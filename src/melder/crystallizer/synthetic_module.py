@@ -26,6 +26,10 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         """
         Return the registered synthetic module object for one spec.
 
+        Purpose:
+            Hand importlib the already-registered world object rather than
+            allocating a second disconnected module instance.
+
         Args:
             spec:
                 Importlib spec for one registered synthetic module.
@@ -50,6 +54,11 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
     def exec_module(self, module: ModuleType) -> None:
         """
         Execute one registered synthetic module into its live namespace.
+
+        Purpose:
+            Delegate execution back to the registered synthetic module so the
+            same world object owns publication, parent binding, and executed
+            state.
 
         Args:
             module:
@@ -91,9 +100,12 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
             fullname:
                 Fully qualified module name being imported.
             path:
-                Parent package search path from importlib.
+                Parent package search path from importlib. It is accepted for
+                protocol compatibility but not used directly because lookup is
+                registry-driven.
             target:
-                Optional importlib reload target.
+                Optional importlib reload target. It is accepted for protocol
+                compatibility but not used directly.
 
         Returns:
             Optional[ModuleSpec]:
@@ -130,6 +142,17 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         - cleanup is deterministic, unregisters the module from the synthetic
           import registry, unpublishes it, detaches parent bindings, and then
           drops owned metadata
+
+    Why this exists:
+        The experiments proved that world-first module behavior depends on more
+        than storing source text on a `ModuleType`. We need one runtime object
+        that can:
+        - exist as a real importable module
+        - participate in package graphs
+        - survive importlib-style circular activation semantics
+        - reload cleanly at explicit boundaries
+        - still expose the crystallizer-owned metadata that ties the live
+          module back to durable truth
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -167,32 +190,45 @@ class SyntheticModule(ModuleType, ISyntheticModule):
 
         Args:
             module_name:
-                Canonical runtime/import name for the module.
+                Canonical runtime/import name for the module. This is the live
+                world identity while the module is registered.
             spell_crystal_id:
-                Crystal identity that produced or owns this module source.
+                Crystal identity that produced or owns this module source. This
+                is the bridge back to durable world truth.
             source_text:
-                Current source text for the module.
+                Current source text for the module. This is what later
+                `execute_source()` and reload flows run.
             source_sha256:
-                SHA256 fingerprint of the current source text.
+                SHA256 fingerprint of the current source text. It should match
+                the current `source_text`, not some older persisted revision.
             binding_signature:
                 Spell-facing binding-signature string associated with this
-                module's primary bound surface.
+                module's primary bound surface. This is loader/bind metadata,
+                not importlib metadata.
             export_names:
-                Optional export/public-surface names.
+                Optional export/public-surface names already known from crystal
+                analysis.
             internal_dependency_names:
-                Optional internal managed dependency names.
+                Optional internal managed dependency names that belong to the
+                same synthetic or crystallized world.
             external_dependency_names:
-                Optional external/environment dependency names.
+                Optional external/environment dependency names outside the
+                managed synthetic world.
             physical_file_path:
-                Optional file path backing the module.
+                Optional physical file path backing the module when the live
+                module is a projection of file-backed truth.
             materialized_directory_path:
-                Optional directory where the module has been materialized.
+                Optional directory where the module has been materialized as a
+                file-backed projection.
             module_docstring:
-                Optional module docstring exposed through `__doc__`.
+                Optional module docstring exposed through `__doc__` on the live
+                module object.
             parent_name:
-                Optional explicit parent package name.
+                Optional explicit parent package name. This matters for dotted
+                module graphs and package attachment.
             is_package:
-                True when the module should behave like a package shell.
+                True when the module should behave like a package shell rather
+                than a leaf module.
 
         Raises:
             ValueError:
@@ -258,6 +294,9 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         - detaches the module from its parent package binding when applicable
         - removes non-dunder runtime namespace values
         - clears owned metadata and then drops the lock reference
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -507,6 +546,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Replace the module source text and fingerprint.
 
+        Purpose:
+            Swap the live module's source truth before a later explicit
+            execution or reload boundary.
+
         Args:
             source_text:
                 Replacement source text.
@@ -539,6 +582,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Replace the derived export and dependency metadata for this module.
 
+        Purpose:
+            Refresh the analysis-side manifest fields after a crystal-analysis
+            pass without rebuilding the live module object itself.
+
         Args:
             export_names:
                 Replacement export/public-surface names, if provided.
@@ -568,6 +615,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Update filesystem materialization metadata for this module.
 
+        Purpose:
+            Record where this live module came from or where it has been
+            projected back out into the filesystem.
+
         Args:
             physical_file_path:
                 Physical module file path, if any.
@@ -586,6 +637,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Merge runtime namespace values into the live module namespace.
 
+        Purpose:
+            Inject additional runtime values into the live module object without
+            re-running source execution.
+
         Args:
             namespace_values:
                 Mapping of names to values that should be inserted into the
@@ -603,6 +658,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Attach this module to its parent package object when available.
 
+        Purpose:
+            Keep parent package attribute exposure aligned with normal import
+            semantics for dotted module names.
+
         Returns:
             None.
         """
@@ -616,6 +675,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def _detach_from_parent_package(self) -> None:
         """
         Remove this module from its parent package object when attached.
+
+        Purpose:
+            Undo parent-package attribute publication during unpublish or
+            cleanup so the synthetic world tears down cleanly.
 
         Returns:
             None.
@@ -648,6 +711,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Raises:
             RuntimeError:
                 If the module has already been cleaned.
+
+        Notes:
+            This method assumes the module is already published in
+            `sys.modules` when circular-import-safe behavior is required.
         """
         self.check_cleaned()
         with self._lock:
@@ -658,6 +725,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def publish_to_sys_modules(self) -> None:
         """
         Publish this module object into `sys.modules` under its canonical name.
+
+        Purpose:
+            Make this exact live world object visible to import machinery and
+            sibling modules by canonical name.
 
         Raises:
             RuntimeError:
@@ -672,6 +743,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def unpublish_from_sys_modules(self) -> None:
         """
         Remove this module from `sys.modules` if this exact object is published.
+
+        Purpose:
+            Withdraw this live module from import visibility without destroying
+            the object itself.
 
         Raises:
             RuntimeError:
@@ -703,6 +778,11 @@ class SyntheticModule(ModuleType, ISyntheticModule):
 
         Returns:
             None.
+
+        Notes:
+            Registration is what makes a module discoverable through the
+            synthetic finder/loader path. It is not the same thing as
+            publication or source execution.
         """
         self.check_cleaned()
         with self.__class__._registry_lock:
@@ -718,6 +798,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def unregister_from_import_registry(self) -> None:
         """
         Remove this module from the synthetic import registry.
+
+        Purpose:
+            Stop importlib-driven discovery of this module without requiring an
+            immediate object destruction.
 
         Returns:
             None.
@@ -757,6 +841,11 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Returns:
             SyntheticModule:
                 This live module object.
+
+        Notes:
+            This is the simplest full activation path:
+            register -> optional hook install -> parent shell materialization
+            -> publish -> execute -> attach importlib metadata.
         """
         self.check_cleaned()
         self.register_in_import_registry(
@@ -789,6 +878,11 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Returns:
             SyntheticModule:
                 The reloaded live module object.
+
+        Notes:
+            Reload is an explicit refresh boundary, not a first-load
+            substitute. The module must already be registered and published
+            coherently for this to be meaningful.
         """
         self.check_cleaned()
         self.register_in_import_registry(auto_parent_package_shells=True)
@@ -835,6 +929,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Returns:
             SyntheticModule:
                 New package-shell module object.
+
+        Notes:
+            Package shells are first-class because dotted module graphs and
+            circular imports depend on them being materialized honestly.
         """
         source_text = "PACKAGE_NAME = '{0}'\n".format(module_name)
         return cls(
@@ -864,6 +962,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
 
         Returns:
             None.
+
+        Notes:
+            This only registers missing parent shells. It does not materialize
+            them into `sys.modules` yet.
         """
         parent_name = module_name.rpartition(".")[0]
         if not parent_name:
@@ -887,6 +989,11 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     ) -> None:
         """
         Materialize any registered ancestor package shells for one module.
+
+        Purpose:
+            Satisfy importlib and reload expectations for dotted modules by
+            ensuring ancestor package shells are actually live before child
+            execution.
 
         Args:
             module_name:
@@ -916,6 +1023,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Return the singleton importlib loader for synthetic modules.
 
+        Purpose:
+            Preserve one stable loader identity for all synthetic-module specs
+            and reload flows in this interpreter.
+
         Returns:
             _SyntheticModuleImportLoader:
                 Shared loader object.
@@ -929,6 +1040,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def _get_meta_path_finder(cls) -> _SyntheticModuleMetaPathFinder:
         """
         Return the singleton meta-path finder for synthetic modules.
+
+        Purpose:
+            Preserve one stable finder identity for synthetic-module discovery
+            in this interpreter.
 
         Returns:
             _SyntheticModuleMetaPathFinder:
@@ -944,6 +1059,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         """
         Install the synthetic finder at the front of `sys.meta_path`.
 
+        Purpose:
+            Make registered synthetic modules discoverable through normal import
+            machinery.
+
         Returns:
             None.
         """
@@ -957,6 +1076,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def remove_import_hook(cls) -> None:
         """
         Remove the synthetic finder from `sys.meta_path`.
+
+        Purpose:
+            Stop synthetic-module discovery through importlib without deleting
+            the registered/live modules themselves.
 
         Returns:
             None.
@@ -982,6 +1105,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Returns:
             Optional[ModuleSpec]:
                 Importlib spec when the module is registered, otherwise None.
+
+        Notes:
+            The spec is built from the registered live module, not from a
+            second detached record object.
         """
         with cls._registry_lock:
             module = cls._registered_modules_by_name.get(module_name)
@@ -1004,6 +1131,11 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def _attach_importlib_metadata(cls, module: "SyntheticModule") -> None:
         """
         Attach the current loader/spec metadata to one registered module.
+
+        Purpose:
+            Keep the live module object aligned with importlib expectations so
+            `import_module(...)` and `reload(...)` can treat it like a normal
+            managed module.
 
         Args:
             module:
@@ -1036,6 +1168,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Returns:
             Optional[SyntheticModule]:
                 Registered module object, or None when absent.
+
+        Notes:
+            This returns the existing live module object rather than allocating
+            a second module for the same identity.
         """
         with cls._registry_lock:
             module = cls._registered_modules_by_name.get(spec.name)
@@ -1050,6 +1186,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def exec_registered_module(cls, module_name: str) -> None:
         """
         Execute one registered synthetic module by name.
+
+        Purpose:
+            Bridge importlib loader execution back onto the registered world
+            object that owns the source text and execution state.
 
         Args:
             module_name:
@@ -1090,6 +1230,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         Returns:
             ModuleType:
                 Imported module object.
+
+        Notes:
+            This is the preferred importlib-style activation path once the
+            module graph is already registered.
         """
         if install_import_hook:
             cls.install_import_hook()
@@ -1099,6 +1243,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def loaded_module_names(cls) -> List[str]:
         """
         Return the registered synthetic module names in load order.
+
+        Purpose:
+            Expose one deterministic view of synthetic-module registration
+            order for diagnostics, tests, and bench visibility.
 
         Returns:
             List[str]:
@@ -1112,6 +1260,10 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def clear_import_registry(cls) -> None:
         """
         Clear the synthetic import registry and installed hook state.
+
+        Purpose:
+            Reset the synthetic import system for isolated tests or runtime
+            teardown without keeping stale finder state around.
 
         Returns:
             None.
@@ -1128,6 +1280,12 @@ class SyntheticModule(ModuleType, ISyntheticModule):
     def describe(self) -> Dict[str, Any]:
         """
         Return a snapshot of the live synthetic module state.
+
+        Purpose:
+            Provide one detached, inspection-friendly snapshot of the live
+            module world state, including package posture, executed state, and
+            publication state, without exposing the internal mutable fields
+            themselves.
 
         Returns:
             Dict[str, Any]:

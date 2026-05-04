@@ -29,6 +29,21 @@ class SpellCrystal(Cleanable):
         - retains flat module/path/classification targets plus direct
           dependency maps
         - does not mirror the mutable live `Spell` object
+
+    Why this exists:
+        The crystal is the durable loader-facing truth for one spell's module
+        world. It is the object that answers:
+        - what module world does this spell depend on?
+        - which targets are synthetic, user-owned, site-package-backed, or
+          still unresolved?
+        - what exact direct-dependency edges should the loader validate before
+          activation?
+
+    Non-goals:
+        - it is not a live `Spell` replay object
+        - it is not the mutation engine
+        - it is not a package manager
+        - it does not prove runtime reachability beyond source/import truth
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -86,14 +101,20 @@ class SpellCrystal(Cleanable):
               current loader slice needs.
             - Does not retain the live `ISpell` or the live root target
               reference after construction.
+            - Captures the root module classification and all direct-dependency
+              edges needed for later loader validation and world activation.
 
         Args:
             spell:
-                Live spell whose module world should be captured.
+                Live spell whose concrete bound target should be used as the
+                root of the module dependency walk. The constructor consumes
+                only the stable spell-facing identity and target/module
+                semantics it needs for the manifest.
             user_source_root_paths:
                 Optional explicit source roots used to classify user-controlled
-                modules. When omitted, the current working directory remains
-                the first-slice fallback.
+                modules. These roots are the policy input for
+                `user_source` classification. When omitted, the first-slice
+                fallback is the current working directory.
 
         Returns:
             None.
@@ -186,6 +207,9 @@ class SpellCrystal(Cleanable):
             - Clears all retained manifest fields and diagnostics.
             - Drops classification flags and resolved root-path caches.
             - Leaves the object unusable after cleanup completes.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -230,7 +254,15 @@ class SpellCrystal(Cleanable):
 
         Purpose:
             Normalize the source-root inputs used for classifying user-owned
-            physical modules.
+            physical modules into one stable tuple used throughout the
+            dependency walk.
+
+        Contract:
+            - accepts only `str` or `Path` values
+            - resolves every value to an absolute path
+            - deduplicates roots while preserving first-seen order
+            - falls back to the current working directory when no explicit
+              roots are supplied
 
         Args:
             user_source_root_paths:
@@ -266,6 +298,20 @@ class SpellCrystal(Cleanable):
     def _resolve_site_package_root_paths() -> Tuple[Path, ...]:
         """
         Resolve known site-package roots for classification.
+
+        Purpose:
+            Build the physical roots that should count as `site_package`
+            authority during module classification.
+
+        Contract:
+            - best-effort only; site/user-site lookup failures do not abort
+              crystal construction
+            - deduplicates resolved roots while preserving first-seen order
+
+        Returns:
+            Tuple[Path, ...]:
+                Normalized site-package root paths used for module-kind
+                classification.
         """
         resolved_paths: List[Path] = []
         try:
@@ -290,6 +336,18 @@ class SpellCrystal(Cleanable):
     def _resolve_target_identity(target: Any) -> Tuple[str, str, str, str]:
         """
         Resolve stable target identity data from one bound spell object.
+
+        Purpose:
+            Reduce one live spell target to the minimal stable identity the
+            crystal needs before module walking begins.
+
+        Contract:
+            - classes, methods, functions, and lambdas keep their natural
+              module identity
+            - callable and non-callable instances fall back to their concrete
+              runtime type
+            - the returned tuple is intentionally small and stable enough to
+              survive past the live target object itself
 
         Returns:
             Tuple[str, str, str, str]:
@@ -347,6 +405,10 @@ class SpellCrystal(Cleanable):
             ValueError:
                 If the spell exposes no live target or no resolvable module
                 name for that target.
+
+        Notes:
+            The live target reference is used only long enough to resolve the
+            stable root identity and the initial root module object/path.
         """
         root_target = spell.spell
         if root_target is None:
@@ -391,6 +453,17 @@ class SpellCrystal(Cleanable):
               object is missing or incomplete.
             - Returns None for built-in/frozen modules and for modules without
               a usable physical origin.
+
+        Args:
+            module_name:
+                Canonical module name to resolve.
+            module_obj:
+                Live module object when one is already available.
+
+        Returns:
+            Optional[Path]:
+                Best-effort resolved physical path, or None when the module is
+                synthetic, built-in, frozen, or otherwise pathless.
         """
         if module_obj is not None:
             if isinstance(module_obj, ISyntheticModule):
@@ -436,6 +509,21 @@ class SpellCrystal(Cleanable):
     ) -> Tuple[Optional[Any], Optional[Path]]:
         """
         Resolve the root module object and path backing the spell target.
+
+        Purpose:
+            Find the live module object and the best available path for the
+            spell's root target before classification and dependency walking.
+
+        Args:
+            root_target:
+                Live target object currently bound by the spell.
+            root_module_name:
+                Canonical module name resolved from the target identity.
+
+        Returns:
+            Tuple[Optional[Any], Optional[Path]]:
+                `(root_module_obj, root_module_path)` where either side may be
+                None when only partial information is available.
         """
         root_module_obj = sys.modules.get(root_module_name)
         if root_module_obj is None:
@@ -450,6 +538,15 @@ class SpellCrystal(Cleanable):
     def _resolve_file_extension(module_path: Optional[Path]) -> Optional[str]:
         """
         Resolve the file extension for one module path when present.
+
+        Args:
+            module_path:
+                Physical module path, if one exists.
+
+        Returns:
+            Optional[str]:
+                Lowercased suffix for the path, or None when the module is
+                pathless.
         """
         if module_path is None:
             return None
@@ -459,6 +556,15 @@ class SpellCrystal(Cleanable):
     def _is_synthetic_module(module_obj: Optional[Any]) -> bool:
         """
         Return whether one module object is explicitly marked synthetic.
+
+        Args:
+            module_obj:
+                Live module object to check.
+
+        Returns:
+            bool:
+                True when the object satisfies the shared synthetic-module
+                protocol.
         """
         if module_obj is None:
             return False
@@ -474,6 +580,24 @@ class SpellCrystal(Cleanable):
         """
         Classify one module target for the loader-facing manifest.
 
+        Purpose:
+            Decide which authority bucket a module belongs to so loaders can
+            treat synthetic, user-source, site-package, and unresolved targets
+            differently.
+
+        Contract:
+            - synthetic modules win first because their authority is explicit
+            - user-source and site-package classifications are path-driven
+            - modules without usable source/path truth remain `unknown`
+
+        Args:
+            module_name:
+                Canonical module name being classified.
+            module_obj:
+                Live module object when available.
+            module_path:
+                Physical module path when available.
+
         Returns:
             str:
                 One of:
@@ -483,8 +607,8 @@ class SpellCrystal(Cleanable):
                 - `unknown`
 
         Notes:
-            The current user-source classification is still rooted in the
-            active working directory for this first slice.
+            `user_source` classification is policy-driven by the configured
+            root paths, not by import location alone.
         """
         if self._is_synthetic_module(module_obj):
             return "synthetic_module"
@@ -524,6 +648,19 @@ class SpellCrystal(Cleanable):
               is source-like (`.py` / `.pyi`).
             - Read failures are recorded into `walk_errors` instead of raising
               immediately.
+
+        Args:
+            module_name:
+                Canonical module name whose source is being requested.
+            module_obj:
+                Live module object when available.
+            module_path:
+                Physical module path when available.
+
+        Returns:
+            Optional[str]:
+                Source text used for AST import analysis, or None when the
+                module format does not expose source safely.
         """
         if isinstance(module_obj, ISyntheticModule):
             source_text = module_obj.source_text
@@ -554,6 +691,17 @@ class SpellCrystal(Cleanable):
     ) -> Optional[str]:
         """
         Resolve one relative import target into an absolute module name.
+
+        Args:
+            current_package:
+                Package context of the module being parsed.
+            relative_module_name:
+                Relative import string such as `.helper` or `..pkg.mod`.
+
+        Returns:
+            Optional[str]:
+                Absolute module name, or None when the relative path cannot be
+                resolved safely.
         """
         try:
             return importlib.util.resolve_name(relative_module_name, current_package)
@@ -569,6 +717,26 @@ class SpellCrystal(Cleanable):
     ) -> Tuple[List[str], Dict[str, List[str]]]:
         """
         Parse import targets from one module source.
+
+        Purpose:
+            Build the direct source-level import view used by the loader
+            manifest, including both flat dependency candidates and the richer
+            `from ... import ...` shape retained for diagnostics.
+
+        Contract:
+            - works from source text only
+            - deduplicates flat dependency targets
+            - records `from ... import ...` imports even when the imported
+              member is not itself a resolvable submodule
+            - records AST/parse failures into `walk_errors` instead of raising
+
+        Args:
+            module_name:
+                Canonical module name being parsed.
+            module_obj:
+                Live module object when available.
+            module_path:
+                Physical module path when available.
 
         Returns:
             Tuple[List[str], Dict[str, List[str]]]:
@@ -677,6 +845,23 @@ class SpellCrystal(Cleanable):
             - Updates kind/extension/dependency lookup maps.
             - Mirrors the module into the kind-specific flat list used by the
               loader-facing manifest surface.
+
+        Args:
+            module_name:
+                Module being recorded.
+            module_path:
+                Physical backing path, if one exists.
+            module_kind:
+                Classified authority bucket for the module.
+            direct_dependencies:
+                Flat direct dependency module names for the module.
+            ast_import_targets:
+                AST-derived flat import targets recorded for diagnostics.
+            ast_from_import_targets:
+                AST-derived `from ... import ...` map recorded for diagnostics.
+
+        Returns:
+            None.
         """
         if module_name not in self._module_targets:
             self._module_targets.append(module_name)
@@ -718,6 +903,11 @@ class SpellCrystal(Cleanable):
         """
         Walk the tracked module dependency graph rooted at one spell module.
 
+        Purpose:
+            Produce the actual loader-facing module graph for the crystal by
+            following source-level imports and classifying every reachable
+            module target.
+
         Contract:
             - Uses module names as the cycle-protection identity.
             - Reads dependencies from source imports, not from runtime object
@@ -726,6 +916,17 @@ class SpellCrystal(Cleanable):
             - Unknown imports are still recorded explicitly so the manifest
               does not silently imply a more complete dependency picture than
               the source actually provides.
+
+        Args:
+            module_name:
+                Root module name for the current walk step.
+            module_obj:
+                Live module object for the current walk step, if available.
+            module_path:
+                Physical module path for the current walk step, if available.
+
+        Returns:
+            None.
         """
         pending: List[Tuple[str, Optional[Any], Optional[Path]]] = [
             (module_name, module_obj, module_path),
@@ -1003,6 +1204,11 @@ class SpellCrystal(Cleanable):
     def describe(self) -> Dict[str, Any]:
         """
         Return a loader-facing snapshot of the manifest state.
+
+        Purpose:
+            Provide one detached, serialization-friendly view of the current
+            crystal manifest so tests, diagnostics, and later persistence work
+            can inspect the manifest without mutating the live object.
 
         Returns:
             Dict[str, Any]:

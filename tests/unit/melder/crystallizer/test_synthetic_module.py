@@ -4,6 +4,13 @@ import sys
 import pytest
 
 from melder.crystallizer.synthetic_module import SyntheticModule
+from tests.mocks.crystallizer.synthetic_module_harness import (
+    UNIT_CASES,
+    UNIT_CASE_PREFIX,
+    clear_modules_by_prefix,
+    install_unit_case,
+    unit_case_id,
+)
 
 
 def _clear_modules_by_prefix(prefix: str) -> None:
@@ -28,10 +35,12 @@ def reset_synthetic_module_registry() -> None:
         None.
     """
     SyntheticModule.clear_import_registry()
-    _clear_modules_by_prefix("synthetic_module_unit")
+    clear_modules_by_prefix("synthetic_module_unit")
+    clear_modules_by_prefix(UNIT_CASE_PREFIX)
     yield
     SyntheticModule.clear_import_registry()
-    _clear_modules_by_prefix("synthetic_module_unit")
+    clear_modules_by_prefix("synthetic_module_unit")
+    clear_modules_by_prefix(UNIT_CASE_PREFIX)
 
 
 def test_synthetic_module_materialize_executes_and_publishes() -> None:
@@ -246,3 +255,109 @@ def test_synthetic_module_importlib_support_surfaces_bad_circular_cycle() -> Non
         or "cannot import name" in message
         or "has no attribute" in message
     )
+
+
+@pytest.fixture(params=UNIT_CASES, ids=unit_case_id)
+def synthetic_module_unit_case(request):
+    """
+    Build one successful synthetic-world case for the unit matrix.
+
+    Returns:
+        tuple[dict[str, object], ModuleType, dict[str, SyntheticModule]]:
+            Case metadata, imported target module, and installed modules.
+    """
+    case = request.param
+    imported_module, modules_by_name = install_unit_case(case)
+    try:
+        yield case, imported_module, modules_by_name
+    finally:
+        SyntheticModule.clear_import_registry()
+        clear_modules_by_prefix("{0}.{1}".format(UNIT_CASE_PREFIX, case["case_id"]))
+
+
+def test_unit_case_import_returns_expected_marker(
+        synthetic_module_unit_case,
+) -> None:
+    """
+    Verify each successful unit case returns its expected marker.
+
+    Returns:
+        None.
+    """
+    case, imported_module, _modules_by_name = synthetic_module_unit_case
+    assert imported_module.describe_case() == case["expected_marker"]
+
+
+def test_unit_case_loads_expected_modules_into_sys_modules(
+        synthetic_module_unit_case,
+) -> None:
+    """
+    Verify each successful unit case loads the expected live module set.
+
+    Returns:
+        None.
+    """
+    case, _imported_module, _modules_by_name = synthetic_module_unit_case
+    loaded_names = [
+        module_name
+        for module_name in case["expected_loaded_names"]
+        if module_name in sys.modules
+    ]
+    assert loaded_names == case["expected_loaded_names"]
+
+
+def test_unit_case_attaches_children_to_parent_packages(
+        synthetic_module_unit_case,
+) -> None:
+    """
+    Verify each successful unit case attaches loaded children to parents.
+
+    Returns:
+        None.
+    """
+    case, _imported_module, modules_by_name = synthetic_module_unit_case
+    for module_name in case["expected_loaded_names"]:
+        module = modules_by_name.get(module_name)
+        if module is None:
+            continue
+        if not module.parent_name:
+            continue
+        parent_module = sys.modules[module.parent_name]
+        assert getattr(parent_module, module.__name__.rsplit(".", 1)[-1]) is module
+
+
+def test_unit_case_importlib_metadata_is_coherent(
+        synthetic_module_unit_case,
+) -> None:
+    """
+    Verify each successful unit case keeps coherent importlib metadata.
+
+    Returns:
+        None.
+    """
+    _case, imported_module, modules_by_name = synthetic_module_unit_case
+    assert imported_module.__loader__ is not None
+    assert imported_module.__spec__ is not None
+    for module in modules_by_name.values():
+        if module.__name__ not in sys.modules:
+            assert module.published_in_sys_modules is False
+            continue
+        assert module.published_in_sys_modules is True
+        assert module.executed_source is True
+        assert module.__loader__ is not None
+        assert module.__spec__ is not None
+
+
+def test_unit_case_clear_registry_removes_all_live_modules(
+        synthetic_module_unit_case,
+) -> None:
+    """
+    Verify each successful unit case cleans itself out of the live world.
+
+    Returns:
+        None.
+    """
+    case, _imported_module, _modules_by_name = synthetic_module_unit_case
+    SyntheticModule.clear_import_registry()
+    for module_name in case["expected_loaded_names"]:
+        assert module_name not in sys.modules
