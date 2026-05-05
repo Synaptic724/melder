@@ -1,3 +1,0 @@
-"""
-Internal Rift model package.
-"""

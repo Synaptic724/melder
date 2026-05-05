@@ -1,4 +1,0 @@
-"""
-Internal RiftSpace model package.
-"""
-
