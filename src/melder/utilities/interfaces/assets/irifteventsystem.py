@@ -1,7 +1,6 @@
-from typing import runtime_checkable, Protocol, Optional, Dict, Callable
-
+from typing import Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.iriftevent import IRiftEvent
 
 @runtime_checkable
 class IRiftEventSystem(ICleanable, Protocol):

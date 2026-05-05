@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Dict, Any
-
+from typing import Any, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.idescriptorpayload import IDescriptorPayload
-
 
 @runtime_checkable
 class ISpellDescriptorPayload(IDescriptorPayload, Protocol):

@@ -1,7 +1,12 @@
-from typing import runtime_checkable, Protocol, List, Dict
-
+from typing import Dict, List, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.iframeaclbuilder import IFrameACLBuilder
+from melder.utilities.interfaces.assets.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
+from melder.utilities.interfaces.assets.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
+from melder.utilities.interfaces.assets.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.assets.iframeaclprofilebuilder import IFrameACLProfileBuilder
+from melder.utilities.interfaces.assets.iframeaclsetcompatibilityvalidator import IFrameACLSetCompatibilityValidator
+from melder.utilities.interfaces.assets.iframeaclviewconfiguration import IFrameACLViewConfiguration
 
 @runtime_checkable
 class IFrameACLContainer(ICleanable, Protocol):

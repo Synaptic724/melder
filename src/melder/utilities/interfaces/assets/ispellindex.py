@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Any, Set
-
+from typing import Any, Optional, Protocol, Set, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class ISpellIndex(ICleanable, Protocol):

@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Any, Tuple
-
+from typing import Any, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.idescriptorpayload import IDescriptorPayload
-
 
 @runtime_checkable
 class IConduitDescriptorPayload(IDescriptorPayload, Protocol):

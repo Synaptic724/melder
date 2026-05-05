@@ -1,5 +1,4 @@
-from typing import runtime_checkable, Protocol, Dict
-
+from typing import Dict, Protocol, runtime_checkable
 
 @runtime_checkable
 class IRiftMemory(Protocol):

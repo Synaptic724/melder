@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Dict
-
+from typing import Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IRiftConfiguration(ICleanable, Protocol):

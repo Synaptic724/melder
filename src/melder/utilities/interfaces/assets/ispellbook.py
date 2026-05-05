@@ -1,8 +1,9 @@
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Any, Iterable, Tuple, Mapping
-
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, runtime_checkable
+from types import ModuleType
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.ispell import ISpell
+from melder.utilities.interfaces.assets.ispellindex import ISpellIndex
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):

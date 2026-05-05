@@ -1,7 +1,11 @@
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Any, Tuple
-
+from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.assets.inexusconfiguration import INexusConfiguration
+from melder.utilities.interfaces.assets.irift import IRift
+from melder.utilities.interfaces.assets.iriftconfiguration import IRiftConfiguration
+from melder.utilities.interfaces.assets.iriftgate import IRiftGate
+from melder.utilities.interfaces.assets.iriftgatecontroller import IRiftGateController
 
 @runtime_checkable
 class INexus(ICleanable, Protocol):

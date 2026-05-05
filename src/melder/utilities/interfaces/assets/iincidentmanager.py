@@ -1,8 +1,6 @@
+from typing import Any, Dict, Iterable, List, Optional, Protocol, runtime_checkable
 import threading
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Any, Iterable
-
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IIncidentManager(ICleanable, Protocol):

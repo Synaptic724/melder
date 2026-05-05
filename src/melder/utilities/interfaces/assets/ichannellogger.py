@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, List, Union, Dict, Any, Iterable
-
+from typing import Any, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IChannelLogger(ICleanable, Protocol):

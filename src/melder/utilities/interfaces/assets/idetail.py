@@ -1,7 +1,5 @@
-from typing import Protocol
-
+from typing import runtime_checkable, Protocol
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 class IDetail(ICleanable, Protocol):
     """

@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol
-
+from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IRiftGate(ICleanable, Protocol):

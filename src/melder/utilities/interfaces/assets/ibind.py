@@ -1,9 +1,8 @@
-from typing import runtime_checkable, Protocol, Union, Any
-
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from typing import Any, Protocol, Union, runtime_checkable
 from melder.spellbook.existence.existence import Existence
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.ispell import ISpell
 
 @runtime_checkable
 class IBind(ICleanable, Protocol):

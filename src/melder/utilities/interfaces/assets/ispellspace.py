@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Any
-
+from typing import Any, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class ISpellSpace(ICleanable, Protocol):

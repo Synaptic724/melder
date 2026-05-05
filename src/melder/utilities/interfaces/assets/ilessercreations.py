@@ -1,8 +1,6 @@
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from threading import RLock
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Any
-
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class ILesserCreations(ICleanable, Protocol):

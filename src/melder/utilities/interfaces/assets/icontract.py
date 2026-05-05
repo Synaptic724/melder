@@ -1,8 +1,8 @@
-from typing import runtime_checkable, Protocol, Optional, Dict
-
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from typing import Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.iconduit import IConduit
+from melder.utilities.interfaces.assets.iconduitward import IConduitWard
+from melder.utilities.interfaces.assets.idetail import IDetail
 
 @runtime_checkable
 class IContract(ICleanable, Protocol):

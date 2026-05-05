@@ -1,10 +1,8 @@
+from typing import Any, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 import threading
 from types import ModuleType
-from typing import runtime_checkable, Protocol, Optional, Dict, Any, Iterable, Tuple
-
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IConduit(ICleanable, Protocol):

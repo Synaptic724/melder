@@ -1,9 +1,6 @@
-from typing import runtime_checkable, Protocol, Optional, Any, Callable, \
-    Self
-
-from melder.utilities.interfaces.assets.icleanable import ICleanable
+from typing import Any, Callable, Optional, Protocol, Self, runtime_checkable
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
+from melder.utilities.interfaces.assets.icleanable import ICleanable
 
 @runtime_checkable
 class IUnitOfWork(ICleanable, Protocol):

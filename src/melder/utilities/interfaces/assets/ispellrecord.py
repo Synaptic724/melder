@@ -1,9 +1,8 @@
-from typing import runtime_checkable, Protocol, Optional, Any, Tuple
-
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from typing import Any, Optional, Protocol, Tuple, runtime_checkable
 from melder.spellbook.existence.existence import Existence
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.ispelldescriptorpayload import ISpellDescriptorPayload
 
 @runtime_checkable
 class ISpellRecord(ICleanable, Protocol):

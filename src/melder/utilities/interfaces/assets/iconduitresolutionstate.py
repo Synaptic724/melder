@@ -1,8 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, List, Mapping, Sequence
-
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from typing import List, Mapping, Optional, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IConduitResolutionState(ICleanable, Protocol):

@@ -1,7 +1,8 @@
-from typing import runtime_checkable, Protocol, Dict, Tuple
-
+from typing import Dict, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.icodegenexecutionresult import ICodegenExecutionResult
+from melder.utilities.interfaces.assets.icodegentransactioncontext import ICodegenTransactionContext
+from melder.utilities.interfaces.assets.icodegenvalidationresult import ICodegenValidationResult
 
 @runtime_checkable
 class ICodegenSystem(ICleanable, Protocol):

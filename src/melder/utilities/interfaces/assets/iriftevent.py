@@ -1,5 +1,4 @@
-from typing import runtime_checkable, Protocol, Optional, Dict
-
+from typing import Dict, Optional, Protocol, runtime_checkable
 
 @runtime_checkable
 class IRiftEvent(Protocol):

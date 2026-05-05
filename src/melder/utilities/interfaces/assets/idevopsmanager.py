@@ -1,8 +1,7 @@
+from typing import Optional, Protocol, runtime_checkable
 import threading
-from typing import runtime_checkable, Protocol, Optional
-
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.ispellsystemstates import ISpellSystemStates
 
 @runtime_checkable
 class IDevOpsManager(ICleanable, Protocol):

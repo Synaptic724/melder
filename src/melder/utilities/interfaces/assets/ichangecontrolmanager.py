@@ -1,8 +1,6 @@
-from typing import runtime_checkable, Protocol, Optional, Union, Dict, Any, Iterable, Callable, \
-    Tuple
-
+from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
+from threading import RLock
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IChangeControlManager(ICleanable, Protocol):

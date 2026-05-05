@@ -1,11 +1,7 @@
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Any, Callable, \
-    Tuple, Sequence
-
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence, Tuple, runtime_checkable
 from melder.spellbook.existence.existence import Existence
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):

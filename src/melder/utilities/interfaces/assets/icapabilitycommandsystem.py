@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Tuple
-
+from typing import Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.icommandsystem import ICommandSystem
-
 
 @runtime_checkable
 class ICapabilityCommandSystem(ICommandSystem, Protocol):

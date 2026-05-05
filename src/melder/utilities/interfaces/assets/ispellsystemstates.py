@@ -1,9 +1,9 @@
+from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, runtime_checkable
 import threading
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Iterable, Iterator, Tuple, Mapping, Set, Sequence
-
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.ispell import ISpell
+from melder.utilities.interfaces.assets.ispellindex import ISpellIndex
 
 @runtime_checkable
 class ISpellSystemStates(ICleanable, Protocol):

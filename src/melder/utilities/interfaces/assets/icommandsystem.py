@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, List, Dict, Any, Tuple
-
+from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class ICommandSystem(ICleanable, Protocol):

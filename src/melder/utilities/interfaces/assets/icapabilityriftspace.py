@@ -1,7 +1,6 @@
-from typing import runtime_checkable, Protocol
-
+from typing import Protocol, runtime_checkable
+from melder.utilities.interfaces.assets.icapabilitycommandsystem import ICapabilityCommandSystem
 from melder.utilities.interfaces.assets.iriftspace import IRiftSpace
-
 
 @runtime_checkable
 class ICapabilityRiftSpace(IRiftSpace, Protocol):

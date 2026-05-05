@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Dict, Tuple
-
+from typing import Dict, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class ICodegenNamespaceConfiguration(ICleanable, Protocol):

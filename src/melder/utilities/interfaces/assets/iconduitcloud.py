@@ -1,7 +1,6 @@
-from typing import Protocol, Optional, Tuple
-
+from typing import runtime_checkable, Optional, Protocol, Tuple
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.iconduit import IConduit
 
 class IConduitCloud(ICleanable, Protocol):
     """

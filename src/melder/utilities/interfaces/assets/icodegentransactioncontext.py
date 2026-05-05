@@ -1,7 +1,7 @@
-from typing import runtime_checkable, Protocol, Optional, Dict
-
+from typing import Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.icodegennamespace import ICodegenNamespace
+from melder.utilities.interfaces.assets.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
 
 @runtime_checkable
 class ICodegenTransactionContext(ICleanable, Protocol):

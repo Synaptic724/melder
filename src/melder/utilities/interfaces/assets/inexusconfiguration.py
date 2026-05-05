@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Optional, Sequence
-
+from typing import Optional, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class INexusConfiguration(ICleanable, Protocol):

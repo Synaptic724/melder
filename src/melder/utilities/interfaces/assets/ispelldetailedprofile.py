@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Dict, Any
-
+from typing import Any, Dict, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.ispellgeneralprofile import ISpellGeneralProfile
-
 
 @runtime_checkable
 class ISpellDetailedProfile(ISpellGeneralProfile, Protocol):

@@ -1,7 +1,9 @@
-from typing import runtime_checkable, Protocol, Optional, Dict, Callable
-
+from typing import Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.icommandsystem import ICommandSystem
+from melder.utilities.interfaces.assets.irifteventsystem import IRiftEventSystem
+from melder.utilities.interfaces.assets.iriftmemorysystem import IRiftMemorySystem
+from melder.utilities.interfaces.assets.iworkstation import IWorkstation
 
 @runtime_checkable
 class IRiftSpace(ICleanable, Protocol):

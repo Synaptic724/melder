@@ -1,7 +1,5 @@
-from typing import runtime_checkable, Protocol, Dict, Any
-
+from typing import Any, Dict, Protocol, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
 
 @runtime_checkable
 class IFrameACLRule(ICleanable, Protocol):

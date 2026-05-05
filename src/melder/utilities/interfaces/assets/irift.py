@@ -1,7 +1,8 @@
-from typing import runtime_checkable, Protocol, Optional, Dict, Tuple
-
+from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.assets.icleanable import ICleanable
-
+from melder.utilities.interfaces.assets.iriftconfiguration import IRiftConfiguration
+from melder.utilities.interfaces.assets.iriftgate import IRiftGate
+from melder.utilities.interfaces.assets.iriftspace import IRiftSpace
 
 @runtime_checkable
 class IRift(ICleanable, Protocol):
