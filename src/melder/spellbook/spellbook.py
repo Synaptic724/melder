@@ -17,7 +17,7 @@ from melder.spellbook.spell_crafter.validation.validation_system import SpellVal
 from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ISpell,
     IConfiguration,
     ISpellIndex,

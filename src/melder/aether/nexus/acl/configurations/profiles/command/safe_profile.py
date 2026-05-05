@@ -2,7 +2,7 @@ from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_p
     FrameACLCommandProfile,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.utilities.interfaces.interfaces import IFrameACLCommandProfileStrategy
+from melder.utilities.interfaces import IFrameACLCommandProfileStrategy
 
 
 class SafeCommandProfileStrategy(IFrameACLCommandProfileStrategy):

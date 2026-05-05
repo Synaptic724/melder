@@ -12,7 +12,7 @@ from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configu
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ICodegenTransactionContext
+from melder.utilities.interfaces import ICodegenTransactionContext
 
 
 class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):

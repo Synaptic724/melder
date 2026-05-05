@@ -1,7 +1,7 @@
 from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.interfaces import ISpellbook
+from melder.utilities.interfaces import ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

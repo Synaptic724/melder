@@ -11,7 +11,7 @@ from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ISpellDetailedProfile,
     ISpellGeneralProfile,
 )

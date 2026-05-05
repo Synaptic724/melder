@@ -27,7 +27,7 @@ from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import 
     RootResolutionBlueprint,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IChangeControlManager, ISpellIndex
+from melder.utilities.interfaces import IChangeControlManager, ISpellIndex
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 

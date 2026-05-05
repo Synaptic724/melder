@@ -31,7 +31,7 @@ from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_resul
     CodegenValidationResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ICodegenTransactionContext,
     ICodegenValidationResult,
 )

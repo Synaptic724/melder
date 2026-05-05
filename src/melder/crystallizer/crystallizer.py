@@ -8,7 +8,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
 from melder.crystallizer.spell_crystal import SpellCrystal
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IAether, ISpell
+from melder.utilities.interfaces import IAether, ISpell
 
 
 class Crystallizer(Cleanable):

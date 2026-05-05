@@ -24,7 +24,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile impo
     SpellGeneralProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.interfaces import ISpell
 
 
 class SpellDetailedProfile(SpellGeneralProfile):

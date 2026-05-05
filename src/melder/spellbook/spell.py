@@ -9,7 +9,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ISpell,
     ISpellDetailedProfile,
     ISpellGeneralProfile,

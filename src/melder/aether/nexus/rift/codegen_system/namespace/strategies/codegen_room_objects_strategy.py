@@ -6,7 +6,7 @@ from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configu
     CodegenNamespaceConfiguration,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ICodegenNamespaceConfiguration,
     ICodegenRiftSpace,
     IRift,

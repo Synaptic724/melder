@@ -2,7 +2,7 @@ import pytest
 import threading
 from unittest.mock import MagicMock
 from melder.aether.conduit_cloud import ConduitCloud
-from melder.utilities.interfaces.interfaces import IConduit
+from melder.utilities.interfaces import IConduit
 
 # ----------------------------------------------------------------------
 # Fixtures

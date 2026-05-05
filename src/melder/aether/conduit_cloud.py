@@ -2,7 +2,7 @@ import threading
 from typing import Dict, Optional, Tuple
 import ulid
 # Melder imports
-from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
+from melder.utilities.interfaces import IConduit, IConduitCloud
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 

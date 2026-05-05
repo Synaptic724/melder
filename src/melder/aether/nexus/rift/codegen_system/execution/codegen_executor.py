@@ -8,7 +8,7 @@ from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result 
     CodegenExecutionResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ICodegenExecutionResult,
     ICodegenTransactionContext,
 )

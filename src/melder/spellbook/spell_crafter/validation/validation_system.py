@@ -35,7 +35,7 @@ from melder.spellbook.spell_crafter.validation.strategies.binding_resolution_cyc
     BindingResolutionCycleStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell, ISpellbook
+from melder.utilities.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )

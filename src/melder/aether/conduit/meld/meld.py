@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ISpellbook,
     ISpell,
     IMeld,

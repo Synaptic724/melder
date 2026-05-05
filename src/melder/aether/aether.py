@@ -9,7 +9,7 @@ from melder.crystallizer.crystallizer import Crystallizer
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
-from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
+from melder.utilities.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
     IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager, IAether, INexus
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame import AethericFrame

@@ -11,7 +11,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.utilities.interfaces.interfaces import ISpellIndex, ISpellSystemStates
+from melder.utilities.interfaces import ISpellIndex, ISpellSystemStates
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 

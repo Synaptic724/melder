@@ -9,7 +9,7 @@ from melder.aether.nexus.rift.command_system.codegen_command_system import (
 )
 from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRift, IRiftGate
+from melder.utilities.interfaces import ICodegenRiftSpace, IRift, IRiftGate
 
 
 class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):

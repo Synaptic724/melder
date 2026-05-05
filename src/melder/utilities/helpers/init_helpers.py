@@ -1,6 +1,6 @@
 import logging
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces.interfaces import IChannelLogger
+from melder.utilities.interfaces import IChannelLogger
 from melder.aether.aether_utility_system import AetherUtilitySystem
 
 

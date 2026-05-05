@@ -15,7 +15,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )
-from melder.utilities.interfaces.interfaces import ISpellIndex, ISpell
+from melder.utilities.interfaces import ISpellIndex, ISpell
 
 # ----------------------------------------------------------------------
 # Fixtures

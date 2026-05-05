@@ -37,7 +37,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.par
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates, ISpellbook
+from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason

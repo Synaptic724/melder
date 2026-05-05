@@ -5,7 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     IAethericFrame,
     IConduitRecord,
     IFrameRecord,

@@ -5,7 +5,7 @@ from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import 
     CodegenTransactionContext,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ICodegenTransactionContext
+from melder.utilities.interfaces import ICodegenTransactionContext
 
 
 class CodegenCompiler(Cleanable):

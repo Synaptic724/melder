@@ -7,7 +7,7 @@ from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     IFrameACLBuilder,
     IFrameACLCommandBuilder,
     IFrameACLCommandConfiguration,

@@ -7,7 +7,7 @@ from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import 
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
-from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
+from melder.utilities.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 

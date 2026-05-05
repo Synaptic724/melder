@@ -17,7 +17,7 @@ from melder.aether.nexus.rift.command_system.command_system import (
 from melder.aether.nexus.rift.rift_space.workstation import Workstation
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     IRiftEventSystem,
     IRiftGate,
     IRiftMemorySystem,

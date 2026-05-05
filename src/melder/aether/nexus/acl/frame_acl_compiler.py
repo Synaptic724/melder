@@ -20,7 +20,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IFrameACLProfileBuilder
+from melder.utilities.interfaces import IFrameACLProfileBuilder
 
 
 class FrameACLCompiler(Cleanable):

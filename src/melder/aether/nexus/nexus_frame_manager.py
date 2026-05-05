@@ -12,7 +12,7 @@ from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguratio
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     IAethericFrame,
     IConduit,
     INexus,

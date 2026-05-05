@@ -37,7 +37,7 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IFrameLink
+from melder.utilities.interfaces import IFrameLink
 
 
 @decorate_public_view_actions

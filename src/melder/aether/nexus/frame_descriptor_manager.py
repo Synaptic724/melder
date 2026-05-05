@@ -17,7 +17,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     IAether,
     ISpellGeneralProfile,
 )

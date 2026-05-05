@@ -14,7 +14,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import IConduit, ISpell
+from melder.utilities.interfaces import IConduit, ISpell
 
 
 class ProtocolStub:

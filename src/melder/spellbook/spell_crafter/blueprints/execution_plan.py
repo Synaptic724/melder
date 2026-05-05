@@ -12,7 +12,7 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.interfaces import ISpell
 
 
 class ExecutionPlanVariant:

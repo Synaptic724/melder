@@ -20,7 +20,7 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.interfaces import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

@@ -14,7 +14,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, \
+from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, \
     ISafeLogger, ISpellSpace
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether

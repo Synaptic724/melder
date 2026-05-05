@@ -8,7 +8,7 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IDetail
+from melder.utilities.interfaces import IDetail
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Detail(Cleanable, IDetail):

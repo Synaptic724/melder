@@ -7,7 +7,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.interfaces import IConfiguration
+from melder.utilities.interfaces import IConfiguration
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Configuration(Cleanable, IConfiguration):

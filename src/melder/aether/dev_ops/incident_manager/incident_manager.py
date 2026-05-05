@@ -7,7 +7,7 @@ from melder.aether.dev_ops.incident_manager.incident_severity import (
 )
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IIncidentManager
+from melder.utilities.interfaces import IIncidentManager
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )

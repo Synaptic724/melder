@@ -17,7 +17,7 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.par
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.interfaces import ISpell
 
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]

@@ -5,7 +5,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.mutations.research.research import Research
-from melder.utilities.interfaces.interfaces import IAethericFrame
+from melder.utilities.interfaces import IAethericFrame
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # TODO(MutationResearch): Implement the real mutation promotion contract here.

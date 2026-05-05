@@ -19,7 +19,7 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell, ISpellSystemStates
+from melder.utilities.interfaces import ISpell, ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 

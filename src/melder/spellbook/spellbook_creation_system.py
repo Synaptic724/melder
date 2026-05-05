@@ -17,7 +17,7 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     ISpell,
     ISpellDetailedProfile,
     ISpellGeneralProfile,

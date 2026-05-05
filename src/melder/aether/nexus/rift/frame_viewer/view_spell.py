@@ -25,7 +25,7 @@ from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_pr
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IFrameLink
+from melder.utilities.interfaces import IFrameLink
 
 
 @decorate_public_view_actions

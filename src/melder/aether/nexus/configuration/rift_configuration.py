@@ -7,7 +7,7 @@ from melder.aether.nexus.configuration.rift_validation_mode import RiftValidatio
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IRiftConfiguration
+from melder.utilities.interfaces import IRiftConfiguration
 
 
 class RiftConfiguration(Cleanable, IRiftConfiguration):

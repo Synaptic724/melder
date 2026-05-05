@@ -24,7 +24,7 @@ from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spell import Spell
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
-from melder.utilities.interfaces.interfaces import (
+from melder.utilities.interfaces import (
     IAether,
     IAethericFrame,
     IBind,
@@ -94,11 +94,11 @@ def test_interfaces_star_import_surface_matches___all__() -> None:
         None.
     """
     interfaces_module = importlib.import_module(
-        "melder.utilities.interfaces.interfaces"
+        "melder.utilities.interfaces"
     )
     namespace = {}
     exec(
-        "from melder.utilities.interfaces.interfaces import *",
+        "from melder.utilities.interfaces import *",
         {},
         namespace,
     )

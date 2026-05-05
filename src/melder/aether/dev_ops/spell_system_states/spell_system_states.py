@@ -12,7 +12,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell, ISpellIndex, ISpellSystemStates
+from melder.utilities.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemStates(Cleanable, ISpellSystemStates):

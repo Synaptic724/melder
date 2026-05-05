@@ -3,7 +3,7 @@ import pytest
 
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces.interfaces import IChannelLogger
+from melder.utilities.interfaces import IChannelLogger
 
 
 def test_resolve_safe_logger_accepts_none():
