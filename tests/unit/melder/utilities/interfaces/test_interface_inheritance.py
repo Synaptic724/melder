@@ -23,7 +23,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spell import Spell
 from melder.spellbook.spellbook import Spellbook
-from melder.utilities.interfaces.assets.icleanable import ICleanable as AssetICleanable
+from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.interfaces import (
     IAether,
     IAethericFrame,
