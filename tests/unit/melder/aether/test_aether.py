@@ -1350,15 +1350,61 @@ def test_enable_logging_uses_automatic_channel_path_when_enabled() -> None:
     Aether should be able to attach its own logger through the automatic channel path.
     """
     a = Aether()
-    utility_system = AetherUtilitySystem()
-    utility_system.set_channel_logger_activation_enabled(True)
-    utility_system.register_channel_logger_resolver(
-        lambda **_: logging.getLogger("aether-auto")
+    configuration = (
+        a.create_configuration_builder()
+        .with_channel_logger_activation_enabled(True)
+        .with_channel_logger_resolver(
+            lambda **_: logging.getLogger("aether-auto")
+        )
+        .activate()
     )
+    a.activate(configuration)
 
     a.enable_logging()
 
     assert a.logger is not None
+
+
+def test_enable_logging_requires_activated_configuration_for_automatic_path() -> None:
+    """
+    The automatic Aether logger path should fail fast before config activation.
+    """
+    a = Aether()
+
+    with pytest.raises(RuntimeError, match="AetherConfiguration must be activated"):
+        a.enable_logging()
+
+
+def test_enable_logging_requires_channel_logger_activation_enabled() -> None:
+    """
+    The automatic Aether logger path should fail fast when config disables it.
+    """
+    a = Aether()
+    configuration = (
+        a.create_configuration_builder()
+        .with_defaults()
+        .activate()
+    )
+    a.activate(configuration)
+
+    with pytest.raises(RuntimeError, match="disabled in AetherConfiguration"):
+        a.enable_logging()
+
+
+def test_enable_logging_requires_registered_automatic_provider() -> None:
+    """
+    The automatic Aether logger path should fail fast when no provider exists.
+    """
+    a = Aether()
+    configuration = (
+        a.create_configuration_builder()
+        .with_channel_logger_activation_enabled(True)
+        .activate()
+    )
+    a.activate(configuration)
+
+    with pytest.raises(RuntimeError, match="no automatic logger provider configured"):
+        a.enable_logging()
 
 
 def test_aether_activate_applies_logger_configuration_to_utility_system() -> None:

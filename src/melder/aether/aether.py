@@ -410,17 +410,58 @@ class Aether(Cleanable, IAether):
             Attach one explicit logger when provided, otherwise try the current
             automatic channel logger path through `AetherUtilitySystem`.
 
+        Contract:
+            - Passing an explicit logger always uses the direct safe-logger
+              attachment path and does not require Aether root configuration.
+            - Calling this method without an explicit logger requires:
+              - an installed and activated `AetherConfiguration`
+              - automatic channel logger activation enabled in that config
+              - at least one automatic provider path registered on the hosted
+                utility system (channel resolver or default logger)
+            - The automatic path fails fast when that setup is incomplete
+              instead of silently leaving Aether on the null logger path.
+
         Args:
             logger:
                 Optional explicit logger override.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If the automatic logger path is requested before Aether root
+                configuration has been activated, if automatic channel logger
+                activation is disabled, or if no automatic logger provider has
+                been registered into the utility system.
         """
         self.check_cleaned()
         if logger is not None:
             self.attach_logger(logger)
             return
+        if not self._activated or self._configuration is None:
+            raise RuntimeError(
+                "AetherConfiguration must be activated before automatic "
+                "Aether logging can be enabled."
+            )
+        if not self._configuration.channel_logger_activation_enabled:
+            raise RuntimeError(
+                "Automatic channel logger activation is disabled in "
+                "AetherConfiguration."
+            )
+        if not self._aether_utility_system.is_channel_logger_activation_enabled():
+            raise RuntimeError(
+                "AetherUtilitySystem automatic channel logger activation is "
+                "disabled."
+            )
+        if (
+                not self._aether_utility_system.has_channel_logger_resolver()
+                and not self._aether_utility_system.has_default_logger()
+        ):
+            raise RuntimeError(
+                "AetherUtilitySystem has no automatic logger provider "
+                "configured."
+            )
         self._logger = InitHelpers.resolve_channel_logger(
             self,
             groups=["aether", "lifecycle"],
@@ -428,6 +469,10 @@ class Aether(Cleanable, IAether):
             props={"component": "aether"},
             channels="system",
         )
+        if self._logger._logger is None:
+            raise RuntimeError(
+                "Automatic Aether logger resolution returned no logger."
+            )
 
     @property
     def configuration(self) -> Optional[AetherConfiguration]:

@@ -117,8 +117,8 @@ def test_integration_aether_logging_configuration_keeps_automatic_logger_path_di
     Contract:
         - Aether can carry a resolver/default logger in config while automatic
           activation remains disabled.
-        - `Aether.enable_logging()` remains a no-op for automatic resolution in
-          that disabled state.
+        - `Aether.enable_logging()` now fails fast for the automatic path in
+          that disabled state instead of silently no-oping.
         - Spellbook and Conduit stay on the null logger path.
 
     Returns:
@@ -134,7 +134,9 @@ def test_integration_aether_logging_configuration_keeps_automatic_logger_path_di
         .activate()
     )
     aether.activate(configuration)
-    aether.enable_logging()
+
+    with pytest.raises(RuntimeError, match="disabled in AetherConfiguration"):
+        aether.enable_logging()
 
     spellbook = Spellbook(
         aetheric_frame="integration-logger-disabled",

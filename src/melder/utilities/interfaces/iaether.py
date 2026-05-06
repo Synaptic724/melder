@@ -43,7 +43,9 @@ class IAether(ICleanable, Protocol):
         Args:
             logger:
                 Optional explicit logger override. When omitted, Aether should
-                use the hosted automatic channel-logger path.
+                use the hosted automatic channel-logger path, which requires an
+                activated Aether root configuration and enabled automatic
+                channel logger policy.
 
         Returns:
             None.
