@@ -54,6 +54,7 @@ def test_aether_utility_system_singleton_under_concurrent_construction() -> None
 def test_has_channel_logger_resolver_false_by_default() -> None:
     """Resolver presence should default to false."""
     assert AetherUtilitySystem().has_channel_logger_resolver() is False
+    assert AetherUtilitySystem().is_channel_logger_activation_enabled() is False
 
 
 def test_resolve_channel_logger_falls_back_to_null_logger_when_unconfigured() -> None:
@@ -107,6 +108,7 @@ def test_register_channel_logger_resolver_is_used() -> None:
         return logging.getLogger("provider-test")
 
     system = AetherUtilitySystem()
+    system.set_channel_logger_activation_enabled(True)
     system.register_channel_logger_resolver(resolver)
     registrant = object()
 
@@ -140,6 +142,7 @@ def test_clear_channel_logger_resolver_restores_null_fallback() -> None:
         None.
     """
     system = AetherUtilitySystem()
+    system.set_channel_logger_activation_enabled(True)
     system.register_channel_logger_resolver(lambda **_: logging.getLogger("temp"))
     system.clear_channel_logger_resolver()
 
@@ -159,6 +162,7 @@ def test_register_default_logger_is_used_when_channel_resolver_is_missing() -> N
     """
     raw = logging.getLogger("default-fallback")
     system = AetherUtilitySystem()
+    system.set_channel_logger_activation_enabled(True)
     system.register_default_logger(raw)
 
     logger = system.resolve_channel_logger(object(), channels="system")
@@ -205,6 +209,7 @@ def test_default_logger_is_used_when_channel_resolver_raises() -> None:
         raise RuntimeError("resolver failed")
 
     system = AetherUtilitySystem()
+    system.set_channel_logger_activation_enabled(True)
     system.register_default_logger(raw)
     system.register_channel_logger_resolver(resolver)
 
@@ -223,6 +228,7 @@ def test_clear_default_logger_restores_null_fallback_without_channel_resolver() 
         None.
     """
     system = AetherUtilitySystem()
+    system.set_channel_logger_activation_enabled(True)
     system.register_default_logger(logging.getLogger("temp-default"))
     system.clear_default_logger()
 
@@ -279,7 +285,30 @@ def test_resolve_channel_logger_returns_null_logger_when_resolver_raises_and_no_
         raise RuntimeError("resolver failed")
 
     system = AetherUtilitySystem()
+    system.set_channel_logger_activation_enabled(True)
     system.register_channel_logger_resolver(resolver)
+
+    logger = system.resolve_channel_logger(object(), channels="system")
+
+    assert isinstance(logger, SafeLogger)
+    assert logger._logger is None
+
+
+def test_registered_resolver_is_ignored_when_channel_activation_is_disabled() -> None:
+    """Automatic channel resolution should noop when activation is disabled."""
+    system = AetherUtilitySystem()
+    system.register_channel_logger_resolver(lambda **_: logging.getLogger("disabled"))
+
+    logger = system.resolve_channel_logger(object(), channels="system")
+
+    assert isinstance(logger, SafeLogger)
+    assert logger._logger is None
+
+
+def test_registered_default_logger_is_ignored_when_channel_activation_is_disabled() -> None:
+    """Fallback logger should also be ignored when channel activation is disabled."""
+    system = AetherUtilitySystem()
+    system.register_default_logger(logging.getLogger("disabled-default"))
 
     logger = system.resolve_channel_logger(object(), channels="system")
 

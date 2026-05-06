@@ -71,6 +71,8 @@ from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
+from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -155,6 +157,8 @@ __all__ = [
     "INexus",
     "INexusFrameManager",
     "IAether",
+    "IAetherConfiguration",
+    "IAetherConfigurationBuilder",
     "IChannelLogger",
     "IConfiguration",
     "ISafeLogger",

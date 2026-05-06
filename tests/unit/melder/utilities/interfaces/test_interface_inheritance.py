@@ -4,6 +4,8 @@ from typing import Dict
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
@@ -26,6 +28,8 @@ from melder.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces import (
     IAether,
+    IAetherConfiguration,
+    IAetherConfigurationBuilder,
     IAethericFrame,
     IBind,
     IChangeControlManager,
@@ -53,6 +57,8 @@ from melder.utilities.logger.safe_logger import SafeLogger
 
 _INTERFACE_MAP: Dict[type, type] = {
     IAether: Aether,
+    IAetherConfiguration: AetherConfiguration,
+    IAetherConfigurationBuilder: AetherConfigurationBuilder,
     IAethericFrame: AethericFrame,
     IBind: Bind,
     IChangeControlManager: ChangeControlManager,

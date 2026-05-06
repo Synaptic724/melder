@@ -52,7 +52,7 @@ def _create_activated_crystallizer(
         Crystallizer: Activated hosted crystallizer.
     """
     aether = Aether()
-    crystallizer = aether._ensure_crystallizer()
+    crystallizer = aether._crystallizer
     configuration = crystallizer.create_configuration()
     if user_source_root_paths is None:
         configuration = configuration.with_defaults().activate()

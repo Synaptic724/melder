@@ -1,10 +1,14 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 import threading
 from unittest.mock import MagicMock, patch, ANY
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces import IConduit, IConduitCloud
@@ -23,6 +27,7 @@ def fresh_aether():
     and cleans up afterwards.
     """
     # Teardown any existing state
+    AetherUtilitySystem._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     if Aether._instance:
         Aether().cleanup()
@@ -32,6 +37,7 @@ def fresh_aether():
     yield
 
     # Post-test cleanup
+    AetherUtilitySystem._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     if Aether._instance:
         Aether().cleanup()
@@ -1294,33 +1300,28 @@ def test_on_conduit_left_cluster_delegates_to_cluster_handle_leave(aether_with_m
 
 def test_logger_access(aether_with_mocks):
     """
-    Verify logger property and setter.
+    Verify logger property and explicit attach path.
     By default (mocked init or default init), logger is None (SafeLogger(None)).
     """
     a = aether_with_mocks
-    # The property .logger returns the underlying logger object.
-    # SafeLogger(None) -> _logger is None.
     assert a.logger is None
     
     new_logger = MagicMock()
-    # Mocking the validation chain in InitHelpers/SafeLogger
-    # We patch InitHelpers because SafeLogger constructor does type checking too.
     with patch("melder.utilities.helpers.init_helpers.InitHelpers.resolve_safe_logger") as mock_resolver:
-        # Create a dummy SafeLogger
         mock_safe_logger = MagicMock()
         mock_safe_logger._logger = new_logger
         mock_resolver.return_value = mock_safe_logger
         
-        a.logger = new_logger
+        a.attach_logger(new_logger)
     
     assert a.logger is new_logger
 
 def test_safe_logger_usage():
     """
     Purpose:
-        Verify Aether wraps the configured logger with SafeLogger.
+        Verify Aether wraps an attached logger with SafeLogger.
     Contract:
-        - Setting a logger installs the SafeLogger wrapper.
+        - `attach_logger(...)` installs the SafeLogger wrapper.
     Returns:
         None.
     Raises:
@@ -1333,32 +1334,68 @@ def test_safe_logger_usage():
         mock_safe._logger = mock_logger
         mock_resolver.return_value = mock_safe
 
-        # Instantiate empty, then set logger manually to avoid __new__ args issue.
         a = Aether()
-        a.logger = mock_logger
-
-        # Verify internal setter updated _logger
-        # Note: a.logger property returns the raw logger, a._logger is the SafeLogger wrapper.
+        a.attach_logger(mock_logger)
         assert a._logger is mock_safe
 
 
-def test_init_falls_back_to_null_logger_when_safe_logger_resolution_fails(mock_frame_cls) -> None:
-    """Aether should install a fallback SafeLogger and log the initialization failure."""
-    initial_safe = MagicMock()
-    initial_safe._logger = None
-    fallback_safe = MagicMock()
-    fallback_safe._logger = None
+def test_aether_boot_does_not_attach_real_logger(aether_with_mocks) -> None:
+    """Aether should boot with no attached raw logger."""
+    a = aether_with_mocks
+    assert a.logger is None
 
-    Aether._reset_singleton_for_tests()
 
-    with patch(
-        "melder.aether.aether.InitHelpers.resolve_safe_logger",
-        side_effect=[initial_safe, RuntimeError("safe logger boom"), fallback_safe],
-    ), patch("melder.aether.aether.Nexus", return_value=MagicMock()):
-        a = Aether(logger=MagicMock())
+def test_enable_logging_uses_automatic_channel_path_when_enabled() -> None:
+    """
+    Aether should be able to attach its own logger through the automatic channel path.
+    """
+    a = Aether()
+    utility_system = AetherUtilitySystem()
+    utility_system.set_channel_logger_activation_enabled(True)
+    utility_system.register_channel_logger_resolver(
+        lambda **_: logging.getLogger("aether-auto")
+    )
 
-    assert a._logger is fallback_safe
-    fallback_safe.error.assert_called_once()
+    a.enable_logging()
+
+    assert a.logger is not None
+
+
+def test_aether_activate_applies_logger_configuration_to_utility_system() -> None:
+    """
+    Verify Aether root config controls automatic channel logger activation.
+    """
+    a = Aether()
+    configuration = (
+        a.create_configuration()
+        .with_channel_logger_activation_enabled(True)
+        .with_default_logger(logging.getLogger("aether-default"))
+        .activate()
+    )
+
+    a.activate(configuration)
+
+    assert a.configured is True
+    assert a.activated is True
+    assert AetherUtilitySystem().is_channel_logger_activation_enabled() is True
+    assert AetherUtilitySystem().has_default_logger() is True
+
+
+def test_aether_configuration_builder_hands_off_activated_configuration() -> None:
+    """
+    Verify the Aether configuration builder can activate and hand off config.
+    """
+    builder = AetherConfigurationBuilder()
+    configuration = (
+        builder
+        .with_defaults()
+        .with_channel_logger_activation_enabled(True)
+        .activate()
+    )
+
+    assert isinstance(configuration, AetherConfiguration)
+    assert configuration.activated is True
+    assert builder.cleaned is True
 
 def test_cleanup_failure_logging(mock_frame_cls):
     """If a frame fails to clean, error is logged."""
@@ -1369,9 +1406,8 @@ def test_cleanup_failure_logging(mock_frame_cls):
         mock_safe._logger = mock_logger
         mock_resolver.return_value = mock_safe
         
-        # Workaround for __new__ signature issue:
         a = Aether()
-        a.logger = mock_logger
+        a.attach_logger(mock_logger)
         
         # Force failure
         a._default_frame.cleanup.side_effect = RuntimeError("Fail")

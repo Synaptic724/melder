@@ -4,6 +4,7 @@ from typing import Optional, Any, Dict, List, Set, Tuple
 import ulid
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -32,6 +33,8 @@ class Aether(Cleanable, IAether):
         - Owns the default frame and ensures it exists while the singleton is live.
         - Hosts singleton-level subsystems such as Nexus, Crystallizer, and the
           utility system.
+        - Owns one optional Aether root configuration that applies policy into
+          the hosted utility system.
         - Becomes reinitializable only after `cleanup()` fully resets singleton state.
 
     Threading / Concurrency:
@@ -64,7 +67,7 @@ class Aether(Cleanable, IAether):
                     cls._instance = super(Aether, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, logger: Optional[Any] = None):
+    def __init__(self):
         """
         Initialize the Aether singleton and its always-on frame substrate.
 
@@ -78,12 +81,9 @@ class Aether(Cleanable, IAether):
             - Initializes the hosted Nexus singleton eagerly as an object, but
               leaves it unconfigured and disabled until a user explicitly
               engages it.
+            - Starts with a null SafeLogger wrapper and no attached raw logger.
+            - Does not try to attach a real logger during boot.
             - Does not preinstall a Nexus configuration during normal boot.
-
-        Args:
-            logger:
-                Optional logger instance or logger-like object used to seed the
-                SafeLogger facade.
 
         Returns:
             None.
@@ -96,34 +96,19 @@ class Aether(Cleanable, IAether):
             self._nexus = None
             self._crystallizer = None
             self._aether_utility_system = None
+            self._configuration = None
+            self._configured = False
+            self._activated = False
             self._logger = InitHelpers.resolve_safe_logger(None)
 
             Aether._initialized = True
 
             self._id: str = str(ulid.ULID())
             self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
-            try:
-                if logger is None:
-                    self._logger = InitHelpers.resolve_channel_logger(
-                        self,
-                        groups=["aether", "lifecycle"],
-                        system_groups=["aether"],
-                        props={"component": "aether"},
-                        channels="system",
-                    )
-                else:
-                    self._logger = InitHelpers.resolve_safe_logger(logger)
-            except Exception as e:
-                self._logger = InitHelpers.resolve_safe_logger(None)
-                self._logger.error(
-                    f"Failed to initialize Aether logger: {e}",
-                    "__init__",
-                    exc_info=True,
-                )
             # --- Frame setup ---
             self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame(self, "default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
-            self._crystallizer: Crystallizer = self._ensure_crystallizer()
+            self._crystallizer: Crystallizer = Crystallizer(aether=self)
             self._nexus: INexus = Nexus(aether=self)
 
     def cleanup(self):
@@ -161,6 +146,11 @@ class Aether(Cleanable, IAether):
                 if self._crystallizer is not None:
                     self._crystallizer.cleanup()
                     self._crystallizer = None
+                if self._configuration is not None:
+                    self._configuration.cleanup()
+                    self._configuration = None
+                self._configured = False
+                self._activated = False
                 if self._nexus is not None:
                     self._nexus.cleanup()
                     self._nexus = None
@@ -218,26 +208,6 @@ class Aether(Cleanable, IAether):
             finally:
                 cls._instance = None
                 cls._initialized = False
-
-    def _ensure_crystallizer(self) -> Crystallizer:
-        """
-        Ensure the singleton still has a live hosted crystallizer root.
-
-        Contract:
-            - Returns the currently hosted crystallizer when it exists and is
-              still live.
-            - Creates and stores a new hosted crystallizer when the host slot
-              is empty or the prior root has already been cleaned.
-
-        Returns:
-            Crystallizer: The live hosted crystallizer singleton.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if self._crystallizer is not None and not self._crystallizer.cleaned:
-                return self._crystallizer
-            self._crystallizer = Crystallizer(aether=self)
-            return self._crystallizer
 
     def _ensure_default_frame(self) -> None:
         """
@@ -388,17 +358,183 @@ class Aether(Cleanable, IAether):
     @logger.setter
     def logger(self, value: IChannelLogger | logging.Logger | None):
         """
-        Replace the logger wrapped by the singleton's internal `SafeLogger`.
+        Replace the attached logger through the explicit attach path.
 
         Contract:
-            - Accepts an explicit channel logger, stdlib logger, or `None`.
-            - Rewraps the supplied object through `InitHelpers.resolve_safe_logger(...)`
-              so later logging calls stay on the unified safe-logger path.
+            - Delegates to `attach_logger(...)`.
 
         Args:
             value: The IChannelLogger, Logger, Handler, or None to use.
         """
-        self._logger = InitHelpers.resolve_safe_logger(value)
+        self.attach_logger(value)
+
+    def attach_logger(
+            self,
+            logger: IChannelLogger | logging.Logger | None,
+    ) -> None:
+        """
+        Attach one real logger after Aether boot.
+
+        Purpose:
+            Aether is created too early in runtime boot for a real logger to be
+            attached reliably in `__init__`. This method is the explicit
+            post-boot logger-attachment seam.
+
+        Contract:
+            - Aether starts with a null `SafeLogger` wrapper and no attached
+              raw logger.
+            - Passing a real logger attaches it through the `SafeLogger`
+              facade.
+            - Passing None resets Aether back to the null logger wrapper.
+
+        Args:
+            logger:
+                Real logger object to attach, or None to detach back to the
+                null logger wrapper.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._logger = InitHelpers.resolve_safe_logger(logger)
+
+    def enable_logging(
+            self,
+            logger: IChannelLogger | logging.Logger | None = None,
+    ) -> None:
+        """
+        Enable Aether's own logger after boot.
+
+        Purpose:
+            Attach one explicit logger when provided, otherwise try the current
+            automatic channel logger path through `AetherUtilitySystem`.
+
+        Args:
+            logger:
+                Optional explicit logger override.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if logger is not None:
+            self.attach_logger(logger)
+            return
+        self._logger = InitHelpers.resolve_channel_logger(
+            self,
+            groups=["aether", "lifecycle"],
+            system_groups=["aether"],
+            props={"component": "aether"},
+            channels="system",
+        )
+
+    @property
+    def configuration(self) -> Optional[AetherConfiguration]:
+        """
+        Return the installed Aether root configuration, if any.
+
+        Returns:
+            Optional[AetherConfiguration]: Installed root config.
+        """
+        self.check_cleaned()
+        return self._configuration
+
+    @property
+    def configured(self) -> bool:
+        """
+        Return whether an Aether root configuration is installed.
+
+        Returns:
+            bool: True when a config is installed.
+        """
+        self.check_cleaned()
+        return self._configured
+
+    @property
+    def activated(self) -> bool:
+        """
+        Return whether the Aether root configuration has been applied.
+
+        Returns:
+            bool: True when root config has been activated.
+        """
+        self.check_cleaned()
+        return self._activated
+
+    def create_configuration(self) -> AetherConfiguration:
+        """
+        Create a fresh Aether root configuration object.
+
+        Returns:
+            AetherConfiguration: New mutable config object.
+        """
+        self.check_cleaned()
+        return AetherConfiguration()
+
+    def configure(self, configuration: AetherConfiguration) -> None:
+        """
+        Install one root configuration on Aether.
+
+        Args:
+            configuration:
+                Root configuration object to install.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(configuration, AetherConfiguration):
+            raise TypeError("configuration must be an AetherConfiguration instance.")
+        self._configuration = configuration
+        self._configured = True
+
+    def activate(
+            self,
+            configuration: Optional[AetherConfiguration] = None,
+    ) -> None:
+        """
+        Activate the installed Aether root configuration.
+
+        Args:
+            configuration:
+                Optional configuration to install before activation.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if configuration is not None:
+            self.configure(configuration)
+        if not self._configured or self._configuration is None:
+            raise RuntimeError("Aether is not configured.")
+        if not self._configuration.activated:
+            raise RuntimeError(
+                "AetherConfiguration must be activated before activating Aether."
+            )
+        self._configuration.validate()
+        self._apply_configuration_to_utility_system()
+        self._activated = True
+
+    def _apply_configuration_to_utility_system(self) -> None:
+        """
+        Apply the installed root configuration into the hosted utility system.
+
+        Returns:
+            None.
+        """
+        utility_system = self._aether_utility_system
+        configuration = self._configuration
+        utility_system.set_channel_logger_activation_enabled(
+            configuration.channel_logger_activation_enabled
+        )
+        utility_system.clear_channel_logger_resolver()
+        utility_system.clear_default_logger()
+        if configuration.channel_logger_resolver is not None:
+            utility_system.register_channel_logger_resolver(
+                configuration.channel_logger_resolver
+            )
+        if configuration.default_logger is not None:
+            utility_system.register_default_logger(configuration.default_logger)
 
     def _ensure_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
         """

@@ -42,6 +42,7 @@ class AetherUtilitySystem(Cleanable):
     _initialized = False
     __slots__ = Cleanable.__slots__ + [
         "_lock",
+        "_channel_logger_activation_enabled",
         "_channel_logger_resolver",
         "_default_logger",
     ]
@@ -79,6 +80,7 @@ class AetherUtilitySystem(Cleanable):
         if not AetherUtilitySystem._initialized:
             super().__init__()
             self._lock: threading.RLock = threading.RLock()
+            self._channel_logger_activation_enabled: bool = False
             self._channel_logger_resolver: Optional[Callable[..., Any]] = None
             self._default_logger: Optional[logging.Logger] = None
             AetherUtilitySystem._initialized = True
@@ -127,12 +129,40 @@ class AetherUtilitySystem(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            self._channel_logger_activation_enabled = False
             self._channel_logger_resolver = None
             self._default_logger = None
         self._lock = None
         with AetherUtilitySystem._singleton_lock:
             AetherUtilitySystem._instance = None
             AetherUtilitySystem._initialized = False
+
+    def set_channel_logger_activation_enabled(self, enabled: bool) -> None:
+        """
+        Enable or disable automatic channel logger activation.
+
+        Args:
+            enabled:
+                Desired activation state.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(enabled, bool):
+            raise TypeError("enabled must be a bool.")
+        with self._lock:
+            self._channel_logger_activation_enabled = enabled
+
+    def is_channel_logger_activation_enabled(self) -> bool:
+        """
+        Return whether automatic channel logger activation is enabled.
+
+        Returns:
+            bool: True when the automatic channel logger path may resolve.
+        """
+        self.check_cleaned()
+        return self._channel_logger_activation_enabled
 
     def has_channel_logger_resolver(self) -> bool:
         """
@@ -302,8 +332,11 @@ class AetherUtilitySystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            enabled = self._channel_logger_activation_enabled
             resolver = self._channel_logger_resolver
             default_logger = self._default_logger
+        if not enabled:
+            return SafeLogger(None)
         if resolver is None:
             if default_logger is not None:
                 return SafeLogger(default_logger)

@@ -46,7 +46,7 @@ def _create_component_crystallizer() -> Crystallizer:
         Crystallizer: Activated hosted crystallizer.
     """
     aether = Aether()
-    crystallizer = aether._ensure_crystallizer()
+    crystallizer = aether._crystallizer
     configuration = (
         crystallizer.create_configuration()
         .with_user_source_root_paths((PHYSICAL_USER_SOURCE_ROOT,))

@@ -1,4 +1,6 @@
+import logging
 from typing import Any, Optional, Protocol, Tuple, runtime_checkable
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
@@ -11,6 +13,23 @@ class IAether(ICleanable, Protocol):
     Aether is the top-level "universe" of the melder system and acts as the
     central service provider for other internal components of the library.
     """
+
+    def attach_logger(
+            self,
+            logger: IChannelLogger | logging.Logger | None,
+    ) -> None:
+        """
+        Attach one real logger after Aether boot.
+
+        Args:
+            logger:
+                Real logger to attach, or None to detach back to the null
+                logger wrapper.
+
+        Returns:
+            None.
+        """
+        ...
 
     def _bind_configuration(self, configuration: Any, aetheric_frame_name: str = "default") -> None:
         """

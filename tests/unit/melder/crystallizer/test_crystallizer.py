@@ -171,7 +171,7 @@ def test_crystallizer_cleanup_resets_singleton_state() -> None:
 
     assert aether._crystallizer is None
 
-    fresh = aether._ensure_crystallizer()
+    fresh = Crystallizer(aether=aether)
     assert fresh is not crystallizer
     assert fresh.is_configured is False
     assert fresh.is_activated is False
