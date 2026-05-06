@@ -1381,11 +1381,23 @@ def test_aether_activate_applies_logger_configuration_to_utility_system() -> Non
     assert AetherUtilitySystem().has_default_logger() is True
 
 
+def test_aether_create_configuration_builder_returns_builder() -> None:
+    """
+    Verify Aether exposes the fluent configuration builder through the root.
+    """
+    a = Aether()
+
+    builder = a.create_configuration_builder()
+
+    assert isinstance(builder, AetherConfigurationBuilder)
+    assert builder.cleaned is False
+
+
 def test_aether_configuration_builder_hands_off_activated_configuration() -> None:
     """
     Verify the Aether configuration builder can activate and hand off config.
     """
-    builder = AetherConfigurationBuilder()
+    builder = Aether().create_configuration_builder()
     configuration = (
         builder
         .with_defaults()

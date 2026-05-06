@@ -1,9 +1,11 @@
 import logging
-from typing import Any, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, Optional, Protocol, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
+from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -16,7 +18,7 @@ class IAether(ICleanable, Protocol):
 
     def attach_logger(
             self,
-            logger: IChannelLogger | logging.Logger | None,
+            logger: Optional[Union[IChannelLogger, logging.Logger]],
     ) -> None:
         """
         Attach one real logger after Aether boot.
@@ -25,6 +27,72 @@ class IAether(ICleanable, Protocol):
             logger:
                 Real logger to attach, or None to detach back to the null
                 logger wrapper.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def enable_logging(
+            self,
+            logger: Optional[Union[IChannelLogger, logging.Logger]] = None,
+    ) -> None:
+        """
+        Enable Aether's own logger after boot.
+
+        Args:
+            logger:
+                Optional explicit logger override. When omitted, Aether should
+                use the hosted automatic channel-logger path.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def create_configuration(self) -> IAetherConfiguration:
+        """
+        Create one mutable Aether root configuration.
+
+        Returns:
+            IAetherConfiguration:
+                Fresh mutable configuration instance.
+        """
+        ...
+
+    def create_configuration_builder(self) -> IAetherConfigurationBuilder:
+        """
+        Create one fluent builder for Aether root configuration assembly.
+
+        Returns:
+            IAetherConfigurationBuilder:
+                New one-shot builder.
+        """
+        ...
+
+    def configure(self, configuration: IAetherConfiguration) -> None:
+        """
+        Install one root configuration on Aether.
+
+        Args:
+            configuration:
+                Root configuration to install.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def activate(
+            self,
+            configuration: Optional[IAetherConfiguration] = None,
+    ) -> None:
+        """
+        Activate the installed Aether root configuration.
+
+        Args:
+            configuration:
+                Optional configuration to install before activation.
 
         Returns:
             None.

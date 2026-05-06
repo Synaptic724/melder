@@ -5,6 +5,7 @@ import ulid
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -470,6 +471,22 @@ class Aether(Cleanable, IAether):
         """
         self.check_cleaned()
         return AetherConfiguration()
+
+    def create_configuration_builder(self) -> AetherConfigurationBuilder:
+        """
+        Create a fresh fluent builder for Aether root configuration assembly.
+
+        Purpose:
+            Mirror the repo's configuration-builder workflow at the Aether root
+            so callers do not need to import the builder directly just to
+            assemble the first logger-policy slice.
+
+        Returns:
+            AetherConfigurationBuilder:
+                New one-shot builder instance.
+        """
+        self.check_cleaned()
+        return AetherConfigurationBuilder()
 
     def configure(self, configuration: AetherConfiguration) -> None:
         """
