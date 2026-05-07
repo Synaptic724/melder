@@ -69,6 +69,14 @@ def test_spellbook_uses_registered_channel_logger_provider() -> None:
     Aether._reset_singleton_for_tests()
     AetherUtilitySystem().register_channel_logger_resolver(resolver)
     aether = Aether()
+    aether_configuration = (
+        aether.create_configuration_builder()
+        .with_channel_logger_activation_enabled(True)
+        .with_channel_logger_resolver(resolver)
+        .activate()
+    )
+    aether.activate(aether_configuration)
+    aether.enable_logging()
     Spellbook._aether = aether
     Conduit._aether = aether
 

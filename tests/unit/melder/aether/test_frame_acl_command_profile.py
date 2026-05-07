@@ -149,6 +149,7 @@ def test_frame_acl_command_profile_cleanup_rechecks_cleaned_inside_lock() -> Non
 
     thread = threading.Thread(target=profile.cleanup)
     thread.start()
+    assert profile._lock._entered_first.wait(timeout=1.0)
     profile.cleanup()
     thread.join(timeout=1.0)
 

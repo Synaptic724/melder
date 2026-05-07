@@ -116,6 +116,7 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     thread = threading.Thread(target=req.cleanup)
     thread.start()
+    assert req._lock._entered_first.wait(timeout=1.0)
     req.cleanup()
     thread.join(timeout=1.0)
 

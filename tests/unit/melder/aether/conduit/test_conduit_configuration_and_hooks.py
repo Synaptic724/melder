@@ -218,7 +218,9 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
         seen["obj"] = registrant
         return logging.Logger("factory-logger")
 
-    AetherUtilitySystem().register_channel_logger_resolver(resolver)
+    utility_system = AetherUtilitySystem()
+    utility_system.set_channel_logger_activation_enabled(True)
+    utility_system.register_channel_logger_resolver(resolver)
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration,

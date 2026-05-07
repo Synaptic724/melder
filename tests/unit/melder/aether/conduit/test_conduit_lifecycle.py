@@ -371,7 +371,9 @@ def test_provider_used_when_logger_missing(
         seen.append(registrant)
         return logging.getLogger("conduit-factory")
 
-    AetherUtilitySystem().register_channel_logger_resolver(resolver)
+    utility_system = AetherUtilitySystem()
+    utility_system.set_channel_logger_activation_enabled(True)
+    utility_system.register_channel_logger_resolver(resolver)
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,

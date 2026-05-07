@@ -4,6 +4,7 @@ import logging
 import threading
 import weakref
 from types import SimpleNamespace
+from typing import Callable
 from typing import Dict, Optional, Tuple
 
 import pytest
@@ -124,6 +125,44 @@ def _create_enabled_nexus() -> Nexus:
     configuration.with_direct_rift_access(True)
     nexus.enable(configuration)
     return nexus
+
+
+def _activate_aether_channel_logger_policy(
+    *,
+    resolver: Optional[Callable[..., logging.Logger]] = None,
+    default_logger: Optional[logging.Logger] = None,
+    refresh_hosted_nexus_logger: bool = False,
+) -> Aether:
+    """
+    Activate the Aether-owned automatic channel logger policy for tests.
+
+    Args:
+        resolver:
+            Optional provider resolver to register.
+        default_logger:
+            Optional stdlib fallback logger to register.
+        refresh_hosted_nexus_logger:
+            Whether to explicitly reinitialize the already-hosted Nexus logger
+            after the Aether root configuration has been activated.
+
+    Returns:
+        Aether:
+            Activated Aether singleton for the current test.
+    """
+    aether = Aether()
+    configuration_builder = (
+        aether.create_configuration_builder()
+        .with_channel_logger_activation_enabled(True)
+    )
+    if resolver is not None:
+        configuration_builder.with_channel_logger_resolver(resolver)
+    if default_logger is not None:
+        configuration_builder.with_default_logger(default_logger)
+    configuration = configuration_builder.activate()
+    aether.activate(configuration)
+    if refresh_hosted_nexus_logger:
+        aether._nexus._initialize_logging(None)
+    return aether
 
 
 def _bind_target_frame_configuration(
@@ -674,9 +713,11 @@ def test_nexus_uses_registered_channel_logger_provider() -> None:
         ai_native_enabled=False,
         system_state=SystemState.automatic,
     )
-
-    aether = Aether()
-    nexus = Nexus()
+    aether = _activate_aether_channel_logger_policy(
+        resolver=resolver,
+        refresh_hosted_nexus_logger=True,
+    )
+    nexus = aether._nexus
 
     assert aether._nexus is nexus
     assert any(isinstance(obj, Nexus) for obj in created_for)
@@ -727,15 +768,17 @@ def test_nexus_default_logger_metadata_is_rich_and_stable() -> None:
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     AetherUtilitySystem._reset_singleton_for_tests()
-    AetherUtilitySystem().register_channel_logger_resolver(resolver)
     _bind_target_frame_configuration(
         "default",
         rift_enabled=True,
         ai_native_enabled=False,
         system_state=SystemState.automatic,
     )
-
-    nexus = Nexus()
+    aether = _activate_aether_channel_logger_policy(
+        resolver=resolver,
+        refresh_hosted_nexus_logger=True,
+    )
+    nexus = aether._nexus
     nexus_calls = [
         captured_call
         for captured_call in captured_args
@@ -1085,8 +1128,7 @@ def test_create_rift_uses_registered_channel_logger_provider() -> None:
         created_for.append(registrant)
         return logging.getLogger("rift-provider.{0}".format(registrant.__class__.__name__))
 
-    AetherUtilitySystem().register_channel_logger_resolver(resolver)
-
+    _activate_aether_channel_logger_policy(resolver=resolver)
     nexus = _create_enabled_nexus()
     rift = nexus.create_rift(rift_name="alpha")
 
