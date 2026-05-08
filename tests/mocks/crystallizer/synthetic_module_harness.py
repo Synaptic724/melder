@@ -1,4 +1,5 @@
 import sys
+from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from melder.crystallizer.synthetic_module import SyntheticModule
