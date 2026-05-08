@@ -157,7 +157,7 @@ def test_crystallizer_create_spell_crystal_uses_configured_user_source_roots() -
 
 def test_crystallizer_cleanup_resets_singleton_state() -> None:
     """
-    Verify cleanup clears the active singleton root.
+    Verify cleanup resets singleton bookkeeping without detaching the hosted root.
 
     Returns:
         None.
@@ -169,9 +169,7 @@ def test_crystallizer_cleanup_resets_singleton_state() -> None:
 
     crystallizer.cleanup()
 
-    assert aether._crystallizer is None
-
-    fresh = Crystallizer(aether=aether)
-    assert fresh is not crystallizer
-    assert fresh.is_configured is False
-    assert fresh.is_activated is False
+    assert aether._crystallizer is crystallizer
+    assert crystallizer.cleaned is True
+    assert Crystallizer._instance is None
+    assert Crystallizer._initialized is False

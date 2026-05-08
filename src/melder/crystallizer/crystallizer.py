@@ -125,11 +125,6 @@ class Crystallizer(Cleanable):
             self._configuration = None
             self._configured = False
             self._activated = False
-            if (
-                    self._aether is not None
-                    and self._aether._crystallizer is self
-            ):
-                self._aether._crystallizer = None
             self._aether = None
             self._id = None
         self._lock = None

@@ -240,8 +240,7 @@ class Nexus(Cleanable, INexus):
         """
         if self._cleaned:
             return
-        lock = self._lock
-        with lock:
+        with self._lock:
             if self._cleaned:
                 return
             self._logger.info("Cleaning Nexus singleton state.", "cleanup")
