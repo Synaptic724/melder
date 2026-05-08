@@ -86,11 +86,10 @@ class Nexus(Cleanable, INexus):
 
     __melder_internal__ = _mrg.sentinel
     _instance = None
-    _singleton_lock = threading.RLock()
+    _lock = threading.RLock()
     _initialized = False
     __slots__ = Cleanable.__slots__ + [
         "_id",
-        "_lock",
         "_logger",
         "_aether",
         "_configuration",
@@ -123,7 +122,7 @@ class Nexus(Cleanable, INexus):
             Nexus: The one process-wide Nexus instance.
         """
         if cls._instance is None:
-            with cls._singleton_lock:
+            with cls._lock:
                 if cls._instance is None:
                     cls._instance = super(Nexus, cls).__new__(cls)
         return cls._instance
@@ -177,7 +176,7 @@ class Nexus(Cleanable, INexus):
             return
 
         if aether is None:
-            with Nexus._singleton_lock:
+            with Nexus._lock:
                 if Nexus._instance is self and not Nexus._initialized:
                     Nexus._instance = None
                     Nexus._initialized = False
@@ -185,7 +184,6 @@ class Nexus(Cleanable, INexus):
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
-            self._lock: threading.RLock = threading.RLock()
             self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
             self._aether: IAether = aether
             self._configuration: Optional[INexusConfiguration] = configuration
@@ -209,7 +207,7 @@ class Nexus(Cleanable, INexus):
             self._initialize_logging(logger)
             Nexus._initialized = True
         except Exception:
-            with Nexus._singleton_lock:
+            with Nexus._lock:
                 if Nexus._instance is self:
                     Nexus._instance = None
                 Nexus._initialized = False
@@ -278,11 +276,10 @@ class Nexus(Cleanable, INexus):
             self._frame_manager = None
             self._target_frame_ref_counts = None
             self._id = None
-        if self._logger is not None:
-            self._logger.cleanup()
-            self._logger = None
-        self._lock = None
-        with Nexus._singleton_lock:
+            if self._logger is not None:
+                self._logger.cleanup()
+                self._logger = None
+        with Nexus._lock:
             Nexus._instance = None
             Nexus._initialized = False
 
@@ -398,7 +395,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
-        with cls._singleton_lock:
+        with cls._lock:
             instance = cls._instance
             if instance is None:
                 cls._initialized = False

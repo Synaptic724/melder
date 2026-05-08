@@ -245,6 +245,397 @@ class SpellCrystal(Cleanable):
             self._site_package_root_paths = None
         self._lock = None
 
+
+
+    @property
+    def spell_crystal_id(self) -> str:
+        """
+        Return the stable crystal-facing identity for this manifest.
+
+        Purpose:
+            Expose the current first-slice crystal id used to address this
+            manifest from loader-facing or persistence-facing surfaces.
+
+        Returns:
+            str:
+                Concrete spell SHA currently reused as the `spell_crystal_id`
+                for this manifest slice.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spell_id
+
+    @property
+    def spell_id(self) -> str:
+        """
+        Return the concrete spell version identity the manifest was built from.
+
+        Purpose:
+            Expose the live spell SHA that anchored crystal construction
+            without forcing callers to inspect `describe()`.
+
+        Returns:
+            str:
+                Concrete `spell_id` / SHA256 identity of the spell that
+                produced this manifest.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spell_id
+
+    @property
+    def root_module_name(self) -> str:
+        """
+        Return the canonical root module name for the bound target.
+
+        Purpose:
+            Tell loaders and diagnostics which module the bound spell target
+            was rooted in before dependency walking expanded the manifest.
+
+        Returns:
+            str:
+                Canonical dotted module name for the root spell target.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_module_name
+
+    @property
+    def root_module_path(self) -> Optional[str]:
+        """
+        Return the resolved physical path for the root module when one exists.
+
+        Purpose:
+            Expose the root module's backing file location for file-backed or
+            site-package-backed targets.
+
+        Returns:
+            Optional[str]:
+                Physical root-module path when the root has one, otherwise
+                `None` for pathless or purely synthetic roots.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_module_path
+
+    @property
+    def root_module_kind(self) -> str:
+        """
+        Return the classified authority kind for the root module.
+
+        Purpose:
+            Expose whether the root target lives in synthetic, user-source,
+            site-package, or unknown authority space.
+
+        Returns:
+            str:
+                Root module classification such as `synthetic_module`,
+                `user_source`, `site_package`, or `unknown`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_module_kind
+
+    @property
+    def root_file_extension(self) -> Optional[str]:
+        """
+        Return the root module file extension when the root is path-backed.
+
+        Purpose:
+            Expose the file-format hint the manifest resolved for the root
+            module.
+
+        Returns:
+            Optional[str]:
+                Lowercased root module suffix such as `.py` or `.pyi`, or
+                `None` when the root has no physical path.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_file_extension
+
+    @property
+    def root_target_name(self) -> str:
+        """
+        Return the short bound-target name at the root of the manifest.
+
+        Purpose:
+            Expose the human-readable target name resolved from the spell
+            object before module walking began.
+
+        Returns:
+            str:
+                Short class/function/method/object name for the root target.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_target_name
+
+    @property
+    def root_target_qualname(self) -> str:
+        """
+        Return the qualified root-target name resolved from the spell object.
+
+        Purpose:
+            Preserve the fully qualified target identity needed for later
+            diagnostics or loader-facing reporting.
+
+        Returns:
+            str:
+                Qualified root-target name such as a class or method
+                `__qualname__`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_target_qualname
+
+    @property
+    def root_target_kind(self) -> str:
+        """
+        Return the broad runtime kind of the root target.
+
+        Purpose:
+            Tell callers whether the root target was resolved as a class,
+            function, method, lambda, callable object, or instance.
+
+        Returns:
+            str:
+                Broad target-kind label for the root spell target.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._root_target_kind
+
+    @property
+    def module_targets(self) -> List[str]:
+        """
+        Return the full tracked module-name list.
+
+        Purpose:
+            Expose the flat ordered module inventory retained by the current
+            manifest.
+
+        Returns:
+            List[str]:
+                Detached list of all tracked module names, including the root
+                module and any discovered dependencies.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._module_targets)
+
+    @property
+    def path_targets(self) -> List[str]:
+        """
+        Return the tracked physical path inventory for the manifest.
+
+        Purpose:
+            Expose every physical module path the current dependency walk was
+            able to resolve.
+
+        Returns:
+            List[str]:
+                Detached list of resolved path targets for file-backed
+                modules.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._path_targets)
+
+    @property
+    def synthetic_module_targets(self) -> List[str]:
+        """
+        Return the tracked synthetic-module names.
+
+        Purpose:
+            Expose the subset of `module_targets` currently classified as
+            synthetic world material.
+
+        Returns:
+            List[str]:
+                Detached list of module names classified as
+                `synthetic_module`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._synthetic_module_targets)
+
+    @property
+    def user_source_targets(self) -> List[str]:
+        """
+        Return the tracked user-source module names.
+
+        Purpose:
+            Expose the subset of `module_targets` that fell under the
+            configured user-source roots.
+
+        Returns:
+            List[str]:
+                Detached list of module names classified as `user_source`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._user_source_targets)
+
+    @property
+    def site_package_targets(self) -> List[str]:
+        """
+        Return the tracked site-package module names.
+
+        Purpose:
+            Expose the subset of `module_targets` classified as external
+            environment/package modules.
+
+        Returns:
+            List[str]:
+                Detached list of module names classified as `site_package`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._site_package_targets)
+
+    @property
+    def unknown_targets(self) -> List[str]:
+        """
+        Return the tracked unresolved or unknown module names.
+
+        Purpose:
+            Expose the imports and module targets the manifest could name but
+            could not classify into a stronger authority bucket.
+
+        Returns:
+            List[str]:
+                Detached list of unknown target names, including unresolved
+                AST-discovered dependencies.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._unknown_targets)
+
+    @property
+    def user_source_root_paths(self) -> List[str]:
+        """
+        Return the normalized user-source roots used for classification.
+
+        Purpose:
+            Expose the exact configured roots that drove `user_source`
+            classification for this manifest.
+
+        Returns:
+            List[str]:
+                Detached list of normalized user-source root paths.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return [str(root_path) for root_path in self._user_root_paths]
+
+    @property
+    def site_package_root_paths(self) -> List[str]:
+        """
+        Return the normalized site-package roots used for classification.
+
+        Purpose:
+            Expose the resolved site-package roots used when classifying
+            environment-backed modules.
+
+        Returns:
+            List[str]:
+                Detached list of normalized site-package root paths.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return [str(root_path) for root_path in self._site_package_root_paths]
+
+    @property
+    def module_to_path(self) -> Dict[str, str]:
+        """
+        Return a detached copy of the module-name -> path mapping.
+
+        Purpose:
+            Expose the resolved physical path for each path-backed tracked
+            module.
+
+        Returns:
+            Dict[str, str]:
+                Detached mapping from module name to resolved physical path.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._module_to_path)
+
+    @property
+    def module_to_kind(self) -> Dict[str, str]:
+        """
+        Return a detached copy of the module-name -> kind mapping.
+
+        Purpose:
+            Expose the authority classification assigned to every tracked
+            module.
+
+        Returns:
+            Dict[str, str]:
+                Detached mapping from module name to classification kind.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._module_to_kind)
+
+    @property
+    def module_to_extension(self) -> Dict[str, str]:
+        """
+        Return a detached copy of the module-name -> file-extension mapping.
+
+        Purpose:
+            Expose the resolved file suffix for each path-backed tracked
+            module.
+
+        Returns:
+            Dict[str, str]:
+                Detached mapping from module name to file extension.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._module_to_extension)
+
+    @property
+    def module_to_direct_dependencies(self) -> Dict[str, List[str]]:
+        """
+        Return a detached copy of the direct dependency map.
+
+        Purpose:
+            Expose the direct source-level dependency edges retained for each
+            tracked module.
+
+        Returns:
+            Dict[str, List[str]]:
+                Detached mapping from module name to its flat direct dependency
+                module-name list.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                module_name: list(dependency_names)
+                for module_name, dependency_names in self._module_to_direct_dependencies.items()
+            }
+
+    @property
+    def walk_errors(self) -> List[str]:
+        """
+        Return the dependency-walk diagnostics collected so far.
+
+        Purpose:
+            Expose non-fatal source-read, parse, or walk issues captured while
+            building the manifest.
+
+        Returns:
+            List[str]:
+                Detached list of dependency-walk diagnostic strings.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._walk_errors)
+
+
     @staticmethod
     def _resolve_user_root_paths(
             user_source_root_paths: Optional[Sequence[Union[str, Path]]],
@@ -994,212 +1385,6 @@ class SpellCrystal(Cleanable):
                 ast_import_targets=ast_import_targets,
                 ast_from_import_targets=ast_from_import_targets,
             )
-
-    @property
-    def spell_crystal_id(self) -> str:
-        """
-        Return the concrete spell SHA used as the crystal identity in this slice.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._spell_id
-
-    @property
-    def spell_id(self) -> str:
-        """
-        Return the concrete spell SHA for this manifest.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._spell_id
-
-    @property
-    def root_module_name(self) -> str:
-        """
-        Return the root module name for the bound spell target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_module_name
-
-    @property
-    def root_module_path(self) -> Optional[str]:
-        """
-        Return the root module path when one exists.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_module_path
-
-    @property
-    def root_module_kind(self) -> str:
-        """
-        Return the root module classification.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_module_kind
-
-    @property
-    def root_file_extension(self) -> Optional[str]:
-        """
-        Return the root module file extension when present.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_file_extension
-
-    @property
-    def root_target_name(self) -> str:
-        """
-        Return the short name of the bound root target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_target_name
-
-    @property
-    def root_target_qualname(self) -> str:
-        """
-        Return the qualified name of the bound root target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_target_qualname
-
-    @property
-    def root_target_kind(self) -> str:
-        """
-        Return the broad kind of the bound root target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._root_target_kind
-
-    @property
-    def module_targets(self) -> List[str]:
-        """
-        Return the full tracked module-name list.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._module_targets)
-
-    @property
-    def path_targets(self) -> List[str]:
-        """
-        Return the full tracked path-target list.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._path_targets)
-
-    @property
-    def synthetic_module_targets(self) -> List[str]:
-        """
-        Return the tracked synthetic module names.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._synthetic_module_targets)
-
-    @property
-    def user_source_targets(self) -> List[str]:
-        """
-        Return the tracked user-source module names.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._user_source_targets)
-
-    @property
-    def site_package_targets(self) -> List[str]:
-        """
-        Return the tracked site-package module names.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._site_package_targets)
-
-    @property
-    def unknown_targets(self) -> List[str]:
-        """
-        Return the tracked unresolved/unknown module names.
-
-        Contract:
-            This list now includes unknown imported dependencies that were
-            discovered during the AST walk, not only unknown root/module
-            records that happened to be recorded elsewhere.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._unknown_targets)
-
-    @property
-    def user_source_root_paths(self) -> List[str]:
-        """
-        Return the normalized user-source roots used for classification.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return [str(root_path) for root_path in self._user_root_paths]
-
-    @property
-    def site_package_root_paths(self) -> List[str]:
-        """
-        Return the normalized site-package roots used for classification.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return [str(root_path) for root_path in self._site_package_root_paths]
-
-    @property
-    def module_to_path(self) -> Dict[str, str]:
-        """
-        Return a detached copy of the module-name -> path mapping.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return dict(self._module_to_path)
-
-    @property
-    def module_to_kind(self) -> Dict[str, str]:
-        """
-        Return a detached copy of the module-name -> kind mapping.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return dict(self._module_to_kind)
-
-    @property
-    def module_to_extension(self) -> Dict[str, str]:
-        """
-        Return a detached copy of the module-name -> file-extension mapping.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return dict(self._module_to_extension)
-
-    @property
-    def module_to_direct_dependencies(self) -> Dict[str, List[str]]:
-        """
-        Return a detached copy of the direct dependency map.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return {
-                module_name: list(dependency_names)
-                for module_name, dependency_names in self._module_to_direct_dependencies.items()
-            }
-
-    @property
-    def walk_errors(self) -> List[str]:
-        """
-        Return the dependency-walk diagnostics collected so far.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._walk_errors)
 
     def describe(self) -> Dict[str, Any]:
         """

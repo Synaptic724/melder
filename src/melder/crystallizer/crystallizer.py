@@ -32,11 +32,10 @@ class Crystallizer(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     _instance = None
-    _singleton_lock = threading.RLock()
+    _lock = threading.RLock()
     _initialized = False
     __slots__ = Cleanable.__slots__ + [
         "_id",
-        "_lock",
         "_aether",
         "_configuration",
         "_configured",
@@ -51,7 +50,7 @@ class Crystallizer(Cleanable):
             Crystallizer: The one process-wide crystallizer instance.
         """
         if cls._instance is None:
-            with cls._singleton_lock:
+            with cls._lock:
                 if cls._instance is None:
                     cls._instance = super(Crystallizer, cls).__new__(cls)
         return cls._instance
@@ -82,7 +81,7 @@ class Crystallizer(Cleanable):
             return
 
         if aether is None:
-            with Crystallizer._singleton_lock:
+            with Crystallizer._lock:
                 if Crystallizer._instance is self and not Crystallizer._initialized:
                     Crystallizer._instance = None
                     Crystallizer._initialized = False
@@ -91,7 +90,6 @@ class Crystallizer(Cleanable):
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
-            self._lock: threading.RLock = threading.RLock()
             self._aether: Optional[IAether] = aether
             self._configuration: Optional[CrystallizerConfiguration] = None
             self._configured: bool = False
@@ -101,7 +99,7 @@ class Crystallizer(Cleanable):
                 self.configure(configuration)
             Crystallizer._initialized = True
         except Exception:
-            with Crystallizer._singleton_lock:
+            with Crystallizer._lock:
                 if Crystallizer._instance is self:
                     Crystallizer._instance = None
                 Crystallizer._initialized = False
@@ -127,8 +125,7 @@ class Crystallizer(Cleanable):
             self._activated = False
             self._aether = None
             self._id = None
-        self._lock = None
-        with Crystallizer._singleton_lock:
+        with Crystallizer._lock:
             Crystallizer._instance = None
             Crystallizer._initialized = False
 
@@ -140,11 +137,11 @@ class Crystallizer(Cleanable):
         Returns:
             None.
         """
-        with cls._singleton_lock:
+        with cls._lock:
             instance = cls._instance
         if instance is not None and not instance.cleaned:
             instance.cleanup()
-        with cls._singleton_lock:
+        with cls._lock:
             cls._instance = None
             cls._initialized = False
 
