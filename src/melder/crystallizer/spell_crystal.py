@@ -51,7 +51,7 @@ class SpellCrystal(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
-        "_spell_id",
+        "_id",
         "_root_module_name",
         "_root_module_path",
         "_root_module_kind",
@@ -94,7 +94,7 @@ class SpellCrystal(Cleanable):
 
         Contract:
             - Accepts exactly one live `ISpell`.
-            - Uses the spell's concrete `spell_id` as the current crystal id.
+            - Uses the spell's concrete `spell_id` as the current manifest id.
             - Resolves the root bound target and its root module.
             - Classifies the root module into user-source, site-package,
               synthetic, or unknown.
@@ -134,8 +134,7 @@ class SpellCrystal(Cleanable):
         self._lock: Optional[threading.RLock] = threading.RLock()
         if spell.spell_id is None:
             raise ValueError("spell must expose a non-empty spell_id.")
-        self._spell_id: Optional[str] = spell.spell_id
-        self._id: str = IDBuilder.create_id() #Internal ID to map time created (ULID)
+        self._id: Optional[str] = spell.spell_id
         self._module_targets: Optional[List[str]] = []
         self._path_targets: Optional[List[str]] = []
         self._synthetic_module_targets: Optional[List[str]] = []
@@ -218,7 +217,7 @@ class SpellCrystal(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._spell_id = None
+            self._id = None
             self._root_module_name = None
             self._root_module_path = None
             self._root_module_kind = None
@@ -247,27 +246,8 @@ class SpellCrystal(Cleanable):
         self._lock = None
 
 
-
     @property
-    def spell_crystal_id(self) -> str:
-        """
-        Return the stable crystal-facing identity for this manifest.
-
-        Purpose:
-            Expose the current first-slice crystal id used to address this
-            manifest from loader-facing or persistence-facing surfaces.
-
-        Returns:
-            str:
-                Concrete spell SHA currently reused as the `spell_crystal_id`
-                for this manifest slice.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._spell_id
-
-    @property
-    def spell_id(self) -> str:
+    def id(self) -> str:
         """
         Return the concrete spell version identity the manifest was built from.
 
@@ -277,12 +257,12 @@ class SpellCrystal(Cleanable):
 
         Returns:
             str:
-                Concrete `spell_id` / SHA256 identity of the spell that
+                Concrete SHA256 identity of the spell that
                 produced this manifest.
         """
         self.check_cleaned()
         with self._lock:
-            return self._spell_id
+            return self._id
 
     @property
     def root_module_name(self) -> str:
@@ -1404,8 +1384,7 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return {
-                "spell_id": self._spell_id,
-                "spell_crystal_id": self._spell_id,
+                "id": self._id,
                 "root_module_name": self._root_module_name,
                 "root_module_path": self._root_module_path,
                 "root_module_kind": self._root_module_kind,

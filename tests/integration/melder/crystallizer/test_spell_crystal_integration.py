@@ -117,14 +117,14 @@ def integration_spell_crystal_case(request):
         clear_modules_by_prefix(PHYSICAL_PACKAGE_PREFIX)
 
 
-def test_integration_case_preserves_spell_id(
+def test_integration_case_preserves_id(
         integration_spell_crystal_case,
 ) -> None:
     """
-    Verify each integration case carries the real bound spell id through.
+    Verify each integration case carries the real bound identity through.
     """
     _case, spell_id, crystal = integration_spell_crystal_case
-    assert crystal.spell_id == spell_id
+    assert crystal.id == spell_id
 
 
 def test_integration_case_root_module_name_matches_expected(
@@ -201,7 +201,7 @@ def test_integration_case_describe_snapshot_matches_expected_maps(
     """
     case, spell_id, crystal = integration_spell_crystal_case
     description = crystal.describe()
-    assert description["spell_id"] == spell_id
+    assert description["id"] == spell_id
     assert set(description["module_targets"]) == set(case["expected_module_targets"])
     assert {
         module_name: set(dependency_names)
