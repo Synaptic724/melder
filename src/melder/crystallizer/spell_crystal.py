@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Uni
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import ISpell, ISyntheticModule
 
 
@@ -134,7 +135,7 @@ class SpellCrystal(Cleanable):
         if spell.spell_id is None:
             raise ValueError("spell must expose a non-empty spell_id.")
         self._spell_id: Optional[str] = spell.spell_id
-
+        self._id: str = IDBuilder.create_id() #Internal ID to map time created (ULID)
         self._module_targets: Optional[List[str]] = []
         self._path_targets: Optional[List[str]] = []
         self._synthetic_module_targets: Optional[List[str]] = []
