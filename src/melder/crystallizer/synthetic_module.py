@@ -21,7 +21,7 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         modules without forcing callers to manually juggle `sys.modules`,
         `ModuleSpec`, or package-shell setup themselves.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         """
         Return the registered synthetic module object for one spec.
@@ -86,7 +86,7 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         Allow normal `import ...` / `importlib.import_module(...)` flows to
         discover crystallizer-owned synthetic modules through the registry.
     """
-
+    __melder_internal__ = _mrg.sentinel
     def find_spec(
             self,
             fullname: str,
