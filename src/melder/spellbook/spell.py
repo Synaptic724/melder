@@ -1576,6 +1576,8 @@ class Spell(Cleanable, ISpell):
         Apply or update the DAG-level mutation override for this spell.
 
         Contract:
+            - Requires the spell to be attached to a dynamic runtime
+              environment.
             - Stores the raw overlay payload on the spell.
             - Clears the spell-owned `CreationContext` so runtime shape is rebuilt
               on the next meld path.
@@ -1594,8 +1596,16 @@ class Spell(Cleanable, ISpell):
         Returns:
             None.
 
+        Raises:
+            RuntimeError:
+                If the spell is not attached to a dynamic runtime environment.
+
         """
         self.check_cleaned()
+        if not self._dynamic_environment:
+            raise RuntimeError(
+                "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
+            )
 
         new_payload: dict = override if override is not None else {}
         self._mutation_override = new_payload
@@ -1618,6 +1628,8 @@ class Spell(Cleanable, ISpell):
         Clear any active mutation overlay for this spell.
 
         Contract:
+            - Requires the spell to be attached to a dynamic runtime
+              environment.
             - Resets the local overlay payload back to the default empty dict.
             - Clears the spell-owned `CreationContext` so future meld work rebuilds
               runtime shape without the previous overlay.
@@ -1630,8 +1642,16 @@ class Spell(Cleanable, ISpell):
         Returns:
             None.
 
+        Raises:
+            RuntimeError:
+                If the spell is not attached to a dynamic runtime environment.
+
         """
         self.check_cleaned()
+        if not self._dynamic_environment:
+            raise RuntimeError(
+                "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
+            )
 
         if not self._mutation_override and not self.has_mutation_override:
             # Nothing to do; avoid spurious state changes.

@@ -228,6 +228,11 @@ class ISpell(ICleanable, Protocol):
         """
         Apply or update the DAG-level mutation override for this Spell.
 
+        Contract:
+            - Requires the spell to be attached to a dynamic runtime
+              environment.
+            - Rejects writes when the spell is not running in dynamic mode.
+
         Instead, it:
 
         - Updates the local overlay payload; and
@@ -242,6 +247,11 @@ class ISpell(ICleanable, Protocol):
             override:
                 New overlay payload. `None` or `{}` clears the overlay and
                 leaves this Spell in a "no active mutation overlay" state.
+
+        Raises:
+            RuntimeError:
+                If dynamic mode is not enabled for the spell's current runtime
+                ownership context.
         """
         ...
 
@@ -249,12 +259,22 @@ class ISpell(ICleanable, Protocol):
         """
         Clear any active mutation overlay for this Spell.
 
+        Contract:
+            - Requires the spell to be attached to a dynamic runtime
+              environment.
+            - Rejects writes when the spell is not running in dynamic mode.
+
         This resets the local overlay payload back to the default empty dict,
         and, if SpellSystemStates is available, marks the index as having
         rolled back a mutation.
 
         The actual effect on the compiled/system DAG is owned by the higher-
         level mutation / validation pipelines.
+
+        Raises:
+            RuntimeError:
+                If dynamic mode is not enabled for the spell's current runtime
+                ownership context.
         """
         ...
 
