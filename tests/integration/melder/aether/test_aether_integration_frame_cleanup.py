@@ -90,7 +90,7 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
     conduit = spellbook.conjure(name="root")
 
     cloud = frame._conduit_cloud
-    mutation = frame._mutation_research
+    mutation = frame._aether._mutation_research
     states = frame._spell_system_states
     devops = frame._dev_ops_manager
 
@@ -100,7 +100,7 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
     assert conduit.cleaned is True
     assert cluster.cleaned is True
     assert cloud.cleaned is True
-    assert mutation.cleaned is True
+    assert mutation.cleaned is False
     assert states.cleaned is True
     assert devops.cleaned is True
     assert frame._conduits is None

@@ -29,12 +29,10 @@ def mock_dependencies():
     Returns a dict of the mock classes.
     """
     with patch("melder.aether.aetheric_frame.ConduitCloud") as mock_cloud, \
-         patch("melder.aether.aetheric_frame.MutationResearch") as mock_mr, \
          patch("melder.aether.aetheric_frame.SpellSystemStates") as mock_sss, \
          patch("melder.aether.aetheric_frame.DevOpsManager") as mock_dom:
         yield {
             "cloud": mock_cloud,
-            "mr": mock_mr,
             "sss": mock_sss,
             "dom": mock_dom
         }
@@ -72,7 +70,6 @@ def test_init_success(mock_dependencies):
     
     # Verify sub-components were created
     assert f._conduit_cloud is mock_dependencies["cloud"].return_value
-    assert f._mutation_research is mock_dependencies["mr"].return_value
     assert f._spell_system_states is mock_dependencies["sss"].return_value
     assert f._dev_ops_manager is mock_dependencies["dom"].return_value
 
@@ -160,12 +157,11 @@ def test_cleanup_calls_subcomponent_cleanup(frame):
     Verify `cleanup` delegates to child objects.
 
     Contract:
-    - `cleanup()` is called on all owned managers (cloud, mr, sss, dom).
+    - `cleanup()` is called on all owned managers (cloud, sss, dom).
     - `cleanup()` is called on all owned conduits and clusters.
     """
     # Sub-components are mocks from fixture
     cloud = frame._conduit_cloud
-    mr = frame._mutation_research
     sss = frame._spell_system_states
     dom = frame._dev_ops_manager
     conduit = MagicMock()
@@ -176,7 +172,6 @@ def test_cleanup_calls_subcomponent_cleanup(frame):
     frame.cleanup()
     
     cloud.cleanup.assert_called_once()
-    mr.cleanup.assert_called_once()
     sss.cleanup.assert_called_once()
     dom.cleanup.assert_called_once()
     conduit.cleanup.assert_called_once()
@@ -224,7 +219,6 @@ def test_cleanup_nulls_properties(frame):
     """
     frame.cleanup()
     assert frame._conduit_cloud is None
-    assert frame._mutation_research is None
     assert frame._dev_ops_manager is None
     assert frame._spell_system_states is None
     assert frame._configuration is None
@@ -274,7 +268,6 @@ def test_property_accessors_success(frame):
     """Test access to sub-manager properties."""
     assert frame.spell_system_states is not None
     assert frame.dev_ops_manager is not None
-    assert frame.mutation_research is not None
 
 def test_property_accessors_fail_after_cleanup(frame):
     """Test access raises RuntimeError after cleanup."""
@@ -283,8 +276,6 @@ def test_property_accessors_fail_after_cleanup(frame):
         _ = frame.spell_system_states
     with pytest.raises(RuntimeError):
         _ = frame.dev_ops_manager
-    with pytest.raises(RuntimeError):
-        _ = frame.mutation_research
     with pytest.raises(RuntimeError):
         _ = frame.frame_configuration
 

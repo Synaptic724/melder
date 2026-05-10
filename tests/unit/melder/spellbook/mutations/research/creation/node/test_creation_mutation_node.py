@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from melder.spellbook.mutations.research.creation.node.creation_mutation_node import CreationMutationNode
+from melder.mutation_research.research.creation.node.creation_mutation_node import CreationMutationNode
 
 
 def test_creation_mutation_node_cleanup_clears_payloads() -> None:

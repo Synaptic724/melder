@@ -1,0 +1,282 @@
+import threading
+from typing import Dict, Optional
+
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
+
+
+class MutationResearchConfiguration(Cleanable):
+    """
+    Mutable-to-frozen configuration surface for the mutation-research root.
+
+    Purpose:
+        Hold mutation-research-wide policy inputs before the Aether-owned
+        mutation-research root is activated.
+
+    Contract:
+        - mutable until frozen
+        - validates required properties before freeze/activation
+        - activation is explicit and implies successful validation/freeze
+        - thread-safe mutations are serialized with the instance lock
+    """
+
+    __melder_internal__ = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_lock",
+        "_frozen",
+        "_activated",
+        "_properties",
+        "available_properties",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Initialize one empty mutation-research configuration.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
+        self._frozen: bool = False
+        self._activated: bool = False
+        self._properties: Dict[str, object] = {}
+        self.available_properties: Dict[str, type] = {
+            "restricted_module_mutations": bool,
+            "unrestricted_module_mutations": bool,
+        }
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear configuration state.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frozen = True
+            self._activated = False
+            self._properties.clear()
+            self._properties = None
+            self.available_properties = None
+            self._id = None
+        self._lock = None
+
+    @property
+    def id(self) -> str:
+        """
+        Return the stable configuration id.
+
+        Returns:
+            str: Stable configuration id.
+        """
+        self.check_cleaned()
+        return self._id
+
+    @property
+    def frozen(self) -> bool:
+        """
+        Return whether the configuration is frozen.
+
+        Returns:
+            bool: True when property mutation is closed.
+        """
+        self.check_cleaned()
+        return self._frozen
+
+    @property
+    def activated(self) -> bool:
+        """
+        Return whether the configuration has been activated.
+
+        Returns:
+            bool: True when the config is validated, frozen, and marked ready.
+        """
+        self.check_cleaned()
+        return self._activated
+
+    def set_property(self, key: str, value: object) -> None:
+        """
+        Set one configuration property before freeze/activation.
+
+        Args:
+            key:
+                Property name.
+            value:
+                Candidate property value.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError(
+                "Cannot modify MutationResearchConfiguration after freeze()."
+            )
+        if key not in self.available_properties:
+            raise ValueError(
+                "Unknown MutationResearchConfiguration property: '{0}'.".format(key)
+            )
+        if not isinstance(value, self.available_properties[key]):
+            raise TypeError(
+                "MutationResearchConfiguration property '{0}' must be a {1}.".format(
+                    key,
+                    self.available_properties[key].__name__,
+                )
+            )
+
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError(
+                    "Cannot modify MutationResearchConfiguration after freeze()."
+                )
+            self._properties[key] = value
+
+    def get_property(self, key: str) -> object:
+        """
+        Return one stored configuration property.
+
+        Args:
+            key:
+                Property name.
+
+        Returns:
+            object: Stored property value.
+        """
+        self.check_cleaned()
+        return self._properties[key]
+
+    def has_property(self, key: str) -> bool:
+        """
+        Return whether one property is currently defined.
+
+        Args:
+            key:
+                Property name.
+
+        Returns:
+            bool: True when the property has been set.
+        """
+        self.check_cleaned()
+        return key in self._properties
+
+    def validate(self) -> bool:
+        """
+        Validate that the mutation-research policy bag is complete and coherent.
+
+        Returns:
+            bool: True when the configuration is valid.
+        """
+        self.check_cleaned()
+        for key in self.available_properties.keys():
+            if key not in self._properties:
+                raise ValueError(
+                    "Missing required mutation research configuration property: '{0}'.".format(
+                        key
+                    )
+                )
+
+        restricted = bool(self.get_property("restricted_module_mutations"))
+        unrestricted = bool(self.get_property("unrestricted_module_mutations"))
+        if restricted == unrestricted:
+            raise ValueError(
+                "Exactly one of restricted_module_mutations or unrestricted_module_mutations must be enabled."
+            )
+        return True
+
+    def freeze(self) -> None:
+        """
+        Validate and freeze the configuration.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            return
+        if not self.validate():
+            raise ValueError("MutationResearchConfiguration validation failed.")
+        with self._lock:
+            self._frozen = True
+
+    def finalize(self) -> "MutationResearchConfiguration":
+        """
+        Validate and freeze the configuration, then return it.
+
+        Returns:
+            MutationResearchConfiguration: This configuration instance.
+        """
+        self.freeze()
+        return self
+
+    def activate(self) -> "MutationResearchConfiguration":
+        """
+        Validate, freeze, and mark the configuration as activated.
+
+        Returns:
+            MutationResearchConfiguration: This configuration instance.
+        """
+        self.freeze()
+        with self._lock:
+            self._activated = True
+        return self
+
+    def with_defaults(self) -> "MutationResearchConfiguration":
+        """
+        Apply the default mutation-research posture.
+
+        Contract:
+            - Restricted module mutation is enabled by default.
+            - Unrestricted module mutation is disabled by default.
+
+        Returns:
+            MutationResearchConfiguration: This configuration instance.
+        """
+        self.check_cleaned()
+        self.set_property("restricted_module_mutations", True)
+        self.set_property("unrestricted_module_mutations", False)
+        return self
+
+    def with_restricted_module_mutations(
+            self,
+            enabled: bool,
+    ) -> "MutationResearchConfiguration":
+        """
+        Set the restricted-module-mutations posture.
+
+        Args:
+            enabled:
+                Whether restricted module mutation mode is enabled.
+
+        Returns:
+            MutationResearchConfiguration: This configuration instance.
+        """
+        self.check_cleaned()
+        self.set_property("restricted_module_mutations", enabled)
+        return self
+
+    def with_unrestricted_module_mutations(
+            self,
+            enabled: bool,
+    ) -> "MutationResearchConfiguration":
+        """
+        Set the unrestricted-module-mutations posture.
+
+        Args:
+            enabled:
+                Whether unrestricted module mutation mode is enabled.
+
+        Returns:
+            MutationResearchConfiguration: This configuration instance.
+        """
+        self.check_cleaned()
+        self.set_property("unrestricted_module_mutations", enabled)
+        return self

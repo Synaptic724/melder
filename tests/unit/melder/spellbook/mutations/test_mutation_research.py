@@ -7,11 +7,24 @@ import types
 
 import pytest
 
-import melder.spellbook.mutations.mutation_research as mutation_research_module
+import melder.mutation_research.mutation_research as mutation_research_module
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.mutations.mutation_research import MutationResearch
+from melder.mutation_research.mutation_research import MutationResearch
 
-MODULE_PATH = "melder.spellbook.mutations.mutation_research"
+MODULE_PATH = "melder.mutation_research.mutation_research"
+
+
+@pytest.fixture(autouse=True)
+def reset_mutation_research_singleton() -> None:
+    """
+    Reset the MutationResearch singleton around each direct unit test.
+
+    Returns:
+        None.
+    """
+    MutationResearch._reset_singleton_for_tests()
+    yield
+    MutationResearch._reset_singleton_for_tests()
 
 
 class _WeakRefTarget:
@@ -75,7 +88,7 @@ def test_mutation_research_cleanup_cleans_sessions_and_releases_associations() -
         assert creation_line.cleaned is True
         assert spell_node.cleaned is True
         assert creation_node.cleaned is True
-        assert manager._aetheric_frame is None
+        assert manager._aether is None
         assert manager._sessions_by_index is None
         assert session._target_index is None
         assert spell_line._spell_ref is None

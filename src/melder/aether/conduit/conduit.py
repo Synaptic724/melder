@@ -3972,7 +3972,7 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Returns the MutationResearch manager for this Conduit's Aetheric Frame.
+        Returns the Aether-owned MutationResearch manager for this runtime.
 
         Mutation Research is a specialized system that allows AI agents to study and mutate spells and creations.
         If you are a human using this API directly, be aware that Mutation Research is primarily designed for AI-driven
@@ -3983,7 +3983,7 @@ class Conduit(Cleanable, IConduit):
           - The system is in DYNAMIC mode.
 
         Returns:
-            MutationResearch: The mutation research manager for this Conduit's frame.
+            MutationResearch: The hosted mutation research manager.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -4002,7 +4002,7 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Dynamic environment is not enabled. MutationResearch is unavailable.")
 
         # Pull from Aether
-        return Conduit._aether._get_mutation_research(self._aetheric_frame)
+        return Conduit._aether._get_mutation_research()
 
     #endregion Mutation Research
 

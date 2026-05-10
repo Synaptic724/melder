@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from melder.spellbook.mutations.research.spell.spell_research import ResearchSpell
+from melder.mutation_research.research.spell.spell_research import ResearchSpell
 
 
 class _WeakRefTarget:

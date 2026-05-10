@@ -8,7 +8,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.mutations.mutation_research import MutationResearch
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.conduit.conduit_cluster import ConduitCluster
@@ -27,7 +26,6 @@ class AethericFrame(Cleanable, IAethericFrame):
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
       - Owns the version registry for all `SpellIndex` lineages in this frame.
-      - Owns the `MutationResearch` hub for this frame.
       - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
       - Owns one narrow frame-level AR posture object distinct from the richer
         shared Spellbook configuration object.
@@ -85,9 +83,6 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         # Dynamic-mode "cloud" factory for named conduits.
         self._conduit_cloud: ConduitCloud = ConduitCloud(name)
-
-        # Per-frame mutation research hub (local lab entrypoint).
-        self._mutation_research: MutationResearch = MutationResearch(self)
 
         # Per-frame graph + dirtiness registry for all spell lineages.
         self._spell_system_states: SpellSystemStates = SpellSystemStates(self)
@@ -191,11 +186,6 @@ class AethericFrame(Cleanable, IAethericFrame):
             self._conduit_cloud.cleanup()
             self._conduit_cloud = None
 
-        # Mutation research hub
-        if self._mutation_research is not None:
-            self._mutation_research.cleanup()
-            self._mutation_research = None
-
         # Spell system states registry
         if self._spell_system_states is not None:
             self._spell_system_states.cleanup()
@@ -276,21 +266,6 @@ class AethericFrame(Cleanable, IAethericFrame):
         """
         self.check_cleaned()
         return self._frame_configuration
-
-    @property
-    def mutation_research(self) -> MutationResearch:
-        """
-        Per-frame mutation research hub.
-
-        This is the "lab" entrypoint that can:
-          - create research conduits & spellbooks,
-          - stage mutation workspaces,
-          - coordinate with DevOpsManager / SpellSystemStates.
-
-        Exact API lives in MutationResearch.
-        """
-        self.check_cleaned()
-        return self._mutation_research
 
     # ------------------------------------------------------------------
     # Version Registry Maintenance

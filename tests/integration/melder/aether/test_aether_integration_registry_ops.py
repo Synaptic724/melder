@@ -108,8 +108,7 @@ def test_aether_devops_accessors_missing_frame_raise() -> None:
         aether._get_incident_manager("missing-frame")
     with pytest.raises(ValueError, match="does not exist"):
         aether._get_change_control_manager("missing-frame")
-    with pytest.raises(ValueError, match="does not exist"):
-        aether._get_mutation_research("missing-frame")
+    assert aether._get_mutation_research() is aether.mutation_research
 
 
 def test_aether_conduit_cloud_unregister_removes_entry() -> None:

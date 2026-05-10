@@ -327,8 +327,8 @@ def test_aether_managers_are_scoped_by_frame() -> None:
     change_control_a = aether._get_change_control_manager("frame-managers-a")
     assert change_control_a is devops_a.change_control_manager
 
-    mutation_a = aether._get_mutation_research("frame-managers-a")
-    assert mutation_a is frame_a.mutation_research
+    mutation_a = aether._get_mutation_research()
+    assert mutation_a is aether.mutation_research
 
 
 def test_aether_spell_versions_drop_after_conduit_cleanup() -> None:

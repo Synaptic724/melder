@@ -695,7 +695,7 @@ def test_get_mutation_research_delegates_when_dynamic(
 
     result = conduit_dynamic_normal.get_mutation_research()
 
-    aether_stub._get_mutation_research.assert_called_once_with("default")
+    aether_stub._get_mutation_research.assert_called_once_with()
     assert result is sentinel
 
 

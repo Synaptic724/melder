@@ -1,7 +1,7 @@
 from threading import RLock
 from typing import Any, Dict, List, Optional
 # Melder imports
-from melder.spellbook.mutations.research.spell.node.spell_mutation_node import SpellMutationNode
+from melder.mutation_research.research.spell.node.spell_mutation_node import SpellMutationNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef

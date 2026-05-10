@@ -135,6 +135,7 @@ def test_initialization_creates_default_frame(mock_frame_cls):
     assert isinstance(a._crystallizer, Crystallizer)
     assert a._crystallizer.is_configured is False
     assert a._crystallizer.is_activated is False
+    assert a._mutation_research is not None
 
 def test_cleanup_clears_state(aether_with_mocks):
     """
@@ -1525,11 +1526,7 @@ def test_get_managers_access(aether_with_mocks):
 def test_get_mutation_research_access(aether_with_mocks):
     """Verify mutation research accessor."""
     a = aether_with_mocks
-    mr = MagicMock()
-    a._default_frame._mutation_research = mr
-    a._default_frame._cleaned = False
-    
-    assert a._get_mutation_research() is mr
+    assert a._get_mutation_research() is a._mutation_research
 
 def test_aether_cleaned_guards(aether_with_mocks):
     """Verify methods check for _cleaned state."""
@@ -1701,11 +1698,12 @@ def test_get_all_spell_versions_validates_frame_exists(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         a._get_all_spell_versions("missing_frame")
 
-def test_get_mutation_research_validates_frame_exists(aether_with_mocks):
-    """_get_mutation_research raises ValueError if frame missing."""
+def test_get_mutation_research_raises_after_cleanup(aether_with_mocks):
+    """_get_mutation_research raises after cleanup."""
     a = aether_with_mocks
-    with pytest.raises(ValueError, match="does not exist"):
-        a._get_mutation_research("missing_frame")
+    a.cleanup()
+    with pytest.raises(RuntimeError):
+        a._get_mutation_research()
 
 def test_get_devops_manager_validates_frame_exists(aether_with_mocks):
     """_get_devops_manager raises ValueError if frame missing."""

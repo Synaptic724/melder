@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import types
-
 import pytest
 
-import melder.spellbook.mutations.research.research as research_module
+import melder.mutation_research.research.research as research_module
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.mutations.research.research import Research
+from melder.mutation_research.research.research import Research
 
 
 def test_research_cleanup_cleans_lines_and_nulls_target() -> None:

@@ -571,6 +571,7 @@ def test_conduit_get_mutation_research_dynamic_returns_manager() -> None:
     try:
         manager = conduit.get_mutation_research()
         assert manager is not None
+        assert manager is conduit._aether.mutation_research
     finally:
         conduit.cleanup()
 

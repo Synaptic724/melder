@@ -2,8 +2,23 @@
 
 from __future__ import annotations
 
+import pytest
+
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.mutations.mutation_research import MutationResearch
+from melder.mutation_research.mutation_research import MutationResearch
+
+
+@pytest.fixture(autouse=True)
+def reset_mutation_research_singleton() -> None:
+    """
+    Reset the MutationResearch singleton around each component test.
+
+    Returns:
+        None.
+    """
+    MutationResearch._reset_singleton_for_tests()
+    yield
+    MutationResearch._reset_singleton_for_tests()
 
 
 def test_mutation_research_component_drives_real_session_lines_and_promotion() -> None:

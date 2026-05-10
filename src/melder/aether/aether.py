@@ -8,6 +8,7 @@ from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
+from melder.mutation_research.mutation_research import MutationResearch
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
@@ -34,6 +35,8 @@ class Aether(Cleanable, IAether):
         - Owns the default frame and ensures it exists while the singleton is live.
         - Hosts singleton-level subsystems such as Nexus, Crystallizer, and the
           utility system.
+        - Hosts the singleton MutationResearch root above frame-local runtime
+          state.
         - Owns one optional Aether root configuration that applies policy into
           the hosted utility system.
         - Becomes reinitializable only after `cleanup()` fully resets singleton state.
@@ -96,6 +99,7 @@ class Aether(Cleanable, IAether):
             self._default_frame = None
             self._nexus = None
             self._crystallizer = None
+            self._mutation_research = None
             self._aether_utility_system = None
             self._configuration = None
             self._configured = False
@@ -110,6 +114,7 @@ class Aether(Cleanable, IAether):
             self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame(self, "default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
             self._crystallizer: Crystallizer = Crystallizer(aether=self)
+            self._mutation_research: MutationResearch = MutationResearch(aether=self)
             self._nexus: INexus = Nexus(aether=self)
 
     def cleanup(self):
@@ -147,6 +152,9 @@ class Aether(Cleanable, IAether):
                 if self._crystallizer is not None:
                     self._crystallizer.cleanup()
                     self._crystallizer = None
+                if self._mutation_research is not None:
+                    self._mutation_research.cleanup()
+                    self._mutation_research = None
                 if self._configuration is not None:
                     self._configuration.cleanup()
                     self._configuration = None
@@ -495,6 +503,17 @@ class Aether(Cleanable, IAether):
         """
         self.check_cleaned()
         return self._configured
+
+    @property
+    def mutation_research(self) -> MutationResearch:
+        """
+        Return the Aether-owned MutationResearch root.
+
+        Returns:
+            MutationResearch: Hosted mutation-research singleton.
+        """
+        self.check_cleaned()
+        return self._mutation_research
 
     @property
     def activated(self) -> bool:
@@ -1931,46 +1950,22 @@ class Aether(Cleanable, IAether):
 
     #region Mutation Research
 
-    def _get_mutation_research(self, aetheric_frame_name: str = "default") -> "MutationResearch":
+    def _get_mutation_research(self) -> "MutationResearch":
         """
-        Retrieves the MutationResearch manager associated with a specific Aetheric Frame.
+        Return the Aether-owned MutationResearch root.
 
         Internal use only.
 
-        Args:
-            aetheric_frame_name (str): The name of the frame whose MutationResearch
-                object should be retrieved. Defaults to "default".
-
         Returns:
-            MutationResearch: The MutationResearch instance for the target frame.
+            MutationResearch: The hosted mutation-research singleton.
 
         Raises:
-            ValueError: If the specified frame does not exist.
-            RuntimeError: If the Aether or target frame has been cleaned.
+            RuntimeError: If the Aether has been cleaned.
         """
         self.check_cleaned()
-        # Select frame
-        if aetheric_frame_name != "default":
-            try:
-                frame = self._aetheric_frames[aetheric_frame_name]
-            except KeyError:
-                self._logger.error(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
-                    "_get_mutation_research",
-                    exc_info=True
-                )
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            self._ensure_default_frame()
-            frame = self._default_frame
-
-        # Validate frame
-        if frame is None or frame._cleaned:
-            raise RuntimeError(
-                f"The AethericFrame '{aetheric_frame_name}' has been cleaned or is unavailable."
-            )
-
-        return frame._mutation_research
+        if self._mutation_research is None or self._mutation_research.cleaned:
+            raise RuntimeError("MutationResearch has been cleaned or is unavailable.")
+        return self._mutation_research
 
     #endregion Mutation Research
     #region DevOps Management
