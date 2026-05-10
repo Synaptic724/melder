@@ -128,6 +128,38 @@ class MutationContract(Cleanable):
         self._spell_override = spell_override
         self._late_binding = late_binding
 
+    def cleanup(self) -> None:
+        """
+        Release descriptor references and invalidate the mutation socket object.
+
+        Contract:
+            - Idempotent and safe to call multiple times.
+            - Clears mutable override payloads before dropping references.
+            - After cleanup the descriptor should be treated as unusable and
+              callers should rely on `check_cleaned()` before reading it.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+
+            self._cleaned = True
+
+            # Clear override payload if it is a container.
+            if isinstance(self._spell_override, (list, dict)):
+                self._spell_override.clear()
+
+            self._spell_override = None
+            self._spell = None
+            self._spellframe = None
+            self._binding_name = None
+            self._late_binding = None
+
+        self._lock = None
+
+
     @property
     def spell(self) -> Any:
         """
@@ -264,37 +296,6 @@ class MutationContract(Cleanable):
                 self._spell_override = spell_override
             if late_binding is not ...:
                 self._late_binding = late_binding
-
-    def cleanup(self) -> None:
-        """
-        Release descriptor references and invalidate the mutation socket object.
-
-        Contract:
-            - Idempotent and safe to call multiple times.
-            - Clears mutable override payloads before dropping references.
-            - After cleanup the descriptor should be treated as unusable and
-              callers should rely on `check_cleaned()` before reading it.
-        """
-        if self._cleaned:
-            return
-
-        with self._lock:
-            if self._cleaned:
-                return
-
-            self._cleaned = True
-
-            # Clear override payload if it is a container.
-            if isinstance(self._spell_override, (list, dict)):
-                self._spell_override.clear()
-
-            self._spell_override = None
-            self._spell = None
-            self._spellframe = None
-            self._binding_name = None
-            self._late_binding = None
-
-        self._lock = None
 
     @property
     def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
