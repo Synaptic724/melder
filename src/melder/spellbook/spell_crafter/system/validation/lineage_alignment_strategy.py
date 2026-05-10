@@ -50,7 +50,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
             Ensure the Phase-5 blueprint lineage metadata stays aligned with
             the SpellSystemIndex lineage ids used for system tracking.
         Contract:
-            - Emits ``root_lineage_mismatch`` when the lineage ids differ.
+            - Emits root_lineage_mismatch when the lineage ids differ.
             - Omits diagnostics when root lineage metadata is absent.
             - Cancellation is honored between roots.
         Args:
@@ -66,7 +66,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         for root_id, blueprint in blueprints.items():
             if cancel_event is not None and cancel_event.is_set:

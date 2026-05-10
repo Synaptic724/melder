@@ -68,7 +68,7 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         lineage_to_roots: Dict[str, List[str]] = {}
         for root_id in blueprints.keys():

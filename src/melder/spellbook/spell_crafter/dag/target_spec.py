@@ -10,9 +10,9 @@ class TargetSpecKind(Enum):
 
     Represents the three supported targeting modes for overrides:
 
-    * PATH      -> explicit param path: ``"a>b>c"``.
-    * UNIQUE    -> unique-by-name wildcard: ``"*repo"``.
-    * BROADCAST -> broadcast-by-name wildcard: ``"**logger"``.
+    * PATH      -> explicit param path: "a>b>c".
+    * UNIQUE    -> unique-by-name wildcard: "*repo".
+    * BROADCAST -> broadcast-by-name wildcard: "**logger".
     """
     __melder_internal__ = _mrg.sentinel
     PATH = auto()
@@ -32,8 +32,8 @@ class TargetSpec:
             The targeting mode (:class:`TargetSpecKind`).
 
         path:
-            The param path segments for PATH specs (e.g. ``("orchestrator", "repo")``).
-            ``None`` for UNIQUE / BROADCAST.
+            The param path segments for PATH specs (e.g. ("orchestrator", "repo")).
+            None for UNIQUE / BROADCAST.
 
         param_name:
             The parameter name used for UNIQUE / BROADCAST specs (e.g. ``"logger"``).

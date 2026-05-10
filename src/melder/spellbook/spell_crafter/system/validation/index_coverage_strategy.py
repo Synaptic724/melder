@@ -62,7 +62,7 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         covered_ids: Set[str] = set()
         for blueprint in blueprints.values():

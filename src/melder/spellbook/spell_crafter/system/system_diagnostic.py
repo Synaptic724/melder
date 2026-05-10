@@ -21,7 +21,7 @@ class SystemDiagnostic(Cleanable):
     Purpose:
         Represent one system-level validation finding with optional attribution.
     Contract:
-        - ``code`` and ``message`` are required and non-empty.
+        - code and ``message`` are required and non-empty.
         - ``severity`` is always a ``SystemDiagnosticSeverity`` value.
         - ``source`` is optional and used for strategy attribution.
     Attributes:

@@ -71,7 +71,7 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         lineage_to_conduits: Dict[str, Set[str]] = {}
         lineage_to_spells: Dict[str, Set[str]] = {}

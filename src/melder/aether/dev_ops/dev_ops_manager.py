@@ -55,8 +55,8 @@ class DevOpsManager(Cleanable, IDevOpsManager):
         Contract:
             - All owned managers are created exactly once during init.
             - RiskManager is attached to SpellSystemStates via
-              ``set_risk_manager(...)``.
-            - ``spell_system_states`` must be provided.
+              set_risk_manager(...).
+            - spell_system_states must be provided.
 
         Args:
             spell_system_states:
@@ -67,7 +67,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
         Raises:
             ValueError:
-                If ``spell_system_states`` is ``None``.
+                If spell_system_states`` is ``None``.
         """
         super().__init__()
         if spell_system_states is None:

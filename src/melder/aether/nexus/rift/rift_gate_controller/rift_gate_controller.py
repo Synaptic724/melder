@@ -17,14 +17,14 @@ class RiftGateController(Cleanable):
 
     Contract:
         - Each Rift id must be non-empty and unique within the registry.
-        - Missing-key lookups return ``None``.
+        - Missing-key lookups return None.
         - Missing-key count/drain operations are no-ops returning zero/None.
-        - ``enable_all`` and ``disable_all`` fan out across every registered
+        - enable_all and disable_all fan out across every registered
           Rift gate.
-        - All public methods enforce ``check_cleaned()``.
+        - All public methods enforce check_cleaned().
 
     Threading:
-        - Uses one internal ``RLock`` so cleanup and registry mutation are
+        - Uses one internal RLock so cleanup and registry mutation are
           deterministic under concurrent access.
         - Callers should still serialize higher-level lifecycle transitions.
     """
@@ -159,7 +159,7 @@ class RiftGateController(Cleanable):
                 Rift id to resolve.
 
         Returns:
-            Optional[RiftGate]: Registered gate when present; otherwise ``None``.
+            Optional[RiftGate]: Registered gate when present; otherwise None``.
         """
         self.check_cleaned()
         with self._lock:

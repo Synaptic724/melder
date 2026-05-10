@@ -63,7 +63,7 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         scope_rank = {
             Existence.unique: 0,

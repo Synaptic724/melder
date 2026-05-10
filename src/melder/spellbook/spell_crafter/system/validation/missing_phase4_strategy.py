@@ -64,7 +64,7 @@ class MissingPhase4Strategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         missing_ids: Set[str] = set()
 

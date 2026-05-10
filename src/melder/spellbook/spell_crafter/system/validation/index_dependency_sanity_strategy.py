@@ -49,7 +49,7 @@ class IndexDependencySanityStrategy(SpellSystemValidationStrategy):
         Purpose:
             Catch SpellSystemIndex entries that reference unknown dependencies.
         Contract:
-            - Each missing dependency generates a ``missing_index_dependency`` diagnostic.
+            - Each missing dependency generates a missing_index_dependency`` diagnostic.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.

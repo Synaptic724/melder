@@ -39,7 +39,7 @@ class SpellContract(Cleanable):
 
     Typical usage:
 
-    ```python
+    `python
     class ReportingService:
         def __init__(
             self,
@@ -49,7 +49,7 @@ class SpellContract(Cleanable):
             ),
         ):
             self._auth = auth
-    ```
+    `
 
     When the reporting conduit is conjured, the socket remains unresolved but
     explicitly declared. When a provider conduit is linked later, the linker

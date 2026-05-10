@@ -36,7 +36,7 @@ class SpellMap(Cleanable):
 
     Typical usage:
 
-    ```python
+    `python
     class MyService:
         def __init__(self, repo=SpellMap(MyRepo)):
             self.repo = repo
@@ -55,7 +55,7 @@ class SpellMap(Cleanable):
             ),
         ):
             self.cfg = cfg
-    ```
+    `
 
     Contract:
         - Pure intent object; it does not resolve providers by itself.

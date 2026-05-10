@@ -18,23 +18,23 @@ class RiftGate(Cleanable):
 
     Control model:
         1. Blocking mode (`enabled` flag):
-           - When enabled is ``False``, callers may block in ``wait()``.
-           - ``open()`` re-enables access and releases waiters.
+           - When enabled is False, callers may block in wait().
+           - open() re-enables access and releases waiters.
         2. Terminal close mode (`_closed` flag):
-           - ``close_and_wait_until_free()`` marks the gate terminally closed
+           - close_and_wait_until_free() marks the gate terminally closed
              to new work and waits for active tickets to drain.
-           - ``cleanup()`` also marks terminal close and releases waiters.
+           - cleanup() also marks terminal close and releases waiters.
 
     Ticket model:
         - Callers register a ticket when entering guarded work and unregister
           on exit.
         - Drain operations wait for ticket count to reach zero.
-        - Ticket bookkeeping uses ``deque[None]`` for low overhead and
+        - Ticket bookkeeping uses deque[None] for low overhead and
           allocation-friendly append/pop behavior.
 
     Threading:
-        - State transitions for ``enabled`` / ``_closed`` and the event are
-          protected by an internal ``RLock``.
+        - State transitions for enabled / _closed and the event are
+          protected by an internal RLock``.
         - ``enabled`` is intentionally readable without lock on hot paths.
     """
 

@@ -65,7 +65,7 @@ class RootCoverageStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         for root_id in blueprints.keys():
             if cancel_event is not None and cancel_event.is_set:

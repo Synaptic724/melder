@@ -62,7 +62,7 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         if not broken_spell_ids:
             return

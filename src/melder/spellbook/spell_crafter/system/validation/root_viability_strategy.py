@@ -65,7 +65,7 @@ class RootViabilityStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         # Pre-group diagnostics by root_id for existing errors.
         errors_by_root: Dict[str, int] = {}

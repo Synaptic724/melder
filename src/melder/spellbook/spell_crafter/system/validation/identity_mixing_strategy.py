@@ -61,7 +61,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         lineage_ids: Set[str] = {
             node.lineage_id for node in index.nodes.values() if node.lineage_id is not None

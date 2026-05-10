@@ -62,7 +62,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event`` is set while iterating.
         """
         lineage_to_versions: Dict[str, Set[str]] = {}
         for spell_id, spell in spell_lookup.items():

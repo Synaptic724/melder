@@ -207,7 +207,7 @@ class Scan:
         delegates binding to an owning Spellbook instance.
     Contract:
         - Only scans a single, user-supplied module (no package traversal).
-        - Rejects re-exports: the object's ``__module__`` must match the module name.
+        - Rejects re-exports: the object's __module__`` must match the module name.
         - Delegates all validation to `Spellbook.bind`.
     """
     __slots__ = ("_spellbook",)

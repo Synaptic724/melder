@@ -68,7 +68,7 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event`` is set while iterating.
         """
         disallowed_types = {
             SpellType.METHOD,

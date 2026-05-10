@@ -63,7 +63,7 @@ class VisibilityGapStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:

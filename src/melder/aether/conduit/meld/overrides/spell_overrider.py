@@ -25,12 +25,12 @@ class _Specificity(IntEnum):
 
 class SpellOverrider(Cleanable):
     """
-    Runtime helper that turns a raw ``spell_override`` dict into a socket-aware
-    ``OverrideMap`` for a specific root blueprint.
+    Runtime helper that turns a raw spell_override dict into a socket-aware
+    OverrideMap for a specific root blueprint.
 
     The targeting semantics are shared with mutation overrides:
-      * PATH:       ``a>b>c``
-      * UNIQUE:     ``*param``  (exactly one match required)
+      * PATH:       a>b>c
+      * UNIQUE:     *param  (exactly one match required)
       * BROADCAST:  ``**param`` (one or more matches required)
     """
     __melder_internal__ = _mrg.sentinel

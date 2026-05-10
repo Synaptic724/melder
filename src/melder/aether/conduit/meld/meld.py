@@ -233,7 +233,7 @@ class Meld(Cleanable, IMeld):
             spell_name (str):
                 spell_name of the spell to meld
 
-                When provided without an explicit ``spell`` or ``spellframe``, this is
+                When provided without an explicit spell`` or ``spellframe``, this is
                 treated as the **logical name key** used by the resolution pipeline.
                 In other words, ``meld(spell_name=\"MyService\")`` becomes equivalent
                 to a name-based lookup driven by the Spellbook / SpellIndex mappings.

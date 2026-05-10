@@ -63,7 +63,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         provider_map: Dict[Tuple[str, str], Set[str]] = {}
         for spell_id, spell in spell_lookup.items():

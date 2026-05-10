@@ -96,7 +96,7 @@ class RootScaleLimitStrategy(SpellSystemValidationStrategy):
             None.
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is set while iterating.
+                If cancel_event is set while iterating.
         """
         for root_id, blueprint in blueprints.items():
             if cancel_event is not None and cancel_event.is_set:

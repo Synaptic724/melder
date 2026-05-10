@@ -45,7 +45,7 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
         Purpose:
             Detect orphan nodes that are not reachable from the root spell.
         Contract:
-            - Root-less DAGs raise a ``root_missing_in_dag`` diagnostic.
+            - Root-less DAGs raise a root_missing_in_dag diagnostic.
             - Orphan nodes produce ``dag_orphan_node`` diagnostics.
             - Cancellation is honored between roots.
         Args:

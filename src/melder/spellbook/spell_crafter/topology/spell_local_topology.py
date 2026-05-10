@@ -18,7 +18,7 @@ class SpellSocketDescriptor:
     Attributes:
         spell_id:
             The version ID of the spell that owns this socket
-            (``spell.spell_index.current``).
+            (spell.spell_index.current``).
 
         param_name:
             The constructor parameter name (e.g. ``"logger"``).
