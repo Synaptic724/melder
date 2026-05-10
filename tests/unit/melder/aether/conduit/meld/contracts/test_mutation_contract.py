@@ -1,3 +1,4 @@
+import threading
 from unittest.mock import patch
 
 import pytest
@@ -156,10 +157,14 @@ def test_cleanup_clears_dict_override_and_nulls_fields() -> None:
     )
     contract.cleanup()
     assert override == {}
-    assert contract.spell is None
-    assert contract.spellframe is None
-    assert contract.binding_name is None
-    assert contract.spell_override is None
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spellframe
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.binding_name
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell_override
 
 
 def test_cleanup_clears_list_override_and_nulls_fields() -> None:
@@ -180,10 +185,14 @@ def test_cleanup_clears_list_override_and_nulls_fields() -> None:
     )
     contract.cleanup()
     assert override == []
-    assert contract.spell is None
-    assert contract.spellframe is None
-    assert contract.binding_name is None
-    assert contract.spell_override is None
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spellframe
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.binding_name
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell_override
 
 
 def test_cleanup_leaves_tuple_override_intact() -> None:
@@ -204,7 +213,8 @@ def test_cleanup_leaves_tuple_override_intact() -> None:
     )
     contract.cleanup()
     assert override == (1, 2)
-    assert contract.spell_override is None
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell_override
 
 
 def test_cleanup_is_idempotent() -> None:
@@ -221,8 +231,10 @@ def test_cleanup_is_idempotent() -> None:
     contract = MutationContract(spell="alpha")
     contract.cleanup()
     contract.cleanup()
-    assert contract.spell is None
-    assert contract.spell_override is None
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = contract.spell_override
 
 
 def test_lookup_triplet_reflects_fields() -> None:
@@ -316,6 +328,117 @@ def test_late_binding_true_is_preserved() -> None:
     """
     contract = MutationContract(spell="alpha", late_binding=True)
     assert contract.late_binding is True
+
+
+def test_update_contract_updates_fields_and_normalizes_binding_name() -> None:
+    """
+    Verify update_contract mutates the live descriptor through the supported path.
+
+    Contract:
+        - Updates spell, spellframe, binding_name, spell_override, and
+          late_binding under the internal lock.
+        - Normalizes the binding name when provided.
+    """
+    override = {"x": 1}
+    contract = MutationContract(spell="alpha", binding_name="Primary")
+
+    contract.update_contract(
+        spell="beta",
+        spellframe="frame",
+        binding_name="Secondary",
+        spell_override=override,
+        late_binding=True,
+    )
+
+    assert contract.spell == "beta"
+    assert contract.spellframe == "frame"
+    assert contract.binding_name == "secondary"
+    assert contract.spell_override is override
+    assert contract.late_binding is True
+
+
+def test_update_contract_rejects_clearing_spell_and_spellframe() -> None:
+    """
+    Verify update_contract preserves the identity guard.
+
+    Contract:
+        - At least one of spell or spellframe must remain populated after the
+          update.
+    """
+    contract = MutationContract(spell="alpha")
+
+    with pytest.raises(ValueError, match="requires at least one"):
+        contract.update_contract(spell=None, spellframe=None)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        lambda contract: contract.lookup_triplet,
+        lambda contract: contract.canonical_key,
+        lambda contract: contract.spell_key,
+        lambda contract: contract.spell,
+        lambda contract: contract.spellframe,
+        lambda contract: contract.binding_name,
+        lambda contract: contract.spell_override,
+        lambda contract: contract.late_binding,
+        lambda contract: repr(contract),
+        lambda contract: contract.update_contract(binding_name="x"),
+    ],
+)
+def test_public_methods_raise_after_cleanup(operation) -> None:
+    """
+    Verify supported public read/update paths fail fast after cleanup.
+    """
+    contract = MutationContract(spell="alpha")
+    contract.cleanup()
+
+    with pytest.raises(RuntimeError, match="cleaned"):
+        operation(contract)
+
+
+def test_update_contract_and_read_paths_are_thread_safe() -> None:
+    """
+    Verify supported reads and writes can interleave across threads without errors.
+    """
+    contract = MutationContract(spell="alpha", spellframe="frame", binding_name="primary")
+    barrier = threading.Barrier(3)
+    errors: list[str] = []
+
+    def writer(index: int) -> None:
+        try:
+            barrier.wait()
+            for _ in range(100):
+                contract.update_contract(
+                    binding_name=f"variant_{index}",
+                    late_binding=bool(index % 2),
+                )
+        except Exception as exc:  # pragma: no cover - failure capture
+            errors.append(f"writer:{index}:{exc}")
+
+    def reader() -> None:
+        try:
+            barrier.wait()
+            for _ in range(100):
+                _ = contract.lookup_triplet
+                _ = contract.canonical_key
+                _ = repr(contract)
+        except Exception as exc:  # pragma: no cover - failure capture
+            errors.append(f"reader:{exc}")
+
+    threads = [
+        threading.Thread(target=writer, args=(1,), daemon=True),
+        threading.Thread(target=writer, args=(2,), daemon=True),
+        threading.Thread(target=reader, daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=2.0)
+        assert thread.is_alive() is False
+
+    assert errors == []
+    assert contract.binding_name in {"variant_1", "variant_2"}
 
 
 def test_repr_includes_fields() -> None:

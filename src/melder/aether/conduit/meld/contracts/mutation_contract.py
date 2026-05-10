@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Optional, Union, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -49,11 +50,12 @@ class MutationContract(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "spell",
-        "spellframe",
-        "binding_name",
-        "spell_override",
-        "late_binding",
+        "_lock",
+        "_spell",
+        "_spellframe",
+        "_binding_name",
+        "_spell_override",
+        "_late_binding",
     ]
 
     def __init__(
@@ -114,16 +116,154 @@ class MutationContract(Cleanable):
                 "to be provided."
             )
         super().__init__()
-        self.spell = spell
-        self.spellframe = spellframe
-        self.binding_name = (
+        self._lock: threading.RLock = threading.RLock()
+        self._spell = spell
+        self._spellframe = spellframe
+        self._binding_name = (
             SpellInputUtils.normalize_binding_name(binding_name)
             if binding_name is not None
             else None
         )
         # Preserve the caller payload; None means no override is attached.
-        self.spell_override = spell_override
-        self.late_binding = late_binding
+        self._spell_override = spell_override
+        self._late_binding = late_binding
+
+    @property
+    def spell(self) -> Any:
+        """
+        Return the concrete spell target currently stored on this contract.
+
+        Returns:
+            Any: Current concrete spell target, or `None` when this is a
+                frame-only mutation socket.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spell
+
+    @property
+    def spellframe(self) -> Optional[Any]:
+        """
+        Return the logical frame/protocol target currently stored on this contract.
+
+        Returns:
+            Optional[Any]: Current logical frame/protocol target, or `None`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe
+
+    @property
+    def binding_name(self) -> Optional[str]:
+        """
+        Return the normalized binding name currently stored on this contract.
+
+        Returns:
+            Optional[str]: Normalized binding name, or `None` when the
+                descriptor uses default-binding semantics.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._binding_name
+
+    @property
+    def spell_override(self) -> Optional[Union[dict, list, tuple]]:
+        """
+        Return the current override payload stored on this contract.
+
+        Returns:
+            Optional[Union[dict, list, tuple]]: Current override payload as
+                stored on the descriptor.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spell_override
+
+    @property
+    def late_binding(self) -> bool:
+        """
+        Return whether this mutation socket is allowed to remain unresolved.
+
+        Returns:
+            bool: Current late-binding posture for the descriptor.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._late_binding
+
+    def update_contract(
+        self,
+        *,
+        spell: Any = ...,
+        spellframe: Any = ...,
+        binding_name: Any = ...,
+        spell_override: Any = ...,
+        late_binding: Any = ...,
+    ) -> None:
+        """
+        Update the live in-memory mutation-contract identity under a lock.
+
+        Purpose:
+            Provide one supported mutation path for the descriptor instead of
+            relying on direct unsynchronized field assignment.
+
+        Contract:
+            - Applies updates atomically under the internal `RLock`.
+            - Preserves current values for any field not explicitly supplied.
+            - Re-normalizes `binding_name` when a new value is provided.
+            - Rejects updates that would leave both `spell` and `spellframe`
+              unset.
+
+        Args:
+            spell:
+                New concrete spell target, or `...` to keep the current value.
+            spellframe:
+                New logical frame/protocol target, or `...` to keep the
+                current value.
+            binding_name:
+                New binding name, or `...` to keep the current value. When a
+                concrete value is provided it is normalized through
+                `SpellInputUtils.normalize_binding_name(...)`. `None` clears the
+                explicit binding name and restores default-binding semantics.
+            spell_override:
+                New override payload, or `...` to keep the current payload.
+            late_binding:
+                New late-binding posture, or `...` to keep the current value.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the update would leave the descriptor without both `spell`
+                and `spellframe`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+
+            new_spell = self._spell if spell is ... else spell
+            new_spellframe = self._spellframe if spellframe is ... else spellframe
+            if new_spell is None and new_spellframe is None:
+                raise ValueError(
+                    "MutationContract requires at least one of `spell` or `spellframe` "
+                    "to be provided."
+                )
+
+            if binding_name is ...:
+                new_binding_name = self._binding_name
+            elif binding_name is None:
+                new_binding_name = None
+            else:
+                new_binding_name = SpellInputUtils.normalize_binding_name(binding_name)
+
+            self._spell = new_spell
+            self._spellframe = new_spellframe
+            self._binding_name = new_binding_name
+            if spell_override is not ...:
+                self._spell_override = spell_override
+            if late_binding is not ...:
+                self._late_binding = late_binding
 
     def cleanup(self) -> None:
         """
@@ -138,17 +278,23 @@ class MutationContract(Cleanable):
         if self._cleaned:
             return
 
-        # No internal lock needed; this is a simple intent object.
-        self._cleaned = True
+        with self._lock:
+            if self._cleaned:
+                return
 
-        # Clear override payload if it is a container.
-        if isinstance(self.spell_override, (list, dict)):
-            self.spell_override.clear()
+            self._cleaned = True
 
-        self.spell_override = None
-        self.spell = None
-        self.spellframe = None
-        self.binding_name = None
+            # Clear override payload if it is a container.
+            if isinstance(self._spell_override, (list, dict)):
+                self._spell_override.clear()
+
+            self._spell_override = None
+            self._spell = None
+            self._spellframe = None
+            self._binding_name = None
+            self._late_binding = None
+
+        self._lock = None
 
     @property
     def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
@@ -162,7 +308,9 @@ class MutationContract(Cleanable):
             tuple[Any, Optional[Any], Optional[str]]: `(spell, spellframe,
             binding_name)` exactly as stored on the descriptor.
         """
-        return (self.spell, self.spellframe, self.binding_name)
+        self.check_cleaned()
+        with self._lock:
+            return (self._spell, self._spellframe, self._binding_name)
 
     @property
     def canonical_key(self) -> Tuple[str, str]:
@@ -176,10 +324,15 @@ class MutationContract(Cleanable):
         Returns:
             Tuple[str, str]: Normalized `(frame_key, binding_key)` pair.
         """
+        self.check_cleaned()
+        with self._lock:
+            spell = self._spell
+            spellframe = self._spellframe
+            binding_name = self._binding_name
         frame_key, bind_key = SpellInputUtils.normalize_spell_key(
-            spell=self.spell,
-            spellframe=self.spellframe,
-            binding_name=self.binding_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
         )
         return frame_key, bind_key
 
@@ -192,6 +345,7 @@ class MutationContract(Cleanable):
             Tuple[str, str]: The same normalized key pair returned by
             `canonical_key`.
         """
+        self.check_cleaned()
         return self.canonical_key
 
     def __repr__(self) -> str:
@@ -202,10 +356,17 @@ class MutationContract(Cleanable):
             str: Representation showing stored spell/frame/binding/late-binding
             and override fields without attempting any mutation resolution.
         """
+        self.check_cleaned()
+        with self._lock:
+            spell = self._spell
+            spellframe = self._spellframe
+            binding_name = self._binding_name
+            late_binding = self._late_binding
+            spell_override = self._spell_override
         return (
-            f"<MutationContract spell={self.spell!r} "
-            f"spellframe={self.spellframe!r} "
-            f"binding_name={self.binding_name!r} "
-            f"late_binding={self.late_binding!r} "
-            f"override={self.spell_override!r}>"
+            f"<MutationContract spell={spell!r} "
+            f"spellframe={spellframe!r} "
+            f"binding_name={binding_name!r} "
+            f"late_binding={late_binding!r} "
+            f"override={spell_override!r}>"
         )
