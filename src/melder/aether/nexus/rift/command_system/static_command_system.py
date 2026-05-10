@@ -42,12 +42,12 @@ class StaticCommandSystem(CommandSystem):
             frame_name: str,
     ) -> object:
         """
-        Resolve one static-room spell runtime object by stable lineage id while
+        Resolve one static-room spell runtime object by stable spell-index id while
         the command lock is already held.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id to resolve.
+                Stable SpellIndex id to resolve.
             frame_name:
                 Resolved hosted frame name.
 
@@ -56,7 +56,7 @@ class StaticCommandSystem(CommandSystem):
 
         Raises:
             ValueError:
-                If the lineage id is empty, unpublished, command-disabled, uses
+                If the spell-index id is empty, unpublished, command-disabled, uses
                 unsupported static existence, or is not currently live.
         """
         if not spell_index_id:
@@ -113,13 +113,13 @@ class StaticCommandSystem(CommandSystem):
         )
         if unsupported_spell_record is not None:
             raise ValueError(
-                "Spell lineage '{0}' uses unsupported static existence '{1}'.".format(
+                "Spell index '{0}' uses unsupported static existence '{1}'.".format(
                     spell_index_id,
                     unsupported_spell_record.existence.name,
                 )
             )
         raise ValueError(
-            "Spell lineage '{0}' is not live in frame '{1}'.".format(
+            "Spell index '{0}' is not live in frame '{1}'.".format(
                 spell_index_id,
                 frame_name,
             )
@@ -294,11 +294,11 @@ class StaticCommandSystem(CommandSystem):
             frame_name: Optional[str] = None,
     ) -> dict:
         """
-        Return static availability status for one stable spell lineage id.
+        Return static availability status for one stable spell-index id.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id to resolve.
+                Stable SpellIndex id to resolve.
             frame_name:
                 Optional frame name. When omitted, the room default frame is
                 used.
@@ -353,11 +353,11 @@ class StaticCommandSystem(CommandSystem):
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one already-live spell runtime object by stable spell lineage id.
+        Return one already-live spell runtime object by stable spell-index id.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id to resolve.
+                Stable SpellIndex id to resolve.
             frame_name:
                 Optional frame name. When omitted, the room default frame is
                 used.
@@ -367,7 +367,7 @@ class StaticCommandSystem(CommandSystem):
 
         Raises:
             ValueError:
-                If the spell lineage is not published in the selected frame or
+                If the spell index is not published in the selected frame or
                 does not currently have a live creation.
         """
         self.check_cleaned()

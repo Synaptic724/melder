@@ -206,7 +206,7 @@ class CommandSystem(Cleanable):
             frame_name: str,
     ) -> object:
         """
-        Resolve one spell runtime object by stable lineage id while the command
+        Resolve one spell runtime object by stable spell-index id while the command
         lock is already held.
 
         Contract:
@@ -218,7 +218,7 @@ class CommandSystem(Cleanable):
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id to resolve.
+                Stable SpellIndex spell-index id to resolve.
             frame_name:
                 Resolved hosted frame name.
 
@@ -227,7 +227,7 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the lineage id is empty, unpublished, command-disabled, or
+                If the spell-index id is empty, unpublished, command-disabled, or
                 not found in the owner spellbooks for the frame.
         """
         if not spell_index_id:
@@ -715,7 +715,7 @@ class CommandSystem(Cleanable):
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id to resolve.
+                Stable SpellIndex spell-index id to resolve.
             frame_name:
                 Optional frame name. When omitted, the room default frame is
                 used.
@@ -725,7 +725,7 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the spell lineage is not published in the selected frame or
+                If the spell index is not published in the selected frame or
                 command ACL denies spell access.
         """
         self.check_cleaned()
@@ -1258,11 +1258,11 @@ class CommandSystem(Cleanable):
             frame_name: str,
     ) -> None:
         """
-        Enforce spell-level command access for one stable spell lineage id.
+        Enforce spell-level command access for one stable spell index id.
 
         Args:
             spell_index_id:
-                Stable spell lineage id being resolved.
+                Stable spell index id being resolved.
             frame_name:
                 Hosted frame the spell belongs to.
 
@@ -1271,14 +1271,14 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the spell lineage is not command-enabled in the target
+                If the spell index is not command-enabled in the target
                 frame.
         """
         compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
         if spell_index_id in compiled_access_surface.enabled_spell_index_ids:
             return
         raise ValueError(
-            "Command access to spell lineage '{0}' is disabled in frame '{1}'.".format(
+            "Command access to spell index '{0}' is disabled in frame '{1}'.".format(
                 spell_index_id,
                 frame_name,
             )
@@ -1375,13 +1375,13 @@ class CommandSystem(Cleanable):
             frame_name: str,
     ) -> str:
         """
-        Return the stable spell lineage id matching one published spell id.
+        Return the stable spell index id matching one published spell id.
 
         Contract:
             - Resolves through published descriptor truth so ACL checks stay on
-              stable lineage identity.
+              stable spell-index identity.
             - Accepts multiple matching records only when they collapse to one
-              lineage id.
+              spell-index id.
 
         Args:
             spell_id:
@@ -1390,7 +1390,7 @@ class CommandSystem(Cleanable):
                 Hosted frame to query.
 
         Returns:
-            str: Stable published spell lineage id.
+            str: Stable published spell index id.
 
         Raises:
             ValueError:
@@ -1593,3 +1593,4 @@ class CommandSystem(Cleanable):
             raise ValueError(
                 "Aetheric frame '{0}' does not exist.".format(frame_name)
             ) from exc
+

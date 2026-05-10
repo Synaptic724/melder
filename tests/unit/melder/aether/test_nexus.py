@@ -253,7 +253,7 @@ def _build_descriptor_backed_viewer(
         enabled_conduit_ids:
             Command-enabled conduit ids for the hosted frame.
         enabled_spell_index_ids:
-            Command-enabled spell lineage ids for the hosted frame.
+            Command-enabled spell index ids for the hosted frame.
 
     Returns:
         FrameViewer: Descriptor-backed viewer with one visible frame target.
@@ -348,11 +348,11 @@ def _replace_compiled_access_surface(
         visible_spell_keys:
             Optional visible spell record keys for the frame.
         visible_spell_index_ids:
-            Optional visible spell lineage ids for the frame.
+            Optional visible spell index ids for the frame.
         enabled_conduit_ids:
             Command-enabled conduit ids for the frame.
         enabled_spell_index_ids:
-            Command-enabled spell lineage ids for the frame.
+            Command-enabled spell index ids for the frame.
 
     Returns:
         None.
@@ -3542,7 +3542,7 @@ def test_capability_command_system_denies_conduit_object_by_id_when_conduit_acl_
 
 def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled() -> None:
     """
-    Verify direct spell access fails fast when the spell lineage is not command-enabled.
+    Verify direct spell access fails fast when the spell index is not command-enabled.
 
     Returns:
         None.
@@ -3598,7 +3598,7 @@ def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled(
 
     with pytest.raises(
         ValueError,
-        match="Command access to spell lineage 'lineage-1' is disabled in frame 'ops'",
+        match="Command access to spell index 'lineage-1' is disabled in frame 'ops'",
     ):
         space.command_system.get_spell_by_index_id(
             "lineage-1",
@@ -4436,7 +4436,7 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
 
     with pytest.raises(
         ValueError,
-        match="Spell lineage 'lineage-1' is not live in frame 'ops'",
+        match="Spell index 'lineage-1' is not live in frame 'ops'",
     ):
         space.command_system.get_spell_by_index_id(
             "lineage-1",
@@ -6297,6 +6297,7 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
             configuration=configuration,
             rift_name="manual",
         )
+
 
 
 

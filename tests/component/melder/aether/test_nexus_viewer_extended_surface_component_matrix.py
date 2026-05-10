@@ -93,7 +93,7 @@ def _build_component_kwargs(viewer: FrameViewer, method_name: str) -> dict[str, 
         "list_spell_record_ids",
         "list_spell_names",
         "list_binding_names",
-        "list_lineage_ids",
+        "list_index_ids",
         "list_permissions",
         "list_existence_kinds",
         "describe_descriptor_inventory",
@@ -119,7 +119,7 @@ def _build_component_kwargs(viewer: FrameViewer, method_name: str) -> dict[str, 
     if method_name in {
         "describe_spell_identity",
         "describe_spell_origin",
-        "describe_spell_lineage",
+        "describe_spell_index",
         "describe_spell_binding",
         "describe_spell_resolution",
         "describe_spell_metadata",
@@ -143,7 +143,7 @@ COMPONENT_METHOD_CASES = [
     ("list_spell_record_ids", "list"),
     ("list_spell_names", "list"),
     ("list_binding_names", "list"),
-    ("list_lineage_ids", "list"),
+    ("list_index_ids", "list"),
     ("list_permissions", "list"),
     ("list_existence_kinds", "list"),
     ("describe_descriptor_inventory", "dict"),
@@ -185,3 +185,4 @@ def test_component_viewer_extended_surface_matrix(
         assert isinstance(result, int)
     else:
         raise AssertionError(expected_type)
+

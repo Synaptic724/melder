@@ -652,8 +652,8 @@ class ViewMultiFrame(Cleanable):
                 "origin_spellbook_count": len(
                     self.list_origin_spellbook_ids(frame_name=current_frame_name)
                 ),
-                "lineage_count": len(
-                    self.list_lineage_ids(frame_name=current_frame_name)
+                "index_count": len(
+                    self.list_index_ids(frame_name=current_frame_name)
                 ),
             }
             for current_frame_name in self.list_frame_names()
@@ -855,8 +855,8 @@ class ViewMultiFrame(Cleanable):
         right_spell_source_ids = tuple(
             self.list_spell_source_ids_for_frame(right_frame_name)
         )
-        left_lineage_ids = tuple(self.list_lineage_ids(frame_name=left_frame_name))
-        right_lineage_ids = tuple(self.list_lineage_ids(frame_name=right_frame_name))
+        left_index_ids = tuple(self.list_index_ids(frame_name=left_frame_name))
+        right_index_ids = tuple(self.list_index_ids(frame_name=right_frame_name))
         left_spell_names = tuple(self.list_spell_names(frame_name=left_frame_name))
         right_spell_names = tuple(self.list_spell_names(frame_name=right_frame_name))
         left_binding_names = tuple(self.list_binding_names(frame_name=left_frame_name))
@@ -870,9 +870,9 @@ class ViewMultiFrame(Cleanable):
                 left_spell_source_ids,
                 right_spell_source_ids,
             ),
-            "lineage_ids": self._compare_sorted_value_sets(
-                left_lineage_ids,
-                right_lineage_ids,
+            "index_ids": self._compare_sorted_value_sets(
+                left_index_ids,
+                right_index_ids,
             ),
             "spell_names": self._compare_sorted_value_sets(
                 left_spell_names,
@@ -934,17 +934,17 @@ class ViewMultiFrame(Cleanable):
             value_getter=lambda spell_record: spell_record.spell_name,
         )
 
-    def describe_lineage_groups(
+    def describe_index_groups(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> Dict[str, Tuple[str, ...]]:
         """
-        Return lineage groups in the selected descriptor scope.
+        Return spell-index groups in the selected descriptor scope.
 
         Purpose:
-            Surface all published spell source ids grouped by lineage id, even
-            when a lineage currently has only one visible member.
+            Surface all published spell source ids grouped by spell-index id,
+            even when an index currently has only one visible member.
 
         Args:
             frame_name:
@@ -952,7 +952,7 @@ class ViewMultiFrame(Cleanable):
                 frames.
 
         Returns:
-            Dict[str, Tuple[str, ...]]: Lineage ids mapped to published spell
+            Dict[str, Tuple[str, ...]]: Spell-index ids mapped to published spell
             source ids.
         """
         self.check_cleaned()
@@ -1511,30 +1511,30 @@ class ViewMultiFrame(Cleanable):
             binding_names.append(spell_record.binding_name)
         return binding_names
 
-    def list_lineage_ids(
+    def list_index_ids(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> List[str]:
         """
-        Return lineage ids for the selected descriptor scope.
+        Return spell-index ids for the selected descriptor scope.
 
         Purpose:
-            Expose lineage identity directly from `SpellRecord` metadata.
+            Expose SpellIndex identity directly from `SpellRecord` metadata.
 
         Args:
             frame_name:
-                Optional hosted frame name. When omitted, returns lineage ids
+                Optional hosted frame name. When omitted, returns spell-index ids
                 across all hosted frames.
 
         Returns:
-            List[str]: Lineage ids in deterministic record order.
+            List[str]: Spell-index ids in deterministic record order.
         """
         self.check_cleaned()
-        lineage_ids: List[str] = []
+        index_ids: List[str] = []
         for spell_record in self._iter_spell_records(frame_name=frame_name):
-            lineage_ids.append(spell_record.spell_index_id)
-        return lineage_ids
+            index_ids.append(spell_record.spell_index_id)
+        return index_ids
 
     def list_spellframes(
             self,

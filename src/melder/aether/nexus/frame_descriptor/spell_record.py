@@ -80,7 +80,7 @@ class SpellRecord(Cleanable):
             spell_id:
                 Current spell/version id.
             spell_index_id:
-                Stable SpellIndex lineage id.
+                Stable SpellIndex id.
             spell_name:
                 Human-readable spell name.
             spellframe:
@@ -142,7 +142,7 @@ class SpellRecord(Cleanable):
 
         Contract:
             - Keys the record by originating spellbook plus current spell id.
-            - Uses the published spell/version id, not the stable lineage id.
+            - Uses the published spell/version id, not the stable SpellIndex id.
         """
         self.check_cleaned()
         return self.origin_spellbook_id, self.spell_id

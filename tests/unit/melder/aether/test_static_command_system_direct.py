@@ -167,7 +167,7 @@ def test_static_command_system_get_spell_by_index_id_guardrails_and_ownerless_pa
     )
     with pytest.raises(
         ValueError,
-        match="Spell lineage 'lineage-1' is not live in frame 'ops'",
+        match="Spell index 'lineage-1' is not live in frame 'ops'",
     ):
         command_system.get_spell_by_index_id("lineage-1")
 
@@ -183,3 +183,4 @@ def test_static_command_system_get_spell_by_index_id_reports_unsupported_static_
 
     with pytest.raises(ValueError, match="unsupported static existence 'many'"):
         command_system.get_spell_by_index_id("lineage-many")
+

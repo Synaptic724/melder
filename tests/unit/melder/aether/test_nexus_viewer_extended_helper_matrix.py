@@ -60,7 +60,7 @@ FRAME_COLLECTION_CASES = [
     ("list_visible_binding_names", (), ["ops_spell_1", "ops_spell_2"]),
     ("list_visible_spell_names", (), ["OpsSpell1", "OpsSpell2"]),
     ("list_visible_spellframes", (), []),
-    ("list_visible_lineage_ids", (), ["ops-lineage-1", "ops-lineage-2"]),
+    ("list_visible_index_ids", (), ["ops-lineage-1", "ops-lineage-2"]),
     ("list_visible_target_ids", (), [
         "ops:frame:ops-frame",
         "ops:conduit:ops-conduit-1",
@@ -301,8 +301,8 @@ SPELL_SIMPLE_CASES = [
     ("describe_spell_identity", "ops-spellbook:ops-spell-2", "payload_type", "detailed"),
     ("describe_spell_origin", "ops-spellbook:ops-spell-1", "owner_conduit_id", "ops-conduit-1"),
     ("describe_spell_origin", "ops-spellbook:ops-spell-2", "owner_conduit_id", "ops-conduit-2"),
-    ("describe_spell_lineage", "ops-spellbook:ops-spell-1", "spell_index_id", "ops-lineage-1"),
-    ("describe_spell_lineage", "ops-spellbook:ops-spell-2", "spell_index_id", "ops-lineage-2"),
+    ("describe_spell_index", "ops-spellbook:ops-spell-1", "spell_index_id", "ops-lineage-1"),
+    ("describe_spell_index", "ops-spellbook:ops-spell-2", "spell_index_id", "ops-lineage-2"),
     ("describe_spell_binding", "ops-spellbook:ops-spell-1", "binding_name", "ops_spell_1"),
     ("describe_spell_binding", "ops-spellbook:ops-spell-2", "binding_name", "ops_spell_2"),
     ("describe_spell_resolution", "ops-spellbook:ops-spell-1", "requirement_count", 1),
@@ -325,8 +325,8 @@ SPELL_FILTER_CASES = [
     ("list_spells_by_owner_conduit", ("ops-conduit-1",), ["ops-spellbook:ops-spell-1"]),
     ("list_spells_by_owner_conduit", ("ops-conduit-2",), ["ops-spellbook:ops-spell-2"]),
     ("list_spells_by_spellbook_id", ("ops-spellbook",), ["ops-spellbook:ops-spell-1", "ops-spellbook:ops-spell-2"]),
-    ("list_spells_by_lineage_id", ("ops-lineage-1",), ["ops-spellbook:ops-spell-1"]),
-    ("list_spells_by_lineage_id", ("ops-lineage-2",), ["ops-spellbook:ops-spell-2"]),
+    ("list_spells_by_index_id", ("ops-lineage-1",), ["ops-spellbook:ops-spell-1"]),
+    ("list_spells_by_index_id", ("ops-lineage-2",), ["ops-spellbook:ops-spell-2"]),
     ("list_spells_by_permission", ("create",), ["ops-spellbook:ops-spell-1", "ops-spellbook:ops-spell-2"]),
     ("list_spells_by_existence", ("unique",), ["ops-spellbook:ops-spell-1", "ops-spellbook:ops-spell-2"]),
     ("list_spells_by_spell_name", ("OpsSpell1",), ["ops-spellbook:ops-spell-1"]),
@@ -436,7 +436,7 @@ ROUTE_CASES = [
     ("describe_conduit_access_summary", {"frame_name": "ops", "conduit_id": "ops-conduit-1"}, "dict"),
     ("describe_spell_identity", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
     ("describe_spell_origin", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
-    ("describe_spell_lineage", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
+    ("describe_spell_index", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
     ("describe_spell_binding", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
     ("describe_spell_resolution", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
     ("describe_spell_metadata", {"frame_name": "ops", "spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
@@ -477,7 +477,7 @@ HOST_ROUTE_CASES = [
     ("list_spell_record_ids", {}, "list"),
     ("list_spell_names", {}, "list"),
     ("list_binding_names", {}, "list"),
-    ("list_lineage_ids", {}, "list"),
+    ("list_index_ids", {}, "list"),
     ("list_permissions", {}, "list"),
     ("list_existence_kinds", {}, "list"),
     ("describe_descriptor_inventory", {}, "dict"),
@@ -507,3 +507,4 @@ def test_execute_method_host_route_matrix(method_name, kwargs, expected_type) ->
         assert isinstance(result, int)
     else:
         raise AssertionError(expected_type)
+

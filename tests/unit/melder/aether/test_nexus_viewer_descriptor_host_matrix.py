@@ -143,7 +143,7 @@ HOST_LIST_CASES = [
         ["finance_spell_1", "finance_spell_2"],
     ),
     (
-        "list_lineage_ids",
+        "list_index_ids",
         {},
         [
             "finance-lineage-1",
@@ -424,3 +424,4 @@ def test_viewer_descriptor_host_summary_methods_report_expected_shapes() -> None
     assert len(spell_records) == 2
     assert spell_records[0]["frame_name"] == "finance"
     assert spell_records[1]["origin_spellbook_id"] == "finance-spellbook-a"
+

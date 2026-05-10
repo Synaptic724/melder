@@ -1,7 +1,7 @@
 """
 Spell-scoped helper surface for one selected frame view.
 
-This module provides ACL-filtered spell inspection, payload reads, lineage
+This module provides ACL-filtered spell inspection, payload reads, spell-index
 queries, and spell comparison behavior over the currently selected frame
 helper.
 """
@@ -47,7 +47,7 @@ class ViewSpell(Cleanable):
     _ast_helper_access: str = "public"
     __agent_purpose__: str = (
         "access: public. Spell-local helper surface for spell identity, "
-        "origin, lineage, filtering, detailed payload access, dunder-member "
+        "origin, spell-index grouping, filtering, detailed payload access, dunder-member "
         "visibility, and spell crosswalk/comparison flows inside one selected "
         "frame."
     )
@@ -529,19 +529,19 @@ class ViewSpell(Cleanable):
             "source_profile_version": spell_record.payload.source_profile_version,
         }
 
-    def describe_spell_lineage(
+    def describe_spell_index(
             self,
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
         """
-        Return lineage grouping information for one visible spell.
+        Return spell-index grouping information for one visible spell.
 
         Purpose:
             Expose all visible and descriptor-local siblings that share the
-            same lineage id so the operator can understand the spell's lineage
-            context inside the current frame.
+            same spell-index id so the operator can understand the spell's
+            index context inside the current frame.
 
         Args:
             spell_source_id:
@@ -551,7 +551,7 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            Dict[str, object]: Lineage grouping summary for the spell.
+            Dict[str, object]: Spell-index grouping summary for the spell.
         """
         self.check_cleaned()
         spell_record = self._get_required_spell_record(
@@ -1009,18 +1009,18 @@ class ViewSpell(Cleanable):
             if spell_record.origin_spellbook_id == spellbook_id
         ]
 
-    def list_spells_by_lineage_id(
+    def list_spells_by_index_id(
             self,
-            lineage_id: str,
+            spell_index_id: str,
             *,
             frame_name: Optional[str] = None,
     ) -> List[IFrameLink]:
         """
-        Return visible spells sharing one lineage id.
+        Return visible spells sharing one spell-index id.
 
         Args:
-            lineage_id:
-                Required lineage id.
+            spell_index_id:
+                Required spell-index id.
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
@@ -1029,14 +1029,14 @@ class ViewSpell(Cleanable):
             List[FrameLink]: Matching visible spell links.
         """
         self.check_cleaned()
-        if not lineage_id:
-            raise ValueError("lineage_id cannot be empty.")
+        if not spell_index_id:
+            raise ValueError("spell_index_id cannot be empty.")
         return [
             spell_link
             for spell_link, spell_record in self._iter_visible_spell_links_and_records(
                 frame_name=frame_name
             )
-            if spell_record.spell_index_id == lineage_id
+            if spell_record.spell_index_id == spell_index_id
         ]
 
     def list_spells_by_permission(
@@ -1342,7 +1342,7 @@ class ViewSpell(Cleanable):
 
         Purpose:
             Give the operator one direct spell crosswalk from the spell to its
-            conduit, root conduit, peer conduits, spellbook, lineage, and
+            conduit, root conduit, peer conduits, spellbook, spell index, and
             visible sibling spells.
 
         Args:
@@ -1377,7 +1377,7 @@ class ViewSpell(Cleanable):
             "root_conduit_id": root_conduit_id,
             "peer_conduit_ids": peer_conduit_ids,
             "spell_index_id": spell_record.spell_index_id,
-            "related_visible_source_ids": self.describe_spell_lineage(
+            "related_visible_source_ids": self.describe_spell_index(
                 spell_source_id,
                 frame_name=frame_name,
             )["visible_related_source_ids"],

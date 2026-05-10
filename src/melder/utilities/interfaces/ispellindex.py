@@ -12,12 +12,12 @@ class ISpellIndex(ICleanable, Protocol):
         * The "current" version pointer is mutable and thread-safe.
         * The object is safe to use as a dictionary key even while the
           version pointer changes over time.
-        * Tracks the full lineage of versions via an internal version set.
+        * Tracks the full set of versions via an internal version set.
 
     Typical usage:
         * As a key into spell registries:
               Dict[SpellIndex, ISpell]
-        * As a stable lineage handle for spell mutation/versioning.
+        * As a stable SpellIndex handle for spell mutation/versioning.
         * As a synchronization primitive when multiple threads need to
           reason about "which version is active" without breaking key
           identity in maps.
@@ -67,7 +67,7 @@ class ISpellIndex(ICleanable, Protocol):
         Returns:
             Set[str]:
                 A copy of the internal set of all version IDs seen for
-                this lineage.
+                this SpellIndex.
         """
         ...
 
@@ -82,7 +82,7 @@ class ISpellIndex(ICleanable, Protocol):
 
         Returns:
             bool:
-                ``True`` if the version ID is present in the lineage
+                ``True`` if the version ID is present in the SpellIndex
                 set, ``False`` otherwise.
         """
         ...

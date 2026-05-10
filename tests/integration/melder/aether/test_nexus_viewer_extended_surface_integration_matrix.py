@@ -347,7 +347,7 @@ def _build_method_kwargs(viewer: object, method_name: str) -> dict[str, object]:
         "list_spell_record_ids",
         "list_spell_names",
         "list_binding_names",
-        "list_lineage_ids",
+        "list_index_ids",
         "list_permissions",
         "list_existence_kinds",
         "describe_descriptor_inventory",
@@ -388,7 +388,7 @@ INTEGRATION_METHOD_CASES = [
     ("list_spell_record_ids", "list"),
     ("list_spell_names", "list"),
     ("list_binding_names", "list"),
-    ("list_lineage_ids", "list"),
+    ("list_index_ids", "list"),
     ("list_permissions", "list"),
     ("list_existence_kinds", "list"),
     ("describe_descriptor_inventory", "dict"),
@@ -580,4 +580,5 @@ def test_real_rift_viewer_multi_frame_explicit_frame_routes_helper_reads() -> No
         finance_conduit.cleanup()
         ops_spellbook.cleanup()
         finance_spellbook.cleanup()
+
 

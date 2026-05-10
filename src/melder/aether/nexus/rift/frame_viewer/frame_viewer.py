@@ -567,17 +567,17 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         return self.get_view_multiframe().describe_spell_name_collisions(frame_name=frame_name)
 
-    def describe_lineage_groups(
+    def describe_index_groups(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> Dict[str, Tuple[str, ...]]:
         """
-        Return lineage groups in the selected descriptor scope.
+        Return spell-index groups in the selected descriptor scope.
 
         Purpose:
-            Surface all published spell source ids grouped by lineage id, even
-            when a lineage currently has only one visible member.
+            Surface all published spell source ids grouped by spell-index id,
+            even when an index currently has only one visible member.
 
         Args:
             frame_name:
@@ -585,11 +585,11 @@ class FrameViewer(Cleanable):
                 frames.
 
         Returns:
-            Dict[str, Tuple[str, ...]]: Lineage ids mapped to published spell
+            Dict[str, Tuple[str, ...]]: Spell-index ids mapped to published spell
             source ids.
         """
         self.check_cleaned()
-        return self.get_view_multiframe().describe_lineage_groups(frame_name=frame_name)
+        return self.get_view_multiframe().describe_index_groups(frame_name=frame_name)
 
     def describe_spellframe_groups(
             self,
@@ -996,27 +996,27 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         return self.get_view_multiframe().list_binding_names(frame_name=frame_name)
 
-    def list_lineage_ids(
+    def list_index_ids(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> List[str]:
         """
-        Return lineage ids for the selected descriptor scope.
+        Return spell-index ids for the selected descriptor scope.
 
         Purpose:
-            Expose lineage identity directly from `SpellRecord` metadata.
+            Expose SpellIndex identity directly from `SpellRecord` metadata.
 
         Args:
             frame_name:
-                Optional hosted frame name. When omitted, returns lineage ids
+                Optional hosted frame name. When omitted, returns spell-index ids
                 across all hosted frames.
 
         Returns:
-            List[str]: Lineage ids in deterministic record order.
+            List[str]: Spell-index ids in deterministic record order.
         """
         self.check_cleaned()
-        return self.get_view_multiframe().list_lineage_ids(frame_name=frame_name)
+        return self.get_view_multiframe().list_index_ids(frame_name=frame_name)
 
     def list_spellframes(
             self,
@@ -2058,22 +2058,22 @@ class FrameViewer(Cleanable):
             frame_name=frame_name,
         )
 
-    def list_visible_lineage_ids(
+    def list_visible_index_ids(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> List[str]:
         """
-        Return visible lineage ids for the selected frame.
+        Return visible spell-index ids for the selected frame.
 
         Args:
             frame_name:
                 Optional hosted frame name override.
 
         Returns:
-            List[str]: Visible lineage ids in deterministic spell order.
+            List[str]: Visible spell-index ids in deterministic spell order.
         """
-        return self.get_view_frame(frame_name=frame_name).list_visible_lineage_ids(
+        return self.get_view_frame(frame_name=frame_name).list_visible_index_ids(
             frame_name=frame_name,
         )
 
@@ -3341,18 +3341,18 @@ class FrameViewer(Cleanable):
             frame_name=frame_name,
         )
 
-    def describe_spell_lineage(
+    def describe_spell_index(
             self,
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
         """
-        Return lineage grouping information for one visible spell.
+        Return spell-index grouping information for one visible spell.
 
         Purpose:
             Expose all visible and descriptor-local siblings that share the
-            same lineage id so the operator can understand the spell lineage
+            same spell-index id so the operator can understand the spell-index
             context inside the current frame.
 
         Args:
@@ -3362,9 +3362,9 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            Dict[str, object]: Lineage grouping summary for the spell.
+            Dict[str, object]: Spell-index grouping summary for the spell.
         """
-        return self.get_view_spell(frame_name=frame_name).describe_spell_lineage(
+        return self.get_view_spell(frame_name=frame_name).describe_spell_index(
             spell_source_id,
             frame_name=frame_name,
         )
@@ -3689,26 +3689,26 @@ class FrameViewer(Cleanable):
             frame_name=frame_name,
         )
 
-    def list_spells_by_lineage_id(
+    def list_spells_by_index_id(
             self,
-            lineage_id: str,
+            spell_index_id: str,
             *,
             frame_name: Optional[str] = None,
     ) -> List[IFrameLink]:
         """
-        Return visible spells sharing one lineage id.
+        Return visible spells sharing one spell-index id.
 
         Args:
-            lineage_id:
-                Required lineage id.
+            spell_index_id:
+                Required spell-index id.
             frame_name:
                 Optional hosted frame name override.
 
         Returns:
             List[IFrameLink]: Matching visible spell links.
         """
-        return self.get_view_spell(frame_name=frame_name).list_spells_by_lineage_id(
-            lineage_id,
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_index_id(
+            spell_index_id,
             frame_name=frame_name,
         )
 

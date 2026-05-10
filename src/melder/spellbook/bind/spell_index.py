@@ -8,11 +8,11 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellIndex(Cleanable, ISpellIndex):
     """
-    A stable dictionary key that points to a mutable version ID.
+    A stable SpellIndex identity that points to a mutable version ID.
 
     Design:
     This class solves the "mutable dictionary key" problem. It provides a
-    stable, hashable identity via an immutable ULID, while simultaneously
+    stable, hashable SpellIndex identity via an immutable ULID, while simultaneously
     tracking a mutable "current version" pointer (e.g., a SHA256 commit ID).
 
     - Hashing and equality are based *only* on the immutable ULID.
@@ -39,7 +39,7 @@ class SpellIndex(Cleanable, ISpellIndex):
         Initialize the SpellIndex with its permanent identity and initial version.
 
         Purpose:
-            Provide a stable, hashable lineage key with a mutable version pointer
+            Provide a stable, hashable SpellIndex identity with a mutable version pointer
             and optional Spellbook attachments for update propagation.
 
         Contract:
@@ -105,7 +105,7 @@ class SpellIndex(Cleanable, ISpellIndex):
     @property
     def current(self) -> str:
         """
-        Return the currently active version id for this lineage.
+        Return the currently active version id for this SpellIndex.
 
         Returns:
             str: The current version id.
@@ -177,7 +177,7 @@ class SpellIndex(Cleanable, ISpellIndex):
 
         Args:
             spellbook (ISpellbook): Owning Spellbook for this index.
-            spell (ISpell): The owned spell instance for this lineage.
+            spell (ISpell): The owned spell instance for this SpellIndex.
 
         Raises:
             RuntimeError: If a different owner is already attached.
@@ -200,7 +200,7 @@ class SpellIndex(Cleanable, ISpellIndex):
         """
         Record the owning conduit identifier for this SpellIndex.
 
-        This is the lineage-side memory of which conduit currently owns the
+        This is the SpellIndex-side memory of which conduit currently owns the
         spellbook attachment. It is used as attachment metadata, not as part of
         hash/equality identity.
 
@@ -284,7 +284,7 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def get_all_versions(self) -> set:
         """
-        Return a snapshot of every version id this lineage has pointed to.
+        Return a snapshot of every version id this SpellIndex has pointed to.
 
         Returns:
             set: A set of all version IDs seen.
@@ -301,7 +301,7 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def has_version(self, version_id: str) -> bool:
         """
-        Return whether this lineage has ever pointed at `version_id`.
+        Return whether this SpellIndex has ever pointed at `version_id`.
 
         Args:
             version_id (str): The version ID to check.
@@ -333,7 +333,7 @@ class SpellIndex(Cleanable, ISpellIndex):
     # ------------------------------------------------------------
     def __hash__(self) -> int:
         """
-        Hash this index by immutable lineage identity only.
+        Hash this index by immutable SpellIndex identity only.
 
         This ensures the hash is stable, even if _current_id changes,
         making it safe for use as a dictionary key.
@@ -342,7 +342,7 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def __eq__(self, other) -> bool:
         """
-        Compare two `SpellIndex` objects by immutable lineage identity only.
+        Compare two `SpellIndex` objects by immutable SpellIndex identity only.
 
         This guarantees that key equality is stable and not affected
         by version changes.

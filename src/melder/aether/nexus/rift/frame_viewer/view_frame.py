@@ -621,7 +621,7 @@ class ViewFrame(Cleanable):
         Purpose:
             Make visible ambiguity explicit at the frame-local surface so the
             operator can see where multiple visible spells share the same
-            binding name, spell name, lineage, or spellframe.
+            binding name, spell name, spell index, or spellframe.
 
         Args:
             frame_name:
@@ -635,7 +635,7 @@ class ViewFrame(Cleanable):
         self._assert_optional_frame_name(frame_name)
         grouped_source_ids_by_binding_name: Dict[str, List[str]] = {}
         grouped_source_ids_by_spell_name: Dict[str, List[str]] = {}
-        grouped_source_ids_by_lineage_id: Dict[str, List[str]] = {}
+        grouped_source_ids_by_index_id: Dict[str, List[str]] = {}
         grouped_source_ids_by_spellframe: Dict[str, List[str]] = {}
         for spell_link, spell_record in self._iter_visible_spell_links_and_records(
                 frame_name=frame_name
@@ -649,7 +649,7 @@ class ViewFrame(Cleanable):
                 spell_record.spell_name,
                 [],
             ).append(spell_link.source_id)
-            grouped_source_ids_by_lineage_id.setdefault(
+            grouped_source_ids_by_index_id.setdefault(
                 spell_record.spell_index_id,
                 [],
             ).append(spell_link.source_id)
@@ -668,8 +668,8 @@ class ViewFrame(Cleanable):
             "spell_name_collisions": self._filter_grouped_collisions(
                 grouped_source_ids_by_spell_name
             ),
-            "lineage_groups": self._normalize_grouped_source_ids(
-                grouped_source_ids_by_lineage_id
+            "index_groups": self._normalize_grouped_source_ids(
+                grouped_source_ids_by_index_id
             ),
             "spellframe_groups": self._normalize_grouped_source_ids(
                 grouped_source_ids_by_spellframe
@@ -1052,13 +1052,13 @@ class ViewFrame(Cleanable):
             seen_spellframes.add(spellframe_name)
         return spellframes
 
-    def list_visible_lineage_ids(
+    def list_visible_index_ids(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> List[str]:
         """
-        Return visible lineage ids for the bound frame.
+        Return visible spell-index ids for the bound frame.
 
         Args:
             frame_name:
@@ -1066,7 +1066,7 @@ class ViewFrame(Cleanable):
                 bound frame.
 
         Returns:
-            List[str]: Visible lineage ids in deterministic spell order.
+            List[str]: Visible spell-index ids in deterministic spell order.
         """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)

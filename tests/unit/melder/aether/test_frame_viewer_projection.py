@@ -923,7 +923,7 @@ def test_frame_viewer_descriptor_host_methods_report_record_level_inventory() ->
     ]
     assert viewer.list_spell_names() == ["FinanceSpell", "OpsSpell"]
     assert viewer.list_binding_names() == ["finance_spell", "ops_spell"]
-    assert viewer.list_lineage_ids() == ["finance-lineage", "ops-lineage"]
+    assert viewer.list_index_ids() == ["finance-lineage", "ops-lineage"]
     assert viewer.list_spellframes() == []
     assert viewer.list_permissions() == ["create"]
     assert viewer.list_existence_kinds() == ["unique"]
@@ -1140,7 +1140,7 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "root_conduit_count": 1,
             "spell_record_count": 1,
             "origin_spellbook_count": 1,
-            "lineage_count": 1,
+            "index_count": 1,
         },
         "ops": {
             "frame_id": "ops-frame",
@@ -1149,7 +1149,7 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "root_conduit_count": 1,
             "spell_record_count": 1,
             "origin_spellbook_count": 1,
-            "lineage_count": 1,
+            "index_count": 1,
         },
     }
     assert method_surface == {
@@ -1223,7 +1223,7 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "left_only": ("ops-spellbook:ops-spell",),
             "right_only": ("finance-spellbook:finance-spell",),
         },
-        "lineage_ids": {
+        "index_ids": {
             "shared": tuple(),
             "left_only": ("ops-lineage",),
             "right_only": ("finance-lineage",),
@@ -1280,7 +1280,7 @@ def test_view_frame_visible_surface_methods_report_inventory_and_topology() -> N
     assert view_frame.list_visible_binding_names() == ["ops_spell"]
     assert view_frame.list_visible_spell_names() == ["OpsSpell"]
     assert view_frame.list_visible_spellframes() == []
-    assert view_frame.list_visible_lineage_ids() == ["ops-lineage"]
+    assert view_frame.list_visible_index_ids() == ["ops-lineage"]
     assert view_frame.describe_visible_spell_ownership() == {
         "ops-conduit": ("ops-spellbook:ops-spell",)
     }
@@ -1724,7 +1724,7 @@ def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
         "source_profile_name": None,
         "source_profile_version": None,
     }
-    assert view_spell.describe_spell_lineage("ops-spellbook:ops-spell") == {
+    assert view_spell.describe_spell_index("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
         "spell_index_id": "ops-lineage",
         "related_source_ids": ("ops-spellbook:ops-spell",),
@@ -1755,7 +1755,7 @@ def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
     assert [link.source_id for link in view_spell.list_spells_by_spellbook_id("ops-spellbook")] == [
         "ops-spellbook:ops-spell"
     ]
-    assert [link.source_id for link in view_spell.list_spells_by_lineage_id("ops-lineage")] == [
+    assert [link.source_id for link in view_spell.list_spells_by_index_id("ops-lineage")] == [
         "ops-spellbook:ops-spell"
     ]
     assert [link.source_id for link in view_spell.list_spells_by_permission("create")] == [
@@ -1824,8 +1824,8 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
         view_spell.list_spells_by_owner_conduit("")
     with pytest.raises(ValueError, match="spellbook_id cannot be empty."):
         view_spell.list_spells_by_spellbook_id("")
-    with pytest.raises(ValueError, match="lineage_id cannot be empty."):
-        view_spell.list_spells_by_lineage_id("")
+    with pytest.raises(ValueError, match="spell_index_id cannot be empty."):
+        view_spell.list_spells_by_index_id("")
     with pytest.raises(ValueError, match="permission_name cannot be empty."):
         view_spell.list_spells_by_permission("")
     with pytest.raises(ValueError, match="existence_name cannot be empty."):
@@ -2018,7 +2018,7 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
         )
     )
 
-    lineage = view_spell.describe_spell_lineage("ops-spellbook:ops-spell-1")
+    lineage = view_spell.describe_spell_index("ops-spellbook:ops-spell-1")
     assert "ops-spellbook:ops-spell-3" not in lineage["related_source_ids"]
 
     with pytest.raises(
@@ -2195,7 +2195,7 @@ def test_frame_viewer_host_collision_methods_report_expected_groups() -> None:
             "shared-book:ops-spell-1",
         )
     }
-    assert viewer.describe_lineage_groups()["shared-lineage"] == (
+    assert viewer.describe_index_groups()["shared-lineage"] == (
         "shared-book:finance-spell-1",
         "shared-book:ops-spell-1",
     )
@@ -2276,7 +2276,7 @@ def test_view_frame_visible_collision_method_reports_expected_groups() -> None:
                 "ops-spellbook:ops-spell-2",
             )
         },
-        "lineage_groups": {
+        "index_groups": {
             "shared-lineage": (
                 "ops-spellbook:ops-spell-1",
                 "ops-spellbook:ops-spell-2",
@@ -2731,3 +2731,4 @@ def test_frame_viewer_execute_guardrails_are_explicit() -> None:
 
     with pytest.raises(AttributeError):
         viewer.ghost_tool(frame_name="ops")
+
