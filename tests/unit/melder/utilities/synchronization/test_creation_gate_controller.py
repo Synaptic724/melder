@@ -16,20 +16,20 @@ def test_creation_gate_controller_initial_state() -> None:
     """
     controller = CreationGateController()
     assert controller._conduit_creation_gates == {}
-    assert controller._spell_lineage_creation_gates == {}
+    assert controller._spell_index_creation_gates == {}
 
 
 def test_creation_gate_controller_cleanup_clears_registries() -> None:
     """
     Purpose:
-        Verify cleanup clears both conduit and spell-lineage maps.
+        Verify cleanup clears both conduit and spell-index maps.
     """
     controller = CreationGateController()
     controller.create_conduit_gate("c1")
-    controller.create_spell_lineage_gate("l1")
+    controller.create_spell_index_gate("i1")
     controller.cleanup()
     assert controller._conduit_creation_gates is None
-    assert controller._spell_lineage_creation_gates is None
+    assert controller._spell_index_creation_gates is None
     assert controller._conduit_creation_gates_by_root is None
     assert controller._conduit_root_by_conduit is None
     assert controller._lock is None
@@ -38,18 +38,18 @@ def test_creation_gate_controller_cleanup_clears_registries() -> None:
 def test_creation_gate_controller_cleanup_cleans_registered_gates() -> None:
     """
     Purpose:
-        Verify cleanup cascades into all registered conduit/lineage gates.
+        Verify cleanup cascades into all registered conduit/index gates.
     """
     controller = CreationGateController()
     conduit_gate = controller.create_conduit_gate("c1")
-    lineage_gate = controller.create_spell_lineage_gate("l1")
+    index_gate = controller.create_spell_index_gate("i1")
 
     controller.cleanup()
 
     with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
         conduit_gate.open()
     with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
-        lineage_gate.open()
+        index_gate.open()
 
 
 def test_creation_gate_controller_cleanup_idempotent() -> None:
@@ -350,137 +350,137 @@ def test_disable_all_conduit_gates_closes_all() -> None:
     assert g2.enabled is False
 
 
-def test_create_spell_lineage_gate_success() -> None:
+def test_create_spell_index_gate_success() -> None:
     """
     Purpose:
-        Verify spell-lineage gate creation and registry storage.
+        Verify spell-index gate creation and registry storage.
     """
     controller = CreationGateController()
-    gate = controller.create_spell_lineage_gate("l1")
+    gate = controller.create_spell_index_gate("i1")
     assert isinstance(gate, CreationGate)
-    assert controller.get_spell_lineage_gate("l1") is gate
+    assert controller.get_spell_index_gate("i1") is gate
 
 
-@pytest.mark.parametrize("lineage_id", ["", None])
-def test_create_spell_lineage_gate_empty_raises(lineage_id: Any) -> None:
+@pytest.mark.parametrize("index_id", ["", None])
+def test_create_spell_index_gate_empty_raises(index_id: Any) -> None:
     """
     Purpose:
-        Ensure empty lineage keys are rejected.
+        Ensure empty spell-index keys are rejected.
     """
     controller = CreationGateController()
-    with pytest.raises(ValueError, match="lineage_id cannot be empty"):
-        controller.create_spell_lineage_gate(lineage_id)
+    with pytest.raises(ValueError, match="index_id cannot be empty"):
+        controller.create_spell_index_gate(index_id)
 
 
-def test_create_spell_lineage_gate_duplicate_raises() -> None:
+def test_create_spell_index_gate_duplicate_raises() -> None:
     """
     Purpose:
-        Ensure duplicate lineage registration fails.
+        Ensure duplicate spell-index registration fails.
     """
     controller = CreationGateController()
-    controller.create_spell_lineage_gate("l1")
+    controller.create_spell_index_gate("i1")
     with pytest.raises(ValueError, match="CreationGate already registered"):
-        controller.create_spell_lineage_gate("l1")
+        controller.create_spell_index_gate("i1")
 
 
-def test_register_spell_lineage_gate_success() -> None:
+def test_register_spell_index_gate_success() -> None:
     """
     Purpose:
-        Verify explicit spell-lineage gate registration.
+        Verify explicit spell-index gate registration.
     """
     controller = CreationGateController()
     gate = CreationGate()
-    controller.register_spell_lineage_gate("l1", gate)
-    assert controller.get_spell_lineage_gate("l1") is gate
+    controller.register_spell_index_gate("i1", gate)
+    assert controller.get_spell_index_gate("i1") is gate
 
 
-@pytest.mark.parametrize("lineage_id", ["", None])
-def test_register_spell_lineage_gate_empty_raises(lineage_id: Any) -> None:
+@pytest.mark.parametrize("index_id", ["", None])
+def test_register_spell_index_gate_empty_raises(index_id: Any) -> None:
     """
     Purpose:
-        Ensure empty lineage keys are rejected on register.
+        Ensure empty spell-index keys are rejected on register.
     """
     controller = CreationGateController()
-    with pytest.raises(ValueError, match="lineage_id cannot be empty"):
-        controller.register_spell_lineage_gate(lineage_id, CreationGate())
+    with pytest.raises(ValueError, match="index_id cannot be empty"):
+        controller.register_spell_index_gate(index_id, CreationGate())
 
 
-def test_register_spell_lineage_gate_duplicate_raises() -> None:
+def test_register_spell_index_gate_duplicate_raises() -> None:
     """
     Purpose:
-        Ensure duplicate lineage registration is rejected.
+        Ensure duplicate spell-index registration is rejected.
     """
     controller = CreationGateController()
-    controller.register_spell_lineage_gate("l1", CreationGate())
+    controller.register_spell_index_gate("i1", CreationGate())
     with pytest.raises(ValueError, match="CreationGate already registered"):
-        controller.register_spell_lineage_gate("l1", CreationGate())
+        controller.register_spell_index_gate("i1", CreationGate())
 
 
-def test_unregister_spell_lineage_gate_missing_is_noop() -> None:
+def test_unregister_spell_index_gate_missing_is_noop() -> None:
     """
     Purpose:
-        Verify missing lineage unregistration is a no-op.
+        Verify missing spell-index unregistration is a no-op.
     """
     controller = CreationGateController()
-    controller.unregister_spell_lineage_gate("missing")
-    assert controller.get_spell_lineage_gate("missing") is None
+    controller.unregister_spell_index_gate("missing")
+    assert controller.get_spell_index_gate("missing") is None
 
 
-def test_get_spell_lineage_gate_missing_returns_none() -> None:
+def test_get_spell_index_gate_missing_returns_none() -> None:
     """
     Purpose:
-        Verify missing lineage lookup returns None.
+        Verify missing spell-index lookup returns None.
     """
     controller = CreationGateController()
-    assert controller.get_spell_lineage_gate("missing") is None
+    assert controller.get_spell_index_gate("missing") is None
 
 
-def test_count_active_threads_for_spell_lineage_missing_returns_zero() -> None:
+def test_count_active_threads_for_spell_index_missing_returns_zero() -> None:
     """
     Purpose:
-        Verify missing lineage count returns zero.
+        Verify missing spell-index count returns zero.
     """
     controller = CreationGateController()
-    assert controller.count_active_threads_for_spell_lineage("missing") == 0
+    assert controller.count_active_threads_for_spell_index("missing") == 0
 
 
-def test_count_active_threads_spell_lineages_sums_registry() -> None:
+def test_count_active_threads_spell_indexes_sums_registry() -> None:
     """
     Purpose:
-        Verify lineage aggregate count sums all lineage gates.
+        Verify spell-index aggregate count sums all spell-index gates.
     """
     controller = CreationGateController()
-    g1 = controller.create_spell_lineage_gate("l1")
-    g2 = controller.create_spell_lineage_gate("l2")
+    g1 = controller.create_spell_index_gate("i1")
+    g2 = controller.create_spell_index_gate("i2")
     g1.register_ticket()
     g2.register_ticket()
     try:
-        assert controller.count_active_threads_spell_lineages() == 2
+        assert controller.count_active_threads_spell_indexes() == 2
     finally:
         g1.unregister_ticket()
         g2.unregister_ticket()
 
 
-def test_close_and_wait_until_spell_lineage_free_missing_is_noop() -> None:
+def test_close_and_wait_until_spell_index_free_missing_is_noop() -> None:
     """
     Purpose:
-        Verify close-and-drain on missing lineage key is no-op.
+        Verify close-and-drain on missing spell-index key is no-op.
     """
     controller = CreationGateController()
-    controller.close_and_wait_until_spell_lineage_free(
+    controller.close_and_wait_until_spell_index_free(
         "missing",
         timeout=0.01,
         interval=0.001,
     )
 
 
-def test_close_and_wait_until_spell_lineage_free_drains_tickets() -> None:
+def test_close_and_wait_until_spell_index_free_drains_tickets() -> None:
     """
     Purpose:
-        Verify lineage close-and-drain waits until tickets are released.
+        Verify spell-index close-and-drain waits until tickets are released.
     """
     controller = CreationGateController()
-    gate = controller.create_spell_lineage_gate("l1")
+    gate = controller.create_spell_index_gate("i1")
     registered = threading.Event()
     release = threading.Event()
 
@@ -497,8 +497,8 @@ def test_close_and_wait_until_spell_lineage_free_drains_tickets() -> None:
     closer_done = threading.Event()
 
     def _close() -> None:
-        controller.close_and_wait_until_spell_lineage_free(
-            "l1",
+        controller.close_and_wait_until_spell_index_free(
+            "i1",
             timeout=2.0,
             interval=0.01,
         )
@@ -514,30 +514,30 @@ def test_close_and_wait_until_spell_lineage_free_drains_tickets() -> None:
     assert gate.is_closed() is True
 
 
-def test_enable_all_spell_lineage_gates_opens_all() -> None:
+def test_enable_all_spell_index_gates_opens_all() -> None:
     """
     Purpose:
-        Verify lineage-wide enable broadcast.
+        Verify spell-index-wide enable broadcast.
     """
     controller = CreationGateController()
-    g1 = controller.create_spell_lineage_gate("l1")
-    g2 = controller.create_spell_lineage_gate("l2")
+    g1 = controller.create_spell_index_gate("i1")
+    g2 = controller.create_spell_index_gate("i2")
     g1.close()
     g2.close()
-    controller.enable_all_spell_lineage_gates()
+    controller.enable_all_spell_index_gates()
     assert g1.enabled is True
     assert g2.enabled is True
 
 
-def test_disable_all_spell_lineage_gates_closes_all() -> None:
+def test_disable_all_spell_index_gates_closes_all() -> None:
     """
     Purpose:
-        Verify lineage-wide disable broadcast.
+        Verify spell-index-wide disable broadcast.
     """
     controller = CreationGateController()
-    g1 = controller.create_spell_lineage_gate("l1")
-    g2 = controller.create_spell_lineage_gate("l2")
-    controller.disable_all_spell_lineage_gates()
+    g1 = controller.create_spell_index_gate("i1")
+    g2 = controller.create_spell_index_gate("i2")
+    controller.disable_all_spell_index_gates()
     assert g1.enabled is False
     assert g2.enabled is False
 
@@ -545,11 +545,11 @@ def test_disable_all_spell_lineage_gates_closes_all() -> None:
 def test_count_active_threads_total_sums_both_registries() -> None:
     """
     Purpose:
-        Verify total active count combines conduit and lineage maps.
+        Verify total active count combines conduit and spell-index maps.
     """
     controller = CreationGateController()
     cg = controller.create_conduit_gate("c1")
-    lg = controller.create_spell_lineage_gate("l1")
+    lg = controller.create_spell_index_gate("i1")
     cg.register_ticket()
     lg.register_ticket()
     try:
@@ -566,7 +566,7 @@ def test_enable_all_opens_both_registries() -> None:
     """
     controller = CreationGateController()
     cg = controller.create_conduit_gate("c1")
-    lg = controller.create_spell_lineage_gate("l1")
+    lg = controller.create_spell_index_gate("i1")
     cg.close()
     lg.close()
     controller.enable_all()
@@ -581,7 +581,7 @@ def test_disable_all_closes_both_registries() -> None:
     """
     controller = CreationGateController()
     cg = controller.create_conduit_gate("c1")
-    lg = controller.create_spell_lineage_gate("l1")
+    lg = controller.create_spell_index_gate("i1")
     controller.disable_all()
     assert cg.enabled is False
     assert lg.enabled is False
@@ -599,18 +599,18 @@ def test_disable_all_closes_both_registries() -> None:
         ("get_root_conduit_id_for_conduit", ("c1",)),
         ("get_conduit_lineage_gates", ("root-1",)),
         ("count_active_threads_for_conduit_lineage", ("root-1",)),
-        ("create_spell_lineage_gate", ("l1",)),
-        ("register_spell_lineage_gate", ("l1", CreationGate())),
-        ("unregister_spell_lineage_gate", ("l1",)),
-        ("get_spell_lineage_gate", ("l1",)),
-        ("count_active_threads_for_spell_lineage", ("l1",)),
-        ("count_active_threads_spell_lineages", ()),
+        ("create_spell_index_gate", ("i1",)),
+        ("register_spell_index_gate", ("i1", CreationGate())),
+        ("unregister_spell_index_gate", ("i1",)),
+        ("get_spell_index_gate", ("i1",)),
+        ("count_active_threads_for_spell_index", ("i1",)),
+        ("count_active_threads_spell_indexes", ()),
         ("count_active_threads_total", ()),
         ("enable_all", ()),
         ("disable_all", ()),
         ("close_and_wait_until_conduit_free", ("c1",)),
         ("close_and_wait_until_conduit_lineage_free", ("root-1",)),
-        ("close_and_wait_until_spell_lineage_free", ("l1",)),
+        ("close_and_wait_until_spell_index_free", ("i1",)),
     ],
 )
 def test_creation_gate_controller_methods_raise_after_cleanup(

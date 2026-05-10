@@ -132,7 +132,7 @@ def test_build_passes_resolved_policy_into_creation_context(
         spell,
         dynamic_environment=True,
         creation_gate="gate",
-        creation_gate_lineage_id="lineage",
+        creation_gate_index_id="index",
     )
 
     assert result == "context"
@@ -140,7 +140,7 @@ def test_build_passes_resolved_policy_into_creation_context(
         "spell": spell,
         "dynamic_environment": True,
         "creation_gate": "gate",
-        "creation_gate_lineage_id": "lineage",
+        "creation_gate_index_id": "index",
         "resolve_route_key": CreationContext.ROUTE_MANY,
         "fast_transient_no_overrides_enabled": True,
         "no_overrides_executor": "executor",

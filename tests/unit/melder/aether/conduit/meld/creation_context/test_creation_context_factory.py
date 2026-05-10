@@ -44,14 +44,14 @@ class _BuilderStub:
             *,
             dynamic_environment: bool = False,
             creation_gate: Optional[Any] = None,
-            creation_gate_lineage_id: Optional[str] = None,
+            creation_gate_index_id: Optional[str] = None,
     ) -> Any:
         self.build_calls.append(
             {
                 "spell": spell,
                 "dynamic_environment": dynamic_environment,
                 "creation_gate": creation_gate,
-                "creation_gate_lineage_id": creation_gate_lineage_id,
+                "creation_gate_index_id": creation_gate_index_id,
             }
         )
         if self.build_result is None:
@@ -76,7 +76,7 @@ class _SpellStub:
     ) -> None:
         self.spell_id = spell_id
         self.spell_name = spell_id
-        self.spell_index = SimpleNamespace(current=spell_id, id=f"lineage-{spell_id}")
+        self.spell_index = SimpleNamespace(current=spell_id, id=f"index-{spell_id}")
         self.existence = Existence.unique
         self.is_existing_creation = False
         self.user_created_object = None
@@ -130,7 +130,7 @@ def test_cleanup_swallows_builder_cleanup_error_and_nulls_fields() -> None:
         dynamic_environment=True,
         creation_gate_controller=CreationGateController(),
     )
-    factory._created_spell_lineage_ids.add("lineage-1")
+    factory._created_spell_index_ids.add("index-1")
 
     factory.cleanup()
     factory.cleanup()
@@ -139,7 +139,7 @@ def test_cleanup_swallows_builder_cleanup_error_and_nulls_fields() -> None:
     assert factory._builder is None
     assert factory._dynamic_environment is None
     assert factory._creation_gate_controller is None
-    assert factory._created_spell_lineage_ids is None
+    assert factory._created_spell_index_ids is None
 
 
 def test_cleanup_creation_context_helper_noops_on_none_and_swallows_errors() -> None:
@@ -157,27 +157,27 @@ def test_cleanup_creation_context_helper_noops_on_none_and_swallows_errors() -> 
     CreationContextFactory._cleanup_creation_context(_FailingContext())
 
 
-def test_resolve_or_create_spell_lineage_gate_reuses_existing_gate() -> None:
-    """Verify factory reuses existing lineage gates instead of recreating them."""
+def test_resolve_or_create_spell_index_gate_reuses_existing_gate() -> None:
+    """Verify factory reuses existing spell-index gates instead of recreating them."""
     controller = CreationGateController()
-    existing_gate = controller.create_spell_lineage_gate("lineage-1")
+    existing_gate = controller.create_spell_index_gate("index-1")
     factory = CreationContextFactory(creation_gate_controller=controller)
 
-    resolved = factory._resolve_or_create_spell_lineage_gate("lineage-1")
+    resolved = factory._resolve_or_create_spell_index_gate("index-1")
 
     assert resolved is existing_gate
-    assert factory._created_spell_lineage_ids == set()
+    assert factory._created_spell_index_ids == set()
 
 
-def test_resolve_or_create_spell_lineage_gate_creates_new_gate_and_tracks_id() -> None:
-    """Verify factory creates and tracks a new lineage gate when one is missing."""
+def test_resolve_or_create_spell_index_gate_creates_new_gate_and_tracks_id() -> None:
+    """Verify factory creates and tracks a new spell-index gate when one is missing."""
     controller = CreationGateController()
     factory = CreationContextFactory(creation_gate_controller=controller)
 
-    resolved = factory._resolve_or_create_spell_lineage_gate("lineage-2")
+    resolved = factory._resolve_or_create_spell_index_gate("index-2")
 
-    assert resolved is controller.get_spell_lineage_gate("lineage-2")
-    assert factory._created_spell_lineage_ids == {"lineage-2"}
+    assert resolved is controller.get_spell_index_gate("index-2")
+    assert factory._created_spell_index_ids == {"index-2"}
 
 
 def test_resolve_runtime_gate_for_spell_returns_none_in_automatic_mode() -> None:
@@ -191,8 +191,8 @@ def test_resolve_runtime_gate_for_spell_returns_none_in_automatic_mode() -> None
     assert factory._resolve_runtime_gate_for_spell(spell) == (None, None)
 
 
-def test_resolve_runtime_gate_for_spell_dynamic_returns_gate_and_lineage_id() -> None:
-    """Verify dynamic mode resolves and returns shared lineage gate metadata."""
+def test_resolve_runtime_gate_for_spell_dynamic_returns_gate_and_index_id() -> None:
+    """Verify dynamic mode resolves and returns shared spell-index gate metadata."""
     spell = _SpellStub(spell_id="spell-dynamic")
     controller = CreationGateController()
     factory = CreationContextFactory(
@@ -200,11 +200,11 @@ def test_resolve_runtime_gate_for_spell_dynamic_returns_gate_and_lineage_id() ->
         creation_gate_controller=controller,
     )
 
-    gate, lineage_id = factory._resolve_runtime_gate_for_spell(spell)
+    gate, index_id = factory._resolve_runtime_gate_for_spell(spell)
 
-    assert lineage_id == spell.spell_index.id
-    assert gate is controller.get_spell_lineage_gate(lineage_id)
-    assert factory._created_spell_lineage_ids == {lineage_id}
+    assert index_id == spell.spell_index.id
+    assert gate is controller.get_spell_index_gate(index_id)
+    assert factory._created_spell_index_ids == {index_id}
 
 
 def test_build_for_spell_passes_dynamic_gate_metadata_to_builder() -> None:
@@ -223,8 +223,8 @@ def test_build_for_spell_passes_dynamic_gate_metadata_to_builder() -> None:
     assert result == "built-context"
     assert builder.build_calls[0]["spell"] is spell
     assert builder.build_calls[0]["dynamic_environment"] is True
-    assert builder.build_calls[0]["creation_gate_lineage_id"] == spell.spell_index.id
-    assert builder.build_calls[0]["creation_gate"] is controller.get_spell_lineage_gate(spell.spell_index.id)
+    assert builder.build_calls[0]["creation_gate_index_id"] == spell.spell_index.id
+    assert builder.build_calls[0]["creation_gate"] is controller.get_spell_index_gate(spell.spell_index.id)
 
 
 def test_get_or_build_for_spell_returns_cached_context_for_follower_path() -> None:
@@ -259,7 +259,7 @@ def test_get_or_build_for_spell_builds_and_advances_switch_for_leader_path() -> 
     assert result is built_context
     assert spell._creation_context is built_context
     assert spell._creation_context_switch.advance_calls == [1]
-    assert builder.build_calls[0]["creation_gate_lineage_id"] == spell.spell_index.id
+    assert builder.build_calls[0]["creation_gate_index_id"] == spell.spell_index.id
 
 
 def test_get_or_build_for_spell_returns_cached_context_for_non_leader_non_open_state() -> None:
@@ -305,11 +305,11 @@ def test_rebuild_for_spell_delegates_to_build_and_bind() -> None:
     assert builder.build_calls[0]["spell"] is spell
 
 
-def test_lineage_id_for_spell_returns_spell_index_id() -> None:
-    """Verify lineage id helper returns the stable SpellIndex id."""
-    spell = _SpellStub(spell_id="spell-lineage")
+def test_index_id_for_spell_returns_spell_index_id() -> None:
+    """Verify spell-index-id helper returns the stable SpellIndex id."""
+    spell = _SpellStub(spell_id="spell-index")
     factory = CreationContextFactory(creation_gate_controller=CreationGateController())
     try:
-        assert factory._lineage_id_for_spell(spell) == spell.spell_index.id
+        assert factory._index_id_for_spell(spell) == spell.spell_index.id
     finally:
         factory.cleanup()

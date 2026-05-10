@@ -70,7 +70,7 @@ def _make_execute_dispatch_harness() -> tuple[CreationContext, list[str]]:
     context._cleaned = False
     context._dynamic_environment = False
     context._creation_gate = None
-    context._creation_gate_lineage_id = None
+    context._creation_gate_index_id = None
 
     def _hooks_no_overrides(caller_creations: Any) -> tuple[str, bool]:
         calls.append("hooks_no_overrides")
@@ -139,11 +139,11 @@ def test_execute_no_hooks_routes_to_no_overrides_when_payload_missing() -> None:
 
 def test_execute_dynamic_gate_closed_raises() -> None:
     """
-    Verify dynamic execute fails fast when spell-lineage gate is terminally closed.
+    Verify dynamic execute fails fast when spell-index gate is terminally closed.
     """
     context, _calls = _make_execute_dispatch_harness()
     context._dynamic_environment = True
-    context._creation_gate_lineage_id = "lineage-s1"
+    context._creation_gate_index_id = "index-s1"
     gate = CreationGate()
     gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
     context._creation_gate = gate
@@ -158,7 +158,7 @@ def test_execute_dynamic_gate_registers_and_unregisters_ticket() -> None:
     """
     context, calls = _make_execute_dispatch_harness()
     context._dynamic_environment = True
-    context._creation_gate_lineage_id = "lineage-s1"
+    context._creation_gate_index_id = "index-s1"
     gate = CreationGate()
     context._creation_gate = gate
 
@@ -174,7 +174,7 @@ def test_execute_no_hooks_dynamic_gate_registers_and_unregisters_ticket() -> Non
     """
     context, calls = _make_execute_dispatch_harness()
     context._dynamic_environment = True
-    context._creation_gate_lineage_id = "lineage-s1"
+    context._creation_gate_index_id = "index-s1"
     gate = CreationGate()
     context._creation_gate = gate
 
@@ -190,7 +190,7 @@ def test_execute_dynamic_gate_blocks_until_open() -> None:
     """
     context, calls = _make_execute_dispatch_harness()
     context._dynamic_environment = True
-    context._creation_gate_lineage_id = "lineage-s1"
+    context._creation_gate_index_id = "index-s1"
     gate = CreationGate()
     gate.close()
     context._creation_gate = gate

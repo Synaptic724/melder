@@ -141,7 +141,7 @@ class CreationContext(Cleanable):
         "_spell_id",
         "_dynamic_environment",
         "_creation_gate",
-        "_creation_gate_lineage_id",
+        "_creation_gate_index_id",
         "_owner_creations",
         "_execute_hooks_overrides_compiled",
         "_execute_hooks_no_overrides_compiled",
@@ -171,7 +171,7 @@ class CreationContext(Cleanable):
             spell: ISpell,
             dynamic_environment: bool = False,
             creation_gate: Optional[CreationGate] = None,
-            creation_gate_lineage_id: Optional[str] = None,
+            creation_gate_index_id: Optional[str] = None,
             resolve_route_key: str,
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
@@ -190,10 +190,10 @@ class CreationContext(Cleanable):
                 True when the owning conduit runs in dynamic mode. Stored as
                 context-level runtime mode metadata.
             creation_gate:
-                Shared spell-lineage CreationGate used for dynamic-mode
+                Shared spell-index CreationGate used for dynamic-mode
                 admission and ticket tracking during execute paths.
-            creation_gate_lineage_id:
-                Stable spell-lineage id used for gate diagnostics.
+            creation_gate_index_id:
+                Stable spell-index id used for gate diagnostics.
             resolve_route_key:
                 Preselected existence route key from `CreationContextBuilder`.
             fast_transient_no_overrides_enabled:
@@ -217,7 +217,7 @@ class CreationContext(Cleanable):
                 "creation_gate cannot be None when dynamic_environment is True."
             )
         self._creation_gate: Optional[CreationGate] = creation_gate
-        self._creation_gate_lineage_id: Optional[str] = creation_gate_lineage_id
+        self._creation_gate_index_id: Optional[str] = creation_gate_index_id
         self._owner_creations: Any = spell._owner_creations
         self._no_overrides_executor: Optional[Callable[..., Any]] = (
             no_overrides_executor
@@ -393,7 +393,7 @@ class CreationContext(Cleanable):
         self._spell_id = None
         self._dynamic_environment = None
         self._creation_gate = None
-        self._creation_gate_lineage_id = None
+        self._creation_gate_index_id = None
         self._owner_creations = None
         self._execute_hooks_overrides_compiled = None
         self._execute_hooks_no_overrides_compiled = None
@@ -443,7 +443,7 @@ class CreationContext(Cleanable):
 
         Raises:
             RuntimeError:
-                If dynamic-mode spell lineage gate is terminally closed.
+                If dynamic-mode spell-index gate is terminally closed.
         """
         if not self._dynamic_environment:
             if overrides is None:
@@ -455,16 +455,16 @@ class CreationContext(Cleanable):
             return execute_hooks_overrides_compiled(caller_creations, overrides)
 
         creation_gate = self._creation_gate
-        lineage_id = self._creation_gate_lineage_id
+        index_id = self._creation_gate_index_id
         if creation_gate.is_closed():
             raise RuntimeError(
-                f"CreationGate is closed for spell lineage '{lineage_id}'."
+                f"CreationGate is closed for spell index '{index_id}'."
             )
         if not creation_gate.enabled:
             creation_gate.wait()
             if creation_gate.is_closed():
                 raise RuntimeError(
-                    f"CreationGate is closed for spell lineage '{lineage_id}'."
+                    f"CreationGate is closed for spell index '{index_id}'."
                 )
         try:
             creation_gate.register_ticket()
@@ -499,7 +499,7 @@ class CreationContext(Cleanable):
 
         Raises:
             RuntimeError:
-                If dynamic-mode spell lineage gate is terminally closed.
+                If dynamic-mode spell-index gate is terminally closed.
         """
         if not self._dynamic_environment:
             if overrides is None:
@@ -513,16 +513,16 @@ class CreationContext(Cleanable):
             return execute_no_hooks_overrides_compiled(caller_creations, overrides)
 
         creation_gate = self._creation_gate
-        lineage_id = self._creation_gate_lineage_id
+        index_id = self._creation_gate_index_id
         if creation_gate.is_closed():
             raise RuntimeError(
-                f"CreationGate is closed for spell lineage '{lineage_id}'."
+                f"CreationGate is closed for spell index '{index_id}'."
             )
         if not creation_gate.enabled:
             creation_gate.wait()
             if creation_gate.is_closed():
                 raise RuntimeError(
-                    f"CreationGate is closed for spell lineage '{lineage_id}'."
+                    f"CreationGate is closed for spell index '{index_id}'."
                 )
         try:
             creation_gate.register_ticket()

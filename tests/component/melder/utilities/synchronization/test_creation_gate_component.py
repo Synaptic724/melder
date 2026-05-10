@@ -78,13 +78,13 @@ def test_component_creation_gate_controller_drains_conduit_gate() -> None:
     drainer.join(timeout=1.0)
 
 
-def test_component_creation_gate_controller_drains_spell_lineage_gate() -> None:
+def test_component_creation_gate_controller_drains_spell_index_gate() -> None:
     """
     Purpose:
-        Verify controller lineage drain waits for active ticket release.
+        Verify controller spell-index drain waits for active ticket release.
     """
     controller = CreationGateController()
-    gate = controller.create_spell_lineage_gate("l1")
+    gate = controller.create_spell_index_gate("i1")
     registered = threading.Event()
     release = threading.Event()
     drained = threading.Event()
@@ -96,7 +96,7 @@ def test_component_creation_gate_controller_drains_spell_lineage_gate() -> None:
         gate.unregister_ticket()
 
     def _drainer() -> None:
-        controller.close_and_wait_until_spell_lineage_free("l1", timeout=2.0, interval=0.01)
+        controller.close_and_wait_until_spell_index_free("i1", timeout=2.0, interval=0.01)
         drained.set()
 
     holder = threading.Thread(target=_holder, daemon=True)
@@ -133,13 +133,13 @@ def test_component_creation_gate_controller_disable_enable_conduit_waiters_resum
     waiter.join(timeout=1.0)
 
 
-def test_component_creation_gate_controller_disable_enable_lineage_waiters_resume() -> None:
+def test_component_creation_gate_controller_disable_enable_index_waiters_resume() -> None:
     """
     Purpose:
-        Verify disable/enable broadcasts release blocked lineage waiters.
+        Verify disable/enable broadcasts release blocked spell-index waiters.
     """
     controller = CreationGateController()
-    gate = controller.create_spell_lineage_gate("l1")
+    gate = controller.create_spell_index_gate("i1")
     gate.close()
     released = threading.Event()
 
@@ -150,7 +150,7 @@ def test_component_creation_gate_controller_disable_enable_lineage_waiters_resum
     waiter = threading.Thread(target=_waiter, daemon=True)
     waiter.start()
     assert released.wait(timeout=0.05) is False
-    controller.enable_all_spell_lineage_gates()
+    controller.enable_all_spell_index_gates()
     assert released.wait(timeout=1.0) is True
     waiter.join(timeout=1.0)
 
@@ -158,17 +158,17 @@ def test_component_creation_gate_controller_disable_enable_lineage_waiters_resum
 def test_component_creation_gate_controller_disable_enable_all_both_registries() -> None:
     """
     Purpose:
-        Verify global disable/enable touches conduit and lineage gates.
+        Verify global disable/enable touches conduit and spell-index gates.
     """
     controller = CreationGateController()
     conduit_gate = controller.create_conduit_gate("c1")
-    lineage_gate = controller.create_spell_lineage_gate("l1")
+    index_gate = controller.create_spell_index_gate("i1")
     controller.disable_all()
     assert conduit_gate.enabled is False
-    assert lineage_gate.enabled is False
+    assert index_gate.enabled is False
     controller.enable_all()
     assert conduit_gate.enabled is True
-    assert lineage_gate.enabled is True
+    assert index_gate.enabled is True
 
 
 def test_component_creation_gate_controller_total_counts_live_tickets() -> None:
@@ -178,16 +178,16 @@ def test_component_creation_gate_controller_total_counts_live_tickets() -> None:
     """
     controller = CreationGateController()
     conduit_gate = controller.create_conduit_gate("c1")
-    lineage_gate = controller.create_spell_lineage_gate("l1")
+    index_gate = controller.create_spell_index_gate("i1")
     conduit_gate.register_ticket()
-    lineage_gate.register_ticket()
+    index_gate.register_ticket()
     try:
         assert controller.count_active_threads_total() == 2
         assert controller.count_active_threads_for_conduit("c1") == 1
-        assert controller.count_active_threads_for_spell_lineage("l1") == 1
+        assert controller.count_active_threads_for_spell_index("i1") == 1
     finally:
         conduit_gate.unregister_ticket()
-        lineage_gate.unregister_ticket()
+        index_gate.unregister_ticket()
 
 
 def test_component_conduit_meld_with_creation_gate_blocks_until_enabled() -> None:

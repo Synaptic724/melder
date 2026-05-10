@@ -25,7 +25,7 @@ class CreationContextFactory(Cleanable):
         - Spell owns context lifecycle through `spell._creation_context`.
         - Get-or-build path is lock-free and race-tolerant.
         - Factory delegates all shape rules to `CreationContextBuilder`.
-        - In dynamic mode, factory resolves/creates one spell-lineage gate
+        - In dynamic mode, factory resolves/creates one spell-index gate
           and injects it into built contexts for runtime execution admission.
     """
 
@@ -33,7 +33,7 @@ class CreationContextFactory(Cleanable):
         "_builder",
         "_dynamic_environment",
         "_creation_gate_controller",
-        "_created_spell_lineage_ids",
+        "_created_spell_index_ids",
     ]
 
     def __init__(
@@ -53,7 +53,7 @@ class CreationContextFactory(Cleanable):
                 True when the owning conduit runs in dynamic mode. Propagated
                 to built CreationContext instances.
             creation_gate_controller:
-                Frame-owned CreationGateController used for spell-lineage gate
+                Frame-owned CreationGateController used for spell-index gate
                 registration and ticket governance during dynamic runtime.
 
         Raises:
@@ -70,7 +70,7 @@ class CreationContextFactory(Cleanable):
         self._creation_gate_controller: CreationGateController = (
             creation_gate_controller
         )
-        self._created_spell_lineage_ids: Set[str] = set()
+        self._created_spell_index_ids: Set[str] = set()
 
     def cleanup(self) -> None:
         """
@@ -92,8 +92,8 @@ class CreationContextFactory(Cleanable):
         self._builder = None
         self._dynamic_environment = None
         self._creation_gate_controller = None
-        self._created_spell_lineage_ids.clear()
-        self._created_spell_lineage_ids = None
+        self._created_spell_index_ids.clear()
+        self._created_spell_index_ids = None
 
     @staticmethod
     def _cleanup_creation_context(
@@ -114,44 +114,44 @@ class CreationContextFactory(Cleanable):
             pass
 
 
-    def _lineage_id_for_spell(self, spell: ISpell) -> str:
+    def _index_id_for_spell(self, spell: ISpell) -> str:
         """
-        Return the stable lineage id used for gate-controller operations.
+        Return the stable spell-index id used for gate-controller operations.
 
-        The factory keys creation-gate registration by lineage rather than by
-        current spell version so all contexts for the same evolving spell line
-        share one admission gate.
+        The factory keys creation-gate registration by SpellIndex identity
+        rather than by current spell version so all contexts for the same
+        spell-index slot share one admission gate.
 
         Args:
-            spell: Spell whose lineage id should be resolved.
+            spell: Spell whose spell-index id should be resolved.
 
         Returns:
-            str: Stable spell-lineage id derived from `SpellIndex.id`.
+            str: Stable spell-index id derived from `SpellIndex.id`.
         """
         return spell.spell_index.id
 
-    def _resolve_or_create_spell_lineage_gate(self, lineage_id: str) -> CreationGate:
+    def _resolve_or_create_spell_index_gate(self, index_id: str) -> CreationGate:
         """
-        Return the shared creation gate for one spell lineage.
+        Return the shared creation gate for one spell index.
 
         The factory does not perform admission or ticket management itself; it
-        only ensures that every context built for the same lineage sees the
-        same `CreationGate` object. If the controller has not seen the lineage
-        yet, the gate is created and the lineage id is recorded as factory-
+        only ensures that every context built for the same index sees the
+        same `CreationGate` object. If the controller has not seen the index
+        yet, the gate is created and the index id is recorded as factory-
         created bookkeeping.
 
         Args:
-            lineage_id: Stable spell-lineage key.
+            index_id: Stable spell-index key.
 
         Returns:
-            CreationGate: Shared gate object for this lineage.
+            CreationGate: Shared gate object for this spell index.
         """
         creation_gate_controller = self._creation_gate_controller
-        gate = creation_gate_controller.get_spell_lineage_gate(lineage_id)
+        gate = creation_gate_controller.get_spell_index_gate(index_id)
         if gate is not None:
             return gate
-        gate = creation_gate_controller.create_spell_lineage_gate(lineage_id)
-        self._created_spell_lineage_ids.add(lineage_id)
+        gate = creation_gate_controller.create_spell_index_gate(index_id)
+        self._created_spell_index_ids.add(index_id)
         return gate
 
     def _resolve_runtime_gate_for_spell(
@@ -165,7 +165,7 @@ class CreationContextFactory(Cleanable):
         This is the mode switch between automatic and dynamic runtime paths:
 
         - automatic mode builds contexts with no gate metadata
-        - dynamic mode injects the shared lineage gate plus its stable id so the
+        - dynamic mode injects the shared spell-index gate plus its stable id so the
           context can enforce runtime admission checks during execute paths
 
         Args:
@@ -173,13 +173,13 @@ class CreationContextFactory(Cleanable):
 
         Returns:
             tuple[Optional[CreationGate], Optional[str]]:
-                `(gate, lineage_id)` for context runtime admission checks.
+                `(gate, index_id)` for context runtime admission checks.
         """
         if not self._dynamic_environment:
             return None, None
-        lineage_id = self._lineage_id_for_spell(spell)
-        gate = self._resolve_or_create_spell_lineage_gate(lineage_id)
-        return gate, lineage_id
+        index_id = self._index_id_for_spell(spell)
+        gate = self._resolve_or_create_spell_index_gate(index_id)
+        return gate, index_id
 
     def build_for_spell(self, spell: ISpell) -> CreationContext:
         """
@@ -192,12 +192,12 @@ class CreationContextFactory(Cleanable):
         Returns:
             CreationContext: New spell-shaped context ready for runtime use.
         """
-        creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
+        creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
         return self._builder.build(
             spell,
             dynamic_environment=self._dynamic_environment,
             creation_gate=creation_gate,
-            creation_gate_lineage_id=lineage_id,
+            creation_gate_index_id=index_id,
         )
 
     def build_and_bind_for_spell(self, spell: ISpell) -> CreationContext:
@@ -211,12 +211,12 @@ class CreationContextFactory(Cleanable):
             - Opens the spell-owned CounterSwitch latch after publish.
             - Does not use spell lock primitives.
         """
-        creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
+        creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
         built_creation_context = self._builder.build(
             spell,
             dynamic_environment=self._dynamic_environment,
             creation_gate=creation_gate,
-            creation_gate_lineage_id=lineage_id,
+            creation_gate_index_id=index_id,
         )
         previous_creation_context = spell._creation_context
         spell._creation_context = built_creation_context
@@ -248,12 +248,12 @@ class CreationContextFactory(Cleanable):
             return spell._creation_context
         switch_state = creation_context_switch.selector()
         if switch_state == 1:
-            creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
+            creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
             built_creation_context = self._builder.build(
                 spell,
                 dynamic_environment=self._dynamic_environment,
                 creation_gate=creation_gate,
-                creation_gate_lineage_id=lineage_id,
+                creation_gate_index_id=index_id,
             )
             spell._creation_context = built_creation_context
             creation_context_switch.advance(1)

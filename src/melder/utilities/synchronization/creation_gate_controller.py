@@ -15,7 +15,7 @@ class CreationGateController(Cleanable):
         - Conduit-scope gates indexed by
           root_conduit_id -> conduit_id -> CreationGate and a reverse
           conduit_id -> root_conduit_id map.
-        - Spell-lineage gates keyed by lineage_id.
+        - Spell-index gates keyed by index_id.
 
         This split allows the same gate primitive to be reused for both
         conduit-level meld entry control and spell-level creation-context
@@ -39,18 +39,18 @@ class CreationGateController(Cleanable):
         "_conduit_creation_gates",
         "_conduit_creation_gates_by_root",
         "_conduit_root_by_conduit",
-        "_spell_lineage_creation_gates",
+        "_spell_index_creation_gates",
     )
 
     def __init__(self) -> None:
         """
         Public API
 
-        Initialize empty conduit and spell-lineage gate registries.
+        Initialize empty conduit and spell-index gate registries.
 
         Purpose:
             Construct a frame-level gate registry that can govern both
-            conduit lineage entry control and spell-lineage creation control.
+            conduit lineage entry control and spell-index creation control.
 
         Contract:
             - All registries start empty.
@@ -75,7 +75,7 @@ class CreationGateController(Cleanable):
         self._conduit_creation_gates: Dict[str, CreationGate] = {}
         self._conduit_creation_gates_by_root: Dict[str, Dict[str, CreationGate]] = {}
         self._conduit_root_by_conduit: Dict[str, str] = {}
-        self._spell_lineage_creation_gates: Dict[str, CreationGate] = {}
+        self._spell_index_creation_gates: Dict[str, CreationGate] = {}
 
     def cleanup(self) -> None:
         """
@@ -108,18 +108,18 @@ class CreationGateController(Cleanable):
             if self._cleaned:
                 return
             gates = set(self._conduit_creation_gates.values())
-            gates.update(self._spell_lineage_creation_gates.values())
+            gates.update(self._spell_index_creation_gates.values())
             for gate in gates:
                 gate.cleanup()
             self._conduit_creation_gates.clear()
             self._conduit_creation_gates_by_root.clear()
             self._conduit_root_by_conduit.clear()
-            self._spell_lineage_creation_gates.clear()
+            self._spell_index_creation_gates.clear()
             self._cleaned = True
             self._conduit_creation_gates = None
             self._conduit_creation_gates_by_root = None
             self._conduit_root_by_conduit = None
-            self._spell_lineage_creation_gates = None
+            self._spell_index_creation_gates = None
 
         self._lock = None
 
@@ -678,24 +678,24 @@ class CreationGateController(Cleanable):
             gate.close()
 
     # ------------------------------------------------------------------
-    # Spell-lineage registry
+    # Spell-index registry
     # ------------------------------------------------------------------
-    def create_spell_lineage_gate(self, lineage_id: str) -> CreationGate:
+    def create_spell_index_gate(self, index_id: str) -> CreationGate:
         """
         Public API
 
-        Create and register a spell-lineage CreationGate.
+        Create and register a spell-index CreationGate.
 
         Purpose:
-            Allocate a new gate for one spell lineage id.
+            Allocate a new gate for one spell index id.
 
         Contract:
-            - lineage_id must be unique in lineage registry.
+            - index_id must be unique in spell-index registry.
             - Returns the same gate instance stored in registry.
 
         Args:
-            lineage_id:
-                Spell lineage key.
+            index_id:
+                Spell index key.
 
         Returns:
             CreationGate:
@@ -705,31 +705,31 @@ class CreationGateController(Cleanable):
             RuntimeError:
                 If called after cleanup().
             ValueError:
-                If lineage_id is empty or already registered.
+                If index_id is empty or already registered.
         """
         self.check_cleaned()
-        self._require_key(lineage_id, "lineage_id")
-        self._ensure_absent(self._spell_lineage_creation_gates, lineage_id, "lineage_id")
+        self._require_key(index_id, "index_id")
+        self._ensure_absent(self._spell_index_creation_gates, index_id, "index_id")
         gate = CreationGate()
-        self._spell_lineage_creation_gates[lineage_id] = gate
+        self._spell_index_creation_gates[index_id] = gate
         return gate
 
-    def register_spell_lineage_gate(self, lineage_id: str, gate: CreationGate) -> None:
+    def register_spell_index_gate(self, index_id: str, gate: CreationGate) -> None:
         """
         Public API
 
-        Register an existing spell-lineage CreationGate.
+        Register an existing spell-index CreationGate.
 
         Purpose:
-            Attach an externally created gate instance to lineage registry.
+            Attach an externally created gate instance to spell-index registry.
 
         Contract:
-            - lineage_id must be unique in lineage registry.
+            - index_id must be unique in spell-index registry.
             - Provided gate is stored by reference.
 
         Args:
-            lineage_id:
-                Spell lineage key.
+            index_id:
+                Spell index key.
             gate:
                 Existing gate instance to register.
 
@@ -740,27 +740,27 @@ class CreationGateController(Cleanable):
             RuntimeError:
                 If called after cleanup().
             ValueError:
-                If lineage_id is empty or already registered.
+                If index_id is empty or already registered.
         """
         self.check_cleaned()
-        self._require_key(lineage_id, "lineage_id")
-        self._ensure_absent(self._spell_lineage_creation_gates, lineage_id, "lineage_id")
-        self._spell_lineage_creation_gates[lineage_id] = gate
+        self._require_key(index_id, "index_id")
+        self._ensure_absent(self._spell_index_creation_gates, index_id, "index_id")
+        self._spell_index_creation_gates[index_id] = gate
 
-    def unregister_spell_lineage_gate(self, lineage_id: str) -> None:
+    def unregister_spell_index_gate(self, index_id: str) -> None:
         """
         Public API
 
-        Remove spell-lineage registration by key.
+        Remove spell-index registration by key.
 
         Contract:
-            - Missing lineage id is a no-op.
+            - Missing index id is a no-op.
             - Does not cleanup the gate instance; it only detaches registry
               ownership.
 
         Args:
-            lineage_id:
-                Spell lineage key to unregister.
+            index_id:
+                Spell index key to unregister.
 
         Returns:
             None.
@@ -770,17 +770,17 @@ class CreationGateController(Cleanable):
                 If called after cleanup().
         """
         self.check_cleaned()
-        self._spell_lineage_creation_gates.pop(lineage_id, None)
+        self._spell_index_creation_gates.pop(index_id, None)
 
-    def get_spell_lineage_gate(self, lineage_id: str) -> Optional[CreationGate]:
+    def get_spell_index_gate(self, index_id: str) -> Optional[CreationGate]:
         """
         Public API
 
-        Return spell-lineage gate by key, or None when missing.
+        Return spell-index gate by key, or None when missing.
 
         Args:
-            lineage_id:
-                Spell lineage key.
+            index_id:
+                Spell index key.
 
         Returns:
             Optional[CreationGate]:
@@ -791,38 +791,38 @@ class CreationGateController(Cleanable):
                 If called after cleanup().
         """
         self.check_cleaned()
-        return self._spell_lineage_creation_gates.get(lineage_id)
+        return self._spell_index_creation_gates.get(index_id)
 
-    def count_active_threads_for_spell_lineage(self, lineage_id: str) -> int:
+    def count_active_threads_for_spell_index(self, index_id: str) -> int:
         """
         Public API
 
-        Return active ticket count for one spell-lineage gate.
+        Return active ticket count for one spell-index gate.
 
         Args:
-            lineage_id:
-                Spell lineage key.
+            index_id:
+                Spell index key.
 
         Returns:
             int:
-                Active ticket count for the lineage gate, or 0 when missing.
+                Active ticket count for the spell-index gate, or 0 when missing.
 
         Raises:
             RuntimeError:
                 If called after cleanup().
         """
         self.check_cleaned()
-        return self._count_active(self._spell_lineage_creation_gates, lineage_id)
+        return self._count_active(self._spell_index_creation_gates, index_id)
 
-    def count_active_threads_spell_lineages(self) -> int:
+    def count_active_threads_spell_indexes(self) -> int:
         """
         Public API
 
-        Return active ticket count summed across all spell-lineage gates.
+        Return active ticket count summed across all spell-index gates.
 
         Returns:
             int:
-                Sum of active tickets across spell-lineage registry.
+                Sum of active tickets across spell-index registry.
 
         Raises:
             RuntimeError:
@@ -830,26 +830,26 @@ class CreationGateController(Cleanable):
         """
         self.check_cleaned()
         return sum(
-            gate.active_ticket_count() for gate in self._spell_lineage_creation_gates.values()
+            gate.active_ticket_count() for gate in self._spell_index_creation_gates.values()
         )
 
-    def close_and_wait_until_spell_lineage_free(
+    def close_and_wait_until_spell_index_free(
         self,
-        lineage_id: str,
+        index_id: str,
         timeout: float = 30.0,
         interval: float = 0.1,
     ) -> None:
         """
         Public API
 
-        Terminally close and drain one spell-lineage gate.
+        Terminally close and drain one spell-index gate.
 
         Purpose:
-            Seal one lineage gate and wait for in-flight ticket drain.
+            Seal one spell-index gate and wait for in-flight ticket drain.
 
         Args:
-            lineage_id:
-                Spell lineage key.
+            index_id:
+                Spell index key.
             timeout:
                 Maximum seconds to wait for ticket drain.
             interval:
@@ -865,20 +865,20 @@ class CreationGateController(Cleanable):
         """
         self.check_cleaned()
         self._close_and_wait(
-            self._spell_lineage_creation_gates,
-            lineage_id,
+            self._spell_index_creation_gates,
+            index_id,
             timeout,
             interval,
         )
 
-    def enable_all_spell_lineage_gates(self) -> None:
+    def enable_all_spell_index_gates(self) -> None:
         """
         Public API
 
-        Open every spell-lineage gate.
+        Open every spell-index gate.
 
         Contract:
-            - Invokes open() on each registered lineage gate.
+            - Invokes open() on each registered spell-index gate.
             - No-op when registry is empty.
 
         Returns:
@@ -889,17 +889,17 @@ class CreationGateController(Cleanable):
                 If called after cleanup().
         """
         self.check_cleaned()
-        for gate in self._spell_lineage_creation_gates.values():
+        for gate in self._spell_index_creation_gates.values():
             gate.open()
 
-    def disable_all_spell_lineage_gates(self) -> None:
+    def disable_all_spell_index_gates(self) -> None:
         """
         Public API
 
-        Close every spell-lineage gate.
+        Close every spell-index gate.
 
         Contract:
-            - Invokes close() on each registered lineage gate.
+            - Invokes close() on each registered spell-index gate.
             - No-op when registry is empty.
 
         Returns:
@@ -910,7 +910,7 @@ class CreationGateController(Cleanable):
                 If called after cleanup().
         """
         self.check_cleaned()
-        for gate in self._spell_lineage_creation_gates.values():
+        for gate in self._spell_index_creation_gates.values():
             gate.close()
 
     # ------------------------------------------------------------------
@@ -924,27 +924,27 @@ class CreationGateController(Cleanable):
 
         Returns:
             int:
-                Sum of active conduit and spell-lineage tickets.
+                Sum of active conduit and spell-index tickets.
 
         Raises:
             RuntimeError:
                 If called after cleanup().
 
         Notes:
-            This is an aggregate sum across the current conduit and spell-lineage
+            This is an aggregate sum across the current conduit and spell-index
             registries, not a lock-held global snapshot of all gate activity.
         """
         self.check_cleaned()
         return (
             self.count_active_threads_conduits()
-            + self.count_active_threads_spell_lineages()
+            + self.count_active_threads_spell_indexes()
         )
 
     def enable_all(self) -> None:
         """
         Public API
 
-        Open every registered gate (conduit + spell lineage).
+        Open every registered gate (conduit + spell index).
 
         Contract:
             - Delegates to conduit and lineage enable-all operations.
@@ -959,13 +959,13 @@ class CreationGateController(Cleanable):
         """
         self.check_cleaned()
         self.enable_all_conduit_gates()
-        self.enable_all_spell_lineage_gates()
+        self.enable_all_spell_index_gates()
 
     def disable_all(self) -> None:
         """
         Public API
 
-        Close every registered gate (conduit + spell lineage).
+        Close every registered gate (conduit + spell index).
 
         Contract:
             - Delegates to conduit and lineage disable-all operations.
@@ -980,5 +980,5 @@ class CreationGateController(Cleanable):
         """
         self.check_cleaned()
         self.disable_all_conduit_gates()
-        self.disable_all_spell_lineage_gates()
+        self.disable_all_spell_index_gates()
 

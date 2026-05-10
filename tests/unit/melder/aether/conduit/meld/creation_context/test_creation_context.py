@@ -113,7 +113,7 @@ def _make_override_harness(
     context._spell_id = "s1"
     context._dynamic_environment = False
     context._creation_gate = None
-    context._creation_gate_lineage_id = None
+    context._creation_gate_index_id = None
     context._owner_creations = object()
     context._execute_hooks_overrides_compiled = None
     context._execute_hooks_no_overrides_compiled = None
@@ -214,7 +214,7 @@ def test_creation_context_init_requires_creation_gate_in_dynamic_mode() -> None:
             spell=_make_spell(),
             dynamic_environment=True,
             creation_gate=None,
-            creation_gate_lineage_id="lineage-1",
+            creation_gate_index_id="index-1",
             resolve_route_key=CreationContext.ROUTE_MANY,
         )
 
@@ -269,7 +269,7 @@ def test_creation_context_init_selects_mutation_route_and_seeds_baseline_executo
         spell=_make_spell(),
         dynamic_environment=False,
         creation_gate=None,
-        creation_gate_lineage_id=None,
+        creation_gate_index_id=None,
         resolve_route_key=CreationContext.ROUTE_MANY,
         fast_transient_no_overrides_enabled=True,
         no_overrides_executor=lambda *args, **kwargs: "direct-no-overrides",
@@ -334,7 +334,7 @@ def test_creation_context_init_non_mutation_route_uses_no_override_compilers(
         spell=_make_spell(),
         dynamic_environment=False,
         creation_gate=None,
-        creation_gate_lineage_id=None,
+        creation_gate_index_id=None,
         resolve_route_key=CreationContext.ROUTE_MANY,
         fast_transient_no_overrides_enabled=True,
         no_overrides_executor=lambda *args, **kwargs: "direct-no-overrides",
@@ -381,7 +381,7 @@ def test_execute_dynamic_mode_waits_registers_and_unregisters_gate() -> None:
     gate = _Gate(enabled=False, closed=False)
     context._dynamic_environment = True
     context._creation_gate = gate
-    context._creation_gate_lineage_id = "lineage-1"
+    context._creation_gate_index_id = "index-1"
     context._execute_hooks_no_overrides_compiled = lambda caller_creations: ("dynamic-no-overrides", False)
 
     result = context.execute(caller_creations="caller", overrides=None)
@@ -405,7 +405,7 @@ def test_execute_dynamic_mode_raises_when_gate_is_closed() -> None:
     gate = _Gate(enabled=True, closed=True)
     context._dynamic_environment = True
     context._creation_gate = gate
-    context._creation_gate_lineage_id = "lineage-closed"
+    context._creation_gate_index_id = "index-closed"
 
     with pytest.raises(RuntimeError, match="CreationGate is closed"):
         context.execute(caller_creations="caller", overrides=None)
@@ -427,7 +427,7 @@ def test_execute_no_hooks_dynamic_mode_routes_overrides_and_balances_gate() -> N
     gate = _Gate(enabled=True, closed=False)
     context._dynamic_environment = True
     context._creation_gate = gate
-    context._creation_gate_lineage_id = "lineage-no-hooks"
+    context._creation_gate_index_id = "index-no-hooks"
     context._execute_no_hooks_overrides_compiled = lambda caller_creations, overrides: "dynamic-no-hooks-overrides"
 
     result = context.execute_no_hooks(caller_creations="caller", overrides={"x": 1})
@@ -467,7 +467,7 @@ def test_execute_no_hooks_dynamic_mode_waits_registers_and_returns_no_overrides(
     gate = _Gate(enabled=False, closed=False)
     context._dynamic_environment = True
     context._creation_gate = gate
-    context._creation_gate_lineage_id = "lineage-no-hooks-wait"
+    context._creation_gate_index_id = "index-no-hooks-wait"
     context._execute_no_hooks_no_overrides_compiled = lambda caller_creations: "dynamic-no-hooks-no-overrides"
 
     result = context.execute_no_hooks(caller_creations="caller", overrides=None)
@@ -497,7 +497,7 @@ def test_execute_no_hooks_dynamic_mode_raises_when_gate_closes_after_wait() -> N
     gate = _ClosingGate(enabled=False, closed=False)
     context._dynamic_environment = True
     context._creation_gate = gate
-    context._creation_gate_lineage_id = "lineage-no-hooks-close"
+    context._creation_gate_index_id = "index-no-hooks-close"
 
     with pytest.raises(RuntimeError, match="CreationGate is closed"):
         context.execute_no_hooks(caller_creations="caller", overrides=None)
