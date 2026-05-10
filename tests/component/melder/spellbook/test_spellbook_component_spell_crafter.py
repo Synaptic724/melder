@@ -253,7 +253,7 @@ class _SpellSystemStatesStub:
     Contract:
         - update_dependencies records dependencies by SpellIndex.
         - register_local_topology records topology by SpellIndex.
-        - unregister_lineage records SpellIndex removals during cleanup.
+        - unregister_index records SpellIndex removals during cleanup.
     """
     def __init__(self) -> None:
         """
@@ -270,7 +270,7 @@ class _SpellSystemStatesStub:
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
 
-    def register_lineage(self, spell_index: object, spell: object) -> None:
+    def register_index(self, spell_index: object, spell: object) -> None:
         """
         Purpose:
             Record a lineage registration call from Spellbook.bind.
@@ -325,7 +325,7 @@ class _SpellSystemStatesStub:
         """
         return self.topology_by_spell.get(spell_index)
 
-    def unregister_lineage(self, spell_index: object) -> None:
+    def unregister_index(self, spell_index: object) -> None:
         """
         Purpose:
             Record a lineage unregistration from Spellbook.cleanup.
@@ -1543,3 +1543,4 @@ def test_component_spell_crafter_run_phase_system_validation_local_scopes_result
         assert outside_crafter.validation_result_phase6 is None
     finally:
         spellbook.cleanup()
+

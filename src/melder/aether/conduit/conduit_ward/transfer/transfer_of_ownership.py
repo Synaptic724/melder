@@ -531,7 +531,7 @@ class TransferOfOwnership:
         spell_states = self.source_conduit._spellbook._spell_system_states
         state = spell_states.get_by_index_id(spell_index.id)
         if state is None:
-            spell_states.register_lineage(spell_index, self.spell)
+            spell_states.register_index(spell_index, self.spell)
             state = spell_states.get_by_index_id(spell_index.id)
         if state is None:
             raise RuntimeError("Failed to register lineage for transfer disable.")
@@ -656,8 +656,8 @@ class TransferOfOwnership:
         if src_states is None:
             raise RuntimeError("Source Spellbook has no SpellSystemStates.")
         if tgt_states is not None and tgt_states is not src_states:
-            tgt_states.unregister_lineage(spell_obj.spell_index)
-        src_states.register_lineage(spell_obj.spell_index, spell_obj)
+            tgt_states.unregister_index(spell_obj.spell_index)
+        src_states.register_index(spell_obj.spell_index, spell_obj)
 
     def _get_resolution_required_for_spellbook(self, spellbook: Any) -> bool:
         """
@@ -1109,7 +1109,7 @@ class TransferOfOwnership:
                     src_book._spells.pop(spell_obj.spell_index, None)
                     src_book._lookup_spells.pop(spell_obj._key, None)
                     src_book._unregister_owned_spell_id(spell_id, spell_obj)
-                    src_states.unregister_lineage(spell_obj.spell_index)
+                    src_states.unregister_index(spell_obj.spell_index)
                     self._register_rollback(
                         lambda: self._rollback_spellbook_move(spell_obj, src_book, tgt_book)
                     )
@@ -1134,7 +1134,7 @@ class TransferOfOwnership:
                     spell_obj._spellbook = tgt_book
                     spell_obj._spell_system_states = tgt_book._spell_system_states
                     spell_obj._crafter = None
-                tgt_states.register_lineage(
+                tgt_states.register_index(
                     spell_index=spell_obj.spell_index,
                     spell=spell_obj,
                 )
@@ -1556,3 +1556,4 @@ class TransferOfOwnership:
                 )
         except Exception:
             pass
+

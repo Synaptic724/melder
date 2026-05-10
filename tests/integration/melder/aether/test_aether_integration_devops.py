@@ -320,13 +320,13 @@ def test_aether_spell_system_states_local_topology_round_trip() -> None:
         book.cleanup()
 
 
-def test_aether_spell_system_states_consume_dirty_lineages() -> None:
+def test_aether_spell_system_states_consume_dirty_indexes() -> None:
     """
     Purpose:
         Validate dirty lineage consumption clears the queue.
     Contract:
         - Newly registered lineages appear in the dirty list.
-        - consume_dirty_lineages clears the dirty set.
+        - consume_dirty_indexes clears the dirty set.
     Returns:
         None.
     Raises:
@@ -351,9 +351,9 @@ def test_aether_spell_system_states_consume_dirty_lineages() -> None:
     states = aether._get_spell_system_states(frame_name)
     expected_ids = {idx.id for idx in book._spells.keys()}
 
-    dirty = set(states.consume_dirty_lineages())
+    dirty = set(states.consume_dirty_indexes())
     assert expected_ids.issubset(dirty)
-    assert states.consume_dirty_lineages() == []
+    assert states.consume_dirty_indexes() == []
 
     book.cleanup()
 
@@ -432,3 +432,4 @@ def test_aether_devops_revalidate_pipeline_from_states() -> None:
             blueprint.cleanup()
         topology.cleanup()
         book.cleanup()
+

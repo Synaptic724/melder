@@ -13,7 +13,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a SpellIndex lineage in SpellSystemStates for component tests.
@@ -27,7 +27,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index instance.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -75,7 +75,7 @@ def test_component_spell_system_states_registers_local_topology_round_trip() -> 
     states = frame.spell_system_states
     root_id = "root-topology-roundtrip"
     dep_id = "dep-topology-roundtrip"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     topology = _build_topology(root_id, dep_id)
     states.register_local_topology(root_index, topology)
     try:
@@ -101,7 +101,7 @@ def test_component_spell_system_states_registers_local_topology_replacement() ->
     root_id = "root-topology-replace"
     dep_a = "dep-topology-a"
     dep_b = "dep-topology-b"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     topology_a = _build_topology(root_id, dep_a)
     topology_b = _build_topology(root_id, dep_b)
     states.register_local_topology(root_index, topology_a)
@@ -129,7 +129,7 @@ def test_component_spell_system_states_cleanup_cleans_local_topologies() -> None
     states = frame.spell_system_states
     root_id = "root-topology-cleanup"
     dep_id = "dep-topology-cleanup"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     topology = _build_topology(root_id, dep_id)
     states.register_local_topology(root_index, topology)
     frame.cleanup()
@@ -137,7 +137,7 @@ def test_component_spell_system_states_cleanup_cleans_local_topologies() -> None
     assert states.cleaned is True
 
 
-def test_component_spell_system_states_register_lineage_sets_change_reason() -> None:
+def test_component_spell_system_states_register_index_sets_change_reason() -> None:
     """
     Purpose:
         Validate registering a lineage sets validity and change reason.
@@ -151,7 +151,7 @@ def test_component_spell_system_states_register_lineage_sets_change_reason() -> 
     """
     frame = AethericFrame(Aether(), "component-states-register-flags")
     states = frame.spell_system_states
-    index = _register_lineage(states, "spell-register-flags")
+    index = _register_index(states, "spell-register-flags")
     try:
         state = states.get_by_index_id(index.id)
         assert state is not None
@@ -178,8 +178,8 @@ def test_component_spell_system_states_dependency_change_sets_reason() -> None:
     """
     frame = AethericFrame(Aether(), "component-states-dependency-reason")
     states = frame.spell_system_states
-    root_index = _register_lineage(states, "root-dep-reason")
-    dep_index = _register_lineage(states, "dep-dep-reason")
+    root_index = _register_index(states, "root-dep-reason")
+    dep_index = _register_index(states, "dep-dep-reason")
     states.update_dependencies(root_index, [dep_index.current])
     try:
         state = states.get_by_index_id(root_index.id)
@@ -196,7 +196,7 @@ def test_component_spell_system_states_rebind_updates_spell_id_index() -> None:
     Purpose:
         Validate re-registering a lineage refreshes the spell-id index.
     Contract:
-        - register_lineage updates the current spell id on the existing state.
+        - register_index updates the current spell id on the existing state.
         - get_by_spell_id resolves the updated current id.
         - change_reason remains register_or_rebind after rebind.
     Returns:
@@ -206,14 +206,14 @@ def test_component_spell_system_states_rebind_updates_spell_id_index() -> None:
     """
     frame = AethericFrame(Aether(), "component-states-rebind")
     states = frame.spell_system_states
-    index = _register_lineage(states, "spell-rebind-v1")
+    index = _register_index(states, "spell-rebind-v1")
     try:
         state = states.get_by_index_id(index.id)
         assert state is not None
         assert state.current_spell_id == "spell-rebind-v1"
 
         index.update("spell-rebind-v2")
-        states.register_lineage(index, object())
+        states.register_index(index, object())
 
         state = states.get_by_index_id(index.id)
         assert state is not None
@@ -239,10 +239,10 @@ def test_component_spell_system_states_impact_closure_preserves_root_state() -> 
     """
     frame = AethericFrame(Aether(), "component-states-impact-closure")
     states = frame.spell_system_states
-    root_index = _register_lineage(states, "root-impact-closure")
-    dep_index = _register_lineage(states, "dep-impact-closure")
+    root_index = _register_index(states, "root-impact-closure")
+    dep_index = _register_index(states, "dep-impact-closure")
     states.update_dependencies(dep_index, [root_index.current])
-    states.consume_dirty_lineages()
+    states.consume_dirty_indexes()
     states.mark_structural_change(root_index)
 
     impacted = states.compute_impact_closure([root_index.id])
@@ -258,7 +258,7 @@ def test_component_spell_system_states_impact_closure_preserves_root_state() -> 
         assert dep_state.transitively_dirty is True
         assert dep_state.change_reason is SpellStateChangeReason.dependency_changed
         assert SpellState.impacted_by_dependency in dep_state.flags
-        dirty = set(states.consume_dirty_lineages())
+        dirty = set(states.consume_dirty_indexes())
         assert dirty == {root_index.id, dep_index.id}
     finally:
         frame.cleanup()
@@ -278,11 +278,11 @@ def test_component_spell_system_states_mark_structural_change_marks_dirty() -> N
     """
     frame = AethericFrame(Aether(), "component-states-structural-dirty")
     states = frame.spell_system_states
-    index = _register_lineage(states, "spell-structural-dirty")
-    states.consume_dirty_lineages()
+    index = _register_index(states, "spell-structural-dirty")
+    states.consume_dirty_indexes()
     try:
         states.mark_structural_change(index)
-        dirty = set(states.consume_dirty_lineages())
+        dirty = set(states.consume_dirty_indexes())
         assert index.id in dirty
         state = states.get_by_index_id(index.id)
         assert state is not None
@@ -308,9 +308,9 @@ def test_component_spell_system_states_update_dependencies_tracks_reverse_edges(
     """
     frame = AethericFrame(Aether(), "component-states-reverse-edges")
     states = frame.spell_system_states
-    root_index = _register_lineage(states, "root-reverse-edges")
-    dep_index = _register_lineage(states, "dep-reverse-edges")
-    states.consume_dirty_lineages()
+    root_index = _register_index(states, "root-reverse-edges")
+    dep_index = _register_index(states, "dep-reverse-edges")
+    states.consume_dirty_indexes()
     try:
         states.update_dependencies(root_index, [dep_index.current])
         root_state = states.get_by_index_id(root_index.id)
@@ -330,13 +330,13 @@ def test_component_spell_system_states_update_dependencies_tracks_reverse_edges(
         frame.cleanup()
 
 
-def test_component_spell_system_states_consume_dirty_lineages_clears() -> None:
+def test_component_spell_system_states_consume_dirty_indexes_clears() -> None:
     """
     Purpose:
-        Validate consume_dirty_lineages clears the dirty queue.
+        Validate consume_dirty_indexes clears the dirty queue.
     Contract:
         - Registered lineages appear in the dirty list.
-        - consume_dirty_lineages clears the queue after read.
+        - consume_dirty_indexes clears the queue after read.
     Returns:
         None.
     Raises:
@@ -344,13 +344,13 @@ def test_component_spell_system_states_consume_dirty_lineages_clears() -> None:
     """
     frame = AethericFrame(Aether(), "component-states-consume-dirty")
     states = frame.spell_system_states
-    index_a = _register_lineage(states, "spell-dirty-a")
-    index_b = _register_lineage(states, "spell-dirty-b")
+    index_a = _register_index(states, "spell-dirty-a")
+    index_b = _register_index(states, "spell-dirty-b")
     try:
-        dirty = set(states.consume_dirty_lineages())
+        dirty = set(states.consume_dirty_indexes())
         assert index_a.id in dirty
         assert index_b.id in dirty
-        assert states.consume_dirty_lineages() == []
+        assert states.consume_dirty_indexes() == []
     finally:
         frame.cleanup()
 
@@ -368,7 +368,7 @@ def test_component_spell_system_states_cleanup_cleans_spell_system_state() -> No
     """
     frame = AethericFrame(Aether(), "component-states-cleanup-state")
     states = frame.spell_system_states
-    index = _register_lineage(states, "spell-state-cleanup")
+    index = _register_index(states, "spell-state-cleanup")
     state = states.get_by_index_id(index.id)
     assert state is not None
     frame.cleanup()
@@ -389,8 +389,8 @@ def test_component_spell_system_states_clear_dirty_resets_state_flags() -> None:
     """
     frame = AethericFrame(Aether(), "component-states-clear-dirty")
     states = frame.spell_system_states
-    root_index = _register_lineage(states, "root-clear-dirty")
-    dep_index = _register_lineage(states, "dep-clear-dirty")
+    root_index = _register_index(states, "root-clear-dirty")
+    dep_index = _register_index(states, "dep-clear-dirty")
     states.update_dependencies(root_index, [dep_index.current])
     try:
         state = states.get_by_index_id(root_index.id)
@@ -420,12 +420,12 @@ def test_component_spell_system_states_rebind_preserves_old_spell_id_mapping() -
     """
     frame = AethericFrame(Aether(), "component-states-rebind-old-id")
     states = frame.spell_system_states
-    index = _register_lineage(states, "spell-rebind-old-id")
+    index = _register_index(states, "spell-rebind-old-id")
     try:
         state = states.get_by_index_id(index.id)
         assert state is not None
         index.update("spell-rebind-new-id")
-        states.register_lineage(index, object())
+        states.register_index(index, object())
         assert states.get_by_spell_id("spell-rebind-old-id") is state
         assert states.get_by_spell_id("spell-rebind-new-id") is state
     finally:
@@ -447,15 +447,15 @@ def test_component_spell_system_states_update_dependencies_with_unknown_dep() ->
     """
     frame = AethericFrame(Aether(), "component-states-unknown-dep")
     states = frame.spell_system_states
-    root_index = _register_lineage(states, "root-unknown-dep")
-    states.consume_dirty_lineages()
+    root_index = _register_index(states, "root-unknown-dep")
+    states.consume_dirty_indexes()
     try:
         states.update_dependencies(root_index, ["missing-dep-id"])
         root_state = states.get_by_index_id(root_index.id)
         assert root_state is not None
         assert "missing-dep-id" in root_state.direct_dependencies
         assert states.get_by_spell_id("missing-dep-id") is None
-        dirty = set(states.consume_dirty_lineages())
+        dirty = set(states.consume_dirty_indexes())
         assert root_index.id in dirty
     finally:
         frame.cleanup()
@@ -475,11 +475,11 @@ def test_component_spell_system_states_impact_closure_handles_cycle() -> None:
     """
     frame = AethericFrame(Aether(), "component-states-cycle")
     states = frame.spell_system_states
-    index_a = _register_lineage(states, "spell-cycle-a")
-    index_b = _register_lineage(states, "spell-cycle-b")
+    index_a = _register_index(states, "spell-cycle-a")
+    index_b = _register_index(states, "spell-cycle-b")
     states.update_dependencies(index_a, [index_b.current])
     states.update_dependencies(index_b, [index_a.current])
-    states.consume_dirty_lineages()
+    states.consume_dirty_indexes()
     states.mark_structural_change(index_a)
     impacted = states.compute_impact_closure([index_a.id])
     try:
@@ -510,7 +510,7 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
     """
     frame = AethericFrame(Aether(), "component-states-flag-persist")
     states = frame.spell_system_states
-    index = _register_lineage(states, "spell-flag-persist")
+    index = _register_index(states, "spell-flag-persist")
     try:
         state = states.get_by_index_id(index.id)
         assert state is not None
@@ -535,4 +535,5 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
         assert SpellState.impacted_by_dependency not in flags
     finally:
         frame.cleanup()
+
 

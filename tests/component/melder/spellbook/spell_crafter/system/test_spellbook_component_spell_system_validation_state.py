@@ -22,7 +22,7 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -36,7 +36,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -165,7 +165,7 @@ def test_component_validation_state_from_system_validation_tracks_diagnostics() 
     frame = AethericFrame(Aether(), "component-validation-state-diagnostics")
     states = frame._spell_system_states
     root_id = "root-validation-state"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     error = SystemDiagnostic(code="err", message="error")
@@ -200,4 +200,5 @@ def test_component_validation_state_from_system_validation_tracks_diagnostics() 
         assert warning.cleaned is True
     finally:
         frame.cleanup()
+
 

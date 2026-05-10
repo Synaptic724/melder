@@ -160,7 +160,7 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
         assert state.direct_dependencies == {service_a_id}
         spell_states = spellbook._spell_system_states
         assert spell_states is not None
-        spell_states.consume_dirty_lineages()
+        spell_states.consume_dirty_indexes()
 
         with spellbook.binding_transaction():
             service_b_id = spellbook.bind(
@@ -171,7 +171,7 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
                 binding_name="b",
             )
 
-        dirty_lineages = spell_states.consume_dirty_lineages()
+        dirty_lineages = spell_states.consume_dirty_indexes()
         assert consumer_spell.spell_index.id in dirty_lineages
 
         assert set(consumer_spell.dependencies) == {service_a_id}
@@ -318,7 +318,7 @@ def test_post_conjure_bind_collection_dependencies_isolated_by_spellbook() -> No
         consumer_b_spell.run_phase_symbolic_graph()
         consumer_b_spell.run_phase_local_frame()
 
-        spellbook_a._spell_system_states.consume_dirty_lineages()
+        spellbook_a._spell_system_states.consume_dirty_indexes()
 
         with spellbook_a.binding_transaction():
             spellbook_a.bind(
@@ -329,7 +329,7 @@ def test_post_conjure_bind_collection_dependencies_isolated_by_spellbook() -> No
                 binding_name="a2",
             )
 
-        dirty_lineages = spellbook_a._spell_system_states.consume_dirty_lineages()
+        dirty_lineages = spellbook_a._spell_system_states.consume_dirty_indexes()
         assert consumer_a_spell.spell_index.id in dirty_lineages
         assert consumer_b_spell.spell_index.id not in dirty_lineages
     finally:
@@ -439,7 +439,7 @@ def test_post_conjure_contract_addition_marks_local_collection_consumers() -> No
         borrower_consumer_spell.run_phase_symbolic_graph()
         borrower_consumer_spell.run_phase_local_frame()
 
-        borrower_book._spell_system_states.consume_dirty_lineages()
+        borrower_book._spell_system_states.consume_dirty_indexes()
 
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -449,9 +449,10 @@ def test_post_conjure_contract_addition_marks_local_collection_consumers() -> No
                 permissions="create",
             )
 
-        dirty_lineages = borrower_book._spell_system_states.consume_dirty_lineages()
+        dirty_lineages = borrower_book._spell_system_states.consume_dirty_indexes()
         assert borrower_consumer_spell.spell_index.id in dirty_lineages
         assert owner_consumer_spell.spell_index.id not in dirty_lineages
     finally:
         borrower.cleanup()
         owner.cleanup()
+

@@ -23,7 +23,7 @@ from melder.spellbook.spell_crafter.system.validation.root_viability_strategy im
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -37,7 +37,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -78,8 +78,8 @@ def test_component_system_validation_reports_missing_index_node() -> None:
     dep_id = "dep-missing-index"
     frame = AethericFrame(Aether(), "component-graph-consistency-missing-index")
     states = frame._spell_system_states
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -135,8 +135,8 @@ def test_component_system_validation_reports_edge_mismatch_index() -> None:
     dep_id = "dep-edge-mismatch"
     frame = AethericFrame(Aether(), "component-graph-consistency-edge-mismatch")
     states = frame._spell_system_states
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -200,8 +200,8 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
     dep_id = "dep-unscoped"
     frame = AethericFrame(Aether(), "component-graph-consistency-unscoped")
     states = frame._spell_system_states
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -254,4 +254,5 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
         assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+
 

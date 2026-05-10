@@ -22,7 +22,7 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -36,7 +36,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -83,8 +83,8 @@ def test_component_index_builds_nodes_from_states() -> None:
     states = frame._spell_system_states
     root_id = "root-index-lineage"
     dep_id = "dep-index-lineage"
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -118,8 +118,8 @@ def test_component_index_marks_root_flags_from_snapshot() -> None:
     states = frame._spell_system_states
     root_id = "root-index"
     dep_id = "dep-index"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -150,7 +150,7 @@ def test_component_index_validation_state_nodes_mapping_is_live() -> None:
     frame = AethericFrame(Aether(), "component-index-live-mapping")
     states = frame._spell_system_states
     root_id = "root-live"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -190,7 +190,7 @@ def test_component_index_preserves_node_metadata() -> None:
     frame = AethericFrame(Aether(), "component-index-metadata")
     states = frame._spell_system_states
     root_id = "root-meta"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -240,8 +240,8 @@ def test_component_index_rebuild_reflects_dependency_changes() -> None:
     states = frame._spell_system_states
     root_id = "root-rebuild"
     dep_id = "dep-rebuild"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
     states.update_dependencies(root_index, [])
 
@@ -274,7 +274,7 @@ def test_component_index_handles_spells_without_dependencies() -> None:
     frame = AethericFrame(Aether(), "component-index-no-deps")
     states = frame._spell_system_states
     root_id = "root-nodeps"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -304,8 +304,8 @@ def test_component_index_validation_with_graph_consistency_strategy() -> None:
     states = frame._spell_system_states
     root_id = "root-graph-consistency"
     dep_id = "dep-graph-consistency"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -351,8 +351,8 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
     states = frame._spell_system_states
     root_a = "root-multi-a"
     root_b = "root-multi-b"
-    root_a_index = _register_lineage(states, root_a)
-    root_b_index = _register_lineage(states, root_b)
+    root_a_index = _register_index(states, root_a)
+    root_b_index = _register_index(states, root_b)
     states.update_dependencies(root_a_index, [])
     states.update_dependencies(root_b_index, [])
 
@@ -381,4 +381,5 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
         assert conduit_state.get_spell_validity(root_b) is SpellValidity.valid
     finally:
         frame.cleanup()
+
 

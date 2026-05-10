@@ -115,7 +115,7 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_lineage(self, spell_index: SpellIndex, spell: Any) -> None:
+    def register_index(self, spell_index: SpellIndex, spell: Any) -> None:
         """
         Register a lineage state for the provided spell index.
 
@@ -130,7 +130,7 @@ class FakeSpellStatesSystem:
             change_reason=SpellStateChangeReason.new_lineage,
         )
 
-    def unregister_lineage(self, spell_index: SpellIndex) -> Optional[FakeState]:
+    def unregister_index(self, spell_index: SpellIndex) -> Optional[FakeState]:
         """
         Remove a lineage state when unregistering.
 
@@ -4197,12 +4197,12 @@ def test_unshare_everywhere_no_contracts_no_error() -> None:
     assert env.source_ward.remove_calls == []
 
 
-def test_mark_lineage_disabled_swallows_register_lineage_error() -> None:
+def test_mark_lineage_disabled_swallows_register_index_error() -> None:
     """
-    Verify mark_lineage_disabled propagates register_lineage errors.
+    Verify mark_lineage_disabled propagates register_index errors.
 
     Contract:
-    - Exceptions from register_lineage are raised.
+    - Exceptions from register_index are raised.
     """
     env = build_environment()
 
@@ -4218,7 +4218,7 @@ def test_mark_lineage_disabled_swallows_register_lineage_error() -> None:
         """
         raise RuntimeError("boom")
 
-    env.states_system.register_lineage = failing_register
+    env.states_system.register_index = failing_register
     transfer = TransferOfOwnership(
         source_conduit=env.source,
         target_conduit=env.target,
@@ -4245,3 +4245,4 @@ def test_repoint_borrowers_ignores_cluster_borrower() -> None:
     transfer._repoint_borrowers([{"type": "cluster"}], env.spell)
     assert env.target_ward.link_calls == []
     assert env.target_ward.add_calls == []
+

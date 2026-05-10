@@ -79,8 +79,8 @@ class _SpellSystemStatesStub:
     Purpose:
         Capture lineage registrations for Spellbook bind operations.
     Contract:
-        - register_lineage records SpellIndex and Spell instances in order.
-        - unregister_lineage records SpellIndex removals during cleanup.
+        - register_index records SpellIndex and Spell instances in order.
+        - unregister_index records SpellIndex removals during cleanup.
     """
     def __init__(self) -> None:
         """
@@ -95,7 +95,7 @@ class _SpellSystemStatesStub:
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
 
-    def register_lineage(self, spell_index: object, spell: object) -> None:
+    def register_index(self, spell_index: object, spell: object) -> None:
         """
         Purpose:
             Record a lineage registration from Spellbook.bind.
@@ -109,7 +109,7 @@ class _SpellSystemStatesStub:
         """
         self.registered_lineages.append((spell_index, spell))
 
-    def unregister_lineage(self, spell_index: object) -> None:
+    def unregister_index(self, spell_index: object) -> None:
         """
         Purpose:
             Record a lineage unregistration from Spellbook.cleanup.
@@ -169,7 +169,7 @@ def test_component_spellbook_bind_registers_lineage_and_states() -> None:
     Purpose:
         Validate Spellbook.bind registers lineage and uses spell system states.
     Contract:
-        - register_lineage receives the SpellIndex and bound Spell instance.
+        - register_index receives the SpellIndex and bound Spell instance.
         - The bound Spell references the injected SpellSystemStates instance.
     Returns:
         None.
@@ -807,11 +807,11 @@ def test_component_spellbook_cleanup_unregisters_lineages() -> None:
     Purpose:
         Validate Spellbook.cleanup unregisters local lineages from SpellSystemStates.
     Contract:
-        - unregister_lineage is called once per local SpellIndex.
+        - unregister_index is called once per local SpellIndex.
     Returns:
         None.
     Raises:
-        AssertionError: If unregister_lineage is missing or incomplete.
+        AssertionError: If unregister_index is missing or incomplete.
     """
     spellbook = _make_spellbook()
     states = _SpellSystemStatesStub()
@@ -1253,3 +1253,4 @@ def test_component_spellbook_remove_contracted_spell_raises_when_missing_version
             spellbook._remove_contracted_spell("missing-version", conduit_id)
     finally:
         spellbook.cleanup()
+

@@ -1,4 +1,4 @@
-﻿from contextlib import contextmanager
+from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection
 import threading
@@ -386,7 +386,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         for spell_index, spell in self._spells.items():
             try:
-                self._spell_system_states.unregister_lineage(spell_index)
+                self._spell_system_states.unregister_index(spell_index)
             except Exception as e:
                 self._logger.error(
                     f"Error unregistering spell lineage '{spell_index}': {e}",
@@ -2773,7 +2773,7 @@ class Spellbook(Cleanable, ISpellbook):
                             exc_info=True,
                         )
 
-            self._spell_system_states.register_lineage(
+            self._spell_system_states.register_index(
                 spell_index=new_spell.spell_index,
                 spell=new_spell,
             )
@@ -3646,6 +3646,7 @@ class Spellbook(Cleanable, ISpellbook):
 
     #endregion
 #endregion
+
 
 
 

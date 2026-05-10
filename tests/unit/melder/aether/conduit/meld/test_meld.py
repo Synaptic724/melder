@@ -136,7 +136,7 @@ class _SpellSystemStatesStub:
         """
         return self._resolution_state
 
-    def unregister_lineage(self, spell_index: object) -> None:
+    def unregister_index(self, spell_index: object) -> None:
         """
         Purpose:
             Provide a cleanup-compatible no-op for Spellbook cleanup.
@@ -2467,3 +2467,4 @@ def test_describe_live_creation_status_reports_spellspace_gap_without_scope() ->
         "active_spellspace_id": None,
         "creation_count": 0,
     }
+

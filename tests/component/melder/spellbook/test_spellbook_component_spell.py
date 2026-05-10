@@ -265,7 +265,7 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
         states = spellbook._spell_system_states
-        states.consume_dirty_lineages()
+        states.consume_dirty_indexes()
 
         spell.apply_mutation_override({"mode": "overlay"})
         state = spell.system_state
@@ -273,12 +273,13 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
         assert state.change_reason is SpellStateChangeReason.mutation_contract_set
         assert spell.has_mutation_override is True
         assert spell.mutation_override == {"mode": "overlay"}
-        assert states.consume_dirty_lineages() == [spell.spell_index.id]
+        assert states.consume_dirty_indexes() == [spell.spell_index.id]
 
         spell.clear_mutation_override()
         assert state.change_reason is SpellStateChangeReason.mutation_contract_cleared
         assert spell.has_mutation_override is False
         assert spell.mutation_override == {}
-        assert states.consume_dirty_lineages() == [spell.spell_index.id]
+        assert states.consume_dirty_indexes() == [spell.spell_index.id]
     finally:
         spellbook.cleanup()
+

@@ -23,7 +23,7 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 CONDUIT_ID = "conduit-1"
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a SpellIndex lineage in SpellSystemStates for component tests.
@@ -37,7 +37,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index instance.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -87,8 +87,8 @@ def test_component_change_control_rebuild_component_of_maps_root_and_dependency(
     states = frame.spell_system_states
     root_id = "root-ccm"
     dep_id = "dep-ccm"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     manager = ChangeControlManager(states)
@@ -122,9 +122,9 @@ def test_component_change_control_includes_deep_dependencies() -> None:
     root_id = "root-deep"
     mid_id = "mid-deep"
     leaf_id = "leaf-deep"
-    root_index = _register_lineage(states, root_id)
-    mid_index = _register_lineage(states, mid_id)
-    _register_lineage(states, leaf_id)
+    root_index = _register_index(states, root_id)
+    mid_index = _register_index(states, mid_id)
+    _register_index(states, leaf_id)
     states.update_dependencies(root_index, [mid_id])
     states.update_dependencies(mid_index, [leaf_id])
 
@@ -160,8 +160,8 @@ def test_component_change_control_revalidate_dirty_roots_uses_blueprint_roots() 
     states = frame.spell_system_states
     root_id = "root-revalidate"
     dep_id = "dep-revalidate"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     manager = ChangeControlManager(states)
@@ -219,7 +219,7 @@ def test_component_change_control_pending_change_round_trip() -> None:
     states = frame.spell_system_states
     manager = frame.dev_ops_manager.change_control_manager
     index = SpellIndex("spell-pending-change")
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     try:
         manager.register_pending_change(
             index,
@@ -758,8 +758,8 @@ def test_component_change_control_revalidate_dirty_roots_failure_keeps_dirty() -
     states = frame.spell_system_states
     root_id = "root-ccm-failure"
     dep_id = "dep-ccm-failure"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     manager = frame.dev_ops_manager.change_control_manager
@@ -803,8 +803,8 @@ def test_component_change_control_revalidate_dirty_roots_no_revalidator_noop() -
     states = frame.spell_system_states
     root_id = "root-ccm-no-hook"
     dep_id = "dep-ccm-no-hook"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     manager = frame.dev_ops_manager.change_control_manager
@@ -841,8 +841,8 @@ def test_component_change_control_revalidate_dirty_roots_respects_cancellation()
     states = frame.spell_system_states
     root_id = "root-ccm-cancel"
     dep_id = "dep-ccm-cancel"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     manager = frame.dev_ops_manager.change_control_manager
@@ -873,4 +873,5 @@ def test_component_change_control_revalidate_dirty_roots_respects_cancellation()
         signal.cleanup()
         _cleanup_blueprints(blueprints)
         frame.cleanup()
+
 

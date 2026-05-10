@@ -16,7 +16,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -30,7 +30,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -49,7 +49,7 @@ def test_component_snapshot_tracks_unregistered_dependency_ids() -> None:
     frame = AethericFrame(Aether(), "component-snapshot-ghost")
     states = frame._spell_system_states
     root_id = "root-ghost-snap"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, ["ghost-id"])
 
     try:
@@ -77,7 +77,7 @@ def test_component_snapshot_cleanup_does_not_clean_topologies() -> None:
     frame = AethericFrame(Aether(), "component-snapshot-cleanup")
     states = frame._spell_system_states
     root_id = "root-topology"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     topology = SpellLocalTopology(
@@ -120,8 +120,8 @@ def test_component_snapshot_roots_change_after_dependency_removed() -> None:
     states = frame._spell_system_states
     root_id = "root-shift"
     dep_id = "dep-shift"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
     states.update_dependencies(root_index, [])
 
@@ -147,8 +147,8 @@ def test_component_snapshot_collects_multiple_topologies() -> None:
     states = frame._spell_system_states
     root_id = "root-topo"
     dep_id = "dep-topo"
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     root_topology = SpellLocalTopology(spell_id=root_id, sockets=())
@@ -181,9 +181,9 @@ def test_component_snapshot_helpers_resolve_shared_dependency() -> None:
     root_a = "root-share-a"
     root_b = "root-share-b"
     shared = "dep-share"
-    root_a_index = _register_lineage(states, root_a)
-    root_b_index = _register_lineage(states, root_b)
-    _register_lineage(states, shared)
+    root_a_index = _register_index(states, root_a)
+    root_b_index = _register_index(states, root_b)
+    _register_index(states, shared)
     states.update_dependencies(root_a_index, [shared])
     states.update_dependencies(root_b_index, [shared])
 
@@ -212,8 +212,8 @@ def test_component_snapshot_mutation_drives_blueprint_builder() -> None:
     root_id = "root-mutation"
     dep_id = "dep-mutation"
     extra_id = "dep-extra"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -250,8 +250,8 @@ def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
     states = frame._spell_system_states
     root_id = "root-topology-blueprint"
     dep_id = "dep-topology-blueprint"
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     topology = SpellLocalTopology(
@@ -281,4 +281,5 @@ def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
         assert blueprint.dag_index.get_by_exact_path(("dep",)) != []
     finally:
         frame.cleanup()
+
 

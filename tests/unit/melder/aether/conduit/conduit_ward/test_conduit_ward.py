@@ -2227,9 +2227,9 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
     index_none = SpellIndex("spell-c")
-    states.register_lineage(index_a, spell_a)
-    states.register_lineage(index_b, spell_b)
-    states.register_lineage(index_none, spell_none)
+    states.register_index(index_a, spell_a)
+    states.register_index(index_b, spell_b)
+    states.register_index(index_none, spell_none)
 
     keys_a = ward._get_spell_contract_keys(spell_a)
     keys_b = ward._get_spell_contract_keys(spell_b)
@@ -2332,8 +2332,8 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
     spellbook._spell_system_states = states
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
-    states.register_lineage(index_a, spell_a)
-    states.register_lineage(index_b, spell_b)
+    states.register_index(index_a, spell_a)
+    states.register_index(index_b, spell_b)
 
     keys_a = ward._get_spell_contract_keys(spell_a)
     keys_b = ward._get_spell_contract_keys(spell_b)
@@ -2479,3 +2479,4 @@ def test_invalidate_contract_consumers_skips_missing_state_entries(ward) -> None
     ward._invalidate_contract_consumers()
 
     creations.extract_spell_creations.assert_not_called()
+

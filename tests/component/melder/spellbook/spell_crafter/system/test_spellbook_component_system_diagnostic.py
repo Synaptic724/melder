@@ -18,7 +18,7 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -32,7 +32,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -102,7 +102,7 @@ def test_component_system_diagnostic_warning_roundtrip() -> None:
     frame = AethericFrame(Aether(), "component-system-diagnostic-warning")
     states = frame._spell_system_states
     root_id = "root-diagnostic-warning"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     warning = SystemDiagnostic(
@@ -162,7 +162,7 @@ def test_component_system_diagnostic_error_gates_states() -> None:
     frame = AethericFrame(Aether(), "component-system-diagnostic-error")
     states = frame._spell_system_states
     root_id = "root-diagnostic-error"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     error = SystemDiagnostic(
@@ -203,4 +203,5 @@ def test_component_system_diagnostic_error_gates_states() -> None:
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+
 

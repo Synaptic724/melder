@@ -68,7 +68,7 @@ def _make_frame(name: str = "frame-system-validation-component") -> AethericFram
     return AethericFrame(Aether(), name)
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -82,7 +82,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -192,8 +192,8 @@ def _setup_states_with_dependency(
     """
     frame = _make_frame()
     states = frame._spell_system_states
-    root_index = _register_lineage(states, root_id)
-    dependency_index = _register_lineage(states, dependency_id)
+    root_index = _register_index(states, root_id)
+    dependency_index = _register_index(states, dependency_id)
     states.update_dependencies(root_index, [dependency_id])
     return frame, states, root_index, dependency_index
 
@@ -663,7 +663,7 @@ def test_component_system_validation_warning_does_not_gate_states() -> None:
     root_id = "root-warning-only"
     frame = _make_frame("component-system-warning-only")
     states = frame._spell_system_states
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -720,7 +720,7 @@ def test_component_system_validation_skips_missing_state() -> None:
     frame = _make_frame("component-system-missing-state")
     states = frame._spell_system_states
     root_id = "root-missing-state"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -777,8 +777,8 @@ def test_component_system_validation_only_updates_index_nodes() -> None:
     states = frame._spell_system_states
     root_id = "root-index-only"
     extra_id = "extra-index-only"
-    root_index = _register_lineage(states, root_id)
-    extra_index = _register_lineage(states, extra_id)
+    root_index = _register_index(states, root_id)
+    extra_index = _register_index(states, extra_id)
     states.update_dependencies(root_index, [])
     states.update_dependencies(extra_index, [])
 
@@ -828,7 +828,7 @@ def test_component_system_validation_cancels_before_strategies() -> None:
     frame = _make_frame("component-system-cancel")
     states = frame._spell_system_states
     root_id = "root-cancel"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     cancel_signal = CancellationEventSignal()
@@ -880,7 +880,7 @@ def test_component_system_validation_collects_multiple_errors() -> None:
     root_id = "root-multi-error"
     frame = _make_frame("component-system-multi-error")
     states = frame._spell_system_states
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -929,4 +929,5 @@ def test_component_system_validation_collects_multiple_errors() -> None:
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+
 

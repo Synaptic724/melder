@@ -89,9 +89,9 @@ class FakeSpellStatesSystem:
     Minimal spell state system used by transfer tests.
 
     Contract:
-    - register_lineage creates a FakeState when needed.
+    - register_index creates a FakeState when needed.
     - mark_structural_change records requests.
-    - unregister_lineage and conduit-dirty calls are supported.
+    - unregister_index and conduit-dirty calls are supported.
     """
 
     def __init__(self) -> None:
@@ -114,7 +114,7 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_lineage(self, spell_index: SpellIndex, spell: Any) -> None:
+    def register_index(self, spell_index: SpellIndex, spell: Any) -> None:
         """
         Register a lineage state for the given spell index.
 
@@ -129,7 +129,7 @@ class FakeSpellStatesSystem:
             change_reason=SpellStateChangeReason.new_lineage,
         )
 
-    def unregister_lineage(self, spell_index: SpellIndex) -> Optional[FakeState]:
+    def unregister_index(self, spell_index: SpellIndex) -> Optional[FakeState]:
         """
         Remove a lineage state when unregistering.
 
@@ -1388,3 +1388,4 @@ def test_execute_invalidate_false_sets_gated_validity() -> None:
     assert current_state is not None
     assert current_state.validity == SpellValidity.gated
     assert current_state.change_reason == SpellStateChangeReason.structure_changed
+

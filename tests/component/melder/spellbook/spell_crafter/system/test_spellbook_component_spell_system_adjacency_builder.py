@@ -13,7 +13,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -27,7 +27,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -49,9 +49,9 @@ def test_component_adjacency_builder_tracks_reverse_edges_and_topologies() -> No
     root_id = "root-adj"
     dep_a = "dep-a"
     dep_b = "dep-b"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_a)
-    _register_lineage(states, dep_b)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_a)
+    _register_index(states, dep_b)
     states.update_dependencies(root_index, [dep_a, dep_b])
 
     topology = SpellLocalTopology(
@@ -109,9 +109,9 @@ def test_component_adjacency_builder_reflects_dependency_updates() -> None:
     root_id = "root-update"
     dep_a = "dep-a-update"
     dep_b = "dep-b-update"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_a)
-    _register_lineage(states, dep_b)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_a)
+    _register_index(states, dep_b)
 
     states.update_dependencies(root_index, [dep_a, dep_b])
     states.update_dependencies(root_index, [dep_b])
@@ -165,7 +165,7 @@ def test_component_adjacency_builder_ignores_unregistered_dependency_ids() -> No
     frame = AethericFrame(Aether(), "component-adjacency-ghost")
     states = frame._spell_system_states
     root_id = "root-ghost"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, ["ghost-id"])
     try:
         snapshot = SpellSystemAdjacencyBuilder.build(states)
@@ -193,9 +193,9 @@ def test_component_adjacency_builder_tracks_multiple_dependents() -> None:
     root_a = "root-parent-a"
     root_b = "root-parent-b"
     shared = "dep-shared"
-    root_a_index = _register_lineage(states, root_a)
-    root_b_index = _register_lineage(states, root_b)
-    _register_lineage(states, shared)
+    root_a_index = _register_index(states, root_a)
+    root_b_index = _register_index(states, root_b)
+    _register_index(states, shared)
 
     states.update_dependencies(root_a_index, [shared])
     states.update_dependencies(root_b_index, [shared])
@@ -225,8 +225,8 @@ def test_component_adjacency_builder_collects_dependency_topologies() -> None:
     states = frame._spell_system_states
     root_id = "root-no-topology"
     dep_id = "dep-with-topology"
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     dep_topology = SpellLocalTopology(spell_id=dep_id, sockets=())
@@ -255,7 +255,7 @@ def test_component_adjacency_builder_ignores_unregistered_topology_entry() -> No
     frame = AethericFrame(Aether(), "component-adjacency-ghost-topology")
     states = frame._spell_system_states
     root_id = "root-ghost-topo"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     ghost_index = SpellIndex("ghost-topo")
@@ -267,4 +267,5 @@ def test_component_adjacency_builder_ignores_unregistered_topology_entry() -> No
         assert snapshot.topologies == {root_id: None}
     finally:
         frame.cleanup()
+
 

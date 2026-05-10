@@ -12,10 +12,10 @@ class ISpellSystemStates(ICleanable, Protocol):
 
     This is the "control tower" object:
 
-    - Owns the index: lineage id -> SpellSystemState.
+    - Owns the index: spell-index id -> SpellSystemState.
     - Keeps an auxiliary index: current_spell_id -> SpellSystemState
       (for convenience when you only know the version id).
-    - Tracks which lineages are currently dirty so higher-level
+    - Tracks which spell indexes are currently dirty so higher-level
       DevOps/validation flows can decide what to re-run.
     - Tracks collection dependency indices per Spellbook for targeted
       list[Frame] revalidation.
@@ -27,31 +27,31 @@ class ISpellSystemStates(ICleanable, Protocol):
     - One instance per AethericFrame (owned by the frame and initialized
       alongside Spellbook / DevOpsManager).
     - Spellbook / SpellCrafter call:
-        * `register_lineage(...)` when a new SpellIndex+Spell appears
+        * `register_index(...)` when a new SpellIndex+Spell appears
         * `update_dependencies(...)` after Phase 3/4 attaches dependency ids
-        * `mark_structural_change(...)` when a lineage is rebound/mutated
+        * `mark_structural_change(...)` when a spell index is rebound/mutated
     - DevOps / validation flows call:
-        * `consume_dirty_lineages(...)` to get a worklist
-        * `compute_impact_closure(...)` to fan out impacted lineages
+        * `consume_dirty_indexes(...)` to get a worklist
+        * `compute_impact_closure(...)` to fan out impacted spell indexes
     """
     _lock: threading.RLock
     _frame: Optional["AethericFrame"]
     _states_by_index_id: Optional[Dict[str, 'SpellSystemState']]
     _states_by_spell_id: Optional[Dict[str, 'SpellSystemState']]
-    _dirty_lineages: Optional['Set[str]']
+    _dirty_indexes: Optional['Set[str]']
     _resolution_by_conduit_id: Optional[Dict[str, 'IConduitResolutionState']]
-    _lineage_owner_spellbook_id: Optional[Dict[str, str]]
-    _collection_frames_by_lineage: Optional[Dict[str, 'Set[str]']]
+    _index_owner_spellbook_id: Optional[Dict[str, str]]
+    _collection_frames_by_index: Optional[Dict[str, 'Set[str]']]
     _collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, 'Set[str]']]]
-    _contract_keys_by_lineage: Optional[Dict[str, 'Set[Tuple[str, str]]']]
+    _contract_keys_by_index: Optional[Dict[str, 'Set[Tuple[str, str]]']]
     _contract_dependents_by_spellbook: Optional[Dict[str, Dict[Tuple[str, str], 'Set[str]']]]
 
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_lineage(self, spell_index: ISpellIndex, spell: ISpell) -> 'SpellSystemState':
+    def register_index(self, spell_index: ISpellIndex, spell: ISpell) -> 'SpellSystemState':
         """
-        Ensure a SpellSystemState exists for the given lineage and return it.
+        Ensure a SpellSystemState exists for the given spell index and return it.
 
         Behaviour:
         - If this is the first time we see `spell_index.id`, create a new
@@ -60,7 +60,7 @@ class ISpellSystemStates(ICleanable, Protocol):
           `spell_index.current`.
         - Update the spell-id index so `get_by_spell_id(...)` can resolve
           by current version id.
-        - Mark the lineage as structurally gated with reason
+        - Mark the spell index as structurally gated with reason
           SpellStateChangeReason.register_or_rebind and add it to the dirty set.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
@@ -74,7 +74,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         Public API
 
-        Enable meld execution for this conduit lineage.
+        Enable meld execution for this conduit spell-index family.
 
         Contract:
             - Delegates to the local CreationGate for this conduit.
@@ -86,7 +86,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         Public API
 
-        Disable meld execution for this conduit lineage.
+        Disable meld execution for this conduit spell-index family.
 
         Contract:
             - Delegates to the local CreationGate for this conduit.
@@ -94,15 +94,15 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    def unregister_lineage(self, spell_index: ISpellIndex) -> Optional['SpellSystemState']:
+    def unregister_index(self, spell_index: ISpellIndex) -> Optional['SpellSystemState']:
         """
-        Remove a lineage from this registry and return the removed state if present.
+        Remove a spell index from this registry and return the removed state if present.
 
         Behaviour:
-        - Drop the lineage from the lineage index and current spell-id index.
+        - Drop the spell index from the index and current spell-id index.
         - Remove dirty markers and local topology for the current spell id.
         - Remove collection/contract indices for the owning spellbook.
-        - Detach this lineage from reverse-dependency edges.
+        - Detach this spell index from reverse-dependency edges.
         - Cleanup the removed SpellSystemState instance.
 
         Returns:
@@ -112,10 +112,10 @@ class ISpellSystemStates(ICleanable, Protocol):
 
     def get_by_index_id(self, index_id: str) -> Optional['SpellSystemState']:
         """
-        Lookup a SpellSystemState by lineage id.
+        Lookup a SpellSystemState by spell-index id.
 
         Returns:
-            - The SpellSystemState instance for this lineage, or
+            - The SpellSystemState instance for this spell index, or
             - None if no state has been registered for the id.
         """
         ...
@@ -125,7 +125,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         Lookup a SpellSystemState by current spell version id.
 
         This is a convenience when the caller only knows the version id
-        (e.g., SpellIndex.current) and wants to find the associated lineage state.
+        (e.g., SpellIndex.current) and wants to find the associated spell-index state.
 
         Returns:
             - The SpellSystemState instance, or
@@ -138,19 +138,19 @@ class ISpellSystemStates(ICleanable, Protocol):
     # ------------------------------------------------------------------
     def update_dependencies(self, spell_index: ISpellIndex, dependency_ids: Iterable[str]) -> None:
         """
-        Attach direct dependency ids for this lineage and update reverse edges.
+        Attach direct dependency ids for this spell index and update reverse edges.
 
-        `dependency_ids` are generic "spell ids" (version or lineage ids) - the
+        `dependency_ids` are generic "spell ids" (version or index ids) - the
         SpellCrafter / Spellbook decides the semantics. This manager only
         cares about connectivity, not the type system.
 
         Behaviour:
-        - Ensure there is a SpellSystemState for this lineage (create if missing).
+        - Ensure there is a SpellSystemState for this spell index (create if missing).
         - Compute the delta between previous and new dependency sets.
         - Remove reverse edges from dependencies we no longer reference.
         - Add reverse edges for new dependencies.
-        - Mark this lineage as gated due to dependency change and add to
-          `_dirty_lineages`.
+        - Mark this spell index as gated due to dependency change and add to
+          `_dirty_indexes`.
         """
         ...
 
@@ -186,7 +186,7 @@ class ISpellSystemStates(ICleanable, Protocol):
             reason: 'SpellStateChangeReason' = SpellStateChangeReason.structure_changed,
     ) -> None:
         """
-        Mark a lineage as structurally changed.
+        Mark a spell index as structurally changed.
 
         Typical triggers:
         - New version promoted.
@@ -194,9 +194,9 @@ class ISpellSystemStates(ICleanable, Protocol):
         - Binding semantics changed in a way that affects structure.
 
         Behaviour:
-        - Ensure a SpellSystemState exists for the lineage.
+        - Ensure a SpellSystemState exists for the spell index.
         - Mark it structurally gated with the provided reason.
-        - Add the lineage id to `_dirty_lineages`.
+        - Add the spell-index id to `_dirty_indexes`.
         """
         ...
 
@@ -243,7 +243,7 @@ class ISpellSystemStates(ICleanable, Protocol):
 
         Returns:
             Optional[SpellLocalTopology]:
-                Local topology for the lineage when registered; otherwise None.
+                Local topology for the spell index when registered; otherwise None.
         """
         ...
 
@@ -263,37 +263,37 @@ class ISpellSystemStates(ICleanable, Protocol):
 
     def compute_impact_closure(self, root_index_ids: Iterable[str]) -> Set[str]:
         """
-        Compute the transitive closure of impacted lineages downstream.
+        Compute the transitive closure of impacted spell indexes downstream.
 
         Args:
             root_index_ids:
-                Lineage ids that changed *directly* (e.g., newly promoted or
+                Spell-index ids that changed *directly* (e.g., newly promoted or
                 structurally altered).
 
         Behaviour:
         - Walk reverse edges (`direct_dependents`) starting from each root.
-        - Build a set of all lineages that depend (directly or indirectly)
+        - Build a set of all spell indexes that depend (directly or indirectly)
           on any of the roots.
-        - For each impacted lineage:
+        - For each impacted spell index:
             * Roots: left in their existing structural state (already gated).
             * Non-roots: marked as transitively dirty (impacted_by_dependency).
-        - All impacted lineages are added to `_dirty_lineages`.
+        - All impacted spell indexes are added to `_dirty_indexes`.
 
         Returns:
-            A set of all impacted lineage ids, including the roots.
+            A set of all impacted spell-index ids, including the roots.
         """
         ...
 
-    def consume_dirty_lineages(self) -> List[str]:
+    def consume_dirty_indexes(self) -> List[str]:
         """
-        Pop and return the current set of dirty lineage ids.
+        Pop and return the current set of dirty spell-index ids.
 
         This is the handoff to whatever runs the revalidation / mutation
         governor (your "Phase 5-7" or equivalent).
 
         Behaviour:
-        - Snapshot all ids currently in `_dirty_lineages`.
-        - Clear `_dirty_lineages`.
+        - Snapshot all ids currently in `_dirty_indexes`.
+        - Clear `_dirty_indexes`.
         - Return the snapshot list. Order is unspecified.
         """
         ...

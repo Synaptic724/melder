@@ -37,7 +37,7 @@ class _SpellStub:
         self.name = name
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a SpellIndex lineage in SpellSystemStates for testing.
@@ -51,7 +51,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The registered lineage object.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, _SpellStub(spell_id))
+    states.register_index(index, _SpellStub(spell_id))
     return index
 
 
@@ -68,13 +68,13 @@ def _build_blueprint():
     frame = AethericFrame(Aether(), "component-dag-targeting")
     states = frame.spell_system_states
 
-    root_index = _register_lineage(states, "root-targeting")
-    repo_index = _register_lineage(states, "repo-targeting")
-    logger_index = _register_lineage(states, "logger-targeting")
-    service_root_index = _register_lineage(states, "service-root-targeting")
-    service_repo_index = _register_lineage(states, "service-repo-targeting")
-    contract_root_index = _register_lineage(states, "contract-root-targeting")
-    contract_repo_index = _register_lineage(states, "contract-repo-targeting")
+    root_index = _register_index(states, "root-targeting")
+    repo_index = _register_index(states, "repo-targeting")
+    logger_index = _register_index(states, "logger-targeting")
+    service_root_index = _register_index(states, "service-root-targeting")
+    service_repo_index = _register_index(states, "service-repo-targeting")
+    contract_root_index = _register_index(states, "contract-root-targeting")
+    contract_repo_index = _register_index(states, "contract-repo-targeting")
 
     root_id = root_index.current
     repo_id = repo_index.current
@@ -276,4 +276,5 @@ def test_component_dag_targeting_path_ignores_same_name_elsewhere() -> None:
         assert socket.node_id == ids["root"]
     finally:
         blueprint.cleanup()
+
 

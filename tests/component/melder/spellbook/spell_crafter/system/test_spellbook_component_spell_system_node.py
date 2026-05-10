@@ -25,7 +25,7 @@ from melder.spellbook.spell_crafter.system.validation.root_viability_strategy im
 from melder.spellbook.spell_types.spell_types import SpellType
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -39,7 +39,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -57,7 +57,7 @@ def test_component_node_metadata_roundtrip_in_validation_state() -> None:
     frame = AethericFrame(Aether(), "component-node-metadata")
     states = frame._spell_system_states
     root_id = "node-meta"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -107,9 +107,9 @@ def test_component_node_dependency_change_triggers_graph_mismatch() -> None:
     root_id = "node-root"
     dep_id = "node-dep"
     extra_id = "node-extra"
-    root_index = _register_lineage(states, root_id)
-    dep_index = _register_lineage(states, dep_id)
-    _register_lineage(states, extra_id)
+    root_index = _register_index(states, root_id)
+    dep_index = _register_index(states, dep_id)
+    _register_index(states, extra_id)
     states.update_dependencies(root_index, [dep_id])
 
     try:
@@ -180,7 +180,7 @@ def test_component_node_survives_validation_state_cleanup() -> None:
     frame = AethericFrame(Aether(), "component-node-cleanup")
     states = frame._spell_system_states
     root_id = "node-cleanup"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     try:
@@ -208,4 +208,5 @@ def test_component_node_survives_validation_state_cleanup() -> None:
         assert node.cleaned is False
     finally:
         frame.cleanup()
+
 

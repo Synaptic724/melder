@@ -535,7 +535,7 @@ class _SpellSystemStatesStub:
         """
         return list(self._states)
 
-    def unregister_lineage(self, spell_index: object) -> None:
+    def unregister_index(self, spell_index: object) -> None:
         """
         Purpose:
             Record a lineage unregistration from Spellbook.cleanup.
@@ -8279,4 +8279,5 @@ def test_codegen_ir_property_flushes_phase8_11_when_dirty(
     assert flush_calls == [True]
     assert payload is crafter._codegen_ir
     assert crafter._phase8_11_codegen_ir_dirty is False
+
 

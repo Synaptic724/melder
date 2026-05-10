@@ -16,7 +16,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a spell lineage into SpellSystemStates.
@@ -30,7 +30,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -51,9 +51,9 @@ def test_component_root_blueprint_builder_traverses_state_topologies() -> None:
     root_id = "root-blueprint"
     mid_id = "mid-blueprint"
     leaf_id = "leaf-blueprint"
-    root_index = _register_lineage(states, root_id)
-    mid_index = _register_lineage(states, mid_id)
-    _register_lineage(states, leaf_id)
+    root_index = _register_index(states, root_id)
+    mid_index = _register_index(states, mid_id)
+    _register_index(states, leaf_id)
 
     states.update_dependencies(root_index, [mid_id])
     states.update_dependencies(mid_index, [leaf_id])
@@ -126,9 +126,9 @@ def test_component_root_blueprint_builder_skips_missing_topology() -> None:
     root_id = "root-missing-topo"
     mid_id = "mid-missing-topo"
     leaf_id = "leaf-missing-topo"
-    root_index = _register_lineage(states, root_id)
-    mid_index = _register_lineage(states, mid_id)
-    _register_lineage(states, leaf_id)
+    root_index = _register_index(states, root_id)
+    mid_index = _register_index(states, mid_id)
+    _register_index(states, leaf_id)
 
     states.update_dependencies(root_index, [mid_id])
     states.update_dependencies(mid_index, [leaf_id])
@@ -179,8 +179,8 @@ def test_component_root_blueprint_builder_builds_multiple_roots() -> None:
     states = frame._spell_system_states
     root_a = "root-a"
     root_b = "root-b"
-    root_a_index = _register_lineage(states, root_a)
-    root_b_index = _register_lineage(states, root_b)
+    root_a_index = _register_index(states, root_a)
+    root_b_index = _register_index(states, root_b)
 
     topo_a = SpellLocalTopology(spell_id=root_a, sockets=())
     topo_b = SpellLocalTopology(spell_id=root_b, sockets=())
@@ -216,9 +216,9 @@ def test_component_root_blueprint_builder_handles_shared_dependency() -> None:
     root_a = "root-shared-a"
     root_b = "root-shared-b"
     shared = "dep-shared"
-    root_a_index = _register_lineage(states, root_a)
-    root_b_index = _register_lineage(states, root_b)
-    _register_lineage(states, shared)
+    root_a_index = _register_index(states, root_a)
+    root_b_index = _register_index(states, root_b)
+    _register_index(states, shared)
 
     states.update_dependencies(root_a_index, [shared])
     states.update_dependencies(root_b_index, [shared])
@@ -254,7 +254,7 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
     frame = AethericFrame(Aether(), "component-root-blueprints-empty-target")
     states = frame._spell_system_states
     root_id = "root-empty-target"
-    root_index = _register_lineage(states, root_id)
+    root_index = _register_index(states, root_id)
     states.update_dependencies(root_index, [])
 
     topology = SpellLocalTopology(
@@ -284,4 +284,5 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
         assert blueprint.dag_index.get_by_exact_path(("config",)) != []
     finally:
         frame.cleanup()
+
 

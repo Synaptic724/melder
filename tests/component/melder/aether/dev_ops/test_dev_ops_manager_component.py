@@ -11,7 +11,7 @@ from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder i
 )
 
 
-def _register_lineage(states, spell_id: str) -> SpellIndex:
+def _register_index(states, spell_id: str) -> SpellIndex:
     """
     Purpose:
         Register a SpellIndex lineage in SpellSystemStates for component tests.
@@ -25,7 +25,7 @@ def _register_lineage(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index instance.
     """
     index = SpellIndex(spell_id)
-    states.register_lineage(index, object())
+    states.register_index(index, object())
     return index
 
 
@@ -78,8 +78,8 @@ def test_component_dev_ops_revalidate_dirty_roots_clears_change_control_state() 
     root_id = "root-devops"
     dep_id = "dep-devops"
     conduit_id = "conduit-1"
-    root_index = _register_lineage(states, root_id)
-    _register_lineage(states, dep_id)
+    root_index = _register_index(states, root_id)
+    _register_index(states, dep_id)
     states.update_dependencies(root_index, [dep_id])
 
     calls: list[set[str]] = []
@@ -135,7 +135,7 @@ def test_component_dev_ops_cleanup_cleans_children_and_states() -> None:
     incident_manager = devops.incident_manager
     change_control = devops.change_control_manager
 
-    index = _register_lineage(states, "spell-cleanup")
+    index = _register_index(states, "spell-cleanup")
     state = states.get_by_index_id(index.id)
     assert state is not None
     assert state.validity is SpellValidity.gated
@@ -153,4 +153,5 @@ def test_component_dev_ops_cleanup_cleans_children_and_states() -> None:
         assert incident.cleaned is True
     finally:
         frame.cleanup()
+
 
