@@ -27,7 +27,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 #region ConduitWard
 class ConduitWard(Cleanable, IConduitWard):
     """
-    Control-plane for a single Conduit: contracts, lineage, and policy.
+    Control-plane for a single Conduit: contracts, index, and policy.
 
     ConduitWard is the **relationship manager** for its owning Conduit. It never
     builds spells itself; instead it coordinates how this conduit relates to
@@ -36,7 +36,7 @@ class ConduitWard(Cleanable, IConduitWard):
     What it owns
     ------------
     - Contract graph: symmetric links to peer conduits, each represented by a
-      `Contract` with per-ward `Detail` maps (spell lineage + permission).
+      `Contract` with per-ward `Detail` maps (spell index + permission).
     - Lineage tree: parent pointer and the set of **lesser conduits** spawned
       by this conduit (pure ownership; no contract semantics here).
     - Root pointer: the **normal conduit** at the top of this lineage tree.

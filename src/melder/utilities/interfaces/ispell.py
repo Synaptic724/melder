@@ -13,7 +13,7 @@ class ISpell(ICleanable, Protocol):
     A spell is the concrete, runtime blueprint that the `Spellbook` binds and a
     `Conduit` later casts. It wraps:
       - The underlying callable / type (`spell`)
-      - Its lineage handle (`spell_index`)
+      - Its index handle (`spell_index`)
       - Identity and metadata (`spell_id`, `spellframe`, `binding_name`, `spell_name`)
       - Lifecycle policy (`existence`)
       - Structural profile (`ClassProfile` / `MethodProfile` / `SpellBindingProfile`)
@@ -125,7 +125,7 @@ class ISpell(ICleanable, Protocol):
     @property
     def system_state(self) -> Optional["SpellSystemState"]:
         """
-        Return the SpellSystemState instance associated with this Spell's lineage.
+        Return the SpellSystemState instance associated with this Spell's index.
 
         This is a *view* into the change-control / validation state tracked
         by SpellSystemStates. It is intentionally read-mostly at the Spell layer:
@@ -137,7 +137,7 @@ class ISpell(ICleanable, Protocol):
         Returns:
             SpellSystemState | None:
                 The state object if SpellSystemStates is available and this
-                spell has a registered lineage; otherwise None.
+                spell has a registered index; otherwise None.
         """
         ...
 
@@ -231,7 +231,7 @@ class ISpell(ICleanable, Protocol):
         Instead, it:
 
         - Updates the local overlay payload; and
-        - Marks the Spell's lineage as structurally changed via
+        - Marks the Spell's index as structurally changed via
           SpellSystemStates (if available), using a mutation_contract_*
           change reason.
 
@@ -250,7 +250,7 @@ class ISpell(ICleanable, Protocol):
         Clear any active mutation overlay for this Spell.
 
         This resets the local overlay payload back to the default empty dict,
-        and, if SpellSystemStates is available, marks the lineage as having
+        and, if SpellSystemStates is available, marks the index as having
         rolled back a mutation.
 
         The actual effect on the compiled/system DAG is owned by the higher-
@@ -594,7 +594,7 @@ class ISpell(ICleanable, Protocol):
         Phase 6 - System-level validation (facade).
 
         Delegates to the SpellCrafter to validate system-level DAG integrity
-        and update lineage validity states.
+        and update index validity states.
 
         Contract:
             - Requires Phase 5 to have completed successfully.
