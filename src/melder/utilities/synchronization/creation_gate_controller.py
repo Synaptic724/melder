@@ -13,9 +13,9 @@ class CreationGateController(Cleanable):
         Provide one orchestration surface for creation gates across two scopes:
 
         - Conduit-scope gates indexed by
-          ``root_conduit_id -> conduit_id -> CreationGate`` and a reverse
-          ``conduit_id -> root_conduit_id`` map.
-        - Spell-lineage gates keyed by ``lineage_id``.
+          root_conduit_id -> conduit_id -> CreationGate and a reverse
+          conduit_id -> root_conduit_id map.
+        - Spell-lineage gates keyed by lineage_id.
 
         This split allows the same gate primitive to be reused for both
         conduit-level meld entry control and spell-level creation-context
@@ -23,13 +23,13 @@ class CreationGateController(Cleanable):
 
     Contract:
         - Each registry key must be non-empty and unique within its registry.
-        - Missing-key lookups return ``None``.
+        - Missing-key lookups return None.
         - Missing-key count/drain operations are no-ops returning zero/None.
-        - ``enable_all`` / ``disable_all`` fan out to both registries.
-        - All public methods enforce ``check_cleaned()``.
+        - enable_all / disable_all fan out to both registries.
+        - All public methods enforce check_cleaned().
 
     Threading:
-        - The controller uses an internal ``RLock`` to make teardown
+        - The controller uses an internal RLock to make teardown
           deterministic under concurrent access.
         - Callers should still serialize concurrent registry mutations.
     """
@@ -54,17 +54,17 @@ class CreationGateController(Cleanable):
 
         Contract:
             - All registries start empty.
-            - ``_lock`` is initialized for deterministic cleanup sequencing.
+            - _lock is initialized for deterministic cleanup sequencing.
 
         Registry layout:
-            - ``_lock``:
+            - _lock:
                 Internal synchronization lock used by cleanup paths.
-            - ``_conduit_creation_gates``:
+            - _conduit_creation_gates:
                 Flat index for O(1) lookup by conduit_id.
-            - ``_conduit_creation_gates_by_root``:
+            - _conduit_creation_gates_by_root:
                 Hierarchical index for lineage operations:
-                ``root_conduit_id -> conduit_id -> gate``.
-            - ``_conduit_root_by_conduit``:
+                root_conduit_id -> conduit_id -> gate.
+            - _conduit_root_by_conduit:
                 Reverse index for O(1) root lookup by conduit_id.
 
         Returns:
@@ -88,7 +88,7 @@ class CreationGateController(Cleanable):
             the controller instance for further use.
 
         Contract:
-            - Calls ``cleanup()`` on all unique registered gates.
+            - Calls cleanup() on all unique registered gates.
             - Deduplicates gates that appear in both conduit flat/root indexes
               before cleanup so shared gate instances are only cleaned once.
             - Clears and nulls all registries/indexes.
@@ -141,7 +141,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             ValueError:
-                If ``key`` is empty.
+                If key is empty.
 
         Returns:
             None.
@@ -170,7 +170,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             ValueError:
-                If ``key`` already exists in ``registry``.
+                If key already exists in registry.
 
         Returns:
             None.
@@ -193,7 +193,7 @@ class CreationGateController(Cleanable):
 
         Returns:
             int:
-                Active ticket count for ``key``, or 0 when key is missing.
+                Active ticket count for key, or 0 when key is missing.
         """
         gate = registry.get(key)
         if gate is None:
@@ -285,7 +285,7 @@ class CreationGateController(Cleanable):
             conduit flat map and root-lineage map.
 
         Contract:
-            - ``conduit_id`` must be unique in conduit registry.
+            - conduit_id must be unique in conduit registry.
             - Root map and reverse root index are updated atomically within
               this call.
             - Returns the same gate instance stored in controller registries.
@@ -295,7 +295,7 @@ class CreationGateController(Cleanable):
                 Unique conduit key for the flat conduit index.
             root_conduit_id:
                 Optional lineage root key. When omitted, defaults to
-                ``conduit_id`` (single-node lineage).
+                conduit_id (single-node lineage).
 
         Returns:
             CreationGate:
@@ -303,10 +303,10 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
             ValueError:
-                If ``conduit_id`` or normalized root id is empty, or if
-                ``conduit_id`` is already registered.
+                If conduit_id or normalized root id is empty, or if
+                conduit_id is already registered.
         """
         self.check_cleaned()
         self._require_key(conduit_id, "conduit_id")
@@ -339,8 +339,8 @@ class CreationGateController(Cleanable):
             Attach an externally created gate instance to conduit/root indices.
 
         Contract:
-            - ``conduit_id`` must be unique in conduit registry.
-            - Provided ``gate`` is stored by reference.
+            - conduit_id must be unique in conduit registry.
+            - Provided gate is stored by reference.
             - Root map and reverse root index are updated atomically within
               this call.
 
@@ -351,17 +351,17 @@ class CreationGateController(Cleanable):
                 Existing gate instance to attach.
             root_conduit_id:
                 Optional lineage root key. When omitted, defaults to
-                ``conduit_id`` (single-node lineage).
+                conduit_id (single-node lineage).
 
         Returns:
             None.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
             ValueError:
-                If ``conduit_id`` or normalized root id is empty, or if
-                ``conduit_id`` is already registered.
+                If conduit_id or normalized root id is empty, or if
+                conduit_id is already registered.
         """
         self.check_cleaned()
         self._require_key(conduit_id, "conduit_id")
@@ -400,7 +400,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         gate = self._conduit_creation_gates.pop(conduit_id, None)
@@ -426,11 +426,11 @@ class CreationGateController(Cleanable):
 
         Returns:
             Optional[CreationGate]:
-                Registered gate instance when present; otherwise ``None``.
+                Registered gate instance when present; otherwise None.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return self._conduit_creation_gates.get(conduit_id)
@@ -447,11 +447,11 @@ class CreationGateController(Cleanable):
 
         Returns:
             Optional[str]:
-                Root lineage id when present; otherwise ``None``.
+                Root lineage id when present; otherwise None.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return self._conduit_root_by_conduit.get(conduit_id)
@@ -478,7 +478,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         if not root_conduit_id:
@@ -504,7 +504,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return self._count_active(self._conduit_creation_gates, conduit_id)
@@ -521,7 +521,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return sum(gate.active_ticket_count() for gate in self._conduit_creation_gates.values())
@@ -538,12 +538,12 @@ class CreationGateController(Cleanable):
 
         Returns:
             int:
-                Sum of active tickets for gates under ``root_conduit_id``;
+                Sum of active tickets for gates under root_conduit_id;
                 returns 0 when root is missing.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         if not root_conduit_id:
@@ -580,7 +580,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()`` or if the underlying gate drain
+                If called after cleanup() or if the underlying gate drain
                 times out.
         """
         self.check_cleaned()
@@ -608,8 +608,8 @@ class CreationGateController(Cleanable):
 
         Contract:
             - Uses a detached lineage snapshot from the root index.
-            - Missing or empty ``root_conduit_id`` is a no-op.
-            - Calls ``close_and_wait_until_free(...)`` on each lineage gate.
+            - Missing or empty root_conduit_id is a no-op.
+            - Calls close_and_wait_until_free(...) on each lineage gate.
             - Does not unregister or cleanup gates; it only performs close+drain.
 
         Args:
@@ -625,7 +625,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()`` or if any lineage gate drain
+                If called after cleanup() or if any lineage gate drain
                 times out.
         """
         self.check_cleaned()
@@ -642,7 +642,7 @@ class CreationGateController(Cleanable):
         Open every conduit-scope gate.
 
         Contract:
-            - Invokes ``open()`` on each registered conduit gate.
+            - Invokes open() on each registered conduit gate.
             - No-op when registry is empty.
 
         Returns:
@@ -650,7 +650,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         for gate in self._conduit_creation_gates.values():
@@ -663,7 +663,7 @@ class CreationGateController(Cleanable):
         Close every conduit-scope gate.
 
         Contract:
-            - Invokes ``close()`` on each registered conduit gate.
+            - Invokes close() on each registered conduit gate.
             - No-op when registry is empty.
 
         Returns:
@@ -671,7 +671,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         for gate in self._conduit_creation_gates.values():
@@ -690,7 +690,7 @@ class CreationGateController(Cleanable):
             Allocate a new gate for one spell lineage id.
 
         Contract:
-            - ``lineage_id`` must be unique in lineage registry.
+            - lineage_id must be unique in lineage registry.
             - Returns the same gate instance stored in registry.
 
         Args:
@@ -703,9 +703,9 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
             ValueError:
-                If ``lineage_id`` is empty or already registered.
+                If lineage_id is empty or already registered.
         """
         self.check_cleaned()
         self._require_key(lineage_id, "lineage_id")
@@ -724,8 +724,8 @@ class CreationGateController(Cleanable):
             Attach an externally created gate instance to lineage registry.
 
         Contract:
-            - ``lineage_id`` must be unique in lineage registry.
-            - Provided ``gate`` is stored by reference.
+            - lineage_id must be unique in lineage registry.
+            - Provided gate is stored by reference.
 
         Args:
             lineage_id:
@@ -738,9 +738,9 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
             ValueError:
-                If ``lineage_id`` is empty or already registered.
+                If lineage_id is empty or already registered.
         """
         self.check_cleaned()
         self._require_key(lineage_id, "lineage_id")
@@ -767,7 +767,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         self._spell_lineage_creation_gates.pop(lineage_id, None)
@@ -784,11 +784,11 @@ class CreationGateController(Cleanable):
 
         Returns:
             Optional[CreationGate]:
-                Registered gate instance when present; otherwise ``None``.
+                Registered gate instance when present; otherwise None.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return self._spell_lineage_creation_gates.get(lineage_id)
@@ -809,7 +809,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return self._count_active(self._spell_lineage_creation_gates, lineage_id)
@@ -826,7 +826,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return sum(
@@ -860,7 +860,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()`` or if the underlying gate drain
+                If called after cleanup() or if the underlying gate drain
                 times out.
         """
         self.check_cleaned()
@@ -878,7 +878,7 @@ class CreationGateController(Cleanable):
         Open every spell-lineage gate.
 
         Contract:
-            - Invokes ``open()`` on each registered lineage gate.
+            - Invokes open() on each registered lineage gate.
             - No-op when registry is empty.
 
         Returns:
@@ -886,7 +886,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         for gate in self._spell_lineage_creation_gates.values():
@@ -899,7 +899,7 @@ class CreationGateController(Cleanable):
         Close every spell-lineage gate.
 
         Contract:
-            - Invokes ``close()`` on each registered lineage gate.
+            - Invokes close() on each registered lineage gate.
             - No-op when registry is empty.
 
         Returns:
@@ -907,7 +907,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         for gate in self._spell_lineage_creation_gates.values():
@@ -928,7 +928,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
 
         Notes:
             This is an aggregate sum across the current conduit and spell-lineage
@@ -955,7 +955,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         self.enable_all_conduit_gates()
@@ -976,7 +976,7 @@ class CreationGateController(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         self.disable_all_conduit_gates()
