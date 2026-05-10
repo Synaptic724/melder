@@ -12,6 +12,9 @@ from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.par
     ParameterDIShape,
 )
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
 
@@ -264,6 +267,11 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
+        spell._add_owned_conduit(
+            "component-conduit",
+            dynamic_environment=True,
+            creation_gate_controller=CreationGateController(),
+        )
         states = spellbook._spell_system_states
         states.consume_dirty_indexes()
 

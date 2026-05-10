@@ -145,6 +145,7 @@ def test_mutation_override_signals_structural_change():
         spellbook=_SpellbookStub(states),
     )
 
+    spell._dynamic_environment = True
     spell.apply_mutation_override({"mode": "overlay"})
     assert spell.mutation_override == {"mode": "overlay"}
     assert states.calls[-1][1] is SpellStateChangeReason.mutation_contract_set
@@ -175,6 +176,7 @@ def test_clear_mutation_override_is_noop_when_empty():
         spellbook=_SpellbookStub(states),
     )
 
+    spell._dynamic_environment = True
     spell.clear_mutation_override()
     assert spell.mutation_override == {}
     assert states.calls == []
@@ -573,9 +575,10 @@ def _make_spell(
         states=None,
         profile=None,
         existing_object=None,
+        dynamic_environment: bool = False,
 ):
     states = states or _RecordingStates()
-    return Spell(
+    spell = Spell(
         spell=spell,
         spell_index=SpellIndex(spell_id),
         spellframe=spellframe,
@@ -590,6 +593,8 @@ def _make_spell(
         profile=profile,
         existing_object=existing_object,
     )
+    spell._dynamic_environment = dynamic_environment
+    return spell
 
 
 def test_spell_hooks_default_state() -> None:
@@ -803,7 +808,7 @@ def test_add_build_details_rejects_none_inputs(dag, deps, error_msg):
 )
 def test_apply_mutation_override_signals_devops(payload, expected_reason, expected_payload):
     states = _RecordingStates()
-    spell = _make_spell(states=states)
+    spell = _make_spell(states=states, dynamic_environment=True)
     spell.apply_mutation_override(payload)
     assert spell.mutation_override == expected_payload
     assert states.calls[-1][1] is expected_reason
@@ -811,7 +816,7 @@ def test_apply_mutation_override_signals_devops(payload, expected_reason, expect
 
 def test_clear_mutation_override_noop_when_empty():
     states = _RecordingStates()
-    spell = _make_spell(states=states)
+    spell = _make_spell(states=states, dynamic_environment=True)
     spell.clear_mutation_override()
     assert states.calls == []
     assert spell.mutation_override == {}
@@ -819,7 +824,7 @@ def test_clear_mutation_override_noop_when_empty():
 
 def test_clear_mutation_override_signals_when_overlay_present():
     states = _RecordingStates()
-    spell = _make_spell(states=states)
+    spell = _make_spell(states=states, dynamic_environment=True)
     spell.apply_mutation_override({"v": 1})
     spell.clear_mutation_override()
     assert states.calls[-1][1] is SpellStateChangeReason.mutation_contract_cleared
@@ -998,7 +1003,7 @@ def test_run_structural_phases_invokes_crafter_in_order():
     ],
 )
 def test_has_mutation_override_reflects_payload(payload, expected_flag):
-    spell = _make_spell()
+    spell = _make_spell(dynamic_environment=True)
     spell.apply_mutation_override(payload)
     assert spell.has_mutation_override is expected_flag
 
@@ -1031,7 +1036,7 @@ def test_binding_name_normalization_special_cases(binding_name, expected):
 
 
 def test_mutation_override_replaces_previous_payload():
-    spell = _make_spell()
+    spell = _make_spell(dynamic_environment=True)
     spell.apply_mutation_override({"first": 1})
     spell.apply_mutation_override({"second": 2})
     assert spell.mutation_override == {"second": 2}
@@ -1048,18 +1053,32 @@ def test_add_build_details_overwrites_previous_values():
 
 
 def test_apply_mutation_override_no_states_does_not_raise():
-    spell = _make_spell(states=None)
+    spell = _make_spell(states=None, dynamic_environment=True)
     spell._spell_system_states = None
     spell.apply_mutation_override({"k": "v"})
     assert spell.mutation_override == {"k": "v"}
 
 
 def test_clear_mutation_override_no_states_safely_clears():
-    spell = _make_spell(states=None)
+    spell = _make_spell(states=None, dynamic_environment=True)
     spell._spell_system_states = None
     spell.apply_mutation_override({"k": "v"})
     spell.clear_mutation_override()
     assert spell.mutation_override == {}
+
+
+def test_apply_mutation_override_raises_outside_dynamic_mode():
+    spell = _make_spell(dynamic_environment=False)
+
+    with pytest.raises(RuntimeError, match="Mutation overrides require dynamic mode"):
+        spell.apply_mutation_override({"mode": "overlay"})
+
+
+def test_clear_mutation_override_raises_outside_dynamic_mode():
+    spell = _make_spell(dynamic_environment=False)
+
+    with pytest.raises(RuntimeError, match="Mutation overrides require dynamic mode"):
+        spell.clear_mutation_override()
 
 
 def test_cleanup_swallows_child_cleanup_errors():
