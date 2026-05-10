@@ -34,8 +34,8 @@ class RiftGate(Cleanable):
 
     Threading:
         - State transitions for enabled / _closed and the event are
-          protected by an internal RLock``.
-        - ``enabled`` is intentionally readable without lock on hot paths.
+          protected by an internal RLock.
+        - enabled is intentionally readable without lock on hot paths.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -52,19 +52,19 @@ class RiftGate(Cleanable):
             state and in-flight ticket count for one protected Rift path.
 
         Contract:
-            - ``_closed`` starts ``False``.
-            - ``enabled`` reflects constructor input.
-            - ``_event`` state mirrors ``enabled``:
+            - _closed starts False.
+            - enabled reflects constructor input.
+            - _event state mirrors enabled:
               set when enabled, cleared when disabled.
             - Ticket queue starts empty.
 
         Args:
             enabled:
                 True starts with immediate pass-through behavior.
-                False starts in blocking mode until ``open()`` is called.
+                False starts in blocking mode until open() is called.
             entry_mode:
-                Admission mode used by ``admit()`` while the gate is disabled.
-                Supported values are ``wait`` and ``raise``.
+                Admission mode used by admit() while the gate is disabled.
+                Supported values are wait and raise.
 
         Returns:
             None.
@@ -92,7 +92,7 @@ class RiftGate(Cleanable):
 
         Contract:
             - Marks gate terminally closed.
-            - Forces ``enabled=True`` and signals the event to unblock waiters.
+            - Forces enabled=True and signals the event to unblock waiters.
             - Clears outstanding tickets as teardown intent.
             - Marks this instance cleaned and nulls owned references.
             - Leaves the object unusable for all guarded operations.
@@ -142,7 +142,7 @@ class RiftGate(Cleanable):
 
     def close(self) -> None:
         """
-        Disable entry so callers block in ``wait()``.
+        Disable entry so callers block in wait().
 
         Returns:
             None.
@@ -171,9 +171,9 @@ class RiftGate(Cleanable):
         Contract:
             - Raises immediately when the gate is terminally closed.
             - Returns immediately when admission is enabled.
-            - When admission is disabled and ``entry_mode == "raise"``,
+            - When admission is disabled and entry_mode == "raise",
               raises immediately.
-            - When admission is disabled and ``entry_mode == "wait"``, blocks
+            - When admission is disabled and entry_mode == "wait", blocks
               until the gate is reopened or terminally closed.
 
         Returns:
@@ -202,7 +202,7 @@ class RiftGate(Cleanable):
 
         Args:
             entry_mode:
-                Admission mode. Supported values are ``wait`` and ``raise``.
+                Admission mode. Supported values are wait and raise.
 
         Returns:
             None.
@@ -281,7 +281,7 @@ class RiftGate(Cleanable):
 
         Raises:
             RuntimeError:
-                If ticket drain does not complete before ``timeout``.
+                If ticket drain does not complete before timeout.
         """
         self.check_cleaned()
 

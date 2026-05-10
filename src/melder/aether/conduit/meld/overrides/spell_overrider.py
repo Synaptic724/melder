@@ -31,7 +31,7 @@ class SpellOverrider(Cleanable):
     The targeting semantics are shared with mutation overrides:
       * PATH:       a>b>c
       * UNIQUE:     *param  (exactly one match required)
-      * BROADCAST:  ``**param`` (one or more matches required)
+      * BROADCAST:  **param (one or more matches required)
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]

@@ -233,9 +233,9 @@ class Meld(Cleanable, IMeld):
             spell_name (str):
                 spell_name of the spell to meld
 
-                When provided without an explicit spell`` or ``spellframe``, this is
+                When provided without an explicit spell or spellframe, this is
                 treated as the **logical name key** used by the resolution pipeline.
-                In other words, ``meld(spell_name=\"MyService\")`` becomes equivalent
+                In other words, meld(spell_name=\"MyService\") becomes equivalent
                 to a name-based lookup driven by the Spellbook / SpellIndex mappings.
             spell (str | object | None):
                 The primary spell identifier.
@@ -1375,7 +1375,7 @@ class Meld(Cleanable, IMeld):
             spell_override: Optional[dict | list | tuple]
     ) -> Optional[dict[str, Any]]:
         """
-        Normalize the ``spell_override`` input into a consistent dictionary format.
+        Normalize the spell_override input into a consistent dictionary format.
 
         The **override payload** is intended to represent *per-call* constructor
         / factory overrides for a given meld operation. This helper converts the
@@ -1385,21 +1385,21 @@ class Meld(Cleanable, IMeld):
         Supported input shapes
         ----------------------
 
-        * ``None``:
-            - No overrides are supplied; returns ``None``.
+        * None:
+            - No overrides are supplied; returns None.
 
-        * ``dict``:
+        * dict:
             - Treated as keyword-style overrides:
-              ``{"param_name": value, "other_param": other_value}``.
-            - Empty dict payloads are normalized to ``None`` (no overrides).
+              {"param_name": value, "other_param": other_value}.
+            - Empty dict payloads are normalized to None (no overrides).
             - A shallow copy is created to avoid accidental mutation of the
               caller's dictionary.
 
-        * ``list`` / ``tuple``:
+        * list / tuple:
             - Treated as **positional argument** overrides.
-            - These are stored under the special key ``"__args__"`` so that the
+            - These are stored under the special key "__args__" so that the
               runtime can distinguish them from keyword overrides:
-              ``{"__args__": [arg0, arg1, ...]}``.
+              {"__args__": [arg0, arg1, ...]}.
 
         Any more sophisticated interpretation (e.g. mixing positional and keyword
         semantics, or nested override structures) can be layered on later, but the
@@ -1408,16 +1408,16 @@ class Meld(Cleanable, IMeld):
         Args:
             spell_override:
                 The raw override payload supplied by the caller. Must be one of:
-                ``None``, ``dict``, ``list``, or ``tuple``.
+                None, dict, list, or tuple.
 
         Returns:
             Optional[dict[str, Any]]:
                 A normalized dictionary representation of the overrides, or
-                ``None`` if no overrides were supplied.
+                None if no overrides were supplied.
 
         Raises:
             TypeError:
-                If ``spell_override`` is not one of the supported shapes.
+                If spell_override is not one of the supported shapes.
         """
         if spell_override is None:
             return None
@@ -1451,28 +1451,28 @@ class Meld(Cleanable, IMeld):
         """
         Internal
 
-        Resolve an ``ISpell`` using either:
+        Resolve an ISpell using either:
 
-        1. A direct ``spell_id`` string (SHA256 fingerprint), or
+        1. A direct spell_id string (SHA256 fingerprint), or
         2. A logical identity tuple derived from
-           ``(spellframe | spell, binding_name)``.
+           (spellframe | spell, binding_name).
 
-        This is the main entry point used by ``meld()``; it delegates to
+        This is the main entry point used by meld(); it delegates to
         more specific helpers for each resolution strategy.
 
         Args:
             spell:
-                If a string, treated as the canonical ``spell_id``.
+                If a string, treated as the canonical spell_id.
                 Otherwise treated as a class/function/instance used when
                 deriving the logical spell key.
             spell_name:
                 Optional explicit spell name to use when deriving the
                 logical identity key. When provided without an explicit
-                ``spell`` or ``spellframe``, this name is treated as the
+                spell or spellframe, this name is treated as the
                 logical frame key for resolution.
             spellframe:
                 Optional spellframe / Protocol / interface used as part of
-                the DI identity. If ``None``, the spell’s own type/name is
+                the DI identity. If None, the spell’s own type/name is
                 used by the normalization helper.
             binding_name:
                 Optional binding name to discriminate multiple spells
@@ -1542,7 +1542,7 @@ class Meld(Cleanable, IMeld):
 
         Raises:
             KeyError:
-                If no spell with the given ``spell_id`` exists in either
+                If no spell with the given spell_id exists in either
                 the local or contracted spell maps.
         """
         # Local spells
@@ -1579,9 +1579,9 @@ class Meld(Cleanable, IMeld):
 
         Args:
             lookup_key:
-                A tuple ``(frame_key, binding_name)`` produced by
-                ``SpellInputUtils.normalize_spell_key`` or
-                ``SpellInputUtils.make_spell_key_from_parts``.
+                A tuple (frame_key, binding_name) produced by
+                SpellInputUtils.normalize_spell_key or
+                SpellInputUtils.make_spell_key_from_parts.
 
         Returns:
             ISpell:
@@ -1592,7 +1592,7 @@ class Meld(Cleanable, IMeld):
                 If no spell can be resolved for the given key in either
                 the local or contracted spell maps.
             RuntimeError:
-                If a ``SpellIndex`` is found for the key, but the
+                If a SpellIndex is found for the key, but the
                 associated spell object is missing from the expected map.
         """
         frame_key, bind_key = lookup_key
@@ -1621,16 +1621,16 @@ class Meld(Cleanable, IMeld):
 
         Args:
             lookup_key:
-                The logical identity key ``(frame_key, binding_name)``.
+                The logical identity key (frame_key, binding_name).
 
         Returns:
             Optional[ISpell]:
                 The resolved spell object if found locally, otherwise
-                ``None``.
+                None.
 
         Raises:
             RuntimeError:
-                If a ``SpellIndex`` is found in the local lookup map but
+                If a SpellIndex is found in the local lookup map but
                 the owned spell map does not contain the corresponding
                 spell object.
         """
@@ -1660,18 +1660,18 @@ class Meld(Cleanable, IMeld):
 
         Args:
             lookup_key:
-                The logical identity key ``(frame_key, binding_name)``.
+                The logical identity key (frame_key, binding_name).
 
         Returns:
             Optional[ISpell]:
                 The resolved spell object if found among contracted
-                spells, otherwise ``None``.
+                spells, otherwise None.
 
         Raises:
             RuntimeError:
-                If a contracted lookup map resolves a ``SpellIndex`` but:
+                If a contracted lookup map resolves a SpellIndex but:
                   * the spell map does not contain a spell object for
-                     the resolved ``SpellIndex``.
+                     the resolved SpellIndex.
         """
         # If contracted lookup maps exist, we expect contracted spell maps
         # to exist as well. We only enforce this when we actually find a hit.

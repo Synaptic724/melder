@@ -159,7 +159,7 @@ class RiftGateController(Cleanable):
                 Rift id to resolve.
 
         Returns:
-            Optional[RiftGate]: Registered gate when present; otherwise None``.
+            Optional[RiftGate]: Registered gate when present; otherwise None.
         """
         self.check_cleaned()
         with self._lock:

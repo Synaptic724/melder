@@ -1222,7 +1222,7 @@ class Conduit(Cleanable, IConduit):
             - Uses strict controller calls (no swallowed errors or legacy paths).
 
         Threading:
-            - Reads descendant snapshots under ``ConduitWard`` lock before
+            - Reads descendant snapshots under ConduitWard lock before
               recursive rebinding.
 
         Returns:
@@ -1267,7 +1267,7 @@ class Conduit(Cleanable, IConduit):
         can access the Spellbook to bind new spells.
 
         Optionally, in **dynamic mode**, you can supply a `hooks` mapping that will be
-        registered through ``register_conduit_hooks(...)`` and attached only to this
+        registered through register_conduit_hooks(...) and attached only to this
         upgraded conduit:
 
             hooks = {
@@ -1275,7 +1275,7 @@ class Conduit(Cleanable, IConduit):
                 "on_conduit_post_link": [log_link, audit_link],
             }
 
-        The ``hooks`` mapping shape is:
+        The hooks mapping shape is:
 
             hook_name -> callable | list[callable] | tuple[callable, ...]
 
@@ -1655,7 +1655,7 @@ class Conduit(Cleanable, IConduit):
 
         Returns:
             Optional[Any]:
-                Matching spell object when found, otherwise ``None``.
+                Matching spell object when found, otherwise None.
 
         Raises:
             RuntimeError:
@@ -2467,7 +2467,7 @@ class Conduit(Cleanable, IConduit):
         instance, which resolves a concrete spell_id via SpellInputUtils.
 
         Resolution, reuse, and lifecycle behavior are delegated to
-        the underlying ``Meld`` instance.
+        the underlying Meld instance.
 
         In dynamic mode, this method uses the Conduit's CreationGate to control
         meld entry and track active meld tickets. In automatic mode, meld
@@ -2496,17 +2496,17 @@ class Conduit(Cleanable, IConduit):
                 spell. Used as the binding key during resolution.
             spell_override:
                 Optional per-call override payload (dict / list / tuple)
-                passed through to ``Meld.meld`` for constructor/factory
+                passed through to Meld.meld for constructor/factory
                 argument overrides.
         Returns:
             Any:
                 The resolved component instance (reused or newly
-                created) as returned by ``Meld.meld``.
+                created) as returned by Meld.meld.
 
         Raises:
             RuntimeError:
                 - If the Conduit has been cleaned.
-                - If the underlying ``Meld`` instance is missing.
+                - If the underlying Meld instance is missing.
                 - If the CreationGate is closed.
             ValueError:
                 - If none of `spell_name`, `spell`, or `spellframe` are provided.
@@ -2514,13 +2514,13 @@ class Conduit(Cleanable, IConduit):
                 - If `spell_name` is not a string when provided.
                 - If `binding_name` is not a string when provided.
             KeyError:
-                Propagated from ``Meld.meld`` when a spell_id cannot be
+                Propagated from Meld.meld when a spell_id cannot be
                 resolved.
             NotImplementedError:
-                Propagated from ``Meld.meld`` for spell types or
+                Propagated from Meld.meld for spell types or
                 existence modes not yet implemented.
             HookExecutionError:
-                Propagated from ``Meld.meld`` if hook execution fails.
+                Propagated from Meld.meld if hook execution fails.
         """
         self.check_cleaned()
 
@@ -4058,7 +4058,7 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Invoke all local Conduit hooks registered under ``hook_name``, if any.
+        Invoke all local Conduit hooks registered under hook_name, if any.
 
         This uses the hook map localized into this Conduit via
         :meth:`_initialize_conduit_hooks`. The contract is intentionally
@@ -4067,7 +4067,7 @@ class Conduit(Cleanable, IConduit):
             - Shared lineage hooks run before local conduit hooks.
             - All hooks are plain callables.
             - They are invoked as: hook(*conduits)
-            - Each element in ``conduits`` MUST be a Conduit instance.
+            - Each element in conduits MUST be a Conduit instance.
             - Exceptions are logged and suppressed so hooks cannot
               destabilize core lifecycle behavior.
 

@@ -67,7 +67,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
         Raises:
             ValueError:
-                If spell_system_states`` is ``None``.
+                If spell_system_states is None.
         """
         super().__init__()
         if spell_system_states is None:
@@ -212,7 +212,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             RuntimeError:
                 If manager has been cleaned.
             ValueError:
-                If ``conduit_id`` is empty.
+                If conduit_id is empty.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -232,7 +232,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             specific conduit gate.
 
         Contract:
-            - Resolves gate ownership through ``CreationGateController`` only.
+            - Resolves gate ownership through CreationGateController only.
             - Missing conduit gate is a no-op.
             - Does not mutate registry membership.
 
@@ -263,7 +263,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             specific conduit gate.
 
         Contract:
-            - Resolves gate ownership through ``CreationGateController`` only.
+            - Resolves gate ownership through CreationGateController only.
             - Missing conduit gate is a no-op.
             - Does not mutate registry membership.
 
@@ -299,7 +299,7 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             before returning.
 
         Contract:
-            - Delegates to ``CreationGateController.close_and_wait_until_conduit_free``.
+            - Delegates to CreationGateController.close_and_wait_until_conduit_free.
             - Missing conduit gate is a no-op by controller contract.
 
         Args:
