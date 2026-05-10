@@ -13,7 +13,7 @@ class ISpellbook(ICleanable, Protocol):
 
     This interface reflects the *SpellIndex-native* implementation:
 
-    * Local and contracted spells are keyed by `SpellIndex` (lineage).
+    * Local and contracted spells are keyed by `SpellIndex`.
     * Version SHAs are tracked via `SpellIndex._versions` plus:
         - `_spell_versions`  (local)
         - `_contracted_versions` (per-conduit)
@@ -449,7 +449,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         Public API
 
-        Finds a spell's **SpellIndex** (lineage identifier) using its
+        Finds a spell's **SpellIndex** using its
         logical identifiers.
 
         Lookup order:
@@ -466,7 +466,7 @@ class ISpellbook(ICleanable, Protocol):
 
         Returns:
             Optional[SpellIndex]:
-                The SpellIndex representing this spell's lineage.
+                The SpellIndex associated with this spell.
 
         Raises:
             RuntimeError:
@@ -515,7 +515,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         Public API
 
-        Resolve a spell by its stable SpellIndex lineage id.
+        Resolve a spell by its stable SpellIndex id.
 
         Returns:
             Optional[ISpell]:
@@ -531,7 +531,7 @@ class ISpellbook(ICleanable, Protocol):
 
         Args:
             spell_index:
-                The SpellIndex (lineage) of the spell.
+                The SpellIndex of the spell.
 
         Returns:
             Optional[str]:
@@ -694,9 +694,9 @@ class ISpellbook(ICleanable, Protocol):
 
         Args:
             old_id:
-                Previous version id for the lineage.
+                Previous version id for the spell index.
             new_id:
-                New version id for the lineage.
+                New version id for the spell index.
             spell:
                 Owned spell instance.
 
@@ -747,9 +747,9 @@ class ISpellbook(ICleanable, Protocol):
             conduit_id:
                 Peer conduit id for the contract.
             old_id:
-                Previous version id for the lineage.
+                Previous version id for the spell index.
             new_id:
-                New version id for the lineage.
+                New version id for the spell index.
             spell:
                 Contracted spell instance.
 

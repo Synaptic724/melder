@@ -371,10 +371,10 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Cleanup local spell objects and unregister their lineages.
+        Cleanup local spell objects and unregister their spell indexes.
 
         Contract:
-            - Unregisters each local SpellIndex lineage from SpellSystemStates.
+            - Unregisters each local SpellIndex entry from SpellSystemStates.
             - Cleans Spell and SpellIndex instances (best-effort).
             - Logs cleanup errors and continues.
 
@@ -389,7 +389,7 @@ class Spellbook(Cleanable, ISpellbook):
                 self._spell_system_states.unregister_index(spell_index)
             except Exception as e:
                 self._logger.error(
-                    f"Error unregistering spell lineage '{spell_index}': {e}",
+                    f"Error unregistering spell index '{spell_index}': {e}",
                     "_cleanup_spells",
                     exc_info=True,
                 )
@@ -594,8 +594,8 @@ class Spellbook(Cleanable, ISpellbook):
             - Adds the new id to the local version cache.
 
         Args:
-            old_id (str): Previous version id for the lineage.
-            new_id (str): New version id for the lineage.
+            old_id (str): Previous version id for the spell index.
+            new_id (str): New version id for the spell index.
             spell (ISpell): Owned spell instance.
 
         Raises:
@@ -789,8 +789,8 @@ class Spellbook(Cleanable, ISpellbook):
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
-            old_id (str): Previous version id for the lineage.
-            new_id (str): New version id for the lineage.
+            old_id (str): Previous version id for the spell index.
+            new_id (str): New version id for the spell index.
             spell (ISpell): Contracted spell instance.
 
         Raises:
@@ -970,7 +970,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Returns:
             Mapping[SpellIndex, ISpell]:
-                Immutable map of local `SpellIndex` lineage keys to spell
+                Immutable map of local `SpellIndex` keys to spell
                 objects.
         """
         return MappingProxyType(self._spells)
@@ -1084,7 +1084,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Args:
             spell_index:
-                The SpellIndex (lineage) of the spell.
+                The SpellIndex of the spell.
 
         Returns:
             Optional[str]:
@@ -1154,11 +1154,11 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Locate a **local** SpellIndex by its stable lineage id.
+        Locate a **local** SpellIndex by its stable index id.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id (ULID) to resolve.
+                Stable SpellIndex id (ULID) to resolve.
 
         Returns:
             Optional[ISpellIndex]:
@@ -1178,11 +1178,11 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Locate a contracted SpellIndex by its stable lineage id.
+        Locate a contracted SpellIndex by its stable index id.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id (ULID) to resolve.
+                Stable SpellIndex id (ULID) to resolve.
 
         Returns:
             Optional[ISpellIndex]:
@@ -1203,10 +1203,10 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Resolve a spell by its stable SpellIndex lineage id.
+        Resolve a spell by its stable SpellIndex id.
 
         Purpose:
-            Provide a runtime lookup path keyed by the stable lineage identity
+            Provide a runtime lookup path keyed by the stable SpellIndex identity
             (`spell_index_id`) rather than the current version id (`spell_id`).
 
         Contract:
@@ -1214,11 +1214,11 @@ class Spellbook(Cleanable, ISpellbook):
             - Once the matching `SpellIndex` object is found, resolves the
               spell directly through the existing index-based helpers instead of
               bouncing back through a second spell-id lookup.
-            - Returns ``None`` when no matching lineage exists.
+            - Returns ``None`` when no matching SpellIndex exists.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id (ULID) to resolve.
+                Stable SpellIndex id (ULID) to resolve.
 
         Returns:
             Optional[ISpell]:
@@ -1266,7 +1266,7 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Finds a spell's SpellIndex (lineage identifier) using its logical identifiers.
+        Finds a spell's SpellIndex using its logical identifiers.
 
         The search checks local spells first, then contracted spells.
 
@@ -1276,7 +1276,7 @@ class Spellbook(Cleanable, ISpellbook):
             binding_name (str): The secondary key to distinguish the spell.
 
         Returns:
-            Optional[SpellIndex]: The SpellIndex representing this spell's lineage.
+            Optional[SpellIndex]: The SpellIndex associated with this spell.
 
         Raises:
             RuntimeError: If the spell is not found in the spellbook (local or contracted).
@@ -1711,7 +1711,7 @@ class Spellbook(Cleanable, ISpellbook):
         Removes a specific contracted spell from the internal registry.
 
         The SpellIndex attachment is removed so this Spellbook no longer
-        receives spell_id updates for the contracted lineage.
+        receives spell_id updates for the contracted spell index.
 
         When a link transaction is active, this also refreshes staged contract
         keys for the peer conduit so change-control commit hooks can observe
@@ -1782,7 +1782,7 @@ class Spellbook(Cleanable, ISpellbook):
         the contract structure and zeroing the version cache.
 
         SpellIndex attachments are removed so this Spellbook no longer
-        receives spell_id updates for the contracted lineage.
+        receives spell_id updates for the contracted spell index.
 
         When a link transaction is active, this also refreshes staged contract
         keys for the peer conduit so change-control commit hooks can observe
