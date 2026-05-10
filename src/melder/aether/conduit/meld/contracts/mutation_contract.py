@@ -226,76 +226,68 @@ class MutationContract(Cleanable):
     def update_contract(
         self,
         *,
-        spell: Any = ...,
-        spellframe: Any = ...,
-        binding_name: Any = ...,
-        spell_override: Any = ...,
-        late_binding: Any = ...,
+        spell: Optional[Any] = None,
+        spellframe: Optional[Any] = None,
+        binding_name: Optional[str] = None,
+        spell_override: Optional[Union[dict, list, tuple]] = None,
+        late_binding: bool = False,
     ) -> None:
         """
-        Update the live in-memory mutation-contract identity under a lock.
+        Replace the live in-memory mutation-contract state under a lock.
 
         Purpose:
-            Provide one supported mutation path for the descriptor instead of
-            relying on direct unsynchronized field assignment.
+            Provide one supported full-replacement mutation path for the
+            descriptor instead of relying on direct unsynchronized field
+            assignment.
 
         Contract:
-            - Applies updates atomically under the internal `RLock`.
-            - Preserves current values for any field not explicitly supplied.
+            - Applies the replacement atomically under the internal `RLock`.
+            - Replaces the full live contract state with the supplied values.
             - Re-normalizes `binding_name` when a new value is provided.
-            - Rejects updates that would leave both `spell` and `spellframe`
-              unset.
+            - Rejects replacements that would leave both `spell` and
+              `spellframe` unset.
 
         Args:
             spell:
-                New concrete spell target, or `...` to keep the current value.
+                New concrete spell target, or `None` when the replacement is
+                frame-only.
             spellframe:
-                New logical frame/protocol target, or `...` to keep the
-                current value.
+                New logical frame/protocol target, or `None` when the
+                replacement is spell-only.
             binding_name:
-                New binding name, or `...` to keep the current value. When a
-                concrete value is provided it is normalized through
+                New binding name. When provided it is normalized through
                 `SpellInputUtils.normalize_binding_name(...)`. `None` clears the
-                explicit binding name and restores default-binding semantics.
+                explicit binding name and restores default-binding semantics for
+                the replacement.
             spell_override:
-                New override payload, or `...` to keep the current payload.
+                New override payload for the replacement contract.
             late_binding:
-                New late-binding posture, or `...` to keep the current value.
+                New late-binding posture for the replacement contract.
 
         Returns:
             None.
 
         Raises:
             ValueError:
-                If the update would leave the descriptor without both `spell`
+                If the replacement would leave the descriptor without both `spell`
                 and `spellframe`.
         """
         self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
-
-            new_spell = self._spell if spell is ... else spell
-            new_spellframe = self._spellframe if spellframe is ... else spellframe
-            if new_spell is None and new_spellframe is None:
+            if spell is None and spellframe is None:
                 raise ValueError(
                     "MutationContract requires at least one of `spell` or `spellframe` "
                     "to be provided."
                 )
-
-            if binding_name is ...:
-                new_binding_name = self._binding_name
-            elif binding_name is None:
-                new_binding_name = None
-            else:
-                new_binding_name = SpellInputUtils.normalize_binding_name(binding_name)
-
-            self._spell = new_spell
-            self._spellframe = new_spellframe
-            self._binding_name = new_binding_name
-            if spell_override is not ...:
-                self._spell_override = spell_override
-            if late_binding is not ...:
-                self._late_binding = late_binding
+            self._spell = spell
+            self._spellframe = spellframe
+            self._binding_name = (
+                SpellInputUtils.normalize_binding_name(binding_name)
+                if binding_name is not None
+                else None
+            )
+            self._spell_override = spell_override
+            self._late_binding = late_binding
 
     @property
     def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
@@ -346,7 +338,6 @@ class MutationContract(Cleanable):
             Tuple[str, str]: The same normalized key pair returned by
             `canonical_key`.
         """
-        self.check_cleaned()
         return self.canonical_key
 
     def __repr__(self) -> str:

@@ -202,8 +202,10 @@ def _experiment_bind_reference_recovery_and_update() -> None:
         _emit("OK_MUTATION_CONTRACT_REFERENCE_SHARED")
 
         recovered_contract.update_contract(
+            spell=recovered_contract.spell,
             spellframe=ProviderB,
             binding_name="Secondary",
+            spell_override=recovered_contract.spell_override,
             late_binding=True,
         )
 

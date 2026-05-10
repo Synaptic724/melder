@@ -410,7 +410,10 @@ def test_update_contract_and_read_paths_are_thread_safe() -> None:
             barrier.wait()
             for _ in range(100):
                 contract.update_contract(
+                    spell="alpha",
+                    spellframe="frame",
                     binding_name=f"variant_{index}",
+                    spell_override=contract.spell_override,
                     late_binding=bool(index % 2),
                 )
         except Exception as exc:  # pragma: no cover - failure capture
