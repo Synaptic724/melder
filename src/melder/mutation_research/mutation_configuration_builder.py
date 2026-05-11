@@ -7,9 +7,15 @@ from melder.mutation_research.mutation_configuration import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.imutationresearchconfiguration import (
+    IMutationResearchConfiguration,
+)
+from melder.utilities.interfaces.imutationresearchconfigurationbuilder import (
+    IMutationResearchConfigurationBuilder,
+)
 
 
-class MutationResearchConfigurationBuilder(Cleanable):
+class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigurationBuilder):
     """
     One-shot builder for mutation-research configuration assembly.
 
@@ -69,7 +75,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self.check_cleaned()
         return self._id
 
-    def with_defaults(self) -> "MutationResearchConfigurationBuilder":
+    def with_defaults(self) -> IMutationResearchConfigurationBuilder:
         """
         Apply the default mutation-research configuration.
 
@@ -83,7 +89,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
     def with_restricted_module_mutations(
             self,
             enabled: bool,
-    ) -> "MutationResearchConfigurationBuilder":
+    ) -> IMutationResearchConfigurationBuilder:
         """
         Set the restricted-module-mutations posture on the wrapped config.
 
@@ -101,7 +107,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,
-    ) -> "MutationResearchConfigurationBuilder":
+    ) -> IMutationResearchConfigurationBuilder:
         """
         Set the unrestricted-module-mutations posture on the wrapped config.
 
@@ -116,7 +122,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.with_unrestricted_module_mutations(enabled)
         return self
 
-    def build(self) -> MutationResearchConfiguration:
+    def build(self) -> IMutationResearchConfiguration:
         """
         Transfer the wrapped mutable configuration to the caller.
 
@@ -126,7 +132,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self.check_cleaned()
         return self._handoff_configuration()
 
-    def finalize(self) -> MutationResearchConfiguration:
+    def finalize(self) -> IMutationResearchConfiguration:
         """
         Finalize and transfer the wrapped configuration to the caller.
 
@@ -137,7 +143,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.finalize()
         return self._handoff_configuration()
 
-    def activate(self) -> MutationResearchConfiguration:
+    def activate(self) -> IMutationResearchConfiguration:
         """
         Activate and transfer the wrapped configuration to the caller.
 
@@ -148,7 +154,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.activate()
         return self._handoff_configuration()
 
-    def _handoff_configuration(self) -> MutationResearchConfiguration:
+    def _handoff_configuration(self) -> IMutationResearchConfiguration:
         """
         Transfer builder-owned configuration ownership to the caller.
 

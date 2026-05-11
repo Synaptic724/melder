@@ -4,9 +4,12 @@ from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.imutationresearchconfiguration import (
+    IMutationResearchConfiguration,
+)
 
 
-class MutationResearchConfiguration(Cleanable):
+class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
     """
     Mutable-to-frozen configuration surface for the mutation-research root.
 
@@ -207,7 +210,7 @@ class MutationResearchConfiguration(Cleanable):
         with self._lock:
             self._frozen = True
 
-    def finalize(self) -> "MutationResearchConfiguration":
+    def finalize(self) -> IMutationResearchConfiguration:
         """
         Validate and freeze the configuration, then return it.
 
@@ -217,7 +220,7 @@ class MutationResearchConfiguration(Cleanable):
         self.freeze()
         return self
 
-    def activate(self) -> "MutationResearchConfiguration":
+    def activate(self) -> IMutationResearchConfiguration:
         """
         Validate, freeze, and mark the configuration as activated.
 
@@ -229,7 +232,7 @@ class MutationResearchConfiguration(Cleanable):
             self._activated = True
         return self
 
-    def with_defaults(self) -> "MutationResearchConfiguration":
+    def with_defaults(self) -> IMutationResearchConfiguration:
         """
         Apply the default mutation-research posture.
 
@@ -248,7 +251,7 @@ class MutationResearchConfiguration(Cleanable):
     def with_restricted_module_mutations(
             self,
             enabled: bool,
-    ) -> "MutationResearchConfiguration":
+    ) -> IMutationResearchConfiguration:
         """
         Set the restricted-module-mutations posture.
 
@@ -266,7 +269,7 @@ class MutationResearchConfiguration(Cleanable):
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,
-    ) -> "MutationResearchConfiguration":
+    ) -> IMutationResearchConfiguration:
         """
         Set the unrestricted-module-mutations posture.
 

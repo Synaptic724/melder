@@ -15,9 +15,18 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import IAether, IConduit
+from melder.utilities.interfaces.imutationconduit import IMutationConduit
+from melder.utilities.interfaces.imutationframe import IMutationFrame
+from melder.utilities.interfaces.imutationresearch import IMutationResearch
+from melder.utilities.interfaces.imutationresearchconfiguration import (
+    IMutationResearchConfiguration,
+)
+from melder.utilities.interfaces.imutationresearchconfigurationbuilder import (
+    IMutationResearchConfigurationBuilder,
+)
 
 
-class MutationResearch(Cleanable):
+class MutationResearch(Cleanable, IMutationResearch):
     """
     Singleton mutation-research root hosted by `Aether`.
 
@@ -217,7 +226,7 @@ class MutationResearch(Cleanable):
         return self.activated
 
     @property
-    def configuration(self) -> Optional[MutationResearchConfiguration]:
+    def configuration(self) -> Optional[IMutationResearchConfiguration]:
         """
         Return the installed configuration, if any.
 
@@ -227,7 +236,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         return self._configuration
 
-    def create_configuration(self) -> MutationResearchConfiguration:
+    def create_configuration(self) -> IMutationResearchConfiguration:
         """
         Create a fresh mutation-research configuration object.
 
@@ -237,7 +246,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         return MutationResearchConfiguration()
 
-    def create_configuration_builder(self) -> MutationResearchConfigurationBuilder:
+    def create_configuration_builder(self) -> IMutationResearchConfigurationBuilder:
         """
         Create a fresh fluent builder for mutation-research configuration assembly.
 
@@ -247,7 +256,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         return MutationResearchConfigurationBuilder()
 
-    def configure(self, configuration: MutationResearchConfiguration) -> None:
+    def configure(self, configuration: IMutationResearchConfiguration) -> None:
         """
         Install one configuration on the mutation-research root.
 
@@ -280,7 +289,7 @@ class MutationResearch(Cleanable):
 
     def activate(
             self,
-            configuration: Optional[MutationResearchConfiguration] = None,
+            configuration: Optional[IMutationResearchConfiguration] = None,
     ) -> None:
         """
         Activate the mutation-research root using one activated configuration.
@@ -320,7 +329,7 @@ class MutationResearch(Cleanable):
         with self._lock:
             self._activated = False
 
-    def create_mutation_conduit(self, conduit: IConduit) -> MutationConduit:
+    def create_mutation_conduit(self, conduit: IConduit) -> IMutationConduit:
         """
         Create one placeholder mutation-conduit facade for a live conduit.
 
@@ -346,7 +355,7 @@ class MutationResearch(Cleanable):
             change_control_manager=change_control,
         )
 
-    def create_mutation_frame(self, aetheric_frame_name: str = "default") -> MutationFrame:
+    def create_mutation_frame(self, aetheric_frame_name: str = "default") -> IMutationFrame:
         """
         Create one placeholder mutation-frame facade for a named frame.
 

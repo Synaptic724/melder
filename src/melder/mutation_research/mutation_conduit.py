@@ -5,9 +5,11 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import IChangeControlManager, IConduit, ISpellSystemStates
+from melder.utilities.interfaces.imutationconduit import IMutationConduit
+from melder.utilities.interfaces.imutationresearch import IMutationResearch
 
 
-class MutationConduit(Cleanable):
+class MutationConduit(Cleanable, IMutationConduit):
     """
     Placeholder conduit-scoped mutation facade.
 
@@ -36,7 +38,7 @@ class MutationConduit(Cleanable):
             self,
             *,
             conduit: IConduit,
-            mutation_research,
+            mutation_research: IMutationResearch,
             spell_system_states: ISpellSystemStates,
             change_control_manager: IChangeControlManager,
     ) -> None:
@@ -105,7 +107,7 @@ class MutationConduit(Cleanable):
         return self._conduit
 
     @property
-    def mutation_research(self):
+    def mutation_research(self) -> IMutationResearch:
         """
         Return the owning mutation-research root.
 
