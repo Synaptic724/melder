@@ -518,6 +518,14 @@ class FakeSpellbook:
     Minimal spellbook storage for transfer operations.
     """
 
+    class _ConfigurationStub:
+        def get_property(self, key: str) -> bool:
+            if key == "overrides_enabled":
+                return True
+            if key == "full_ahead_of_time_compilation":
+                return True
+            raise KeyError(key)
+
     def __init__(self, states_system: FakeSpellStatesSystem) -> None:
         """
         Initialize spell storage and the state system link.
@@ -537,6 +545,7 @@ class FakeSpellbook:
         self._risk_unregister_calls: List[Dict[str, Any]] = []
         self._nexus_publish_enabled: bool = True
         self._nexus_publish_calls: List[Any] = []
+        self._configuration = self._ConfigurationStub()
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """
@@ -852,6 +861,7 @@ def build_spell(
         creations: Any = None,
         *,
         dynamic_environment: bool = False,
+        overrides_enabled: bool = True,
         creation_gate_controller: Optional[CreationGateController] = None,
     ) -> None:
         """

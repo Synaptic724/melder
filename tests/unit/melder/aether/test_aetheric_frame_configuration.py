@@ -50,6 +50,7 @@ def test_frame_configuration_derives_from_spellbook_configuration() -> None:
     assert frame_configuration.system_state == SystemState.dynamic
     assert frame_configuration.ai_native_enabled is True
     assert frame_configuration.rift_enabled is True
+    assert frame_configuration.overrides_enabled is True
 
 
 def test_aetheric_frame_configuration_first_writer_wins() -> None:
@@ -190,6 +191,7 @@ def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
         "system_state": SystemState.dynamic,
         "ai_native_enabled": True,
         "rift_enabled": False,
+        "overrides_enabled": True,
     }
 
 

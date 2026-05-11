@@ -261,6 +261,7 @@ class DummySpell:
             creations=None,
             *,
             dynamic_environment=False,
+            overrides_enabled=True,
             creation_gate_controller=None,
     ):
         """

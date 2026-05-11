@@ -14,6 +14,7 @@ def test_load_defaults_populates_all_required_properties():
     assert cfg.get_property("debugging") is False
     assert cfg.get_property("disposal_method_names") == []
     assert cfg.get_property("full_ahead_of_time_compilation") is True
+    assert cfg.get_property("overrides_enabled") is True
 
 
 def test_set_property_converts_enum_strings():
@@ -132,6 +133,14 @@ def test_validate_full_ahead_of_time_compilation_type():
         cfg.validate()
 
 
+def test_validate_overrides_enabled_type() -> None:
+    cfg = Configuration()
+    cfg.load_default_dictionary()
+    cfg.set_property("overrides_enabled", "yes")
+    with pytest.raises(ValueError):
+        cfg.validate()
+
+
 def test_freeze_is_idempotent_and_blocks_mutation():
     cfg = Configuration()
     cfg.load_default_dictionary()
@@ -204,6 +213,11 @@ def test_with_phase_scheduler_workers_rejects_invalid():
     cfg = Configuration()
     with pytest.raises(ValueError):
         cfg.with_phase_scheduler_workers(0)
+
+
+def test_with_overrides_enabled_sets_property() -> None:
+    cfg = Configuration().with_overrides_enabled(False)
+    assert cfg.get_property("overrides_enabled") is False
 
 
 def test_with_phase_scheduler_barrier_timeout_limits():

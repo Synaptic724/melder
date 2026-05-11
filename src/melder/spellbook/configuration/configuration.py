@@ -89,6 +89,7 @@ class Configuration(Cleanable, IConfiguration):
             "disposal": bool,
             "disposal_method_names": list,
             "full_ahead_of_time_compilation": bool,
+            "overrides_enabled": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "ai_native_enabled": bool,
             "rift_enabled": bool,
@@ -225,6 +226,7 @@ class Configuration(Cleanable, IConfiguration):
         self._validate_required_property_types()
         self._validate_enum_properties()
         self._validate_phase_scheduler_workers()
+        self._validate_overrides_enabled()
         self._validate_ai_native_enabled()
         self._validate_rift_enabled()
         self._validate_ai_runtime_posture()
@@ -276,6 +278,15 @@ class Configuration(Cleanable, IConfiguration):
 
         if not isinstance(workers, int) or workers < 1:
             raise ValueError("phase_scheduler_workers must be a positive integer >= 1.")
+
+    def _validate_overrides_enabled(self) -> None:
+        """
+        Ensure overrides_enabled is a boolean.
+        """
+        enabled = self._properties.get("overrides_enabled")
+
+        if not isinstance(enabled, bool):
+            raise ValueError("overrides_enabled must be a boolean.")
 
     def _validate_ai_native_enabled(self) -> None:
         """
@@ -450,6 +461,7 @@ class Configuration(Cleanable, IConfiguration):
             "disposal": False,
             "disposal_method_names": [],
             "full_ahead_of_time_compilation": True,
+            "overrides_enabled": True,
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
             "rift_enabled": False,
@@ -738,6 +750,31 @@ class Configuration(Cleanable, IConfiguration):
         self.set_property("full_ahead_of_time_compilation", enabled)
         return self
 
+    def with_overrides_enabled(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Set whether bound spells default to override-capable runtime posture.
+
+        Semantics:
+        - ``True`` keeps the current override-capable runtime behavior.
+        - ``False`` means later runtime entrypoints should reject caller
+          overrides and mutation overlays for spells using the default.
+
+        Args:
+            enabled (bool): Desired default override posture.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+
+        Raises:
+            TypeError: If ``enabled`` is not a bool.
+        """
+        if not isinstance(enabled, bool):
+            raise TypeError("overrides_enabled must be a bool.")
+        self.set_property("overrides_enabled", enabled)
+        return self
+
 
     def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
         """
@@ -792,7 +829,8 @@ class Configuration(Cleanable, IConfiguration):
 
         Behavior:
         - Sets: system_state="automatic", debugging=False, disposal=False,
-          disposal_method_names=[], full_ahead_of_time_compilation=True.
+          disposal_method_names=[], full_ahead_of_time_compilation=True,
+          overrides_enabled=True.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:
@@ -884,9 +922,9 @@ class Configuration(Cleanable, IConfiguration):
         Build the narrow frame-level AR posture object from this configuration.
 
         Purpose:
-            Project the full Spellbook configuration down to the three
-            frame-level posture fields that matter to AR/Nexus-facing runtime
-            behavior.
+            Project the full Spellbook configuration down to the narrow
+            frame-level posture fields that later runtime surfaces may need,
+            including the default override posture.
 
         Args:
             origin_spellbook_id:

@@ -321,6 +321,20 @@ class IConfiguration(ICleanable, Protocol):
         """
         ...
 
+    def with_overrides_enabled(self, enabled: bool = True) -> 'IConfiguration':
+        """
+        Fluent
+
+        Set whether bound spells default to override-capable runtime posture.
+
+        Args:
+            enabled: True to keep override-capable posture enabled by default.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+        """
+        ...
+
     def with_disposal_method_names(self, names: list[str]) -> 'IConfiguration':
         """
         Fluent
