@@ -258,6 +258,8 @@ class Meld(Cleanable, IMeld):
                 represents **per-call overrides** (constructor arguments, factory
                 inputs, etc.) and is normalized into a dictionary by
                 :meth:`_normalize_spell_override`.
+                The payload is rejected when the resolved spell disables
+                override-capable runtime posture.
 
         Returns:
             Optional[Any]:
@@ -276,8 +278,9 @@ class Meld(Cleanable, IMeld):
                 If a pre-cast, activation, or post-cast hook fails.
             RuntimeError:
                 For unexpected internal state issues (e.g., missing object after
-                ID resolution, unsupported Creations manager, or attempting to
-                meld a broken spell).
+                ID resolution, unsupported Creations manager, attempting to
+                meld a broken spell, or passing `spell_override` to a spell
+                that has overrides disabled).
         """
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[ISpell] = None
@@ -323,6 +326,11 @@ class Meld(Cleanable, IMeld):
         if spell_override is None:
             override_map = None
         else:
+            if not target_spell.overrides_enabled:
+                raise RuntimeError(
+                    "Overrides are not enabled for this spell. "
+                    "spell_override cannot be passed to Meld.meld()."
+                )
             override_map = self._normalize_spell_override(spell_override)
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
