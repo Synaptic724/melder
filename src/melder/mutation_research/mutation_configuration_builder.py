@@ -86,24 +86,6 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
         self._configuration.with_defaults()
         return self
 
-    def with_restricted_module_mutations(
-            self,
-            enabled: bool,
-    ) -> IMutationResearchConfigurationBuilder:
-        """
-        Set the restricted-module-mutations posture on the wrapped config.
-
-        Args:
-            enabled:
-                Whether restricted module mutation mode is enabled.
-
-        Returns:
-            MutationResearchConfigurationBuilder: This builder.
-        """
-        self.check_cleaned()
-        self._configuration.with_restricted_module_mutations(enabled)
-        return self
-
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,

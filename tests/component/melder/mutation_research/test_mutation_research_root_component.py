@@ -131,12 +131,11 @@ def test_component_root_create_mutation_frame_returns_placeholder(case_index: in
 
 
 @pytest.mark.parametrize(
-    "case_index,restricted,unrestricted",
-    [(i, i % 2 == 0, i % 2 != 0) for i in range(1, 11)],
+    "case_index,unrestricted",
+    [(i, i % 2 != 0) for i in range(1, 11)],
 )
 def test_component_root_configuration_activation_matrix(
     case_index: int,
-    restricted: bool,
     unrestricted: bool,
 ) -> None:
     """
@@ -145,7 +144,6 @@ def test_component_root_configuration_activation_matrix(
     aether = Aether()
     root = aether.mutation_research
     configuration = root.create_configuration()
-    configuration.with_restricted_module_mutations(restricted)
     configuration.with_unrestricted_module_mutations(unrestricted)
     configuration.activate()
 
@@ -155,5 +153,6 @@ def test_component_root_configuration_activation_matrix(
     assert root.is_configured is True
     assert root.is_activated is True
     assert root.configuration is configuration
+    assert root.configuration.get_property("unrestricted_module_mutations") is unrestricted
     root.deactivate()
     assert root.is_activated is False

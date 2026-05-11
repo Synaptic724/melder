@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional
+from typing import Dict, Tuple, Type, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -47,8 +47,7 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
         self._frozen: bool = False
         self._activated: bool = False
         self._properties: Dict[str, object] = {}
-        self.available_properties: Dict[str, type] = {
-            "restricted_module_mutations": bool,
+        self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "unrestricted_module_mutations": bool,
         }
 
@@ -69,6 +68,7 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
             self._activated = False
             self._properties.clear()
             self._properties = None
+            self.available_properties.clear()
             self.available_properties = None
             self._id = None
         self._lock = None
@@ -128,11 +128,15 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
             raise ValueError(
                 "Unknown MutationResearchConfiguration property: '{0}'.".format(key)
             )
-        if not isinstance(value, self.available_properties[key]):
+        expected_type = self.available_properties[key]
+        if not isinstance(expected_type, tuple):
+            expected_type = (expected_type,)
+        if not isinstance(value, expected_type):
+            expected_names = ", ".join(t.__name__ for t in expected_type)
             raise TypeError(
                 "MutationResearchConfiguration property '{0}' must be a {1}.".format(
                     key,
-                    self.available_properties[key].__name__,
+                    expected_names,
                 )
             )
 
@@ -186,13 +190,6 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
                         key
                     )
                 )
-
-        restricted = bool(self.get_property("restricted_module_mutations"))
-        unrestricted = bool(self.get_property("unrestricted_module_mutations"))
-        if restricted == unrestricted:
-            raise ValueError(
-                "Exactly one of restricted_module_mutations or unrestricted_module_mutations must be enabled."
-            )
         return True
 
     def freeze(self) -> None:
@@ -237,33 +234,17 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
         Apply the default mutation-research posture.
 
         Contract:
-            - Restricted module mutation is enabled by default.
             - Unrestricted module mutation is disabled by default.
 
         Returns:
             MutationResearchConfiguration: This configuration instance.
         """
         self.check_cleaned()
-        self.set_property("restricted_module_mutations", True)
-        self.set_property("unrestricted_module_mutations", False)
-        return self
-
-    def with_restricted_module_mutations(
-            self,
-            enabled: bool,
-    ) -> IMutationResearchConfiguration:
-        """
-        Set the restricted-module-mutations posture.
-
-        Args:
-            enabled:
-                Whether restricted module mutation mode is enabled.
-
-        Returns:
-            MutationResearchConfiguration: This configuration instance.
-        """
-        self.check_cleaned()
-        self.set_property("restricted_module_mutations", enabled)
+        defaults = {
+            "unrestricted_module_mutations": False,
+        }
+        for key, value in defaults.items():
+            self.set_property(key, value)
         return self
 
     def with_unrestricted_module_mutations(

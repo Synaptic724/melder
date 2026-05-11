@@ -29,25 +29,22 @@ def reset_mutation_research_singleton() -> None:
 
 def test_mutation_research_configuration_defaults_validate() -> None:
     """
-    Verify the default mutation-research configuration is the restricted posture.
+    Verify the default mutation-research configuration disables unrestricted mode.
     """
     configuration = MutationResearchConfiguration().with_defaults()
 
-    assert configuration.get_property("restricted_module_mutations") is True
     assert configuration.get_property("unrestricted_module_mutations") is False
     assert configuration.validate() is True
 
 
-def test_mutation_research_configuration_rejects_both_modes_enabled() -> None:
+def test_mutation_research_configuration_accepts_explicit_unrestricted_toggle() -> None:
     """
-    Verify configuration rejects enabling both restricted and unrestricted modes.
+    Verify configuration accepts explicit unrestricted-mode enabling.
     """
     configuration = MutationResearchConfiguration()
-    configuration.set_property("restricted_module_mutations", True)
     configuration.set_property("unrestricted_module_mutations", True)
 
-    with pytest.raises(ValueError, match="Exactly one"):
-        configuration.validate()
+    assert configuration.validate() is True
 
 
 def test_mutation_research_configuration_builder_activate_hands_off_configuration() -> None:

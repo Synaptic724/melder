@@ -59,7 +59,6 @@ def test_unit_configuration_builder_handoff_matrix(case_index: int) -> None:
     if case_index % 2 == 0:
         builder.with_defaults()
     else:
-        builder.with_restricted_module_mutations(False)
         builder.with_unrestricted_module_mutations(True)
 
     if case_index % 4 == 0:
@@ -72,10 +71,11 @@ def test_unit_configuration_builder_handoff_matrix(case_index: int) -> None:
         configuration = builder.build()
         assert configuration.cleaned is False
 
+    assert configuration.has_property("unrestricted_module_mutations") is True
     if case_index % 2 == 0:
-        assert configuration.has_property("restricted_module_mutations") is True
+        assert configuration.get_property("unrestricted_module_mutations") is False
     else:
-        assert configuration.has_property("unrestricted_module_mutations") is True
+        assert configuration.get_property("unrestricted_module_mutations") is True
 
 
 @pytest.mark.parametrize(
@@ -124,7 +124,7 @@ def test_unit_create_mutation_conduit_identity_matrix(conduit_label: str) -> Non
 
 @pytest.mark.parametrize(
     "operation_index",
-    list(range(1, 25)),
+    list(range(1, 24)),
 )
 def test_unit_cleanup_guard_matrix(operation_index: int) -> None:
     """
@@ -157,7 +157,6 @@ def test_unit_cleanup_guard_matrix(operation_index: int) -> None:
         lambda: configuration.frozen,
         lambda: configuration.activated,
         lambda: configuration.with_defaults(),
-        lambda: configuration.with_restricted_module_mutations(True),
         lambda: configuration.with_unrestricted_module_mutations(False),
         lambda: configuration.validate(),
         lambda: configuration.freeze(),

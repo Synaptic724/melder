@@ -20,12 +20,6 @@ class IMutationResearchConfiguration(ICleanable, Protocol):
     def with_defaults(self) -> "IMutationResearchConfiguration":
         ...
 
-    def with_restricted_module_mutations(
-            self,
-            enabled: bool,
-    ) -> "IMutationResearchConfiguration":
-        ...
-
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,
