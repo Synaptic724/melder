@@ -279,14 +279,7 @@ class Meld(Cleanable, IMeld):
                 ID resolution, unsupported Creations manager, or attempting to
                 meld a broken spell).
         """
-
-        # 1) Normalize per-call overrides into a stable dict shape.
-        if spell_override is None:
-            override_map = None
-        else:
-            override_map = self._normalize_spell_override(spell_override)
-
-        # 2) Resolve the spell object from the Spellbook / SpellIndex.
+        # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[ISpell] = None
         if isinstance(spell, str):
             spell_id_resolution_cache = self._spell_id_resolution_cache
@@ -325,6 +318,12 @@ class Meld(Cleanable, IMeld):
                         None,
                     )
                 input_resolution_cache[cache_key] = target_spell
+
+        # 2) Normalize per-call overrides into a stable dict shape.
+        if spell_override is None:
+            override_map = None
+        else:
+            override_map = self._normalize_spell_override(spell_override)
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
