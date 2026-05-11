@@ -182,6 +182,7 @@ class Spell(Cleanable, ISpell):
         "_key",
         "_lock",
         "_mutation_override",
+        "_overrides_enabled",
         "_owner_conduit_id",
         "_owner_conduit_name",
         "_owner_creations",
@@ -320,6 +321,7 @@ class Spell(Cleanable, ISpell):
         self.tags = args if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: dict = {}
+        self._overrides_enabled: bool = True
         self.disposal_method_names: List[str] = []
         self.has_disposal_methods: bool = False
 
@@ -944,6 +946,18 @@ class Spell(Cleanable, ISpell):
     #endregion Introspection Helpers
 
     #region Configuration
+    @property
+    def overrides_enabled(self) -> bool:
+        """
+        Whether this spell currently allows override-capable runtime behavior.
+
+        Returns:
+            bool: True when caller overrides and mutation overlays are allowed
+            for this spell.
+        """
+        self.check_cleaned()
+        return self._overrides_enabled
+
     def _add_owned_conduit(
             self,
             conduit_id: str,
@@ -951,6 +965,7 @@ class Spell(Cleanable, ISpell):
             creations: Any = None,
             *,
             dynamic_environment: bool,
+            overrides_enabled: bool = True,
             creation_gate_controller: CreationGateController,
     ) -> None:
         """
@@ -962,6 +977,7 @@ class Spell(Cleanable, ISpell):
         - Attach the spell to a specific Conduit identity (for logging, diagnostics, and scoping).
         - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
         - Reconfigure CreationContextFactory dependencies for the new owner.
+        - Apply the effective overrides-enabled posture supplied by the owner.
         - Invalidate the spell-owned CreationContext because ownership/scoping changed.
 
         Args:
@@ -973,6 +989,9 @@ class Spell(Cleanable, ISpell):
                 Conduit-level creations container used for managing shared instances.
             dynamic_environment (bool):
                 True when the owning conduit runs in dynamic mode.
+            overrides_enabled (bool):
+                Effective override-capable runtime posture for this spell under
+                the owning conduit/runtime configuration.
             creation_gate_controller (CreationGateController):
                 Frame-owned CreationGateController used by CreationContextFactory.
 
@@ -982,6 +1001,7 @@ class Spell(Cleanable, ISpell):
         with self._lock:
             # Ownership changes invalidate spell-bound runtime context shape.
             self._cleanup_creation_context()
+            self._overrides_enabled = bool(overrides_enabled)
             self._configure_creation_context_factory(
                 dynamic_environment=dynamic_environment,
                 creation_gate_controller=creation_gate_controller,
@@ -1578,6 +1598,7 @@ class Spell(Cleanable, ISpell):
         Contract:
             - Requires the spell to be attached to a dynamic runtime
               environment.
+            - Requires overrides-enabled posture for this spell.
             - Stores the raw overlay payload on the spell.
             - Clears the spell-owned `CreationContext` so runtime shape is rebuilt
               on the next meld path.
@@ -1598,13 +1619,18 @@ class Spell(Cleanable, ISpell):
 
         Raises:
             RuntimeError:
-                If the spell is not attached to a dynamic runtime environment.
+                If the spell is not attached to a dynamic runtime environment,
+                or if overrides are disabled for this spell.
 
         """
         self.check_cleaned()
         if not self._dynamic_environment:
             raise RuntimeError(
                 "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
+            )
+        if not self._overrides_enabled:
+            raise RuntimeError(
+                "Overrides are not enabled for this spell. Mutation overrides require overrides-enabled posture."
             )
 
         new_payload: dict = override if override is not None else {}
@@ -1630,6 +1656,7 @@ class Spell(Cleanable, ISpell):
         Contract:
             - Requires the spell to be attached to a dynamic runtime
               environment.
+            - Requires overrides-enabled posture for this spell.
             - Resets the local overlay payload back to the default empty dict.
             - Clears the spell-owned `CreationContext` so future meld work rebuilds
               runtime shape without the previous overlay.
@@ -1644,13 +1671,18 @@ class Spell(Cleanable, ISpell):
 
         Raises:
             RuntimeError:
-                If the spell is not attached to a dynamic runtime environment.
+                If the spell is not attached to a dynamic runtime environment,
+                or if overrides are disabled for this spell.
 
         """
         self.check_cleaned()
         if not self._dynamic_environment:
             raise RuntimeError(
                 "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
+            )
+        if not self._overrides_enabled:
+            raise RuntimeError(
+                "Overrides are not enabled for this spell. Mutation overrides require overrides-enabled posture."
             )
 
         if not self._mutation_override and not self.has_mutation_override:

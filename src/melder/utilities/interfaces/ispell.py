@@ -64,6 +64,7 @@ class ISpell(ICleanable, Protocol):
     tags: List
     metadata: Dict
     _mutation_override: dict
+    _overrides_enabled: bool
     disposal_method_names: List[str]
     has_disposal_methods: bool
 
@@ -224,6 +225,16 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
+    @property
+    def overrides_enabled(self) -> bool:
+        """
+        Whether this Spell currently allows override-capable runtime behavior.
+
+        This is the effective per-spell gate used by runtime entrypoints to
+        decide whether caller overrides and mutation overlays are permitted.
+        """
+        ...
+
     def apply_mutation_override(self, override: Optional[dict]) -> None:
         """
         Apply or update the DAG-level mutation override for this Spell.
@@ -344,6 +355,7 @@ class ISpell(ICleanable, Protocol):
             creations: Any = None,
             *,
             dynamic_environment: bool,
+            overrides_enabled: bool = True,
             creation_gate_controller: 'CreationGateController',
     ) -> None:
         """
