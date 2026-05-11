@@ -495,6 +495,9 @@ class SpellbookCreationSystem(Cleanable):
                         conduit._name,
                         conduit._creations,
                         dynamic_environment=conduit.__dynamic_environment__,
+                        overrides_enabled=spellbook._configuration.get_property(
+                            "overrides_enabled"
+                        ),
                         creation_gate_controller=conduit._creation_gate_controller,
                     )
                     spell.spell_index._set_owner_conduit_id(conduit._id)

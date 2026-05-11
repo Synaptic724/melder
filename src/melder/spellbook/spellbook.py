@@ -2755,6 +2755,9 @@ class Spellbook(Cleanable, ISpellbook):
                     self._conduit._name,
                     self._conduit._creations,
                     dynamic_environment=self._conduit.__dynamic_environment__,
+                    overrides_enabled=self._configuration.get_property(
+                        "overrides_enabled"
+                    ),
                     creation_gate_controller=self._conduit._creation_gate_controller,
                 )
                 new_spell.spell_index._set_owner_conduit_id(self._conduit._id)
@@ -3224,12 +3227,16 @@ class Spellbook(Cleanable, ISpellbook):
         rift_enabled = self._configuration.get_property("rift_enabled")
         if rift_enabled is None:
             rift_enabled = False
+        overrides_enabled = self._configuration.get_property("overrides_enabled")
+        if overrides_enabled is None:
+            overrides_enabled = True
 
         return AethericFrameConfiguration(
             origin_spellbook_id=self._id,
             system_state=system_state,
             ai_native_enabled=ai_native_enabled,
             rift_enabled=rift_enabled,
+            overrides_enabled=overrides_enabled,
         )
 
     def _refresh_nexus_publish_enabled(self) -> bool:
