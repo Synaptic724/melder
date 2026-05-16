@@ -2,7 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -155,7 +155,7 @@ def _bind_target_frame_configuration(
     """
     aether = Aether()
     aether._ensure_frame(frame_name)
-    frame_configuration = Configuration()
+    frame_configuration = SpellbookConfiguration()
     if system_state == SystemState.dynamic:
         frame_configuration.dynamic_defaults()
     else:

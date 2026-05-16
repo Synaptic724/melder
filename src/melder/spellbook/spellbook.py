@@ -25,7 +25,7 @@ from melder.utilities.interfaces import (
     ISpellbook,
     IUnitOfWork,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
@@ -81,7 +81,7 @@ class Spellbook(Cleanable, ISpellbook):
             Shared frame name used to bind this Spellbook to one Aether frame.
             Defaults to `"default"`. If the frame does not exist yet, Spellbook
             creates it.
-        configuration (Optional[Configuration]):
+        configuration (Optional[SpellbookConfiguration]):
             Optional pre-configured configuration instance to reuse for this
             frame.
 
@@ -97,7 +97,7 @@ class Spellbook(Cleanable, ISpellbook):
           and high-level references are dropped afterward.
 
     Notes:
-        - Configuration is locked automatically once the spellbook crosses into
+        - SpellbookConfiguration is locked automatically once the spellbook crosses into
           the conjured runtime path.
         - Shared Aether frame configuration is reused when it already exists.
     """
@@ -185,7 +185,7 @@ class Spellbook(Cleanable, ISpellbook):
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
         Spellbook._aether._ensure_frame(self._aetheric_frame)
 
-        # Configuration state
+        # SpellbookConfiguration state
         self._configuration_locked: bool = False
         self._configuration: IConfiguration = configuration
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
@@ -507,7 +507,7 @@ class Spellbook(Cleanable, ISpellbook):
         After this runs:
             - Each conduit_id in `_contracted_spells` will have a corresponding
               ConcurrentSet[str] in `_contracted_versions` containing all
-              version IDs (SHA256) for that conduit’s spells.
+              version IDs (SHA256) for that conduitâ€™s spells.
         """
 
         with self._lock:
@@ -2879,7 +2879,7 @@ class Spellbook(Cleanable, ISpellbook):
                 )
 
     #endregion Binding API
-    #region Configuration API
+    #region SpellbookConfiguration API
     def _initialize_configuration(self) -> None:
         """
         Internal
@@ -2890,7 +2890,7 @@ class Spellbook(Cleanable, ISpellbook):
               * Otherwise, adopt the Aether config and mark as locked.
           - If Aether has no config:
               * If a config was passed in, verify its frame matches and keep it (unlocked).
-              * Otherwise create a fresh Configuration for this frame (unlocked).
+              * Otherwise create a fresh SpellbookConfiguration for this frame (unlocked).
         """
         try:
             aether_config: Optional[IConfiguration] = self._get_configuration_from_aether()
@@ -2912,17 +2912,17 @@ class Spellbook(Cleanable, ISpellbook):
                 # User supplied a configuration object
                 if self._configuration._aether_frame != self._aetheric_frame:
                     self._logger.error(
-                        "Configuration name does not match the aetheric frame",
+                        "SpellbookConfiguration name does not match the aetheric frame",
                         "_initialize_configuration",
                         exc_info=True,
                     )
-                    raise RuntimeError("Configuration name does not match the aetheric frame.")
+                    raise RuntimeError("SpellbookConfiguration name does not match the aetheric frame.")
 
                 self._configuration_locked = False
                 return
 
             # No config in Aether and none provided: create a fresh one and load defaults.
-            self._configuration = Configuration(self._aetheric_frame)
+            self._configuration = SpellbookConfiguration(self._aetheric_frame)
             self._configuration.load_default_dictionary()
             self._configuration_locked = False
         except Exception as e:
@@ -3076,7 +3076,7 @@ class Spellbook(Cleanable, ISpellbook):
         Sets `_configuration_locked` upon success.
 
         This assumes that any desired properties (including AI-native flags,
-        worker counts, etc.) have already been applied via the Configuration's
+        worker counts, etc.) have already been applied via the SpellbookConfiguration's
         own API. This method does not mutate properties; it only validates and
         finalizes.
 
@@ -3101,11 +3101,11 @@ class Spellbook(Cleanable, ISpellbook):
 
             if not self._configuration.validate():
                 self._logger.error(
-                    "Configuration validation failed.",
+                    "SpellbookConfiguration validation failed.",
                     "_validate_and_freeze_configuration",
                     exc_info=True,
                 )
-                raise ValueError("Configuration validation failed.")
+                raise ValueError("SpellbookConfiguration validation failed.")
 
             self._configuration.freeze()
             self._configuration_locked = True
@@ -3191,7 +3191,7 @@ class Spellbook(Cleanable, ISpellbook):
         Spellbook configuration.
 
         Purpose:
-            Support the normal rich `Configuration` helper path while
+            Support the normal rich `SpellbookConfiguration` helper path while
             remaining compatible with older or lightweight configuration test
             doubles that only implement `get_property(...)`.
 
@@ -3211,7 +3211,7 @@ class Spellbook(Cleanable, ISpellbook):
             Exception: Propagates failures from helper-based derivation or
                 posture normalization.
         """
-        if isinstance(self._configuration, Configuration):
+        if isinstance(self._configuration, SpellbookConfiguration):
             return self._configuration.to_aetheric_frame_configuration(
                 origin_spellbook_id=self._id
             )
@@ -3355,18 +3355,18 @@ class Spellbook(Cleanable, ISpellbook):
 
 
 
-    def get_configuration(self) -> 'Configuration':
+    def get_configuration(self) -> 'SpellbookConfiguration':
         """
         Public API
 
         Returns the active configuration object for this Spellbook.
 
         Returns:
-            Configuration: The configuration instance.
+            SpellbookConfiguration: The configuration instance.
         """
         return self._configuration
 
-    #endregion Configuration API
+    #endregion SpellbookConfiguration API
     #region Conduit API
 
     def create_new_preset_spellbook(self) -> 'Spellbook':
@@ -3421,7 +3421,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Hook integration
         ----------------
-        If the active Configuration has Conduit lifecycle hooks registered under this
+        If the active SpellbookConfiguration has Conduit lifecycle hooks registered under this
         Spellbook's ID, they are fetched via
         ``SpellbookCreationSystem.get_conjure_hook_map()`` and invoked
         in the following order:

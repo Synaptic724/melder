@@ -38,7 +38,7 @@ if EXPERIMENT_DIR not in sys.path:
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from synthetic_module_import_testbench import (
@@ -201,7 +201,7 @@ def _create_spellbook(frame_name: str) -> Spellbook:
     Spellbook._aether = aether
     Conduit._aether = aether
 
-    configuration = Configuration(frame_name)
+    configuration = SpellbookConfiguration(frame_name)
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return Spellbook(

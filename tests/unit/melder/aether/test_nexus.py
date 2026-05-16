@@ -80,7 +80,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -190,7 +190,7 @@ def _bind_target_frame_configuration(
     """
     aether = Aether()
     aether._ensure_frame(frame_name)
-    frame_configuration = Configuration()
+    frame_configuration = SpellbookConfiguration()
     if system_state == SystemState.dynamic:
         frame_configuration.dynamic_defaults()
     else:
@@ -4555,7 +4555,7 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
     Returns:
         None.
     """
-    configuration = Configuration(aether_frame="ops_capability_auto")
+    configuration = SpellbookConfiguration(aether_frame="ops_capability_auto")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)
@@ -4616,7 +4616,7 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
     Returns:
         None.
     """
-    configuration = Configuration(aether_frame="ops_capability_dynamic")
+    configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic")
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)
@@ -4671,7 +4671,7 @@ def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
     Returns:
         None.
     """
-    configuration = Configuration(aether_frame="ops_capability_auto_lesser")
+    configuration = SpellbookConfiguration(aether_frame="ops_capability_auto_lesser")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)
@@ -4729,7 +4729,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
     Returns:
         None.
     """
-    configuration = Configuration(aether_frame="ops_capability_dynamic_cluster")
+    configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic_cluster")
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)
@@ -4807,7 +4807,7 @@ def test_capability_room_can_link_on_dynamic_frame() -> None:
     Returns:
         None.
     """
-    configuration = Configuration(aether_frame="ops_capability_dynamic_link")
+    configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic_link")
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)

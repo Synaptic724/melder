@@ -14,7 +14,7 @@ Contract:
 from dataclasses import dataclass
 
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.integration.melder.live_sim.interfaces.protocols import ICache
@@ -109,7 +109,7 @@ class LiveSimDynamicContext:
     owner_bindings: LiveSimBindings
 
 
-def create_live_sim_dynamic_configuration() -> Configuration:
+def create_live_sim_dynamic_configuration() -> SpellbookConfiguration:
     """
     Purpose:
         Build a configuration for dynamic live-sim integration tests.
@@ -117,9 +117,9 @@ def create_live_sim_dynamic_configuration() -> Configuration:
         - Uses dynamic defaults.
         - Sets phase_scheduler_workers_per_spellbook to 1.
     Returns:
-        Configuration: Configured dynamic configuration.
+        SpellbookConfiguration: Configured dynamic configuration.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration
@@ -252,7 +252,7 @@ def bootstrap_live_sim_automatic(*, name: str = "live-sim-auto") -> LiveSimAutom
 
 
 def create_live_sim_dynamic_owner(
-    configuration: Configuration,
+    configuration: SpellbookConfiguration,
     *,
     name: str = "live-sim-owner",
 ) -> LiveSimDynamicOwner:
@@ -279,7 +279,7 @@ def create_live_sim_dynamic_owner(
 
 
 def create_live_sim_dynamic_borrower(
-    configuration: Configuration,
+    configuration: SpellbookConfiguration,
     *,
     name: str = "live-sim-borrower",
 ) -> LiveSimDynamicBorrower:

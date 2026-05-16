@@ -7,7 +7,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.creation_gate import CreationGate
@@ -39,7 +39,7 @@ def _make_dynamic_spellbook() -> Spellbook:
     Purpose:
         Build a dynamic Spellbook configured for deterministic component tests.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return Spellbook(configuration=configuration)

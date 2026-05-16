@@ -2,7 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.protocols import IService
@@ -46,7 +46,7 @@ def _make_spellbook() -> Spellbook:
     return spellbook
 
 
-def _make_dynamic_configuration() -> Configuration:
+def _make_dynamic_configuration() -> SpellbookConfiguration:
     """
     Purpose:
         Provide a dynamic configuration for contract/link integration tests.
@@ -54,9 +54,9 @@ def _make_dynamic_configuration() -> Configuration:
         - system_state is set to dynamic defaults.
         - phase_scheduler_workers_per_spellbook is configured.
     Returns:
-        Configuration: A dynamic configuration instance.
+        SpellbookConfiguration: A dynamic configuration instance.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration

@@ -9,7 +9,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -43,7 +43,7 @@ def _make_configuration(
     aether_frame: str,
     dynamic: bool,
     workers: int = 1,
-) -> Configuration:
+) -> SpellbookConfiguration:
     """
     Purpose:
         Build a configuration for change-control integration tests.
@@ -55,9 +55,9 @@ def _make_configuration(
         dynamic: Whether to enable dynamic defaults.
         workers: Scheduler worker count per spellbook.
     Returns:
-        Configuration: Configured instance.
+        SpellbookConfiguration: Configured instance.
     """
-    configuration = Configuration(aether_frame=aether_frame)
+    configuration = SpellbookConfiguration(aether_frame=aether_frame)
     if dynamic:
         configuration.dynamic_defaults()
     else:

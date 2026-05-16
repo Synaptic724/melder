@@ -2,7 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.spellbook import Spellbook
 
 
@@ -29,18 +29,18 @@ def reset_aether_singleton_for_component_spellbook_configuration() -> None:
     Conduit._aether = aether
 
 
-def _make_configuration(aether_frame: str) -> Configuration:
+def _make_configuration(aether_frame: str) -> SpellbookConfiguration:
     """
     Purpose:
-        Build a Configuration instance with a specific Aether frame name.
+        Build a SpellbookConfiguration instance with a specific Aether frame name.
     Contract:
-        - Returns a Configuration whose _aether_frame matches the input.
+        - Returns a SpellbookConfiguration whose _aether_frame matches the input.
     Args:
         aether_frame: Target frame name for the configuration instance.
     Returns:
-        Configuration: Newly created configuration for the frame.
+        SpellbookConfiguration: Newly created configuration for the frame.
     """
-    return Configuration(aether_frame=aether_frame)
+    return SpellbookConfiguration(aether_frame=aether_frame)
 
 
 def test_component_spellbook_initialize_configuration_adopts_aether_config_and_locks() -> None:
@@ -49,7 +49,7 @@ def test_component_spellbook_initialize_configuration_adopts_aether_config_and_l
         Validate Spellbook adopts an existing Aether configuration when present.
     Contract:
         - Spellbook reuses the Aether configuration instance.
-        - Configuration is marked as locked when adopted.
+        - SpellbookConfiguration is marked as locked when adopted.
     Returns:
         None.
     Raises:
@@ -75,7 +75,7 @@ def test_component_spellbook_initialize_configuration_reuses_matching_provided_c
         Validate Spellbook accepts a provided configuration when it matches Aether.
     Contract:
         - The provided configuration instance is reused.
-        - Configuration is locked when Aether already has the config.
+        - SpellbookConfiguration is locked when Aether already has the config.
     Returns:
         None.
     Raises:
@@ -129,17 +129,17 @@ def test_component_spellbook_initialize_configuration_rejects_frame_mismatch() -
         AssertionError: If the error is not raised.
     """
     config = _make_configuration("frame-a")
-    with pytest.raises(RuntimeError, match="Configuration name does not match"):
+    with pytest.raises(RuntimeError, match="SpellbookConfiguration name does not match"):
         Spellbook(aetheric_frame="frame-b", configuration=config)
 
 
 def test_component_spellbook_initialize_configuration_creates_default_config_when_missing() -> None:
     """
     Purpose:
-        Validate Spellbook creates a new Configuration when none is supplied.
+        Validate Spellbook creates a new SpellbookConfiguration when none is supplied.
     Contract:
-        - A new Configuration instance is created for the requested frame.
-        - Configuration is not locked when freshly created.
+        - A new SpellbookConfiguration instance is created for the requested frame.
+        - SpellbookConfiguration is not locked when freshly created.
     Returns:
         None.
     Raises:
@@ -149,7 +149,7 @@ def test_component_spellbook_initialize_configuration_creates_default_config_whe
     spellbook = Spellbook(aetheric_frame=frame_name)
     try:
         config = spellbook.get_configuration()
-        assert isinstance(config, Configuration)
+        assert isinstance(config, SpellbookConfiguration)
         assert config._aether_frame == frame_name
         assert spellbook.is_configuration_locked() is False
     finally:
@@ -180,7 +180,7 @@ def test_component_spellbook_bind_configuration_to_aether_propagates_errors(
         Contract:
             Raises ValueError unconditionally.
         Args:
-            configuration: Configuration instance to bind.
+            configuration: SpellbookConfiguration instance to bind.
             aetheric_frame_name: Target frame name.
         Raises:
             ValueError: Always raised for the stub.

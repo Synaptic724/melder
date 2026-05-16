@@ -7,7 +7,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.spellbook import Spellbook
 
 
@@ -46,7 +46,7 @@ def _make_spellbook(*, dynamic: bool) -> Spellbook:
     Returns:
         Spellbook: Configured spellbook.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
     if dynamic:
         config.dynamic_defaults()
     else:

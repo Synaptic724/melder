@@ -6,7 +6,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.spellbook import Spellbook
 
 
@@ -33,7 +33,7 @@ def reset_aether_for_component_logger_tests() -> None:
     Conduit._aether = aether
 
 
-def _make_configuration(aether_frame: str) -> Configuration:
+def _make_configuration(aether_frame: str) -> SpellbookConfiguration:
     """
     Create one spellbook configuration for logger component tests.
 
@@ -42,10 +42,10 @@ def _make_configuration(aether_frame: str) -> Configuration:
             Target Aether frame name.
 
     Returns:
-        Configuration:
+        SpellbookConfiguration:
             Initialized configuration object.
     """
-    configuration = Configuration(aether_frame=aether_frame)
+    configuration = SpellbookConfiguration(aether_frame=aether_frame)
     configuration.automatic_defaults()
     return configuration
 

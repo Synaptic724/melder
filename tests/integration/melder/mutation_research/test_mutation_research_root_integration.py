@@ -7,7 +7,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.mutation_research.mutation_conduit import MutationConduit
 from melder.mutation_research.mutation_frame import MutationFrame
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -32,7 +32,7 @@ def reset_runtime_singletons() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration(frame_name: str) -> Configuration:
+def _make_dynamic_configuration(frame_name: str) -> SpellbookConfiguration:
     """
     Create one dynamic configuration for integration tests.
 
@@ -41,9 +41,9 @@ def _make_dynamic_configuration(frame_name: str) -> Configuration:
             Target Aether frame name.
 
     Returns:
-        Configuration: Dynamic configuration instance.
+        SpellbookConfiguration: Dynamic configuration instance.
     """
-    configuration = Configuration(aether_frame=frame_name)
+    configuration = SpellbookConfiguration(aether_frame=frame_name)
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration

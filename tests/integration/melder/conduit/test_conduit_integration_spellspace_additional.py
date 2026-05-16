@@ -6,7 +6,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -36,7 +36,7 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration(*, workers: int = 2) -> Configuration:
+def _make_dynamic_configuration(*, workers: int = 2) -> SpellbookConfiguration:
     """
     Purpose:
         Create a dynamic configuration for linking and concurrency coverage.
@@ -46,9 +46,9 @@ def _make_dynamic_configuration(*, workers: int = 2) -> Configuration:
     Args:
         workers: Worker count for the phase scheduler.
     Returns:
-        Configuration: Configured dynamic configuration.
+        SpellbookConfiguration: Configured dynamic configuration.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration

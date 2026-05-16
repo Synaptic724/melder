@@ -4,7 +4,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -185,7 +185,7 @@ def test_spellbook_integration_frame_config_mismatch_raises() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        other_config = Configuration(aether_frame=frame)
+        other_config = SpellbookConfiguration(aether_frame=frame)
         other_config.set_property("phase_scheduler_workers_per_spellbook", 1)
         with pytest.raises(RuntimeError, match="Aether configuration does not match"):
             Spellbook(aetheric_frame=frame, configuration=other_config)
@@ -248,7 +248,7 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
     frame = "frame-locked-config"
     aether = Spellbook._aether
     aether._ensure_frame(frame)
-    config = Configuration(aether_frame=frame)
+    config = SpellbookConfiguration(aether_frame=frame)
     config.with_defaults()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     config.set_property("phase_scheduler_barrier_timeout_milliseconds", 60000)
@@ -277,13 +277,13 @@ def test_spellbook_integration_configuration_frame_mismatch_raises() -> None:
     Purpose:
         Validate configuration frame mismatch is rejected at initialization.
     Contract:
-        - A Configuration with a different aether_frame raises when passed in.
+        - A SpellbookConfiguration with a different aether_frame raises when passed in.
     Returns:
         None.
     Raises:
         AssertionError: If mismatched configuration is accepted.
     """
-    config = Configuration(aether_frame="frame-x")
+    config = SpellbookConfiguration(aether_frame="frame-x")
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     with pytest.raises(RuntimeError, match="aetheric frame"):
         Spellbook(aetheric_frame="frame-y", configuration=config)
@@ -452,7 +452,7 @@ def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_sc
     Raises:
         AssertionError: If conflict admission is not enforced.
     """
-    configuration = Configuration("shared-frame")
+    configuration = SpellbookConfiguration("shared-frame")
     configuration.dynamic_defaults()
     spellbook_a = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
@@ -940,7 +940,7 @@ def test_spellbook_integration_contracted_spells_visible() -> None:
     Raises:
         AssertionError: If contracted spells are not visible or resolvable.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -989,7 +989,7 @@ def test_spellbook_integration_contract_updates_risk_manager_lineages() -> None:
     Raises:
         AssertionError: If borrower RiskManager lineage state is stale.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -1051,7 +1051,7 @@ def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() ->
     Raises:
         AssertionError: If the live mirror is stale.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -1100,7 +1100,7 @@ def test_spellbook_integration_contract_removal_clears_access() -> None:
     Raises:
         AssertionError: If the contract is not removed.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -1148,7 +1148,7 @@ def test_spellbook_integration_sever_link_clears_contracts() -> None:
     Raises:
         AssertionError: If unlink does not clear contracts.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -1193,7 +1193,7 @@ def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -
     Raises:
         AssertionError: If contracted lookups fail.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 

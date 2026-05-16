@@ -4,7 +4,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -35,16 +35,16 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def _make_configuration() -> Configuration:
+def _make_configuration() -> SpellbookConfiguration:
     """
     Purpose:
         Create a configuration for lookup helper integration tests.
     Contract:
         - phase_scheduler_workers_per_spellbook is set.
     Returns:
-        Configuration: Configured instance.
+        SpellbookConfiguration: Configured instance.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration

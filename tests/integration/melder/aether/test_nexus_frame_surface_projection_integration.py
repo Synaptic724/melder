@@ -9,7 +9,7 @@ from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -43,7 +43,7 @@ def reset_singletons_for_nexus_projection_integration() -> None:
 def _make_rift_publishable_configuration(
         *,
         aetheric_frame: str,
-) -> Configuration:
+) -> SpellbookConfiguration:
     """
     Build one Spellbook configuration that publishes passive Nexus state.
 
@@ -52,10 +52,10 @@ def _make_rift_publishable_configuration(
             Target frame name.
 
     Returns:
-        Configuration:
+        SpellbookConfiguration:
             Configured Spellbook configuration.
     """
-    configuration = Configuration(aether_frame=aetheric_frame)
+    configuration = SpellbookConfiguration(aether_frame=aetheric_frame)
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)

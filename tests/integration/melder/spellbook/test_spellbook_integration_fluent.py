@@ -4,7 +4,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -397,7 +397,7 @@ def test_spellbook_fluent_as_unique_per_conduit_cluster_shares_across_cluster() 
     Raises:
         AssertionError: If cluster sharing fails.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 

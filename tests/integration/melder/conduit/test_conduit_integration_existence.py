@@ -4,7 +4,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces import ISpell
@@ -217,7 +217,7 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     Raises:
         AssertionError: If the instance is not shared across the cluster.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -295,7 +295,7 @@ def test_conduit_contract_by_spell_id_dynamic_link() -> None:
     Raises:
         AssertionError: If the contract is not established or resolution fails.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
@@ -347,7 +347,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
     Raises:
         AssertionError: If the contract is not established or resolution fails.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 

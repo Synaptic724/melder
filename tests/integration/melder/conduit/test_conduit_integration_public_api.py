@@ -4,7 +4,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -341,7 +341,7 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
         AssertionError: If conflict admission is not enforced.
     """
     frame_name = "shared-conduit-scope"
-    configuration = Configuration(frame_name).dynamic_defaults().finalize()
+    configuration = SpellbookConfiguration(frame_name).dynamic_defaults().finalize()
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     conduit_a = spellbook_a.conjure(automatic=False, name="conduit-a")
@@ -435,7 +435,7 @@ def test_conduit_public_api_get_conduit_by_id_name_and_spell_id() -> None:
     Raises:
         AssertionError: If Aether lookup helpers fail.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.load_default_dictionary()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 

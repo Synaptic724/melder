@@ -24,7 +24,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spellbook import Spellbook
 
@@ -58,7 +58,7 @@ def _bind_target_frame_configuration(
 ) -> None:
     aether = Aether()
     aether._ensure_frame(frame_name)
-    configuration = Configuration(aether_frame=frame_name)
+    configuration = SpellbookConfiguration(aether_frame=frame_name)
     if system_state == SystemState.dynamic:
         configuration.dynamic_defaults()
     else:

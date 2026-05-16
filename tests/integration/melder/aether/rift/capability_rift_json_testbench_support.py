@@ -12,7 +12,7 @@ from melder.aether.nexus.rift.rift_space.capability_rift_space import (
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -268,14 +268,14 @@ class CapabilityRiftJsonBench:
                 saved_results[save_as] = result
         return saved_results
 
-    def _build_configuration(self) -> Configuration:
+    def _build_configuration(self) -> SpellbookConfiguration:
         """
         Build the Spellbook configuration for this harness.
 
         Returns:
-            Configuration: Publishable frame configuration.
+            SpellbookConfiguration: Publishable frame configuration.
         """
-        configuration = Configuration(aether_frame=self.frame_name)
+        configuration = SpellbookConfiguration(aether_frame=self.frame_name)
         if self.dynamic_frame:
             configuration.dynamic_defaults()
         else:

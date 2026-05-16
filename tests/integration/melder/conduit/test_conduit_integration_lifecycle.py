@@ -6,7 +6,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
@@ -40,7 +40,7 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration(workers: int = 1) -> Configuration:
+def _make_dynamic_configuration(workers: int = 1) -> SpellbookConfiguration:
     """
     Purpose:
         Create a dynamic configuration for lifecycle tests.
@@ -50,9 +50,9 @@ def _make_dynamic_configuration(workers: int = 1) -> Configuration:
     Args:
         workers: Scheduler workers per spellbook.
     Returns:
-        Configuration: Dynamic configuration instance.
+        SpellbookConfiguration: Dynamic configuration instance.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration

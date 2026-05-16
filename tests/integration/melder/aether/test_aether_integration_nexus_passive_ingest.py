@@ -4,7 +4,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -40,7 +40,7 @@ def reset_singletons_for_integration() -> None:
 def _make_rift_publishable_configuration(
         *,
         aether_frame: str,
-) -> Configuration:
+) -> SpellbookConfiguration:
     """
     Purpose:
         Build one Spellbook configuration that will publish into passive Nexus
@@ -53,9 +53,9 @@ def _make_rift_publishable_configuration(
         aether_frame:
             Target frame name.
     Returns:
-        Configuration: Configured Spellbook configuration.
+        SpellbookConfiguration: Configured Spellbook configuration.
     """
-    configuration = Configuration(aether_frame=aether_frame)
+    configuration = SpellbookConfiguration(aether_frame=aether_frame)
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)

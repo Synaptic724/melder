@@ -7,7 +7,7 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.crystallizer.spell_crystal_harness import (
@@ -64,7 +64,7 @@ def _create_integration_crystallizer() -> Crystallizer:
     return crystallizer
 
 
-def _make_configuration(frame_name: str) -> Configuration:
+def _make_configuration(frame_name: str) -> SpellbookConfiguration:
     """
     Build one small automatic Spellbook configuration for integration tests.
 
@@ -73,9 +73,9 @@ def _make_configuration(frame_name: str) -> Configuration:
             Target frame name.
 
     Returns:
-        Configuration: Prepared configuration object.
+        SpellbookConfiguration: Prepared configuration object.
     """
-    configuration = Configuration(aether_frame=frame_name)
+    configuration = SpellbookConfiguration(aether_frame=frame_name)
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration

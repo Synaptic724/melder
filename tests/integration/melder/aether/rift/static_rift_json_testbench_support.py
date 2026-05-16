@@ -7,7 +7,7 @@ from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -300,14 +300,14 @@ class StaticRiftJsonBench:
         """
         self._objects_by_name.pop(object_name, None)
 
-    def _build_configuration(self) -> Configuration:
+    def _build_configuration(self) -> SpellbookConfiguration:
         """
         Build the Spellbook configuration for this harness.
 
         Returns:
-            Configuration: Publishable frame configuration.
+            SpellbookConfiguration: Publishable frame configuration.
         """
-        configuration = Configuration(aether_frame=self.frame_name)
+        configuration = SpellbookConfiguration(aether_frame=self.frame_name)
         if self.dynamic_frame:
             configuration.dynamic_defaults()
         else:

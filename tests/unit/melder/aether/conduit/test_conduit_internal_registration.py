@@ -7,11 +7,11 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.creations.creations import Creations
 from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 
 def test_add_conduit_to_aether_raises_when_aether_none(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -21,7 +21,7 @@ def test_add_conduit_to_aether_raises_when_aether_none(
         - Raises RuntimeError when Conduit._aether is None.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
@@ -45,7 +45,7 @@ def test_add_conduit_to_aether_raises_when_aether_none(
 
 
 def test_remove_conduit_from_aether_raises_when_aether_none(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -55,7 +55,7 @@ def test_remove_conduit_from_aether_raises_when_aether_none(
         - Raises RuntimeError when Conduit._aether is None.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
@@ -163,7 +163,7 @@ def test_add_spells_to_aether_registers_spell_indices(
 
 
 def test_add_spells_to_aether_raises_when_aether_none(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -173,7 +173,7 @@ def test_add_spells_to_aether_raises_when_aether_none(
         - Raises RuntimeError when Conduit._aether is None.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
@@ -198,7 +198,7 @@ def test_add_spells_to_aether_raises_when_aether_none(
 
 def test_creations_configuration_returns_creations_for_lesser(
     conduit_lesser: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
 ) -> None:
     """
     Verify _creations_configuration returns Creations for lesser conduits.
@@ -208,7 +208,7 @@ def test_creations_configuration_returns_creations_for_lesser(
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
 
     Raises:
         AssertionError: If the returned type is not Creations.
@@ -222,7 +222,7 @@ def test_creations_configuration_returns_creations_for_lesser(
 
 def test_creations_configuration_returns_creations(
     conduit_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
 ) -> None:
     """
     Verify _creations_configuration returns Creations for normal conduits.
@@ -232,7 +232,7 @@ def test_creations_configuration_returns_creations(
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
 
     Raises:
         AssertionError: If the returned type is not Creations.
@@ -246,7 +246,7 @@ def test_creations_configuration_returns_creations(
 
 def test_creations_configuration_raises_for_unknown_state(
     conduit_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
 ) -> None:
     """
     Verify _creations_configuration rejects unknown conduit states.
@@ -256,7 +256,7 @@ def test_creations_configuration_raises_for_unknown_state(
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
 
     Raises:
         AssertionError: If unsupported state does not raise.

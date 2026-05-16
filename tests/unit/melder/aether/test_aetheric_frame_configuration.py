@@ -8,7 +8,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 
 
@@ -37,7 +37,7 @@ def test_frame_configuration_derives_from_spellbook_configuration() -> None:
     Returns:
         None.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.with_system_state(SystemState.dynamic)
     configuration.with_ai_native(True)
     configuration.with_rift_enabled(True)
@@ -178,7 +178,7 @@ def test_from_spellbook_configuration_rejects_none_configuration() -> None:
 
 
 def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
-    """Configuration should expose a stable id and a detached posture description."""
+    """SpellbookConfiguration should expose a stable id and a detached posture description."""
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-alpha",
         system_state=SystemState.dynamic,

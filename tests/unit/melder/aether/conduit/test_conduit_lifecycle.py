@@ -8,7 +8,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.logger.safe_logger import SafeLogger
 
@@ -120,7 +120,7 @@ def test_init_rejects_non_configuration(spellbook_stub: MagicMock) -> None:
 
 
 def test_lesser_conduit_drops_name(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -130,7 +130,7 @@ def test_lesser_conduit_drops_name(
         - A name passed to a lesser conduit is discarded.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub used for construction.
 
     Raises:
@@ -339,7 +339,7 @@ def test_context_manager_acquires_and_releases_lock(conduit_lesser: Conduit) -> 
 
 
 def test_provider_used_when_logger_missing(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -350,7 +350,7 @@ def test_provider_used_when_logger_missing(
         - The resulting SafeLogger is assigned to the conduit.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub used for construction.
 
     Raises:
@@ -389,7 +389,7 @@ def test_provider_used_when_logger_missing(
 
 
 def test_explicit_logger_skips_provider(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -400,7 +400,7 @@ def test_explicit_logger_skips_provider(
         - The conduit receives a SafeLogger wrapper.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub used for construction.
 
     Raises:

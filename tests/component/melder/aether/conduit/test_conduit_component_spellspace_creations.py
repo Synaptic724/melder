@@ -4,7 +4,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -68,7 +68,7 @@ def _make_spellbook(
         Spellbook: Configured Spellbook instance.
     """
     if disposal:
-        configuration = Configuration()
+        configuration = SpellbookConfiguration()
         configuration.set_property("system_state", "automatic")
         configuration.set_property("disposal", True)
         configuration.set_property(

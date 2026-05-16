@@ -7,7 +7,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.deep_layers import (
@@ -50,7 +50,7 @@ def reset_aether_singleton_for_integration() -> None:
 def _make_dynamic_spellbook(
     *,
     workers: int = 4,
-    configuration: Configuration | None = None,
+    configuration: SpellbookConfiguration | None = None,
 ) -> Spellbook:
     """
     Purpose:
@@ -68,7 +68,7 @@ def _make_dynamic_spellbook(
     if configuration is None:
         configuration = Aether()._get_configuration("default")
     if configuration is None:
-        configuration = Configuration()
+        configuration = SpellbookConfiguration()
         configuration.dynamic_defaults()
     if not configuration._frozen:
         configuration.set_property("phase_scheduler_workers_per_spellbook", workers)

@@ -34,7 +34,7 @@ _ensure_src_on_path()
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.deep_layers import Depth3Root, get_depth_3_classes
@@ -169,7 +169,7 @@ def _build_spellbook_and_ids(
     """
     Build one spellbook and bind the benchmark classes under the requested existence.
     """
-    cfg = Configuration(frame_name)
+    cfg = SpellbookConfiguration(frame_name)
     if automatic:
         cfg.automatic_defaults()
     else:

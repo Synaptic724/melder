@@ -8,7 +8,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -223,7 +223,7 @@ def reset_aether_singleton_for_multithreading_link_features() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration(*, workers: int = 4) -> Configuration:
+def _make_dynamic_configuration(*, workers: int = 4) -> SpellbookConfiguration:
     """
     Purpose:
         Create dynamic configuration for integration tests.
@@ -233,9 +233,9 @@ def _make_dynamic_configuration(*, workers: int = 4) -> Configuration:
     Args:
         workers: Workers per spellbook for phase scheduler.
     Returns:
-        Configuration: Configured dynamic object.
+        SpellbookConfiguration: Configured dynamic object.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration

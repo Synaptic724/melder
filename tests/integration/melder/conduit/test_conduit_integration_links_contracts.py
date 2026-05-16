@@ -7,7 +7,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -39,7 +39,7 @@ def reset_aether_singleton_for_integration() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration() -> Configuration:
+def _make_dynamic_configuration() -> SpellbookConfiguration:
     """
     Purpose:
         Create a dynamic configuration suitable for link/contract tests.
@@ -47,9 +47,9 @@ def _make_dynamic_configuration() -> Configuration:
         - system_state is dynamic.
         - phase_scheduler_workers_per_spellbook is set.
     Returns:
-        Configuration: Dynamic configuration instance.
+        SpellbookConfiguration: Dynamic configuration instance.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration

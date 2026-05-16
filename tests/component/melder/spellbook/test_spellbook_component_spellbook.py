@@ -4,7 +4,7 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -346,7 +346,7 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
     Raises:
         AssertionError: If disposal metadata is missing or incorrect.
     """
-    config = Configuration("default")
+    config = SpellbookConfiguration("default")
     config.set_property("disposal_method_names", ["cleanup", "close", "dispose"])
     config.load_default_dictionary()
     spellbook = Spellbook(configuration=config)
@@ -739,7 +739,7 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
     Raises:
         AssertionError: If incremental Nexus publication is missing.
     """
-    configuration = Configuration(aether_frame="ops")
+    configuration = SpellbookConfiguration(aether_frame="ops")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)
@@ -778,7 +778,7 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     Raises:
         AssertionError: If passive Nexus does not reflect the scan lifecycle.
     """
-    configuration = Configuration(aether_frame="ops")
+    configuration = SpellbookConfiguration(aether_frame="ops")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)

@@ -1,12 +1,12 @@
 import pytest
 
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
 
 
 def test_load_defaults_populates_all_required_properties():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     for key in cfg.available_properties:
         assert cfg.has_property(key)
@@ -17,20 +17,20 @@ def test_load_defaults_populates_all_required_properties():
 
 
 def test_set_property_converts_enum_strings():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", "dynamic")
     assert cfg.get_property("system_state") == SystemState.dynamic
 
 
 def test_set_property_rejects_idempotent_overwrite():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", SystemState.automatic)
     with pytest.raises(RuntimeError):
         cfg.set_property("system_state", SystemState.dynamic)
 
 
 def test_set_property_rejects_frozen():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.freeze()
     with pytest.raises(RuntimeError):
@@ -38,13 +38,13 @@ def test_set_property_rejects_frozen():
 
 
 def test_set_property_rejects_non_string_key():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(TypeError):
         cfg.set_property(123, "x")  # type: ignore[arg-type]
 
 
 def test_clear_properties_blocks_when_frozen():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.freeze()
     with pytest.raises(RuntimeError):
@@ -52,27 +52,27 @@ def test_clear_properties_blocks_when_frozen():
 
 
 def test_get_property_missing_raises_key_error():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     with pytest.raises(KeyError):
         cfg.get_property("missing")
 
 
 def test_has_property_reflects_state():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     assert cfg.has_property("disposal") is False
     cfg.set_property("disposal", True)
     assert cfg.has_property("disposal") is True
 
 
 def test_validate_success_after_defaults():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     assert cfg.validate() is True
 
 
 def test_validate_missing_property_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg._properties.pop("disposal")
     with pytest.raises(ValueError):
@@ -80,7 +80,7 @@ def test_validate_missing_property_raises():
 
 
 def test_validate_wrong_type_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("phase_scheduler_workers_per_spellbook", "wrong")
     with pytest.raises(ValueError):
@@ -88,13 +88,13 @@ def test_validate_wrong_type_raises():
 
 
 def test_validate_enum_type_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
         cfg.set_property("system_state", "not-an-enum")
 
 
 def test_validate_phase_scheduler_workers_bounds():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 0)
     with pytest.raises(ValueError):
@@ -102,7 +102,7 @@ def test_validate_phase_scheduler_workers_bounds():
 
 
 def test_validate_ai_native_enabled_type():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("ai_native_enabled", "yes")
     with pytest.raises(ValueError):
@@ -110,7 +110,7 @@ def test_validate_ai_native_enabled_type():
 
 
 def test_validate_ai_native_requires_dynamic_system_state():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("ai_native_enabled", True)
     with pytest.raises(ValueError):
@@ -118,14 +118,14 @@ def test_validate_ai_native_requires_dynamic_system_state():
 
 
 def test_validate_ai_native_allowed_in_dynamic_system_state():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.dynamic_defaults()
     cfg.set_property("ai_native_enabled", True)
     assert cfg.validate() is True
 
 
 def test_validate_full_ahead_of_time_compilation_type():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("full_ahead_of_time_compilation", "yes")
     with pytest.raises(ValueError):
@@ -133,7 +133,7 @@ def test_validate_full_ahead_of_time_compilation_type():
 
 
 def test_validate_overrides_enabled_type() -> None:
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("overrides_enabled", "yes")
     with pytest.raises(ValueError):
@@ -141,7 +141,7 @@ def test_validate_overrides_enabled_type() -> None:
 
 
 def test_freeze_is_idempotent_and_blocks_mutation():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.freeze()
     cfg.freeze()
@@ -150,7 +150,7 @@ def test_freeze_is_idempotent_and_blocks_mutation():
 
 
 def test_add_hook_returns_shared_map():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
 
     def hook_a():
         return None
@@ -166,7 +166,7 @@ def test_add_hook_returns_shared_map():
 
 
 def test_add_hook_rejects_unknown_or_noncallable():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
         cfg.add_hook("sb1", "not_allowed", lambda: None)
     with pytest.raises(TypeError):
@@ -174,7 +174,7 @@ def test_add_hook_rejects_unknown_or_noncallable():
 
 
 def test_add_hooks_handles_iterables_and_skips_none():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     called = []
 
     def fn():
@@ -185,7 +185,7 @@ def test_add_hooks_handles_iterables_and_skips_none():
 
 
 def test_hooks_blocked_when_frozen():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.freeze()
     with pytest.raises(RuntimeError):
@@ -194,7 +194,7 @@ def test_hooks_blocked_when_frozen():
 
 def test_withers_chain_and_freeze():
     cfg = (
-        Configuration()
+        SpellbookConfiguration()
         .with_disposal(True)
         .dynamic_defaults()
         .with_phase_scheduler_workers(3)
@@ -207,18 +207,18 @@ def test_withers_chain_and_freeze():
 
 
 def test_with_phase_scheduler_workers_rejects_invalid():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
         cfg.with_phase_scheduler_workers(0)
 
 
 def test_with_overrides_enabled_sets_property() -> None:
-    cfg = Configuration().with_overrides_enabled(False)
+    cfg = SpellbookConfiguration().with_overrides_enabled(False)
     assert cfg.get_property("overrides_enabled") is False
 
 
 def test_with_phase_scheduler_barrier_timeout_limits():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
         cfg.with_phase_scheduler_barrier_timeout(0)
     with pytest.raises(ValueError):
@@ -226,29 +226,29 @@ def test_with_phase_scheduler_barrier_timeout_limits():
 
 
 def test_add_disposal_methods_validates_types():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(TypeError):
         cfg.add_disposal_methods("ok", 123)  # type: ignore[arg-type]
 
 
 def test_build_alias_for_finalize():
-    cfg = Configuration().with_defaults().build()
+    cfg = SpellbookConfiguration().with_defaults().build()
     with pytest.raises(RuntimeError):
         cfg.set_property("disposal", True)
 
 
 def test_dynamic_defaults_sets_state_dynamic():
-    cfg = Configuration().dynamic_defaults()
+    cfg = SpellbookConfiguration().dynamic_defaults()
     assert cfg.get_property("system_state") == SystemState.dynamic
 
 
 def test_automatic_defaults_sets_state_automatic():
-    cfg = Configuration().automatic_defaults()
+    cfg = SpellbookConfiguration().automatic_defaults()
     assert cfg.get_property("system_state") == SystemState.automatic
 
 
 def test_iter_returns_keys():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     keys = set(iter(cfg))
     assert "system_state" in keys
@@ -256,7 +256,7 @@ def test_iter_returns_keys():
 
 
 def test_cleanup_idempotent_and_nulls_references():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.cleanup()
     cfg.cleanup()
@@ -267,7 +267,7 @@ def test_cleanup_idempotent_and_nulls_references():
 
 
 def test_convert_enum_helper_matches_configuration_usage():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     assert EnumHelpers.convert_enum_and_check("dynamic", SystemState) == SystemState.dynamic
     cfg.set_property("system_state", "automatic")
     assert cfg.get_property("system_state") == SystemState.automatic
@@ -276,14 +276,14 @@ def test_convert_enum_helper_matches_configuration_usage():
 # Additional coverage
 
 def test_set_property_rejects_after_cleanup():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.set_property("disposal", True)
 
 
 def test_get_has_property_after_cleanup_raise():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.get_property("disposal")
@@ -292,21 +292,21 @@ def test_get_has_property_after_cleanup_raise():
 
 
 def test_freeze_after_cleanup_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.freeze()
 
 
 def test_load_defaults_preserves_pre_set_system_state():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", SystemState.dynamic)
     cfg.load_default_dictionary()
     assert cfg.get_property("system_state") == SystemState.dynamic
 
 
 def test_clear_properties_allows_reset_before_freeze():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.clear_properties()
     assert cfg.has_property("system_state") is False
@@ -315,23 +315,23 @@ def test_clear_properties_allows_reset_before_freeze():
 
 
 def test_clear_properties_after_cleanup_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.clear_properties()
 
 
 def test_validate_enums_method_failure_and_success():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", "automatic")
     assert cfg.validate_enums() is True
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
         cfg.set_property("system_state", 123)  # type: ignore[arg-type]
 
 
 def test_validate_disposal_method_names_type():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", SystemState.dynamic)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", "not-a-list")
@@ -345,7 +345,7 @@ def test_validate_disposal_method_names_type():
 
 
 def test_validate_barrier_timeout_type_and_bounds():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", "bad")
     with pytest.raises(ValueError):
@@ -353,27 +353,27 @@ def test_validate_barrier_timeout_type_and_bounds():
 
 
 def test_add_hook_after_cleanup_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.add_hook("sb", "on_conduit_pre_created", lambda: None)
 
 
 def test_add_hooks_after_cleanup_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.add_hooks("sb", on_conduit_pre_created=lambda: None)
 
 
 def test_get_hooks_missing_spellbook_id_returns_empty():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.add_hook("sb1", "on_conduit_pre_created", lambda: None)
     assert cfg.get_hooks("missing") == {}
 
 
 def test_add_hook_appends_multiple_times():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.add_hook("sb", "on_conduit_pre_created", lambda: "a")
     cfg.add_hook("sb", "on_conduit_pre_created", lambda: "b")
     hooks = cfg.get_hooks("sb")["on_conduit_pre_created"]
@@ -381,7 +381,7 @@ def test_add_hook_appends_multiple_times():
 
 
 def test_add_hooks_rejects_generator_with_bad_entry():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
 
     def gen():
         yield lambda: None
@@ -392,13 +392,13 @@ def test_add_hooks_rejects_generator_with_bad_entry():
 
 
 def test_with_hooks_fluent_returns_self():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     result = cfg.with_hooks("sb", on_conduit_pre_created=lambda: None)
     assert result is cfg
 
 
 def test_add_disposal_methods_dedup_and_order():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.add_disposal_methods("close", "cleanup", "close")
     assert cfg.get_property("disposal_method_names") == ["close", "cleanup"]
     with pytest.raises(RuntimeError):
@@ -406,32 +406,32 @@ def test_add_disposal_methods_dedup_and_order():
 
 
 def test_with_disposal_method_names_rejects_non_list():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(TypeError):
         cfg.with_disposal_method_names("not-list")  # type: ignore[arg-type]
 
 
 def test_with_full_ahead_of_time_compilation_sets_value():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     returned = cfg.with_full_ahead_of_time_compilation(False)
     assert returned is cfg
     assert cfg.get_property("full_ahead_of_time_compilation") is False
 
 
 def test_with_full_ahead_of_time_compilation_rejects_non_bool():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     with pytest.raises(TypeError):
         cfg.with_full_ahead_of_time_compilation("false")  # type: ignore[arg-type]
 
 
 def test_with_defaults_allows_overriding_full_ahead_of_time_compilation():
-    cfg = Configuration().with_defaults()
+    cfg = SpellbookConfiguration().with_defaults()
     cfg.with_full_ahead_of_time_compilation(False)
     assert cfg.get_property("full_ahead_of_time_compilation") is False
 
 
 def test_finalize_twice_is_idempotent():
-    cfg = Configuration().with_defaults()
+    cfg = SpellbookConfiguration().with_defaults()
     cfg.finalize()
     cfg.finalize()
     with pytest.raises(RuntimeError):
@@ -439,21 +439,21 @@ def test_finalize_twice_is_idempotent():
 
 
 def test_dynamic_defaults_does_not_overwrite_existing_disposal_names():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("disposal_method_names", ["pre"])
     cfg.dynamic_defaults()
     assert cfg.get_property("disposal_method_names")[0] == "pre"
 
 
 def test_with_system_state_rejects_overwrite_explicit():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", SystemState.dynamic)
     with pytest.raises(RuntimeError):
         cfg.with_system_state(SystemState.automatic)
 
 
 def test_iter_only_has_current_keys_after_clear_and_reset():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.clear_properties()
     cfg.set_property("system_state", SystemState.dynamic)
@@ -462,7 +462,7 @@ def test_iter_only_has_current_keys_after_clear_and_reset():
 
 
 def test_cleanup_sets_frozen_and_blocks_mutation():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.cleanup()
     assert cfg._frozen is True
@@ -471,14 +471,14 @@ def test_cleanup_sets_frozen_and_blocks_mutation():
 
 
 def test_cleanup_clears_hooks_registry():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.add_hook("sb", "on_conduit_pre_created", lambda: None)
     cfg.cleanup()
     assert cfg._hooks is None
 
 
 def test_add_hooks_registers_multiple_names():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     called = []
 
     def pre():
@@ -496,20 +496,20 @@ def test_add_hooks_registers_multiple_names():
 
 
 def test_get_hooks_after_cleanup_raises():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.get_hooks("sb")
 
 
 def test_with_hooks_after_defaults_before_freeze_allowed():
-    cfg = Configuration().with_defaults()
+    cfg = SpellbookConfiguration().with_defaults()
     cfg.with_hooks("sb", on_conduit_pre_created=lambda: None)
     assert "on_conduit_pre_created" in cfg.get_hooks("sb")
 
 
 def test_validate_enums_with_extra_properties_present():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", SystemState.automatic)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", [])
@@ -520,7 +520,7 @@ def test_validate_enums_with_extra_properties_present():
 
 
 def test_iter_on_partially_populated_config():
-    cfg = Configuration()
+    cfg = SpellbookConfiguration()
     cfg.set_property("system_state", SystemState.dynamic)
     keys = set(iter(cfg))
     assert keys == {"system_state"}

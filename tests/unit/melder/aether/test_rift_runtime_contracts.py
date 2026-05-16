@@ -18,7 +18,7 @@ from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.init_helpers import InitHelpers
 
@@ -84,7 +84,7 @@ def _bind_target_frame_configuration(
     """
     aether = Aether()
     aether._ensure_frame(frame_name)
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     if system_state == SystemState.dynamic:
         configuration.dynamic_defaults()
     else:

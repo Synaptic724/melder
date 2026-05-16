@@ -1,6 +1,6 @@
 import pytest
 
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 
 
@@ -14,7 +14,7 @@ def test_component_configuration_defaults_validate_and_freeze() -> None:
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
     config.with_defaults()
     assert config.validate() is True
     assert config.get_property("system_state") is SystemState.automatic
@@ -34,7 +34,7 @@ def test_component_configuration_idempotent_system_state_cannot_change() -> None
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
     config.set_property("system_state", "automatic")
     assert config.get_property("system_state") is SystemState.automatic
 
@@ -52,7 +52,7 @@ def test_component_configuration_hooks_register_and_shared_map() -> None:
     Returns:
         None.
     """
-    config = Configuration().with_defaults()
+    config = SpellbookConfiguration().with_defaults()
 
     def hook_a() -> None:
         return None
@@ -83,7 +83,7 @@ def test_component_configuration_freeze_blocks_hooks_and_properties() -> None:
     Returns:
         None.
     """
-    config = Configuration().with_defaults()
+    config = SpellbookConfiguration().with_defaults()
     config.freeze()
 
     with pytest.raises(RuntimeError):
@@ -102,7 +102,7 @@ def test_component_configuration_stays_logger_free() -> None:
     Returns:
         None.
     """
-    config = Configuration().with_defaults().finalize()
+    config = SpellbookConfiguration().with_defaults().finalize()
     assert config.get_property("system_state") is SystemState.automatic
 
 
@@ -115,7 +115,7 @@ def test_component_configuration_validate_requires_required_properties() -> None
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
     with pytest.raises(ValueError, match="Missing required configuration property"):
         config.validate()
 
@@ -130,7 +130,7 @@ def test_component_configuration_with_hook_registers_hook() -> None:
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
 
     def hook() -> None:
         return None
@@ -151,7 +151,7 @@ def test_component_configuration_with_disposal_method_names_sets_list() -> None:
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
     result = config.with_disposal_method_names(["cleanup", "close"])
     assert result is config
     assert config.get_property("disposal_method_names") == ["cleanup", "close"]
@@ -167,7 +167,7 @@ def test_component_configuration_with_hooks_registers_multiple() -> None:
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
 
     def pre() -> None:
         return None
@@ -196,7 +196,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     Returns:
         None.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
 
     config.with_system_state("dynamic")
     config.with_disposal(True)

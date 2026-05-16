@@ -8,12 +8,12 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 
 def test_conduit_begin_transaction_link_accepts_conduits_list(
     conduit_dynamic_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
@@ -135,7 +135,7 @@ def test_conduit_begin_transaction_rejects_non_conduit_objects_in_link_list(
 
 def test_conduit_begin_transaction_link_requires_local_conduit_presence(
     conduit_dynamic_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """Link transactions should require the local conduit in the conduits list."""

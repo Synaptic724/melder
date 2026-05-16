@@ -7,7 +7,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.spellbook import Spellbook
 
 
@@ -80,7 +80,7 @@ def test_spellbook_uses_registered_channel_logger_provider() -> None:
     Spellbook._aether = aether
     Conduit._aether = aether
 
-    configuration = Configuration(aether_frame="log-frame")
+    configuration = SpellbookConfiguration(aether_frame="log-frame")
     spellbook = Spellbook(aetheric_frame="log-frame", configuration=configuration)
 
     assert any(isinstance(obj, Aether) for obj in created_for)

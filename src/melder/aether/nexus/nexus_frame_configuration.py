@@ -3,7 +3,7 @@ from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
@@ -308,20 +308,20 @@ class NexusFrameConfiguration(Cleanable):
             rift_enabled=self._rift_enabled,
         )
 
-    def to_spellbook_configuration(self) -> Configuration:
+    def to_spellbook_configuration(self) -> SpellbookConfiguration:
         """
         Compile the authored posture into a Spellbook configuration.
 
         Purpose:
-            Build the broader `Configuration` surface needed when the manager
+            Build the broader `SpellbookConfiguration` surface needed when the manager
             bootstraps a root conduit through a temporary `Spellbook` path.
 
         Returns:
-            Configuration: Spellbook configuration suitable for optional root
+            SpellbookConfiguration: Spellbook configuration suitable for optional root
             conduit bootstrap.
         """
         self.check_cleaned()
-        configuration = Configuration(aether_frame=self._frame_name)
+        configuration = SpellbookConfiguration(aether_frame=self._frame_name)
         configuration.dynamic_defaults()
         configuration.with_ai_native(self._ai_native_enabled)
         configuration.with_rift_enabled(self._rift_enabled)

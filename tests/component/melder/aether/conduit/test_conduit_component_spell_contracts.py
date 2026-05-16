@@ -6,7 +6,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -52,7 +52,7 @@ def _make_spellbook() -> Spellbook:
     Returns:
         Spellbook: Configured spellbook.
     """
-    config = Configuration()
+    config = SpellbookConfiguration()
     config.dynamic_defaults()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     return Spellbook(configuration=config)

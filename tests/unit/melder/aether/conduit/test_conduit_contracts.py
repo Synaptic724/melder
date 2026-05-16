@@ -11,7 +11,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 
 def _set_active_link_transaction(conduit: Conduit, peer_id: str) -> None:
@@ -85,7 +85,7 @@ def test_link_rejects_non_conduit_target(conduit_dynamic_normal: Conduit) -> Non
 
 def test_link_rejects_target_without_id(
     conduit_dynamic_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -96,7 +96,7 @@ def test_link_rejects_target_without_id(
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub with storage maps.
 
     Raises:
@@ -119,7 +119,7 @@ def test_link_rejects_target_without_id(
 
 def test_link_delegates_to_ward_and_fires_hook(
     conduit_dynamic_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -131,7 +131,7 @@ def test_link_delegates_to_ward_and_fires_hook(
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub with storage maps.
 
     Raises:
@@ -175,7 +175,7 @@ def test_link_delegates_to_ward_and_fires_hook(
 
 def test_link_publishes_peer_record_when_target_participates_in_nexus(
     conduit_dynamic_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """Successful link should publish the peer conduit record when the peer is Nexus-published and normal."""
@@ -308,7 +308,7 @@ def test_sever_link_delegates_and_fires_hook(
 
 def test_sever_link_publishes_peer_record_when_target_participates_in_nexus(
     conduit_dynamic_normal: Conduit,
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """Successful unlink should publish the peer conduit record when the peer is Nexus-published and normal."""

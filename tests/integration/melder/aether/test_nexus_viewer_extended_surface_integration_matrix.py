@@ -10,7 +10,7 @@ from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -85,7 +85,7 @@ def fresh_singletons() -> None:
     StaticFrameViewer._aether = aether
 
 
-def _make_rift_publishable_configuration(aetheric_frame: str) -> Configuration:
+def _make_rift_publishable_configuration(aetheric_frame: str) -> SpellbookConfiguration:
     """
     Build one Spellbook configuration that allows Nexus/Rift publication.
 
@@ -94,9 +94,9 @@ def _make_rift_publishable_configuration(aetheric_frame: str) -> Configuration:
             Target frame name for the spellbook.
 
     Returns:
-        Configuration: Publishable dynamic configuration.
+        SpellbookConfiguration: Publishable dynamic configuration.
     """
-    configuration = Configuration(aether_frame=aetheric_frame)
+    configuration = SpellbookConfiguration(aether_frame=aetheric_frame)
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     configuration.set_property("rift_enabled", True)

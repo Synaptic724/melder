@@ -10,7 +10,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.spellbook import Spellbook
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 
@@ -42,35 +42,35 @@ def fresh_singletons() -> None:
 
 
 @pytest.fixture()
-def configuration_automatic() -> Configuration:
+def configuration_automatic() -> SpellbookConfiguration:
     """
-    Provide a Configuration instance with automatic defaults applied.
+    Provide a SpellbookConfiguration instance with automatic defaults applied.
 
     Contract:
         - system_state is automatic.
         - default properties required by Conduit are present.
 
     Returns:
-        Configuration: Ready-to-use automatic configuration.
+        SpellbookConfiguration: Ready-to-use automatic configuration.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.automatic_defaults()
     return configuration
 
 
 @pytest.fixture()
-def configuration_dynamic() -> Configuration:
+def configuration_dynamic() -> SpellbookConfiguration:
     """
-    Provide a Configuration instance with dynamic defaults applied.
+    Provide a SpellbookConfiguration instance with dynamic defaults applied.
 
     Contract:
         - system_state is dynamic.
         - default properties required by Conduit are present.
 
     Returns:
-        Configuration: Ready-to-use dynamic configuration.
+        SpellbookConfiguration: Ready-to-use dynamic configuration.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     return configuration
 
@@ -151,7 +151,7 @@ def aether_stub() -> MagicMock:
 
 @pytest.fixture()
 def conduit_lesser(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> Conduit:
     """
@@ -162,7 +162,7 @@ def conduit_lesser(
         - Avoids Aether registration by staying in lesser state.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub with storage maps.
 
     Returns:
@@ -181,7 +181,7 @@ def conduit_lesser(
 
 @pytest.fixture()
 def conduit_normal(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> Conduit:
@@ -193,7 +193,7 @@ def conduit_normal(
         - Cleans up deterministically after each test.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub with storage maps.
         aether_stub (MagicMock): Aether stub installed on Conduit._aether.
 
@@ -213,7 +213,7 @@ def conduit_normal(
 
 @pytest.fixture()
 def conduit_dynamic_normal(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> Conduit:
@@ -225,7 +225,7 @@ def conduit_dynamic_normal(
         - Normal state enables contract qualification paths.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub with storage maps.
         aether_stub (MagicMock): Aether stub installed on Conduit._aether.
 
@@ -246,7 +246,7 @@ def conduit_dynamic_normal(
 
 @pytest.fixture()
 def conduit_dynamic_lesser(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> Conduit:
@@ -258,7 +258,7 @@ def conduit_dynamic_lesser(
         - Conduit remains in lesser state until upgraded.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub with storage maps.
         aether_stub (MagicMock): Aether stub installed on Conduit._aether.
 

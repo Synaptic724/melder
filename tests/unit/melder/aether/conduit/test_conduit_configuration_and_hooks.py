@@ -13,7 +13,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.logger.safe_logger import SafeLogger
@@ -33,7 +33,7 @@ def fresh_utility_system() -> None:
 
 
 def test_configure_logger_rejects_invalid_logger(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -43,7 +43,7 @@ def test_configure_logger_rejects_invalid_logger(
         - Conduit init raises TypeError when the provided logger is invalid.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
@@ -61,7 +61,7 @@ def test_configure_logger_rejects_invalid_logger(
 
 
 def test_init_rejects_non_string_conduit_id(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -82,7 +82,7 @@ def test_init_rejects_non_string_conduit_id(
 
 
 def test_init_rejects_empty_conduit_id(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -103,7 +103,7 @@ def test_init_rejects_empty_conduit_id(
 
 
 def test_init_registers_existing_creation_gate_for_current_root(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -150,7 +150,7 @@ def test_configure_logger_prefers_explicit_logger_over_provider(
     Raises:
         AssertionError: If the factory is invoked despite explicit logger.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.automatic_defaults()
     resolver_called = {"value": False}
 
@@ -200,7 +200,7 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
     Raises:
         AssertionError: If resolver is not called or logger wrapper missing.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", "automatic")
     configuration.with_defaults()
     seen: dict[str, object] = {}
@@ -253,7 +253,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
     Raises:
         AssertionError: If flags do not update internal state.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", SystemState.dynamic)
     configuration.with_defaults()
     conduit = Conduit(
@@ -274,7 +274,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
 
 
 def test_configure_conduit_state_clears_name_for_lesser(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -284,7 +284,7 @@ def test_configure_conduit_state_clears_name_for_lesser(
         - Lesser conduits cannot retain a name.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
@@ -305,7 +305,7 @@ def test_configure_conduit_state_clears_name_for_lesser(
 
 
 def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -370,7 +370,7 @@ def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup
     Raises:
         AssertionError: If hooks are not attached or fired.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", "automatic")
     configuration.with_defaults()
     events: list[Conduit] = []
@@ -425,7 +425,7 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
     Raises:
         AssertionError: If hooks fail to attach to a lesser conduit.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", "automatic")
     configuration.with_defaults()
     events: list[Conduit] = []
@@ -469,13 +469,13 @@ def test_initialize_conduit_hooks_copies_hook_lists_from_configuration(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify Conduit snapshots hook lists from Configuration.
+    Verify Conduit snapshots hook lists from SpellbookConfiguration.
 
     Contract:
         - Conduit keeps detached list copies for conduit and meld hook maps.
-        - Later Configuration list mutations do not mutate Conduit maps.
+        - Later SpellbookConfiguration list mutations do not mutate Conduit maps.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", "automatic")
     configuration.with_defaults()
 
@@ -531,13 +531,13 @@ def test_snapshot_split_hook_maps_from_configuration_uses_static_hook_lists(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify Conduit pulls only static hook names from Configuration hook maps.
+    Verify Conduit pulls only static hook names from SpellbookConfiguration hook maps.
 
     Contract:
         - Unknown hook keys are ignored.
         - Known hook keys are copied into the proper conduit/meld maps.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", "automatic")
     configuration.with_defaults()
 
@@ -591,7 +591,7 @@ def test_register_conduit_hooks_registers_locally_only(
     conduit_dynamic_normal: Conduit,
 ) -> None:
     """
-    Verify hook registration is local-only and does not mutate Configuration.
+    Verify hook registration is local-only and does not mutate SpellbookConfiguration.
 
     Contract:
         - Registered conduit hooks land in _local_conduit_hooks.
@@ -711,7 +711,7 @@ def test_register_conduit_hooks_local_does_not_wire_non_meld_hooks_to_meld(
     Contract:
         - Non-meld hook stores in _local_conduit_hooks.
         - Meld hook map does not include non-meld hook names.
-        - Configuration hook registry is not modified.
+        - SpellbookConfiguration hook registry is not modified.
     """
     def hook(conduit: Conduit) -> None:
         """
@@ -743,7 +743,7 @@ def test_register_conduit_hooks_noop_for_empty_mapping(
 
 
 def test_register_conduit_hooks_local_does_not_propagate_to_lesser(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
@@ -788,7 +788,7 @@ def test_register_conduit_hooks_local_does_not_propagate_to_lesser(
 
 
 def test_register_conduit_hooks_local_preserves_shared_map(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
@@ -798,7 +798,7 @@ def test_register_conduit_hooks_local_preserves_shared_map(
     Contract:
         - Conduit hook map remains detached from configuration hook map.
         - Local hooks are stored separately.
-        - Configuration hook map retains only shared hooks.
+        - SpellbookConfiguration hook map retains only shared hooks.
     """
     configuration_automatic.add_hook(
         spellbook_stub._id,
@@ -1131,7 +1131,7 @@ def test_register_to_creations_rejects_non_creations_manager(
 
 
 def test_cleanup_normal_unregisters_from_aether_and_removes_spells(
-    configuration_automatic: Configuration,
+    configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
@@ -1144,7 +1144,7 @@ def test_cleanup_normal_unregisters_from_aether_and_removes_spells(
         - Dynamic cloud registration is removed when named.
 
     Args:
-        configuration_automatic (Configuration): Automatic configuration defaults.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub with spell registry.
         aether_stub (MagicMock): Aether stub for removal checks.
 

@@ -6,7 +6,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -43,17 +43,17 @@ def reset_aether_singleton_for_component_spell_system_phase5_contracts() -> None
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration() -> Configuration:
+def _make_dynamic_configuration() -> SpellbookConfiguration:
     """
     Purpose:
-        Build a dynamic Configuration for contract-focused component tests.
+        Build a dynamic SpellbookConfiguration for contract-focused component tests.
     Contract:
         - dynamic_defaults are applied.
         - phase_scheduler_workers_per_spellbook is set to 1.
     Returns:
-        Configuration: Configured dynamic configuration.
+        SpellbookConfiguration: Configured dynamic configuration.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration

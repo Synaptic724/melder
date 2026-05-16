@@ -12,7 +12,7 @@ from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.capability_rift_space import (
     CapabilityRiftSpace,
 )
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -123,7 +123,7 @@ def _build_publishable_configuration(
         frame_name: str,
         *,
         dynamic_frame: bool = True,
-) -> Configuration:
+) -> SpellbookConfiguration:
     """
     Build one publishable Spellbook configuration for an integration frame.
 
@@ -134,9 +134,9 @@ def _build_publishable_configuration(
             Whether the frame should use dynamic posture.
 
     Returns:
-        Configuration: Publishable frame configuration.
+        SpellbookConfiguration: Publishable frame configuration.
     """
-    configuration = Configuration(aether_frame=frame_name)
+    configuration = SpellbookConfiguration(aether_frame=frame_name)
     if dynamic_frame:
         configuration.dynamic_defaults()
     else:

@@ -5,7 +5,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.creations.creations import Creations
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -33,7 +33,7 @@ def reset_aether_singleton_for_integration_creations() -> None:
     Conduit._aether = aether
 
 
-def _make_dynamic_configuration(workers: int = 1) -> Configuration:
+def _make_dynamic_configuration(workers: int = 1) -> SpellbookConfiguration:
     """
     Purpose:
         Create a dynamic configuration for integration creations tests.
@@ -43,9 +43,9 @@ def _make_dynamic_configuration(workers: int = 1) -> Configuration:
     Args:
         workers: Scheduler workers per spellbook.
     Returns:
-        Configuration: Dynamic configuration instance.
+        SpellbookConfiguration: Dynamic configuration instance.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration
@@ -180,7 +180,7 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
     Raises:
         AssertionError: If upgrade drops or fails to preserve creations.
     """
-    configuration = Configuration()
+    configuration = SpellbookConfiguration()
     configuration.set_property("system_state", "dynamic")
     configuration.set_property("disposal", True)
     configuration.set_property("disposal_method_names", ["cleanup"])

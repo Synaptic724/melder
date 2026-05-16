@@ -5,7 +5,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
@@ -40,7 +40,7 @@ def _make_configuration(
     aether_frame: str = "default",
     dynamic: bool = False,
     workers: int = 1,
-) -> Configuration:
+) -> SpellbookConfiguration:
     """
     Purpose:
         Create a configuration for Aether integration tests.
@@ -51,9 +51,9 @@ def _make_configuration(
         dynamic: Whether to use dynamic defaults.
         workers: Scheduler workers per spellbook.
     Returns:
-        Configuration: Configured instance.
+        SpellbookConfiguration: Configured instance.
     """
-    configuration = Configuration(aether_frame=aether_frame)
+    configuration = SpellbookConfiguration(aether_frame=aether_frame)
     if dynamic:
         configuration.dynamic_defaults()
     else:
