@@ -1158,9 +1158,6 @@ class TransferOfOwnership:
                 self.target_conduit._name,
                 self.target_conduit._creations,
                 dynamic_environment=self.target_conduit.__dynamic_environment__,
-                overrides_enabled=tgt_book._configuration.get_property(
-                    "overrides_enabled"
-                ),
                 creation_gate_controller=self.target_conduit._creation_gate_controller,
             )
             target_resolution_required = self._get_resolution_required_for_spellbook(

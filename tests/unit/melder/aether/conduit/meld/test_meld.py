@@ -229,7 +229,6 @@ class _SpellStub:
         validity_after_run: SpellValidity | None = None,
         broken_after_run: bool | None = None,
         creation_context: Any | None = None,
-        overrides_enabled: bool = True,
         resolution_required: bool = False,
         resolution_complete: bool = True,
     ) -> None:
@@ -263,8 +262,6 @@ class _SpellStub:
             validity_after_run: Validity to assign after structural phases.
             broken_after_run: Broken state to assign after structural phases.
             creation_context: Optional spell-owned creation context cache.
-            overrides_enabled: Whether the spell accepts override-capable
-                runtime behavior.
             resolution_required: Deferred runtime-resolution requirement flag.
             resolution_complete: Deferred runtime-resolution completion flag.
         """
@@ -299,7 +296,6 @@ class _SpellStub:
         self._owner_conduit_name = owner_conduit_name
         self.aetheric_frame = aetheric_frame
         self.spell_type = spell_type
-        self.overrides_enabled = bool(overrides_enabled)
         self._lock = RLock()
         self._creation_context = creation_context
         self._creation_context_factory = None
@@ -782,26 +778,6 @@ def test_meld_no_hooks_uses_cached_context_overrides_door() -> None:
     assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "instance-with-overrides"
     assert context.calls == ["no_hooks_overrides"]
     assert context.last_overrides == {"__args__": [1, 2]}
-
-
-def test_meld_rejects_spell_override_when_target_spell_disables_overrides() -> None:
-    """
-    Verify meld rejects override payloads when the resolved spell disables
-    override-capable runtime behavior.
-    """
-    creations, _ = _make_creations()
-    meld = _make_meld(creations=creations)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        owner_creations=creations,
-        creation_context=_CreationContextStub(no_hooks_no_overrides_result="instance"),
-        overrides_enabled=False,
-    )
-    spell._hooks_enabled = False
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
-
-    with pytest.raises(RuntimeError, match="Overrides are not enabled for this spell"):
-        meld.meld(spell="spell-1", spell_override={"x": 1})
 
 
 def test_meld_no_hooks_empty_dict_override_uses_no_overrides_door() -> None:

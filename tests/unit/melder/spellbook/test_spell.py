@@ -21,24 +21,8 @@ class _SpellbookStub:
     Minimal Spellbook stand-in that only exposes SpellSystemStates for Spell construction.
     """
 
-    class _ConfigurationStub:
-        """
-        Tiny configuration stub that exposes only overrides_enabled lookup.
-        """
-
-        def __init__(self, *, overrides_enabled: bool):
-            self._overrides_enabled = overrides_enabled
-
-        def get_property(self, key):
-            if key == "overrides_enabled":
-                return self._overrides_enabled
-            raise KeyError(key)
-
-    def __init__(self, states, *, overrides_enabled: bool = True):
+    def __init__(self, states):
         self._spell_system_states = states
-        self._configuration = self._ConfigurationStub(
-            overrides_enabled=overrides_enabled
-        )
 
 
 class _RecordingStates:
@@ -273,20 +257,8 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 class _SpellbookStub:
-    class _ConfigurationStub:
-        def __init__(self, *, overrides_enabled: bool):
-            self._overrides_enabled = overrides_enabled
-
-        def get_property(self, key):
-            if key == "overrides_enabled":
-                return self._overrides_enabled
-            raise KeyError(key)
-
-    def __init__(self, states, *, overrides_enabled: bool = True):
+    def __init__(self, states):
         self._spell_system_states = states
-        self._configuration = self._ConfigurationStub(
-            overrides_enabled=overrides_enabled
-        )
 
 
 class _RecordingStates:
@@ -604,7 +576,6 @@ def _make_spell(
         profile=None,
         existing_object=None,
         dynamic_environment: bool = False,
-        overrides_enabled: bool = True,
 ):
     states = states or _RecordingStates()
     spell = Spell(
@@ -618,15 +589,11 @@ def _make_spell(
         spell_id=spell_id,
         permissions=permissions,
         aetheric_frame="default",
-        spellbook=_SpellbookStub(
-            states,
-            overrides_enabled=overrides_enabled,
-        ),
+        spellbook=_SpellbookStub(states),
         profile=profile,
         existing_object=existing_object,
     )
     spell._dynamic_environment = dynamic_environment
-    spell._overrides_enabled = overrides_enabled
     return spell
 
 
@@ -635,7 +602,6 @@ def test_spell_hooks_default_state() -> None:
     Verify Spell initializes with hooks disabled and empty hook lists.
     """
     spell = _make_spell()
-    assert spell.overrides_enabled is True
     assert spell._hooks_enabled is False
     assert spell._pre_hooks == []
     assert spell._activation_hooks == []
@@ -1166,20 +1132,6 @@ def test_clear_mutation_override_raises_outside_dynamic_mode():
     spell = _make_spell(dynamic_environment=False)
 
     with pytest.raises(RuntimeError, match="Mutation overrides require dynamic mode"):
-        spell.clear_mutation_override()
-
-
-def test_apply_mutation_override_raises_when_overrides_disabled() -> None:
-    spell = _make_spell(dynamic_environment=True, overrides_enabled=False)
-
-    with pytest.raises(RuntimeError, match="Overrides are not enabled for this spell"):
-        spell.apply_mutation_override({"mode": "overlay"})
-
-
-def test_clear_mutation_override_raises_when_overrides_disabled() -> None:
-    spell = _make_spell(dynamic_environment=True, overrides_enabled=False)
-
-    with pytest.raises(RuntimeError, match="Overrides are not enabled for this spell"):
         spell.clear_mutation_override()
 
 

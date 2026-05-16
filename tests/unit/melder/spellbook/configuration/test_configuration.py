@@ -21,7 +21,6 @@ def test_load_defaults_populates_all_required_properties():
         assert cfg.has_property(key)
     assert cfg.get_property("disposal_method_names") == []
     assert cfg.get_property("full_ahead_of_time_compilation") is True
-    assert cfg.get_property("overrides_enabled") is True
     frame_configuration = build_aetheric_frame_configuration_for_spellbook_configuration(cfg, )
     assert frame_configuration.system_state == SystemState.automatic
     assert frame_configuration.shared_framewide_spellbook_configuration is False
@@ -139,14 +138,6 @@ def test_validate_full_ahead_of_time_compilation_type():
         cfg.validate()
 
 
-def test_validate_overrides_enabled_type() -> None:
-    cfg = SpellbookConfiguration()
-    cfg.load_default_dictionary()
-    cfg.set_property("overrides_enabled", "yes")
-    with pytest.raises(ValueError):
-        cfg.validate()
-
-
 def test_freeze_is_idempotent_and_blocks_mutation():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
@@ -216,11 +207,6 @@ def test_with_phase_scheduler_workers_rejects_invalid():
         cfg.with_phase_scheduler_workers(0)
 
 
-def test_with_overrides_enabled_sets_property() -> None:
-    cfg = SpellbookConfiguration().with_overrides_enabled(False)
-    assert cfg.get_property("overrides_enabled") is False
-
-
 def test_with_shared_framewide_spellbook_configuration_sets_property() -> None:
     cfg = set_shared_framewide_spellbook_configuration_for_spellbook_configuration(SpellbookConfiguration(), True)
     assert (
@@ -264,7 +250,7 @@ def test_iter_returns_keys():
     cfg.load_default_dictionary()
     keys = set(iter(cfg))
     assert "disposal" in keys
-    assert "overrides_enabled" in keys
+    assert "full_ahead_of_time_compilation" in keys
 
 
 def test_cleanup_idempotent_and_nulls_references():

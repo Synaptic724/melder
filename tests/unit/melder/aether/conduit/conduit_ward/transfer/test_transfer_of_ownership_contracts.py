@@ -520,8 +520,6 @@ class FakeSpellbook:
 
     class _ConfigurationStub:
         def get_property(self, key: str) -> bool:
-            if key == "overrides_enabled":
-                return True
             if key == "full_ahead_of_time_compilation":
                 return True
             raise KeyError(key)
@@ -861,7 +859,6 @@ def build_spell(
         creations: Any = None,
         *,
         dynamic_environment: bool = False,
-        overrides_enabled: bool = True,
         creation_gate_controller: Optional[CreationGateController] = None,
     ) -> None:
         """

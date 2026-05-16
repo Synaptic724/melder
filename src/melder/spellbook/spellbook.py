@@ -2765,9 +2765,6 @@ class Spellbook(Cleanable, ISpellbook):
                     self._conduit._name,
                     self._conduit._creations,
                     dynamic_environment=self._conduit.__dynamic_environment__,
-                    overrides_enabled=self._configuration.get_property(
-                        "overrides_enabled"
-                    ),
                     creation_gate_controller=self._conduit._creation_gate_controller,
                 )
                 new_spell.spell_index._set_owner_conduit_id(self._conduit._id)

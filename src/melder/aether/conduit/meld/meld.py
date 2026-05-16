@@ -326,11 +326,6 @@ class Meld(Cleanable, IMeld):
         if spell_override is None:
             override_map = None
         else:
-            if not target_spell.overrides_enabled:
-                raise RuntimeError(
-                    "Overrides are not enabled for this spell. "
-                    "spell_override cannot be passed to Meld.meld()."
-                )
             override_map = self._normalize_spell_override(spell_override)
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.

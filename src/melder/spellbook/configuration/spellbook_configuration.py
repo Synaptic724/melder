@@ -82,7 +82,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             "disposal": bool,
             "disposal_method_names": list,
             "full_ahead_of_time_compilation": bool,
-            "overrides_enabled": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "phase_scheduler_barrier_timeout_milliseconds": int,
         }
@@ -217,7 +216,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self._validate_required_properties_exist()
         self._validate_required_property_types()
         self._validate_phase_scheduler_workers()
-        self._validate_overrides_enabled()
 
         return True
 
@@ -255,15 +253,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
 
         if not isinstance(workers, int) or workers < 1:
             raise ValueError("phase_scheduler_workers must be a positive integer >= 1.")
-
-    def _validate_overrides_enabled(self) -> None:
-        """
-        Ensure overrides_enabled is a boolean.
-        """
-        enabled = self._properties.get("overrides_enabled")
-
-        if not isinstance(enabled, bool):
-            raise ValueError("overrides_enabled must be a boolean.")
 
     def validate_enums(self) -> bool:
         """
@@ -352,7 +341,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             "disposal": False,
             "disposal_method_names": [],
             "full_ahead_of_time_compilation": True,
-            "overrides_enabled": True,
             "phase_scheduler_workers_per_spellbook": 5,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
         }
@@ -598,31 +586,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("full_ahead_of_time_compilation", enabled)
         return self
 
-    def with_overrides_enabled(self, enabled: bool = True) -> IConfiguration:
-        """
-        Fluent
-
-        Set whether bound spells default to override-capable runtime posture.
-
-        Semantics:
-        - ``True`` keeps the current override-capable runtime behavior.
-        - ``False`` means later runtime entrypoints should reject caller
-          overrides and mutation overlays for spells using the default.
-
-        Args:
-            enabled (bool): Desired default override posture.
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-
-        Raises:
-            TypeError: If ``enabled`` is not a bool.
-        """
-        if not isinstance(enabled, bool):
-            raise TypeError("overrides_enabled must be a bool.")
-        self.set_property("overrides_enabled", enabled)
-        return self
-
     def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
         """
         Fluent
@@ -677,7 +640,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         Behavior:
         - Sets local rich-config defaults:
           disposal=False, disposal_method_names=[],
-          full_ahead_of_time_compilation=True, overrides_enabled=True.
+          full_ahead_of_time_compilation=True.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:

@@ -213,7 +213,6 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_disposal(True)
     config.with_disposal_method_names(["cleanup"])
     config.with_full_ahead_of_time_compilation(True)
-    config.with_overrides_enabled(True)
     config.with_phase_scheduler_workers(2)
     config.with_phase_scheduler_barrier_timeout(1000)
     set_frame_ai_native_for_spellbook_configuration(config, True)
