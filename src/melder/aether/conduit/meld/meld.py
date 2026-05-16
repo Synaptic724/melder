@@ -118,7 +118,7 @@ class Meld(Cleanable, IMeld):
 
 
         # Conduit-local instantiation manager.
-        self._creations = creations
+        self._creations: ICreations = creations
 
         # Front-door resolution caches.
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
