@@ -4723,29 +4723,19 @@ class SpellCrafter(Cleanable):
             )
         self._phase11_no_overrides_input_signature = no_overrides_input_signature
 
-        plan_overrides = self._try_build_execution_plan_variant_from_base(
-            base_plan=plan_no_overrides,
+        plan_overrides = self._build_execution_plan_variant(
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
+            spell_lookup=spell_lookup,
             plan_variant=ExecutionPlanVariant.OVERRIDES,
         )
-        if plan_overrides is None:
-            plan_overrides = self._build_execution_plan_variant(
-                occurrence_plan=occurrence_plan,
-                injection_plan=injection_plan,
-                spell_lookup=spell_lookup,
-                plan_variant=ExecutionPlanVariant.OVERRIDES,
-            )
 
-        plan_overrides_with_mutations = self._try_build_execution_plan_variant_from_base(
-            base_plan=plan_no_overrides,
+        plan_overrides_with_mutations = self._build_execution_plan_variant(
+            occurrence_plan=occurrence_plan,
+            injection_plan=injection_plan,
+            spell_lookup=spell_lookup,
             plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
         )
-        if plan_overrides_with_mutations is None:
-            plan_overrides_with_mutations = self._build_execution_plan_variant(
-                occurrence_plan=occurrence_plan,
-                injection_plan=injection_plan,
-                spell_lookup=spell_lookup,
-                plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
-            )
 
         self._cache_execution_plan_metrics(
             occurrence_plan=occurrence_plan,

@@ -7807,22 +7807,25 @@ def test_run_phase_execution_plan_compiles_phase12_without_eager_phase8_11_flush
     assert crafter._phase8_11_codegen_ir_dirty is True
 
 
-def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
+def test_run_phase_execution_plan_builds_override_variants_separately_from_stripped_no_overrides_base(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Purpose:
-        Verify phase11 reuses the no-overrides structural plan for sibling variants.
+        Verify phase11 rebuilds override-capable variants from source inputs
+        when the no-overrides base plan is intentionally stripped.
     Contract:
-        When the no-overrides plan exposes compatible structure, phase11 should
-        invoke `_build_execution_plan_variant` only once and derive overrides
-        variants from the base without rebuilding.
+        A stripped no-overrides base must not poison the override-capable
+        variants. Phase11 therefore rebuilds `OVERRIDES` and
+        `OVERRIDES_WITH_MUTATIONS` from occurrence/injection inputs instead of
+        deriving them from the stripped base plan.
     Args:
         monkeypatch: Pytest fixture for replacing phase11 collaborators.
     Returns:
         None.
     Raises:
-        AssertionError: If rebuild count or variant contracts regress.
+        AssertionError: If the override-capable variants stop rebuilding from
+            source inputs.
     """
     crafter, _, _ = _build_spell_and_crafter(spell_id="root")
     crafter._occurrence_plan_phase8 = types.SimpleNamespace()
@@ -7874,7 +7877,11 @@ def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
 
     crafter.run_phase_execution_plan("cid")
 
-    assert build_calls == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
+    assert build_calls == [
+        spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+    ]
     assert crafter._execution_plan_phase11_no_overrides.plan_variant == spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST
     assert crafter._execution_plan_phase11_overrides.plan_variant == spell_crafter_module.ExecutionPlanVariant.OVERRIDES
     assert crafter._execution_plan_phase11.plan_variant == spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS
@@ -7897,7 +7904,7 @@ def test_run_phase_execution_plan_reuses_no_overrides_plan_when_input_signature_
     Returns:
         None.
     Raises:
-        AssertionError: If no-overrides full build is not elided on warm rerun.
+        AssertionError: If the warm rerun rebuilds the cached variant set.
     """
     crafter, _, _ = _build_spell_and_crafter(spell_id="root")
     crafter._occurrence_plan_phase8 = types.SimpleNamespace()
@@ -7964,7 +7971,11 @@ def test_run_phase_execution_plan_reuses_no_overrides_plan_when_input_signature_
     first_plan = crafter._execution_plan_phase11_no_overrides
     crafter.run_phase_execution_plan("cid")
 
-    assert build_calls == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
+    assert build_calls == [
+        spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+    ]
     assert signature_calls == ["called", "called"]
     assert first_plan is not None
     assert crafter._execution_plan_phase11_no_overrides is first_plan
@@ -7977,11 +7988,12 @@ def test_run_phase_execution_plan_reuses_cached_variant_set_when_input_signature
     """
     Purpose:
         Verify phase11 reuses the full cached variant set on unchanged-signature
-        warm reruns.
+        warm reruns after the override-capable variants are built from source
+        inputs.
     Contract:
         With stable no-overrides input signature and cached variants, phase11
-        should not derive sibling variants again and should retain cached plan
-        object identities.
+        should not rebuild any variant on the warm rerun and should retain
+        cached plan object identities.
     Args:
         monkeypatch: Pytest fixture for replacing phase11 collaborators.
     Returns:
@@ -7995,7 +8007,6 @@ def test_run_phase_execution_plan_reuses_cached_variant_set_when_input_signature
 
     signature_calls: list[str] = []
     build_calls: list[str] = []
-    derive_calls: list[str] = []
     cache_metrics_calls = 0
     compile_calls = 0
 
@@ -8031,25 +8042,6 @@ def test_run_phase_execution_plan_reuses_cached_variant_set_when_input_signature
             fast_transient_plan=None,
         )
 
-    def _derive_from_base_stub(
-        self: SpellCrafter,
-        *,
-        base_plan: object,
-        plan_variant: str,
-    ) -> object:
-        del self
-        derive_calls.append(plan_variant)
-        return types.SimpleNamespace(
-            root_spell_id=base_plan.root_spell_id,
-            root_instance_key=base_plan.root_instance_key,
-            steps=list(base_plan.steps),
-            spell_id_step_index=dict(base_plan.spell_id_step_index),
-            optimistic_object_refs_by_spell_id=dict(base_plan.optimistic_object_refs_by_spell_id),
-            available_param_by_spell_id=dict(base_plan.available_param_by_spell_id),
-            plan_variant=plan_variant,
-            fast_transient_plan=None,
-        )
-
     def _cache_metrics_stub(
         self: SpellCrafter,
         *,
@@ -8074,7 +8066,6 @@ def test_run_phase_execution_plan_reuses_cached_variant_set_when_input_signature
 
     monkeypatch.setattr(SpellCrafter, "_build_phase11_no_overrides_input_signature", _build_signature_stub)
     monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
-    monkeypatch.setattr(SpellCrafter, "_try_build_execution_plan_variant_from_base", _derive_from_base_stub)
     monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
     monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
 
@@ -8086,8 +8077,8 @@ def test_run_phase_execution_plan_reuses_cached_variant_set_when_input_signature
     crafter.run_phase_execution_plan("cid")
 
     assert signature_calls == ["called", "called"]
-    assert build_calls == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
-    assert derive_calls == [
+    assert build_calls == [
+        spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
         spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
         spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
     ]
@@ -8104,16 +8095,19 @@ def test_run_phase_execution_plan_rebuilds_no_overrides_plan_when_input_signatur
 ) -> None:
     """
     Purpose:
-        Verify phase11 rebuilds no-overrides plan when input signature changes.
+        Verify phase11 rebuilds the full variant set when the no-overrides
+        input signature changes.
     Contract:
-        A changed no-overrides input signature forces a fresh no-overrides full
-        build even when sibling variant reuse remains available.
+        A changed no-overrides input signature forces a fresh no-overrides
+        rebuild, and the override-capable variants are rebuilt from source
+        inputs in the same pass.
     Args:
         monkeypatch: Pytest fixture for replacing phase11 collaborators.
     Returns:
         None.
     Raises:
-        AssertionError: If signature drift does not trigger no-overrides rebuild.
+        AssertionError: If signature drift does not trigger the expected full
+            variant rebuild.
     """
     crafter, _, _ = _build_spell_and_crafter(spell_id="root")
     crafter._occurrence_plan_phase8 = types.SimpleNamespace()
@@ -8182,7 +8176,11 @@ def test_run_phase_execution_plan_rebuilds_no_overrides_plan_when_input_signatur
 
     assert build_calls == [
         spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
         spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
     ]
     assert first_plan is not None
     assert second_plan is not None

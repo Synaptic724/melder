@@ -1274,13 +1274,33 @@ class ExecutionPlanBuilder:
             owner_conduit_required = existence is Existence.unique_per_spell_space
             must_register = self._should_register(spell)
             disposal_method_names = list(spell.disposal_method_names) if spell.has_disposal_methods else []
+            strip_override_metadata = (
+                self._plan_variant == ExecutionPlanVariant.NO_OVERRIDES_FAST
+            )
 
             for instance_key in self._occurrence_plan.instance_keys_by_spell_id.get(spell_id, []):
                 occurrence = self._occurrence_for_instance_key(instance_key)
                 inject_spec = injection_lookup.get(instance_key) if injection_lookup else None
-                dependency_keys, dependency_keys_by_param, override_keys, contract_keys = (
-                    self._extract_param_keys(inject_spec)
-                )
+                if strip_override_metadata:
+                    dependency_keys, dependency_keys_by_param = (
+                        self._extract_param_keys_no_overrides(inject_spec)
+                    )
+                    override_keys = []
+                    contract_keys = []
+                    expects_overrides = False
+                    override_match_prefix = None
+                    override_match_prefix_len = 0
+                else:
+                    dependency_keys, dependency_keys_by_param, override_keys, contract_keys = (
+                        self._extract_param_keys(inject_spec)
+                    )
+                    expects_overrides = bool(override_keys)
+                    override_match_prefix = occurrence[1]
+                    override_match_prefix_len = (
+                        path_registry.depth(override_match_prefix)
+                        if override_match_prefix is not None
+                        else 0
+                    )
                 dependency_resolution_order = list(dependency_keys_by_param.items())
                 allow_list_aggregation = inject_spec.allow_list_aggregation if inject_spec else False
                 uses_positional_override = inject_spec.uses_positional_override if inject_spec else False
@@ -1293,13 +1313,6 @@ class ExecutionPlanBuilder:
                 ):
                     contract_positional_override = contract_payload["__args__"]
                 has_contract_payload = bool(contract_payload)
-                expects_overrides = bool(override_keys)
-                override_match_prefix = occurrence[1]
-                override_match_prefix_len = (
-                    path_registry.depth(override_match_prefix)
-                    if override_match_prefix is not None
-                    else 0
-                )
 
                 step = ExecutionPlanStep(
                     instance_key=instance_key,
@@ -2240,3 +2253,27 @@ class ExecutionPlanBuilder:
             if source.dependency_keys:
                 dependency_keys_by_param[param_name] = list(source.dependency_keys)
         return dependency_keys, dependency_keys_by_param, override_keys, contract_keys
+
+    @staticmethod
+    def _extract_param_keys_no_overrides(
+            inject_spec: Optional[InjectionSpec],
+    ) -> tuple[List[InstanceKey], Dict[str, List[InstanceKey]]]:
+        """
+        Flatten only dependency keys for the no-overrides branch.
+
+        Contract:
+            - Returns dependency routing only.
+            - Skips override-key and contract-key collection entirely.
+            - Preserves dependency ordering semantics from the full helper.
+        """
+        if inject_spec is None:
+            return [], {}
+        dependency_keys: List[InstanceKey] = []
+        dependency_keys_by_param: Dict[str, List[InstanceKey]] = {}
+        for source in inject_spec.param_sources.values():
+            if source.dependency_keys:
+                dependency_keys.extend(source.dependency_keys)
+        for param_name, source in inject_spec.param_sources.items():
+            if source.dependency_keys:
+                dependency_keys_by_param[param_name] = list(source.dependency_keys)
+        return dependency_keys, dependency_keys_by_param

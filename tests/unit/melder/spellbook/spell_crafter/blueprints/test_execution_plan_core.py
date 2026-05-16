@@ -421,6 +421,85 @@ def test_execution_plan_builder_raises_when_shared_canonical_occurrence_is_missi
         builder._occurrence_for_instance_key(("root", None))
 
 
+def test_execution_plan_builder_strips_override_metadata_from_no_overrides_variant() -> None:
+    """
+    Purpose:
+        Lock the bounded no-overrides strip contract for Phase 11.
+    Contract:
+        - `NO_OVERRIDES_FAST` steps do not carry explicit override metadata.
+        - Contract payload semantics still survive in the no-overrides plan.
+        - The override-capable variant still preserves override metadata.
+    """
+
+    path_registry = _PathRegistryStub({7: 2})
+    occurrence_plan = SimpleNamespace(
+        root_spell_id="root",
+        execution_order=["root"],
+        instance_keys_by_spell_id={"root": [("root", None)]},
+        canonical_occurrences_by_spell_id={"root": ("root", 7)},
+        root_instance_key=("root", None),
+        shared_spell_ids={"root"},
+        path_registry=path_registry,
+    )
+    injection_lookup = {
+        ("root", None): InjectionSpec(
+            param_sources={
+                "contracted": ParamSource(
+                    kind="mixed",
+                    override_key="override-service",
+                    contract_key="contract-service",
+                ),
+            },
+            allow_list_aggregation=False,
+            uses_positional_override=True,
+            contract_payload={"value": "contract", "__args__": ("left",)},
+        )
+    }
+    injection_plan = SimpleNamespace(
+        select_for_runtime=lambda *, root_spell_id: injection_lookup
+        if root_spell_id == "root"
+        else None,
+    )
+    spell = _make_spell_stub(
+        existence=Existence.unique,
+        user_created_object=object(),
+        has_disposal_methods=True,
+    )
+
+    no_overrides_builder = ExecutionPlanBuilder(
+        occurrence_plan=occurrence_plan,
+        injection_plan=injection_plan,
+        spell_lookup={"root": spell},
+        plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    )
+    no_overrides_plan = no_overrides_builder.build()
+    no_overrides_step = no_overrides_plan.steps[0]
+
+    assert no_overrides_step.override_keys == []
+    assert no_overrides_step.override_match_prefix is None
+    assert no_overrides_step.override_match_prefix_len == 0
+    assert no_overrides_step.expects_overrides is False
+    assert no_overrides_step.contract_keys == ["contract-service"]
+    assert no_overrides_step.contract_payload == {
+        "value": "contract",
+        "__args__": ("left",),
+    }
+
+    overrides_builder = ExecutionPlanBuilder(
+        occurrence_plan=occurrence_plan,
+        injection_plan=injection_plan,
+        spell_lookup={"root": spell},
+        plan_variant=ExecutionPlanVariant.OVERRIDES,
+    )
+    overrides_plan = overrides_builder.build()
+    overrides_step = overrides_plan.steps[0]
+
+    assert overrides_step.override_keys == ["override-service"]
+    assert overrides_step.override_match_prefix == 7
+    assert overrides_step.override_match_prefix_len == 2
+    assert overrides_step.expects_overrides is True
+
+
 def test_execution_plan_builder_build_raises_on_injection_root_mismatch() -> None:
     """
     Purpose:
