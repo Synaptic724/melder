@@ -4,6 +4,15 @@ from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguratio
 from melder.spellbook.configuration.system_state import SystemState
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.mark.parametrize(
     ("immutable", "metadata", "root_conduit_name"),
     [
@@ -187,10 +196,12 @@ def test_nexus_frame_configuration_to_spellbook_configuration_matches_contract()
 
     spellbook_configuration = configuration.to_spellbook_configuration()
 
-    frame_configuration = spellbook_configuration.to_aetheric_frame_configuration()
+    frame_configuration = configuration.to_aetheric_frame_configuration()
+    spellbook_configuration.load_default_dictionary()
     assert frame_configuration.system_state == SystemState.dynamic
     assert frame_configuration.ai_native_enabled is True
     assert frame_configuration.rift_enabled is True
+    assert spellbook_configuration.has_property("phase_scheduler_workers_per_spellbook") is True
 
 
 def test_nexus_frame_configuration_cleanup_is_idempotent() -> None:

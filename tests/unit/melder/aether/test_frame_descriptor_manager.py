@@ -134,8 +134,8 @@ def test_manager_refresh_frame_posture_cache_returns_none_for_missing_frame() ->
 
 def test_manager_refresh_frame_posture_cache_returns_none_when_posture_not_bound() -> None:
     """
-    Verify posture refresh leaves a descriptor without posture when the frame
-    exists but has no bound frame configuration.
+    Verify posture refresh returns the default frame-owned posture when the
+    frame exists but no explicit external posture has been bound yet.
 
     Returns:
         None.
@@ -146,10 +146,10 @@ def test_manager_refresh_frame_posture_cache_returns_none_when_posture_not_bound
 
     posture = manager._refresh_frame_posture_cache("ops")
 
-    assert posture is None
+    assert posture is not None
     descriptor = manager._get_required_frame_descriptor("ops")
-    assert descriptor.frame_configuration is None
-    assert descriptor.frame_handle is None
+    assert descriptor.frame_configuration is posture
+    assert descriptor.frame_handle is not None
 
 
 def test_manager_descriptor_helpers_cover_create_has_and_missing_record_cases() -> None:

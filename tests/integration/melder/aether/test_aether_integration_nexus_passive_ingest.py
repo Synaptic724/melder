@@ -10,6 +10,15 @@ from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_singletons_for_integration() -> None:
     """
@@ -56,9 +65,9 @@ def _make_rift_publishable_configuration(
         SpellbookConfiguration: Configured Spellbook configuration.
     """
     configuration = SpellbookConfiguration(aether_frame=aether_frame)
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     return configuration
 
 

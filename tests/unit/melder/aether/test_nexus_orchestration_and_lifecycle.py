@@ -58,14 +58,13 @@ def _bind_target_frame_configuration(
 ) -> None:
     aether = Aether()
     aether._ensure_frame(frame_name)
-    configuration = SpellbookConfiguration(aether_frame=frame_name)
-    if system_state == SystemState.dynamic:
-        configuration.dynamic_defaults()
-    else:
-        configuration.automatic_defaults()
-    configuration.with_rift_enabled(rift_enabled)
-    configuration.with_ai_native(ai_native_enabled)
-    aether._bind_configuration(configuration, frame_name)
+    posture = AethericFrameConfiguration(
+        origin_spellbook_id="{0}-spellbook".format(frame_name),
+        system_state=system_state,
+        ai_native_enabled=ai_native_enabled,
+        rift_enabled=rift_enabled,
+    )
+    aether._bind_aetheric_frame_configuration(posture, frame_name)
 
 
 def _bind_target_runtime_posture(
@@ -522,7 +521,12 @@ def test_nexus_get_required_target_frame_runtime_configuration_prefers_bound_run
         system_state=SystemState.automatic,
     )
 
-    assert nexus._get_required_target_frame_runtime_configuration("ops") is posture
+    bound = nexus._get_required_target_frame_runtime_configuration("ops")
+    assert bound is not posture
+    assert bound.origin_spellbook_id == "spellbook-alpha"
+    assert bound.system_state is SystemState.dynamic
+    assert bound.ai_native_enabled is True
+    assert bound.rift_enabled is True
 
 
 def test_nexus_get_required_target_frame_runtime_configuration_falls_back_to_bound_configuration() -> None:

@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional, Tuple
+from types import SimpleNamespace
 
 import pytest
 
@@ -231,6 +232,14 @@ class _SpellbookStub:
             None.
         """
         self._config = config
+        class _FrameConfigurationStub:
+            @property
+            def system_state(_self):
+                if config is None:
+                    return None
+                return config.get_property("system_state")
+
+        self._aetheric_frame_configuration = _FrameConfigurationStub()
         self._contracted_spells: Dict[str, Dict[_SpellIndexStub, _ProviderSpellStub]] = {}
         if contracted_spells:
             self._contracted_spells["contracted"] = {

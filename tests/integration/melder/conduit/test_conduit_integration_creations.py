@@ -10,6 +10,15 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_integration_creations() -> None:
     """
@@ -46,7 +55,7 @@ def _make_dynamic_configuration(workers: int = 1) -> SpellbookConfiguration:
         SpellbookConfiguration: Dynamic configuration instance.
     """
     configuration = SpellbookConfiguration()
-    configuration.dynamic_defaults()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration
 
@@ -181,7 +190,7 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
         AssertionError: If upgrade drops or fails to preserve creations.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state("dynamic")
+    set_frame_system_state_for_spellbook_configuration(configuration, "dynamic")
     configuration.set_property("disposal", True)
     configuration.set_property("disposal_method_names", ["cleanup"])
     configuration.load_default_dictionary()

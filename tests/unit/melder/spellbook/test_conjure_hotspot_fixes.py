@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
 from types import SimpleNamespace
 
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spell_crafter.blueprints.injection_plan import (
     InjectionPlanBuilder,
@@ -86,6 +87,12 @@ class _StubSpellbook:
             None.
         """
         self._configuration = _StubConfiguration(system_state)
+        self._aetheric_frame_configuration = AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-stub",
+            system_state=system_state,
+            ai_native_enabled=False,
+            rift_enabled=False,
+        )
         self._lookup_contracted_spells: Dict[Any, Dict[Any, Any]] = {}
         self._contracted_spells: Dict[Any, Dict[Any, Any]] = {}
 

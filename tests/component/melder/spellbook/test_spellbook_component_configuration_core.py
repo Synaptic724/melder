@@ -4,6 +4,15 @@ from melder.spellbook.configuration.spellbook_configuration import SpellbookConf
 from melder.spellbook.configuration.system_state import SystemState
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 def test_component_configuration_defaults_validate_and_freeze() -> None:
     """
     Purpose:
@@ -18,7 +27,7 @@ def test_component_configuration_defaults_validate_and_freeze() -> None:
     config.with_defaults()
     assert config.validate() is True
     assert (
-        config.to_aetheric_frame_configuration().system_state
+        build_aetheric_frame_configuration_for_spellbook_configuration(config, ).system_state
         is SystemState.automatic
     )
 
@@ -38,10 +47,10 @@ def test_component_configuration_system_state_is_reconfigurable_pre_freeze() -> 
         None.
     """
     config = SpellbookConfiguration()
-    config.with_system_state("automatic")
-    assert config.to_aetheric_frame_configuration().system_state is SystemState.automatic
-    config.with_system_state(SystemState.dynamic)
-    assert config.to_aetheric_frame_configuration().system_state is SystemState.dynamic
+    set_frame_system_state_for_spellbook_configuration(config, "automatic")
+    assert build_aetheric_frame_configuration_for_spellbook_configuration(config, ).system_state is SystemState.automatic
+    set_frame_system_state_for_spellbook_configuration(config, SystemState.dynamic)
+    assert build_aetheric_frame_configuration_for_spellbook_configuration(config, ).system_state is SystemState.dynamic
 
 
 def test_component_configuration_hooks_register_and_shared_map() -> None:
@@ -105,7 +114,7 @@ def test_component_configuration_stays_logger_free() -> None:
         None.
     """
     config = SpellbookConfiguration().with_defaults().finalize()
-    assert config.to_aetheric_frame_configuration().system_state is SystemState.automatic
+    assert build_aetheric_frame_configuration_for_spellbook_configuration(config, ).system_state is SystemState.automatic
 
 
 def test_component_configuration_validate_requires_required_properties() -> None:
@@ -200,18 +209,18 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     """
     config = SpellbookConfiguration()
 
-    config.with_system_state("dynamic")
+    set_frame_system_state_for_spellbook_configuration(config, "dynamic")
     config.with_disposal(True)
     config.with_disposal_method_names(["cleanup"])
     config.with_full_ahead_of_time_compilation(True)
     config.with_overrides_enabled(True)
     config.with_phase_scheduler_workers(2)
     config.with_phase_scheduler_barrier_timeout(1000)
-    config.with_ai_native(True)
-    config.with_rift_enabled(False)
+    set_frame_ai_native_for_spellbook_configuration(config, True)
+    set_frame_rift_enabled_for_spellbook_configuration(config, False)
     config.finalize()
 
-    frame_configuration = config.to_aetheric_frame_configuration()
+    frame_configuration = build_aetheric_frame_configuration_for_spellbook_configuration(config, )
     assert frame_configuration.system_state is SystemState.dynamic
     assert config.get_property("disposal") is True
     assert config.get_property("disposal_method_names") == ["cleanup"]

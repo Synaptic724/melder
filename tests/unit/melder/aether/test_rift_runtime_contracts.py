@@ -7,6 +7,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
@@ -84,14 +85,13 @@ def _bind_target_frame_configuration(
     """
     aether = Aether()
     aether._ensure_frame(frame_name)
-    configuration = SpellbookConfiguration()
-    if system_state == SystemState.dynamic:
-        configuration.dynamic_defaults()
-    else:
-        configuration.automatic_defaults()
-    configuration.with_rift_enabled(rift_enabled)
-    configuration.with_ai_native(ai_native_enabled)
-    aether._bind_configuration(configuration, frame_name)
+    posture = AethericFrameConfiguration(
+        origin_spellbook_id="{0}-spellbook".format(frame_name),
+        system_state=system_state,
+        ai_native_enabled=ai_native_enabled,
+        rift_enabled=rift_enabled,
+    )
+    aether._bind_aetheric_frame_configuration(posture, frame_name)
 
 
 def _seed_frame_descriptor(frame_name: str) -> None:

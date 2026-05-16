@@ -8,6 +8,15 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spellbook import Spellbook
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_component_spellbook_configuration() -> None:
     """
@@ -93,7 +102,7 @@ def test_component_spellbook_initialize_configuration_adopts_aether_config_and_l
     frame_name = "frame-config-adopt"
     aether._ensure_frame(frame_name)
     config = _make_configuration(frame_name).with_defaults()
-    config.with_shared_framewide_spellbook_configuration(True)
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(config, True)
     _bind_frame_posture(
         aether,
         frame_name,
@@ -125,7 +134,7 @@ def test_component_spellbook_initialize_configuration_reuses_matching_provided_c
     frame_name = "frame-config-match"
     aether._ensure_frame(frame_name)
     config = _make_configuration(frame_name).with_defaults()
-    config.with_shared_framewide_spellbook_configuration(True)
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(config, True)
     _bind_frame_posture(
         aether,
         frame_name,
@@ -156,9 +165,9 @@ def test_component_spellbook_initialize_configuration_rejects_mismatched_aether_
     frame_name = "frame-config-conflict"
     aether._ensure_frame(frame_name)
     config_aether = _make_configuration(frame_name).with_defaults()
-    config_aether.with_shared_framewide_spellbook_configuration(True)
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(config_aether, True)
     config_other = _make_configuration(frame_name).with_defaults()
-    config_other.with_shared_framewide_spellbook_configuration(True)
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(config_other, True)
     _bind_frame_posture(
         aether,
         frame_name,
@@ -253,7 +262,7 @@ def test_component_spellbook_cleanup_does_not_clean_frame_owned_shared_configura
     frame_name = "frame-config-shared-cleanup"
     aether._ensure_frame(frame_name)
     config = _make_configuration(frame_name).with_defaults()
-    config.with_shared_framewide_spellbook_configuration(True)
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(config, True)
     _bind_frame_posture(
         aether,
         frame_name,
@@ -303,7 +312,7 @@ def test_component_spellbook_bind_configuration_to_aether_propagates_errors(
         raise ValueError("bind-failed")
 
     try:
-        spellbook.get_configuration().with_shared_framewide_spellbook_configuration(True)
+        set_shared_framewide_spellbook_configuration_for_spellbook_configuration(spellbook.get_configuration(), True)
         monkeypatch.setattr(spellbook._aether, "_bind_configuration", _raise_bind)
         with pytest.raises(ValueError, match="bind-failed"):
             spellbook._bind_configuration_to_aether()

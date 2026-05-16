@@ -1,6 +1,7 @@
 import pytest
 from typing import Dict, Optional
 
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -74,6 +75,12 @@ class _StubSpellbook:
         """
         self._spell_validator = object()
         self._configuration = _StubConfiguration()
+        self._aetheric_frame_configuration = AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-stub",
+            system_state=SystemState.dynamic,
+            ai_native_enabled=False,
+            rift_enabled=False,
+        )
         self._spells = spells
         self._contracted_spells: Dict[str, Dict[_StubSpellIndex, "_StubSpell"]] = {}
         self._lookup_spells: Dict[tuple, _StubSpellIndex] = {

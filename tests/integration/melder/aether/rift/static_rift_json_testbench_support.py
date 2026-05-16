@@ -10,6 +10,7 @@ from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpac
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 
 class _BaseBenchService:
@@ -308,12 +309,13 @@ class StaticRiftJsonBench:
             SpellbookConfiguration: Publishable frame configuration.
         """
         configuration = SpellbookConfiguration(aether_frame=self.frame_name)
-        if self.dynamic_frame:
-            configuration.dynamic_defaults()
-        else:
-            configuration.automatic_defaults()
+        configuration.load_default_dictionary()
+        configure_frame_posture_for_spellbook_configuration(
+            configuration,
+            dynamic=self.dynamic_frame,
+            rift_enabled=True,
+        )
         configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-        configuration.set_property("rift_enabled", True)
         return configuration
 
     def _bind_spells(self) -> None:

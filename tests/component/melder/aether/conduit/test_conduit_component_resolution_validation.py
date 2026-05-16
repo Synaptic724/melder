@@ -20,6 +20,15 @@ from tests.mocks.spellbook.deep_layers import Depth3Root
 from tests.mocks.spellbook.deep_layers import get_depth_3_classes
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_component_resolution_validation() -> None:
     """
@@ -54,7 +63,7 @@ def _make_dynamic_configuration() -> SpellbookConfiguration:
         SpellbookConfiguration: Configured dynamic configuration.
     """
     configuration = SpellbookConfiguration()
-    configuration.dynamic_defaults()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration
 

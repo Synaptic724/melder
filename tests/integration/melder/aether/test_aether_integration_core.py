@@ -11,6 +11,15 @@ from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_integration() -> None:
     """
@@ -54,9 +63,9 @@ def _make_configuration(
     """
     configuration = SpellbookConfiguration(aether_frame=aether_frame)
     if dynamic:
-        configuration.dynamic_defaults()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
     else:
-        configuration.automatic_defaults()
+        apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration
 
@@ -111,7 +120,7 @@ def test_aether_bind_configuration_missing_frame_raises() -> None:
         AssertionError: If missing-frame binds do not raise.
     """
     aether = Aether()
-    config = _make_configuration(aether_frame="missing-frame")
+    config = SpellbookConfiguration(aether_frame="missing-frame").with_defaults()
     with pytest.raises(ValueError, match="does not exist"):
         aether._bind_configuration(config, "missing-frame")
 

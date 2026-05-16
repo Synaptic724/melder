@@ -18,6 +18,15 @@ from tests.mocks.spellbook import scan_bind_module_reexport
 from tests.mocks.spellbook import scan_bind_module_wrapped
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_integration_scan_bind() -> None:
     """
@@ -496,7 +505,7 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
     """
     spellbook = _make_spellbook()
     config = spellbook.get_configuration()
-    config.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(config, True)
     frame_name = spellbook._aetheric_frame
 
     conduit = spellbook.conjure(name="scan_root_nexus")

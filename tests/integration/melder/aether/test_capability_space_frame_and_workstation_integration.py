@@ -15,6 +15,7 @@ from melder.aether.nexus.rift.rift_space.capability_rift_space import (
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 
 class CapabilityWorkspaceService:
@@ -137,12 +138,13 @@ def _build_publishable_configuration(
         SpellbookConfiguration: Publishable frame configuration.
     """
     configuration = SpellbookConfiguration(aether_frame=frame_name)
-    if dynamic_frame:
-        configuration.dynamic_defaults()
-    else:
-        configuration.automatic_defaults()
+    configuration.load_default_dictionary()
+    configure_frame_posture_for_spellbook_configuration(
+        configuration,
+        dynamic=dynamic_frame,
+        rift_enabled=True,
+    )
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-        configuration.with_rift_enabled(True)
     return configuration
 
 

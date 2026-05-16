@@ -2,6 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -155,14 +156,13 @@ def _bind_target_frame_configuration(
     """
     aether = Aether()
     aether._ensure_frame(frame_name)
-    frame_configuration = SpellbookConfiguration()
-    if system_state == SystemState.dynamic:
-        frame_configuration.dynamic_defaults()
-    else:
-        frame_configuration.automatic_defaults()
-    frame_configuration.with_rift_enabled(rift_enabled)
-    frame_configuration.with_ai_native(ai_native_enabled)
-    aether._bind_configuration(frame_configuration, frame_name)
+    posture = AethericFrameConfiguration(
+        origin_spellbook_id="{0}-spellbook".format(frame_name),
+        system_state=system_state,
+        ai_native_enabled=ai_native_enabled,
+        rift_enabled=rift_enabled,
+    )
+    aether._bind_aetheric_frame_configuration(posture, frame_name)
 
 
 def _create_enabled_nexus(*allowed_target_frame_names: str) -> Nexus:

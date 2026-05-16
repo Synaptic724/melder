@@ -14,6 +14,15 @@ from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.factories import BuiltArtifact
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_integration() -> None:
     """
@@ -341,7 +350,9 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
         AssertionError: If conflict admission is not enforced.
     """
     frame_name = "shared-conduit-scope"
-    configuration = SpellbookConfiguration(frame_name).dynamic_defaults().finalize()
+    configuration = SpellbookConfiguration(frame_name)
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.finalize()
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     conduit_a = spellbook_a.conjure(automatic=False, name="conduit-a")

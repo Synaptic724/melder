@@ -9,6 +9,7 @@ import pytest
 import melder.spellbook.spellbook as spellbook_module
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -1493,7 +1494,12 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
     with pytest.raises(RuntimeError, match="dynamic mode"):
         sb.begin_transaction(spellbook_module.ChangeTransactionType.LINK)
 
-    sb._configuration = _TxnConfig(SystemState.dynamic)
+    sb._aetheric_frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-id",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
     change_control = types.SimpleNamespace(
         transaction_manager=lambda: types.SimpleNamespace(
             make_scope_key_spellbook=lambda spellbook_id: f"scope:{spellbook_id}",
@@ -1683,6 +1689,7 @@ def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeyp
     sb._aetheric_frame = "ops"
 
     aether_stub = types.SimpleNamespace(
+        _get_configuration=lambda frame: None,
         _bind_configuration=lambda configuration, frame: (_ for _ in ()).throw(
             RuntimeError("bind configuration boom")
         ),
@@ -1692,9 +1699,22 @@ def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeyp
     )
     monkeypatch.setattr(spellbook_module.Spellbook, "_aether", aether_stub)
 
+    sb._aetheric_frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-id",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+        shared_framewide_spellbook_configuration=True,
+    )
     with pytest.raises(RuntimeError, match="bind configuration boom"):
         sb._bind_configuration_to_aether()
 
+    sb._aetheric_frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-id",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
     with pytest.raises(RuntimeError, match="bind posture boom"):
         sb._bind_aetheric_frame_configuration_to_aether()
 
@@ -1702,24 +1722,18 @@ def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeyp
 def test_bind_aetheric_frame_configuration_missing_config_raises() -> None:
     sb = Spellbook()
     sb._logger = DummySafeLogger()
-    sb._configuration = None
+    sb._aetheric_frame_configuration = None
 
-    with pytest.raises(RuntimeError, match="No configuration instance available to derive frame posture."):
+    with pytest.raises(RuntimeError, match="No frame configuration instance available to bind to Aether."):
         sb._bind_aetheric_frame_configuration_to_aether()
 
 
-def test_derive_aetheric_frame_configuration_fallback_defaults() -> None:
-    class _Config:
-        def get_property(self, name):
-            return None
-
+def test_spellbook_initializes_frame_owned_configuration_defaults() -> None:
     sb = Spellbook()
-    sb._configuration = _Config()
-    sb._id = "spellbook-id"
+    frame_configuration = sb._aetheric_frame_configuration
 
-    frame_configuration = sb._derive_aetheric_frame_configuration()
-
-    assert frame_configuration.origin_spellbook_id == "spellbook-id"
+    assert frame_configuration is not None
+    assert frame_configuration.origin_spellbook_id is None
     assert frame_configuration.system_state is SystemState.automatic
     assert frame_configuration.ai_native_enabled is False
     assert frame_configuration.rift_enabled is False
@@ -2031,9 +2045,7 @@ def test_refresh_nexus_publish_enabled_and_publish_helpers_cover_enabled_and_dis
     sb._conduit = conduit
     sb._conjured = True
 
-    spellbook_module.Spellbook._aether = types.SimpleNamespace(
-        _get_aetheric_frame_configuration=lambda frame: None
-    )
+    sb._aetheric_frame_configuration = None
 
     assert sb._refresh_nexus_publish_enabled() is False
     sb._publish_nexus_state_for_conjure(conduit)
@@ -2045,9 +2057,7 @@ def test_refresh_nexus_publish_enabled_and_publish_helpers_cover_enabled_and_dis
     assert publish_calls == []
     assert remove_calls == []
 
-    spellbook_module.Spellbook._aether = types.SimpleNamespace(
-        _get_aetheric_frame_configuration=lambda frame: types.SimpleNamespace(rift_enabled=True)
-    )
+    sb._aetheric_frame_configuration = types.SimpleNamespace(rift_enabled=True)
 
     assert sb._refresh_nexus_publish_enabled() is True
     sb._publish_nexus_state_for_conjure(conduit)

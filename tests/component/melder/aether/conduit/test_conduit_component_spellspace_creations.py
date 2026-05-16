@@ -10,6 +10,15 @@ from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 class DisposableService:
     """
     Purpose:
@@ -69,7 +78,7 @@ def _make_spellbook(
     """
     if disposal:
         configuration = SpellbookConfiguration()
-        configuration.with_system_state("automatic")
+        set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
         configuration.set_property("disposal", True)
         configuration.set_property(
             "disposal_method_names",

@@ -729,7 +729,7 @@ def test_get_aetheric_frame_configuration_missing_frame_raises(aether_with_mocks
 
 
 def test_get_aetheric_frame_configuration_returns_default_frame_posture() -> None:
-    """_get_aetheric_frame_configuration should return the bound default-frame posture."""
+    """_get_aetheric_frame_configuration should return the frame-owned default-frame posture."""
     a = Aether()
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-1",
@@ -740,7 +740,13 @@ def test_get_aetheric_frame_configuration_returns_default_frame_posture() -> Non
 
     a._bind_aetheric_frame_configuration(frame_configuration)
 
-    assert a._get_aetheric_frame_configuration() is frame_configuration
+    bound = a._get_aetheric_frame_configuration()
+    assert bound is a._default_frame.frame_configuration
+    assert bound is not frame_configuration
+    assert bound.system_state is SystemState.dynamic
+    assert bound.ai_native_enabled is True
+    assert bound.rift_enabled is False
+    assert bound.shared_framewide_spellbook_configuration is False
 
 
 def test_bind_aetheric_frame_configuration_rejects_invalid_type() -> None:
@@ -771,7 +777,7 @@ def test_bind_aetheric_frame_configuration_missing_frame_raises() -> None:
 
 
 def test_bind_aetheric_frame_configuration_sets_default_frame_posture() -> None:
-    """First posture bind should attach the configuration to the default frame."""
+    """First posture bind should copy posture into the frame-owned default object."""
     a = Aether()
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-1",
@@ -782,11 +788,17 @@ def test_bind_aetheric_frame_configuration_sets_default_frame_posture() -> None:
 
     a._bind_aetheric_frame_configuration(frame_configuration)
 
-    assert a._default_frame.frame_configuration is frame_configuration
+    bound = a._default_frame.frame_configuration
+    assert bound is not frame_configuration
+    assert bound.system_state is SystemState.dynamic
+    assert bound.ai_native_enabled is True
+    assert bound.rift_enabled is False
+    assert bound.shared_framewide_spellbook_configuration is False
+    assert frame_configuration._cleaned is True
 
 
 def test_bind_aetheric_frame_configuration_same_posture_cleans_duplicate() -> None:
-    """Same-posture rebind should keep the original configuration and clean the duplicate."""
+    """Same-posture rebind should keep the frame-owned canonical object and clean the duplicate."""
     a = Aether()
     original = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-1",
@@ -804,12 +816,18 @@ def test_bind_aetheric_frame_configuration_same_posture_cleans_duplicate() -> No
     a._bind_aetheric_frame_configuration(original)
     a._bind_aetheric_frame_configuration(duplicate)
 
-    assert a._default_frame.frame_configuration is original
+    bound = a._default_frame.frame_configuration
+    assert bound is not original
+    assert bound.system_state is SystemState.dynamic
+    assert bound.ai_native_enabled is True
+    assert bound.rift_enabled is False
+    assert bound.shared_framewide_spellbook_configuration is False
     assert duplicate._cleaned is True
+    assert original._cleaned is True
 
 
 def test_bind_aetheric_frame_configuration_conflict_keeps_original_and_logs_warning() -> None:
-    """Conflicting posture rebind should keep the original and clean the conflicting attempt."""
+    """Conflicting posture rebind should keep the first copied posture and clean the conflicting attempt."""
     a = Aether()
     a._logger = MagicMock()
     original = AethericFrameConfiguration(
@@ -828,8 +846,14 @@ def test_bind_aetheric_frame_configuration_conflict_keeps_original_and_logs_warn
     a._bind_aetheric_frame_configuration(original)
     a._bind_aetheric_frame_configuration(conflicting)
 
-    assert a._default_frame.frame_configuration is original
+    bound = a._default_frame.frame_configuration
+    assert bound is not original
+    assert bound.system_state is SystemState.dynamic
+    assert bound.ai_native_enabled is True
+    assert bound.rift_enabled is False
+    assert bound.shared_framewide_spellbook_configuration is False
     assert conflicting._cleaned is True
+    assert original._cleaned is True
     a._logger.warning.assert_called_once()
 
 def test_check_for_spell_delegates(aether_with_mocks):

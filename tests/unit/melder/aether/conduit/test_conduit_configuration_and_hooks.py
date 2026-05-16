@@ -19,6 +19,15 @@ from melder.spellbook.existence.existence import Existence
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def fresh_utility_system() -> None:
     """
@@ -151,7 +160,7 @@ def test_configure_logger_prefers_explicit_logger_over_provider(
         AssertionError: If the factory is invoked despite explicit logger.
     """
     configuration = SpellbookConfiguration()
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     resolver_called = {"value": False}
 
     def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
@@ -201,7 +210,7 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
         AssertionError: If resolver is not called or logger wrapper missing.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state("automatic")
+    set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
     configuration.with_defaults()
     seen: dict[str, object] = {}
 
@@ -254,8 +263,11 @@ def test_apply_configuration_flags_updates_dynamic_environment(
         AssertionError: If flags do not update internal state.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state(SystemState.dynamic)
+    set_frame_system_state_for_spellbook_configuration(configuration, SystemState.dynamic)
     configuration.with_defaults()
+    spellbook_stub._aetheric_frame_configuration = (
+        build_aetheric_frame_configuration_for_spellbook_configuration(configuration, )
+    )
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
@@ -371,7 +383,7 @@ def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup
         AssertionError: If hooks are not attached or fired.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state("automatic")
+    set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
     configuration.with_defaults()
     events: list[Conduit] = []
 
@@ -426,7 +438,7 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
         AssertionError: If hooks fail to attach to a lesser conduit.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state("automatic")
+    set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
     configuration.with_defaults()
     events: list[Conduit] = []
 
@@ -476,7 +488,7 @@ def test_initialize_conduit_hooks_copies_hook_lists_from_configuration(
         - Later SpellbookConfiguration list mutations do not mutate Conduit maps.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state("automatic")
+    set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
     configuration.with_defaults()
 
     def conduit_hook(conduit: Conduit) -> None:
@@ -538,7 +550,7 @@ def test_snapshot_split_hook_maps_from_configuration_uses_static_hook_lists(
         - Known hook keys are copied into the proper conduit/meld maps.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state("automatic")
+    set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
     configuration.with_defaults()
 
     def known_conduit_hook(conduit: Conduit) -> None:
@@ -893,8 +905,13 @@ def test_apply_configuration_flags_logs_and_reraises_on_configuration_failure(
 ) -> None:
     """_apply_configuration_flags should log and re-raise configuration lookup failures."""
     conduit_normal._logger = MagicMock()
-    conduit_normal._configuration = MagicMock()
-    conduit_normal._configuration.to_aetheric_frame_configuration.side_effect = RuntimeError("config boom")
+
+    class _BrokenFrameConfiguration:
+        @property
+        def system_state(self):
+            raise RuntimeError("config boom")
+
+    conduit_normal._spellbook._aetheric_frame_configuration = _BrokenFrameConfiguration()
 
     with pytest.raises(RuntimeError, match="config boom"):
         conduit_normal._apply_configuration_flags()

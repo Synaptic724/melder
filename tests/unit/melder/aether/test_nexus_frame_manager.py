@@ -9,6 +9,15 @@ from melder.aether.nexus.nexus_frame_manager import NexusFrameManager
 from melder.spellbook.configuration.system_state import SystemState
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 class _FakeFrame:
     def __init__(
             self,

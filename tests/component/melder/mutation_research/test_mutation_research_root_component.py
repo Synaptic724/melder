@@ -12,6 +12,15 @@ from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_runtime_singletons() -> None:
     """
@@ -43,7 +52,7 @@ def _make_dynamic_configuration(frame_name: str) -> SpellbookConfiguration:
         SpellbookConfiguration: Dynamic configuration instance.
     """
     configuration = SpellbookConfiguration(aether_frame=frame_name)
-    configuration.dynamic_defaults()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration
 

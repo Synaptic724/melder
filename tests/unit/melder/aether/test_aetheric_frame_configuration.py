@@ -12,6 +12,15 @@ from melder.spellbook.configuration.spellbook_configuration import SpellbookConf
 from melder.spellbook.configuration.system_state import SystemState
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def fresh_singletons() -> None:
     """
@@ -38,12 +47,11 @@ def test_frame_configuration_derives_from_spellbook_configuration() -> None:
         None.
     """
     configuration = SpellbookConfiguration()
-    configuration.with_system_state(SystemState.dynamic)
-    configuration.with_ai_native(True)
-    configuration.with_rift_enabled(True)
-    configuration.with_shared_framewide_spellbook_configuration(True)
-
-    frame_configuration = configuration.to_aetheric_frame_configuration(
+    set_frame_system_state_for_spellbook_configuration(configuration, SystemState.dynamic)
+    set_frame_ai_native_for_spellbook_configuration(configuration, True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(configuration, True)
+    frame_configuration = build_aetheric_frame_configuration_for_spellbook_configuration(configuration, 
         origin_spellbook_id="spellbook-alpha",
     )
 
@@ -83,14 +91,17 @@ def test_aetheric_frame_configuration_first_writer_wins() -> None:
 
     bound = aether._get_aetheric_frame_configuration("ops")
 
-    assert bound is first
+    assert bound is not first
     assert bound.origin_spellbook_id == "spellbook-alpha"
     assert bound.system_state == SystemState.automatic
     assert bound.ai_native_enabled is False
     assert bound.rift_enabled is True
+    assert bound.shared_framewide_spellbook_configuration is False
 
     with pytest.raises(RuntimeError):
         _ = conflicting.id
+    with pytest.raises(RuntimeError):
+        _ = first.id
 
 
 def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
@@ -169,12 +180,8 @@ def test_aetheric_frame_configuration_rejects_non_bool_rift_flag() -> None:
 
 
 def test_from_spellbook_configuration_rejects_none_configuration() -> None:
-    """from_spellbook_configuration should reject None."""
-    with pytest.raises(TypeError, match="configuration cannot be None"):
-        AethericFrameConfiguration.from_spellbook_configuration(
-            origin_spellbook_id="spellbook-alpha",
-            configuration=None,
-        )
+    """The old SpellbookConfiguration conversion classmethod no longer exists."""
+    assert hasattr(AethericFrameConfiguration, "from_spellbook_configuration") is False
 
 
 def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:

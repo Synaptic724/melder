@@ -8,6 +8,7 @@ from threading import RLock
 import pytest
 
 import melder.spellbook.spell_crafter.spell_crafter as spell_crafter_module
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -24,12 +25,22 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
 from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 class _CleanableStub(Cleanable):
     """
     Purpose:
@@ -345,6 +356,12 @@ class _SpellbookStub:
         self._spells_by_id: dict[str, object] = {}
         self._spell_id_pool: dict[str, object] = {}
         self._configuration = _ConfigurationStub()
+        self._aetheric_frame_configuration = AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-stub",
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=False,
+        )
 
     @property
     def spells(self) -> dict[object, object]:
@@ -5188,6 +5205,7 @@ def test_build_phase8_occurrence_plan_fast_key_serializes_visible_state_and_reje
         spellbook=spellbook,
         spell_system_states=states,
     )
+    spellbook._aetheric_frame_configuration.with_system_state(SystemState.dynamic)
     spellbook._spells[dep_spell.spell_index] = dep_spell
     spellbook._spells_by_id[dep_spell.spell_index.current] = dep_spell
     spellbook._spell_id_pool[dep_spell.spell_index.current] = dep_spell
@@ -5238,7 +5256,7 @@ def test_build_phase8_occurrence_plan_fast_key_serializes_visible_state_and_reje
             ("root", "root", Existence.unique.name, False),
         ),
         (("root", (("svc", ("dep",)),)),),
-        "dynamic",
+        SystemState.dynamic,
         (("peer", "frame", "binding", "dep"),),
     )
 

@@ -11,6 +11,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
@@ -87,6 +88,15 @@ from melder.spellbook.spellbook import Spellbook
 from tests._nexus_viewer_matrix_support import ViewerProjectionRiftDouble
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def fresh_nexus() -> None:
     """
@@ -190,14 +200,13 @@ def _bind_target_frame_configuration(
     """
     aether = Aether()
     aether._ensure_frame(frame_name)
-    frame_configuration = SpellbookConfiguration()
-    if system_state == SystemState.dynamic:
-        frame_configuration.dynamic_defaults()
-    else:
-        frame_configuration.automatic_defaults()
-    frame_configuration.with_rift_enabled(rift_enabled)
-    frame_configuration.with_ai_native(ai_native_enabled)
-    aether._bind_configuration(frame_configuration, frame_name)
+    posture = AethericFrameConfiguration(
+        origin_spellbook_id="{0}-spellbook".format(frame_name),
+        system_state=system_state,
+        ai_native_enabled=ai_native_enabled,
+        rift_enabled=rift_enabled,
+    )
+    aether._bind_aetheric_frame_configuration(posture, frame_name)
 
 
 def _seed_frame_descriptor(frame_name: str) -> None:
@@ -4556,9 +4565,9 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
         None.
     """
     configuration = SpellbookConfiguration(aether_frame="ops_capability_auto")
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4617,9 +4626,9 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
         None.
     """
     configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic")
-    configuration.dynamic_defaults()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4672,9 +4681,9 @@ def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
         None.
     """
     configuration = SpellbookConfiguration(aether_frame="ops_capability_auto_lesser")
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4730,9 +4739,9 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
         None.
     """
     configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic_cluster")
-    configuration.dynamic_defaults()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4808,9 +4817,9 @@ def test_capability_room_can_link_on_dynamic_frame() -> None:
         None.
     """
     configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic_link")
-    configuration.dynamic_defaults()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether

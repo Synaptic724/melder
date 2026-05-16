@@ -8,6 +8,7 @@ from melder.aether.conduit.creations.creations import Creations
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 
 @pytest.fixture(autouse=True)
@@ -60,9 +61,11 @@ def _make_spellbook(
             "disposal_method_names",
             list(disposal_methods or ["cleanup"]),
         )
-    if dynamic:
-    configuration.with_system_state("dynamic")
     configuration.load_default_dictionary()
+    configure_frame_posture_for_spellbook_configuration(
+        configuration,
+        dynamic=dynamic,
+    )
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return Spellbook(configuration=configuration)
 

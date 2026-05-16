@@ -1,0 +1,225 @@
+import typing
+import weakref
+
+from melder.aether.aether import Aether
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.spellbook.configuration.system_state import SystemState
+
+
+_TEST_FRAME_POSTURES: "weakref.WeakKeyDictionary[SpellbookConfiguration, AethericFrameConfiguration]" = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _get_or_create_detached_frame_posture(
+        configuration: SpellbookConfiguration,
+) -> AethericFrameConfiguration:
+    """
+    Return one detached frame-posture copy for the given SpellbookConfiguration.
+    """
+    frame_configuration = _TEST_FRAME_POSTURES.get(configuration)
+    if frame_configuration is None:
+        frame_configuration = AethericFrameConfiguration(
+            origin_spellbook_id=None,
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=False,
+            shared_framewide_spellbook_configuration=False,
+        )
+        _TEST_FRAME_POSTURES[configuration] = frame_configuration
+    return frame_configuration
+
+
+def _sync_detached_frame_posture_to_aether(
+        configuration: SpellbookConfiguration,
+) -> AethericFrameConfiguration:
+    """
+    Apply the detached test posture onto the live frame-owned posture object.
+    """
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    aether = Aether()
+    frame_name = configuration._aether_frame
+    aether._ensure_frame(frame_name)
+    frame_configuration = aether._get_aetheric_frame_configuration(frame_name)
+    if frame_configuration is None:
+        raise RuntimeError("Frame posture is unavailable for the requested test frame.")
+    if frame_configuration._frozen:
+        if frame_configuration.matches_posture(detached_configuration):
+            return typing.cast(AethericFrameConfiguration, frame_configuration)
+        raise RuntimeError(
+            "Cannot reconfigure a frozen frame posture to a different value in tests."
+        )
+    frame_configuration.with_system_state(detached_configuration.system_state)
+    frame_configuration.with_ai_native(detached_configuration.ai_native_enabled)
+    frame_configuration.with_rift_enabled(detached_configuration.rift_enabled)
+    frame_configuration.with_shared_framewide_spellbook_configuration(
+        detached_configuration.shared_framewide_spellbook_configuration
+    )
+    return typing.cast(AethericFrameConfiguration, frame_configuration)
+
+
+def configure_frame_posture_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+        *,
+        dynamic: bool = False,
+        rift_enabled: bool = False,
+        ai_native_enabled: bool = False,
+        shared_framewide_spellbook_configuration: bool = False,
+) -> AethericFrameConfiguration:
+    """
+    Configure the frame-owned posture associated with one SpellbookConfiguration.
+
+    Purpose:
+        Tests that previously authored frame posture through the rich local
+        Spellbook configuration now need a direct path onto the frame-owned
+        `AethericFrameConfiguration`.
+
+    Args:
+        configuration:
+            Local Spellbook configuration whose frame name identifies the target
+            frame posture object.
+        dynamic:
+            When True, apply dynamic defaults; otherwise apply automatic
+            defaults.
+        rift_enabled:
+            Whether Rift visibility should be enabled.
+        ai_native_enabled:
+            Whether AI-native posture should be enabled.
+        shared_framewide_spellbook_configuration:
+            Whether frame-wide shared rich-config mode should be enabled.
+
+    Returns:
+        AethericFrameConfiguration: The mutable frame-owned posture object used
+        by the target frame.
+    """
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    if dynamic:
+        detached_configuration.dynamic_defaults()
+    else:
+        detached_configuration.automatic_defaults()
+    detached_configuration.with_rift_enabled(rift_enabled)
+    detached_configuration.with_ai_native(ai_native_enabled)
+    detached_configuration.with_shared_framewide_spellbook_configuration(
+        shared_framewide_spellbook_configuration
+    )
+    return _sync_detached_frame_posture_to_aether(configuration)
+
+
+def get_frame_posture_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+) -> AethericFrameConfiguration:
+    """
+    Return the frame-owned posture object for one SpellbookConfiguration.
+
+    Args:
+        configuration:
+            Rich Spellbook configuration whose frame posture should be resolved.
+
+    Returns:
+        AethericFrameConfiguration: The frame-owned posture for the
+        configuration's frame.
+    """
+    return _sync_detached_frame_posture_to_aether(configuration)
+
+
+def set_frame_system_state_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+        system_state: typing.Union[SystemState, str],
+) -> SpellbookConfiguration:
+    """
+    Apply one system_state value to the frame-owned posture for tests.
+    """
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    detached_configuration.with_system_state(system_state)
+    _sync_detached_frame_posture_to_aether(configuration)
+    return configuration
+
+
+def set_frame_ai_native_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+        enabled: bool = True,
+) -> SpellbookConfiguration:
+    """
+    Apply one AI-native flag to the frame-owned posture for tests.
+    """
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    detached_configuration.with_ai_native(enabled)
+    _sync_detached_frame_posture_to_aether(configuration)
+    return configuration
+
+
+def set_frame_rift_enabled_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+        enabled: bool = True,
+) -> SpellbookConfiguration:
+    """
+    Apply one Rift-enabled flag to the frame-owned posture for tests.
+    """
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    detached_configuration.with_rift_enabled(enabled)
+    _sync_detached_frame_posture_to_aether(configuration)
+    return configuration
+
+
+def set_shared_framewide_spellbook_configuration_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+        enabled: bool = True,
+) -> SpellbookConfiguration:
+    """
+    Apply one shared-rich-config flag to the frame-owned posture for tests.
+    """
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    detached_configuration.with_shared_framewide_spellbook_configuration(enabled)
+    _sync_detached_frame_posture_to_aether(configuration)
+    return configuration
+
+
+def apply_dynamic_defaults_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+) -> SpellbookConfiguration:
+    """
+    Apply rich-config defaults plus dynamic frame posture defaults for tests.
+    """
+    configuration.with_defaults()
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    detached_configuration.dynamic_defaults()
+    _sync_detached_frame_posture_to_aether(configuration)
+    return configuration
+
+
+def apply_automatic_defaults_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+) -> SpellbookConfiguration:
+    """
+    Apply rich-config defaults plus automatic frame posture defaults for tests.
+    """
+    configuration.with_defaults()
+    detached_configuration = _get_or_create_detached_frame_posture(configuration)
+    detached_configuration.automatic_defaults()
+    _sync_detached_frame_posture_to_aether(configuration)
+    return configuration
+
+
+def build_aetheric_frame_configuration_for_spellbook_configuration(
+        configuration: SpellbookConfiguration,
+        origin_spellbook_id: typing.Optional[str] = None,
+) -> AethericFrameConfiguration:
+    """
+    Build a detached frame configuration copy from one SpellbookConfiguration.
+
+    Purpose:
+        Some tests need a standalone `AethericFrameConfiguration` object for
+        bind/equality assertions. The runtime owner is still the frame, so this
+        helper copies the current frame-owned posture into a detached object.
+    """
+    frame_configuration = _get_or_create_detached_frame_posture(configuration)
+    return AethericFrameConfiguration(
+        origin_spellbook_id=origin_spellbook_id,
+        system_state=frame_configuration.system_state,
+        ai_native_enabled=frame_configuration.ai_native_enabled,
+        rift_enabled=frame_configuration.rift_enabled,
+        shared_framewide_spellbook_configuration=(
+            frame_configuration.shared_framewide_spellbook_configuration
+        ),
+    )

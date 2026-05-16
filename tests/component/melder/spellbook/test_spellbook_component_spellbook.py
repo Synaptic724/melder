@@ -14,6 +14,15 @@ from tests.mocks.spellbook.protocols import IService
 from tests.mocks.spellbook import scan_bind_module_core
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_component_spellbook() -> None:
     """
@@ -740,9 +749,9 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
         AssertionError: If incremental Nexus publication is missing.
     """
     configuration = SpellbookConfiguration(aether_frame="ops")
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
 
     conduit = spellbook.conjure(name="root")
@@ -779,9 +788,9 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
         AssertionError: If passive Nexus does not reflect the scan lifecycle.
     """
     configuration = SpellbookConfiguration(aether_frame="ops")
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.with_rift_enabled(True)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
 
     conduit = spellbook.conjure(name="root")
