@@ -86,8 +86,8 @@ def test_aetheric_frame_configuration_first_writer_wins() -> None:
         rift_enabled=True,
     )
 
-    aether._bind_aetheric_frame_configuration(first, "ops")
-    aether._bind_aetheric_frame_configuration(conflicting, "ops")
+    aether._ensure_frame("ops").bind_frame_configuration(first)
+    aether._ensure_frame("ops").bind_frame_configuration(conflicting)
 
     bound = aether._get_aetheric_frame_configuration("ops")
 
@@ -120,7 +120,7 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
         ai_native_enabled=False,
         rift_enabled=True,
     )
-    aether._bind_aetheric_frame_configuration(frame_configuration, "ops")
+    aether._ensure_frame("ops").bind_frame_configuration(frame_configuration)
 
     nexus = Nexus()
     configuration = nexus.create_system_configuration()

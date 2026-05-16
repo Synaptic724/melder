@@ -35,9 +35,13 @@ class _FakeFrame:
         self._conduits = dict(conduit_ids or {})
         self._conduit_cloud = SimpleNamespace(_registry=dict(cloud_names or {}))
         self._conduit_clusters = dict(cluster_names or {})
+        self.bound_frame_configuration = None
 
     def cleanup(self) -> None:
         self.cleaned = True
+
+    def bind_frame_configuration(self, frame_configuration) -> None:
+        self.bound_frame_configuration = frame_configuration
 
 
 class _FakeConduit:

@@ -221,8 +221,8 @@ class SpellbookCreationSystem(Cleanable):
         """
         if not spellbook.is_configuration_locked():
             spellbook._validate_and_freeze_configuration()
-            spellbook._bind_configuration_to_aether()
             spellbook._bind_aetheric_frame_configuration_to_aether()
+            spellbook._bind_configuration_to_aether()
         SpellbookCreationSystem.run_structural_phases(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
@@ -396,7 +396,7 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: On policy/state contract violations.
         """
         policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
-        system_state = spellbook._configuration.get_property("system_state")
+        system_state = spellbook._aetheric_frame_configuration.system_state
 
         if automatic:
             if policy_enum != Policies.default:

@@ -1194,7 +1194,7 @@ class OccurrencePlanBuilder(object):
             - Automatic mode remains strict and requires providers to resolve.
         """
         spellbook = self._root_spell._spellbook
-        system_state = spellbook._configuration.get_property("system_state")
+        system_state = spellbook._aetheric_frame_configuration.system_state
         state_enum = EnumHelpers.convert_enum_and_check(system_state, SystemState)
         return state_enum is SystemState.dynamic
 

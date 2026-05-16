@@ -958,6 +958,10 @@ class NexusFrameManager(Cleanable):
 
         Spellbook._aether = self._nexus._aether
         Conduit._aether = self._nexus._aether
+        frame = Spellbook._aether._ensure_frame(configuration.frame_name)
+        frame.bind_frame_configuration(
+            configuration.to_aetheric_frame_configuration()
+        )
         spellbook_configuration = configuration.to_spellbook_configuration()
         spellbook = Spellbook(
             aetheric_frame=configuration.frame_name,

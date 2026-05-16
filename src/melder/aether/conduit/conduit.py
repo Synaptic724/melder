@@ -169,6 +169,7 @@ class Conduit(Cleanable, IConduit):
 
         self._configuration: IConfiguration = configuration
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
+        self._spellbook: ISpellbook = spellbook
         self._logger: ISafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()
@@ -180,8 +181,6 @@ class Conduit(Cleanable, IConduit):
             self._root_conduit_id: str = root_conduit_id
         else:
             self._root_conduit_id: str = self._id
-
-        self._spellbook: ISpellbook = spellbook
         self._creations: Creations = self._creations_configuration(configuration)
         self._dev_ops_manager: Any | None = self._resolve_dev_ops_manager()
         self._creation_gate_controller: CreationGateController = self._resolve_creation_gate_controller()
@@ -966,7 +965,7 @@ class Conduit(Cleanable, IConduit):
         instance passed.
         """
         try:
-            state = self._configuration.get_property("system_state")
+            state = self._spellbook._aetheric_frame_configuration.system_state
             self.__dynamic_environment__ = (state == SystemState.dynamic)
         except Exception as e:
             self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)

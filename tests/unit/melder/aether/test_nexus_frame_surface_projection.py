@@ -162,7 +162,7 @@ def _bind_target_frame_configuration(
         ai_native_enabled=ai_native_enabled,
         rift_enabled=rift_enabled,
     )
-    aether._bind_aetheric_frame_configuration(posture, frame_name)
+    aether._ensure_frame(frame_name).bind_frame_configuration(posture)
 
 
 def _create_enabled_nexus(*allowed_target_frame_names: str) -> Nexus:

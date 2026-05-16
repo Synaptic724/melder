@@ -264,9 +264,11 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
     set_shared_framewide_spellbook_configuration_for_spellbook_configuration(config, True)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     config.set_property("phase_scheduler_barrier_timeout_milliseconds", 60000)
-    aether._bind_aetheric_frame_configuration(
-        build_aetheric_frame_configuration_for_spellbook_configuration(config, origin_spellbook_id="seed"),
-        frame,
+    aether._ensure_frame(frame).bind_frame_configuration(
+        build_aetheric_frame_configuration_for_spellbook_configuration(
+            config,
+            origin_spellbook_id="seed",
+        )
     )
     aether._bind_configuration(config, frame)
 

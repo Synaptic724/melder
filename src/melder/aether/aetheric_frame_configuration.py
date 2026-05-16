@@ -21,15 +21,15 @@ class AethericFrameConfiguration(Cleanable):
         systems and later canonical Nexus record hosting.
 
     Contract:
-        - Captures four frame-level posture values:
+        - Captures frame-level posture values:
           `system_state`, `ai_native_enabled`, `rift_enabled`, and
-          `overrides_enabled`.
+          `shared_framewide_spellbook_configuration`.
         - Carries provenance via `origin_spellbook_id`.
         - Is immutable by convention after construction; callers bind one
           instance into an `AethericFrame` and later same-frame attempts do not
           overwrite that posture.
-        - Equality of posture is defined by the three runtime posture fields,
-          not by object identity, object id, or origin spellbook id.
+        - Equality of posture is defined by the frame-posture fields, not by
+          object identity, object id, or origin spellbook id.
         - Cleanup is idempotent and clears all owned references.
 
     Lifecycle:
@@ -41,11 +41,12 @@ class AethericFrameConfiguration(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
+        "_frozen",
         "_origin_spellbook_id",
         "_system_state",
         "_ai_native_enabled",
         "_rift_enabled",
-        "_overrides_enabled",
+        "_shared_framewide_spellbook_configuration",
     ]
 
     def __init__(
@@ -55,7 +56,7 @@ class AethericFrameConfiguration(Cleanable):
             system_state: SystemState,
             ai_native_enabled: bool,
             rift_enabled: bool,
-            overrides_enabled: bool = True,
+            shared_framewide_spellbook_configuration: bool = False,
     ) -> None:
         """
         Initialize one frame-level posture object.
@@ -71,9 +72,9 @@ class AethericFrameConfiguration(Cleanable):
             rift_enabled:
                 Whether the frame allows AI-profile publication / AR-observable
                 posture.
-            overrides_enabled:
-                Whether bound spells default to override-capable runtime posture
-                for this frame.
+            shared_framewide_spellbook_configuration:
+                Whether the frame posture permits one explicit frame-owned
+                shared rich `SpellbookConfiguration` object.
 
         Returns:
             None.
@@ -92,16 +93,25 @@ class AethericFrameConfiguration(Cleanable):
             raise TypeError("ai_native_enabled must be a bool.")
         if not isinstance(rift_enabled, bool):
             raise TypeError("rift_enabled must be a bool.")
-        if not isinstance(overrides_enabled, bool):
-            raise TypeError("overrides_enabled must be a bool.")
+        if not isinstance(shared_framewide_spellbook_configuration, bool):
+            raise TypeError(
+                "shared_framewide_spellbook_configuration must be a bool."
+            )
+        if ai_native_enabled and normalized_system_state != SystemState.dynamic:
+            raise ValueError(
+                "ai_native_enabled requires system_state to be dynamic."
+            )
 
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
+        self._frozen: bool = False
         self._origin_spellbook_id: Optional[str] = origin_spellbook_id
         self._system_state: SystemState = normalized_system_state
         self._ai_native_enabled: bool = ai_native_enabled
         self._rift_enabled: bool = rift_enabled
-        self._overrides_enabled: bool = overrides_enabled
+        self._shared_framewide_spellbook_configuration: bool = (
+            shared_framewide_spellbook_configuration
+        )
 
     def cleanup(self) -> None:
         """
@@ -121,58 +131,144 @@ class AethericFrameConfiguration(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            self._frozen = True
             self._id = None
             self._origin_spellbook_id = None
             self._system_state = None
             self._ai_native_enabled = None
             self._rift_enabled = None
-            self._overrides_enabled = None
+            self._shared_framewide_spellbook_configuration = None
         self._lock = None
 
-    @classmethod
-    def from_spellbook_configuration(
-            cls,
-            *,
-            origin_spellbook_id: Optional[str],
-            configuration: IConfiguration,
-    ) -> "AethericFrameConfiguration":
+    def validate(self) -> bool:
         """
-        Build one frame-level posture object from a Spellbook configuration.
-
-        Args:
-            origin_spellbook_id:
-                Spellbook id that is deriving the posture object.
-            configuration:
-                Source Spellbook configuration. Must expose the three posture
-                values required for AR-facing frame state.
+        Validate the current frame posture values.
 
         Returns:
-            AethericFrameConfiguration: Derived frame-level posture object.
+            bool: True when the current frame posture is valid.
 
         Raises:
-            KeyError: If any required posture field is missing from the source
-                configuration.
-            TypeError: If any required posture field has an invalid type.
-            ValueError: If `system_state` cannot be normalized into a
-                `SystemState`.
+            ValueError: If AI-native posture is enabled while system state is
+                not dynamic.
         """
-        if configuration is None:
-            raise TypeError("configuration cannot be None.")
+        self.check_cleaned()
+        with self._lock:
+            if self._ai_native_enabled and self._system_state != SystemState.dynamic:
+                raise ValueError(
+                    "ai_native_enabled requires system_state to be dynamic."
+                )
+            return True
 
-        configuration.check_cleaned()
-        with configuration._lock:
-            system_state = configuration.get_property("system_state")
-            ai_native_enabled = configuration.get_property("ai_native_enabled")
-            rift_enabled = configuration.get_property("rift_enabled")
-            overrides_enabled = configuration.get_property("overrides_enabled")
+    def freeze(self, origin_spellbook_id: Optional[str] = None) -> None:
+        """
+        Freeze the frame posture so no further mutation is allowed.
 
-        return cls(
-            origin_spellbook_id=origin_spellbook_id,
-            system_state=system_state,
-            ai_native_enabled=ai_native_enabled,
-            rift_enabled=rift_enabled,
-            overrides_enabled=overrides_enabled,
-        )
+        Args:
+            origin_spellbook_id: Optional spellbook id to stamp as the posture
+                origin if one should be recorded at freeze time.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._frozen:
+                return
+            self.validate()
+            if origin_spellbook_id is not None:
+                self._origin_spellbook_id = origin_spellbook_id
+            self._frozen = True
+
+    def with_system_state(
+            self,
+            system_state: SystemState | str,
+    ) -> "AethericFrameConfiguration":
+        """
+        Set the frame system state before freeze and return `self`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._system_state = EnumHelpers.convert_enum_and_check(
+                system_state,
+                SystemState,
+            )
+        return self
+
+    def with_ai_native(
+            self,
+            enabled: bool = True,
+    ) -> "AethericFrameConfiguration":
+        """
+        Set AI-native frame posture before freeze and return `self`.
+        """
+        self.check_cleaned()
+        if not isinstance(enabled, bool):
+            raise TypeError("ai_native_enabled must be a bool.")
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._ai_native_enabled = enabled
+        return self
+
+    def with_rift_enabled(
+            self,
+            enabled: bool = True,
+    ) -> "AethericFrameConfiguration":
+        """
+        Set Rift-visible frame posture before freeze and return `self`.
+        """
+        self.check_cleaned()
+        if not isinstance(enabled, bool):
+            raise TypeError("rift_enabled must be a bool.")
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._rift_enabled = enabled
+        return self
+
+    def with_shared_framewide_spellbook_configuration(
+            self,
+            enabled: bool = True,
+    ) -> "AethericFrameConfiguration":
+        """
+        Set whether the frame permits explicit shared rich Spellbook config and
+        return `self`.
+        """
+        self.check_cleaned()
+        if not isinstance(enabled, bool):
+            raise TypeError(
+                "shared_framewide_spellbook_configuration must be a bool."
+            )
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._shared_framewide_spellbook_configuration = enabled
+        return self
+
+    def with_defaults(self) -> "AethericFrameConfiguration":
+        """
+        Reset frame posture to the default automatic/non-AR posture.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._system_state = SystemState.automatic
+            self._ai_native_enabled = False
+            self._rift_enabled = False
+            self._shared_framewide_spellbook_configuration = False
+        return self
+
+    def dynamic_defaults(self) -> "AethericFrameConfiguration":
+        """
+        Set the default dynamic frame posture and return `self`.
+        """
+        return self.with_defaults().with_system_state(SystemState.dynamic)
+
+    def automatic_defaults(self) -> "AethericFrameConfiguration":
+        """
+        Set the default automatic frame posture and return `self`.
+        """
+        return self.with_defaults().with_system_state(SystemState.automatic)
 
     @property
     def id(self) -> str:
@@ -235,17 +331,17 @@ class AethericFrameConfiguration(Cleanable):
             return self._rift_enabled
 
     @property
-    def overrides_enabled(self) -> bool:
+    def shared_framewide_spellbook_configuration(self) -> bool:
         """
-        Return whether override-capable runtime posture is enabled by default
-        for this frame.
+        Return whether the frame posture permits one explicit frame-owned
+        shared rich `SpellbookConfiguration`.
 
         Returns:
-            bool: True when override-capable posture is enabled.
+            bool: True when frame-wide rich-config sharing is permitted.
         """
         self.check_cleaned()
         with self._lock:
-            return self._overrides_enabled
+            return self._shared_framewide_spellbook_configuration
 
     def matches_posture(
             self,
@@ -255,9 +351,9 @@ class AethericFrameConfiguration(Cleanable):
         Compare this posture against another frame-level posture object.
 
         Contract:
-            - Compares only the runtime posture fields:
+            - Compares only the frame-posture fields:
               `system_state`, `ai_native_enabled`, `rift_enabled`, and
-              `overrides_enabled`.
+              `shared_framewide_spellbook_configuration`.
             - Ignores provenance metadata such as `origin_spellbook_id`.
             - Returns False when `other` is None.
 
@@ -276,7 +372,8 @@ class AethericFrameConfiguration(Cleanable):
                 self._system_state == other._system_state
                 and self._ai_native_enabled == other._ai_native_enabled
                 and self._rift_enabled == other._rift_enabled
-                and self._overrides_enabled == other._overrides_enabled
+                and self._shared_framewide_spellbook_configuration
+                == other._shared_framewide_spellbook_configuration
             )
 
     def describe_posture(self) -> Dict[str, Any]:
@@ -298,5 +395,7 @@ class AethericFrameConfiguration(Cleanable):
                 "system_state": self._system_state,
                 "ai_native_enabled": self._ai_native_enabled,
                 "rift_enabled": self._rift_enabled,
-                "overrides_enabled": self._overrides_enabled,
+                "shared_framewide_spellbook_configuration": (
+                    self._shared_framewide_spellbook_configuration
+                ),
             }

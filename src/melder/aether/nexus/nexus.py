@@ -2447,11 +2447,10 @@ class Nexus(Cleanable, INexus):
         if target_frame_configuration is not None:
             return target_frame_configuration
 
-        legacy_configuration = self._get_required_target_frame_configuration(
-            target_frame_name
-        )
-        return legacy_configuration.to_aetheric_frame_configuration(
-            origin_spellbook_id=None,
+        raise ValueError(
+            "Target frame '{0}' must have a bound AethericFrameConfiguration for AR use.".format(
+                target_frame_name
+            )
         )
 
     def _get_required_target_frame_configuration(

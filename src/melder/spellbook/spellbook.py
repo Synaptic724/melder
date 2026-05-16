@@ -99,12 +99,15 @@ class Spellbook(Cleanable, ISpellbook):
     Notes:
         - SpellbookConfiguration is locked automatically once the spellbook crosses into
           the conjured runtime path.
-        - Shared Aether frame configuration is reused when it already exists.
+        - Frame-wide rich Spellbook configuration reuse is explicit and only
+          occurs when the frame posture permits it and a shared rich config
+          object already exists on the frame.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_active_change_request",
         "_aetheric_frame",
+        "_aetheric_frame_configuration",
         "_bind",
         "_binding_transaction_active",
         "_block_all_spells",
@@ -188,8 +191,10 @@ class Spellbook(Cleanable, ISpellbook):
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
         self._configuration: IConfiguration = configuration
+        self._aetheric_frame_configuration: Optional[Any] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
         self._logger: Optional[Any] = InitHelpers.resolve_safe_logger(None)
+        self._initialize_aetheric_frame_configuration()
         self._initialize_configuration()
 
         # Logger setup
@@ -269,7 +274,9 @@ class Spellbook(Cleanable, ISpellbook):
             - Cleans local spells and SpellIndex instances.
             - Clears and nulls owned and contracted registries, lookup maps,
               version caches, and spell_id maps.
-            - Cleans configuration and validation subsystems.
+            - Cleans local rich configuration only when it is not the
+              frame-owned shared configuration object.
+            - Cleans validation subsystems.
         """
         if self._conduit is not None:
             self._unregister_conduit_from_risk_manager(self._conduit._id)
@@ -340,10 +347,13 @@ class Spellbook(Cleanable, ISpellbook):
         # 3) cleanup configuration
         if self._configuration is not None:
             try:
-                self._configuration.cleanup()
+                if not self._is_frame_owned_shared_configuration(self._configuration):
+                    self._configuration.cleanup()
             except Exception as e:
                 self._logger.error(f"Error cleaning configuration: {e}", "_cleanup_components", exc_info=True)
             self._configuration = None
+
+        self._aetheric_frame_configuration = None
 
         if self._spell_versions is not None:
             try:
@@ -2057,8 +2067,8 @@ class Spellbook(Cleanable, ISpellbook):
         }
         if request_type in dynamic_only:
             system_state = None
-            if self._configuration is not None and self._configuration.has_property("system_state"):
-                system_state = self._configuration.get_property("system_state")
+            if self._aetheric_frame_configuration is not None:
+                system_state = self._aetheric_frame_configuration.system_state
             if system_state is None:
                 self._logger.error(
                     "Change transaction requires dynamic mode with missing system_state",
@@ -2885,10 +2895,11 @@ class Spellbook(Cleanable, ISpellbook):
         Internal
 
         Initialize configuration with the following rules:
-          - If Aether already has a config for this frame:
+          - If the canonical frame posture already permits explicit frame-wide
+            rich-config sharing and the frame already has such a config:
               * If a config was passed in and it's not the same object, throw.
-              * Otherwise, adopt the Aether config and mark as locked.
-          - If Aether has no config:
+              * Otherwise, adopt the frame-owned config directly.
+          - Otherwise:
               * If a config was passed in, verify its frame matches and keep it (unlocked).
               * Otherwise create a fresh SpellbookConfiguration for this frame (unlocked).
         """
@@ -2933,24 +2944,95 @@ class Spellbook(Cleanable, ISpellbook):
             )
             raise
 
-
-
-
     def _get_configuration_from_aether(self) -> IConfiguration | None:
         """
         Internal
 
-        Retrieves the current configuration from the Aether's global registry.
+        Retrieve the current frame-owned shared rich configuration from Aether,
+        when the canonical frame posture explicitly permits shared rich config.
 
         Returns:
-            IConfiguration | None: The configuration instance for this Aether frame, or None if not registered.
+            IConfiguration | None: The frame-owned shared rich configuration for
+            this Aether frame, or None when explicit shared rich-config reuse is
+            not active.
         """
         try:
+            frame_configuration = self._aetheric_frame_configuration
+            if (
+                frame_configuration is None
+                or not frame_configuration.shared_framewide_spellbook_configuration
+            ):
+                return None
             return Spellbook._aether._get_configuration(self._aetheric_frame)
         except Exception as e:
             self._logger.error(
                 f"Error retrieving configuration from Aether: {e}",
                 "_get_configuration_from_aether",
+                exc_info=True,
+            )
+            raise
+
+    def _is_frame_owned_shared_configuration(
+            self,
+            configuration: Optional[IConfiguration] = None,
+    ) -> bool:
+        """
+        Internal
+
+        Determine whether one rich Spellbook configuration is the frame-owned
+        shared configuration for this Spellbook's frame.
+
+        Args:
+            configuration:
+                Optional configuration object to check. When omitted, the
+                Spellbook's current `_configuration` reference is used.
+
+        Returns:
+            bool: True when the given configuration is the current frame-owned
+            shared rich configuration and the active frame posture explicitly
+            enables that sharing mode.
+        """
+        target_configuration = configuration
+        if target_configuration is None:
+            target_configuration = self._configuration
+        if target_configuration is None:
+            return False
+        try:
+            frame_configuration = self._aetheric_frame_configuration
+            if (
+                frame_configuration is None
+                or not frame_configuration.shared_framewide_spellbook_configuration
+            ):
+                return False
+            shared_configuration = Spellbook._aether._get_configuration(
+                self._aetheric_frame
+            )
+            return shared_configuration is target_configuration
+        except Exception:
+            return False
+
+    def _initialize_aetheric_frame_configuration(self) -> None:
+        """
+        Internal
+
+        Attach the frame-owned `AethericFrameConfiguration` reference for this
+        Spellbook.
+
+        Contract:
+            - The owning `AethericFrame` creates the default posture object.
+            - Spellbook only retrieves and retains that frame-owned object.
+        """
+        try:
+            frame_configuration = Spellbook._aether._get_aetheric_frame_configuration(
+                self._aetheric_frame
+            )
+            if frame_configuration is None:
+                raise RuntimeError("AethericFrameConfiguration is unavailable.")
+            self._aetheric_frame_configuration = frame_configuration
+        except Exception as e:
+            self._logger.error(
+                f"Failed to initialize frame configuration: {e}",
+                "_initialize_aetheric_frame_configuration",
                 exc_info=True,
             )
             raise
@@ -3125,8 +3207,37 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Binds the now-frozen configuration to the Aether for this Spellbook's frame.
+        Bind the now-frozen rich configuration into Aether only when the
+        effective frame posture permits explicit shared rich-config reuse.
         """
+        if self._configuration is None:
+            self._logger.error(
+                "No configuration instance available to bind to Aether.",
+                "_bind_configuration_to_aether",
+                exc_info=True,
+            )
+            raise RuntimeError("No configuration instance available to bind to Aether.")
+
+        frame_configuration = self._aetheric_frame_configuration
+
+        if frame_configuration is not None:
+            if not frame_configuration.shared_framewide_spellbook_configuration:
+                return
+
+            existing_shared_configuration = Spellbook._aether._get_configuration(
+                self._aetheric_frame
+            )
+            if existing_shared_configuration is not None:
+                if existing_shared_configuration is not self._configuration:
+                    local_configuration = self._configuration
+                    self._configuration = existing_shared_configuration
+                    self._configuration_locked = True
+                    if local_configuration is not None:
+                        local_configuration.cleanup()
+                return
+
+        else:
+            return
         try:
             Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
         except Exception as e:
@@ -3141,39 +3252,37 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Bind the narrow frame-level AR posture derived from this Spellbook's
-        configuration into Aether.
+        Bind the retained frame-owned AR posture reference into Aether.
 
         Contract:
-            - Derives an `AethericFrameConfiguration` from the current
-              Spellbook configuration.
-            - Binds it through the owning `Aether` under first-writer-wins
-              semantics.
-            - Does not replace the existing full Spellbook configuration path.
+            - Uses the `AethericFrame`-owned posture reference already attached
+              to this Spellbook.
+            - Binds it through the owning `AethericFrame`, which freezes it on
+              first successful bind or accepts Nexus-provided posture that was
+              already bound earlier.
 
         Returns:
             None.
 
         Raises:
-            RuntimeError: If no Spellbook configuration exists.
-            Exception: Propagates failures from posture derivation or Aether
+            RuntimeError: If no frame posture reference exists.
+            Exception: Propagates failures from Aether
                 binding.
         """
-        if self._configuration is None:
+        if self._aetheric_frame_configuration is None:
             self._logger.error(
-                "No configuration instance available to derive frame posture.",
+                "No frame configuration instance available to bind to Aether.",
                 "_bind_aetheric_frame_configuration_to_aether",
                 exc_info=True,
             )
             raise RuntimeError(
-                "No configuration instance available to derive frame posture."
+                "No frame configuration instance available to bind to Aether."
             )
 
         try:
-            frame_configuration = self._derive_aetheric_frame_configuration()
-            Spellbook._aether._bind_aetheric_frame_configuration(
-                frame_configuration,
-                self._aetheric_frame,
+            frame = Spellbook._aether._ensure_frame(self._aetheric_frame)
+            frame.bind_frame_configuration(
+                self._aetheric_frame_configuration
             )
         except Exception as e:
             self._logger.error(
@@ -3183,75 +3292,17 @@ class Spellbook(Cleanable, ISpellbook):
             )
             raise
 
-    def _derive_aetheric_frame_configuration(self) -> AethericFrameConfiguration:
-        """
-        Internal
-
-        Derive one narrow frame-level AR posture object from the current
-        Spellbook configuration.
-
-        Purpose:
-            Support the normal rich `SpellbookConfiguration` helper path while
-            remaining compatible with older or lightweight configuration test
-            doubles that only implement `get_property(...)`.
-
-        Contract:
-            - Prefers `to_aetheric_frame_configuration(...)` when the
-              configuration exposes it.
-            - Falls back to reading the three posture fields directly from
-              `get_property(...)`.
-            - Missing fallback values resolve to the runtime-safe defaults:
-              `system_state=automatic`, `ai_native_enabled=False`,
-              `rift_enabled=False`.
-
-        Returns:
-            Any: One `AethericFrameConfiguration` instance.
-
-        Raises:
-            Exception: Propagates failures from helper-based derivation or
-                posture normalization.
-        """
-        if isinstance(self._configuration, SpellbookConfiguration):
-            return self._configuration.to_aetheric_frame_configuration(
-                origin_spellbook_id=self._id
-            )
-
-        system_state = self._configuration.get_property("system_state")
-        if system_state is None:
-            system_state = SystemState.automatic
-
-        ai_native_enabled = self._configuration.get_property("ai_native_enabled")
-        if ai_native_enabled is None:
-            ai_native_enabled = False
-
-        rift_enabled = self._configuration.get_property("rift_enabled")
-        if rift_enabled is None:
-            rift_enabled = False
-        overrides_enabled = self._configuration.get_property("overrides_enabled")
-        if overrides_enabled is None:
-            overrides_enabled = True
-
-        return AethericFrameConfiguration(
-            origin_spellbook_id=self._id,
-            system_state=system_state,
-            ai_native_enabled=ai_native_enabled,
-            rift_enabled=rift_enabled,
-            overrides_enabled=overrides_enabled,
-        )
-
     def _refresh_nexus_publish_enabled(self) -> bool:
         """
         Internal
 
-        Refresh the cached passive Nexus publication flag from the bound frame
-        posture.
+        Refresh the cached passive Nexus publication flag from the retained
+        frame-owned posture reference.
 
         Returns:
             bool: True when the current frame is publishable into Nexus.
         """
-        frame_configuration = Spellbook._aether._get_aetheric_frame_configuration(
-            self._aetheric_frame
-        )
+        frame_configuration = self._aetheric_frame_configuration
         self._nexus_publish_enabled = (
             frame_configuration is not None and frame_configuration.rift_enabled
         )

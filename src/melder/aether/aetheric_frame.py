@@ -90,10 +90,18 @@ class AethericFrame(Cleanable, IAethericFrame):
         # Per-frame DevOps hub: incidents + change-control over this frame.
         self._dev_ops_manager: DevOpsManager = DevOpsManager(self._spell_system_states)
 
-        # Shared full Spellbook configuration for this frame (set elsewhere).
+        # Optional explicit frame-owned shared rich Spellbook configuration.
         self._configuration = None
-        # Narrow frame-level AR posture derived from Spellbook configuration.
-        self._frame_configuration: Optional[AethericFrameConfiguration] = None
+        # Narrow frame-level AR posture owned by the frame itself.
+        self._frame_configuration: Optional[AethericFrameConfiguration] = (
+            AethericFrameConfiguration(
+                origin_spellbook_id=None,
+                system_state="automatic",
+                ai_native_enabled=False,
+                rift_enabled=False,
+                shared_framewide_spellbook_configuration=False,
+            )
+        )
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -123,6 +131,8 @@ class AethericFrame(Cleanable, IAethericFrame):
             if self._frame_configuration is not None:
                 self._frame_configuration.cleanup()
                 self._frame_configuration = None
+            if self._configuration is not None:
+                self._configuration.cleanup()
             self._configuration = None
             self._id = None
             self._aether._detach_cleaned_frame(self.name, self)
@@ -258,14 +268,115 @@ class AethericFrame(Cleanable, IAethericFrame):
     @property
     def frame_configuration(self) -> Optional[AethericFrameConfiguration]:
         """
-        Return the narrow frame-level AR posture, if one has been bound.
+        Return the frame-owned narrow frame-level AR posture.
 
         Returns:
-            Optional[AethericFrameConfiguration]: Bound frame posture or None
-            when no posture has been bound yet.
+            Optional[AethericFrameConfiguration]: Frame posture object while the
+            frame is live. Frames create a default posture during init and later
+            Spellbook/Nexus paths freeze that object into its canonical state.
         """
         self.check_cleaned()
         return self._frame_configuration
+
+    def freeze_frame_configuration(
+            self,
+            origin_spellbook_id: Optional[str] = None,
+    ) -> AethericFrameConfiguration:
+        """
+        Freeze the frame-owned posture configuration and return it.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._frame_configuration is None:
+                raise RuntimeError("Frame configuration is unavailable.")
+            self._frame_configuration.freeze(origin_spellbook_id=origin_spellbook_id)
+            return self._frame_configuration
+
+    def bind_frame_configuration(
+            self,
+            frame_configuration: AethericFrameConfiguration,
+    ) -> AethericFrameConfiguration:
+        """
+        Bind one frame-level posture object onto this frame.
+
+        Purpose:
+            Keep frame-posture lifecycle inside the owning `AethericFrame`
+            instead of routing the behavior through `Aether`.
+
+        Contract:
+            - First successful bind freezes the frame-owned posture.
+            - A later same-posture bind is idempotent.
+            - A later conflicting bind keeps the canonical frame posture and
+              cleans the attempted object.
+            - When the frame still holds the default unfrozen posture object,
+              the attempted posture values are copied into that canonical object
+              and the attempted object is cleaned.
+
+        Args:
+            frame_configuration:
+                Attempted posture object to bind.
+
+        Returns:
+            AethericFrameConfiguration: The canonical frame-owned posture object
+            after the bind attempt.
+
+        Raises:
+            TypeError: If `frame_configuration` is not an
+                `AethericFrameConfiguration`.
+            RuntimeError: If the frame has been cleaned.
+        """
+        self.check_cleaned()
+        if not isinstance(frame_configuration, AethericFrameConfiguration):
+            raise TypeError(
+                "frame_configuration must be an AethericFrameConfiguration."
+            )
+
+        with self._lock:
+            existing_frame_configuration = self._frame_configuration
+            if existing_frame_configuration is None:
+                self._frame_configuration = frame_configuration
+                return self.freeze_frame_configuration(
+                    origin_spellbook_id=frame_configuration.origin_spellbook_id
+                )
+
+            if not existing_frame_configuration._frozen:
+                origin_spellbook_id = frame_configuration.origin_spellbook_id
+                if existing_frame_configuration is not frame_configuration:
+                    existing_frame_configuration.with_system_state(
+                        frame_configuration.system_state
+                    )
+                    existing_frame_configuration.with_ai_native(
+                        frame_configuration.ai_native_enabled
+                    )
+                    existing_frame_configuration.with_rift_enabled(
+                        frame_configuration.rift_enabled
+                    )
+                    existing_frame_configuration.with_shared_framewide_spellbook_configuration(
+                        frame_configuration.shared_framewide_spellbook_configuration
+                    )
+                    frame_configuration.cleanup()
+                existing_frame_configuration.freeze(
+                    origin_spellbook_id=origin_spellbook_id
+                )
+                return existing_frame_configuration
+
+            if existing_frame_configuration.matches_posture(frame_configuration):
+                if existing_frame_configuration is not frame_configuration:
+                    frame_configuration.cleanup()
+                return existing_frame_configuration
+
+            if self._aether is not None and self._aether._logger is not None:
+                self._aether._logger.warning(
+                    "Ignored conflicting AethericFrameConfiguration for frame "
+                    "'{0}'. Existing={1}, attempted={2}.".format(
+                        self.name,
+                        existing_frame_configuration.describe_posture(),
+                        frame_configuration.describe_posture(),
+                    ),
+                    "bind_frame_configuration",
+                )
+            frame_configuration.cleanup()
+            return existing_frame_configuration
 
     # ------------------------------------------------------------------
     # Version Registry Maintenance

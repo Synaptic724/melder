@@ -64,7 +64,7 @@ def _bind_target_frame_configuration(
         ai_native_enabled=ai_native_enabled,
         rift_enabled=rift_enabled,
     )
-    aether._bind_aetheric_frame_configuration(posture, frame_name)
+    aether._ensure_frame(frame_name).bind_frame_configuration(posture)
 
 
 def _bind_target_runtime_posture(
@@ -82,7 +82,7 @@ def _bind_target_runtime_posture(
         ai_native_enabled=ai_native_enabled,
         rift_enabled=rift_enabled,
     )
-    aether._bind_aetheric_frame_configuration(posture, frame_name)
+    aether._ensure_frame(frame_name).bind_frame_configuration(posture)
     return posture
 
 

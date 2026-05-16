@@ -17,6 +17,15 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 class CapabilityBenchService:
     """
     Stable runtime service used by the capability integration harness.
@@ -277,11 +286,11 @@ class CapabilityRiftJsonBench:
         """
         configuration = SpellbookConfiguration(aether_frame=self.frame_name)
         if self.dynamic_frame:
-            configuration.dynamic_defaults()
+            apply_dynamic_defaults_for_spellbook_configuration(configuration)
         else:
-            configuration.automatic_defaults()
+            apply_automatic_defaults_for_spellbook_configuration(configuration)
         configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-        configuration.set_property("rift_enabled", True)
+        set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
         return configuration
 
     def _build_nexus(self) -> Nexus:

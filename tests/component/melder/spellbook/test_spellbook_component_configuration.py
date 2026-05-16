@@ -82,7 +82,7 @@ def _bind_frame_posture(
             shared_framewide_spellbook_configuration
         ),
     )
-    aether._bind_aetheric_frame_configuration(frame_configuration, frame_name)
+    aether._ensure_frame(frame_name).bind_frame_configuration(frame_configuration)
     return frame_configuration
 
 

@@ -29,6 +29,15 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 if "src" not in sys.path:
     sys.path.insert(0, "src")
 
@@ -202,7 +211,7 @@ def _create_spellbook(frame_name: str) -> Spellbook:
     Conduit._aether = aether
 
     configuration = SpellbookConfiguration(frame_name)
-    configuration.automatic_defaults()
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return Spellbook(
         aetheric_frame=frame_name,

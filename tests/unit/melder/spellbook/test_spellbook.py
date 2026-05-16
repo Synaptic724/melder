@@ -1693,8 +1693,10 @@ def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeyp
         _bind_configuration=lambda configuration, frame: (_ for _ in ()).throw(
             RuntimeError("bind configuration boom")
         ),
-        _bind_aetheric_frame_configuration=lambda configuration, frame: (_ for _ in ()).throw(
-            RuntimeError("bind posture boom")
+        _ensure_frame=lambda frame: types.SimpleNamespace(
+            bind_frame_configuration=lambda configuration: (_ for _ in ()).throw(
+                RuntimeError("bind posture boom")
+            )
         ),
     )
     monkeypatch.setattr(spellbook_module.Spellbook, "_aether", aether_stub)

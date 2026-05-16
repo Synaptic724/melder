@@ -738,7 +738,7 @@ def test_get_aetheric_frame_configuration_returns_default_frame_posture() -> Non
         rift_enabled=False,
     )
 
-    a._bind_aetheric_frame_configuration(frame_configuration)
+    a._ensure_frame("default").bind_frame_configuration(frame_configuration)
 
     bound = a._get_aetheric_frame_configuration()
     assert bound is a._default_frame.frame_configuration
@@ -754,11 +754,11 @@ def test_bind_aetheric_frame_configuration_rejects_invalid_type() -> None:
     a = Aether()
 
     with pytest.raises(TypeError, match="AethericFrameConfiguration"):
-        a._bind_aetheric_frame_configuration("invalid")
+        a._ensure_frame("default").bind_frame_configuration("invalid")
 
 
 def test_bind_aetheric_frame_configuration_missing_frame_raises() -> None:
-    """_bind_aetheric_frame_configuration should fail clearly for missing custom frames."""
+    """Frame-owned posture binding now requires an existing frame handle."""
     a = Aether()
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-1",
@@ -767,11 +767,8 @@ def test_bind_aetheric_frame_configuration_missing_frame_raises() -> None:
         rift_enabled=True,
     )
 
-    with pytest.raises(ValueError, match="does not exist"):
-        a._bind_aetheric_frame_configuration(
-            frame_configuration,
-            "missing_frame",
-        )
+    with pytest.raises(KeyError, match="missing_frame"):
+        _ = a._aetheric_frames["missing_frame"]
 
     frame_configuration.cleanup()
 
@@ -786,7 +783,7 @@ def test_bind_aetheric_frame_configuration_sets_default_frame_posture() -> None:
         rift_enabled=False,
     )
 
-    a._bind_aetheric_frame_configuration(frame_configuration)
+    a._ensure_frame("default").bind_frame_configuration(frame_configuration)
 
     bound = a._default_frame.frame_configuration
     assert bound is not frame_configuration
@@ -813,8 +810,8 @@ def test_bind_aetheric_frame_configuration_same_posture_cleans_duplicate() -> No
         rift_enabled=False,
     )
 
-    a._bind_aetheric_frame_configuration(original)
-    a._bind_aetheric_frame_configuration(duplicate)
+    a._ensure_frame("default").bind_frame_configuration(original)
+    a._ensure_frame("default").bind_frame_configuration(duplicate)
 
     bound = a._default_frame.frame_configuration
     assert bound is not original
@@ -843,8 +840,8 @@ def test_bind_aetheric_frame_configuration_conflict_keeps_original_and_logs_warn
         rift_enabled=True,
     )
 
-    a._bind_aetheric_frame_configuration(original)
-    a._bind_aetheric_frame_configuration(conflicting)
+    a._ensure_frame("default").bind_frame_configuration(original)
+    a._ensure_frame("default").bind_frame_configuration(conflicting)
 
     bound = a._default_frame.frame_configuration
     assert bound is not original

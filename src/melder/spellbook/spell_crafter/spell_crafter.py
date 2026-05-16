@@ -971,7 +971,7 @@ class SpellCrafter(Cleanable):
             spellbook = self._spell._spellbook
             contracted_lookup = spellbook._lookup_contracted_spells
             contracted_maps = spellbook._contracted_spells
-            system_state = spellbook._configuration.get_property("system_state")
+            system_state = spellbook._aetheric_frame_configuration.system_state
         except Exception:
             return None
 
@@ -1098,7 +1098,7 @@ class SpellCrafter(Cleanable):
             spellbook = self._spell._spellbook
             contracted_lookup = spellbook._lookup_contracted_spells
             contracted_maps = spellbook._contracted_spells
-            system_state = spellbook._configuration.get_property("system_state")
+            system_state = spellbook._aetheric_frame_configuration.system_state
         except Exception:
             return None
 

@@ -20,6 +20,15 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 
+from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
+    build_aetheric_frame_configuration_for_spellbook_configuration,
+    set_frame_ai_native_for_spellbook_configuration,
+    set_frame_rift_enabled_for_spellbook_configuration,
+    set_frame_system_state_for_spellbook_configuration,
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
+)
 def _ensure_src_on_path() -> None:
     """
     Ensure the local `src/` tree is importable for the bench.
@@ -171,9 +180,9 @@ def _build_spellbook_and_ids(
     """
     cfg = SpellbookConfiguration(frame_name)
     if automatic:
-        cfg.automatic_defaults()
+        apply_automatic_defaults_for_spellbook_configuration(cfg)
     else:
-        cfg.dynamic_defaults()
+        apply_dynamic_defaults_for_spellbook_configuration(cfg)
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook = Spellbook(
         aetheric_frame=frame_name,

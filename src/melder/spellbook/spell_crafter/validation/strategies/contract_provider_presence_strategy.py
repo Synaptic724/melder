@@ -76,9 +76,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         system_state: Optional[SystemState] = None
         if spellbook is not None:
             try:
-                configuration = spellbook.get_configuration()
-                if configuration is not None and configuration.has_property("system_state"):
-                    system_state = configuration.get_property("system_state")
+                system_state = spellbook._aetheric_frame_configuration.system_state
             except Exception:
                 system_state = None
 

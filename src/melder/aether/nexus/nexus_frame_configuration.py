@@ -322,7 +322,5 @@ class NexusFrameConfiguration(Cleanable):
         """
         self.check_cleaned()
         configuration = SpellbookConfiguration(aether_frame=self._frame_name)
-        configuration.dynamic_defaults()
-        configuration.with_ai_native(self._ai_native_enabled)
-        configuration.with_rift_enabled(self._rift_enabled)
+        configuration.with_defaults()
         return configuration

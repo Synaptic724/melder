@@ -266,27 +266,8 @@ class IConfiguration(ICleanable, Protocol):
         so you can keep chaining.
 
         Behavior:
-        - Sets: system_state="automatic", disposal=False,
-          disposal_method_names=[].
+        - Sets local rich-config defaults only.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-        """
-        ...
-
-    def with_system_state(self, state: 'SystemState | str') -> 'IConfiguration':
-        """
-        Fluent
-
-        Set the system state ("automatic" or "dynamic") and return `self`.
-
-        Notes:
-        - Accepts either SystemState or a case-insensitive string.
-        - Idempotent: can be set only once before freeze; attempting to overwrite raises.
-
-        Args:
-            state: Desired system state (SystemState or "automatic"|"dynamic").
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
@@ -374,18 +355,3 @@ class IConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def dynamic_defaults(self) -> 'IConfiguration':
-        """
-        Fluent
-
-        Load defaults and set dynamic state, returning `self`.
-        """
-        ...
-
-    def automatic_defaults(self) -> 'IConfiguration':
-        """
-        Fluent
-
-        Load defaults and set automatic state, returning `self`.
-        """
-        ...

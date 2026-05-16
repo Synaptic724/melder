@@ -1,12 +1,8 @@
 import threading
-from enum import Enum
-from typing import Any, Dict, Type, Callable, Optional
+from typing import Any, Dict, Type, Callable
 import ulid
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.spellbook.configuration.system_state import SystemState
-from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces import IConfiguration
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -14,14 +10,13 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
     """
     Mutable build-time configuration surface for one spellbook/runtime context.
 
-    `SpellbookConfiguration` is the central staging object where spellbook-wide runtime
-    posture is assembled before conjure/freeze. It owns the typed property map,
-    idempotent keys, and the per-spellbook system hook registry that later
-    runtime systems consume.
+    `SpellbookConfiguration` is the central staging object for one Spellbook's
+    rich local runtime behavior. It owns the typed property map, idempotent
+    keys, and the per-spellbook system hook registry that later runtime systems
+    consume.
 
     It governs:
-    * conduit/runtime posture
-    * dynamic/AI/Rift feature flags
+    * local Spellbook/runtime behavior
     * disposal and phase-scheduler tuning
     * hook registration for Meld / Conduit / Link / Contract events
 
@@ -84,19 +79,16 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         # Private dictionary storing all properties.
         self._properties: Dict = {}
         self.available_properties: Dict[str, Type] = {
-            "system_state": SystemState,
             "disposal": bool,
             "disposal_method_names": list,
             "full_ahead_of_time_compilation": bool,
             "overrides_enabled": bool,
             "phase_scheduler_workers_per_spellbook": int,
-            "ai_native_enabled": bool,
-            "rift_enabled": bool,
             "phase_scheduler_barrier_timeout_milliseconds": int,
         }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"system_state", "disposal", "disposal_method_names"}
+        self._idempotent_keys = {"disposal", "disposal_method_names"}
 
         # System hook registry (Meld / Conduit / Link / Contract).
         # Maps hook name -> list[Callable[..., Any]].
@@ -158,7 +150,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             RuntimeError: If the configuration is cleaned or frozen.
             RuntimeError: If attempting to modify an idempotent property that is already set.
             TypeError: If `key` is not a string.
-            ValueError: If an enum conversion fails.
+            ValueError: If local value validation fails.
         """
         self.check_cleaned()
         if self._frozen:
@@ -166,6 +158,8 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
 
         if not isinstance(key, str):
             raise TypeError("Key must be a string.")
+        if key not in self.available_properties:
+            raise KeyError(f"Unknown SpellbookConfiguration property: '{key}'.")
 
         with self._lock:
             if key in self._idempotent_keys and key in self._properties:
@@ -174,7 +168,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             if self._frozen:
                 raise RuntimeError("Cannot modify configuration after it is frozen.")
 
-            value = self._convert_enum_if_needed(key, value)
             self._properties[key] = value
 
     def clear_properties(self) -> None:
@@ -223,12 +216,8 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
 
         self._validate_required_properties_exist()
         self._validate_required_property_types()
-        self._validate_enum_properties()
         self._validate_phase_scheduler_workers()
         self._validate_overrides_enabled()
-        self._validate_ai_native_enabled()
-        self._validate_rift_enabled()
-        self._validate_ai_runtime_posture()
 
         return True
 
@@ -258,17 +247,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
                     f"expected {expected_names}, got {type(value).__name__}."
                 )
 
-    def _validate_enum_properties(self) -> None:
-        """
-        Ensures all enum-based properties contain valid enum values.
-        """
-        if "system_state" in self._properties:
-            system_state = self._properties["system_state"]
-            if not isinstance(system_state, SystemState):
-                raise ValueError(
-                    f"Invalid type for 'system_state': expected SystemState, got {type(system_state).__name__}."
-                )
-
     def _validate_phase_scheduler_workers(self) -> None:
         """
         Ensures the phase scheduler worker count is a valid integer >= 1.
@@ -287,52 +265,10 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         if not isinstance(enabled, bool):
             raise ValueError("overrides_enabled must be a boolean.")
 
-    def _validate_ai_native_enabled(self) -> None:
-        """
-        Ensures ai_native_enabled is a boolean.
-        """
-        enabled = self._properties.get("ai_native_enabled")
-
-        if not isinstance(enabled, bool):
-            raise ValueError("ai_native_enabled must be a boolean.")
-
-    def _validate_rift_enabled(self) -> None:
-        """
-        Ensures rift_enabled is a boolean.
-        """
-        enabled = self._properties.get("rift_enabled")
-
-        if not isinstance(enabled, bool):
-            raise ValueError("rift_enabled must be a boolean.")
-
-    def _validate_ai_runtime_posture(self) -> None:
-        """
-        Enforce the semantic relationship between system state and AI posture.
-
-        Contract:
-            - `ai_native_enabled=True` requires `system_state == dynamic`.
-            - `rift_enabled` remains valid in either automatic or
-              dynamic mode.
-
-        Raises:
-            ValueError: If AI-native posture is enabled while the system state
-                is not dynamic.
-        """
-        system_state = self._properties.get("system_state")
-        ai_native_enabled = self._properties.get("ai_native_enabled")
-
-        if ai_native_enabled and system_state != SystemState.dynamic:
-            raise ValueError(
-                "ai_native_enabled requires system_state to be dynamic."
-            )
-
     def validate_enums(self) -> bool:
         """
-        Validate enum-backed properties explicitly.
-
-        This is a narrower compatibility helper kept alongside the broader
-        `validate()` pipeline for callers that only want the enum-specific
-        portion of validation.
+        Local rich configuration no longer owns enum-backed frame posture
+        properties, so enum validation is a no-op.
 
         Returns:
             bool: True if all enum values are valid.
@@ -342,47 +278,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             ValueError: If a known enum property is set to an invalid type.
         """
         self.check_cleaned()
-        # Additional validation for specific properties
-        if "system_state" in self._properties:
-            system_state = self._properties["system_state"]
-            if not isinstance(system_state, SystemState):
-                raise ValueError(
-                    f"Invalid type for 'system_state': expected SystemState, got {type(system_state).__name__}."
-                )
         return True
-
-
-    def _convert_enum_if_needed(self, key: str, value: Any) -> Any:
-        """
-        Converts string inputs into the correct enum types for known keys.
-
-        Args:
-            key (str): The property key.
-            value (Any): The value to check/convert.
-
-        Returns:
-            Any: The converted Enum value or the original value if no conversion is needed.
-
-        Raises:
-            ValueError: If the string value is not a valid enum member or if the input type is incorrect.
-
-        Contract:
-            - Only keys listed in the local enum map are converted.
-            - Unknown keys pass through untouched.
-            - Known enum keys are normalized through the shared enum helper so
-              strings and enum instances follow one validation path.
-        """
-        enum_map: Dict[str, Type[Enum]] = {
-            "system_state": SystemState,
-        }
-
-        enum_type = enum_map.get(key)
-        if enum_type is None:
-            # No conversion rule for this key; keep the original value (per docstring).
-            return value
-
-        # Normalize via shared helper: accepts str|Enum, raises on None/invalid.
-        return EnumHelpers.convert_enum_and_check(value, enum_type)
 
     def get_property(self, key: str) -> Any:
         """
@@ -442,14 +338,11 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         """
         Load the standard default property set.
 
-        This method sets sensible defaults for core properties like
-        `system_state` and `disposal`.
+        This method sets sensible defaults for local rich-config properties.
 
         Contract:
-            - Populates only missing properties; existing explicit values are
-              preserved.
-            - Seeds `system_state` through the same enum-conversion path used by
-              normal property writes.
+            - Populates only missing local rich-config properties; existing
+              explicit values are preserved.
 
         Raises:
             RuntimeError: If the configuration is cleaned.
@@ -461,12 +354,8 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             "full_ahead_of_time_compilation": True,
             "overrides_enabled": True,
             "phase_scheduler_workers_per_spellbook": 5,
-            "ai_native_enabled": False,
-            "rift_enabled": False,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
         }
-        if "system_state" not in self._properties:
-            defaults["system_state"] = self._convert_enum_if_needed("system_state", "automatic")
         for key, value in defaults.items():
             if key not in self._properties:
                 self._properties[key] = value
@@ -683,45 +572,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("phase_scheduler_barrier_timeout_milliseconds", timeout_milliseconds)
         return self
 
-    def with_ai_native(self, enabled: bool = True) -> IConfiguration:
-        """
-        Enable or disable AI-native resolution pipeline features.
-
-        Args:
-            enabled (bool): True to enable AI-native mode.
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-
-        Contract:
-            - Writes only the `ai_native_enabled` flag.
-            - Semantic compatibility with `system_state` is enforced later by
-              validation/freeze, not here.
-        """
-        if not isinstance(enabled, bool):
-            raise TypeError("ai_native_enabled must be a bool.")
-        self.set_property("ai_native_enabled", enabled)
-        return self
-
-    def with_rift_enabled(self, enabled: bool = True) -> IConfiguration:
-        """
-        Enable or disable Rift-facing posture.
-
-        Args:
-            enabled (bool): True to enable Rift-facing posture.
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-
-        Contract:
-            - Writes only the `rift_enabled` flag.
-            - Returns `self` for chaining.
-        """
-        if not isinstance(enabled, bool):
-            raise TypeError("rift_enabled must be a bool.")
-        self.set_property("rift_enabled", enabled)
-        return self
-
     def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> IConfiguration:
         """
         Fluent
@@ -772,7 +622,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             raise TypeError("overrides_enabled must be a bool.")
         self.set_property("overrides_enabled", enabled)
         return self
-
 
     def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
         """
@@ -826,34 +675,15 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         so you can keep chaining.
 
         Behavior:
-        - Sets: system_state="automatic", disposal=False,
-          disposal_method_names=[], full_ahead_of_time_compilation=True,
-          overrides_enabled=True.
+        - Sets local rich-config defaults:
+          disposal=False, disposal_method_names=[],
+          full_ahead_of_time_compilation=True, overrides_enabled=True.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
         """
         self.load_default_dictionary()
-        return self
-
-    def with_system_state(self, state: SystemState | str) -> IConfiguration:
-        """
-        Fluent
-
-        Set the system state ("automatic" or "dynamic") and return `self`.
-
-        Notes:
-        - Accepts either SystemState or a case-insensitive string.
-        - Idempotent: can be set only once before freeze; attempting to overwrite raises.
-
-        Args:
-            state: Desired system state (SystemState or "automatic"|"dynamic").
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-        """
-        self.set_property("system_state", state)
         return self
 
     def with_disposal(self, enabled: bool = True) -> IConfiguration:
@@ -894,37 +724,6 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             raise TypeError("disposal_method_names must be a list[str].")
         self.set_property("disposal_method_names", names)
         return self
-
-    def to_aetheric_frame_configuration(
-            self,
-            origin_spellbook_id: Optional[str] = None,
-    ) -> AethericFrameConfiguration:
-        """
-        Build the narrow frame-level AR posture object from this configuration.
-
-        Purpose:
-            Project the full Spellbook configuration down to the narrow
-            frame-level posture fields that later runtime surfaces may need,
-            including the default override posture.
-
-        Args:
-            origin_spellbook_id:
-                Spellbook id deriving the frame posture. May be None for
-                out-of-band callers.
-
-        Returns:
-            AethericFrameConfiguration: Narrow frame-level posture object.
-
-        Raises:
-            KeyError: If any required posture field is missing.
-            TypeError: If any posture field has the wrong type.
-            ValueError: If `system_state` is not a valid `SystemState`.
-        """
-        self.check_cleaned()
-        return AethericFrameConfiguration.from_spellbook_configuration(
-            origin_spellbook_id=origin_spellbook_id,
-            configuration=self,
-        )
 
     def add_disposal_methods(self, *names: str) -> IConfiguration:
         """
@@ -984,27 +783,3 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         """
         return self.finalize()
 
-    def dynamic_defaults(self) -> IConfiguration:
-        """
-        Load defaults and force dynamic system posture.
-
-        Contract:
-            - Sets `system_state` to dynamic through the normal property path.
-            - Then fills in any remaining defaults.
-            - Returns `self` for chaining.
-        """
-        self.set_property("system_state", "dynamic")
-        return self.with_defaults()
-
-    def automatic_defaults(self) -> IConfiguration:
-        """
-        Load defaults and force automatic system posture.
-
-        Contract:
-            - Sets `system_state` to automatic through the normal property
-              path.
-            - Then fills in any remaining defaults.
-            - Returns `self` for chaining.
-        """
-        self.set_property("system_state", "automatic")
-        return self.with_defaults()

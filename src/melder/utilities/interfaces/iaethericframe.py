@@ -27,3 +27,28 @@ class IAethericFrame(ICleanable, Protocol):
     _conduits: 'Dict[str, IConduit]'
     _spell_registry: 'Dict[str, Set[str]]'
     _conduit_clusters: 'Dict[str, List[str]]'
+
+    @property
+    def frame_configuration(self) -> Optional[Any]:
+        """
+        Return the canonical frame-owned posture object.
+        """
+        ...
+
+    def freeze_frame_configuration(
+            self,
+            origin_spellbook_id: Optional[str] = None,
+    ) -> Any:
+        """
+        Freeze the current frame-owned posture object.
+        """
+        ...
+
+    def bind_frame_configuration(
+            self,
+            frame_configuration: Any,
+    ) -> Any:
+        """
+        Bind one posture object onto this frame and return the canonical owner.
+        """
+        ...
