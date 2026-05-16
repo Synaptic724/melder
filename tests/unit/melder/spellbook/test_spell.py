@@ -865,6 +865,60 @@ def test_clear_mutation_override_signals_when_overlay_present():
     assert spell.mutation_override == {}
 
 
+def test_invalidate_spell_clears_context_and_marks_revalidation_state() -> None:
+    states = _RecordingStates()
+    spell = _make_spell(states=states, dynamic_environment=True)
+    spell._creation_context = _Disposable()
+    spell._creation_context_switch.advance(2)
+    spell.resolution_required = False
+    spell.resolution_complete = True
+
+    spell.invalidate_spell()
+
+    assert spell._creation_context is None
+    assert spell._creation_context_switch.state == 0
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+    assert states.calls[-1][1] is SpellStateChangeReason.structure_changed
+
+
+def test_invalidate_spell_uses_explicit_change_reason() -> None:
+    states = _RecordingStates()
+    spell = _make_spell(states=states, dynamic_environment=True)
+
+    spell.invalidate_spell(
+        change_reason=SpellStateChangeReason.mutation_contract_set,
+    )
+
+    assert states.calls[-1][1] is SpellStateChangeReason.mutation_contract_set
+
+
+def test_invalidate_spell_without_states_registry_still_invalidates_locally() -> None:
+    spell = _make_spell(states=None, dynamic_environment=True)
+    spell._spell_system_states = None
+    spell._creation_context = _Disposable()
+    spell._creation_context_switch.advance(2)
+    spell.resolution_required = False
+    spell.resolution_complete = True
+
+    spell.invalidate_spell()
+
+    assert spell._creation_context is None
+    assert spell._creation_context_switch.state == 0
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+
+
+def test_invalidate_spell_raises_outside_dynamic_mode() -> None:
+    spell = _make_spell(dynamic_environment=False)
+
+    with pytest.raises(
+            RuntimeError,
+            match="Spell invalidation for revalidation requires dynamic mode",
+    ):
+        spell.invalidate_spell()
+
+
 def test_cleanup_disposes_artifacts_and_nulls_references():
     cleanup_calls = []
 

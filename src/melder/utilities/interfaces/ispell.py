@@ -1,4 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence, Tuple, runtime_checkable
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -235,6 +238,27 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
+    def invalidate_spell(
+            self,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Invalidate this Spell for a full next-meld rebuild.
+
+        Contract:
+            - Requires the spell to be attached to a dynamic runtime
+              environment.
+            - Clears the spell-owned CreationContext cache.
+            - Forces deferred runtime resolution to rerun on the next meld by
+              setting `resolution_complete=False` and
+              `resolution_required=True`.
+            - Marks the lineage structurally gated in SpellSystemStates when
+              available, defaulting the reason to `structure_changed`.
+            - Models the normal recoverable post-change posture; it does not
+              imply transfer-only hard-disable semantics.
+        """
+        ...
+
     def apply_mutation_override(self, override: Optional[dict]) -> None:
         """
         Apply or update the DAG-level mutation override for this Spell.
@@ -247,9 +271,8 @@ class ISpell(ICleanable, Protocol):
         Instead, it:
 
         - Updates the local overlay payload; and
-        - Marks the Spell's index as structurally changed via
-          SpellSystemStates (if available), using a mutation_contract_*
-          change reason.
+        - Delegates to `invalidate_spell(...)` with the appropriate
+          mutation-contract change reason.
 
         The actual rebuild / revalidation of the system graph is expected to
         be driven by the Phase 5-7 pipelines and the mutation hub.
@@ -276,8 +299,8 @@ class ISpell(ICleanable, Protocol):
             - Rejects writes when the spell is not running in dynamic mode.
 
         This resets the local overlay payload back to the default empty dict,
-        and, if SpellSystemStates is available, marks the index as having
-        rolled back a mutation.
+        then delegates to `invalidate_spell(...)` with the cleared mutation
+        reason.
 
         The actual effect on the compiled/system DAG is owned by the higher-
         level mutation / validation pipelines.

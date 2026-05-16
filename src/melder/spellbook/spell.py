@@ -378,6 +378,142 @@ class Spell(Cleanable, ISpell):
             binding_name=self.binding_name,
         )
         self._key = (frame_key, bind_key)
+
+
+    #region Disposal
+    def cleanup(self) -> None:
+        """
+        Release spell-owned runtime state and permanently retire this Spell.
+
+        Purpose:
+            Deterministically tear down the spell-local runtime surface so later
+            code cannot keep using stale build artifacts, runtime contexts, or
+            owner references after the spell leaves service.
+
+        Contract:
+            - Idempotent: repeated calls become no-ops after `_cleaned` flips.
+            - Thread-safe: acquires `_lock`, re-checks `_cleaned`, and then
+              performs teardown under the guarded section.
+            - Best-effort child cleanup: owned child cleanup failures are
+              swallowed so teardown still reaches the final cleared state.
+            - Clears hooks, metadata, dependency/build artifacts, execution-plan
+              metrics, spell-owned factory/context state, conduit ownership
+              state, spellbook references, and reflective profile state.
+            - Sets `_cleaned` before the guarded section exits, then drops the
+              `_lock` reference itself after teardown completes.
+
+        Runtime resolution and instance lifecycle remain owned by the Resolution
+        / Meld layer, not by this class.
+
+        Returns:
+            None.
+
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+
+            if self.dependency_graph is not None:
+                try:
+                    self.dependency_graph.cleanup()
+                except Exception:
+                    # Never let cleanup explosions propagate.
+                    pass
+
+            if self.profile is not None and isinstance(self.profile, Cleanable):
+                try:
+                    self.profile.cleanup()
+                except Exception:
+                    pass
+
+            # Phase artifacts - deterministically dropped via SpellCrafter.
+            if self._crafter is not None:
+                try:
+                    self._crafter.cleanup()
+                except Exception:
+                    # Never let cleanup explosions propagate.
+                    pass
+                self._crafter = None
+
+            try:
+                if self.spell_index is not None:
+                    self.spell_index.cleanup()
+            except Exception:
+                pass
+
+            self._spellbook = None
+
+            # Drop references to help GC and enforce immutability after cleanup.
+            self._cleanup_creation_context()
+            self._cleanup_creation_context_factory()
+            if self._creation_context_switch is not None:
+                try:
+                    self._creation_context_switch.cleanup()
+                except Exception:
+                    pass
+            self._owner_creations = None
+            self.user_created_object = None
+            self._spell_system_states = None
+            if self._pre_hooks is not None:
+                self._pre_hooks.clear()
+            if self._activation_hooks is not None:
+                self._activation_hooks.clear()
+            if self._post_hooks is not None:
+                self._post_hooks.clear()
+            if self.tags is not None and hasattr(self.tags, "clear"):
+                try:
+                    self.tags.clear()
+                except Exception:
+                    pass
+            if isinstance(self.metadata, dict):
+                self.metadata.clear()
+            if isinstance(self.dependencies, list):
+                self.dependencies.clear()
+            if isinstance(self.disposal_method_names, list):
+                self.disposal_method_names.clear()
+            self._pre_hooks = None
+            self._activation_hooks = None
+            self._post_hooks = None
+            self._hooks_enabled = False
+            self.tags = None
+            self.metadata = None
+            self.dependencies = None
+            self.disposal_method_names = None
+            self.has_disposal_methods = None
+            self.dependency_graph = None
+            self.execution_plan_step_count = None
+            self.execution_plan_unique_spell_count = None
+            self.execution_plan_max_occurrence_depth = None
+            self.execution_plan_max_dependency_count = None
+            self.execution_plan_has_calln = None
+            self.execution_plan_has_contract_payloads = None
+            self.execution_plan_has_existing_creations = None
+            self.execution_plan_dispatch_route = None
+            self.profile = None
+            self.spell = None
+            self._key = None
+            self._is_existing_creation = None
+            self._is_class_spell = None
+            self._is_method_spell = None
+            self._is_lambda_spell = None
+            self._owner_conduit_id = None
+            self._owner_conduit_name = None
+            self.owned_spell = None
+            self._owner_creations = None
+            self._creation_context = None
+            self._creation_context_factory = None
+            self._creation_context_switch = None
+            self._dynamic_environment = None
+            self.resolution_required = None
+            self.resolution_complete = None
+            self.aetheric_frame = None
+            self.spell_index = None
+
+            self._cleaned = True
+        self._lock = None
+    #endregion Disposal
     def _set_hooks(
             self,
             *,
@@ -541,140 +677,6 @@ class Spell(Cleanable, ISpell):
         creation_context_factory = self._creation_context_factory
         return creation_context_factory.get_or_build_for_spell(self)
 
-    #region Disposal
-    def cleanup(self) -> None:
-        """
-        Release spell-owned runtime state and permanently retire this Spell.
-
-        Purpose:
-            Deterministically tear down the spell-local runtime surface so later
-            code cannot keep using stale build artifacts, runtime contexts, or
-            owner references after the spell leaves service.
-
-        Contract:
-            - Idempotent: repeated calls become no-ops after `_cleaned` flips.
-            - Thread-safe: acquires `_lock`, re-checks `_cleaned`, and then
-              performs teardown under the guarded section.
-            - Best-effort child cleanup: owned child cleanup failures are
-              swallowed so teardown still reaches the final cleared state.
-            - Clears hooks, metadata, dependency/build artifacts, execution-plan
-              metrics, spell-owned factory/context state, conduit ownership
-              state, spellbook references, and reflective profile state.
-            - Sets `_cleaned` before the guarded section exits, then drops the
-              `_lock` reference itself after teardown completes.
-
-        Runtime resolution and instance lifecycle remain owned by the Resolution
-        / Meld layer, not by this class.
-
-        Returns:
-            None.
-
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-
-            if self.dependency_graph is not None:
-                try:
-                    self.dependency_graph.cleanup()
-                except Exception:
-                    # Never let cleanup explosions propagate.
-                    pass
-
-            if self.profile is not None and isinstance(self.profile, Cleanable):
-                try:
-                    self.profile.cleanup()
-                except Exception:
-                    pass
-
-            # Phase artifacts - deterministically dropped via SpellCrafter.
-            if self._crafter is not None:
-                try:
-                    self._crafter.cleanup()
-                except Exception:
-                    # Never let cleanup explosions propagate.
-                    pass
-                self._crafter = None
-
-            try:
-                if self.spell_index is not None:
-                    self.spell_index.cleanup()
-            except Exception:
-                pass
-
-            self._spellbook = None
-
-            # Drop references to help GC and enforce immutability after cleanup.
-            self._cleanup_creation_context()
-            self._cleanup_creation_context_factory()
-            if self._creation_context_switch is not None:
-                try:
-                    self._creation_context_switch.cleanup()
-                except Exception:
-                    pass
-            self._owner_creations = None
-            self.user_created_object = None
-            self._spell_system_states = None
-            if self._pre_hooks is not None:
-                self._pre_hooks.clear()
-            if self._activation_hooks is not None:
-                self._activation_hooks.clear()
-            if self._post_hooks is not None:
-                self._post_hooks.clear()
-            if self.tags is not None and hasattr(self.tags, "clear"):
-                try:
-                    self.tags.clear()
-                except Exception:
-                    pass
-            if isinstance(self.metadata, dict):
-                self.metadata.clear()
-            if isinstance(self.dependencies, list):
-                self.dependencies.clear()
-            if isinstance(self.disposal_method_names, list):
-                self.disposal_method_names.clear()
-            self._pre_hooks = None
-            self._activation_hooks = None
-            self._post_hooks = None
-            self._hooks_enabled = False
-            self.tags = None
-            self.metadata = None
-            self.dependencies = None
-            self.disposal_method_names = None
-            self.has_disposal_methods = None
-            self.dependency_graph = None
-            self.execution_plan_step_count = None
-            self.execution_plan_unique_spell_count = None
-            self.execution_plan_max_occurrence_depth = None
-            self.execution_plan_max_dependency_count = None
-            self.execution_plan_has_calln = None
-            self.execution_plan_has_contract_payloads = None
-            self.execution_plan_has_existing_creations = None
-            self.execution_plan_dispatch_route = None
-            self.profile = None
-            self.spell = None
-            self._key = None
-            self._is_existing_creation = None
-            self._is_class_spell = None
-            self._is_method_spell = None
-            self._is_lambda_spell = None
-            self._owner_conduit_id = None
-            self._owner_conduit_name = None
-            self.owned_spell = None
-            self._owner_creations = None
-            self._creation_context = None
-            self._creation_context_factory = None
-            self._creation_context_switch = None
-            self._dynamic_environment = None
-            self.resolution_required = None
-            self.resolution_complete = None
-            self.aetheric_frame = None
-            self.spell_index = None
-
-            self._cleaned = True
-        self._lock = None
-    #endregion Disposal
 
     #region Context Manager
     def __enter__(self) -> "Spell":
@@ -957,6 +959,75 @@ class Spell(Cleanable, ISpell):
         """
         self.check_cleaned()
         return self._overrides_enabled
+
+    def invalidate_spell(
+            self,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> None:
+        """
+        Invalidate this spell for a full next-meld rebuild.
+
+        Purpose:
+            Provide one spell-local helper for the common "this spell is no
+            longer trustworthy; rebuild it on the next meld" path. This method
+            is the spell-owned convenience wrapper over two different
+            invalidation layers:
+
+            1. spell-local runtime invalidation
+               - clear the cached `CreationContext`
+               - force deferred runtime resolution to run again
+            2. lineage/control-plane invalidation
+               - mark the lineage structurally gated in `SpellSystemStates`
+
+        Contract:
+            - Safe to call multiple times on a live spell.
+            - Requires the spell to be attached to a dynamic runtime
+              environment.
+            - Clears the spell-owned `CreationContext` so cached runtime
+              dispatch state cannot survive a structural invalidation.
+            - Sets `resolution_complete=False` and `resolution_required=True`
+              so the next meld re-enters the deferred runtime plan path after
+              structural validation succeeds.
+            - Uses `SpellSystemStates.mark_structural_change(...)` when the
+              control-plane registry is available.
+            - Defaults the reason to `SpellStateChangeReason.structure_changed`
+              when callers do not supply a more specific reason.
+            - Intentionally does not use transfer-only hard-disable semantics;
+              this helper models the recoverable post-change posture rather than
+              the unsafe mid-transfer posture.
+
+        Args:
+            change_reason:
+                Optional structural change reason to record in the lineage
+                state. When omitted, the helper uses
+                `SpellStateChangeReason.structure_changed`.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the spell has already been cleaned, or if the spell is not
+                attached to a dynamic runtime environment.
+        """
+        self.check_cleaned()
+        if change_reason is None:
+            change_reason = SpellStateChangeReason.structure_changed
+        if not self._dynamic_environment:
+            raise RuntimeError(
+                "Dynamic environment is not enabled. Spell invalidation for revalidation requires dynamic mode."
+            )
+
+        with self._lock:
+            self._cleanup_creation_context()
+            self.resolution_complete = False
+            self.resolution_required = True
+
+        if self._spell_system_states is not None and self.spell_index is not None:
+            self._spell_system_states.mark_structural_change(
+                self.spell_index,
+                change_reason,
+            )
 
     def _add_owned_conduit(
             self,
@@ -1635,18 +1706,11 @@ class Spell(Cleanable, ISpell):
 
         new_payload: dict = override if override is not None else {}
         self._mutation_override = new_payload
-        self._cleanup_creation_context()
-
-        if self._spell_system_states is not None and self.spell_index is not None:
-            if new_payload:
-                change_reason = SpellStateChangeReason.mutation_contract_set
-            else:
-                change_reason = SpellStateChangeReason.mutation_contract_cleared
-
-            self._spell_system_states.mark_structural_change(
-                self.spell_index,
-                change_reason,
-            )
+        if new_payload:
+            change_reason = SpellStateChangeReason.mutation_contract_set
+        else:
+            change_reason = SpellStateChangeReason.mutation_contract_cleared
+        self.invalidate_spell(change_reason=change_reason)
 
 
     def clear_mutation_override(self) -> None:
@@ -1690,13 +1754,9 @@ class Spell(Cleanable, ISpell):
             return
 
         self._mutation_override = {}
-        self._cleanup_creation_context()
-
-        if self._spell_system_states is not None and self.spell_index is not None:
-            self._spell_system_states.mark_structural_change(
-                self.spell_index,
-                SpellStateChangeReason.mutation_contract_cleared,
-            )
+        self.invalidate_spell(
+            change_reason=SpellStateChangeReason.mutation_contract_cleared,
+        )
 
     #endregion Spell Mutations
 #endregion Spell
