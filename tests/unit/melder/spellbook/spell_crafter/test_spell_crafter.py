@@ -6225,8 +6225,18 @@ def test_build_phase11_variant_ir_payload_signature_changes_on_step_semantics(
     base_payload = crafter._build_phase11_variant_ir_payload(base_plan)
     changed_payload = crafter._build_phase11_variant_ir_payload(changed_plan)
 
-    assert changed_payload["steps_rows_signature"] != base_payload["steps_rows_signature"]
-    assert changed_payload["signature"] != base_payload["signature"]
+    stripped_override_fields = {
+        "override_match_prefix",
+        "override_match_prefix_len",
+        "override_keys",
+        "expects_overrides",
+    }
+    if set(step_overrides.keys()).issubset(stripped_override_fields):
+        assert changed_payload["steps_rows_signature"] == base_payload["steps_rows_signature"]
+        assert changed_payload["signature"] == base_payload["signature"]
+    else:
+        assert changed_payload["steps_rows_signature"] != base_payload["steps_rows_signature"]
+        assert changed_payload["signature"] != base_payload["signature"]
 
 
 def test_build_phase11_variant_ir_payload_signature_changes_on_variant_label() -> None:

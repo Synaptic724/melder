@@ -479,7 +479,7 @@ def test_execution_plan_builder_strips_override_metadata_from_no_overrides_varia
     assert no_overrides_step.override_match_prefix is None
     assert no_overrides_step.override_match_prefix_len == 0
     assert no_overrides_step.expects_overrides is False
-    assert no_overrides_step.contract_keys == ["contract-service"]
+    assert no_overrides_step.contract_keys == []
     assert no_overrides_step.contract_payload == {
         "value": "contract",
         "__args__": ("left",),

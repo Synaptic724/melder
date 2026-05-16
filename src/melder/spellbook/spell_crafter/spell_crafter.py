@@ -2095,6 +2095,8 @@ class SpellCrafter(Cleanable):
     def _build_phase11_step_ir_row(
             self,
             step: Any,
+            *,
+            include_override_metadata: bool = True,
     ) -> Dict[str, Any]:
         """
         Build one schema-only Phase11 step row for IR export.
@@ -2130,6 +2132,15 @@ class SpellCrafter(Cleanable):
                     for param_name, value in step.contract_payload.items()
                 )
             )
+        override_match_prefix = None
+        override_match_prefix_len = 0
+        override_keys: Tuple[Any, ...] = ()
+        expects_overrides = False
+        if include_override_metadata:
+            override_match_prefix = step.override_match_prefix
+            override_match_prefix_len = step.override_match_prefix_len
+            override_keys = tuple(step.override_keys)
+            expects_overrides = step.expects_overrides
         return {
             "instance_key": tuple(step.instance_key),
             "spell_id": step.spell.spell_index.current,
@@ -2137,10 +2148,10 @@ class SpellCrafter(Cleanable):
             "creations_target_kind": step.creations_target_kind,
             "shared_instance": step.shared_instance,
             "dependency_resolution_order": dependency_resolution_order,
-            "override_match_prefix": step.override_match_prefix,
-            "override_match_prefix_len": step.override_match_prefix_len,
-            "override_keys": tuple(step.override_keys),
-            "expects_overrides": step.expects_overrides,
+            "override_match_prefix": override_match_prefix,
+            "override_match_prefix_len": override_match_prefix_len,
+            "override_keys": override_keys,
+            "expects_overrides": expects_overrides,
             "contract_keys": tuple(step.contract_keys),
             "allow_list_aggregation": step.allow_list_aggregation,
             "uses_positional_override": step.uses_positional_override,
@@ -2192,8 +2203,14 @@ class SpellCrafter(Cleanable):
             }
 
         steps = plan.steps
+        include_override_metadata = (
+            plan.plan_variant != ExecutionPlanVariant.NO_OVERRIDES_FAST
+        )
         steps_rows = tuple(
-            self._build_phase11_step_ir_row(step)
+            self._build_phase11_step_ir_row(
+                step,
+                include_override_metadata=include_override_metadata,
+            )
             for step in steps
         )
         # Hash the full tuple payload as one signature part to avoid per-row
@@ -2330,6 +2347,8 @@ class SpellCrafter(Cleanable):
     @staticmethod
     def _build_phase11_injection_spec_signature_row(
             injection_spec: Any,
+            *,
+            include_override_metadata: bool = True,
     ) -> Tuple[Any, ...]:
         """
         Build deterministic InjectionSpec row for Phase 11 input signatures.
@@ -2357,12 +2376,15 @@ class SpellCrafter(Cleanable):
                     tuple(dependency_key)
                     for dependency_key in param_source.dependency_keys
                 )
+            override_key = None
+            if include_override_metadata:
+                override_key = param_source.override_key
             param_rows.append(
                 (
                     param_name,
                     param_source.kind,
                     dependency_keys,
-                    param_source.override_key,
+                    override_key,
                     param_source.contract_key,
                 )
             )
@@ -2488,7 +2510,8 @@ class SpellCrafter(Cleanable):
             for instance_key in sorted(injection_lookup.keys()):
                 try:
                     injection_spec_row = self._build_phase11_injection_spec_signature_row(
-                        injection_lookup[instance_key]
+                        injection_lookup[instance_key],
+                        include_override_metadata=False,
                     )
                 except AttributeError:
                     return None
