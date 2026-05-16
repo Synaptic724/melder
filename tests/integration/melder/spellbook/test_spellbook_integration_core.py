@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from threading import Barrier, Lock, Thread
 import pytest
 
 from melder.aether.aether import Aether
@@ -328,6 +329,169 @@ def test_spellbook_integration_conjure_keeps_local_configuration_when_frame_shar
             second.cleanup()
     finally:
         conduit.cleanup()
+
+
+def test_spellbook_integration_explicit_shared_mode_uses_one_frame_owned_configuration() -> None:
+    """
+    Purpose:
+        Prove explicit shared mode converges on one frame-owned rich configuration.
+    Contract:
+        - The frame posture explicitly enables shared rich configuration.
+        - First conjure binds one shared rich configuration into the frame.
+        - Later Spellbooks on the same frame adopt that exact object.
+    Returns:
+        None.
+    """
+    frame = "explicit-shared-frame"
+
+    first_config = SpellbookConfiguration(aether_frame=frame)
+    first_config.with_defaults()
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(
+        first_config,
+        True,
+    )
+    first_config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    first = Spellbook(aetheric_frame=frame, configuration=first_config)
+    first.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = first.conjure(name="root")
+    try:
+        shared_configuration = Spellbook._aether._get_configuration(frame)
+        assert shared_configuration is first.get_configuration()
+
+        second = Spellbook(aetheric_frame=frame)
+        try:
+            assert second.get_configuration() is shared_configuration
+            assert second.is_configuration_locked() is True
+        finally:
+            second.cleanup()
+    finally:
+        conduit.cleanup()
+
+
+def test_spellbook_integration_explicit_local_mode_keeps_spellbook_configurations_isolated() -> None:
+    """
+    Purpose:
+        Prove local mode keeps rich Spellbook configuration isolated per Spellbook.
+    Contract:
+        - Default frame posture keeps shared rich configuration disabled.
+        - Conjuring one Spellbook does not bind rich config into the frame.
+        - A later Spellbook on the same frame gets a distinct local config.
+    Returns:
+        None.
+    """
+    frame = "explicit-local-frame"
+
+    first = Spellbook(aetheric_frame=frame)
+    first_config = first.get_configuration()
+    first_config.with_defaults()
+    first_config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    first.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = first.conjure(name="root")
+    try:
+        assert Spellbook._aether._get_configuration(frame) is None
+
+        second = Spellbook(aetheric_frame=frame)
+        try:
+            second_config = second.get_configuration()
+            assert second_config is not first_config
+            assert second.is_configuration_locked() is False
+            assert Spellbook._aether._get_configuration(frame) is None
+        finally:
+            second.cleanup()
+    finally:
+        conduit.cleanup()
+
+
+def test_spellbook_integration_explicit_shared_mode_same_frame_concurrent_conjure_is_threadsafe() -> None:
+    """
+    Purpose:
+        Prove same-frame shared mode converges under concurrent conjure.
+    Contract:
+        - Two Spellbooks on the same frame may begin with distinct local rich configs.
+        - Shared framewide mode causes both to converge on one frame-owned rich config.
+        - Concurrent conjure does not leave the frame with divergent rich-config truth.
+    Returns:
+        None.
+    """
+    frame = "explicit-shared-concurrent-frame"
+
+    config_a = SpellbookConfiguration(aether_frame=frame)
+    config_a.with_defaults()
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(
+        config_a,
+        True,
+    )
+    config_a.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    config_b = SpellbookConfiguration(aether_frame=frame)
+    config_b.with_defaults()
+    set_shared_framewide_spellbook_configuration_for_spellbook_configuration(
+        config_b,
+        True,
+    )
+    config_b.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    spellbook_a = Spellbook(aetheric_frame=frame, configuration=config_a)
+    spellbook_b = Spellbook(aetheric_frame=frame, configuration=config_b)
+    spellbook_a.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    spellbook_b.bind(
+        spell=BasicConfig,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    barrier = Barrier(2)
+    lock = Lock()
+    conduits = []
+    errors = []
+
+    def worker(spellbook: Spellbook, conduit_name: str) -> None:
+        try:
+            barrier.wait(timeout=10.0)
+            conduit = spellbook.conjure(name=conduit_name)
+            with lock:
+                conduits.append(conduit)
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    thread_a = Thread(target=worker, args=(spellbook_a, "root-a"), daemon=True)
+    thread_b = Thread(target=worker, args=(spellbook_b, "root-b"), daemon=True)
+    thread_a.start()
+    thread_b.start()
+    thread_a.join(timeout=10.0)
+    thread_b.join(timeout=10.0)
+
+    assert not thread_a.is_alive()
+    assert not thread_b.is_alive()
+    assert errors == []
+    assert len(conduits) == 2
+
+    try:
+        shared_configuration = Spellbook._aether._get_configuration(frame)
+        assert shared_configuration is not None
+        assert spellbook_a.get_configuration() is shared_configuration
+        assert spellbook_b.get_configuration() is shared_configuration
+        assert spellbook_a.is_configuration_locked() is True
+        assert spellbook_b.is_configuration_locked() is True
+    finally:
+        for conduit in reversed(conduits):
+            conduit.cleanup()
 
 
 def test_spellbook_integration_configuration_frame_mismatch_raises() -> None:
