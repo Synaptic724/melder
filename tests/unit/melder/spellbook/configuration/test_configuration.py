@@ -11,7 +11,6 @@ def test_load_defaults_populates_all_required_properties():
     for key in cfg.available_properties:
         assert cfg.has_property(key)
     assert cfg.get_property("system_state") == SystemState.automatic
-    assert cfg.get_property("debugging") is False
     assert cfg.get_property("disposal_method_names") == []
     assert cfg.get_property("full_ahead_of_time_compilation") is True
     assert cfg.get_property("overrides_enabled") is True
@@ -35,7 +34,7 @@ def test_set_property_rejects_frozen():
     cfg.load_default_dictionary()
     cfg.freeze()
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", True)
+        cfg.set_property("disposal", True)
 
 
 def test_set_property_rejects_non_string_key():
@@ -61,9 +60,9 @@ def test_get_property_missing_raises_key_error():
 
 def test_has_property_reflects_state():
     cfg = Configuration()
-    assert cfg.has_property("debugging") is False
-    cfg.set_property("debugging", True)
-    assert cfg.has_property("debugging") is True
+    assert cfg.has_property("disposal") is False
+    cfg.set_property("disposal", True)
+    assert cfg.has_property("disposal") is True
 
 
 def test_validate_success_after_defaults():
@@ -75,7 +74,7 @@ def test_validate_success_after_defaults():
 def test_validate_missing_property_raises():
     cfg = Configuration()
     cfg.load_default_dictionary()
-    cfg._properties.pop("debugging")
+    cfg._properties.pop("disposal")
     with pytest.raises(ValueError):
         cfg.validate()
 
@@ -147,7 +146,7 @@ def test_freeze_is_idempotent_and_blocks_mutation():
     cfg.freeze()
     cfg.freeze()
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", True)
+        cfg.set_property("disposal", True)
 
 
 def test_add_hook_returns_shared_map():
@@ -196,7 +195,6 @@ def test_hooks_blocked_when_frozen():
 def test_withers_chain_and_freeze():
     cfg = (
         Configuration()
-        .with_debugging(True)
         .with_disposal(True)
         .dynamic_defaults()
         .with_phase_scheduler_workers(3)
@@ -205,7 +203,6 @@ def test_withers_chain_and_freeze():
         .finalize()
     )
     assert cfg.has_property("system_state")
-    assert cfg.get_property("debugging") is True
     assert cfg.get_property("disposal_method_names") == []
 
 
@@ -237,7 +234,7 @@ def test_add_disposal_methods_validates_types():
 def test_build_alias_for_finalize():
     cfg = Configuration().with_defaults().build()
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", True)
+        cfg.set_property("disposal", True)
 
 
 def test_dynamic_defaults_sets_state_dynamic():
@@ -264,7 +261,7 @@ def test_cleanup_idempotent_and_nulls_references():
     cfg.cleanup()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", True)
+        cfg.set_property("disposal", True)
     assert cfg._properties is None
     assert cfg._hooks is None
 
@@ -282,16 +279,16 @@ def test_set_property_rejects_after_cleanup():
     cfg = Configuration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", True)
+        cfg.set_property("disposal", True)
 
 
 def test_get_has_property_after_cleanup_raise():
     cfg = Configuration()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
-        cfg.get_property("debugging")
+        cfg.get_property("disposal")
     with pytest.raises(RuntimeError):
-        cfg.has_property("debugging")
+        cfg.has_property("disposal")
 
 
 def test_freeze_after_cleanup_raises():
@@ -336,7 +333,6 @@ def test_validate_enums_method_failure_and_success():
 def test_validate_disposal_method_names_type():
     cfg = Configuration()
     cfg.set_property("system_state", SystemState.dynamic)
-    cfg.set_property("debugging", False)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", "not-a-list")
     cfg.set_property("full_ahead_of_time_compilation", True)
@@ -439,7 +435,7 @@ def test_finalize_twice_is_idempotent():
     cfg.finalize()
     cfg.finalize()
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", True)
+        cfg.set_property("disposal", True)
 
 
 def test_dynamic_defaults_does_not_overwrite_existing_disposal_names():
@@ -471,7 +467,7 @@ def test_cleanup_sets_frozen_and_blocks_mutation():
     cfg.cleanup()
     assert cfg._frozen is True
     with pytest.raises(RuntimeError):
-        cfg.set_property("debugging", False)
+        cfg.set_property("disposal", False)
 
 
 def test_cleanup_clears_hooks_registry():
@@ -515,7 +511,6 @@ def test_with_hooks_after_defaults_before_freeze_allowed():
 def test_validate_enums_with_extra_properties_present():
     cfg = Configuration()
     cfg.set_property("system_state", SystemState.automatic)
-    cfg.set_property("debugging", False)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", [])
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)

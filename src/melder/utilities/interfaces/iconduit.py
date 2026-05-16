@@ -20,7 +20,6 @@ class IConduit(ICleanable, Protocol):
     _lock: threading.RLock
     _id: str
     _name: Optional[str]
-    __debugger_mode__: bool
     __dynamic_environment__: bool
     _aetheric_frame: str
 
@@ -239,8 +238,8 @@ class IConduit(ICleanable, Protocol):
         """
         Internal
 
-        Sets the environment mode and debugging mode for this Conduit
-        based on the configuration instance passed.
+        Sets the environment mode for this Conduit based on the configuration
+        instance passed.
         """
         ...
 

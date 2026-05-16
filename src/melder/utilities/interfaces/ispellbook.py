@@ -967,7 +967,6 @@ class ISpellbook(ICleanable, Protocol):
             self,
             *,
             system_state: Optional[str],
-            debugging: Optional[bool],
             disposal: Optional[bool],
             disposal_method_names: Optional[List[str]],
     ) -> None:
@@ -986,9 +985,6 @@ class ISpellbook(ICleanable, Protocol):
         Args:
             system_state:
                 System mode (e.g. ``"automatic"`` or ``"dynamic"``).
-            debugging:
-                Enables or disables internal debugging features such as
-                id tagging.
             disposal:
                 Enables automatic resource disposal when conduits are
                 cleaned.

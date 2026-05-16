@@ -9,7 +9,7 @@ class IConfiguration(ICleanable, Protocol):
     It acts as the configuration core for:
     * **Conduit Management:** How Conduits handle service lifecycles.
     * **Dynamic Behavior:** Flags controlling dynamic linking, expansion, and policies.
-    * **System Flags:** Global settings like debugging mode and resource disposal.
+    * **System Flags:** Global settings like resource disposal and runtime posture.
 
     This object should only be configured once and then frozen to prevent any further changes,
     enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
@@ -150,7 +150,7 @@ class IConfiguration(ICleanable, Protocol):
         """
         Loads and applies a default set of properties atomically.
 
-        This method sets sensible defaults for core properties like `system_state`, `debugging`, and `disposal`.
+        This method sets sensible defaults for core properties like `system_state` and `disposal`.
 
         Raises:
             RuntimeError: If the configuration is cleaned.
@@ -266,7 +266,7 @@ class IConfiguration(ICleanable, Protocol):
         so you can keep chaining.
 
         Behavior:
-        - Sets: system_state="automatic", debugging=False, disposal=False,
+        - Sets: system_state="automatic", disposal=False,
           disposal_method_names=[].
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
@@ -287,20 +287,6 @@ class IConfiguration(ICleanable, Protocol):
 
         Args:
             state: Desired system state (SystemState or "automatic"|"dynamic").
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-        """
-        ...
-
-    def with_debugging(self, enabled: bool = True) -> 'IConfiguration':
-        """
-        Fluent
-
-        Enable or disable debugging and return `self`.
-
-        Args:
-            enabled: True to enable debugging; False to disable.
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).

@@ -235,15 +235,15 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
         conduit.cleanup()
 
 
-def test_apply_configuration_flags_updates_dynamic_and_debugging(
+def test_apply_configuration_flags_updates_dynamic_environment(
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
     """
-    Verify configuration flags drive dynamic and debugging state.
+    Verify configuration flags drive dynamic-environment state.
 
     Contract:
-        - _apply_configuration_flags reads system_state/debugging.
+        - _apply_configuration_flags reads system_state.
         - Dynamic state enables conduit cloud access.
 
     Args:
@@ -255,7 +255,6 @@ def test_apply_configuration_flags_updates_dynamic_and_debugging(
     """
     configuration = Configuration()
     configuration.set_property("system_state", SystemState.dynamic)
-    configuration.set_property("debugging", True)
     configuration.with_defaults()
     conduit = Conduit(
         spellbook=spellbook_stub,
@@ -267,7 +266,6 @@ def test_apply_configuration_flags_updates_dynamic_and_debugging(
     try:
         conduit._apply_configuration_flags()
         assert conduit.__dynamic_environment__ is True
-        assert conduit.__debugger_mode__ is True
         aether_stub._get_conduit_cloud.return_value = MagicMock()
         conduit.get_conduit_cloud()
         aether_stub._get_conduit_cloud.assert_called_once_with("default")

@@ -70,7 +70,6 @@ def _make_spellbook(
     if disposal:
         configuration = Configuration()
         configuration.set_property("system_state", "automatic")
-        configuration.set_property("debugging", False)
         configuration.set_property("disposal", True)
         configuration.set_property(
             "disposal_method_names",

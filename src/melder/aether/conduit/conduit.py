@@ -158,7 +158,6 @@ class Conduit(Cleanable, IConduit):
 
         self._id: str = conduit_id
         self._name: str = name
-        self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False
         self._nexus_publish_enabled: bool = False
         self._nexus: Nexus = Nexus()
@@ -963,13 +962,12 @@ class Conduit(Cleanable, IConduit):
         """
         Internal
 
-        Sets the environment mode and debugging mode for this Conduit
-        based on the configuration instance passed.
+        Sets the environment mode for this Conduit based on the configuration
+        instance passed.
         """
         try:
             state = self._configuration.get_property("system_state")
             self.__dynamic_environment__ = (state == SystemState.dynamic)
-            self.__debugger_mode__ = bool(self._configuration.get_property("debugging"))
         except Exception as e:
             self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
             raise

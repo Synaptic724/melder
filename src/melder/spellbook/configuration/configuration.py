@@ -85,7 +85,6 @@ class Configuration(Cleanable, IConfiguration):
         self._properties: Dict = {}
         self.available_properties: Dict[str, Type] = {
             "system_state": SystemState,
-            "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list,
             "full_ahead_of_time_compilation": bool,
@@ -97,7 +96,7 @@ class Configuration(Cleanable, IConfiguration):
         }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
-        self._idempotent_keys = {"system_state", "debugging", "disposal", "disposal_method_names"}
+        self._idempotent_keys = {"system_state", "disposal", "disposal_method_names"}
 
         # System hook registry (Meld / Conduit / Link / Contract).
         # Maps hook name -> list[Callable[..., Any]].
@@ -444,7 +443,7 @@ class Configuration(Cleanable, IConfiguration):
         Load the standard default property set.
 
         This method sets sensible defaults for core properties like
-        `system_state`, `debugging`, and `disposal`.
+        `system_state` and `disposal`.
 
         Contract:
             - Populates only missing properties; existing explicit values are
@@ -457,7 +456,6 @@ class Configuration(Cleanable, IConfiguration):
         """
         self.check_cleaned()
         defaults = {
-            "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
             "full_ahead_of_time_compilation": True,
@@ -828,7 +826,7 @@ class Configuration(Cleanable, IConfiguration):
         so you can keep chaining.
 
         Behavior:
-        - Sets: system_state="automatic", debugging=False, disposal=False,
+        - Sets: system_state="automatic", disposal=False,
           disposal_method_names=[], full_ahead_of_time_compilation=True,
           overrides_enabled=True.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
@@ -856,23 +854,6 @@ class Configuration(Cleanable, IConfiguration):
             IConfiguration: This same configuration instance (for chaining).
         """
         self.set_property("system_state", state)
-        return self
-
-    def with_debugging(self, enabled: bool = True) -> IConfiguration:
-        """
-        Enable or disable debugging and return `self`.
-
-        Args:
-            enabled: True to enable debugging; False to disable.
-
-        Returns:
-            IConfiguration: This same configuration instance (for chaining).
-
-        Contract:
-            - Writes only the `debugging` flag.
-            - Returns `self` for chaining.
-        """
-        self.set_property("debugging", enabled)
         return self
 
     def with_disposal(self, enabled: bool = True) -> IConfiguration:

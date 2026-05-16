@@ -21,7 +21,7 @@ def test_component_configuration_defaults_validate_and_freeze() -> None:
 
     config.freeze()
     with pytest.raises(RuntimeError):
-        config.set_property("debugging", True)
+        config.set_property("disposal", True)
 
 
 def test_component_configuration_idempotent_system_state_cannot_change() -> None:
@@ -199,7 +199,6 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config = Configuration()
 
     config.with_system_state("dynamic")
-    config.with_debugging(True)
     config.with_disposal(True)
     config.with_disposal_method_names(["cleanup"])
     config.with_full_ahead_of_time_compilation(True)
@@ -211,7 +210,6 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.finalize()
 
     assert config.get_property("system_state") is SystemState.dynamic
-    assert config.get_property("debugging") is True
     assert config.get_property("disposal") is True
     assert config.get_property("disposal_method_names") == ["cleanup"]
     assert config.get_property("full_ahead_of_time_compilation") is True
