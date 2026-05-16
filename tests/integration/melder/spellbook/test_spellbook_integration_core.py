@@ -52,6 +52,7 @@ def test_spellbook_integration_config_shared_and_locked() -> None:
     """
     spellbook = Spellbook(aetheric_frame="shared-frame")
     config = spellbook.get_configuration()
+    config.with_shared_framewide_spellbook_configuration(True)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spell_id = spellbook.bind(
         spell=BasicService,
@@ -176,6 +177,7 @@ def test_spellbook_integration_frame_config_mismatch_raises() -> None:
     frame = "frame-mismatch"
     spellbook = Spellbook(aetheric_frame=frame)
     config = spellbook.get_configuration()
+    config.with_shared_framewide_spellbook_configuration(True)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -250,8 +252,13 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
     aether._ensure_frame(frame)
     config = SpellbookConfiguration(aether_frame=frame)
     config.with_defaults()
+    config.with_shared_framewide_spellbook_configuration(True)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     config.set_property("phase_scheduler_barrier_timeout_milliseconds", 60000)
+    aether._bind_aetheric_frame_configuration(
+        config.to_aetheric_frame_configuration(origin_spellbook_id="seed"),
+        frame,
+    )
     aether._bind_configuration(config, frame)
 
     spellbook = Spellbook(aetheric_frame=frame)
@@ -268,6 +275,46 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
         assert Spellbook._aether._get_configuration(frame) is config
         instance = conduit.meld(spell=spell_id)
         assert isinstance(instance, BasicService)
+    finally:
+        conduit.cleanup()
+
+
+def test_spellbook_integration_conjure_keeps_local_configuration_when_frame_sharing_disabled() -> None:
+    """
+    Purpose:
+        Validate default conjure keeps rich Spellbook configuration local when
+        framewide sharing is disabled.
+    Contract:
+        - First conjure still succeeds.
+        - No rich config is bound into Aether for the frame.
+        - A later Spellbook on the same frame gets its own distinct local rich
+          config object.
+    Returns:
+        None.
+    """
+    frame = "frame-local-rich-config"
+
+    first = Spellbook(aetheric_frame=frame)
+    first_config = first.get_configuration()
+    first_config.with_defaults()
+    first_config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    first_config.set_property("phase_scheduler_barrier_timeout_milliseconds", 60000)
+    first.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = first.conjure(name="root")
+    try:
+        assert Spellbook._aether._get_configuration(frame) is None
+
+        second = Spellbook(aetheric_frame=frame)
+        try:
+            assert second.get_configuration() is not first.get_configuration()
+            assert second.is_configuration_locked() is False
+        finally:
+            second.cleanup()
     finally:
         conduit.cleanup()
 

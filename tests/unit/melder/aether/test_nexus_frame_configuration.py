@@ -187,9 +187,10 @@ def test_nexus_frame_configuration_to_spellbook_configuration_matches_contract()
 
     spellbook_configuration = configuration.to_spellbook_configuration()
 
-    assert spellbook_configuration.get_property("system_state") == SystemState.dynamic
-    assert spellbook_configuration.get_property("ai_native_enabled") is True
-    assert spellbook_configuration.get_property("rift_enabled") is True
+    frame_configuration = spellbook_configuration.to_aetheric_frame_configuration()
+    assert frame_configuration.system_state == SystemState.dynamic
+    assert frame_configuration.ai_native_enabled is True
+    assert frame_configuration.rift_enabled is True
 
 
 def test_nexus_frame_configuration_cleanup_is_idempotent() -> None:

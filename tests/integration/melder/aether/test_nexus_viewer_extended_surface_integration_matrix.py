@@ -99,7 +99,7 @@ def _make_rift_publishable_configuration(aetheric_frame: str) -> SpellbookConfig
     configuration = SpellbookConfiguration(aether_frame=aetheric_frame)
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     return configuration
 
 

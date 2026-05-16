@@ -17,29 +17,31 @@ def test_component_configuration_defaults_validate_and_freeze() -> None:
     config = SpellbookConfiguration()
     config.with_defaults()
     assert config.validate() is True
-    assert config.get_property("system_state") is SystemState.automatic
+    assert (
+        config.to_aetheric_frame_configuration().system_state
+        is SystemState.automatic
+    )
 
     config.freeze()
     with pytest.raises(RuntimeError):
         config.set_property("disposal", True)
 
 
-def test_component_configuration_idempotent_system_state_cannot_change() -> None:
+def test_component_configuration_system_state_is_reconfigurable_pre_freeze() -> None:
     """
     Purpose:
-        Validate idempotent properties cannot be modified once set.
+        Validate frame posture can be re-authored before freeze.
     Contract:
         - system_state is converted to an enum.
-        - Second assignment raises RuntimeError.
+        - A later explicit change updates the associated frame posture.
     Returns:
         None.
     """
     config = SpellbookConfiguration()
-    config.set_property("system_state", "automatic")
-    assert config.get_property("system_state") is SystemState.automatic
-
-    with pytest.raises(RuntimeError):
-        config.set_property("system_state", SystemState.dynamic)
+    config.with_system_state("automatic")
+    assert config.to_aetheric_frame_configuration().system_state is SystemState.automatic
+    config.with_system_state(SystemState.dynamic)
+    assert config.to_aetheric_frame_configuration().system_state is SystemState.dynamic
 
 
 def test_component_configuration_hooks_register_and_shared_map() -> None:
@@ -103,7 +105,7 @@ def test_component_configuration_stays_logger_free() -> None:
         None.
     """
     config = SpellbookConfiguration().with_defaults().finalize()
-    assert config.get_property("system_state") is SystemState.automatic
+    assert config.to_aetheric_frame_configuration().system_state is SystemState.automatic
 
 
 def test_component_configuration_validate_requires_required_properties() -> None:
@@ -209,11 +211,12 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_rift_enabled(False)
     config.finalize()
 
-    assert config.get_property("system_state") is SystemState.dynamic
+    frame_configuration = config.to_aetheric_frame_configuration()
+    assert frame_configuration.system_state is SystemState.dynamic
     assert config.get_property("disposal") is True
     assert config.get_property("disposal_method_names") == ["cleanup"]
     assert config.get_property("full_ahead_of_time_compilation") is True
     assert config.get_property("phase_scheduler_workers_per_spellbook") == 2
     assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
-    assert config.get_property("ai_native_enabled") is True
-    assert config.get_property("rift_enabled") is False
+    assert frame_configuration.ai_native_enabled is True
+    assert frame_configuration.rift_enabled is False

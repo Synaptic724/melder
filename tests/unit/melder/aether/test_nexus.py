@@ -4558,7 +4558,7 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
     configuration = SpellbookConfiguration(aether_frame="ops_capability_auto")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4619,7 +4619,7 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
     configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic")
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4674,7 +4674,7 @@ def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
     configuration = SpellbookConfiguration(aether_frame="ops_capability_auto_lesser")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4732,7 +4732,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
     configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic_cluster")
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -4810,7 +4810,7 @@ def test_capability_room_can_link_on_dynamic_frame() -> None:
     configuration = SpellbookConfiguration(aether_frame="ops_capability_dynamic_link")
     configuration.dynamic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
@@ -5770,26 +5770,16 @@ def test_codegen_rift_requires_dynamic_target_frame_system_state() -> None:
     Returns:
         None.
     """
-    _bind_target_frame_configuration(
-        "ops",
-        rift_enabled=True,
-        ai_native_enabled=True,
-        system_state=SystemState.automatic,
-    )
-    nexus = Nexus()
-    configuration = nexus.create_system_configuration()
-    configuration.with_rift_creation_enabled(True)
-    configuration.with_target_frame_override(True)
-    configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
-
-    rift_configuration = nexus.create_rift_configuration().with_space_type(
-        RiftSpaceType.codegen
-    )
-    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
-
-    with pytest.raises(ValueError, match="dynamic system_state"):
-        rift.create_frame_link("ops")
+    with pytest.raises(
+        ValueError,
+        match="ai_native_enabled requires system_state to be dynamic",
+    ):
+        _bind_target_frame_configuration(
+            "ops",
+            rift_enabled=True,
+            ai_native_enabled=True,
+            system_state=SystemState.automatic,
+        )
 
 
 def test_codegen_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:

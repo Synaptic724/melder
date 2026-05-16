@@ -10,23 +10,25 @@ def test_load_defaults_populates_all_required_properties():
     cfg.load_default_dictionary()
     for key in cfg.available_properties:
         assert cfg.has_property(key)
-    assert cfg.get_property("system_state") == SystemState.automatic
     assert cfg.get_property("disposal_method_names") == []
     assert cfg.get_property("full_ahead_of_time_compilation") is True
     assert cfg.get_property("overrides_enabled") is True
+    frame_configuration = cfg.to_aetheric_frame_configuration()
+    assert frame_configuration.system_state == SystemState.automatic
+    assert frame_configuration.shared_framewide_spellbook_configuration is False
 
 
-def test_set_property_converts_enum_strings():
+def test_with_system_state_accepts_enum_strings():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", "dynamic")
-    assert cfg.get_property("system_state") == SystemState.dynamic
+    cfg.with_system_state("dynamic")
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.dynamic
 
 
-def test_set_property_rejects_idempotent_overwrite():
+def test_with_system_state_can_replace_pre_conjure_posture():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", SystemState.automatic)
-    with pytest.raises(RuntimeError):
-        cfg.set_property("system_state", SystemState.dynamic)
+    cfg.with_system_state(SystemState.automatic)
+    cfg.with_system_state(SystemState.dynamic)
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.dynamic
 
 
 def test_set_property_rejects_frozen():
@@ -90,7 +92,7 @@ def test_validate_wrong_type_raises():
 def test_validate_enum_type_raises():
     cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
-        cfg.set_property("system_state", "not-an-enum")
+        cfg.with_system_state("not-an-enum")
 
 
 def test_validate_phase_scheduler_workers_bounds():
@@ -104,23 +106,20 @@ def test_validate_phase_scheduler_workers_bounds():
 def test_validate_ai_native_enabled_type():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
-    cfg.set_property("ai_native_enabled", "yes")
-    with pytest.raises(ValueError):
-        cfg.validate()
+    with pytest.raises(TypeError):
+        cfg.with_ai_native("yes")  # type: ignore[arg-type]
 
 
 def test_validate_ai_native_requires_dynamic_system_state():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
-    cfg.set_property("ai_native_enabled", True)
     with pytest.raises(ValueError):
-        cfg.validate()
+        cfg.with_ai_native(True)
 
 
 def test_validate_ai_native_allowed_in_dynamic_system_state():
     cfg = SpellbookConfiguration()
-    cfg.dynamic_defaults()
-    cfg.set_property("ai_native_enabled", True)
+    cfg.dynamic_defaults().with_ai_native(True)
     assert cfg.validate() is True
 
 
@@ -202,7 +201,7 @@ def test_withers_chain_and_freeze():
         .with_ai_native(True)
         .finalize()
     )
-    assert cfg.has_property("system_state")
+    assert cfg.has_property("disposal")
     assert cfg.get_property("disposal_method_names") == []
 
 
@@ -215,6 +214,14 @@ def test_with_phase_scheduler_workers_rejects_invalid():
 def test_with_overrides_enabled_sets_property() -> None:
     cfg = SpellbookConfiguration().with_overrides_enabled(False)
     assert cfg.get_property("overrides_enabled") is False
+
+
+def test_with_shared_framewide_spellbook_configuration_sets_property() -> None:
+    cfg = SpellbookConfiguration().with_shared_framewide_spellbook_configuration(True)
+    assert (
+        cfg.to_aetheric_frame_configuration().shared_framewide_spellbook_configuration
+        is True
+    )
 
 
 def test_with_phase_scheduler_barrier_timeout_limits():
@@ -239,20 +246,20 @@ def test_build_alias_for_finalize():
 
 def test_dynamic_defaults_sets_state_dynamic():
     cfg = SpellbookConfiguration().dynamic_defaults()
-    assert cfg.get_property("system_state") == SystemState.dynamic
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.dynamic
 
 
 def test_automatic_defaults_sets_state_automatic():
     cfg = SpellbookConfiguration().automatic_defaults()
-    assert cfg.get_property("system_state") == SystemState.automatic
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.automatic
 
 
 def test_iter_returns_keys():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     keys = set(iter(cfg))
-    assert "system_state" in keys
-    assert "ai_native_enabled" in keys
+    assert "disposal" in keys
+    assert "overrides_enabled" in keys
 
 
 def test_cleanup_idempotent_and_nulls_references():
@@ -269,8 +276,8 @@ def test_cleanup_idempotent_and_nulls_references():
 def test_convert_enum_helper_matches_configuration_usage():
     cfg = SpellbookConfiguration()
     assert EnumHelpers.convert_enum_and_check("dynamic", SystemState) == SystemState.dynamic
-    cfg.set_property("system_state", "automatic")
-    assert cfg.get_property("system_state") == SystemState.automatic
+    cfg.with_system_state("automatic")
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.automatic
 
 
 # Additional coverage
@@ -300,18 +307,18 @@ def test_freeze_after_cleanup_raises():
 
 def test_load_defaults_preserves_pre_set_system_state():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", SystemState.dynamic)
+    cfg.with_system_state(SystemState.dynamic)
     cfg.load_default_dictionary()
-    assert cfg.get_property("system_state") == SystemState.dynamic
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.dynamic
 
 
 def test_clear_properties_allows_reset_before_freeze():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
+    cfg.with_system_state(SystemState.dynamic)
     cfg.clear_properties()
-    assert cfg.has_property("system_state") is False
-    cfg.set_property("system_state", SystemState.dynamic)
-    assert cfg.get_property("system_state") == SystemState.dynamic
+    assert cfg.has_property("disposal") is False
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.dynamic
 
 
 def test_clear_properties_after_cleanup_raises():
@@ -323,22 +330,19 @@ def test_clear_properties_after_cleanup_raises():
 
 def test_validate_enums_method_failure_and_success():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", "automatic")
+    cfg.with_system_state("automatic")
     assert cfg.validate_enums() is True
     cfg = SpellbookConfiguration()
     with pytest.raises(ValueError):
-        cfg.set_property("system_state", 123)  # type: ignore[arg-type]
+        cfg.with_system_state(123)  # type: ignore[arg-type]
 
 
 def test_validate_disposal_method_names_type():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", SystemState.dynamic)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", "not-a-list")
     cfg.set_property("full_ahead_of_time_compilation", True)
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
-    cfg.set_property("ai_native_enabled", False)
-    cfg.set_property("rift_enabled", False)
     cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", 1)
     with pytest.raises(ValueError):
         cfg.validate()
@@ -447,18 +451,18 @@ def test_dynamic_defaults_does_not_overwrite_existing_disposal_names():
 
 def test_with_system_state_rejects_overwrite_explicit():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", SystemState.dynamic)
-    with pytest.raises(RuntimeError):
-        cfg.with_system_state(SystemState.automatic)
+    cfg.with_system_state(SystemState.dynamic)
+    cfg.with_system_state(SystemState.automatic)
+    assert cfg.to_aetheric_frame_configuration().system_state == SystemState.automatic
 
 
 def test_iter_only_has_current_keys_after_clear_and_reset():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.clear_properties()
-    cfg.set_property("system_state", SystemState.dynamic)
+    cfg.set_property("disposal", True)
     keys = set(iter(cfg))
-    assert keys == {"system_state"}
+    assert keys == {"disposal"}
 
 
 def test_cleanup_sets_frozen_and_blocks_mutation():
@@ -510,17 +514,16 @@ def test_with_hooks_after_defaults_before_freeze_allowed():
 
 def test_validate_enums_with_extra_properties_present():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", SystemState.automatic)
+    cfg.with_system_state(SystemState.automatic)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", [])
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
-    cfg.set_property("ai_native_enabled", False)
     cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", 1)
     assert cfg.validate_enums() is True
 
 
 def test_iter_on_partially_populated_config():
     cfg = SpellbookConfiguration()
-    cfg.set_property("system_state", SystemState.dynamic)
+    cfg.set_property("disposal", True)
     keys = set(iter(cfg))
-    assert keys == {"system_state"}
+    assert keys == {"disposal"}

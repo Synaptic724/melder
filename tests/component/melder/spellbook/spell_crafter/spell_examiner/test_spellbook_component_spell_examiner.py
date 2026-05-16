@@ -47,7 +47,7 @@ def _make_spellbook() -> Spellbook:
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
-    config.set_property("rift_enabled", True)
+    config.with_rift_enabled(True)
     return spellbook
 
 

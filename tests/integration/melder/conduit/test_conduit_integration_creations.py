@@ -181,7 +181,7 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
         AssertionError: If upgrade drops or fails to preserve creations.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", "dynamic")
+    configuration.with_system_state("dynamic")
     configuration.set_property("disposal", True)
     configuration.set_property("disposal_method_names", ["cleanup"])
     configuration.load_default_dictionary()

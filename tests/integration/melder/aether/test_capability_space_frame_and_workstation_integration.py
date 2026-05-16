@@ -142,7 +142,7 @@ def _build_publishable_configuration(
     else:
         configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+        configuration.with_rift_enabled(True)
     return configuration
 
 

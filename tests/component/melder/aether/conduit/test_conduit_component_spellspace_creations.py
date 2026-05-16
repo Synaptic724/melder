@@ -69,7 +69,7 @@ def _make_spellbook(
     """
     if disposal:
         configuration = SpellbookConfiguration()
-        configuration.set_property("system_state", "automatic")
+        configuration.with_system_state("automatic")
         configuration.set_property("disposal", True)
         configuration.set_property(
             "disposal_method_names",

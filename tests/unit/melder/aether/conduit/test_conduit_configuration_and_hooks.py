@@ -201,7 +201,7 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
         AssertionError: If resolver is not called or logger wrapper missing.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", "automatic")
+    configuration.with_system_state("automatic")
     configuration.with_defaults()
     seen: dict[str, object] = {}
 
@@ -254,7 +254,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
         AssertionError: If flags do not update internal state.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", SystemState.dynamic)
+    configuration.with_system_state(SystemState.dynamic)
     configuration.with_defaults()
     conduit = Conduit(
         spellbook=spellbook_stub,
@@ -371,7 +371,7 @@ def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup
         AssertionError: If hooks are not attached or fired.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", "automatic")
+    configuration.with_system_state("automatic")
     configuration.with_defaults()
     events: list[Conduit] = []
 
@@ -426,7 +426,7 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
         AssertionError: If hooks fail to attach to a lesser conduit.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", "automatic")
+    configuration.with_system_state("automatic")
     configuration.with_defaults()
     events: list[Conduit] = []
 
@@ -476,7 +476,7 @@ def test_initialize_conduit_hooks_copies_hook_lists_from_configuration(
         - Later SpellbookConfiguration list mutations do not mutate Conduit maps.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", "automatic")
+    configuration.with_system_state("automatic")
     configuration.with_defaults()
 
     def conduit_hook(conduit: Conduit) -> None:
@@ -538,7 +538,7 @@ def test_snapshot_split_hook_maps_from_configuration_uses_static_hook_lists(
         - Known hook keys are copied into the proper conduit/meld maps.
     """
     configuration = SpellbookConfiguration()
-    configuration.set_property("system_state", "automatic")
+    configuration.with_system_state("automatic")
     configuration.with_defaults()
 
     def known_conduit_hook(conduit: Conduit) -> None:
@@ -894,7 +894,7 @@ def test_apply_configuration_flags_logs_and_reraises_on_configuration_failure(
     """_apply_configuration_flags should log and re-raise configuration lookup failures."""
     conduit_normal._logger = MagicMock()
     conduit_normal._configuration = MagicMock()
-    conduit_normal._configuration.get_property.side_effect = RuntimeError("config boom")
+    conduit_normal._configuration.to_aetheric_frame_configuration.side_effect = RuntimeError("config boom")
 
     with pytest.raises(RuntimeError, match="config boom"):
         conduit_normal._apply_configuration_flags()

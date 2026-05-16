@@ -496,7 +496,7 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
     """
     spellbook = _make_spellbook()
     config = spellbook.get_configuration()
-    config.set_property("rift_enabled", True)
+    config.with_rift_enabled(True)
     frame_name = spellbook._aetheric_frame
 
     conduit = spellbook.conjure(name="scan_root_nexus")

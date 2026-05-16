@@ -742,7 +742,7 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
     configuration = SpellbookConfiguration(aether_frame="ops")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
 
     conduit = spellbook.conjure(name="root")
@@ -781,7 +781,7 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     configuration = SpellbookConfiguration(aether_frame="ops")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("rift_enabled", True)
+    configuration.with_rift_enabled(True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
 
     conduit = spellbook.conjure(name="root")

@@ -1,8 +1,10 @@
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.spellbook import Spellbook
 
 
@@ -43,6 +45,38 @@ def _make_configuration(aether_frame: str) -> SpellbookConfiguration:
     return SpellbookConfiguration(aether_frame=aether_frame)
 
 
+def _bind_frame_posture(
+        aether: Aether,
+        frame_name: str,
+        *,
+        shared_framewide_spellbook_configuration: bool,
+) -> AethericFrameConfiguration:
+    """
+    Purpose:
+        Bind one narrow frame posture for focused Spellbook configuration tests.
+    Contract:
+        - Uses the automatic/non-AR default posture.
+        - Carries the explicit shared-rich-config policy under test.
+    Args:
+        aether: Owning Aether singleton.
+        frame_name: Target frame name.
+        shared_framewide_spellbook_configuration: Shared rich-config policy flag.
+    Returns:
+        AethericFrameConfiguration: Bound frame posture object.
+    """
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+        shared_framewide_spellbook_configuration=(
+            shared_framewide_spellbook_configuration
+        ),
+    )
+    aether._bind_aetheric_frame_configuration(frame_configuration, frame_name)
+    return frame_configuration
+
+
 def test_component_spellbook_initialize_configuration_adopts_aether_config_and_locks() -> None:
     """
     Purpose:
@@ -58,7 +92,13 @@ def test_component_spellbook_initialize_configuration_adopts_aether_config_and_l
     aether = Spellbook._aether
     frame_name = "frame-config-adopt"
     aether._ensure_frame(frame_name)
-    config = _make_configuration(frame_name)
+    config = _make_configuration(frame_name).with_defaults()
+    config.with_shared_framewide_spellbook_configuration(True)
+    _bind_frame_posture(
+        aether,
+        frame_name,
+        shared_framewide_spellbook_configuration=True,
+    )
     aether._bind_configuration(config, frame_name)
 
     spellbook = Spellbook(aetheric_frame=frame_name)
@@ -84,7 +124,13 @@ def test_component_spellbook_initialize_configuration_reuses_matching_provided_c
     aether = Spellbook._aether
     frame_name = "frame-config-match"
     aether._ensure_frame(frame_name)
-    config = _make_configuration(frame_name)
+    config = _make_configuration(frame_name).with_defaults()
+    config.with_shared_framewide_spellbook_configuration(True)
+    _bind_frame_posture(
+        aether,
+        frame_name,
+        shared_framewide_spellbook_configuration=True,
+    )
     aether._bind_configuration(config, frame_name)
 
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=config)
@@ -109,8 +155,15 @@ def test_component_spellbook_initialize_configuration_rejects_mismatched_aether_
     aether = Spellbook._aether
     frame_name = "frame-config-conflict"
     aether._ensure_frame(frame_name)
-    config_aether = _make_configuration(frame_name)
-    config_other = _make_configuration(frame_name)
+    config_aether = _make_configuration(frame_name).with_defaults()
+    config_aether.with_shared_framewide_spellbook_configuration(True)
+    config_other = _make_configuration(frame_name).with_defaults()
+    config_other.with_shared_framewide_spellbook_configuration(True)
+    _bind_frame_posture(
+        aether,
+        frame_name,
+        shared_framewide_spellbook_configuration=True,
+    )
     aether._bind_configuration(config_aether, frame_name)
 
     with pytest.raises(RuntimeError, match="Aether configuration does not match"):
@@ -156,6 +209,68 @@ def test_component_spellbook_initialize_configuration_creates_default_config_whe
         spellbook.cleanup()
 
 
+def test_component_spellbook_initialize_configuration_ignores_frame_config_when_sharing_disabled() -> None:
+    """
+    Purpose:
+        Validate Spellbook keeps a local rich config when frame posture does not
+        permit shared rich-config reuse.
+    Contract:
+        - A frame-owned rich config is ignored when the canonical frame posture
+          says sharing is disabled.
+        - The created Spellbook keeps a distinct unlocked local config.
+    Returns:
+        None.
+    """
+    aether = Spellbook._aether
+    frame_name = "frame-config-local-only"
+    aether._ensure_frame(frame_name)
+    config = _make_configuration(frame_name).with_defaults()
+    _bind_frame_posture(
+        aether,
+        frame_name,
+        shared_framewide_spellbook_configuration=False,
+    )
+    aether._bind_configuration(config, frame_name)
+
+    spellbook = Spellbook(aetheric_frame=frame_name)
+    try:
+        assert spellbook.get_configuration() is not config
+        assert spellbook.is_configuration_locked() is False
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_cleanup_does_not_clean_frame_owned_shared_configuration() -> None:
+    """
+    Purpose:
+        Validate borrowed Spellbooks do not clean frame-owned shared rich config.
+    Contract:
+        - Shared rich config remains readable from Aether after borrower cleanup.
+    Returns:
+        None.
+    """
+    aether = Spellbook._aether
+    frame_name = "frame-config-shared-cleanup"
+    aether._ensure_frame(frame_name)
+    config = _make_configuration(frame_name).with_defaults()
+    config.with_shared_framewide_spellbook_configuration(True)
+    _bind_frame_posture(
+        aether,
+        frame_name,
+        shared_framewide_spellbook_configuration=True,
+    )
+    aether._bind_configuration(config, frame_name)
+
+    spellbook = Spellbook(aetheric_frame=frame_name)
+    spellbook.cleanup()
+
+    assert aether._get_configuration(frame_name) is config
+    assert (
+        aether._get_aetheric_frame_configuration(frame_name).system_state
+        == SystemState.automatic
+    )
+
+
 def test_component_spellbook_bind_configuration_to_aether_propagates_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -188,6 +303,7 @@ def test_component_spellbook_bind_configuration_to_aether_propagates_errors(
         raise ValueError("bind-failed")
 
     try:
+        spellbook.get_configuration().with_shared_framewide_spellbook_configuration(True)
         monkeypatch.setattr(spellbook._aether, "_bind_configuration", _raise_bind)
         with pytest.raises(ValueError, match="bind-failed"):
             spellbook._bind_configuration_to_aether()
@@ -226,6 +342,11 @@ def test_component_spellbook_get_configuration_from_aether_propagates_errors(
         raise ValueError(f"missing-frame:{aetheric_frame_name}")
 
     try:
+        _bind_frame_posture(
+            spellbook._aether,
+            spellbook._aetheric_frame,
+            shared_framewide_spellbook_configuration=True,
+        )
         monkeypatch.setattr(spellbook._aether, "_get_configuration", _raise_get_configuration)
         with pytest.raises(ValueError, match="missing-frame"):
             spellbook._get_configuration_from_aether()

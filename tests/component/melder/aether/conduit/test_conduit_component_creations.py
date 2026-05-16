@@ -61,7 +61,7 @@ def _make_spellbook(
             list(disposal_methods or ["cleanup"]),
         )
     if dynamic:
-        configuration.set_property("system_state", "dynamic")
+    configuration.with_system_state("dynamic")
     configuration.load_default_dictionary()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return Spellbook(configuration=configuration)

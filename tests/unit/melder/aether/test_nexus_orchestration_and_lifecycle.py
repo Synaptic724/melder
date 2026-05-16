@@ -464,6 +464,18 @@ def test_nexus_validate_target_frame_runtime_requirements_rejects_invalid_postur
         message: str,
 ) -> None:
     nexus = _create_enabled_nexus()
+    if bind_runtime_posture and ai_native_enabled and system_state == SystemState.automatic:
+        with pytest.raises(
+            ValueError,
+            match="ai_native_enabled requires system_state to be dynamic",
+        ):
+            _bind_target_runtime_posture(
+                "ops",
+                rift_enabled=rift_enabled,
+                ai_native_enabled=ai_native_enabled,
+                system_state=system_state,
+            )
+        return
     if bind_runtime_posture:
         _bind_target_runtime_posture(
             "ops",
