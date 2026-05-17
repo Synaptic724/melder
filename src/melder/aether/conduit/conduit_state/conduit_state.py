@@ -24,7 +24,7 @@ class ConduitState(Enum):
     lesser = auto()
     cleaned = auto()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return the stable lowercase state name used in logs and diagnostics.
         """

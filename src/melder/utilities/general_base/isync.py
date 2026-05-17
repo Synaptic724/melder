@@ -1,5 +1,5 @@
 import threading
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar, Dict, Tuple
 
 class ISync:
     """
@@ -26,7 +26,7 @@ class ISync:
 
     # ----------  helpers shared by ALL Sync* types  -----------------
     @staticmethod
-    def _is_sync(obj) -> bool:
+    def _is_sync(obj: object) -> bool:
         """
         Return whether `obj` is any `ISync` subclass instance.
 
@@ -39,7 +39,7 @@ class ISync:
         return isinstance(obj, ISync)
 
     # NOTE: self._coerce(val) is defined in each concrete subclass
-    def _unwrap_other(self, other):
+    def _unwrap_other(self, other: Any) -> Any:
         """
         Convert `other` into the scalar type expected by this sync wrapper.
 
@@ -58,7 +58,12 @@ class ISync:
         except Exception:
             return other                  # let caller raise if truly incompatible
 
-    def _perform_binary_op(self, other, op, r_operation=False):
+    def _perform_binary_op(
+            self,
+            other: Any,
+            op: Callable[[Any, Any], Any],
+            r_operation: bool = False,
+    ) -> Any:
         """
         Execute one binary operation with deterministic lock ordering.
 
@@ -82,7 +87,7 @@ class ISync:
                 return op(other_val, self._value) if r_operation else op(self._value, other_val)
 
     @staticmethod
-    def _acquire_two(a: "ISync", b: "ISync"):
+    def _acquire_two(a: "ISync", b: "ISync") -> Tuple["ISync", "ISync"]:
         """
         Return the two sync objects in deterministic lock order.
 
@@ -95,7 +100,7 @@ class ISync:
     # ------------------------------------------------------------------ #
     #  Pickle support – exclude the RLock and rebuild it on load
     # ------------------------------------------------------------------ #
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """
         Return the instance state for pickling.
 
@@ -105,7 +110,7 @@ class ISync:
         """
         return {"_value": self.get()}        # plain float, fully picklable
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         """
         Reinitialize the sync wrapper after unpickling.
 

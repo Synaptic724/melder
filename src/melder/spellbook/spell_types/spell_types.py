@@ -64,6 +64,6 @@ class SpellType(Enum):
     LAMBDA_METHOD_WITH_SPELLFRAME = auto()
     LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the stable enum member name used throughout the runtime."""
         return self.name

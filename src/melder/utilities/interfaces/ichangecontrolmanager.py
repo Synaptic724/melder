@@ -1,6 +1,13 @@
 from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
 from threading import RLock
+from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import ChangeControlStagedMutation
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlAdmissionResult,
+    ChangeControlTransactionRequest,
+)
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @runtime_checkable
 class IChangeControlManager(ICleanable, Protocol):
@@ -17,7 +24,7 @@ class IChangeControlManager(ICleanable, Protocol):
     and update.
     """
     _lock: RLock
-    _spell_system_states: "SpellSystemStates"
+    _spell_system_states: ISpellSystemStates
 
     # spell_index_id -> Dict[str, Any]
     _pending_changes: 'Dict[str, Dict[str, Any]]'
@@ -75,7 +82,7 @@ class IChangeControlManager(ICleanable, Protocol):
 
     def set_audit_logger(
             self,
-            fn: Optional[Callable[['ChangeControlTransactionRequest'], None]],
+            fn: Optional[Callable[[ChangeControlTransactionRequest], None]],
     ) -> None:
         """
         Public API
@@ -94,7 +101,7 @@ class IChangeControlManager(ICleanable, Protocol):
 
     def set_commit_validator(
             self,
-            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
         Public API
@@ -113,7 +120,7 @@ class IChangeControlManager(ICleanable, Protocol):
 
     def set_structural_validator(
             self,
-            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
         Public API
@@ -137,7 +144,7 @@ class IChangeControlManager(ICleanable, Protocol):
 
     def set_commit_hook(
             self,
-            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
         Public API
@@ -156,7 +163,7 @@ class IChangeControlManager(ICleanable, Protocol):
 
     def set_dirty_marker(
             self,
-            fn: Optional[Callable[['ChangeControlStagedMutation'], None]],
+            fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
         Public API
@@ -199,8 +206,8 @@ class IChangeControlManager(ICleanable, Protocol):
 
     def admit_request(
             self,
-            request: 'ChangeControlTransactionRequest',
-    ) -> 'ChangeControlAdmissionResult':
+            request: ChangeControlTransactionRequest,
+    ) -> ChangeControlAdmissionResult:
         """
         Public API
 
@@ -291,7 +298,7 @@ class IChangeControlManager(ICleanable, Protocol):
     # ----------------------------------------------------------------------
     def register_pending_change(
             self,
-            spell_index: 'ISpellIndex',
+            spell_index: ISpellIndex,
             reason: str,
             metadata: Optional[
                 Union[Dict[str, Any], 'Dict[str, Any]']

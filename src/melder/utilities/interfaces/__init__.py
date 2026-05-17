@@ -51,6 +51,7 @@ from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 from melder.utilities.interfaces.iriftevent import IRiftEvent
 from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
+from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iworkstation import IWorkstation
 from melder.utilities.interfaces.iframelink import IFrameLink
@@ -75,6 +76,7 @@ from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
+from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -139,6 +141,7 @@ __all__ = [
     "IRiftEvent",
     "IRiftEventSystem",
     "INexusConfiguration",
+    "INexusFrameConfiguration",
     "IRiftConfiguration",
     "IWorkstation",
     "IFrameLink",
@@ -163,6 +166,7 @@ __all__ = [
     "IAether",
     "IAetherConfiguration",
     "IAetherConfigurationBuilder",
+    "IAethericFrameConfiguration",
     "IChannelLogger",
     "IConfiguration",
     "ISafeLogger",

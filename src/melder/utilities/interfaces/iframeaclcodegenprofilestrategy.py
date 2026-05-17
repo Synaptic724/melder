@@ -1,4 +1,5 @@
 from typing import Protocol, runtime_checkable
+from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 
 @runtime_checkable
 class IFrameACLCodegenProfileStrategy(Protocol):
@@ -22,7 +23,7 @@ class IFrameACLCodegenProfileStrategy(Protocol):
         """
         ...
 
-    def build(self) -> "IFrameACLCodegenProfile":
+    def build(self) -> IFrameACLCodegenProfile:
         """
         Build and return one configured codegen ACL profile instance.
 

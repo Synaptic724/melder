@@ -1,5 +1,9 @@
-from typing import runtime_checkable, Any, Dict, List, Optional, Protocol, Set
+from typing import runtime_checkable, Optional, Protocol
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
+from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @runtime_checkable
 class IAethericFrame(ICleanable, Protocol):
@@ -28,16 +32,42 @@ class IAethericFrame(ICleanable, Protocol):
     name: str
 
     @property
-    def frame_configuration(self) -> Optional[Any]:
+    def spell_system_states(self) -> ISpellSystemStates:
+        """
+        Return the frame-owned `SpellSystemStates` registry.
+        """
+        ...
+
+    @property
+    def dev_ops_manager(self) -> IDevOpsManager:
+        """
+        Return the frame-owned DevOps hub.
+        """
+        ...
+
+    @property
+    def frame_configuration(self) -> Optional[IAethericFrameConfiguration]:
         """
         Return the canonical frame-owned posture object.
+        """
+        ...
+
+    def __enter__(self) -> "IAethericFrame":
+        """
+        Enter the frame lock context and return the frame.
+        """
+        ...
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """
+        Exit the frame lock context and release the frame lock.
         """
         ...
 
     def freeze_frame_configuration(
             self,
             origin_spellbook_id: Optional[str] = None,
-    ) -> Any:
+    ) -> IAethericFrameConfiguration:
         """
         Freeze the current frame-owned posture object.
         """
@@ -45,9 +75,36 @@ class IAethericFrame(ICleanable, Protocol):
 
     def bind_frame_configuration(
             self,
-            frame_configuration: Any,
-    ) -> Any:
+            frame_configuration: IAethericFrameConfiguration,
+    ) -> IAethericFrameConfiguration:
         """
         Bind one posture object onto this frame and return the canonical owner.
+        """
+        ...
+
+    def refresh_version_registry(self) -> None:
+        """
+        Rebuild the frame-owned version registry from the current spell registry.
+        """
+        ...
+
+    def has_version(self, version_id: str) -> bool:
+        """
+        Return whether the given version id exists anywhere in this frame.
+        """
+        ...
+
+    def get_all_versions(self) -> set[str]:
+        """
+        Return the flat set of all cached version ids in this frame.
+        """
+        ...
+
+    def find_and_return_spell_index(
+            self,
+            version_id: str,
+    ) -> ISpellIndex | None:
+        """
+        Return the `SpellIndex` that owns the given version id, if any.
         """
         ...

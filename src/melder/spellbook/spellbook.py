@@ -26,9 +26,9 @@ from melder.utilities.interfaces import (
     ISpellValidationSystem,
     ISpellbook,
     IUnitOfWork,
+    ISafeLogger,
 )
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.existence.existence import Existence
@@ -195,7 +195,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._configuration: IConfiguration = configuration
         self._aetheric_frame_configuration: Optional[Any] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
-        self._logger: Optional[Any] = InitHelpers.resolve_safe_logger(None)
+        self._logger: Optional[ISafeLogger] = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()
         self._initialize_configuration()
 
@@ -443,17 +443,10 @@ class Spellbook(Cleanable, ISpellbook):
         # Destroy logger LAST
         if self._logger is not None:
             try:
-                pass
-            except Exception:
-                pass  # if logger is already busted, skip the debug
-            try:
                 if hasattr(self._logger, "cleanup"):
                     self._logger.cleanup()
             except Exception as e:
-                try:
-                    self._logger.error(f"Error during logger cleanup: {e}", "_cleanup_core", exc_info=True)
-                except Exception:
-                    pass
+                self._logger.error(f"Error during logger cleanup: {e}", "_cleanup_core", exc_info=True)
             self._logger = None
 
 
@@ -2390,10 +2383,11 @@ class Spellbook(Cleanable, ISpellbook):
         """
         with self._lock:
             if self._binding_transaction_active:
-                self._logger.error(
-                    f"{owner_label} binding transaction already active",
-                    "begin_binding_transaction",
-                )
+                if self._logger is not None:
+                    self._logger.error(
+                        f"{owner_label} binding transaction already active",
+                        "begin_binding_transaction",
+                    )
                 raise RuntimeError(
                     f"[{owner_label.upper()}] Binding transaction already active. "
                     "End the current transaction before starting another."
@@ -3434,7 +3428,7 @@ class Spellbook(Cleanable, ISpellbook):
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: str = None, conduit_logger: Any | None = None) -> Conduit:
+    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: str| None  = None, conduit_logger: Any | None = None) -> Conduit:
         """
         Public API
 
@@ -3496,7 +3490,7 @@ class Spellbook(Cleanable, ISpellbook):
             - act  : (conduit,)
             - post : (conduit,)
         """
-
+        self.check_cleaned()
         with self._lock:
             if self._conjured:
                 conduit_id = None
@@ -3504,13 +3498,14 @@ class Spellbook(Cleanable, ISpellbook):
                 if self._conduit is not None:
                     conduit_id = self._conduit._id
                     conduit_name = self._conduit._name
-                self._logger.error(
-                    "Conjure denied: Spellbook already has a conduit "
-                    f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
-                    f"conduit_name={conduit_name}).",
-                    "conjure",
-                    exc_info=True,
-                )
+                if self._logger is not None:
+                    self._logger.error(
+                        "Conjure denied: Spellbook already has a conduit "
+                        f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
+                        f"conduit_name={conduit_name}).",
+                        "conjure",
+                        exc_info=True,
+                    )
                 raise RuntimeError(
                     "This Spellbook has already conjured a Conduit. "
                     "Only one is allowed per Spellbook. "
@@ -3533,11 +3528,12 @@ class Spellbook(Cleanable, ISpellbook):
                 try:
                     spellbook_creation_system.cleanup()
                 except Exception as e:
-                    self._logger.error(
-                        f"SpellbookCreationSystem cleanup failed: {e}",
-                        "conjure",
-                        exc_info=True,
-                    )
+                    if self._logger is not None:
+                        self._logger.error(
+                            f"Failed to cleanup SpellbookCreationSystem: {e}",
+                            "conjure",
+                            exc_info=True,
+                        )
 
     def _set_policy_state(self, policy: Policies) -> None:
         """

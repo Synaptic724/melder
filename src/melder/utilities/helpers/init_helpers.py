@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, Iterable, Optional, Union
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.interfaces import IChannelLogger
 from melder.aether.aether_utility_system import AetherUtilitySystem
@@ -46,10 +47,10 @@ class InitHelpers:
     def resolve_channel_logger(
             registrant: object,
             *,
-            groups=None,
-            system_groups=None,
-            props=None,
-            channels=None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            props: Optional[Dict[str, Any]] = None,
+            channels: Optional[Union[str, Iterable[str]]] = None,
     ) -> SafeLogger:
         """
         Resolve a channel-style logger through the hosted utility system.

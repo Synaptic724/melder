@@ -42,7 +42,11 @@ class Crystallizer(Cleanable):
         "_activated",
     ]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(
+            cls,
+            *args: object,
+            **kwargs: object,
+    ) -> "Crystallizer":
         """
         Ensure `Crystallizer` behaves as a singleton.
 

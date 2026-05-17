@@ -1,4 +1,5 @@
 from typing import runtime_checkable, Protocol
+from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.utilities.interfaces.icleanable import ICleanable
 
 class IDetail(ICleanable, Protocol):

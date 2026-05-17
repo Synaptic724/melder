@@ -1,5 +1,8 @@
 from typing import Any, Dict, Iterable, List, Optional, Protocol, runtime_checkable
 import threading
+from melder.aether.dev_ops.incident_manager.incident import Incident
+from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -12,7 +15,7 @@ class IIncidentManager(ICleanable, Protocol):
     - Does not enforce any policies; it is purely descriptive.
     """
     _lock: threading.RLock
-    _incidents_by_id: 'Dict[str, Incident]'
+    _incidents_by_id: Dict[str, Incident]
     _next_numeric_id: int
     # ------------------------------------------------------------------
     # Public API
@@ -21,19 +24,19 @@ class IIncidentManager(ICleanable, Protocol):
             self,
             *,
             kind: str,
-            severity: 'IncidentSeverity',
+            severity: IncidentSeverity,
             summary: str,
             spell_index_id: Optional[str] = None,
             root_ids: Optional[Iterable[str]] = None,
             details: Optional[Dict[str, Any]] = None,
-    ) -> 'Incident':
+    ) -> Incident:
         """
         Create and register a new Incident. Returns the instance so callers
         can attach it to logs/tests or stash the id.
         """
         ...
 
-    def get_incident(self, incident_id: str) -> Optional['Incident']:
+    def get_incident(self, incident_id: str) -> Optional[Incident]:
         """
         Look up a single incident by id. Returns None if not found.
         """
@@ -42,10 +45,10 @@ class IIncidentManager(ICleanable, Protocol):
     def list_incidents(
             self,
             *,
-            status: Optional['IncidentStatus'] = None,
+            status: Optional[IncidentStatus] = None,
             spell_index_id: Optional[str] = None,
             kind: Optional[str] = None,
-    ) -> List['Incident']:
+    ) -> List[Incident]:
         """
         Basic filtering; returns a snapshot list of matching incidents.
 

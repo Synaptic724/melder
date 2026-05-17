@@ -79,7 +79,7 @@ class Existence(Enum):
     - Spell spaces are versioned and resettable.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return the enum member name.
 

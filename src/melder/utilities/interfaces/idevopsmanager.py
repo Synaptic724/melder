@@ -1,6 +1,8 @@
 from typing import Optional, Protocol, runtime_checkable
 import threading
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @runtime_checkable
@@ -18,22 +20,22 @@ class IDevOpsManager(ICleanable, Protocol):
     """
     _lock: threading.RLock
     _spell_system_states: ISpellSystemStates
-    _incident_manager: 'IncidentManager'
-    _change_control_manager: 'ChangeControlManager'
+    _incident_manager: IIncidentManager
+    _change_control_manager: IChangeControlManager
     _risk_manager: object
     _creation_gate_controller: object
     # ------------------------------------------------------------------
     # Public API Properties
     # ------------------------------------------------------------------
     @property
-    def incident_manager(self) -> Optional['IncidentManager']:
+    def incident_manager(self) -> Optional[IIncidentManager]:
         """
         Read-only exposure of the IncidentManager (descriptive: what went wrong, where).
         """
         ...
 
     @property
-    def change_control_manager(self) -> Optional['ChangeControlManager']:
+    def change_control_manager(self) -> Optional[IChangeControlManager]:
         """
         Read-only exposure of the ChangeControlManager (process-level view of pending changes / releases).
         """

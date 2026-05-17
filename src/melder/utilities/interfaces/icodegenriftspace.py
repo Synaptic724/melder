@@ -1,4 +1,5 @@
 from typing import Protocol, runtime_checkable
+from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 
 @runtime_checkable

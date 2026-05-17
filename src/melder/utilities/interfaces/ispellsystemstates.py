@@ -5,7 +5,6 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispell import ISpell
@@ -41,7 +40,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         * `compute_impact_closure(...)` to fan out impacted spell indexes
     """
     _lock: threading.RLock
-    _frame: Optional[IAethericFrame]
+    _frame: Optional[object]
     _states_by_index_id: Optional[Dict[str, SpellSystemState]]
     _states_by_spell_id: Optional[Dict[str, SpellSystemState]]
     _dirty_indexes: Optional['Set[str]']

@@ -6,11 +6,11 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IConfiguration
+from melder.utilities.interfaces import IConfiguration, IAethericFrameConfiguration
 from melder.utilities.synchronization.safeguard import SafeGuard
 
 
-class AethericFrameConfiguration(Cleanable):
+class AethericFrameConfiguration(Cleanable, IAethericFrameConfiguration):
     """
     Internal
 

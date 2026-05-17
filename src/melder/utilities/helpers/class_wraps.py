@@ -2,7 +2,9 @@ from functools import update_wrapper
 from typing import Type, Callable, Optional, Any
 
 
-def class_wraps(decorator_name: Optional[str] = None):
+def class_wraps(
+        decorator_name: Optional[str] = None,
+) -> Callable[[Callable[[Type], Type]], Callable[[Type], Type]]:
     """
     Return a :func:`functools.wraps`-style helper for class decorators.
 

@@ -1,5 +1,7 @@
 from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
 
 @runtime_checkable
 class INexusFrameManager(ICleanable, Protocol):
@@ -14,7 +16,7 @@ class INexusFrameManager(ICleanable, Protocol):
     Contract:
         - Realizes only Nexus-managed frames that satisfy the fixed
           dynamic/AI-native/Rift-enabled posture contract.
-        - Consumes authored `NexusFrameConfiguration` objects as immutable
+        - Consumes authored `INexusFrameConfiguration` objects as immutable
           inputs to frame realization.
         - Returns rooted `IConduit` objects for the realized Nexus-managed
           workspace.
@@ -22,7 +24,7 @@ class INexusFrameManager(ICleanable, Protocol):
 
     def create(
             self,
-            configuration: "NexusFrameConfiguration",
+            configuration: INexusFrameConfiguration,
     ) -> "IConduit":
         """
         Realize one rooted Nexus-managed conduit from authored configuration.

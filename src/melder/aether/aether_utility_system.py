@@ -47,7 +47,11 @@ class AetherUtilitySystem(Cleanable):
         "_default_logger",
     ]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(
+            cls,
+            *args: object,
+            **kwargs: object,
+    ) -> "AetherUtilitySystem":
         """
         Ensure the utility system behaves as a singleton.
 
