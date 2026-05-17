@@ -67,9 +67,9 @@ class AetherConfiguration(Cleanable, IAetherConfiguration):
             self._frozen = True
             self._activated = False
             self._properties.clear()
-            self._properties = None
-            self._id = None
-        self._lock = None
+
+            del self._properties
+            del self._id
 
     @property
     def id(self) -> str:

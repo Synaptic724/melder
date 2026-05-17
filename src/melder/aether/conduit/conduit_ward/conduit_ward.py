@@ -1905,7 +1905,8 @@ class ConduitWard(Cleanable, IConduitWard):
                 target_contracts = list(self._contracts.values())
                 target_peers = [c._get_peer(self)._conduit for c in target_contracts if c is not None]
 
-        report = {"success": [], "failed": {}}
+        success_contract_ids: list[str] = []
+        failed_contract_ids: dict[str, str] = {}
         contracts_to_sever: list[IConduit] = []
 
         for idx, contract in enumerate(target_contracts):
@@ -1959,9 +1960,9 @@ class ConduitWard(Cleanable, IConduitWard):
                 if self._is_contract_empty(contract):
                     contracts_to_sever.append(peer_conduit)
                 if removed_any:
-                    report["success"].append(contract._id)
+                    success_contract_ids.append(contract._id)
             except Exception as e:
-                report["failed"][getattr(contract, "_id", "unknown")] = str(e)
+                failed_contract_ids[getattr(contract, "_id", "unknown")] = str(e)
                 self._logger.error(
                     f"_remove_root_from_contracts: failed for contract {getattr(contract, '_id', 'unknown')}: {e}",
                     method_name="_remove_root_from_contracts",
@@ -1990,7 +1991,10 @@ class ConduitWard(Cleanable, IConduitWard):
                     system_groups=self._log_sysgroups,
                 )
 
-        return report
+        return {
+            "success": success_contract_ids,
+            "failed": failed_contract_ids,
+        }
 
     def _link_spell_dependencies(
             self,
@@ -2248,7 +2252,8 @@ class ConduitWard(Cleanable, IConduitWard):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        report = {"success": [], "failed": {}}
+        success_spell_ids: list[str] = []
+        failed_spell_ids: dict[str, str] = {}
         for sid in (spell_ids or []):
             try:
                 self._add_spell_to_contract(
@@ -2261,9 +2266,9 @@ class ConduitWard(Cleanable, IConduitWard):
                     root_spell_id=sid,
                     link_dependencies=link_dependencies,
                 )
-                report["success"].append(sid)
+                success_spell_ids.append(sid)
             except Exception as e:
-                report["failed"][sid] = str(e)
+                failed_spell_ids[sid] = str(e)
                 self._logger.error(
                     f"add_spells_to_contract: {sid} failed: {e}",
                     method_name="_add_spells_to_contract", exc_info=True,
@@ -2271,12 +2276,15 @@ class ConduitWard(Cleanable, IConduitWard):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
         self._logger.info(
-            f"add_spells_to_contract done success={len(report['success'])} failed={len(report['failed'])}",
+            f"add_spells_to_contract done success={len(success_spell_ids)} failed={len(failed_spell_ids)}",
             method_name="_add_spells_to_contract",
             owner_id=self._id, owner_display=self._display_name,
             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
         )
-        return report
+        return {
+            "success": success_spell_ids,
+            "failed": failed_spell_ids,
+        }
 
     def _remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
                                     conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
@@ -2435,7 +2443,8 @@ class ConduitWard(Cleanable, IConduitWard):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        report = {"success": [], "failed": {}}
+        success_spell_ids: list[str] = []
+        failed_spell_ids: dict[str, str] = {}
         for sid in (spell_ids or []):
             try:
                 self._remove_spell_from_contract(
@@ -2445,9 +2454,9 @@ class ConduitWard(Cleanable, IConduitWard):
                     root_spell_id=root_spell_id,
                     aetheric_frame=aetheric_frame,
                 )
-                report["success"].append(sid)
+                success_spell_ids.append(sid)
             except Exception as e:
-                report["failed"][sid] = str(e)
+                failed_spell_ids[sid] = str(e)
                 self._logger.error(
                     f"remove_spells_from_contract: {sid} failed: {e}",
                     method_name="_remove_spells_from_contract", exc_info=True,
@@ -2455,12 +2464,15 @@ class ConduitWard(Cleanable, IConduitWard):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
         self._logger.info(
-            f"remove_spells_from_contract done success={len(report['success'])} failed={len(report['failed'])}",
+            f"remove_spells_from_contract done success={len(success_spell_ids)} failed={len(failed_spell_ids)}",
             method_name="_remove_spells_from_contract",
             owner_id=self._id, owner_display=self._display_name,
             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
         )
-        return report
+        return {
+            "success": success_spell_ids,
+            "failed": failed_spell_ids,
+        }
 
     def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: str = None, aetheric_frame = "default") -> bool | None:
         """

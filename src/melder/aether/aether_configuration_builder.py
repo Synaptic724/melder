@@ -35,7 +35,7 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._configuration: Optional[AetherConfiguration] = AetherConfiguration()
+        self._configuration: AetherConfiguration = AetherConfiguration()
 
     def cleanup(self) -> None:
         """
@@ -50,11 +50,9 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             if self._cleaned:
                 return
             self._cleaned = True
-            if self._configuration is not None:
-                self._configuration.cleanup()
-            self._configuration = None
-            self._id = None
-        self._lock = None
+            self._configuration.cleanup()
+            del self._configuration
+            del self._id
 
     def with_defaults(self) -> "AetherConfigurationBuilder":
         """
@@ -154,8 +152,5 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
                     "AetherConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
-            self._cleaned = True
-            self._configuration = None
-            self._id = None
-        self._lock = None
+            self.cleanup()
         return configuration

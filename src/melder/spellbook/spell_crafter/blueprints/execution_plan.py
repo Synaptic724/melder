@@ -1286,8 +1286,8 @@ class ExecutionPlanBuilder:
                     dependency_keys, dependency_keys_by_param = (
                         self._extract_param_keys_no_overrides(inject_spec)
                     )
-                    override_keys = []
-                    contract_keys = []
+                    override_keys: list[str] = []
+                    contract_keys: list[str] = []
                     expects_overrides = False
                     override_match_prefix = None
                     override_match_prefix_len = 0
