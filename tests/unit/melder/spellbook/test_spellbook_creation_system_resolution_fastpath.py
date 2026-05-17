@@ -539,10 +539,10 @@ def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
     system.cleanup()
 
     assert system.cleaned is True
-    assert system._spellbook is None
-    assert system._policy is None
-    assert system._automatic is None
-    assert system._lock is None
+    assert not hasattr(system, "_spellbook")
+    assert not hasattr(system, "_policy")
+    assert not hasattr(system, "_automatic")
+    assert system._lock is not None
 
 
 def test_creation_system_cleanup_rechecks_cleaned_state_under_lock() -> None:

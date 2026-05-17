@@ -760,11 +760,11 @@ class SpellRequirementsFinder(Cleanable):
 
         if container in (typing.Optional, Optional):
             if len(args) == 1:
-                return Union.__getitem__((args[0], type(None)))
+                return Union[args[0], type(None)]
             return sentinel
 
         if container in (typing.Union, Union):
-            return Union.__getitem__(args)
+            return Union[args]
 
         if hasattr(container, "__class_getitem__"):
             try:
@@ -905,7 +905,7 @@ class SpellRequirementsFinder(Cleanable):
             return tuple.__class_getitem__(args)
 
         if origin is Union or origin is types.UnionType:
-            return Union.__getitem__(args)
+            return Union[args]
 
         return annotation
 

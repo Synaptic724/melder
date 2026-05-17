@@ -458,7 +458,7 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     conduit_lesser.cleanup()
     conduit_lesser.cleanup()
     assert conduit_lesser.cleaned is True
-    assert conduit_lesser._nexus is None
+    assert not hasattr(conduit_lesser, "_nexus")
 
 
 def test_cleanup_raises_for_unknown_conduit_state(conduit_normal: Conduit) -> None:
@@ -497,16 +497,17 @@ def test_cleanup_lesser_conduit_tolerates_child_cleanup_errors(
     conduit_lesser._meld.cleanup.side_effect = RuntimeError("meld boom")
     conduit_lesser._conduit_ward.cleanup.side_effect = RuntimeError("ward boom")
     conduit_lesser._creations.cleanup.side_effect = RuntimeError("creations boom")
+    logger = conduit_lesser._logger
 
-    conduit_lesser._cleanup_lesser_conduit()
+    conduit_lesser.cleanup()
 
-    assert conduit_lesser._conduit_ward is None
-    assert conduit_lesser._meld is None
-    assert conduit_lesser._creation_gate is None
-    assert conduit_lesser._creation_gate_controller is None
-    assert conduit_lesser._creations is None
-    assert conduit_lesser._spellbook is None
-    assert conduit_lesser._logger.error.call_count >= 4
+    assert not hasattr(conduit_lesser, "_conduit_ward")
+    assert not hasattr(conduit_lesser, "_meld")
+    assert not hasattr(conduit_lesser, "_creation_gate")
+    assert not hasattr(conduit_lesser, "_creation_gate_controller")
+    assert not hasattr(conduit_lesser, "_creations")
+    assert not hasattr(conduit_lesser, "_spellbook")
+    assert logger.error.call_count >= 4
 
 
 def test_cleanup_normal_conduit_tolerates_child_cleanup_errors(
@@ -612,10 +613,12 @@ def test_cleanup_swallows_logger_cleanup_failures(
     conduit_lesser._creations = MagicMock()
     conduit_lesser._logger = MagicMock()
     conduit_lesser._logger.cleanup.side_effect = RuntimeError("logger boom")
+    logger = conduit_lesser._logger
 
     conduit_lesser.cleanup()
 
-    assert conduit_lesser._logger is None
+    assert logger.cleanup.called is True
+    assert not hasattr(conduit_lesser, "_logger")
 
 
 def test_publish_conduit_record_to_nexus_skips_when_disabled(

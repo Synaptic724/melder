@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator
 import threading
 import time
 # Melder Imports
@@ -375,21 +375,33 @@ class Spellbook(Cleanable, ISpellbook):
         """
         for spell_index, spell in self._spells.items():
             try:
+                spell_index_label = spell_index.id
+            except Exception:
+                spell_index_label = f"<spell-index:{id(spell_index)}>"
+            try:
                 self._spell_system_states.unregister_index(spell_index)
             except Exception as e:
                 self._logger.error(
-                    f"Error unregistering spell index '{spell_index}': {e}",
+                    f"Error unregistering spell index '{spell_index_label}': {e}",
                     "_cleanup_spells",
                     exc_info=True,
                 )
             try:
                 spell.cleanup()
             except Exception as e:
-                self._logger.error(f"Error cleaning spell '{spell_index}': {e}", "_cleanup_spells", exc_info=True)
+                self._logger.error(
+                    f"Error cleaning spell '{spell_index_label}': {e}",
+                    "_cleanup_spells",
+                    exc_info=True,
+                )
             try:
                 spell_index.cleanup()
             except Exception as e:
-                self._logger.error(f"Error cleaning spell index '{spell_index}': {e}", "_cleanup_spells", exc_info=True)
+                self._logger.error(
+                    f"Error cleaning spell index '{spell_index_label}': {e}",
+                    "_cleanup_spells",
+                    exc_info=True,
+                )
 
 
     # -------------------------
@@ -2213,7 +2225,7 @@ class Spellbook(Cleanable, ISpellbook):
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
             metadata: Optional[Dict[str, Any]] = None,
-    ) -> "Spellbook":
+    ) -> Generator["Spellbook", None, None]:
         """
         Public API
 
@@ -2242,8 +2254,8 @@ class Spellbook(Cleanable, ISpellbook):
                 Optional contract keys affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
-        Returns:
-            Spellbook: The current Spellbook instance.
+        Yields:
+            Spellbook: The current Spellbook instance for the duration of the transaction context.
         Raises:
             RuntimeError: If a change transaction is already active.
             RuntimeError: If binding transaction is already active for bind requests.
@@ -2316,7 +2328,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._end_binding_transaction(owner_label="Spellbook")
 
     @contextmanager
-    def binding_transaction(self) -> "Spellbook":
+    def binding_transaction(self) -> Generator["Spellbook", None, None]:
         """
         Public API
 
@@ -2334,8 +2346,8 @@ class Spellbook(Cleanable, ISpellbook):
             - If the Spellbook has conjured a Conduit, exit gates list[Frame]
               consumers and runs structural phases for new spells.
 
-        Returns:
-            Spellbook: The current Spellbook instance.
+        Yields:
+            Spellbook: The current Spellbook instance for the duration of the binding context.
         Raises:
             RuntimeError: If a binding transaction is already active.
         """

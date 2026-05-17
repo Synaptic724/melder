@@ -638,7 +638,6 @@ class Spell(Cleanable, ISpell):
             del self._owner_conduit_id
             del self._owner_conduit_name
             del self.owned_spell
-            del self._owner_creations
             del self._creation_context
             del self._creation_context_factory
             del self._creation_context_switch

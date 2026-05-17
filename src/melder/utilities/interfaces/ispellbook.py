@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, runtime_checkable
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.spellbook.existence.existence import Existence
@@ -337,7 +337,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def binding_transaction(self) -> "ISpellbook":
+    def binding_transaction(self) -> ContextManager["ISpellbook"]:
         """
         Public API
 
@@ -348,7 +348,8 @@ class ISpellbook(ICleanable, Protocol):
             - Ends the transaction on exit, even if an exception is raised.
             - Nested usage raises on begin (transaction already active).
         Returns:
-            ISpellbook: The current Spellbook instance.
+            ContextManager[ISpellbook]:
+                Context manager yielding the current Spellbook instance.
         Raises:
             RuntimeError: If a binding transaction is already active.
         """

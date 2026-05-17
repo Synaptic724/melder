@@ -266,7 +266,7 @@ def test_nested_context_manager():
 def test_cleanup_idempotent_and_nulls():
     idx = SpellIndex("v1")
     idx.cleanup()
-    assert idx._lock is None
+    assert idx._lock is not None
     idx.cleanup()  # idempotent
 
 
@@ -497,10 +497,10 @@ def test_cleanup_clears_attachment_references() -> None:
 
     idx.cleanup()
 
-    assert idx._owner_spellbook is None
-    assert idx._owner_spell is None
-    assert idx._owner_conduit_id is None
-    assert idx._contracted_spellbooks is None
+    assert not hasattr(idx, "_owner_spellbook")
+    assert not hasattr(idx, "_owner_spell")
+    assert not hasattr(idx, "_owner_conduit_id")
+    assert not hasattr(idx, "_contracted_spellbooks")
 
 
 def test_update_same_id_is_noop() -> None:

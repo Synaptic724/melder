@@ -287,5 +287,5 @@ def test_component_spell_ai_profile_cleanup_cascades_profiles() -> None:
     assert binding_profile.cleaned is True
     assert resolution_profile.cleaned is True
     assert class_profile.cleaned is True
-    assert profile.metadata is None
+    assert not hasattr(profile, "metadata")
 

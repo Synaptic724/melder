@@ -344,7 +344,7 @@ def test_cleanup_swallows_detail_child_errors() -> None:
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert profile.metadata is None
+    assert not hasattr(profile, "metadata")
     profile.cleanup()
 
 

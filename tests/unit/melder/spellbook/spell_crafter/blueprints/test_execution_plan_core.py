@@ -237,10 +237,10 @@ def test_execution_plan_fast_plan_roundtrip_and_cleanup() -> None:
     assert fast_transient_plan[2] == []
     assert fast_transient_plan[3] == []
     assert fast_transient_plan[4] == []
-    assert plan._root_spell_id is None
-    assert plan._steps is None
-    assert plan._fast_dep_indices is None
-    assert plan._fast_transient_plan is None
+    assert not hasattr(plan, "_root_spell_id")
+    assert not hasattr(plan, "_steps")
+    assert not hasattr(plan, "_fast_dep_indices")
+    assert not hasattr(plan, "_fast_transient_plan")
 
     plan.cleanup()
 

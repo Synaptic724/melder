@@ -1868,8 +1868,8 @@ class ConduitWard(Cleanable, IConduitWard):
             self,
             *,
             root_spell_id: str,
-            conduit: IConduit = None,
-            conduit_id: str = None,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> dict[str, list[str] | dict[str, str]]:
         """

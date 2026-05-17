@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, ContextManager, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 import threading
 from types import ModuleType
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -766,7 +766,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def binding_transaction(self) -> "IConduit":
+    def binding_transaction(self) -> ContextManager["IConduit"]:
         """
         Public API
 
@@ -777,7 +777,8 @@ class IConduit(ICleanable, Protocol):
             - Ends the transaction on exit, even if an exception is raised.
             - Only normal conduits may enter this context.
         Returns:
-            IConduit: The current Conduit instance.
+            ContextManager[IConduit]:
+                Context manager yielding the current Conduit instance.
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If a binding transaction is already active.

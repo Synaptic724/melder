@@ -3,7 +3,7 @@ import time
 from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType
-from typing import Optional, Type, Any, Tuple, Callable, Iterable, Dict, Union
+from typing import Optional, Type, Any, Tuple, Callable, Iterable, Dict, Union, Generator
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -604,7 +604,7 @@ class Conduit(Cleanable, IConduit):
         self._spellspace_registry.discard(space)
 
     @contextmanager
-    def enter_spellspace(self) -> "SpellSpace":
+    def enter_spellspace(self) -> Generator["SpellSpace", None, None]:
         """
         Context-managed SpellSpace. Pushes onto the stack, yields it, and cleans it on exit.
 
@@ -617,7 +617,7 @@ class Conduit(Cleanable, IConduit):
             - SpellSpace is cleaned on exit, even on exceptions.
             - Stack integrity is validated to detect misuse.
 
-        Returns:
+        Yields:
             SpellSpace: The newly created, active spellspace for the duration of the context.
 
         Raises:
@@ -2032,7 +2032,7 @@ class Conduit(Cleanable, IConduit):
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
             metadata: Optional[Dict[str, Any]] = None,
-    ) -> "Conduit":
+    ) -> Generator["Conduit", None, None]:
         """
         Public API
 
@@ -2065,8 +2065,8 @@ class Conduit(Cleanable, IConduit):
                 Optional contract keys affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
-        Returns:
-            Conduit: The current Conduit instance.
+        Yields:
+            Conduit: The current Conduit instance for the duration of the transaction context.
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If change-control admission is denied.
@@ -2134,7 +2134,7 @@ class Conduit(Cleanable, IConduit):
         self._spellbook.end_binding_transaction()
 
     @contextmanager
-    def binding_transaction(self) -> "Conduit":
+    def binding_transaction(self) -> Generator["Conduit", None, None]:
         """
         Public API
 
@@ -2150,8 +2150,8 @@ class Conduit(Cleanable, IConduit):
             - Ends the transaction on exit, even if an exception is raised.
             - Only normal conduits may enter this context.
 
-        Returns:
-            Conduit: The current Conduit instance.
+        Yields:
+            Conduit: The current Conduit instance for the duration of the binding context.
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If a binding transaction is already active.

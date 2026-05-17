@@ -229,17 +229,17 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     assert dependency_graph.cleaned is True
     assert resolution_profile.cleaned is True
     assert binding_profile.cleaned is True
-    assert spell.profile is None
+    assert not hasattr(spell, "profile")
     assert cleanup_calls == ["spell_index"]
 
     assert spell._cleaned is True
-    assert spell._lock is None
-    assert spell.spell is None
-    assert spell.spell_index is None
-    assert spell._key is None
-    assert spell._pre_hooks is None
-    assert spell.metadata is None
-    assert spell._spell_system_states is None
+    assert spell._lock is not None
+    assert not hasattr(spell, "spell")
+    assert not hasattr(spell, "spell_index")
+    assert not hasattr(spell, "_key")
+    assert not hasattr(spell, "_pre_hooks")
+    assert not hasattr(spell, "metadata")
+    assert not hasattr(spell, "_spell_system_states")
 import sys
 import types
 
@@ -927,17 +927,17 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     assert dependency_graph.cleaned is True
     assert resolution_profile.cleaned is True
     assert binding_profile.cleaned is True
-    assert spell.profile is None
+    assert not hasattr(spell, "profile")
     assert cleanup_calls == ["spell_index"]
 
     assert spell._cleaned is True
-    assert spell._lock is None
-    assert spell.spell is None
-    assert spell.spell_index is None
-    assert spell._key is None
-    assert spell._pre_hooks is None
-    assert spell.metadata is None
-    assert spell._spell_system_states is None
+    assert spell._lock is not None
+    assert not hasattr(spell, "spell")
+    assert not hasattr(spell, "spell_index")
+    assert not hasattr(spell, "_key")
+    assert not hasattr(spell, "_pre_hooks")
+    assert not hasattr(spell, "metadata")
+    assert not hasattr(spell, "_spell_system_states")
 
 
 def test_cleanup_idempotent():
@@ -945,7 +945,7 @@ def test_cleanup_idempotent():
     spell.cleanup()
     spell.cleanup()  # second call should no-op
     assert spell._cleaned is True
-    assert spell._lock is None
+    assert spell._lock is not None
 
 
 def test_context_manager_releases_lock():
@@ -1066,7 +1066,8 @@ def test_has_existing_object_after_cleanup_resets():
     existing = object()
     spell = _make_spell(spell_type=SpellType.EXISTING_CREATION, existing_object=existing)
     spell.cleanup()
-    assert spell.has_existing_object is False
+    with pytest.raises(AttributeError):
+        _ = spell.has_existing_object
 
 
 def test_system_state_delegation_returns_state_from_spell_system_states():
@@ -1141,7 +1142,7 @@ def test_cleanup_swallows_child_cleanup_errors():
     spell.profile = _CleanableProfile()
     spell.cleanup()
     assert spell._cleaned is True
-    assert spell.profile is None
+    assert not hasattr(spell, "profile")
 
 
 def test_cleanup_rechecks_cleaned_state_under_lock() -> None:
@@ -1209,8 +1210,8 @@ def test_cleanup_swallows_profile_spellindex_switch_and_tags_clear_failures() ->
 
     assert cleanup_calls == ["spell_index"]
     assert spell._cleaned is True
-    assert spell.profile is None
-    assert spell._creation_context_switch is None
+    assert not hasattr(spell, "profile")
+    assert not hasattr(spell, "_creation_context_switch")
 
 
 def test_owned_conduit_marks_owned_spell_true():
@@ -1235,12 +1236,12 @@ def test_cleanup_clears_hooks_and_metadata_collections():
     spell.metadata = {"k": "v"}
     spell.dependencies = ["dep"]
     spell.cleanup()
-    assert spell._pre_hooks is None
-    assert spell._activation_hooks is None
-    assert spell._post_hooks is None
-    assert spell.tags is None
-    assert spell.metadata is None
-    assert spell.dependencies is None
+    assert not hasattr(spell, "_pre_hooks")
+    assert not hasattr(spell, "_activation_hooks")
+    assert not hasattr(spell, "_post_hooks")
+    assert not hasattr(spell, "tags")
+    assert not hasattr(spell, "metadata")
+    assert not hasattr(spell, "dependencies")
 
 
 def test_system_state_after_cleanup_raises():
