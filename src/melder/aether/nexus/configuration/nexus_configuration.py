@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.nexus_frame_mode import (
@@ -311,6 +311,58 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         )
         projection_refresh_gate_poll_interval_seconds = self.get_property(
             "projection_refresh_gate_poll_interval_seconds"
+        )
+
+        if not isinstance(max_active_rift_count, int):
+            raise TypeError("max_active_rift_count must remain an int.")
+        if not isinstance(nexus_frame_mode, NexusFrameMode):
+            raise TypeError("nexus_frame_mode must remain a NexusFrameMode.")
+        if not isinstance(default_nexus_frame_name, str):
+            raise TypeError("default_nexus_frame_name must remain a str.")
+        if not isinstance(allowed_target_frame_names, tuple) or not all(
+                isinstance(frame_name, str)
+                for frame_name in allowed_target_frame_names
+        ):
+            raise TypeError(
+                "allowed_target_frame_names must remain a tuple[str, ...]."
+            )
+        if not isinstance(denied_target_frame_names, tuple) or not all(
+                isinstance(frame_name, str)
+                for frame_name in denied_target_frame_names
+        ):
+            raise TypeError(
+                "denied_target_frame_names must remain a tuple[str, ...]."
+            )
+        if not isinstance(max_nexus_frame_count, int):
+            raise TypeError("max_nexus_frame_count must remain an int.")
+        if not isinstance(allow_multiple_target_frames, bool):
+            raise TypeError(
+                "allow_multiple_target_frames must remain a bool."
+            )
+        if not isinstance(max_target_frame_count, int):
+            raise TypeError("max_target_frame_count must remain an int.")
+        if not isinstance(
+                projection_refresh_gate_timeout_seconds,
+                (int, float),
+        ):
+            raise TypeError(
+                "projection_refresh_gate_timeout_seconds must remain numeric."
+            )
+        if not isinstance(
+                projection_refresh_gate_poll_interval_seconds,
+                (int, float),
+        ):
+            raise TypeError(
+                "projection_refresh_gate_poll_interval_seconds must remain numeric."
+            )
+
+        allowed_target_frame_names = cast(
+            Tuple[str, ...],
+            allowed_target_frame_names,
+        )
+        denied_target_frame_names = cast(
+            Tuple[str, ...],
+            denied_target_frame_names,
         )
 
         if max_active_rift_count < 0:

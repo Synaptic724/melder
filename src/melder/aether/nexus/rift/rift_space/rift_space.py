@@ -702,9 +702,18 @@ class RiftSpace(Cleanable, IRiftSpace):
         with self._lock:
             event_system = self._event_system
         normalized_payload = dict(event_payload)
-        event_type = normalized_payload.pop("event_type", "runtime_event")
-        frame_name = normalized_payload.pop("frame_name", None)
-        metadata = normalized_payload.pop("metadata", None)
+        raw_event_type = normalized_payload.pop("event_type", "runtime_event")
+        if not isinstance(raw_event_type, str):
+            raise TypeError("event_type must be a string.")
+        event_type: str = raw_event_type
+        raw_frame_name = normalized_payload.pop("frame_name", None)
+        if raw_frame_name is not None and not isinstance(raw_frame_name, str):
+            raise TypeError("frame_name must be a string or None.")
+        frame_name: Optional[str] = raw_frame_name
+        raw_metadata = normalized_payload.pop("metadata", None)
+        if raw_metadata is not None and not isinstance(raw_metadata, dict):
+            raise TypeError("metadata must be a dict or None.")
+        metadata: Optional[Dict[str, object]] = raw_metadata
         event_system.create_and_emit_event(
             event_type,
             payload=normalized_payload,

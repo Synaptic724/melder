@@ -29,6 +29,7 @@ from melder.aether.nexus.configuration.nexus_configuration import (
     NexusConfiguration,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
@@ -36,6 +37,7 @@ from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
+from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -602,9 +604,28 @@ class Nexus(Cleanable, INexus):
             return self._clone_rift_configuration(template)
 
         configuration = RiftConfiguration().with_defaults()
-        configuration.with_space_type(self._configuration.get_property("default_space_type"))
-        configuration.with_auto_activate_on_program(self._configuration.get_property("default_auto_activate_on_program"))
-        configuration.with_validation_mode(self._configuration.get_property("default_validation_mode"))
+        default_space_type = self._configuration.get_property("default_space_type")
+        if not isinstance(default_space_type, RiftSpaceType):
+            raise TypeError("default_space_type must remain a RiftSpaceType.")
+        default_auto_activate_on_program = self._configuration.get_property(
+            "default_auto_activate_on_program"
+        )
+        if not isinstance(default_auto_activate_on_program, bool):
+            raise TypeError(
+                "default_auto_activate_on_program must remain a bool."
+            )
+        default_validation_mode = self._configuration.get_property(
+            "default_validation_mode"
+        )
+        if not isinstance(default_validation_mode, RiftValidationMode):
+            raise TypeError(
+                "default_validation_mode must remain a RiftValidationMode."
+            )
+        configuration.with_space_type(default_space_type)
+        configuration.with_auto_activate_on_program(
+            default_auto_activate_on_program
+        )
+        configuration.with_validation_mode(default_validation_mode)
         return configuration
 
     def register_rift_profile(
@@ -771,7 +792,10 @@ class Nexus(Cleanable, INexus):
             self._validate_active_rift_budget()
             existing_gate = self._rift_gate_controller.get_rift_gate(rift.id)
             if existing_gate is None:
-                self._rift_gate_controller.register_rift_gate(rift.id, rift.rift_gate)
+                self._rift_gate_controller.register_rift_gate(
+                    rift.id,
+                    cast(RiftGate, rift.rift_gate),
+                )
             elif existing_gate is not rift.rift_gate:
                 raise ValueError(
                     "Rift gate for id '{0}' does not match the registered gate.".format(
@@ -1978,6 +2002,18 @@ class Nexus(Cleanable, INexus):
             interval = self._configuration.get_property(
                 "projection_refresh_gate_poll_interval_seconds"
             )
+        if not isinstance(projection_refresh_gate_enabled, bool):
+            raise TypeError(
+                "projection_refresh_gate_enabled must remain a bool."
+            )
+        if not isinstance(timeout, (int, float)):
+            raise TypeError(
+                "projection_refresh_gate_timeout_seconds must remain numeric."
+            )
+        if not isinstance(interval, (int, float)):
+            raise TypeError(
+                "projection_refresh_gate_poll_interval_seconds must remain numeric."
+            )
         impacted_rifts = []
         frame_names_by_rift_id: Dict[str, Tuple[str, ...]] = {}
         for rift in rifts:
@@ -2190,6 +2226,8 @@ class Nexus(Cleanable, INexus):
         self._require_enabled()
         rift = self._get_required_rift(rift_id)
         requested_space_type = rift.configuration.get_property("space_type")
+        if not isinstance(requested_space_type, RiftSpaceType):
+            raise TypeError("space_type must remain a RiftSpaceType.")
         nexus_managed_frame_names = set(self._frame_manager.list_frame_names())
         accessible_non_nexus_frame_names: List[str] = []
         for frame_name in self._frame_descriptor_manager.list_published_frame_names():
@@ -2501,6 +2539,20 @@ class Nexus(Cleanable, INexus):
         """
         denied_target_frame_names = self._configuration.get_property("denied_target_frame_names")
         allowed_target_frame_names = self._configuration.get_property("allowed_target_frame_names")
+        if not isinstance(denied_target_frame_names, tuple) or not all(
+                isinstance(frame_name, str)
+                for frame_name in denied_target_frame_names
+        ):
+            raise TypeError(
+                "denied_target_frame_names must remain a tuple[str, ...]."
+            )
+        if not isinstance(allowed_target_frame_names, tuple) or not all(
+                isinstance(frame_name, str)
+                for frame_name in allowed_target_frame_names
+        ):
+            raise TypeError(
+                "allowed_target_frame_names must remain a tuple[str, ...]."
+            )
         for target_frame_name in target_frame_names:
             if target_frame_name in denied_target_frame_names:
                 raise ValueError("Target frame '{0}' is denied by Nexus policy.".format(target_frame_name))
@@ -2526,11 +2578,22 @@ class Nexus(Cleanable, INexus):
                 unique_new_target_frames.append(target_frame_name)
         if not unique_new_target_frames:
             return
-        if not self._configuration.get_property("allow_multiple_target_frames"):
+        allow_multiple_target_frames = self._configuration.get_property(
+            "allow_multiple_target_frames"
+        )
+        if not isinstance(allow_multiple_target_frames, bool):
+            raise TypeError(
+                "allow_multiple_target_frames must remain a bool."
+            )
+        if not allow_multiple_target_frames:
             if len(self._target_frame_ref_counts) + len(unique_new_target_frames) > 1:
                 raise ValueError("Multiple target frames are disabled.")
-        if len(self._target_frame_ref_counts) + len(unique_new_target_frames) > self._configuration.get_property(
-                "max_target_frame_count"):
+        max_target_frame_count = self._configuration.get_property(
+            "max_target_frame_count"
+        )
+        if not isinstance(max_target_frame_count, int):
+            raise TypeError("max_target_frame_count must remain an int.")
+        if len(self._target_frame_ref_counts) + len(unique_new_target_frames) > max_target_frame_count:
             raise ValueError("Nexus target-frame cap has been reached.")
 
     def _validate_active_rift_budget(self) -> None:
@@ -2548,6 +2611,8 @@ class Nexus(Cleanable, INexus):
             None.
         """
         max_active_rift_count = self._configuration.get_property("max_active_rift_count")
+        if not isinstance(max_active_rift_count, int):
+            raise TypeError("max_active_rift_count must remain an int.")
         if max_active_rift_count == 0:
             return
         if len(self._rifts_by_id) >= max_active_rift_count:

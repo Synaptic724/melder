@@ -1,6 +1,6 @@
 import weakref
 import threading
-from typing import Generic, TypeVar, Optional, Callable, Union, Any, Iterator
+from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union
 from contextlib import contextmanager
 import ulid
 
@@ -71,15 +71,12 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
     """
 
     __slots__ = (
-            Cleanable.__slots__
-            + [
-                "_weak",
-                "_lock",
-                "_id",
-                "_on_collect",
-                "_auto_cleanup",
-                "_phantom_fired",
-            ]
+            "_weak",
+            "_lock",
+            "_id",
+            "_on_collect",
+            "_auto_cleanup",
+            "_phantom_fired",
     )
     __melder_internal__ = _mrg.sentinel
 

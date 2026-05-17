@@ -320,7 +320,8 @@ class CrystallizerConfiguration(Cleanable):
                 )
         return value
 
-    def _convert_property_value_if_needed(self, key: str, value: object) -> object:
+    @staticmethod
+    def _convert_property_value_if_needed(key: str, value: object) -> object:
         """
         Normalize property values before storage.
 

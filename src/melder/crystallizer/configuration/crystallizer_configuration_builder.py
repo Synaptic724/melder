@@ -51,7 +51,7 @@ class CrystallizerConfigurationBuilder(Cleanable):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._configuration: Optional[CrystallizerConfiguration] = (
+        self._configuration: CrystallizerConfiguration | None = (
             CrystallizerConfiguration()
         )
 
@@ -76,9 +76,10 @@ class CrystallizerConfigurationBuilder(Cleanable):
             self._cleaned = True
             if self._configuration is not None:
                 self._configuration.cleanup()
-            self._configuration = None
-            self._id = None
-        self._lock = None
+
+            del self._configuration
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:
@@ -99,7 +100,8 @@ class CrystallizerConfigurationBuilder(Cleanable):
             CrystallizerConfigurationBuilder: This builder.
         """
         self.check_cleaned()
-        self._configuration.with_defaults()
+        if self._configuration is not None:
+            self._configuration.with_defaults()
         return self
 
     def with_user_source_root_paths(
@@ -117,7 +119,8 @@ class CrystallizerConfigurationBuilder(Cleanable):
             CrystallizerConfigurationBuilder: This builder.
         """
         self.check_cleaned()
-        self._configuration.with_user_source_root_paths(root_paths)
+        if self._configuration is not None:
+            self._configuration.with_user_source_root_paths(root_paths)
         return self
 
     def build(self) -> CrystallizerConfiguration:
@@ -147,7 +150,8 @@ class CrystallizerConfigurationBuilder(Cleanable):
             CrystallizerConfiguration: Frozen configuration instance.
         """
         self.check_cleaned()
-        self._configuration.finalize()
+        if self._configuration is not None:
+            self._configuration.finalize()
         return self._handoff_configuration()
 
     def activate(self) -> CrystallizerConfiguration:
@@ -163,7 +167,8 @@ class CrystallizerConfigurationBuilder(Cleanable):
             CrystallizerConfiguration: Activated configuration instance.
         """
         self.check_cleaned()
-        self._configuration.activate()
+        if self._configuration is not None:
+            self._configuration.activate()
         return self._handoff_configuration()
 
     def _handoff_configuration(self) -> CrystallizerConfiguration:
@@ -184,8 +189,5 @@ class CrystallizerConfigurationBuilder(Cleanable):
                     "CrystallizerConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
-            self._cleaned = True
-            self._configuration = None
-            self._id = None
-        self._lock = None
+            self.cleanup()
         return configuration

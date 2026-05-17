@@ -75,25 +75,13 @@ class ResearchSpell(Cleanable):
 
             self._cleaned = True
             # Cleanup nodes
-            if self._nodes is not None:
-                for _, node in list(self._nodes.items()):
-                    try:
-                        node.cleanup()
-                    except Exception:
-                        pass
+            for _, node in list(self._nodes.items()):
                 try:
-                    self._nodes.clear()
+                    node.cleanup()
                 except Exception:
                     pass
-                self._nodes = None
-
-            # Cleanup commit-order index
-            if self._node_ids is not None:
-                try:
-                    self._node_ids.clear()
-                except Exception:
-                    pass
-                self._node_ids = None
+            self._nodes.clear()
+            self._node_ids.clear()
 
             # Cleanup weak ref wrapper
             if self._spell_ref is not None:
@@ -101,12 +89,14 @@ class ResearchSpell(Cleanable):
                     self._spell_ref.cleanup()
                 except Exception:
                     pass
-                self._spell_ref = None
-
-            self._head_id = None
             self._metadata.clear()
-            self._metadata = None
-        self._lock = None
+
+            del self._node_ids
+            del self._spell_ref
+            del self._nodes
+            del self._head_id
+            del self._metadata
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Properties

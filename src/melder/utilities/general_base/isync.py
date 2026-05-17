@@ -21,10 +21,35 @@ class ISync:
 
     """
 
-    __slots__: ClassVar[tuple] = ()
+    __slots__ = ()
     _is_sync_value: ClassVar[bool] = True
+    _value: Any
+    _lock: threading.RLock
 
     # ----------  helpers shared by ALL Sync* types  -----------------
+    @classmethod
+    def _coerce(cls, val: Any) -> Any:
+        """
+        Normalize one scalar value for this concrete sync wrapper type.
+
+        Contract:
+        - Concrete sync wrappers override this to coerce peer values into the
+          scalar form they store internally.
+        - The base mix-in does not choose a scalar policy on its own.
+        """
+        raise NotImplementedError("ISync subclasses must implement _coerce().")
+
+    def get(self) -> Any:
+        """
+        Return the current wrapped scalar value.
+
+        Contract:
+        - Concrete sync wrappers expose their stored scalar through this
+          method.
+        - The shared mix-in uses this for pickling and peer-value unwrapping.
+        """
+        raise NotImplementedError("ISync subclasses must implement get().")
+
     @staticmethod
     def _is_sync(obj: object) -> bool:
         """
@@ -118,6 +143,7 @@ class ISync:
         - Rebuilds `_value` through the concrete class `_coerce(...)`.
         - Creates a fresh `threading.RLock` for the unpickled instance.
         """
-        #self._value = float(state["_value"]) #Remove August 11 2025
-        self._value = type(self)._coerce(state["_value"])
-        self._lock  = threading.RLock()
+        # Route state restoration through subclass-defined slots instead of
+        # claiming the base mix-in owns concrete storage fields.
+        setattr(self, "_value", type(self)._coerce(state["_value"]))
+        setattr(self, "_lock", threading.RLock())
