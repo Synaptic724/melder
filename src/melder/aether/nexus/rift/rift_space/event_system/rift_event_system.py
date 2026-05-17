@@ -94,11 +94,12 @@ class RiftEventSystem(Cleanable):
                 return
             self._cleaned = True
             self._callbacks_by_subscription_id.clear()
-            self._callbacks_by_subscription_id = None
-            self._space_kind = None
-            self._space_id = None
-            self._rift_id = None
-        self._lock = None
+
+            del self._callbacks_by_subscription_id
+            del self._space_kind
+            del self._space_id
+            del self._rift_id
+        del self._lock
 
     @property
     def rift_id(self) -> str:

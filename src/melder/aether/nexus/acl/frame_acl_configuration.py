@@ -383,17 +383,18 @@ class FrameACLConfiguration(Cleanable):
             self._view_configuration.cleanup()
             self._command_configuration.cleanup()
             self._codegen_configuration.cleanup()
-            self._frame_name = None
-            self._source_configuration_id = None
-            self._previous_configuration_id = None
-            self._created_at = None
-            self._reason = None
-            self._locked = None
-            self._view_configuration = None
-            self._command_configuration = None
-            self._codegen_configuration = None
-            self._id = None
-            self._lock = None
+
+            del self._frame_name
+            del self._source_configuration_id
+            del self._previous_configuration_id
+            del self._created_at
+            del self._reason
+            del self._locked
+            del self._view_configuration
+            del self._command_configuration
+            del self._codegen_configuration
+            del self._id
+            del self._lock
 
     @property
     def configuration_id(self) -> str:

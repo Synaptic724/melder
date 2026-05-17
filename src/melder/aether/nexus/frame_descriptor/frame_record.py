@@ -115,13 +115,14 @@ class FrameRecord(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self.nexus_label = None
-            self.nexus_version = None
-            self.frame_name = None
-            self.frame_id = None
-            self.config_origin_spellbook_id = None
             if self.payload is not None:
                 self.payload.cleanup()
-            self.payload = None
-            self._id = None
-            self._lock = None
+
+            del self.nexus_label
+            del self.nexus_version
+            del self.frame_name
+            del self.frame_id
+            del self.config_origin_spellbook_id
+            del self.payload
+            del self._id
+            del self._lock

@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -12,6 +12,26 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces import IConduitResolutionState
+
+
+def _get_resolution_risk_manager_callback(
+        risk_manager: Optional[object],
+) -> Optional[Callable[[str, str, Optional[SpellValidity]], None]]:
+    """
+    Return the resolution-validity callback when the collaborator exposes it.
+
+    Contract:
+        - Accepts the current loose collaborator surface (`object | None`).
+        - Returns a callable only when the collaborator exposes a callable
+          `on_resolution_validity_change(...)` attribute.
+        - Leaves plain objects and missing callbacks as `None`.
+    """
+    if risk_manager is None:
+        return None
+    callback = getattr(risk_manager, "on_resolution_validity_change", None)
+    if not callable(callback):
+        return None
+    return callback
 
 
 class ConduitResolutionState(Cleanable, IConduitResolutionState):
@@ -198,9 +218,10 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 changed = True
             elif change_reason is not None:
                 self._last_change_reason = change_reason
-        if changed and self._risk_manager is not None:
+        callback = _get_resolution_risk_manager_callback(self._risk_manager)
+        if changed and callback is not None:
             try:
-                self._risk_manager.on_resolution_validity_change(self._conduit_id, spell_id, validity)
+                callback(self._conduit_id, spell_id, validity)
             except Exception:
                 pass
 
@@ -249,10 +270,11 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 self.mark_dirty(change_reason=change_reason)
             elif change_reason is not None:
                 self._last_change_reason = change_reason
-        if changed_entries and self._risk_manager is not None:
+        callback = _get_resolution_risk_manager_callback(self._risk_manager)
+        if changed_entries and callback is not None:
             for spell_id, validity in changed_entries:
                 try:
-                    self._risk_manager.on_resolution_validity_change(
+                    callback(
                         self._conduit_id,
                         spell_id,
                         validity,
@@ -348,9 +370,10 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 changed = True
             elif change_reason is not None:
                 self._last_change_reason = change_reason
-        if changed and self._risk_manager is not None:
+        callback = _get_resolution_risk_manager_callback(self._risk_manager)
+        if changed and callback is not None:
             try:
-                self._risk_manager.on_resolution_validity_change(self._conduit_id, root_id, validity)
+                callback(self._conduit_id, root_id, validity)
             except Exception:
                 pass
 
@@ -399,10 +422,11 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 self.mark_dirty(change_reason=change_reason)
             elif change_reason is not None:
                 self._last_change_reason = change_reason
-        if changed_entries and self._risk_manager is not None:
+        callback = _get_resolution_risk_manager_callback(self._risk_manager)
+        if changed_entries and callback is not None:
             for root_id, validity in changed_entries:
                 try:
-                    self._risk_manager.on_resolution_validity_change(
+                    callback(
                         self._conduit_id,
                         root_id,
                         validity,
@@ -608,18 +632,17 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             self._spell_validity.clear()
             self._root_validity.clear()
             self._cleanup_diagnostics_locked()
-
-            self._spell_validity = None
-            self._root_validity = None
-            self._diagnostics = None
             self._dirty = False
-            self._last_validated_at = None
-            self._last_change_reason = None
-            self._conduit_id = None
-            self._initial_validity = None
-            self._risk_manager = None
 
-        self._lock = None
+            del self._spell_validity
+            del self._root_validity
+            del self._diagnostics
+            del self._last_validated_at
+            del self._last_change_reason
+            del self._conduit_id
+            del self._initial_validity
+            del self._risk_manager
+        del self._lock
 
     def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
         """

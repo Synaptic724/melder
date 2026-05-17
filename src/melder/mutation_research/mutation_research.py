@@ -149,14 +149,15 @@ class MutationResearch(Cleanable, IMutationResearch):
                     except Exception:
                         pass
                 self._sessions_by_index.clear()
-                self._sessions_by_index = None
             if self._configuration is not None:
                 self._configuration.cleanup()
-            self._configuration = None
             self._configured = False
             self._activated = False
-            self._aether = None
-            self._id = None
+
+            del self._sessions_by_index
+            del self._configuration
+            del self._aether
+            del self._id
         with MutationResearch._lock:
             MutationResearch._instance = None
             MutationResearch._initialized = False

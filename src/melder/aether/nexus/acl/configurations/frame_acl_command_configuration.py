@@ -301,21 +301,22 @@ class FrameACLCommandConfiguration(Cleanable):
             self._conduit_override_ruleset.cleanup()
             self._spell_override_ruleset.cleanup()
             self._member_override_ruleset.cleanup()
-            self._frame_override_ruleset = None
-            self._conduit_override_ruleset = None
-            self._spell_override_ruleset = None
-            self._member_override_ruleset = None
-            self._source_configuration_id = None
-            self._previous_configuration_id = None
-            self._created_at = None
-            self._reason = None
-            self._locked = None
-            self._precision_profile_name = None
-            self._precision_profile_version = None
-            self._profile_version = None
-            self._profile_name = None
-            self._id = None
-        self._lock = None
+
+            del self._frame_override_ruleset
+            del self._conduit_override_ruleset
+            del self._spell_override_ruleset
+            del self._member_override_ruleset
+            del self._source_configuration_id
+            del self._previous_configuration_id
+            del self._created_at
+            del self._reason
+            del self._locked
+            del self._precision_profile_name
+            del self._precision_profile_version
+            del self._profile_version
+            del self._profile_name
+            del self._id
+        del self._lock
 
     @property
     def configuration_id(self) -> str:

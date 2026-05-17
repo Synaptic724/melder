@@ -109,14 +109,15 @@ class FrameLink(Cleanable, IFrameLink):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._frame_name = None
-            self._source_kind = None
-            self._source_id = None
-            self._display_name = None
             self._metadata.clear()
-            self._metadata = None
-            self._link_id = None
-        self._lock = None
+
+            del self._frame_name
+            del self._source_kind
+            del self._source_id
+            del self._display_name
+            del self._metadata
+            del self._link_id
+        del self._lock
 
     @classmethod
     def from_view_subject(

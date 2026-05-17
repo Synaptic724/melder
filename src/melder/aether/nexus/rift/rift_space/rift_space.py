@@ -206,19 +206,21 @@ class RiftSpace(Cleanable, IRiftSpace):
             category_name: 0
             for category_name in self._ACTION_HOOK_CATEGORIES
         }
+        frame_viewer: FrameViewer
         if space_kind == RiftSpaceType.static.value:
             from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
                 StaticFrameViewer,
             )
-            self._frame_viewer = StaticFrameViewer(
+            frame_viewer = StaticFrameViewer(
                 rift=rift,
                 action_hook_scope_factory=self._entered_action_hook_scope,
             )
         else:
-            self._frame_viewer = FrameViewer(
+            frame_viewer = FrameViewer(
                 rift=rift,
                 action_hook_scope_factory=self._entered_action_hook_scope,
             )
+        self._frame_viewer = frame_viewer
 
     def cleanup(self) -> None:
         """

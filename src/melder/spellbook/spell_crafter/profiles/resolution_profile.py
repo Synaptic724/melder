@@ -51,7 +51,8 @@ class SpellSymbolicNode(Cleanable):
         self._cleaned = True
         if self.metadata is not None:
             self.metadata.clear()
-            self.metadata = None
+
+        del self.metadata
 
 
 class SpellSymbolicEdge(Cleanable):
@@ -94,9 +95,9 @@ class SpellSymbolicEdge(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self.from_node = None
-        self.to_node = None
-        self.via_parameter = None
+        del self.from_node
+        del self.to_node
+        del self.via_parameter
 
 
 class SpellSymbolicGraph(Cleanable):
@@ -158,9 +159,9 @@ class SpellSymbolicGraph(Cleanable):
                     pass
         self.nodes.clear()
         self.edges.clear()
-        self.nodes = None
-        self.edges = None
-        self.spell_id = None
+        del self.nodes
+        del self.edges
+        del self.spell_id
 
 
 class SpellResolutionFrame(Cleanable):
@@ -203,8 +204,8 @@ class SpellResolutionFrame(Cleanable):
         self._cleaned = True
         if isinstance(self.ordered_node_ids, list):
             self.ordered_node_ids.clear()
-        self.ordered_node_ids = None
-        self.spell_id = None
+        del self.ordered_node_ids
+        del self.spell_id
 
 
 class SpellValidationIssue(Cleanable):
@@ -246,9 +247,9 @@ class SpellValidationIssue(Cleanable):
         self._cleaned = True
         if self.details is not None:
             self.details.clear()
-            self.details = None
-        self.code = None
-        self.message = None
+        del self.details
+        del self.code
+        del self.message
 
 
 class SpellValidationResult(Cleanable):
@@ -308,8 +309,8 @@ class SpellValidationResult(Cleanable):
                     pass
         self.errors.clear()
         self.warnings.clear()
-        self.errors = None
-        self.warnings = None
+        del self.errors
+        del self.warnings
 
 
 class SpellResolutionProfile(Cleanable):
@@ -403,11 +404,11 @@ class SpellResolutionProfile(Cleanable):
                     part.cleanup()
                 except Exception:
                     pass
-        self.requirements = None
-        self.symbolic_graph = None
-        self.resolution_frame = None
-        self.validation = None
-        self.spell_id = None
-        self.existence = None
-        self.spellframe = None
-        self.binding_name = None
+        del self.requirements
+        del self.symbolic_graph
+        del self.resolution_frame
+        del self.validation
+        del self.spell_id
+        del self.existence
+        del self.spellframe
+        del self.binding_name

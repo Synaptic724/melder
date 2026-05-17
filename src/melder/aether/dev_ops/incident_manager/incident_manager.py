@@ -76,11 +76,10 @@ class IncidentManager(Cleanable, IIncidentManager):
                     if incident is not None:
                         incident.cleanup()
                 self._incidents_by_id.clear()
-                self._incidents_by_id = None
-
+                del self._incidents_by_id
             self._next_numeric_id = 0
 
-        self._lock = None
+        del self._lock
 
     def _allocate_id(self) -> str:
         """

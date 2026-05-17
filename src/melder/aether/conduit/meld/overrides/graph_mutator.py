@@ -68,8 +68,8 @@ class GraphMutator(Cleanable):
                 self._engine.cleanup()
             except Exception:
                 pass
-        self._engine = None
-        self._blueprint = None
+        del self._engine
+        del self._blueprint
 
     def apply(self, mutation_override: Dict[str, Any]) -> RootResolutionBlueprint:
         """

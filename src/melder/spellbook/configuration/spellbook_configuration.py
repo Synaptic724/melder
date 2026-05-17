@@ -124,15 +124,15 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
 
             if self._properties is not None:
                 self._properties.clear()
-                self._properties = None
+            del self._properties
 
             if self.available_properties is not None:
                 self.available_properties.clear()
-                self.available_properties = None
+            del self.available_properties
 
             if self._hooks is not None:
                 self._hooks.clear()
-                self._hooks = None
+            del self._hooks
 
     def set_property(self, key: str, value: Any) -> None:
         """

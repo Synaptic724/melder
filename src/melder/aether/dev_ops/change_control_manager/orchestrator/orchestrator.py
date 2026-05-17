@@ -91,11 +91,12 @@ class ChangeControlOrchestrator(Cleanable):
             self._cleaned = True
             if self._staged is not None:
                 self._staged.clear()
-                self._staged = None
-            self._commit_validator = None
-            self._commit_hook = None
-            self._abort_hook = None
-        self._lock = None
+            del self._staged
+
+            del self._commit_validator
+            del self._commit_hook
+            del self._abort_hook
+        del self._lock
 
     def set_commit_validator(
             self,

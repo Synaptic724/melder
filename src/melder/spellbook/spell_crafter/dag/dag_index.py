@@ -72,12 +72,13 @@ class PathRegistry(Cleanable):
         self._depths.clear()
         self._child_ids.clear()
         self._formatted_path_by_id.clear()
-        self._parent_ids = None
-        self._segments = None
-        self._depths = None
-        self._child_ids = None
-        self._formatted_path_by_id = None
-        self._root_path_id = None
+
+        del self._parent_ids
+        del self._segments
+        del self._depths
+        del self._child_ids
+        del self._formatted_path_by_id
+        del self._root_path_id
 
     @property
     def root_path_id(self) -> int:
@@ -310,12 +311,13 @@ class DagIndex(Cleanable):
         self._cleaned = True
         if self._path_registry is not None:
             self._path_registry.cleanup()
-        self._path_registry = None
         self._by_exact_path_id.clear()
-        self._by_exact_path_id = None
         self._by_name.clear()
-        self._by_name = None
-        self._built = None
+
+        del self._path_registry
+        del self._by_exact_path_id
+        del self._by_name
+        del self._built
 
     @property
     def path_registry(self) -> PathRegistry:
@@ -451,10 +453,11 @@ class DagTargetingEngine(Cleanable):
         """
         if self._cleaned:
             return
-
         self._cleaned = True
+
         self._index.cleanup()
-        self._index = None
+
+        del self._index
 
     def resolve(
             self,

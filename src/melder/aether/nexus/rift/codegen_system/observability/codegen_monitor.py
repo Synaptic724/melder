@@ -67,8 +67,8 @@ class CodegenMonitor(Cleanable):
                 return
             self._cleaned = True
             self._event_publisher.cleanup()
-            self._event_publisher = None
-        self._lock = None
+            del self._event_publisher
+        del self._lock
 
     def on_validation_started(
             self,

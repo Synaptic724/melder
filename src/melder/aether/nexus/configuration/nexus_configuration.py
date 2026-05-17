@@ -133,11 +133,12 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             self._cleaned = True
             self._frozen = True
             self._properties.clear()
-            self._properties = None
             self.available_properties.clear()
-            self.available_properties = None
-        self._lock = None
-        self._id = None
+
+            del self._properties
+            del self.available_properties
+        del self._lock
+        del self._id
 
     def set_property(self, key: str, value: object) -> None:
         """

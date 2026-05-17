@@ -89,14 +89,14 @@ class CodegenNamespace(Cleanable, ICodegenNamespace):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._configuration = None
             self._globals_dict.clear()
             self._locals_dict.clear()
             self._metadata.clear()
-            self._globals_dict = None
-            self._locals_dict = None
-            self._metadata = None
-        self._lock = None
+            del self._configuration
+            del self._globals_dict
+            del self._locals_dict
+            del self._metadata
+        del self._lock
 
     @classmethod
     def create_placeholder(

@@ -113,16 +113,15 @@ class SpellRequirements(Cleanable):
                 except Exception:
                     # We never let cleanup explosions bubble up from here.
                     pass
-
-            self._parameters = []
-            self._spell_id = None
-            self._spell_type = None
-            self._existence = None
-            self._spellframe = None
-            self._binding_name = None
             self._cleaned = True
 
-        self._lock = None
+            del self._parameters
+            del self._spell_id
+            del self._spell_type
+            del self._existence
+            del self._spellframe
+            del self._binding_name
+        del self._lock
 
     # ------------------------------------------------------------------
     # Properties

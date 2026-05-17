@@ -118,15 +118,16 @@ class FrameACLCodegenProfile(Cleanable):
             self._conduit_ruleset.cleanup()
             self._spell_ruleset.cleanup()
             self._capability_ruleset.cleanup()
-            self._frame_ruleset = None
-            self._conduit_ruleset = None
-            self._spell_ruleset = None
-            self._capability_ruleset = None
-            self._validation_strategy_name = None
-            self._version = None
-            self._name = None
-            self._id = None
-        self._lock = None
+
+            del self._frame_ruleset
+            del self._conduit_ruleset
+            del self._spell_ruleset
+            del self._capability_ruleset
+            del self._validation_strategy_name
+            del self._version
+            del self._name
+            del self._id
+        del self._lock
 
     @classmethod
     def create_default(cls) -> "FrameACLCodegenProfile":

@@ -168,7 +168,6 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
             if self._pending_changes is not None:
                 self._pending_changes.clear()
-                self._pending_changes = None
 
             if self._component_of_by_conduit is not None:
                 for component_of in self._component_of_by_conduit.values():
@@ -176,57 +175,59 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
                         roots.clear()
                     component_of.clear()
                 self._component_of_by_conduit.clear()
-                self._component_of_by_conduit = None
 
             if self._dirty_spells_by_conduit is not None:
                 for dirty_spells in self._dirty_spells_by_conduit.values():
                     dirty_spells.clear()
                 self._dirty_spells_by_conduit.clear()
-                self._dirty_spells_by_conduit = None
 
             if self._dirty_roots_by_conduit is not None:
                 for dirty_roots in self._dirty_roots_by_conduit.values():
                     dirty_roots.clear()
                 self._dirty_roots_by_conduit.clear()
-                self._dirty_roots_by_conduit = None
 
             if self._monitor_active_by_conduit is not None:
                 self._monitor_active_by_conduit.clear()
-                self._monitor_active_by_conduit = None
 
             if self._revalidate_fn_by_conduit is not None:
                 self._revalidate_fn_by_conduit.clear()
-                self._revalidate_fn_by_conduit = None
-            self._change_control_enabled = None
 
             if self._transaction_manager is not None:
                 self._transaction_manager.cleanup()
-                self._transaction_manager = None
 
             if self._conflict_manager is not None:
                 self._conflict_manager.cleanup()
-                self._conflict_manager = None
 
             if self._embargo_manager is not None:
                 self._embargo_manager.cleanup()
-                self._embargo_manager = None
 
             if self._orchestrator is not None:
                 self._orchestrator.cleanup()
-                self._orchestrator = None
-            self._commit_validator = None
-            self._commit_hook = None
-            self._abort_hook = None
-            self._structural_validator = None
-            self._dirty_marker = None
+
+            del self._pending_changes
+            del self._component_of_by_conduit
+            del self._dirty_spells_by_conduit
+            del self._dirty_roots_by_conduit
+            del self._monitor_active_by_conduit
+            del self._revalidate_fn_by_conduit
+            del self._change_control_enabled
+            del self._transaction_manager
+            del self._conflict_manager
+            del self._embargo_manager
+            del self._orchestrator
+            del self._commit_validator
+            del self._commit_hook
+            del self._abort_hook
+            del self._structural_validator
+            del self._dirty_marker
 
             # We do *not* own spell_system_states' lifecycle here; that will
             # be cleaned by the Aetheric Frame / DevOpsManager. We only drop
             # our reference so GC can do its job.
-            self._spell_system_states = None
+            del self._spell_system_states
 
         # Drop the lock last.
-        self._lock = None
+        del self._lock
 
     # ----------------------------------------------------------------------
     # Accessors

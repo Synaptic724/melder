@@ -78,12 +78,12 @@ class MutationFrame(Cleanable, IMutationFrame):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._aetheric_frame_name = None
-            self._mutation_research = None
-            self._spell_system_states = None
-            self._change_control_manager = None
-            self._id = None
-        self._lock = None
+            del self._aetheric_frame_name
+            del self._mutation_research
+            del self._spell_system_states
+            del self._change_control_manager
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

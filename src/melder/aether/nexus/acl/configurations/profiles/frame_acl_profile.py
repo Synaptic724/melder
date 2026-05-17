@@ -135,16 +135,17 @@ class FrameACLProfile(Cleanable):
             self._view_override_ruleset.cleanup()
             self._command_override_ruleset.cleanup()
             self._codegen_override_ruleset.cleanup()
-            self._view_override_ruleset = None
-            self._command_override_ruleset = None
-            self._codegen_override_ruleset = None
-            self._view_profile = None
-            self._command_profile = None
-            self._codegen_profile = None
-            self._version = None
-            self._name = None
-            self._id = None
-        self._lock = None
+
+            del self._view_override_ruleset
+            del self._command_override_ruleset
+            del self._codegen_override_ruleset
+            del self._view_profile
+            del self._command_profile
+            del self._codegen_profile
+            del self._version
+            del self._name
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

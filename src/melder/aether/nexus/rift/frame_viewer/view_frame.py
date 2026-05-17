@@ -216,7 +216,7 @@ class ViewFrame(Cleanable):
         self._assert_optional_frame_name(frame_name)
         target_descriptions: List[Dict[str, object]] = []
         for frame_link in self.list_targets(source_kind=source_kind):
-            description = {
+            description: Dict[str, object] = {
                 "target_id": frame_link.link_id,
                 "source_kind": frame_link.source_kind,
                 "source_id": frame_link.source_id,
@@ -1198,7 +1198,7 @@ class ViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible targets whose identity starts with one prefix.
 
@@ -1213,7 +1213,7 @@ class ViewFrame(Cleanable):
                 Optional target-kind filter.
 
         Returns:
-            List[FrameLink]: Matching visible targets in deterministic order.
+            List[IFrameLink]: Matching visible targets in deterministic order.
         """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)

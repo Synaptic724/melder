@@ -121,15 +121,15 @@ class FrameDescriptor(Cleanable):
             self._spell_records_by_key.clear()
             self._spell_keys_by_conduit_id.clear()
             self._spell_keys_by_spellbook_id.clear()
-            self._frame_handle = None
-            self._frame_configuration = None
-            self._frame_overview = None
-            self._conduit_records_by_id = None
-            self._spell_records_by_key = None
-            self._spell_keys_by_conduit_id = None
-            self._spell_keys_by_spellbook_id = None
-            self._frame_name = None
-        self._lock = None
+            del self._frame_handle
+            del self._frame_configuration
+            del self._frame_overview
+            del self._conduit_records_by_id
+            del self._spell_records_by_key
+            del self._spell_keys_by_conduit_id
+            del self._spell_keys_by_spellbook_id
+            del self._frame_name
+        del self._lock
 
 
     @property

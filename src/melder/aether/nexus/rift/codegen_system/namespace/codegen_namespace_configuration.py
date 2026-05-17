@@ -138,22 +138,23 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._frame_name = None
-            self._include_viewer = None
-            self._include_workstation = None
-            self._include_target = None
-            self._include_command = None
-            self._include_codegen = None
-            self._imports_enabled = None
-            self._allowed_import_module_roots = None
-            self._denied_import_module_roots = None
-            self._denied_builtin_names = None
-            self._allow_unsafe_reflection = None
-            self._allow_dunder_access = None
-            self._allow_recursive_codegen = None
             self._metadata.clear()
-            self._metadata = None
-        self._lock = None
+
+            del self._frame_name
+            del self._include_viewer
+            del self._include_workstation
+            del self._include_target
+            del self._include_command
+            del self._include_codegen
+            del self._imports_enabled
+            del self._allowed_import_module_roots
+            del self._denied_import_module_roots
+            del self._denied_builtin_names
+            del self._allow_unsafe_reflection
+            del self._allow_dunder_access
+            del self._allow_recursive_codegen
+            del self._metadata
+        del self._lock
 
     @classmethod
     def create_default(

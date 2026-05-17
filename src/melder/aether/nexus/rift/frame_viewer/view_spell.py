@@ -207,6 +207,15 @@ class ViewSpell(Cleanable):
         descriptor = frame_view._get_required_frame_descriptor()
         compiled_access_surface = frame_view._get_required_compiled_access_surface()
         record_key = spell_link.metadata["record_key"]
+        if (
+                not isinstance(record_key, tuple)
+                or len(record_key) != 2
+                or not isinstance(record_key[0], str)
+                or not isinstance(record_key[1], str)
+        ):
+            raise TypeError(
+                "spell_link.metadata['record_key'] must be a tuple[str, str]."
+            )
         spell_record = descriptor.spell_records_by_key[record_key]
         visible_sections = tuple(
             compiled_access_surface.spell_payload_sections_by_key.get(
@@ -1203,7 +1212,7 @@ class ViewSpell(Cleanable):
             prefix: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells whose identity starts with one prefix.
 
@@ -1215,7 +1224,7 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            List[FrameLink]: Matching visible spell links.
+            List[IFrameLink]: Matching visible spell links.
         """
         self.check_cleaned()
         if not prefix:
@@ -1737,6 +1746,8 @@ class ViewSpell(Cleanable):
             return None
         if isinstance(class_profile, dict):
             normalized_class_profile = ViewFrame._normalize_value(class_profile)
+            if not isinstance(normalized_class_profile, dict):
+                return normalized_class_profile
             member_names, method_names = self._extract_class_profile_name_sets(
                 normalized_class_profile
             )

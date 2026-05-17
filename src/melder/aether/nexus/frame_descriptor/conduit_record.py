@@ -119,14 +119,15 @@ class ConduitRecord(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self.nexus_label = None
-            self.nexus_version = None
-            self.conduit_id = None
-            self.root_conduit_id = None
-            self.frame_name = None
-            self.origin_spellbook_id = None
             if self.payload is not None:
                 self.payload.cleanup()
-            self.payload = None
-            self._id = None
-            self._lock = None
+
+            del self.nexus_label
+            del self.nexus_version
+            del self.conduit_id
+            del self.root_conduit_id
+            del self.frame_name
+            del self.origin_spellbook_id
+            del self.payload
+            del self._id
+        del self._lock

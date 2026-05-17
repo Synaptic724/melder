@@ -84,9 +84,9 @@ class FrameACLViewBuilder(Cleanable, IFrameACLViewBuilder):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._frame_acl_builder = None
-            self._id = None
-        self._lock = None
+            del self._frame_acl_builder
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

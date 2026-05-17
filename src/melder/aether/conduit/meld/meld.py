@@ -164,29 +164,28 @@ class Meld(Cleanable, IMeld):
             self._cleaned = True
 
             # Clear spellbook references
-            self._owned_spells = None
-            self._contracted_spells = None
-            self._spells_by_id = None
-            self._contracted_spells_by_id = None
-            self._spell_id_pool = None
-            self._lookup_owned_spells = None
-            self._lookup_contracted_spells = None
-            self._spellbook = None
-
+            del self._owned_spells
+            del self._contracted_spells
+            del self._spells_by_id
+            del self._contracted_spells_by_id
+            del self._spell_id_pool
+            del self._lookup_owned_spells
+            del self._lookup_contracted_spells
+            del self._spellbook
             # Clear creations reference
-            self._creations = None
-            self._conduit_id = None
-            self._resolution_conduit_id = None
-            self._dynamic_environment = None
-            self._meld_hooks = None
-            self._input_resolution_cache = None
-            self._spell_id_resolution_cache = None
-            self._max_resolution_cache_size = None
-            self._change_control_manager_by_frame = None
+            del self._creations
+            del self._conduit_id
+            del self._resolution_conduit_id
+            del self._dynamic_environment
+            del self._meld_hooks
+            del self._input_resolution_cache
+            del self._spell_id_resolution_cache
+            del self._max_resolution_cache_size
+            del self._change_control_manager_by_frame
 
 
     # region Context Manager
-    def __enter__(self):
+    def __enter__(self) -> IMeld:
         """
         Enter the meld lock context.
 
@@ -197,7 +196,7 @@ class Meld(Cleanable, IMeld):
         """
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Exit the meld lock context.
 

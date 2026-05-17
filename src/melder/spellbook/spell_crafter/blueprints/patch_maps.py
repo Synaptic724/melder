@@ -581,8 +581,8 @@ class MutationPatchMap(Cleanable):
             return
         self._cleaned = True
         self._targets_by_spec.clear()
-        self._root_spell_id = None
-        self._targets_by_spec = None
+        del self._root_spell_id
+        del self._targets_by_spec
 
     @property
     def root_spell_id(self) -> str:

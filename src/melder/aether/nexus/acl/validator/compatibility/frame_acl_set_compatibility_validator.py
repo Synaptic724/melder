@@ -100,11 +100,11 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             self._cleaned = True
             if self._last_report is not None:
                 self._last_report.cleanup()
-            self._last_report = None
-            self._profile_builder = None
-            self._frame_name = None
-            self._id = None
-        self._lock = None
+            del self._last_report
+            del self._profile_builder
+            del self._frame_name
+            del self._id
+        del self._lock
 
     @property
     def frame_name(self) -> str:

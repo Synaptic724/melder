@@ -89,12 +89,12 @@ class CodegenValidationResult(Cleanable, ICodegenValidationResult):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._accepted = None
-            self._frame_name = None
-            self._reason = None
-            self._validation_issues = None
-            self._transaction_id = None
-        self._lock = None
+            del self._accepted
+            del self._frame_name
+            del self._reason
+            del self._validation_issues
+            del self._transaction_id
+        del self._lock
 
     @classmethod
     def not_implemented(

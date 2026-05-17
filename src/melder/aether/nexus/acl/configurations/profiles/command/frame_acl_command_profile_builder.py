@@ -71,9 +71,9 @@ class FrameACLCommandProfileBuilder(Cleanable):
                 return
             self._cleaned = True
             self._strategies_by_name.clear()
-            self._strategies_by_name = None
-            self._id = None
-        self._lock = None
+            del self._strategies_by_name
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

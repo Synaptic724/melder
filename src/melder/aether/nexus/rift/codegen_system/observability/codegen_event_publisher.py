@@ -70,8 +70,8 @@ class CodegenEventPublisher(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._space = None
-        self._lock = None
+            del self._space
+        del self._lock
 
     def publish_validation_started(
             self,

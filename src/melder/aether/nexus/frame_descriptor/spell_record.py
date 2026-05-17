@@ -165,20 +165,21 @@ class SpellRecord(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self.nexus_label = None
-            self.nexus_version = None
-            self.origin_spellbook_id = None
-            self.frame_name = None
-            self.owner_conduit_id = None
-            self.spell_id = None
-            self.spell_index_id = None
-            self.spell_name = None
-            self.spellframe = None
-            self.binding_name = None
-            self.permissions = None
-            self.existence = None
             if self.payload is not None:
                 self.payload.cleanup()
-            self.payload = None
-            self._id = None
-            self._lock = None
+
+            del self.nexus_label
+            del self.nexus_version
+            del self.origin_spellbook_id
+            del self.frame_name
+            del self.owner_conduit_id
+            del self.spell_id
+            del self.spell_index_id
+            del self.spell_name
+            del self.spellframe
+            del self.binding_name
+            del self.permissions
+            del self.existence
+            del self.payload
+            del self._id
+            del self._lock

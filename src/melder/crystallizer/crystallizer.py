@@ -124,11 +124,12 @@ class Crystallizer(Cleanable):
             self._cleaned = True
             if self._configuration is not None:
                 self._configuration.cleanup()
-            self._configuration = None
             self._configured = False
             self._activated = False
-            self._aether = None
-            self._id = None
+
+            del self._configuration
+            del self._aether
+            del self._id
         with Crystallizer._lock:
             Crystallizer._instance = None
             Crystallizer._initialized = False

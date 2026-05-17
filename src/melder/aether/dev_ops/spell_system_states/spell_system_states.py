@@ -1,5 +1,5 @@
 import threading
-from typing import Iterable, Optional, Set, List, Dict, Iterator, Mapping, Sequence, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
@@ -18,6 +18,26 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+
+def _get_structural_risk_manager_callback(
+        risk_manager: Optional[object],
+) -> Optional[Callable[[str, Optional[SpellValidity]], None]]:
+    """
+    Return the structural-validity callback when the collaborator exposes it.
+
+    Contract:
+        - Accepts the current loose collaborator surface (`object | None`).
+        - Returns a callable only when the collaborator exposes a callable
+          `on_structural_validity_change(...)` attribute.
+        - Leaves plain objects and missing callbacks as `None`.
+    """
+    if risk_manager is None:
+        return None
+    callback = getattr(risk_manager, "on_structural_validity_change", None)
+    if not callable(callback):
+        return None
+    return callback
 
 class SpellSystemStates(Cleanable, ISpellSystemStates):
     """
@@ -126,15 +146,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 for state in list(self._states_by_index_id.values()):
                     state.cleanup()
                 self._states_by_index_id.clear()
-                self._states_by_index_id = None
 
             if self._states_by_spell_id is not None:
                 self._states_by_spell_id.clear()
-                self._states_by_spell_id = None
 
             if self._dirty_indexes is not None:
                 self._dirty_indexes.clear()
-                self._dirty_indexes = None
 
             if self._local_topologies is not None:
                 try:
@@ -144,7 +161,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 except Exception:
                     pass
                 self._local_topologies.clear()
-                self._local_topologies = None
             if self._resolution_by_conduit_id is not None:
                 for state in list(self._resolution_by_conduit_id.values()):
                     try:
@@ -152,7 +168,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                     except Exception:
                         pass
                 self._resolution_by_conduit_id.clear()
-                self._resolution_by_conduit_id = None
 
             if self._collection_dependents_by_spellbook is not None:
                 for book_map in list(self._collection_dependents_by_spellbook.values()):
@@ -163,7 +178,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                         pass
                     book_map.clear()
                 self._collection_dependents_by_spellbook.clear()
-                self._collection_dependents_by_spellbook = None
 
             if self._collection_frames_by_index is not None:
                 for frames in list(self._collection_frames_by_index.values()):
@@ -172,7 +186,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                     except Exception:
                         pass
                 self._collection_frames_by_index.clear()
-                self._collection_frames_by_index = None
 
             if self._contract_dependents_by_spellbook is not None:
                 for book_map in list(self._contract_dependents_by_spellbook.values()):
@@ -183,7 +196,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                         pass
                     book_map.clear()
                 self._contract_dependents_by_spellbook.clear()
-                self._contract_dependents_by_spellbook = None
 
             if self._contract_keys_by_index is not None:
                 for keys in list(self._contract_keys_by_index.values()):
@@ -192,17 +204,25 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                     except Exception:
                         pass
                 self._contract_keys_by_index.clear()
-                self._contract_keys_by_index = None
 
             if self._index_owner_spellbook_id is not None:
                 self._index_owner_spellbook_id.clear()
-                self._index_owner_spellbook_id = None
 
-            self._frame = None
-            self._risk_manager = None
+            del self._states_by_index_id
+            del self._states_by_spell_id
+            del self._dirty_indexes
+            del self._local_topologies
+            del self._resolution_by_conduit_id
+            del self._collection_dependents_by_spellbook
+            del self._collection_frames_by_index
+            del self._contract_dependents_by_spellbook
+            del self._contract_keys_by_index
+            del self._index_owner_spellbook_id
+            del self._frame
+            del self._risk_manager
 
         # Drop lock last
-        self._lock = None
+        del self._lock
 
     # ------------------------------------------------------------------
     # Registration / lookup
@@ -761,10 +781,10 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 if dep_state is not None:
                     dep_state.remove_dependent(index_id)
 
-            risk_manager = self._risk_manager
+            callback = _get_structural_risk_manager_callback(self._risk_manager)
 
-        if risk_manager is not None:
-            risk_manager.on_structural_validity_change(
+        if callback is not None:
+            callback(
                 index_id,
                 SpellValidity.cleaned,
             )

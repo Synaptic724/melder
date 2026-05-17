@@ -213,22 +213,21 @@ class PhaseScheduler(Cleanable):
                         self._queue.get_nowait()
                     except Exception:
                         break
-                self._queue = None
 
             if self._threads is not None:
                 self._threads.clear()
-                self._threads = None
             if self._phase_factories is not None:
                 self._phase_factories.clear()
-                self._phase_factories = None
             if self._phase_order is not None:
                 self._phase_order.clear()
-                self._phase_order = None
 
-            self._configuration = None
-
+            del self._threads
+            del self._phase_factories
+            del self._phase_order
+            del self._configuration
+            del self._queue
         # Drop lock last.
-        self._lock = None
+        del self._lock
 
     # ------------------------------------------------------------------
     # Properties

@@ -132,13 +132,13 @@ class AethericFrameConfiguration(Cleanable, IAethericFrameConfiguration):
                 return
             self._cleaned = True
             self._frozen = True
-            self._id = None
-            self._origin_spellbook_id = None
-            self._system_state = None
-            self._ai_native_enabled = None
-            self._rift_enabled = None
-            self._shared_framewide_spellbook_configuration = None
-        self._lock = None
+            del self._id
+            del self._origin_spellbook_id
+            del self._system_state
+            del self._ai_native_enabled
+            del self._rift_enabled
+            del self._shared_framewide_spellbook_configuration
+        del self._lock
 
     def validate(self) -> bool:
         """

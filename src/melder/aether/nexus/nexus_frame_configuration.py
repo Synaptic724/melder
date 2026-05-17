@@ -154,15 +154,15 @@ class NexusFrameConfiguration(Cleanable, INexusFrameConfiguration):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._frame_name = None
-            self._system_state = None
-            self._ai_native_enabled = None
-            self._rift_enabled = None
-            self._immutable = None
-            self._metadata = None
-            self._root_conduit_name = None
-            self._id = None
-        self._lock = None
+            del self._frame_name
+            del self._system_state
+            del self._ai_native_enabled
+            del self._rift_enabled
+            del self._immutable
+            del self._metadata
+            del self._root_conduit_name
+            del self._id
+        del self._lock
     @classmethod
     def create_dynamic_defaults(
             cls,

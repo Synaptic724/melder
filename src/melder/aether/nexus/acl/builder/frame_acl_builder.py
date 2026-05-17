@@ -134,12 +134,12 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             self._cleaned = True
             if self._draft_configuration is not None:
                 self._draft_configuration.cleanup()
-            self._draft_configuration = None
-            self._draft_family_name = None
-            self._draft_contract_name = None
-            self._container = None
-            self._change_active = None
-        self._lock = None
+            del self._draft_configuration
+            del self._draft_family_name
+            del self._draft_contract_name
+            del self._container
+            del self._change_active
+        del self._lock
 
     @property
     def change_active(self) -> bool:

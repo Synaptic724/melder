@@ -134,9 +134,9 @@ class AetherUtilitySystem(Cleanable):
                 return
             self._cleaned = True
             self._channel_logger_activation_enabled = False
-            self._channel_logger_resolver = None
-            self._default_logger = None
-        self._lock = None
+            del self._channel_logger_resolver
+            del self._default_logger
+        del self._lock
         with AetherUtilitySystem._singleton_lock:
             AetherUtilitySystem._instance = None
             AetherUtilitySystem._initialized = False

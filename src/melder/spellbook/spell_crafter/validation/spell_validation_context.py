@@ -133,16 +133,15 @@ class SpellValidationContext(Cleanable):
                         artifact.cleanup()
                     except Exception:
                         pass
-
+        self._cleaned = True
         # Drop references to help GC.
-        self.spell = None
-        self.spellbook = None
-        self.requirements = None
-        self.symbolic_graph = None
-        self.resolution_frame = None
-        self.cancel_event = None
+        del self.spell
+        del self.spellbook
+        del self.requirements
+        del self.symbolic_graph
+        del self.resolution_frame
+        del self.cancel_event
 
         # Detach our reference to the shared issues list without mutating it.
-        self.issues = None
+        del self.issues
 
-        self._cleaned = True

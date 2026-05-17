@@ -65,6 +65,8 @@ class ISpellbookSpellSurface(Protocol):
         only borrows spell-system-state access from its owning Spellbook.
     """
 
+    _id: str
+
     _spell_system_states: ISpellSystemStatesSpellSurface
 
 
