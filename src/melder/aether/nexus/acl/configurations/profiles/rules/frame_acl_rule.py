@@ -202,11 +202,21 @@ class FrameACLRule(Cleanable):
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
+        rule_name = payload.get("rule_name")
+        operation = payload.get("operation")
+        effect = payload.get("effect")
+        conditions = payload.get("conditions")
+        if not isinstance(rule_name, str):
+            raise TypeError("payload['rule_name'] must be a string.")
+        if not isinstance(operation, str):
+            raise TypeError("payload['operation'] must be a string.")
+        if not isinstance(effect, str):
+            raise TypeError("payload['effect'] must be a string.")
         return cls(
-            rule_name=payload.get("rule_name"),
-            operation=payload.get("operation"),
-            effect=payload.get("effect"),
-            conditions=payload.get("conditions"),
+            rule_name=rule_name,
+            operation=operation,
+            effect=effect,
+            conditions=conditions,
         )
 
     def clone(self) -> "FrameACLRule":

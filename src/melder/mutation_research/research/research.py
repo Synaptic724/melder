@@ -66,9 +66,9 @@ class Research(Cleanable):
             self._cleaned = True
             # Spell researches
             if self._spell_researches is not None:
-                for _, research in list(self._spell_researches.items()):
+                for _, spell_research in list(self._spell_researches.items()):
                     try:
-                        research.cleanup()
+                        spell_research.cleanup()
                     except Exception:
                         pass
                 try:
@@ -84,9 +84,9 @@ class Research(Cleanable):
 
             # Creation researches
             if self._creation_researches is not None:
-                for _, research in list(self._creation_researches.items()):
+                for _, creation_research in list(self._creation_researches.items()):
                     try:
-                        research.cleanup()
+                        creation_research.cleanup()
                     except Exception:
                         pass
                 try:

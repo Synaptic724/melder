@@ -146,7 +146,7 @@ class Creations(Cleanable, ICreations):
         self._spellspace_disposal_stacks.clear()
         return errors
 
-    def _attempt_cleanup(self, creation: Creation) -> Optional[Exception]:
+    def _attempt_cleanup(self, creation: object) -> Optional[Exception]:
         """
         Attempt disposal for one creation using its configured method order.
 
@@ -163,6 +163,8 @@ class Creations(Cleanable, ICreations):
             Optional[Exception]: Wrapped disposal error when the chosen cleanup
             method fails, otherwise `None`.
         """
+        if not isinstance(creation, Creation):
+            raise AttributeError("creation must be a Creation instance.")
         item = creation.value
         if item is None:
             return None

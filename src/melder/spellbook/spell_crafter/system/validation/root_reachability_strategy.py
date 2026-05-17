@@ -1,4 +1,4 @@
-from typing import Dict, List, Mapping, Optional, Set
+﻿from typing import Dict, List, Mapping, Optional, Set
 # Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -32,7 +32,7 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
             *,
             index: SpellSystemIndex,
             blueprints: Dict[str, RootResolutionBlueprint],
-            phase4_results: Dict[str, object],
+            phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,
             spell_lookup: Mapping[str, ISpell],
@@ -119,3 +119,4 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
                         },
                     )
                 )
+

@@ -175,6 +175,57 @@ def test_frame_acl_ruleset_from_json_rejects_invalid_payload_types() -> None:
         FrameACLRuleSet.from_json_dict({"name": "spell_rules", "rules": {}})
 
 
+def test_frame_acl_ruleset_from_json_rejects_non_string_name() -> None:
+    """
+    Verify ruleset JSON reconstruction rejects non-string names.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="name"):
+        FrameACLRuleSet.from_json_dict(
+            {
+                "name": None,
+                "rules": [],
+            }
+        )
+
+
+def test_frame_acl_rule_from_json_rejects_non_string_required_fields() -> None:
+    """
+    Verify rule JSON reconstruction rejects non-string required fields.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="rule_name"):
+        FrameACLRule.from_json_dict(
+            {
+                "rule_name": None,
+                "operation": "visible",
+                "effect": "allow",
+            }
+        )
+
+    with pytest.raises(TypeError, match="operation"):
+        FrameACLRule.from_json_dict(
+            {
+                "rule_name": "visible",
+                "operation": None,
+                "effect": "allow",
+            }
+        )
+
+    with pytest.raises(TypeError, match="effect"):
+        FrameACLRule.from_json_dict(
+            {
+                "rule_name": "visible",
+                "operation": "visible",
+                "effect": None,
+            }
+        )
+
+
 def test_frame_acl_ruleset_clone_returns_detached_copy() -> None:
     """
     Verify ruleset clones are detached from the source registry.

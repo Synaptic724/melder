@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Protocol, runtime_checkable
+from typing import Dict, List, Optional, Protocol, Sequence, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.imutationconduit import IMutationConduit
@@ -83,7 +83,7 @@ class IMutationResearch(ICleanable, Protocol):
     def get_session_by_index_id(self, index_id: str) -> Optional[object]:
         ...
 
-    def list_sessions(self) -> List[object]:
+    def list_sessions(self) -> Sequence[object]:
         ...
 
     def remove_session_for_index(self, target_index) -> None:

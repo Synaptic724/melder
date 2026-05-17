@@ -1,4 +1,4 @@
-from typing import Dict, List, Mapping, Optional, Set, Tuple
+﻿from typing import Dict, List, Mapping, Optional, Set, Tuple
 
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -34,7 +34,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
             *,
             index: SpellSystemIndex,
             blueprints: Dict[str, RootResolutionBlueprint],
-            phase4_results: Dict[str, object],
+            phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,
             spell_lookup: Mapping[str, ISpell],
@@ -234,3 +234,4 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
         rotated = trimmed[min_index:] + trimmed[:min_index]
         rotated.append(rotated[0])
         return tuple(rotated)
+

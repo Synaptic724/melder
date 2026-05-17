@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Collection, Deque, Dict, List, Optional, Sequence, Set, Tuple
 
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
@@ -150,7 +150,7 @@ class SpellSystemRootBlueprintBuilder:
             self,
             root_spell_id: str,
             dependencies: Dict[str, Set[str]],
-            allowed_spell_ids: Optional[Set[str]] = None,
+            allowed_spell_ids: Optional[Collection[str]] = None,
     ) -> Tuple[DirectedAcyclicWorkGraph, Sequence[str]]:
         """
         Internal helper.
@@ -168,7 +168,9 @@ class SpellSystemRootBlueprintBuilder:
                 Mapping of ``spell_id -> { dependency_spell_id, ... }`` where
                 edges are **consumer -> providers** at the adjacency level.
             allowed_spell_ids:
-                Optional membership filter that limits traversal to visible spell ids.
+                Optional membership filter that limits traversal to visible spell
+                ids. Set semantics are not required here; the helper only
+                performs membership checks against the provided collection.
 
         Returns:
             A tuple of:

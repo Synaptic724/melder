@@ -241,13 +241,16 @@ class FrameACLRuleSet(Cleanable):
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
+        name = payload.get("name")
         rules_payload = payload.get("rules")
+        if not isinstance(name, str):
+            raise TypeError("payload['name'] must be a string.")
         if rules_payload is None:
             rules_payload = []
         if not isinstance(rules_payload, list):
             raise TypeError("rules must be a list.")
         return cls(
-            payload.get("name"),
+            name,
             rules=[
                 FrameACLRule.from_json_dict(rule_payload)
                 for rule_payload in rules_payload
