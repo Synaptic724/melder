@@ -1,6 +1,6 @@
 import json
 import threading
-from typing import Optional, Union
+from typing import Optional, Union, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.builder.frame_acl_command_builder import (
@@ -340,7 +340,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "codegen":
                 raise RuntimeError("FrameACLBuilder has no active codegen change.")
-            return self._draft_configuration
+            return cast(IFrameACLCodegenConfiguration, self._draft_configuration)
 
     def _require_active_view_configuration(
             self,
@@ -361,7 +361,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "view":
                 raise RuntimeError("FrameACLBuilder has no active view change.")
-            return self._draft_configuration
+            return cast(IFrameACLViewConfiguration, self._draft_configuration)
 
     def _require_active_command_configuration(
             self,
@@ -382,7 +382,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "command":
                 raise RuntimeError("FrameACLBuilder has no active command change.")
-            return self._draft_configuration
+            return cast(IFrameACLCommandConfiguration, self._draft_configuration)
 
     def apply_frame_acl_profile(
             self,

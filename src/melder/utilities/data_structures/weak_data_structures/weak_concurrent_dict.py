@@ -410,9 +410,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                     finally:
                         node.cleanup()
                 self._dict.clear()
-                self._dict = None
 
-        self._lock = None
+                del self._dict
+        del self._lock
 
     # -------------------------------------------------------------------------
     # Configuration / state

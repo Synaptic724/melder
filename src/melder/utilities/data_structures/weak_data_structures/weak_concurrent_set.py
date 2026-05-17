@@ -216,8 +216,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 finally:
                     node.cleanup()
             self._set.clear()
-            self._set = None
-        self._lock = None
+
+            del self._set
+        del self._lock
 
     # -------------------------------------------------------------------------
     # Configuration / state

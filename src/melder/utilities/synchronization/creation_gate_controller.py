@@ -71,7 +71,7 @@ class CreationGateController(Cleanable):
             None.
         """
         super().__init__()
-        self._lock: Optional[threading.RLock] = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
         self._conduit_creation_gates: Dict[str, CreationGate] = {}
         self._conduit_creation_gates_by_root: Dict[str, Dict[str, CreationGate]] = {}
         self._conduit_root_by_conduit: Dict[str, str] = {}
@@ -116,12 +116,13 @@ class CreationGateController(Cleanable):
             self._conduit_root_by_conduit.clear()
             self._spell_index_creation_gates.clear()
             self._cleaned = True
-            self._conduit_creation_gates = None
-            self._conduit_creation_gates_by_root = None
-            self._conduit_root_by_conduit = None
-            self._spell_index_creation_gates = None
 
-        self._lock = None
+            del self._conduit_creation_gates
+            del self._conduit_creation_gates_by_root
+            del self._conduit_root_by_conduit
+            del self._spell_index_creation_gates
+
+        del self._lock
 
     # ------------------------------------------------------------------
     # Internal helpers

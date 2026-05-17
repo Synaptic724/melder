@@ -182,11 +182,12 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
             if self._cleaned:
                 return
             self._cleaned = True
-            # Drop weakref and callback.
-            self._weak = None
-            self._on_collect = None
 
-        self._lock = None
+            # Drop weakref and callback.
+            del self._weak
+            del self._on_collect
+
+        del self._lock
 
     # ------------------------------------------------------------------
     # Internal helpers

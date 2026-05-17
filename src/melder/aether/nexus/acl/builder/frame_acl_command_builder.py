@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
@@ -461,7 +461,10 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         self.check_cleaned()
         with self._lock:
-            return self._frame_acl_builder.commit_change()
+            return cast(
+                IFrameACLCommandConfiguration,
+                self._frame_acl_builder.commit_change(),
+            )
 
     def discard_change(self) -> None:
         """

@@ -74,10 +74,9 @@ class CancellationEvent(Cleanable):
         """
         if self._cleaned:
             return
-
-        # No lock needed - this class is read-only and the flag is just a reference.
-        self._flag = None
         self._cleaned = True
+        # No lock needed - this class is read-only and the flag is just a reference.
+        del self._flag
 
     @property
     def is_set(self) -> bool:
@@ -131,7 +130,7 @@ class CancellationEventSignal(Cleanable):
       burst-style pipeline (e.g. staged resolution compilation).
     """
 
-    __slots__ = Cleanable.__slots__ + ["_flag", "_event"]
+    __slots__ = Cleanable.__slots__ + ["_lock", "_flag", "_event"]
     __melder_internal__ = _mrg.sentinel
 
     def __init__(self) -> None:
@@ -139,14 +138,16 @@ class CancellationEventSignal(Cleanable):
         Create a cancellation signal and pre-build its shared event view.
 
         Contract:
+            - Owns one mutable :class:`threading.Lock`.
             - Owns one mutable :class:`threading.Event`.
             - Owns one reusable :class:`CancellationEvent` wrapper that all
               consumers share.
         """
         Cleanable.__init__(self)
-        self._flag = threading.Event()
+        self._lock: threading.Lock = threading.Lock()
+        self._flag: threading.Event = threading.Event()
         # Pre-create a single event view; all consumers share it.
-        self._event = CancellationEvent(self._flag)
+        self._event: CancellationEvent = CancellationEvent(self._flag)
 
     # ------------------------------------------------------------
     # Cleanup — deterministic, complete teardown
@@ -165,22 +166,26 @@ class CancellationEventSignal(Cleanable):
         """
         if self._cleaned:
             return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            # Cancel any active workers
+            if self._flag is not None:
+                self._flag.set()
 
-        # Cancel any active workers
-        if self._flag is not None:
-            self._flag.set()
+            # Clean child event
+            if self._event is not None:
+                try:
+                    self._event.cleanup()
+                except Exception:
+                    pass
 
-        # Clean child event
-        if self._event is not None:
-            try:
-                self._event.cleanup()
-            except Exception:
-                pass
+            # Null everything
+            del self._flag
+            del self._event
+            del self._lock
 
-        # Null everything
-        self._flag = None
-        self._event = None
-        self._cleaned = True
 
 
     @property
@@ -196,7 +201,8 @@ class CancellationEventSignal(Cleanable):
             RuntimeError: If this signal has already been cleaned.
         """
         self.check_cleaned()
-        return self._event
+        with self._lock:
+            return self._event
 
     def cancel(self) -> None:
         """
@@ -209,7 +215,8 @@ class CancellationEventSignal(Cleanable):
             RuntimeError: If this signal has already been cleaned.
         """
         self.check_cleaned()
-        self._flag.set()
+        with self._lock:
+            self._flag.set()
 
     @property
     def is_set(self) -> bool:
@@ -223,4 +230,5 @@ class CancellationEventSignal(Cleanable):
             RuntimeError: If this signal has already been cleaned.
         """
         self.check_cleaned()
-        return self._flag.is_set()
+        with self._lock:
+            return self._flag.is_set()

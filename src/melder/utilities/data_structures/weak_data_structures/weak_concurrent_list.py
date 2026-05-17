@@ -153,8 +153,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                 finally:
                     node.cleanup()
             self._list.clear()
-            self._list = None
-        self._lock = None
+
+            del self._list
+        del self._lock
 
     # -------------------------------------------------------------------------
     # Configuration

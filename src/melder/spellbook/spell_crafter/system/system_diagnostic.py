@@ -101,15 +101,16 @@ class SystemDiagnostic(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._code = None
-        self._message = None
-        self._severity = None
-        self._spell_id = None
-        self._root_id = None
-        self._source = None
         if self._details is not None:
             self._details.clear()
-        self._details = None
+
+        del self._code
+        del self._message
+        del self._severity
+        del self._spell_id
+        del self._root_id
+        del self._source
+        del self._details
 
     @property
     def code(self) -> str:
