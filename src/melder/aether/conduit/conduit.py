@@ -14,8 +14,16 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces import IConduit, ISpellbook, IConduitCloud, ISpell, IConfiguration, \
-    ISafeLogger, ISpellSpace
+from melder.utilities.interfaces import (
+    IConduit,
+    ISpellbook,
+    IConduitCloud,
+    ISpell,
+    IConfiguration,
+    ISafeLogger,
+    ISpellSpace,
+    IConduitResolutionState,
+)
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aether import Aether
 from melder.aether.conduit.meld.meld import Meld
@@ -3116,7 +3124,7 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Conduit Ward API
     #region Conduit Resolution Validation API
-    def get_resolution_state(self) -> Optional["ConduitResolutionState"]:
+    def get_resolution_state(self) -> Optional[IConduitResolutionState]:
         """
         Public API
 
@@ -3167,7 +3175,7 @@ class Conduit(Cleanable, IConduit):
 
         return spell_system_states.get_conduit_resolution_state(conduit_id)
 
-    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional["ConduitResolutionState"]:
+    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional[IConduitResolutionState]:
         """
         Public API
 

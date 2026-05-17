@@ -40,12 +40,12 @@ class ISpellbook(ICleanable, Protocol):
     _bind: Optional[Any]
     _id: str
     _aetheric_frame: Optional[str]
-    _configuration: Optional['IConfiguration']
+    _configuration: 'Optional[IConfiguration]'
     _spell_id_pool: Optional[Any]
 
     # Spell Validator
     _spell_validator: 'SpellValidationSystem'
-    _spell_system_states: 'ISpellSystemStates'
+    _spell_system_states: "ISpellSystemStates"
 
     # ------------------------------------------------------------------
     # Properties
