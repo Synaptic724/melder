@@ -308,7 +308,17 @@ class CrystallizerConfiguration(Cleanable):
             Tuple[Path, ...]: Configured source roots as resolved paths.
         """
         self.check_cleaned()
-        return self.get_property("user_source_root_paths")
+        value = self.get_property("user_source_root_paths")
+        if not isinstance(value, tuple):
+            raise TypeError(
+                "user_source_root_paths must remain a tuple of Path values."
+            )
+        for entry in value:
+            if not isinstance(entry, Path):
+                raise TypeError(
+                    "user_source_root_paths entries must remain Path values."
+                )
+        return value
 
     def _convert_property_value_if_needed(self, key: str, value: object) -> object:
         """

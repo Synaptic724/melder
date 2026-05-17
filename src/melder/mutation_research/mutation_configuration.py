@@ -67,11 +67,12 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
             self._frozen = True
             self._activated = False
             self._properties.clear()
-            self._properties = None
             self.available_properties.clear()
-            self.available_properties = None
-            self._id = None
-        self._lock = None
+
+            del self._properties
+            del self.available_properties
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

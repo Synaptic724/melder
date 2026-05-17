@@ -88,15 +88,15 @@ class SpellSystemState(Cleanable):
         self._current_spell_id: Optional[str] = current_spell_id
 
         # Concurrent topology sets
-        self._direct_dependencies: Optional[Set[str]] = set()
-        self._direct_dependents: Optional[Set[str]] = set()
+        self._direct_dependencies: Set[str] = set()
+        self._direct_dependents: Set[str] = set()
 
         # Validity + flags
-        self._validity: Optional[SpellValidity] = SpellValidity.unknown
-        self._flags: Optional[Set[SpellState]] = set()
+        self._validity: SpellValidity = SpellValidity.unknown
+        self._flags: Set[SpellState] = set()
         self._flags.add(SpellState.new_lineage)
 
-        self._change_reason: Optional[SpellStateChangeReason] = SpellStateChangeReason.new_lineage
+        self._change_reason: SpellStateChangeReason | None = SpellStateChangeReason.new_lineage
         self._transitively_dirty: bool = False
         self._last_validated_at: Optional[float] = None
         self._risk_manager: Optional[object] = None
@@ -126,32 +126,28 @@ class SpellSystemState(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-
             self._cleaned = True
 
             if self._direct_dependencies is not None:
                 self._direct_dependencies.clear()
-                self._direct_dependencies = None
-
             if self._direct_dependents is not None:
                 self._direct_dependents.clear()
-                self._direct_dependents = None
-
             if self._flags is not None:
                 self._flags.clear()
-                self._flags = None
-
-            self._validity = None
-            self._change_reason = None
             self._transitively_dirty = False
-            self._last_validated_at = None
-            self._risk_manager = None
 
-            self._spell_index_id = None
-            self._current_spell_id = None
+            del self._direct_dependents
+            del self._flags
+            del self._direct_dependencies
+            del self._validity
+            del self._change_reason
+            del self._last_validated_at
+            del self._risk_manager
+            del self._spell_index_id
+            del self._current_spell_id
 
         # Drop lock last
-        self._lock = None
+        del self._lock
 
     # ------------------------------------------------------------------
     # Properties

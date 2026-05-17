@@ -129,20 +129,18 @@ class Incident(Cleanable):
 
             if self._root_ids is not None:
                 self._root_ids.clear()
-                self._root_ids = None
-
             if self._details is not None:
                 self._details.clear()
-                self._details = None
 
-            self._spell_index_id = None
-            self._summary = None
-            self._kind = None
-            self._severity = None
-            self._status = None
-            self._id = None
-
-        self._lock = None
+            del self._root_ids
+            del self._details
+            del self._spell_index_id
+            del self._summary
+            del self._kind
+            del self._severity
+            del self._status
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

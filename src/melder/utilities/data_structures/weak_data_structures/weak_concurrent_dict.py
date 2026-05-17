@@ -1317,7 +1317,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         """
         In-place merge (`|=`) with another mapping or iterable.
         """
-        self.update(other)
+        if isinstance(other, WeakConcurrentDict):
+            self.update(other.to_dict())
+        else:
+            self.update(other)
         return self
 
     def __ror__(
@@ -1330,7 +1333,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         The right-hand operand (``self``) wins on key conflicts, mirroring built-in dict behavior.
         """
         # Build from the left operand first, then merge self so our keys win.
-        left = WeakConcurrentDict(initial=other, auto_prune=self._auto_prune)
+        if isinstance(other, WeakConcurrentDict):
+            left = other.copy()
+        else:
+            left = WeakConcurrentDict(initial=other, auto_prune=self._auto_prune)
         return left.__or__(self)
 
     def __ne__(self, other: object) -> bool:

@@ -2692,6 +2692,8 @@ class ConduitWard(Cleanable, IConduitWard):
                         )
                         return None
 
+                    if spell is None:
+                        return None
                     return peer_ward._id, spell
 
         return None

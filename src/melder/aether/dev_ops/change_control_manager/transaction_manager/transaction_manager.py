@@ -95,14 +95,15 @@ class ChangeControlTransactionManager(Cleanable):
             self._cleaned = True
             if self._in_flight is not None:
                 self._in_flight.clear()
-                self._in_flight = None
             if self._link_mirror is not None:
                 for borrowers in self._link_mirror.values():
                     borrowers.clear()
                 self._link_mirror.clear()
-                self._link_mirror = None
-            self._audit_log_fn = None
-        self._lock = None
+
+            del self._in_flight
+            del self._link_mirror
+            del self._audit_log_fn
+        del self._lock
 
     def set_audit_logger(
             self,
