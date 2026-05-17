@@ -155,25 +155,25 @@ class ClassProfile(Cleanable):
         self._cleaned = True
 
         # Drop references
-        self.name = None
-        self.qualname = None
-        self.module = None
-        self.mro = None
-        self.bases = None
-        self.annotations = None
-        self.protocols = None
-        self.slots = None
-        self.origin_file = None
-        self.origin_line = None
-        self.origin_end_line = None
-        self.source_preview = None
-        self.source_text = None
-        self.members = None
-        self.methods = None
-        self.is_dataclass = None
-        self.decorated = None
-        self.docstring_raw = None
-        self.docstring_summary = None
-        self.behavior_summary = None
-        self.tags = None
-        self.dynamic_access = None
+        del self.name
+        del self.qualname
+        del self.module
+        del self.mro
+        del self.bases
+        del self.annotations
+        del self.protocols
+        del self.slots
+        del self.origin_file
+        del self.origin_line
+        del self.origin_end_line
+        del self.source_preview
+        del self.source_text
+        del self.members
+        del self.methods
+        del self.is_dataclass
+        del self.decorated
+        del self.docstring_raw
+        del self.docstring_summary
+        del self.behavior_summary
+        del self.tags
+        del self.dynamic_access

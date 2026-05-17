@@ -186,39 +186,39 @@ class MethodProfile(Cleanable):
             self.closure.clear()
         self._cleaned = True
 
-        self.name = None
-        self.qualname = None
-        self.module = None
-        self.id = None
-        self.type = None
-        self.repr = None
-        self.builtin_mod = None
-        self.extension_mod = None
-        self.file = None
-        self.preview = None
-        self.src_offset = None
-        self.start_line = None
-        self.end_line = None
-        self.source_text = None
-        self.signature = None
-        self.parameters = None
-        self.uninspectable = None
-        self.func = None
-        self.method = None
-        self.builtin = None
-        self.classmethod = None
-        self.staticmethod = None
-        self.generator = None
-        self.async_gen = None
-        self.coroutine = None
-        self.lambda_fn = None
-        self.abstract = None
-        self.closure = None
-        self.decorated = None
-        self.wrapped_repr = None
-        self.docstring_raw = None
-        self.docstring_summary = None
-        self.behavior_summary = None
+        del self.name
+        del self.qualname
+        del self.module
+        del self.id
+        del self.type
+        del self.repr
+        del self.builtin_mod
+        del self.extension_mod
+        del self.file
+        del self.preview
+        del self.src_offset
+        del self.start_line
+        del self.end_line
+        del self.source_text
+        del self.signature
+        del self.parameters
+        del self.uninspectable
+        del self.func
+        del self.method
+        del self.builtin
+        del self.classmethod
+        del self.staticmethod
+        del self.generator
+        del self.async_gen
+        del self.coroutine
+        del self.lambda_fn
+        del self.abstract
+        del self.closure
+        del self.decorated
+        del self.wrapped_repr
+        del self.docstring_raw
+        del self.docstring_summary
+        del self.behavior_summary
         if isinstance(self.tags, list):
             self.tags.clear()
-        self.tags = None
+        del self.tags
