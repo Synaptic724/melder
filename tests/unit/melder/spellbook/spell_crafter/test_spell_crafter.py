@@ -1727,7 +1727,9 @@ def test_cleanup_clears_references() -> None:
     Purpose:
         Verify cleanup drops references to owned artifacts.
     Contract:
-        All crafter-owned fields are reset to None after cleanup.
+        Phase-1 through phase-4 owned artifacts are nulled, while later
+        retained phase artifacts and borrowed collaborators are deleted after
+        cleanup.
     Returns:
         None.
     Raises:
@@ -1750,13 +1752,13 @@ def test_cleanup_clears_references() -> None:
     assert crafter._resolution_frame is None
     assert crafter._validation_result_phase4 is None
     assert crafter._validation_result_phase6 is None
-    assert crafter._root_blueprint_phase5 is None
-    assert crafter._spell_system_index_phase5 is None
-    assert crafter._entire_dag_blueprint_phase5 is None
-    assert crafter._spell_system_states is None
-    assert crafter._spell is None
-    assert crafter._spell_validator is None
-    assert crafter._lock is None
+    assert not hasattr(crafter, "_root_blueprint_phase5")
+    assert not hasattr(crafter, "_spell_system_index_phase5")
+    assert not hasattr(crafter, "_entire_dag_blueprint_phase5")
+    assert not hasattr(crafter, "_spell_system_states")
+    assert not hasattr(crafter, "_spell")
+    assert not hasattr(crafter, "_spell_validator")
+    assert crafter._lock is not None
 
 
 @pytest.mark.parametrize(
@@ -7124,6 +7126,7 @@ def test_run_phase_occurrence_plan_reuses_cached_plan_when_input_signature_uncha
 
     builder_init_calls = 0
     build_calls = 0
+    cleanup_calls = 0
     mark_calls: list[str] = []
 
     class _OccurrencePlanBuilderStub:
@@ -7145,6 +7148,10 @@ def test_run_phase_occurrence_plan_reuses_cached_plan_when_input_signature_uncha
                 contract_overrides_by_occurrence={},
                 contract_overrides_by_spell_id={},
             )
+
+        def cleanup(self) -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
 
     def _signature_stub(
         self: SpellCrafter,
@@ -7169,6 +7176,7 @@ def test_run_phase_occurrence_plan_reuses_cached_plan_when_input_signature_uncha
 
     assert builder_init_calls == 1
     assert build_calls == 1
+    assert cleanup_calls == 1
     assert mark_calls == ["mark"]
     assert crafter._occurrence_plan_phase8 is first_plan
     assert crafter._phase8_occurrence_plan_input_signature == "stable-phase8-signature"
@@ -7196,6 +7204,7 @@ def test_run_phase_occurrence_plan_rebuilds_when_input_signature_changes(
     signature_values = ["phase8-signature-a", "phase8-signature-b"]
     builder_init_calls = 0
     build_calls = 0
+    cleanup_calls = 0
     mark_calls: list[str] = []
 
     class _OccurrencePlanBuilderStub:
@@ -7217,6 +7226,10 @@ def test_run_phase_occurrence_plan_rebuilds_when_input_signature_changes(
                 contract_overrides_by_occurrence={},
                 contract_overrides_by_spell_id={},
             )
+
+        def cleanup(self) -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
 
     def _signature_stub(
         self: SpellCrafter,
@@ -7241,6 +7254,7 @@ def test_run_phase_occurrence_plan_rebuilds_when_input_signature_changes(
 
     assert builder_init_calls == 2
     assert build_calls == 2
+    assert cleanup_calls == 2
     assert mark_calls == ["mark", "mark"]
     assert crafter._occurrence_plan_phase8 is not first_plan
     assert crafter._phase8_occurrence_plan_input_signature == "phase8-signature-b"
@@ -7272,6 +7286,7 @@ def test_run_phase_occurrence_plan_reuses_signature_via_fast_key_when_no_mutatio
 
     builder_init_calls = 0
     build_calls = 0
+    cleanup_calls = 0
     signature_calls: list[str] = []
     mark_calls: list[str] = []
 
@@ -7294,6 +7309,10 @@ def test_run_phase_occurrence_plan_reuses_signature_via_fast_key_when_no_mutatio
                 contract_overrides_by_occurrence={},
                 contract_overrides_by_spell_id={},
             )
+
+        def cleanup(self) -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
 
     def _signature_stub(
         self: SpellCrafter,
@@ -7320,6 +7339,7 @@ def test_run_phase_occurrence_plan_reuses_signature_via_fast_key_when_no_mutatio
     assert signature_calls == ["called"]
     assert builder_init_calls == 1
     assert build_calls == 1
+    assert cleanup_calls == 1
     assert mark_calls == ["mark"]
     assert first_plan is not None
     assert crafter._occurrence_plan_phase8 is first_plan
@@ -7353,6 +7373,7 @@ def test_run_phase_occurrence_plan_fast_key_falls_back_when_mutation_override_ac
 
     builder_init_calls = 0
     build_calls = 0
+    cleanup_calls = 0
     signature_calls: list[str] = []
     mark_calls: list[str] = []
 
@@ -7375,6 +7396,10 @@ def test_run_phase_occurrence_plan_fast_key_falls_back_when_mutation_override_ac
                 contract_overrides_by_occurrence={},
                 contract_overrides_by_spell_id={},
             )
+
+        def cleanup(self) -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
 
     def _signature_stub(
         self: SpellCrafter,
@@ -7401,6 +7426,7 @@ def test_run_phase_occurrence_plan_fast_key_falls_back_when_mutation_override_ac
     assert signature_calls == ["called", "called"]
     assert builder_init_calls == 1
     assert build_calls == 1
+    assert cleanup_calls == 1
     assert mark_calls == ["mark"]
     assert first_plan is not None
     assert crafter._occurrence_plan_phase8 is first_plan
@@ -7552,6 +7578,7 @@ def test_run_phase_patch_maps_reuses_cached_maps_when_input_signature_unchanged(
     builder_init_calls = 0
     override_build_calls = 0
     mutation_build_calls = 0
+    cleanup_calls = 0
     mark_calls: list[str] = []
 
     class _PatchMapBuilderStub:
@@ -7568,6 +7595,10 @@ def test_run_phase_patch_maps_reuses_cached_maps_when_input_signature_unchanged(
             nonlocal mutation_build_calls
             mutation_build_calls += 1
             return types.SimpleNamespace(_targets_by_spec={})
+
+        def cleanup(self) -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
 
     def _signature_stub(
         self: SpellCrafter,
@@ -7592,6 +7623,7 @@ def test_run_phase_patch_maps_reuses_cached_maps_when_input_signature_unchanged(
     assert builder_init_calls == 1
     assert override_build_calls == 1
     assert mutation_build_calls == 1
+    assert cleanup_calls == 1
     assert mark_calls == ["mark"]
     assert crafter._override_patch_map_phase10 is first_override_patch_map
     assert crafter._mutation_patch_map_phase10 is first_mutation_patch_map
@@ -7621,6 +7653,7 @@ def test_run_phase_patch_maps_rebuilds_when_input_signature_changes(
     builder_init_calls = 0
     override_build_calls = 0
     mutation_build_calls = 0
+    cleanup_calls = 0
     mark_calls: list[str] = []
 
     class _PatchMapBuilderStub:
@@ -7637,6 +7670,10 @@ def test_run_phase_patch_maps_rebuilds_when_input_signature_changes(
             nonlocal mutation_build_calls
             mutation_build_calls += 1
             return types.SimpleNamespace(_targets_by_spec={})
+
+        def cleanup(self) -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
 
     def _signature_stub(
         self: SpellCrafter,
@@ -7661,6 +7698,7 @@ def test_run_phase_patch_maps_rebuilds_when_input_signature_changes(
     assert builder_init_calls == 2
     assert override_build_calls == 2
     assert mutation_build_calls == 2
+    assert cleanup_calls == 2
     assert mark_calls == ["mark", "mark"]
     assert crafter._override_patch_map_phase10 is not first_override_patch_map
     assert crafter._mutation_patch_map_phase10 is not first_mutation_patch_map
@@ -7704,6 +7742,9 @@ def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
                 contract_overrides_by_spell_id={},
             )
 
+        def cleanup(self) -> None:
+            pass
+
     class _InjectionPlanBuilderStub:
         def __init__(self, **_kwargs: object) -> None:
             pass
@@ -7720,6 +7761,9 @@ def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
 
         def build_mutation_patch_map(self) -> object:
             return types.SimpleNamespace(_targets_by_spec={})
+
+        def cleanup(self) -> None:
+            pass
 
     mark_calls: list[str] = []
     capture_calls: list[str] = []

@@ -263,7 +263,7 @@ class Package(Cleanable, Generic[P, R]):
             A string describing the function's name and parameters.
         """
         with self._lock:
-            if self._cleaned or not self._func:
+            if self._cleaned:
                 return "Package(cleaned)"
 
             func = self._func.__wrapped__
@@ -605,7 +605,7 @@ class Package(Cleanable, Generic[P, R]):
             raise TypeError("Tasks input cannot be None.")
 
         # Single task input still normalizes to a one-element package list.
-        if isinstance(tasks, (Callable, Package)):
+        if isinstance(tasks, Package) or callable(tasks):
             return [Package(Package._normalize_task(tasks))]
 
         if not isinstance(tasks, Iterable):
@@ -659,7 +659,7 @@ class Package(Cleanable, Generic[P, R]):
         if tasks is None:
             raise TypeError("Tasks input cannot be None.")
 
-        if isinstance(tasks, (Callable, Package)):
+        if isinstance(tasks, Package) or callable(tasks):
             return [Package._pack(tasks)]
 
         if not isinstance(tasks, Iterable) or isinstance(tasks, str):

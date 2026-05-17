@@ -417,6 +417,7 @@ class OccurrencePlanBuilder(object):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = [
+        "_cleaned",
         "_root_spell",
         "_blueprint",
         "_spell_lookup",
@@ -453,11 +454,53 @@ class OccurrencePlanBuilder(object):
             raise ValueError("root_spell must not be None.")
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
+        self._cleaned: bool = False
         self._root_spell: ISpell = root_spell
         self._blueprint: Any = blueprint
         self._spell_lookup: Dict[str, ISpell] = spell_lookup
         self._system_states: Any = system_states
         self._path_registry: Any = blueprint.path_registry
+
+    def cleanup(self) -> None:
+        """
+        Release the builder's borrowed references and local transient state.
+
+        Purpose:
+            Mark the builder dead after one planning pass so later accidental
+            reuse fails fast instead of retaining borrowed runtime references.
+
+        Contract:
+            - Idempotent.
+            - Does not mutate the borrowed spell, blueprint, spell lookup, or
+              system-state objects.
+            - Releases only the builder's own references to those objects.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+
+        self._cleaned = True
+        del self._root_spell
+        del self._blueprint
+        del self._spell_lookup
+        del self._system_states
+        del self._path_registry
+
+    def _require_active(self) -> None:
+        """
+        Raise when the builder is used after deterministic cleanup.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the builder has already been cleaned.
+        """
+        if self._cleaned:
+            raise RuntimeError("OccurrencePlanBuilder has already been cleaned.")
 
     def build(self) -> OccurrencePlan:
         """
@@ -472,6 +515,7 @@ class OccurrencePlanBuilder(object):
         Returns:
             OccurrencePlan: The compiled phase 8 artifact.
         """
+        self._require_active()
         root_spell_id = self._blueprint.root_spell_id
         dag = self._blueprint.dag
         ordered_node_ids = self._blueprint.ordered_node_ids
@@ -603,6 +647,7 @@ class OccurrencePlanBuilder(object):
         Returns:
             bool: True when shared occurrence collapse is allowed.
         """
+        self._require_active()
         for spell in self._spell_lookup.values():
             if spell.mutation_override:
                 return False

@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Optional
+from typing import Deque, Literal, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -265,7 +265,7 @@ class TicketFlag(Cleanable):
         self.set_true()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> bool:
+    def __exit__(self, exc_type, exc, tb) -> Literal[False]:
         """
         Public API
 
@@ -273,7 +273,7 @@ class TicketFlag(Cleanable):
 
         Contract:
             - Always attempts one decrement.
-            - Does not suppress exceptions from the with-body.
+            - Never suppresses exceptions from the with-body.
 
         Returns:
             bool:

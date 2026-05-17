@@ -267,21 +267,19 @@ class Conduit(Cleanable, IConduit):
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
             self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
-            self._conduit_hooks = None
-            self._meld_hooks = None
-            self._local_conduit_hooks = None
+
+            del self._conduit_hooks
+            del self._meld_hooks
+            del self._local_conduit_hooks
 
         # Logger last
-        if self._logger is not None:
             try:
                 if hasattr(self._logger, "cleanup"):
                     self._logger.cleanup()
             except Exception:
                 pass
-            self._logger = None
+            del self._logger
 
-        # Release lock reference after teardown
-        self._lock = None
 
 
     def _cleanup_lesser_conduit(self):
@@ -324,18 +322,18 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("Error cleaning creations", "_cleanup_lesser_conduit", exc_info=True)
 
         # Null internal references
-        self._conduit_ward = None
-        self._meld = None
-        self._creation_gate = None
-        self._creation_gate_controller = None
-        self._dev_ops_manager = None
-        self._creations = None
-        self._spellspace_stack = None
-        self._spellspace_registry = None
-        self._spellbook = None
-        self._configuration = None
-        self._root_conduit_id = None
-        self._nexus = None
+        del self._conduit_ward
+        del self._meld
+        del self._creation_gate
+        del self._creation_gate_controller
+        del self._dev_ops_manager
+        del self._creations
+        del self._spellspace_stack
+        del self._spellspace_registry
+        del self._spellbook
+        del self._configuration
+        del self._root_conduit_id
+        del self._nexus
 
 
     def _cleanup_normal_conduit(self):
@@ -2985,7 +2983,7 @@ class Conduit(Cleanable, IConduit):
 
         return unlinked
 
-    def get_links(self):
+    def get_links(self) -> list[IConduit]:
         """
         Public API
 
@@ -3405,7 +3403,7 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def add_spell_to_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None, conduit_id: str = None,
+    def add_spell_to_contract(self, *, spell: ISpell | None = None, spell_id: str | None = None, conduit: IConduit | None = None, conduit_id: str | None = None,
                               permissions: str = "create", aetheric_frame = "default", reason: DetailReason = DetailReason.manual,
                               root_spell_id: str | None = None, link_dependencies: bool = False) -> bool | None:
         """
@@ -3467,7 +3465,7 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit = None, conduit_id: str = None,
+    def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit  | None= None, conduit_id: str | None = None,
                                permissions: str = "create", aetheric_frame = "default",
                                reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict:
         """
@@ -3534,8 +3532,8 @@ class Conduit(Cleanable, IConduit):
         return normalized
 
 
-    def remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
-                                   conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
+    def remove_spell_from_contract(self, *, spell: ISpell | None = None, spell_id: str  | None = None, conduit: IConduit  | None = None,
+                                   conduit_id: str  | None = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 
@@ -3585,8 +3583,8 @@ class Conduit(Cleanable, IConduit):
 
         return result
 
-    def remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                    conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> dict:
+    def remove_spells_from_contract(self, *, spell_ids: list[str] | None = None, conduit: IConduit | None = None,
+                                    conduit_id: str | None = None, root_spell_id: str | None = None, aetheric_frame = "default") -> dict:
         """
         Public API
 
@@ -3645,8 +3643,8 @@ class Conduit(Cleanable, IConduit):
 
         return normalized
 
-    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: IConduit = None,
-                                   conduit_id: str = None, aetheric_frame: str = "default") -> dict:
+    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: Optional[IConduit] = None,
+                                   conduit_id: Optional[str] = None, aetheric_frame: str = "default") -> dict:
         """
         Public API
 
@@ -3673,10 +3671,10 @@ class Conduit(Cleanable, IConduit):
     def add_spell_to_contract_with_dependencies(
             self,
             *,
-            spell: ISpell = None,
-            spell_id: str = None,
-            conduit: IConduit = None,
-            conduit_id: str = None,
+            spell: Optional[ISpell] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
     ) -> bool | None:
@@ -3699,7 +3697,7 @@ class Conduit(Cleanable, IConduit):
         )
 
 
-    def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: str = None, aetheric_frame = "default") -> bool | None:
+    def _remove_all_spells_from_contract(self, *, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None, aetheric_frame = "default") -> bool | None:
         """
         Public API
 

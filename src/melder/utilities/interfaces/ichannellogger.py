@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
+from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -460,7 +460,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    warn = warning  # alias
+    warn: Callable[..., None] = warning  # alias
 
     def error(self, msg: str, *args, **kwargs) -> None:
         """
@@ -511,7 +511,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    fatal = critical
+    fatal: Callable[..., None] = critical
 
     # ===== System Groups =====
     def _add_system_group(self, name: str) -> None:
@@ -639,4 +639,4 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    refresh_props = refresh_properties
+    refresh_props: Callable[..., None] = refresh_properties

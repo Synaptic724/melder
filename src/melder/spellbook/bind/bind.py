@@ -105,7 +105,7 @@ class Bind(Cleanable, IBind):
             aetheric_frame: str,
             spell: Any = None,
             spellframe: Any = None,
-            binding_name: str =None,
+            binding_name: Optional[str] = None,
             profile: str = "general",
     ) -> Union[ISpell, Any]:
         """
@@ -619,7 +619,7 @@ class Bind(Cleanable, IBind):
 
     @staticmethod
     def _structurally_implements_protocol(
-            cls: type, protocol_type: type[Protocol]
+            cls: type, protocol_type: type[Any]
     ) -> tuple[bool, list[str]]:
         """
         Best-effort structural check that `cls` implements `protocol_type`.
@@ -636,7 +636,8 @@ class Bind(Cleanable, IBind):
 
         Args:
             cls (type): The candidate implementation class.
-            protocol_type (type[Protocol]): The Protocol being used as the spellframe.
+            protocol_type (type[Any]): The Protocol subclass being used as the
+                spellframe.
 
         Returns:
             tuple[bool, list[str]]:

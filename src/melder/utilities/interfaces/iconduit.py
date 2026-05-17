@@ -1215,10 +1215,10 @@ class IConduit(ICleanable, Protocol):
     def add_spell_to_contract(
             self,
             *,
-            spell: 'ISpell' = None,
-            spell_id: str = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell: Optional['ISpell'] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame="default",
             reason: Any = None,
@@ -1257,8 +1257,8 @@ class IConduit(ICleanable, Protocol):
     def add_spells_to_contract(
             self,
             spell_ids: list[str],
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame="default",
             reason: Any = None,
@@ -1291,10 +1291,10 @@ class IConduit(ICleanable, Protocol):
     def remove_spell_from_contract(
             self,
             *,
-            spell: 'ISpell' = None,
-            spell_id: str = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell: Optional['ISpell'] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             root_spell_id: str | None = None,
             aetheric_frame="default",
     ) -> bool | None:
@@ -1326,9 +1326,9 @@ class IConduit(ICleanable, Protocol):
     def remove_spells_from_contract(
             self,
             *,
-            spell_ids: list[str] = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell_ids: Optional[list[str]] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             root_spell_id: str | None = None,
             aetheric_frame="default",
     ) -> dict:
@@ -1355,8 +1355,8 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: 'IConduit' = None,
-                                   conduit_id: str = None, aetheric_frame: str = "default") -> dict:
+    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: Optional['IConduit'] = None,
+                                   conduit_id: Optional[str] = None, aetheric_frame: str = "default") -> dict:
         """
         Public API
 
@@ -1372,10 +1372,10 @@ class IConduit(ICleanable, Protocol):
     def add_spell_to_contract_with_dependencies(
             self,
             *,
-            spell: 'ISpell' = None,
-            spell_id: str = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell: Optional['ISpell'] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
     ) -> bool | None:
@@ -1390,8 +1390,8 @@ class IConduit(ICleanable, Protocol):
     def _remove_all_spells_from_contract(
             self,
             *,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             aetheric_frame="default",
     ) -> bool | None:
         """

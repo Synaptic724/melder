@@ -735,42 +735,42 @@ class SpellRequirementsFinder(Cleanable):
 
         if container in (list, typing.List):
             if len(args) == 1:
-                return list[args[0]]
+                return list.__class_getitem__(args[0])
             return sentinel
 
         if container in (set, typing.Set):
             if len(args) == 1:
-                return set[args[0]]
+                return set.__class_getitem__(args[0])
             return sentinel
 
         if container in (frozenset, typing.FrozenSet):
             if len(args) == 1:
-                return frozenset[args[0]]
+                return frozenset.__class_getitem__(args[0])
             return sentinel
 
         if container in (dict, typing.Dict):
             if len(args) == 2:
-                return dict[args[0], args[1]]
+                return dict.__class_getitem__((args[0], args[1]))
             return sentinel
 
         if container in (tuple, typing.Tuple):
             if len(args) == 2 and args[1] is Ellipsis:
-                return tuple[args[0], Ellipsis]
-            return tuple[args]
+                return tuple.__class_getitem__((args[0], Ellipsis))
+            return tuple.__class_getitem__(args)
 
         if container in (typing.Optional, Optional):
             if len(args) == 1:
-                return Union[args[0], None]
+                return Union.__getitem__((args[0], type(None)))
             return sentinel
 
         if container in (typing.Union, Union):
-            return Union[args]
+            return Union.__getitem__(args)
 
         if hasattr(container, "__class_getitem__"):
             try:
                 if len(args) == 1:
-                    return container[args[0]]
-                return container[args]
+                    return container.__class_getitem__(args[0])
+                return container.__class_getitem__(args)
             except Exception:
                 return sentinel
 
@@ -888,24 +888,24 @@ class SpellRequirementsFinder(Cleanable):
             return annotation
 
         if origin is list and len(args) == 1:
-            return list[args[0]]
+            return list.__class_getitem__(args[0])
 
         if origin is set and len(args) == 1:
-            return set[args[0]]
+            return set.__class_getitem__(args[0])
 
         if origin is frozenset and len(args) == 1:
-            return frozenset[args[0]]
+            return frozenset.__class_getitem__(args[0])
 
         if origin is dict and len(args) == 2:
-            return dict[args[0], args[1]]
+            return dict.__class_getitem__((args[0], args[1]))
 
         if origin is tuple:
             if len(args) == 2 and args[1] is Ellipsis:
-                return tuple[args[0], Ellipsis]
-            return tuple[args]
+                return tuple.__class_getitem__((args[0], Ellipsis))
+            return tuple.__class_getitem__(args)
 
         if origin is Union or origin is types.UnionType:
-            return Union[args]
+            return Union.__getitem__(args)
 
         return annotation
 

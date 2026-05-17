@@ -2586,7 +2586,7 @@ class Spellbook(Cleanable, ISpellbook):
             existence: str | Existence,
             permissions: str = "create",
             spellframe: Any = None,
-            binding_name: str | None = None,
+            binding_name: Optional[str] = None,
             profile: str = "general",
             **kwargs,
     ) -> str:
@@ -3405,7 +3405,7 @@ class Spellbook(Cleanable, ISpellbook):
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: str| None  = None, conduit_logger: Any | None = None) -> IConduit:
+    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: Optional[str] = None, conduit_logger: Optional[Any] = None) -> IConduit:
         """
         Public API
 

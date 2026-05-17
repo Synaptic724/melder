@@ -1,5 +1,6 @@
 import threading
 from abc import ABC, abstractmethod
+from typing import Literal
 
 class Cleanable(ABC):
     """
@@ -128,12 +129,12 @@ class Cleanable(ABC):
             self._lock.acquire()
             return self._owner
 
-        def __exit__(self, exc_type, exc, tb) -> bool:
+        def __exit__(self, exc_type, exc, tb) -> Literal[False]:
             """
             Exit the cleanup helper context and trigger owner cleanup once.
 
             Returns:
-                bool:
+                Literal[False]:
                     Always False so caller exceptions are never suppressed.
             """
             # Guarantee cleanup only once.

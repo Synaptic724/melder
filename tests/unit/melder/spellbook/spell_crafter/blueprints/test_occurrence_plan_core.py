@@ -183,3 +183,10 @@ def test_occurrence_plan_builder_validates_required_inputs_and_selection_helpers
     )
     assert builder._instance_key_for_occurrence(("shared", 7)) == ("shared", None)
     assert builder._instance_key_for_occurrence(("many", 7)) == ("many", 7)
+
+    builder.cleanup()
+
+    with pytest.raises(RuntimeError, match="OccurrencePlanBuilder has already been cleaned"):
+        builder._should_collapse_shared_occurrences()
+
+    builder.cleanup()

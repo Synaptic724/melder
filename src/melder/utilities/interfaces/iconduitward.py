@@ -527,8 +527,8 @@ class IConduitWard(ICleanable, Protocol):
     # ------------------------------------------------------------------
     def _check_spell_id_and_spell(
             self,
-            spell: 'ISpell' = None,
-            spell_id: str = None,
+            spell: Optional['ISpell'] = None,
+            spell_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> Tuple[str, 'ISpell']:
         """
@@ -553,8 +553,8 @@ class IConduitWard(ICleanable, Protocol):
 
     def _check_conduit_id_and_conduit(
             self,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> Tuple[str, 'IConduit']:
         """
@@ -626,10 +626,10 @@ class IConduitWard(ICleanable, Protocol):
     def _add_spell_to_contract(
             self,
             *,
-            spell: 'ISpell' = None,
-            spell_id: str = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell: Optional['ISpell'] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
             reason: Any = None,
@@ -667,9 +667,9 @@ class IConduitWard(ICleanable, Protocol):
     def _add_spells_to_contract(
             self,
             *,
-            spell_ids: list[str] = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell_ids: Optional[list[str]] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
             reason: Any = None,
@@ -698,10 +698,10 @@ class IConduitWard(ICleanable, Protocol):
     def _remove_spell_from_contract(
             self,
             *,
-            spell: 'ISpell' = None,
-            spell_id: str = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell: Optional['ISpell'] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> bool | None:
         """
@@ -730,9 +730,9 @@ class IConduitWard(ICleanable, Protocol):
     def _remove_spells_from_contract(
             self,
             *,
-            spell_ids: list[str] = None,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            spell_ids: Optional[list[str]] = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> dict[str, list[str] | dict[str, str]]:
         """
@@ -757,8 +757,8 @@ class IConduitWard(ICleanable, Protocol):
     def _remove_all_spells_from_contract(
             self,
             *,
-            conduit: 'IConduit' = None,
-            conduit_id: str = None,
+            conduit: Optional['IConduit'] = None,
+            conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> bool | None:
         """

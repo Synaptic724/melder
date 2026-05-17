@@ -169,6 +169,7 @@ class Nexus(Cleanable, INexus):
                 If first-time initialization is attempted without an `Aether`
                 substrate reference.
         """
+        self._logger: ISafeLogger
         if Nexus._initialized:
             if logger is not None:
                 self._logger.cleanup()
@@ -184,7 +185,7 @@ class Nexus(Cleanable, INexus):
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
-            self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
+            self._logger = InitHelpers.resolve_safe_logger(None)
             self._aether: IAether = aether
             self._configuration: Optional[INexusConfiguration] = configuration
             self._configured: bool = configuration is not None

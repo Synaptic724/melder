@@ -1144,8 +1144,8 @@ class ConduitWard(Cleanable, IConduitWard):
     #region Spellbinding API
     def _check_spell_id_and_spell(
             self,
-            spell: ISpell = None,
-            spell_id: str = None,
+            spell: Optional[ISpell] = None,
+            spell_id: Optional[str] = None,
             aetheric_frame: str = "default"
     ) -> Tuple[str, ISpell]:
         """
@@ -1241,8 +1241,8 @@ class ConduitWard(Cleanable, IConduitWard):
 
 
     def _check_conduit_id_and_conduit(self,
-                                      conduit: IConduit = None,
-                                      conduit_id: str = None, aetheric_frame = "default") -> Tuple[str, IConduit]:
+                                      conduit: Optional[IConduit] = None,
+                                      conduit_id: Optional[str] = None, aetheric_frame = "default") -> Tuple[str, IConduit]:
         """
         Internal
 
@@ -1507,10 +1507,10 @@ class ConduitWard(Cleanable, IConduitWard):
     def _add_spell_to_contract(
             self,
             *,
-            spell: ISpell = None,
-            spell_id: str = None,
-            conduit: IConduit = None,
-            conduit_id: str = None,
+            spell: Optional[ISpell] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
             reason: DetailReason = DetailReason.manual,
@@ -2224,7 +2224,7 @@ class ConduitWard(Cleanable, IConduitWard):
             walk(dep)
 
 
-    def _add_spells_to_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None, conduit_id: str = None,
+    def _add_spells_to_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None,
                                 permissions: str = "create", aetheric_frame = "default",
                                 reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict[str, list[str] | dict[str, str]]:
         """
@@ -2286,8 +2286,8 @@ class ConduitWard(Cleanable, IConduitWard):
             "failed": failed_spell_ids,
         }
 
-    def _remove_spell_from_contract(self, *, spell: ISpell = None, spell_id: str = None, conduit: IConduit = None,
-                                    conduit_id: str = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
+    def _remove_spell_from_contract(self, *, spell: Optional[ISpell] = None, spell_id: Optional[str] = None, conduit: Optional[IConduit] = None,
+                                    conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 
@@ -2416,8 +2416,8 @@ class ConduitWard(Cleanable, IConduitWard):
         raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
 
-    def _remove_spells_from_contract(self, *, spell_ids: list[str] = None, conduit: IConduit = None,
-                                     conduit_id: str = None, root_spell_id: str | None = None,
+    def _remove_spells_from_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[IConduit] = None,
+                                     conduit_id: Optional[str] = None, root_spell_id: str | None = None,
                                      aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
@@ -2474,7 +2474,7 @@ class ConduitWard(Cleanable, IConduitWard):
             "failed": failed_spell_ids,
         }
 
-    def _remove_all_spells_from_contract(self, *, conduit: IConduit = None, conduit_id: str = None, aetheric_frame = "default") -> bool | None:
+    def _remove_all_spells_from_contract(self, *, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None, aetheric_frame = "default") -> bool | None:
         """
         Internal
 

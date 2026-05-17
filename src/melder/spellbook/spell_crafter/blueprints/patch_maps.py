@@ -184,13 +184,6 @@ class OverridePatchMap(Cleanable):
         del self._targets_by_spec
         del self._specificity_by_spec
         del self._resolved_targets_by_raw_key
-        del self._last_single_raw_key
-        del self._last_single_value
-        del self._last_single_override_map
-        del self._last_single_socket_shape
-        del self._last_multi_signature
-        del self._last_multi_override_map
-        del self._last_multi_socket_shape
 
     @property
     def root_spell_id(self) -> str:
@@ -872,6 +865,7 @@ class PatchMapBuilder(object):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = [
+        "_cleaned",
         "_blueprint",
         "_path_spec_key_by_id",
     ]
@@ -898,8 +892,47 @@ class PatchMapBuilder(object):
         """
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
+        self._cleaned: bool = False
         self._blueprint = blueprint
         self._path_spec_key_by_id: Dict[int, str] = {}
+
+    def cleanup(self) -> None:
+        """
+        Release borrowed blueprint references and owned memoized path state.
+
+        Purpose:
+            Mark the builder dead after one compile pass so the phase planner
+            does not retain unnecessary references between runs.
+
+        Contract:
+            - Idempotent.
+            - Does not mutate the borrowed root blueprint.
+            - Clears only builder-owned cache state and borrowed references.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+
+        self._cleaned = True
+        self._path_spec_key_by_id.clear()
+        del self._path_spec_key_by_id
+        del self._blueprint
+
+    def _require_active(self) -> None:
+        """
+        Raise when the builder is used after cleanup.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the builder has already been cleaned.
+        """
+        if self._cleaned:
+            raise RuntimeError("PatchMapBuilder has already been cleaned.")
 
     def _get_path_spec_key(self, path_id: int) -> str:
         """
@@ -918,6 +951,7 @@ class PatchMapBuilder(object):
             str:
                 Canonical patch-map path key.
         """
+        self._require_active()
         path_key = self._path_spec_key_by_id.get(path_id)
         if path_key is not None:
             return path_key
@@ -937,6 +971,7 @@ class PatchMapBuilder(object):
         Returns:
             OverridePatchMap: Compiled override patch map for the root spell.
         """
+        self._require_active()
         root_spell_id = self._blueprint.root_spell_id
         targets_by_spec: Dict[str, List[SocketRef]] = {}
         specificity_by_spec: Dict[str, _Specificity] = {}
@@ -975,6 +1010,7 @@ class PatchMapBuilder(object):
         Returns:
             MutationPatchMap: Compiled mutation patch map for the root spell.
         """
+        self._require_active()
         root_spell_id = self._blueprint.root_spell_id
         targets_by_spec: Dict[str, List[MutationEdgePatch]] = {}
 

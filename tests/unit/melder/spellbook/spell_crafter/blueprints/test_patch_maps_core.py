@@ -246,6 +246,12 @@ def test_patch_map_builder_builds_override_and_mutation_maps_for_blueprint() -> 
     assert patches[0].param_path_id == mutation_ref.param_path_id
     assert patches[0].new_parent_id == "mutator-id"
 
+    builder.cleanup()
+
+    with pytest.raises(RuntimeError, match="PatchMapBuilder has already been cleaned"):
+        builder._get_path_spec_key(service_ref.param_path_id)
+
+    builder.cleanup()
     override_map.cleanup()
     mutation_map.cleanup()
     blueprint.cleanup()

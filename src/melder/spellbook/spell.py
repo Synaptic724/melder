@@ -578,9 +578,6 @@ class Spell(Cleanable, ISpell):
                     self.spell_index.cleanup()
             except Exception:
                 pass
-
-            self._spellbook = None
-
             # Drop references to help GC and enforce immutability after cleanup.
             self._cleanup_creation_context()
             self._cleanup_creation_context_factory()
@@ -589,9 +586,7 @@ class Spell(Cleanable, ISpell):
                     self._creation_context_switch.cleanup()
                 except Exception:
                     pass
-            self._owner_creations = None
-            self.user_created_object = None
-            self._spell_system_states = None
+
             if self._pre_hooks is not None:
                 self._pre_hooks.clear()
             if self._activation_hooks is not None:
@@ -609,46 +604,51 @@ class Spell(Cleanable, ISpell):
                 self.dependencies.clear()
             if isinstance(self.disposal_method_names, list):
                 self.disposal_method_names.clear()
-            self._pre_hooks = None
-            self._activation_hooks = None
-            self._post_hooks = None
-            self._hooks_enabled = False
-            self.tags = None
-            self.metadata = None
-            self.dependencies = None
-            self.disposal_method_names = None
-            self.has_disposal_methods = None
-            self.dependency_graph = None
-            self.execution_plan_step_count = None
-            self.execution_plan_unique_spell_count = None
-            self.execution_plan_max_occurrence_depth = None
-            self.execution_plan_max_dependency_count = None
-            self.execution_plan_has_calln = None
-            self.execution_plan_has_contract_payloads = None
-            self.execution_plan_has_existing_creations = None
-            self.execution_plan_dispatch_route = None
-            self.profile = None
-            self.spell = None
-            self._key = None
-            self._is_existing_creation = None
-            self._is_class_spell = None
-            self._is_method_spell = None
-            self._is_lambda_spell = None
-            self._owner_conduit_id = None
-            self._owner_conduit_name = None
-            self.owned_spell = None
-            self._owner_creations = None
-            self._creation_context = None
-            self._creation_context_factory = None
-            self._creation_context_switch = None
-            self._dynamic_environment = None
-            self.resolution_required = None
-            self.resolution_complete = None
-            self.aetheric_frame = None
-            self.spell_index = None
-
             self._cleaned = True
-        self._lock = None
+            self._hooks_enabled = False
+
+            del self._owner_creations
+            del self.user_created_object
+            del self._spell_system_states
+            del self._spellbook
+            del self._pre_hooks
+            del self._activation_hooks
+            del self._post_hooks
+            del self.tags
+            del self.metadata
+            del self.dependencies
+            del self.disposal_method_names
+            del self.has_disposal_methods
+            del self.dependency_graph
+            del self.execution_plan_step_count
+            del self.execution_plan_unique_spell_count
+            del self.execution_plan_max_occurrence_depth
+            del self.execution_plan_max_dependency_count
+            del self.execution_plan_has_calln
+            del self.execution_plan_has_contract_payloads
+            del self.execution_plan_has_existing_creations
+            del self.execution_plan_dispatch_route
+            del self.profile
+            del self.spell
+            del self._key
+            del self._is_existing_creation
+            del self._is_class_spell
+            del self._is_method_spell
+            del self._is_lambda_spell
+            del self._owner_conduit_id
+            del self._owner_conduit_name
+            del self.owned_spell
+            del self._owner_creations
+            del self._creation_context
+            del self._creation_context_factory
+            del self._creation_context_switch
+            del self._dynamic_environment
+            del self.resolution_required
+            del self.resolution_complete
+            del self.aetheric_frame
+            del self.spell_index
+
+
     #endregion Disposal
     def _set_hooks(
             self,

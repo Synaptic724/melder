@@ -4395,7 +4395,10 @@ class SpellCrafter(Cleanable):
             spell_lookup=spell_lookup,
             system_states=self._spell_system_states,
         )
-        plan = builder.build()
+        try:
+            plan = builder.build()
+        finally:
+            builder.cleanup()
 
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
@@ -4550,8 +4553,11 @@ class SpellCrafter(Cleanable):
         builder = PatchMapBuilder(
             blueprint=root_blueprint,
         )
-        override_patch_map = builder.build_override_patch_map()
-        mutation_patch_map = builder.build_mutation_patch_map()
+        try:
+            override_patch_map = builder.build_override_patch_map()
+            mutation_patch_map = builder.build_mutation_patch_map()
+        finally:
+            builder.cleanup()
 
         # Hot-swap patch maps without cleaning previous objects in-place.
         # Concurrent runners may still be reading the prior maps.
