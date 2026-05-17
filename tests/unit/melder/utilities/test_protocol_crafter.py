@@ -43,6 +43,23 @@ def _build_temp_interface_file() -> Path:
     return temp_directory / "{0}.py".format(uuid4().hex)
 
 
+def _build_temp_source_file(source_text: str) -> Path:
+    """
+    Create one workspace-local temporary source path for protocol-crafter tests.
+
+    Args:
+        source_text: Python source text to write into the temporary file.
+
+    Returns:
+        Path: Temporary source-file path under the test tree.
+    """
+    temp_directory = Path("tests/unit/melder/utilities/_protocol_crafter_tmp")
+    temp_directory.mkdir(parents=True, exist_ok=True)
+    source_file = temp_directory / "{0}.py".format(uuid4().hex)
+    source_file.write_text(source_text, encoding="utf-8")
+    return source_file
+
+
 def test_protocol_crafter_crafts_protocol_code_from_class() -> None:
     """
     Verify protocol generation mirrors class docs, annotations, and methods.
@@ -186,3 +203,189 @@ def test_protocol_crafter_rejects_duplicate_append() -> None:
     finally:
         if interface_file.exists():
             interface_file.unlink()
+
+
+def test_protocol_crafter_can_write_protocol_module_from_source_file() -> None:
+    """
+    Verify AST-backed source generation writes a full protocol module.
+
+    Returns:
+        None.
+    """
+    crafter = ProtocolCrafter()
+    source_file = _build_temp_source_file(
+        "\n".join(
+                [
+                    "class Example:",
+                    '    """Example docstring."""',
+                    "    name: str",
+                    "    _secret: int",
+                    "",
+                    "    def __init__(self, enabled: bool, label: str | None = None) -> None:",
+                    "        self.enabled = enabled",
+                    "        self.label = label",
+                    "        self._private = 1",
+                    "",
+                    "    def chain(self, value: int, label: str | None = None) -> \"Example\":",
+                    '        """Return the fluent chain result."""',
+                    "        return self",
+                    "",
+                    "    def _helper(self) -> None:",
+                '        """Private helper."""',
+                "        return None",
+                "",
+            ]
+        )
+        + "\n"
+    )
+    output_directory = Path("tests/unit/melder/utilities/_protocol_crafter_tmp")
+    output_file = output_directory / "iexample.py"
+    try:
+        written_path = crafter.write_protocol_module_from_source_file(
+            source_file,
+            "Example",
+            output_directory,
+        )
+        generated_text = written_path.read_text(encoding="utf-8")
+
+        assert written_path == output_file
+        assert generated_text.startswith(
+            "from typing import Optional, Protocol, runtime_checkable\n\n"
+        )
+        assert "class IExample(Protocol):" in generated_text
+        assert "Example docstring." in generated_text
+        assert "name: str" in generated_text
+        assert "enabled: bool" in generated_text
+        assert "label: Optional[str]" in generated_text
+        assert "_secret" not in generated_text
+        assert "_private" not in generated_text
+        assert "def chain(self, value: int, label: Optional[str] = None) -> 'IExample':" in generated_text
+        assert '        """\n        Return the fluent chain result.\n        """' in generated_text
+        assert "def _helper" not in generated_text
+    finally:
+        if source_file.exists():
+            source_file.unlink()
+        if output_file.exists():
+            output_file.unlink()
+
+
+def test_protocol_crafter_can_generate_protocol_module_for_spellbinder() -> None:
+    """
+    Verify source generation produces a cleaner public protocol for SpellBinder.
+
+    Returns:
+        None.
+    """
+    crafter = ProtocolCrafter()
+    source_file = Path("src/melder/spellbook/spellbinder.py")
+    generated_text = crafter.craft_protocol_module_code_from_source_file(
+        source_file,
+        "SpellBinder",
+    )
+
+    assert generated_text.startswith(
+        "from typing import Any, Callable, Optional, Protocol, runtime_checkable\n\n"
+    )
+    assert "class ISpellBinder(Protocol):" in generated_text
+    assert "def bind(" in generated_text
+    assert "-> 'ISpellBinder':" in generated_text
+    assert "_binding_name" not in generated_text
+    assert "def _still_alive" not in generated_text
+    assert "Optional[str] = None" in generated_text
+    assert '        """\n        Stage a spellframe for the pending registration.' in generated_text
+
+
+def test_protocol_crafter_can_write_joined_protocol_module() -> None:
+    """
+    Verify joined generation keeps only the shared class surface.
+
+    Returns:
+        None.
+    """
+    crafter = ProtocolCrafter()
+    source_file = _build_temp_source_file(
+        "\n".join(
+            [
+                "class Alpha:",
+                "    name: str",
+                "    only_alpha: int",
+                "",
+                "    def shared(self, value: int) -> str:",
+                '        """Return the shared string."""',
+                "        return str(value)",
+                "",
+                "    def chain(self, enabled: bool = False) -> \"Alpha\":",
+                '        """Return the fluent instance."""',
+                "        return self",
+                "",
+                "    def mismatch(self, value: int) -> None:",
+                '        """Alpha mismatch."""',
+                "        return None",
+                "",
+                "class Beta:",
+                "    name: str",
+                "    only_beta: int",
+                "",
+                "    def shared(self, value: int) -> str:",
+                '        """Return the shared string."""',
+                "        return str(value)",
+                "",
+                "    def chain(self, enabled: bool = False) -> \"Beta\":",
+                '        """Return the fluent instance."""',
+                "        return self",
+                "",
+                "    def mismatch(self, value: int) -> None:",
+                '        """Beta mismatch."""',
+                "        return None",
+                "",
+                "class Gamma:",
+                "    name: str",
+                "    only_gamma: int",
+                "",
+                "    def shared(self, value: int) -> str:",
+                '        """Return the shared string."""',
+                "        return str(value)",
+                "",
+                "    def chain(self, enabled: bool = False) -> \"Gamma\":",
+                '        """Return the fluent instance."""',
+                "        return self",
+                "",
+                "    def mismatch(self, value: str) -> None:",
+                '        """Gamma mismatch."""',
+                "        return None",
+                "",
+            ]
+        )
+        + "\n"
+    )
+    output_directory = Path("tests/unit/melder/utilities/_protocol_crafter_tmp")
+    output_file = output_directory / "icommonthing.py"
+    try:
+        written_path = crafter.write_joined_protocol_module(
+            [
+                (source_file, "Alpha"),
+                (source_file, "Beta"),
+                (source_file, "Gamma"),
+            ],
+            "ICommonThing",
+            output_directory,
+        )
+        generated_text = written_path.read_text(encoding="utf-8")
+
+        assert written_path == output_file
+        assert generated_text.startswith(
+            "from typing import Protocol, runtime_checkable\n\n"
+        )
+        assert "class ICommonThing(Protocol):" in generated_text
+        assert "name: str" in generated_text
+        assert "only_alpha" not in generated_text
+        assert "only_beta" not in generated_text
+        assert "only_gamma" not in generated_text
+        assert "def shared(self, value: int) -> str:" in generated_text
+        assert "def chain(self, enabled: bool = False) -> 'ICommonThing':" in generated_text
+        assert "def mismatch" not in generated_text
+    finally:
+        if source_file.exists():
+            source_file.unlink()
+        if output_file.exists():
+            output_file.unlink()

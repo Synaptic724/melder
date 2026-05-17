@@ -1,8 +1,10 @@
+import ast
+import copy
 import inspect
 import re
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, get_args, get_origin
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -57,7 +59,30 @@ class ProtocolCrafter(Cleanable):
         "Iterable",
         "Iterator",
         "Callable",
+        "Literal",
+        "Type",
+        "ClassVar",
     }
+    _PROTOCOL_MODULE_IMPORT_NAMES = (
+        "Any",
+        "Callable",
+        "ClassVar",
+        "Dict",
+        "FrozenSet",
+        "Iterable",
+        "Iterator",
+        "List",
+        "Literal",
+        "Mapping",
+        "Optional",
+        "Protocol",
+        "Sequence",
+        "Set",
+        "Tuple",
+        "Type",
+        "Union",
+        "runtime_checkable",
+    )
 
     def __init__(self) -> None:
         """
@@ -166,6 +191,178 @@ class ProtocolCrafter(Cleanable):
                     lines.extend(method_lines)
 
             return "\n".join(lines).rstrip() + "\n"
+
+    def craft_protocol_module_code_from_source_file(
+            self,
+            source_file_path: Union[str, Path],
+            class_name: str,
+            *,
+            protocol_name: Optional[str] = None,
+    ) -> str:
+        """
+        Build one complete protocol-module string from a source file and class.
+
+        Args:
+            source_file_path:
+                Path to the Python source file that defines the target class.
+            class_name:
+                Exact class name to mirror into protocol form.
+            protocol_name:
+                Optional explicit protocol class name. Defaults to `I<class>`.
+
+        Returns:
+            str: Fully formed protocol-module source text.
+
+        Raises:
+            ValueError:
+                If the file cannot be parsed or the class is not found.
+        """
+        self.check_cleaned()
+        with self._lock:
+            source_path = Path(source_file_path)
+            class_node = self._load_source_class(source_path, class_name)
+            resolved_protocol_name = protocol_name or "I{0}".format(class_name)
+            class_docstring = ast.get_docstring(class_node) or (
+                "Protocol mirror for {0}.".format(class_name)
+            )
+            attribute_nodes = self._build_protocol_attributes_from_source(
+                class_node,
+                class_name,
+                resolved_protocol_name,
+            )
+            method_nodes = self._build_protocol_methods_from_source(
+                class_node,
+                class_name,
+                resolved_protocol_name,
+            )
+            module_node = self._build_protocol_module_ast(
+                resolved_protocol_name,
+                class_docstring,
+                attribute_nodes,
+                method_nodes,
+            )
+            return self._render_protocol_module_ast(module_node)
+
+    def write_protocol_module_from_source_file(
+            self,
+            source_file_path: Union[str, Path],
+            class_name: str,
+            output_directory: Union[str, Path],
+            *,
+            protocol_name: Optional[str] = None,
+    ) -> Path:
+        """
+        Write one generated protocol module into a chosen directory.
+
+        Args:
+            source_file_path:
+                Path to the Python source file that defines the target class.
+            class_name:
+                Exact class name to mirror into protocol form.
+            output_directory:
+                Directory that will receive the generated protocol module.
+            protocol_name:
+                Optional explicit protocol class name. Defaults to `I<class>`.
+
+        Returns:
+            Path: Written protocol-module path.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_protocol_name = protocol_name or "I{0}".format(class_name)
+            module_text = self.craft_protocol_module_code_from_source_file(
+                source_file_path,
+                class_name,
+                protocol_name=resolved_protocol_name,
+            )
+            output_path = self._write_protocol_module_text(
+                module_text,
+                output_directory,
+                resolved_protocol_name,
+            )
+            return output_path
+
+    def craft_joined_protocol_module_code(
+            self,
+            targets: Sequence[Tuple[Union[str, Path], str]],
+            protocol_name: str,
+    ) -> str:
+        """
+        Build one protocol module from the shared surface of multiple classes.
+
+        Args:
+            targets:
+                `(source_file_path, class_name)` tuples to compare.
+            protocol_name:
+                Protocol class name to emit for the shared surface.
+
+        Returns:
+            str: Fully formed shared protocol-module source text.
+
+        Raises:
+            ValueError:
+                If fewer than two targets are supplied or a class cannot be
+                located.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if len(targets) < 2:
+                raise ValueError("Joined protocol generation requires at least two targets.")
+            source_models = self._load_joined_source_models(targets)
+            attribute_nodes = self._build_joined_protocol_attributes(
+                source_models,
+                protocol_name,
+            )
+            method_nodes = self._build_joined_protocol_methods(
+                source_models,
+                protocol_name,
+            )
+            class_names = [item[1] for item in source_models]
+            class_docstring = (
+                "Common protocol extracted from {0}.".format(
+                    ", ".join(class_names)
+                )
+            )
+            module_node = self._build_protocol_module_ast(
+                protocol_name,
+                class_docstring,
+                attribute_nodes,
+                method_nodes,
+            )
+            return self._render_protocol_module_ast(module_node)
+
+    def write_joined_protocol_module(
+            self,
+            targets: Sequence[Tuple[Union[str, Path], str]],
+            protocol_name: str,
+            output_directory: Union[str, Path],
+    ) -> Path:
+        """
+        Write one joined protocol module into a chosen directory.
+
+        Args:
+            targets:
+                `(source_file_path, class_name)` tuples to compare.
+            protocol_name:
+                Protocol class name to emit for the shared surface.
+            output_directory:
+                Directory that will receive the generated protocol module.
+
+        Returns:
+            Path: Written protocol-module path.
+        """
+        self.check_cleaned()
+        with self._lock:
+            module_text = self.craft_joined_protocol_module_code(
+                targets,
+                protocol_name,
+            )
+            output_path = self._write_protocol_module_text(
+                module_text,
+                output_directory,
+                protocol_name,
+            )
+            return output_path
 
     def add_protocol_to_interface_file(
             self,
@@ -692,6 +889,1584 @@ class ProtocolCrafter(Cleanable):
             output_lines.append(indent + line.rstrip())
         output_lines.append(indent + '"""')
         return output_lines
+
+    def _load_source_class(
+            self,
+            source_file_path: Path,
+            class_name: str,
+    ) -> ast.ClassDef:
+        """
+        Parse one source file and return the requested top-level class.
+
+        Args:
+            source_file_path:
+                Source file to parse.
+            class_name:
+                Exact class name to locate.
+
+        Returns:
+            ast.ClassDef: Matching top-level class node.
+
+        Raises:
+            ValueError:
+                If the file does not exist, cannot be parsed, or does not
+                define the requested class.
+        """
+        if not source_file_path.exists():
+            raise ValueError(
+                "Source file '{0}' does not exist.".format(source_file_path)
+            )
+        try:
+            source_tree = ast.parse(
+                source_file_path.read_text(encoding="utf-8"),
+                filename=str(source_file_path),
+            )
+        except SyntaxError as error:
+            raise ValueError(
+                "Source file '{0}' could not be parsed.".format(source_file_path)
+            ) from error
+        for node in source_tree.body:
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                return node
+        raise ValueError(
+            "Class '{0}' was not found in '{1}'.".format(
+                class_name,
+                source_file_path,
+            )
+        )
+
+    def _load_joined_source_models(
+            self,
+            targets: Sequence[Tuple[Union[str, Path], str]],
+    ) -> List[Tuple[Path, str, ast.ClassDef]]:
+        """
+        Resolve multiple `(file, class)` targets into parsed class nodes.
+
+        Args:
+            targets:
+                `(source_file_path, class_name)` tuples.
+
+        Returns:
+            List[Tuple[Path, str, ast.ClassDef]]: Parsed target models.
+        """
+        models: List[Tuple[Path, str, ast.ClassDef]] = []
+        for source_file_path, class_name in targets:
+            source_path = Path(source_file_path)
+            class_node = self._load_source_class(source_path, class_name)
+            models.append((source_path, class_name, class_node))
+        return models
+
+    def _build_protocol_attributes_from_source(
+            self,
+            class_node: ast.ClassDef,
+            class_name: str,
+            protocol_name: str,
+    ) -> List[ast.AnnAssign]:
+        """
+        Build public protocol attributes from one source class.
+
+        Args:
+            class_node:
+                Source class node.
+            class_name:
+                Source class name.
+            protocol_name:
+                Output protocol name for self-reference rewriting.
+
+        Returns:
+            List[ast.AnnAssign]: Protocol attribute nodes.
+        """
+        attribute_nodes: List[ast.AnnAssign] = []
+        for attribute_name, annotation_text in self._collect_public_source_attributes(
+                class_node,
+                class_name,
+                protocol_name,
+        ):
+            attribute_source = "{0}: {1}".format(attribute_name, annotation_text)
+            parsed_attribute = ast.parse(attribute_source).body[0]
+            attribute_nodes.append(parsed_attribute)
+        return attribute_nodes
+
+    def _build_protocol_methods_from_source(
+            self,
+            class_node: ast.ClassDef,
+            class_name: str,
+            protocol_name: str,
+    ) -> List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+        """
+        Build public protocol methods from one source class.
+
+        Args:
+            class_node:
+                Source class node.
+            class_name:
+                Source class name.
+            protocol_name:
+                Output protocol name for self-reference rewriting.
+
+        Returns:
+            List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+                Protocol method nodes.
+        """
+        method_nodes: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        for function_node in self._collect_public_source_methods(class_node):
+            method_nodes.append(
+                self._build_protocol_method_from_source(
+                    function_node,
+                    class_name,
+                    protocol_name,
+                )
+            )
+        return method_nodes
+
+    def _collect_public_source_attributes(
+            self,
+            class_node: ast.ClassDef,
+            class_name: str,
+            self_protocol_name: str,
+    ) -> List[Tuple[str, str]]:
+        """
+        Collect public attribute declarations from one source class.
+
+        Args:
+            class_node:
+                Source class node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return/self-attribute references.
+
+        Returns:
+            List[Tuple[str, str]]: `(attribute_name, annotation_text)` pairs.
+        """
+        attribute_items: List[Tuple[str, str]] = []
+        for statement in class_node.body:
+            if isinstance(statement, ast.AnnAssign) and isinstance(
+                    statement.target,
+                    ast.Name,
+            ):
+                attribute_name = statement.target.id
+                if not self._is_public_protocol_attribute_name(attribute_name):
+                    continue
+                annotation_text = self._render_source_annotation_text(
+                    statement.annotation,
+                    class_name,
+                    self_protocol_name,
+                )
+                attribute_items.append((attribute_name, annotation_text))
+                continue
+            if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
+                target = statement.targets[0]
+                if not isinstance(target, ast.Name):
+                    continue
+                attribute_name = target.id
+                if not self._is_public_protocol_attribute_name(attribute_name):
+                    continue
+                annotation_text = self._infer_source_attribute_annotation_text(
+                    statement.value
+                )
+                attribute_items.append((attribute_name, annotation_text))
+        public_instance_attributes = self._collect_public_init_instance_attributes(
+            class_node,
+            class_name,
+            self_protocol_name,
+        )
+        existing_attribute_names = {item[0] for item in attribute_items}
+        for attribute_name, annotation_text in public_instance_attributes:
+            if attribute_name in existing_attribute_names:
+                continue
+            attribute_items.append((attribute_name, annotation_text))
+        return attribute_items
+
+    def _collect_public_source_methods(
+            self,
+            class_node: ast.ClassDef,
+    ) -> List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+        """
+        Collect public source methods suitable for protocol generation.
+
+        Args:
+            class_node:
+                Source class node.
+
+        Returns:
+            List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+                Public method definitions in source order.
+        """
+        method_nodes: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        for statement in class_node.body:
+            if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if self._should_skip_source_method(statement):
+                continue
+            method_nodes.append(statement)
+        return method_nodes
+
+    def _build_joined_protocol_attributes(
+            self,
+            source_models: Sequence[Tuple[Path, str, ast.ClassDef]],
+            protocol_name: str,
+    ) -> List[ast.AnnAssign]:
+        """
+        Build the shared attribute surface across multiple classes.
+
+        Args:
+            source_models:
+                Parsed target class models.
+            protocol_name:
+                Output protocol name for self-reference rewriting.
+
+        Returns:
+            List[ast.AnnAssign]: Shared protocol attribute nodes.
+        """
+        if not source_models:
+            return []
+        placeholder_name = "__SELF_PROTOCOL__"
+        attribute_maps: List[Dict[str, str]] = []
+        for _, class_name, class_node in source_models:
+            attribute_maps.append(
+                dict(
+                    self._collect_public_source_attributes(
+                        class_node,
+                        class_name,
+                        placeholder_name,
+                    )
+                )
+            )
+        common_names = set(attribute_maps[0].keys())
+        for attribute_map in attribute_maps[1:]:
+            common_names &= set(attribute_map.keys())
+        attribute_nodes: List[ast.AnnAssign] = []
+        for attribute_name in sorted(common_names):
+            annotation_text = attribute_maps[0][attribute_name]
+            if all(
+                    attribute_map[attribute_name] == annotation_text
+                    for attribute_map in attribute_maps[1:]
+            ):
+                final_annotation_text = annotation_text.replace(
+                    placeholder_name,
+                    protocol_name,
+                )
+                attribute_source = "{0}: {1}".format(
+                    attribute_name,
+                    final_annotation_text,
+                )
+                attribute_nodes.append(ast.parse(attribute_source).body[0])
+        return attribute_nodes
+
+    def _build_joined_protocol_methods(
+            self,
+            source_models: Sequence[Tuple[Path, str, ast.ClassDef]],
+            protocol_name: str,
+    ) -> List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+        """
+        Build the shared method surface across multiple classes.
+
+        Args:
+            source_models:
+                Parsed target class models.
+            protocol_name:
+                Output protocol name for self-reference rewriting.
+
+        Returns:
+            List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+                Shared protocol method nodes.
+        """
+        if not source_models:
+            return []
+        placeholder_name = "__SELF_PROTOCOL__"
+        method_maps: List[
+            Dict[str, Tuple[str, str, Optional[str], Union[ast.FunctionDef, ast.AsyncFunctionDef]]]
+        ] = []
+        for _, class_name, class_node in source_models:
+            method_map: Dict[
+                str,
+                Tuple[str, str, Optional[str], Union[ast.FunctionDef, ast.AsyncFunctionDef]]
+            ] = {}
+            for function_node in self._collect_public_source_methods(class_node):
+                method_map[function_node.name] = (
+                    self._build_source_method_key(
+                        function_node,
+                        class_name,
+                        placeholder_name,
+                    ),
+                    class_name,
+                    ast.get_docstring(function_node),
+                    function_node,
+                )
+            method_maps.append(method_map)
+        common_names = set(method_maps[0].keys())
+        for method_map in method_maps[1:]:
+            common_names &= set(method_map.keys())
+        method_nodes: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        for method_name in sorted(common_names):
+            first_key, first_class_name, first_docstring, first_function_node = method_maps[0][method_name]
+            if all(
+                    method_map[method_name][0] == first_key
+                    for method_map in method_maps[1:]
+            ):
+                override_docstring = first_docstring
+                normalized_docstrings = {
+                    self._normalize_docstring_text(method_map[method_name][2] or "")
+                    for method_map in method_maps
+                }
+                if len(normalized_docstrings) > 1:
+                    override_docstring = "Shared protocol member for `{0}`.".format(
+                        method_name
+                    )
+                method_nodes.append(
+                    self._build_protocol_method_from_source(
+                        first_function_node,
+                        first_class_name,
+                        protocol_name,
+                        override_docstring=override_docstring,
+                    )
+                )
+        return method_nodes
+
+    def _build_protocol_method_from_source(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            class_name: str,
+            protocol_name: str,
+            *,
+            override_docstring: Optional[str] = None,
+    ) -> Union[ast.FunctionDef, ast.AsyncFunctionDef]:
+        """
+        Build one protocol method node from one source function node.
+
+        Args:
+            function_node:
+                Source function node.
+            class_name:
+                Source class name.
+            protocol_name:
+                Output protocol name for self-reference rewriting.
+            override_docstring:
+                Optional explicit docstring text for the generated method.
+
+        Returns:
+            Union[ast.FunctionDef, ast.AsyncFunctionDef]:
+                Generated protocol method node.
+        """
+        prefix = "async def" if isinstance(function_node, ast.AsyncFunctionDef) else "def"
+        signature_text = self._render_source_function_signature_text(
+            function_node,
+            class_name,
+            protocol_name,
+        )
+        method_lines: List[str] = []
+        method_lines.extend(self._build_supported_decorator_lines(function_node))
+        method_lines.append(
+            "{0} {1}{2}:".format(
+                prefix,
+                function_node.name,
+                signature_text,
+            )
+        )
+        method_lines.extend(
+            self._build_docstring_lines(
+                override_docstring if override_docstring is not None else ast.get_docstring(function_node),
+                fallback="Protocol mirror for `{0}`.".format(function_node.name),
+                indent="    ",
+            )
+        )
+        method_lines.append("    ...")
+        parsed_method = ast.parse("\n".join(method_lines)).body[0]
+        return parsed_method
+
+    def _render_source_function_signature_text(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            class_name: str,
+            self_protocol_name: str,
+    ) -> str:
+        """
+        Render one source function signature for protocol output.
+
+        Args:
+            function_node:
+                Source function node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            str: Rendered signature text.
+        """
+        arguments = function_node.args
+        rendered_parameters: List[str] = []
+        positional_arguments = list(arguments.posonlyargs) + list(arguments.args)
+        default_offset = len(positional_arguments) - len(arguments.defaults)
+        for index, parameter in enumerate(arguments.posonlyargs):
+            default_node = None
+            if index >= default_offset:
+                default_node = arguments.defaults[index - default_offset]
+            rendered_parameters.append(
+                self._render_source_parameter_text(
+                    parameter,
+                    default_node,
+                    class_name,
+                    self_protocol_name,
+                )
+            )
+        if arguments.posonlyargs:
+            rendered_parameters.append("/")
+        for index, parameter in enumerate(arguments.args):
+            absolute_index = len(arguments.posonlyargs) + index
+            default_node = None
+            if absolute_index >= default_offset:
+                default_node = arguments.defaults[absolute_index - default_offset]
+            rendered_parameters.append(
+                self._render_source_parameter_text(
+                    parameter,
+                    default_node,
+                    class_name,
+                    self_protocol_name,
+                )
+            )
+        if arguments.vararg is not None:
+            rendered_parameters.append(
+                self._render_source_parameter_text(
+                    arguments.vararg,
+                    None,
+                    class_name,
+                    self_protocol_name,
+                    prefix="*",
+                )
+            )
+        elif arguments.kwonlyargs:
+            rendered_parameters.append("*")
+        for index, parameter in enumerate(arguments.kwonlyargs):
+            rendered_parameters.append(
+                self._render_source_parameter_text(
+                    parameter,
+                    arguments.kw_defaults[index],
+                    class_name,
+                    self_protocol_name,
+                )
+            )
+        if arguments.kwarg is not None:
+            rendered_parameters.append(
+                self._render_source_parameter_text(
+                    arguments.kwarg,
+                    None,
+                    class_name,
+                    self_protocol_name,
+                    prefix="**",
+                )
+            )
+        return_annotation = "Any"
+        if function_node.returns is not None:
+            return_annotation = self._render_source_annotation_text(
+                function_node.returns,
+                class_name,
+                self_protocol_name,
+            )
+        return "({0}) -> {1}".format(
+            ", ".join(rendered_parameters),
+            return_annotation,
+        )
+
+    def _render_source_parameter_text(
+            self,
+            parameter: ast.arg,
+            default_node: Optional[ast.expr],
+            class_name: str,
+            self_protocol_name: str,
+            *,
+            prefix: str = "",
+    ) -> str:
+        """
+        Render one source parameter for protocol output.
+
+        Args:
+            parameter:
+                Source parameter node.
+            default_node:
+                Optional default-value node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+            prefix:
+                Parameter prefix such as `*` or `**`.
+
+        Returns:
+            str: Rendered parameter text.
+        """
+        parameter_text = "{0}{1}".format(prefix, parameter.arg)
+        if parameter.annotation is not None:
+            parameter_text += ": {0}".format(
+                self._render_source_annotation_text(
+                    parameter.annotation,
+                    class_name,
+                    self_protocol_name,
+                )
+            )
+        if default_node is not None:
+            parameter_text += " = {0}".format(
+                self._render_source_default_text(default_node)
+            )
+        return parameter_text
+
+    def _render_source_default_text(self, default_node: ast.expr) -> str:
+        """
+        Render one source default-value node into safe protocol text.
+
+        Args:
+            default_node:
+                Source default-value node.
+
+        Returns:
+            str: Rendered default value text.
+        """
+        if isinstance(default_node, ast.Constant):
+            if default_node.value is None:
+                return "None"
+            if isinstance(default_node.value, (bool, int, float, str, bytes)):
+                return repr(default_node.value)
+            if default_node.value is Ellipsis:
+                return "..."
+        if isinstance(default_node, ast.Tuple):
+            rendered_items: List[str] = []
+            for item in default_node.elts:
+                if not isinstance(item, ast.Constant):
+                    return "..."
+                if item.value is Ellipsis:
+                    rendered_items.append("...")
+                    continue
+                if not isinstance(item.value, (bool, int, float, str, bytes, type(None))):
+                    return "..."
+                rendered_items.append(repr(item.value))
+            return "({0})".format(", ".join(rendered_items))
+        return "..."
+
+    def _collect_public_init_instance_attributes(
+            self,
+            class_node: ast.ClassDef,
+            class_name: str,
+            self_protocol_name: str,
+    ) -> List[Tuple[str, str]]:
+        """
+        Collect public instance attributes assigned in `__init__`.
+
+        Args:
+            class_node:
+                Source class node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            List[Tuple[str, str]]: `(attribute_name, annotation_text)` pairs.
+        """
+        init_node = self._find_source_init_method(class_node)
+        if init_node is None:
+            return []
+        parameter_annotations = self._build_init_parameter_annotation_map(
+            init_node,
+            class_name,
+            self_protocol_name,
+        )
+        attribute_items: List[Tuple[str, str]] = []
+        for statement in init_node.body:
+            if isinstance(statement, ast.AnnAssign):
+                target = statement.target
+                if not self._is_public_self_attribute_target(target):
+                    continue
+                attribute_items.append(
+                    (
+                        target.attr,
+                        self._render_source_annotation_text(
+                            statement.annotation,
+                            class_name,
+                            self_protocol_name,
+                        ),
+                    )
+                )
+                continue
+            if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
+                target = statement.targets[0]
+                if not self._is_public_self_attribute_target(target):
+                    continue
+                attribute_items.append(
+                    (
+                        target.attr,
+                        self._infer_init_assignment_annotation_text(
+                            statement.value,
+                            parameter_annotations,
+                        ),
+                    )
+                )
+        return attribute_items
+
+    def _find_source_init_method(
+            self,
+            class_node: ast.ClassDef,
+    ) -> Optional[ast.FunctionDef]:
+        """
+        Return the source `__init__` method when present.
+
+        Args:
+            class_node:
+                Source class node.
+
+        Returns:
+            Optional[ast.FunctionDef]: Matching `__init__` node or None.
+        """
+        for statement in class_node.body:
+            if isinstance(statement, ast.FunctionDef) and statement.name == "__init__":
+                return statement
+        return None
+
+    def _build_init_parameter_annotation_map(
+            self,
+            init_node: ast.FunctionDef,
+            class_name: str,
+            self_protocol_name: str,
+    ) -> Dict[str, str]:
+        """
+        Build a name-to-annotation map for `__init__` parameters.
+
+        Args:
+            init_node:
+                `__init__` function node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            Dict[str, str]: Parameter annotation map.
+        """
+        annotation_map: Dict[str, str] = {}
+        positional_arguments = list(init_node.args.posonlyargs) + list(init_node.args.args)
+        for parameter in positional_arguments + list(init_node.args.kwonlyargs):
+            if parameter.arg == "self":
+                continue
+            if parameter.annotation is None:
+                continue
+            annotation_map[parameter.arg] = self._render_source_annotation_text(
+                parameter.annotation,
+                class_name,
+                self_protocol_name,
+            )
+        if init_node.args.vararg is not None and init_node.args.vararg.annotation is not None:
+            annotation_map[init_node.args.vararg.arg] = self._render_source_annotation_text(
+                init_node.args.vararg.annotation,
+                class_name,
+                self_protocol_name,
+            )
+        if init_node.args.kwarg is not None and init_node.args.kwarg.annotation is not None:
+            annotation_map[init_node.args.kwarg.arg] = self._render_source_annotation_text(
+                init_node.args.kwarg.annotation,
+                class_name,
+                self_protocol_name,
+            )
+        return annotation_map
+
+    def _infer_init_assignment_annotation_text(
+            self,
+            value_node: ast.expr,
+            parameter_annotations: Dict[str, str],
+    ) -> str:
+        """
+        Infer an instance-attribute annotation from one `__init__` assignment.
+
+        Args:
+            value_node:
+                Assigned value node.
+            parameter_annotations:
+                Known `__init__` parameter annotations keyed by name.
+
+        Returns:
+            str: Inferred annotation text.
+        """
+        if isinstance(value_node, ast.Name) and value_node.id in parameter_annotations:
+            return parameter_annotations[value_node.id]
+        return self._infer_source_attribute_annotation_text(value_node)
+
+    @staticmethod
+    def _is_public_self_attribute_target(target: ast.expr) -> bool:
+        """
+        Return whether one assignment target is `self.<public_name>`.
+
+        Args:
+            target:
+                Candidate assignment target.
+
+        Returns:
+            bool: True when the target is a public self attribute.
+        """
+        return (
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+            and not target.attr.startswith("_")
+        )
+
+    def _render_source_annotation_text(
+            self,
+            annotation_node: Optional[ast.expr],
+            class_name: str,
+            self_protocol_name: str,
+    ) -> str:
+        """
+        Render one source annotation node into repo-style protocol text.
+
+        Args:
+            annotation_node:
+                Source annotation node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            str: Rendered annotation text.
+        """
+        if annotation_node is None:
+            return "Any"
+        if isinstance(annotation_node, ast.Constant):
+            if annotation_node.value is None:
+                return "None"
+            if isinstance(annotation_node.value, str):
+                try:
+                    parsed_annotation = ast.parse(
+                        annotation_node.value,
+                        mode="eval",
+                    ).body
+                except SyntaxError:
+                    return repr(annotation_node.value)
+                return self._render_source_annotation_text(
+                    parsed_annotation,
+                    class_name,
+                    self_protocol_name,
+                )
+        if isinstance(annotation_node, ast.Name):
+            return self._render_source_name_annotation(
+                annotation_node.id,
+                class_name,
+                self_protocol_name,
+            )
+        if isinstance(annotation_node, ast.Attribute):
+            if (
+                    isinstance(annotation_node.value, ast.Name)
+                    and annotation_node.value.id == "typing"
+                    and annotation_node.attr in self._TYPING_FAMILY_NAMES
+            ):
+                return annotation_node.attr
+            return repr(ast.unparse(annotation_node))
+        if isinstance(annotation_node, ast.Subscript):
+            base_text = self._render_source_subscript_base_text(
+                annotation_node.value,
+                class_name,
+                self_protocol_name,
+            )
+            slice_nodes = self._expand_subscript_slice(annotation_node.slice)
+            rendered_arguments = [
+                self._render_source_annotation_text(
+                    item,
+                    class_name,
+                    self_protocol_name,
+                )
+                for item in slice_nodes
+            ]
+            if base_text.startswith(("'", '"')) and base_text.endswith(("'", '"')):
+                unquoted_base = ast.literal_eval(base_text)
+                return repr(
+                    "{0}[{1}]".format(
+                        unquoted_base,
+                        ", ".join(rendered_arguments),
+                    )
+                )
+            return "{0}[{1}]".format(
+                base_text,
+                ", ".join(rendered_arguments),
+            )
+        if isinstance(annotation_node, ast.BinOp) and isinstance(
+                annotation_node.op,
+                ast.BitOr,
+        ):
+            union_members = self._flatten_pep604_union(annotation_node)
+            rendered_members = [
+                self._render_source_annotation_text(
+                    item,
+                    class_name,
+                    self_protocol_name,
+                )
+                for item in union_members
+            ]
+            non_none_members = [
+                item for item in rendered_members if item != "None"
+            ]
+            if len(non_none_members) == 1 and len(rendered_members) == 2:
+                return "Optional[{0}]".format(non_none_members[0])
+            return "Union[{0}]".format(", ".join(rendered_members))
+        if isinstance(annotation_node, ast.Tuple):
+            return "Tuple[{0}]".format(
+                ", ".join(
+                    self._render_source_annotation_text(
+                        item,
+                        class_name,
+                        self_protocol_name,
+                    )
+                    for item in annotation_node.elts
+                )
+            )
+        return repr(ast.unparse(annotation_node))
+
+    def _render_source_name_annotation(
+            self,
+            annotation_name: str,
+            class_name: str,
+            self_protocol_name: str,
+    ) -> str:
+        """
+        Render one source annotation name into repo-style protocol text.
+
+        Args:
+            annotation_name:
+                Raw annotation name.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            str: Rendered annotation text.
+        """
+        if annotation_name == class_name:
+            return repr(self_protocol_name)
+        if annotation_name in self._TYPING_FAMILY_NAMES:
+            return annotation_name
+        if annotation_name in {
+            "Any",
+            "None",
+            "bool",
+            "bytes",
+            "dict",
+            "float",
+            "frozenset",
+            "int",
+            "list",
+            "object",
+            "set",
+            "str",
+            "tuple",
+            "type",
+        }:
+            return annotation_name
+        return repr(annotation_name)
+
+    def _render_source_subscript_base_text(
+            self,
+            base_node: ast.expr,
+            class_name: str,
+            self_protocol_name: str,
+    ) -> str:
+        """
+        Render one subscript base node into protocol-safe text.
+
+        Args:
+            base_node:
+                Subscript base expression.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            str: Rendered base text.
+        """
+        if isinstance(base_node, ast.Name):
+            builtin_generic_names = {
+                "dict": "Dict",
+                "frozenset": "FrozenSet",
+                "list": "List",
+                "set": "Set",
+                "tuple": "Tuple",
+                "type": "Type",
+            }
+            if base_node.id in builtin_generic_names:
+                return builtin_generic_names[base_node.id]
+        return self._render_source_annotation_text(
+            base_node,
+            class_name,
+            self_protocol_name,
+        )
+
+    def _expand_subscript_slice(
+            self,
+            slice_node: ast.expr,
+    ) -> List[ast.expr]:
+        """
+        Expand one subscript slice into one or more argument nodes.
+
+        Args:
+            slice_node:
+                Subscript slice node.
+
+        Returns:
+            List[ast.expr]: Normalized subscript arguments.
+        """
+        if isinstance(slice_node, ast.Tuple):
+            return list(slice_node.elts)
+        return [slice_node]
+
+    def _flatten_pep604_union(
+            self,
+            annotation_node: ast.expr,
+    ) -> List[ast.expr]:
+        """
+        Flatten one `A | B | C` annotation tree into a linear member list.
+
+        Args:
+            annotation_node:
+                Annotation node that may contain nested `BitOr` unions.
+
+        Returns:
+            List[ast.expr]: Flattened union members.
+        """
+        if isinstance(annotation_node, ast.BinOp) and isinstance(
+                annotation_node.op,
+                ast.BitOr,
+        ):
+            return (
+                self._flatten_pep604_union(annotation_node.left)
+                + self._flatten_pep604_union(annotation_node.right)
+            )
+        return [annotation_node]
+
+    def _build_source_method_key(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            class_name: str,
+            self_protocol_name: str,
+    ) -> str:
+        """
+        Build a stable comparison key for one source method.
+
+        Args:
+            function_node:
+                Source function node.
+            class_name:
+                Source class name.
+            self_protocol_name:
+                Replacement name for self-return references.
+
+        Returns:
+            str: Stable signature/decorator comparison key.
+        """
+        signature_text = self._render_source_function_signature_text(
+            function_node,
+            class_name,
+            self_protocol_name,
+        )
+        decorator_key = "|".join(
+            self._extract_supported_decorator_names(function_node)
+        )
+        async_key = "async" if isinstance(function_node, ast.AsyncFunctionDef) else "sync"
+        return "{0}|{1}|{2}".format(async_key, decorator_key, signature_text)
+
+    def _build_protocol_module_ast(
+            self,
+            protocol_name: str,
+            class_docstring: str,
+            attribute_nodes: Sequence[ast.AnnAssign],
+            method_nodes: Sequence[Union[ast.FunctionDef, ast.AsyncFunctionDef]],
+    ) -> ast.Module:
+        """
+        Assemble one full protocol module AST.
+
+        Args:
+            protocol_name:
+                Protocol class name to emit.
+            class_docstring:
+                Docstring for the generated protocol class.
+            attribute_nodes:
+                Generated attribute nodes.
+            method_nodes:
+                Generated method nodes.
+
+        Returns:
+            ast.Module: Fully assembled protocol module.
+        """
+        class_body: List[ast.stmt] = [ast.Expr(value=ast.Constant(value=class_docstring))]
+        class_body.extend(attribute_nodes)
+        class_body.extend(method_nodes)
+        if len(class_body) == 1:
+            class_body.append(ast.Expr(value=ast.Constant(value=Ellipsis)))
+        class_node = ast.ClassDef(
+            name=protocol_name,
+            bases=[ast.Name(id="Protocol", ctx=ast.Load())],
+            keywords=[],
+            body=class_body,
+            decorator_list=[ast.Name(id="runtime_checkable", ctx=ast.Load())],
+        )
+        import_names = self._collect_protocol_typing_import_names(class_node)
+        module_node = ast.Module(
+            body=[
+                ast.ImportFrom(
+                    module="typing",
+                    names=[
+                        ast.alias(name=name, asname=None)
+                        for name in import_names
+                    ],
+                    level=0,
+                ),
+                class_node,
+            ],
+            type_ignores=[],
+        )
+        return ast.fix_missing_locations(module_node)
+
+    def _collect_protocol_typing_import_names(
+            self,
+            class_node: ast.ClassDef,
+    ) -> List[str]:
+        """
+        Collect the minimal ordered typing imports needed by one protocol class.
+
+        Args:
+            class_node:
+                Generated protocol class node.
+
+        Returns:
+            List[str]: Ordered typing-import names required by the class.
+        """
+        used_names = {"Protocol", "runtime_checkable"}
+        for node in ast.walk(class_node):
+            if isinstance(node, ast.Name) and node.id in self._PROTOCOL_MODULE_IMPORT_NAMES:
+                used_names.add(node.id)
+        return [
+            name for name in self._PROTOCOL_MODULE_IMPORT_NAMES
+            if name in used_names
+        ]
+
+    def _render_protocol_module_ast(self, module_node: ast.Module) -> str:
+        """
+        Render one assembled protocol module AST into source text.
+
+        Args:
+            module_node:
+                Protocol module AST.
+
+        Returns:
+            str: Rendered protocol module text.
+        """
+        lines: List[str] = []
+        for index, statement in enumerate(module_node.body):
+            if index > 0:
+                lines.append("")
+            if isinstance(statement, ast.ImportFrom):
+                lines.append(self._render_protocol_import_from(statement))
+                continue
+            if isinstance(statement, ast.ClassDef):
+                lines.extend(self._render_protocol_class(statement))
+                continue
+        return "\n".join(lines).rstrip() + "\n"
+
+    def _render_protocol_import_from(self, import_node: ast.ImportFrom) -> str:
+        """
+        Render one `from ... import ...` node for protocol-module output.
+
+        Args:
+            import_node:
+                Import-from node.
+
+        Returns:
+            str: Rendered import line.
+        """
+        imported_names = ", ".join(alias.name for alias in import_node.names)
+        return "from {0} import {1}".format(import_node.module, imported_names)
+
+    def _render_protocol_class(self, class_node: ast.ClassDef) -> List[str]:
+        """
+        Render one protocol class node into formatted source lines.
+
+        Args:
+            class_node:
+                Protocol class node.
+
+        Returns:
+            List[str]: Rendered class source lines.
+        """
+        lines: List[str] = []
+        for decorator in class_node.decorator_list:
+            lines.append("@{0}".format(ast.unparse(decorator)))
+        base_text = ", ".join(ast.unparse(base) for base in class_node.bases) or "object"
+        lines.append("class {0}({1}):".format(class_node.name, base_text))
+        body_lines = self._render_protocol_class_body(class_node.body)
+        if body_lines:
+            lines.extend(body_lines)
+        else:
+            lines.append("    ...")
+        return lines
+
+    def _render_protocol_class_body(self, body: Sequence[ast.stmt]) -> List[str]:
+        """
+        Render the body of one generated protocol class.
+
+        Args:
+            body:
+                Protocol class body nodes.
+
+        Returns:
+            List[str]: Rendered body lines with indentation.
+        """
+        rendered_blocks: List[List[str]] = []
+        for statement in body:
+            if self._is_string_expr(statement):
+                rendered_blocks.append(
+                    self._format_docstring_lines(
+                        self._extract_string_expr_value(statement),
+                        indent="    ",
+                    )
+                )
+                continue
+            if isinstance(statement, ast.AnnAssign):
+                rendered_blocks.append(
+                    [self._render_protocol_attribute_line(statement, indent="    ")]
+                )
+                continue
+            if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                rendered_blocks.append(
+                    self._render_protocol_method_lines(statement, indent="    ")
+                )
+                continue
+            if self._is_ellipsis_expr(statement):
+                rendered_blocks.append(["    ..."])
+        lines: List[str] = []
+        for index, block in enumerate(rendered_blocks):
+            if index > 0:
+                lines.append("")
+            lines.extend(block)
+        return lines
+
+    def _render_protocol_attribute_line(
+            self,
+            attribute_node: ast.AnnAssign,
+            *,
+            indent: str,
+    ) -> str:
+        """
+        Render one protocol attribute line.
+
+        Args:
+            attribute_node:
+                Protocol attribute node.
+            indent:
+                Leading indentation.
+
+        Returns:
+            str: Rendered attribute line.
+        """
+        target_text = ast.unparse(attribute_node.target)
+        annotation_text = ast.unparse(attribute_node.annotation)
+        return "{0}{1}: {2}".format(indent, target_text, annotation_text)
+
+    def _render_protocol_method_lines(
+            self,
+            method_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            *,
+            indent: str,
+    ) -> List[str]:
+        """
+        Render one generated protocol method with stable formatting.
+
+        Args:
+            method_node:
+                Protocol method node.
+            indent:
+                Leading indentation for the method block.
+
+        Returns:
+            List[str]: Rendered method lines.
+        """
+        lines: List[str] = []
+        for decorator in method_node.decorator_list:
+            lines.append("{0}@{1}".format(indent, ast.unparse(decorator)))
+        prefix = "async def" if isinstance(method_node, ast.AsyncFunctionDef) else "def"
+        signature_text = self._render_ast_function_signature_text(method_node)
+        lines.append(
+            "{0}{1} {2}{3}:".format(
+                indent,
+                prefix,
+                method_node.name,
+                signature_text,
+            )
+        )
+        body_index = 0
+        if method_node.body and self._is_string_expr(method_node.body[0]):
+            lines.extend(
+                self._format_docstring_lines(
+                    self._extract_string_expr_value(method_node.body[0]),
+                    indent=indent + "    ",
+                )
+            )
+            body_index = 1
+        if body_index >= len(method_node.body):
+            lines.append(indent + "    ...")
+            return lines
+        for statement in method_node.body[body_index:]:
+            if self._is_ellipsis_expr(statement):
+                lines.append(indent + "    ...")
+        if lines[-1] != indent + "    ...":
+            lines.append(indent + "    ...")
+        return lines
+
+    def _render_ast_function_signature_text(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    ) -> str:
+        """
+        Render one generated function signature from its AST node.
+
+        Args:
+            function_node:
+                Generated protocol method node.
+
+        Returns:
+            str: Rendered signature text.
+        """
+        arguments = function_node.args
+        rendered_parameters: List[str] = []
+        positional_arguments = list(arguments.posonlyargs) + list(arguments.args)
+        default_offset = len(positional_arguments) - len(arguments.defaults)
+        for index, parameter in enumerate(arguments.posonlyargs):
+            default_node = None
+            if index >= default_offset:
+                default_node = arguments.defaults[index - default_offset]
+            rendered_parameters.append(
+                self._render_ast_parameter_text(parameter, default_node)
+            )
+        if arguments.posonlyargs:
+            rendered_parameters.append("/")
+        for index, parameter in enumerate(arguments.args):
+            absolute_index = len(arguments.posonlyargs) + index
+            default_node = None
+            if absolute_index >= default_offset:
+                default_node = arguments.defaults[absolute_index - default_offset]
+            rendered_parameters.append(
+                self._render_ast_parameter_text(parameter, default_node)
+            )
+        if arguments.vararg is not None:
+            rendered_parameters.append(
+                self._render_ast_parameter_text(arguments.vararg, None, prefix="*")
+            )
+        elif arguments.kwonlyargs:
+            rendered_parameters.append("*")
+        for index, parameter in enumerate(arguments.kwonlyargs):
+            rendered_parameters.append(
+                self._render_ast_parameter_text(parameter, arguments.kw_defaults[index])
+            )
+        if arguments.kwarg is not None:
+            rendered_parameters.append(
+                self._render_ast_parameter_text(arguments.kwarg, None, prefix="**")
+            )
+        return_annotation = "Any"
+        if function_node.returns is not None:
+            return_annotation = ast.unparse(function_node.returns)
+        return "({0}) -> {1}".format(", ".join(rendered_parameters), return_annotation)
+
+    def _render_ast_parameter_text(
+            self,
+            parameter: ast.arg,
+            default_node: Optional[ast.expr],
+            *,
+            prefix: str = "",
+    ) -> str:
+        """
+        Render one generated AST parameter with stable spacing.
+
+        Args:
+            parameter:
+                Generated parameter node.
+            default_node:
+                Optional default-value node.
+            prefix:
+                Prefix such as `*` or `**`.
+
+        Returns:
+            str: Rendered parameter text.
+        """
+        parameter_text = "{0}{1}".format(prefix, parameter.arg)
+        if parameter.annotation is not None:
+            parameter_text += ": {0}".format(ast.unparse(parameter.annotation))
+        if default_node is not None:
+            parameter_text += " = {0}".format(self._render_source_default_text(default_node))
+        return parameter_text
+
+    def _format_docstring_lines(
+            self,
+            docstring_text: str,
+            *,
+            indent: str,
+    ) -> List[str]:
+        """
+        Format one docstring block with stable indentation.
+
+        Args:
+            docstring_text:
+                Raw docstring text.
+            indent:
+                Leading indentation for the docstring block.
+
+        Returns:
+            List[str]: Rendered docstring lines.
+        """
+        normalized_text = self._normalize_docstring_text(docstring_text)
+        output_lines = [indent + '"""']
+        for line in normalized_text.splitlines():
+            output_lines.append(indent + line)
+        output_lines.append(indent + '"""')
+        return output_lines
+
+    def _normalize_docstring_text(self, docstring_text: str) -> str:
+        """
+        Normalize one docstring for consistent output indentation.
+
+        Args:
+            docstring_text:
+                Raw docstring text.
+
+        Returns:
+            str: Normalized docstring text.
+        """
+        normalized_text = inspect.cleandoc(docstring_text).replace('"""', '\\"""')
+        if not normalized_text:
+            return ""
+        return normalized_text
+
+    @staticmethod
+    def _is_string_expr(statement: ast.stmt) -> bool:
+        """
+        Return whether one statement is a literal-string expression.
+
+        Args:
+            statement:
+                Candidate statement.
+
+        Returns:
+            bool: True when the statement is a string expression.
+        """
+        return (
+            isinstance(statement, ast.Expr)
+            and isinstance(statement.value, ast.Constant)
+            and isinstance(statement.value.value, str)
+        )
+
+    @staticmethod
+    def _extract_string_expr_value(statement: ast.stmt) -> str:
+        """
+        Extract the literal string from one string-expression statement.
+
+        Args:
+            statement:
+                String-expression statement.
+
+        Returns:
+            str: Stored string value.
+        """
+        return statement.value.value
+
+    @staticmethod
+    def _is_ellipsis_expr(statement: ast.stmt) -> bool:
+        """
+        Return whether one statement is a literal ellipsis expression.
+
+        Args:
+            statement:
+                Candidate statement.
+
+        Returns:
+            bool: True when the statement is `...`.
+        """
+        return (
+            isinstance(statement, ast.Expr)
+            and isinstance(statement.value, ast.Constant)
+            and statement.value.value is Ellipsis
+        )
+
+    def _write_protocol_module_text(
+            self,
+            module_text: str,
+            output_directory: Union[str, Path],
+            protocol_name: str,
+    ) -> Path:
+        """
+        Write rendered protocol-module text into a chosen directory.
+
+        Args:
+            module_text:
+                Rendered protocol module text.
+            output_directory:
+                Directory that should receive the generated file.
+            protocol_name:
+                Protocol class name used to derive the filename.
+
+        Returns:
+            Path: Written file path.
+        """
+        output_directory_path = Path(output_directory)
+        output_directory_path.mkdir(parents=True, exist_ok=True)
+        output_path = output_directory_path / self._default_protocol_file_name(
+            protocol_name
+        )
+        output_path.write_text(module_text, encoding="utf-8")
+        return output_path
+
+    def _default_protocol_file_name(self, protocol_name: str) -> str:
+        """
+        Build the default output filename for one protocol name.
+
+        Args:
+            protocol_name:
+                Protocol class name.
+
+        Returns:
+            str: Default lowercase interface filename.
+        """
+        return "{0}.py".format(protocol_name.lower())
+
+    def _extract_supported_decorator_names(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    ) -> List[str]:
+        """
+        Return supported decorator names for protocol method generation.
+
+        Args:
+            function_node:
+                Source function node.
+
+        Returns:
+            List[str]: Supported decorator names in source order.
+        """
+        decorator_names: List[str] = []
+        for decorator in function_node.decorator_list:
+            if isinstance(decorator, ast.Name) and decorator.id in {
+                "property",
+                "classmethod",
+                "staticmethod",
+            }:
+                decorator_names.append(decorator.id)
+                continue
+            if isinstance(decorator, ast.Attribute) and decorator.attr == "getter":
+                decorator_names.append("property")
+        return decorator_names
+
+    def _build_supported_decorator_lines(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    ) -> List[str]:
+        """
+        Render supported decorators into source lines for one protocol method.
+
+        Args:
+            function_node:
+                Source function node.
+
+        Returns:
+            List[str]: Decorator source lines.
+        """
+        return [
+            "@{0}".format(decorator_name)
+            for decorator_name in self._extract_supported_decorator_names(function_node)
+        ]
+
+    def _should_skip_source_method(
+            self,
+            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    ) -> bool:
+        """
+        Return whether one source method should be skipped for protocol output.
+
+        Args:
+            function_node:
+                Source function node.
+
+        Returns:
+            bool: True when the method should be skipped.
+        """
+        if not self._is_public_protocol_method_name(function_node.name):
+            return True
+        for decorator in function_node.decorator_list:
+            if isinstance(decorator, ast.Attribute) and decorator.attr in {
+                "setter",
+                "deleter",
+            }:
+                return True
+        return False
+
+    def _infer_source_attribute_annotation_text(
+            self,
+            value_node: ast.expr,
+    ) -> str:
+        """
+        Infer one attribute annotation from a simple source value node.
+
+        Args:
+            value_node:
+                Source value node.
+
+        Returns:
+            str: Inferred annotation text.
+        """
+        if isinstance(value_node, ast.Constant):
+            if value_node.value is None:
+                return "Any"
+            if isinstance(value_node.value, bool):
+                return "bool"
+            if isinstance(value_node.value, int):
+                return "int"
+            if isinstance(value_node.value, float):
+                return "float"
+            if isinstance(value_node.value, str):
+                return "str"
+            if isinstance(value_node.value, bytes):
+                return "bytes"
+        if isinstance(value_node, ast.List):
+            return "List[Any]"
+        if isinstance(value_node, ast.Dict):
+            return "Dict[Any, Any]"
+        if isinstance(value_node, ast.Set):
+            return "Set[Any]"
+        if isinstance(value_node, ast.Tuple):
+            return "Tuple[Any, ...]"
+        return "Any"
+
+    @staticmethod
+    def _is_public_protocol_attribute_name(name: str) -> bool:
+        """
+        Return whether one attribute name belongs in generated protocols.
+
+        Args:
+            name:
+                Candidate attribute name.
+
+        Returns:
+            bool: True when the attribute should be emitted.
+        """
+        return not name.startswith("_")
+
+    @staticmethod
+    def _is_public_protocol_method_name(name: str) -> bool:
+        """
+        Return whether one method name belongs in generated protocols.
+
+        Args:
+            name:
+                Candidate method name.
+
+        Returns:
+            bool: True when the method should be emitted.
+        """
+        return name == "cleanup" or not name.startswith("_")
 
     def _extract_protocol_name(self, protocol_code: str) -> str:
         """
