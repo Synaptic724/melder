@@ -3,16 +3,14 @@ import hashlib
 from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
-    CodegenNamespace,
-)
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
-    CodegenNamespaceConfiguration,
-)
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import ICodegenTransactionContext
+from melder.utilities.interfaces import (
+    ICodegenNamespace,
+    ICodegenNamespaceConfiguration,
+    ICodegenTransactionContext,
+)
 
 
 class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
@@ -53,8 +51,8 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
             frame_name: str,
             code: str,
             projection: Optional[CodegenProjection] = None,
-            namespace_configuration: Optional[CodegenNamespaceConfiguration] = None,
-            namespace: Optional[CodegenNamespace] = None,
+            namespace_configuration: Optional[ICodegenNamespaceConfiguration] = None,
+            namespace: Optional[ICodegenNamespace] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -92,10 +90,10 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
         self._code: str = code
         self._code_hash: str = hashlib.sha256(code.encode("utf-8")).hexdigest()
         self._projection: Optional[CodegenProjection] = projection
-        self._namespace_configuration: Optional[CodegenNamespaceConfiguration] = (
+        self._namespace_configuration: Optional[ICodegenNamespaceConfiguration] = (
             namespace_configuration
         )
-        self._namespace: Optional[CodegenNamespace] = namespace
+        self._namespace: Optional[ICodegenNamespace] = namespace
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -184,12 +182,12 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
             return self._projection
 
     @property
-    def namespace_configuration(self) -> Optional[CodegenNamespaceConfiguration]:
+    def namespace_configuration(self) -> Optional[ICodegenNamespaceConfiguration]:
         """
         Return the optional namespace configuration for this request.
 
         Returns:
-            Optional[CodegenNamespaceConfiguration]: Namespace configuration
+            Optional[ICodegenNamespaceConfiguration]: Namespace configuration
             when assigned.
         """
         self.check_cleaned()
@@ -197,12 +195,12 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
             return self._namespace_configuration
 
     @property
-    def namespace(self) -> Optional[CodegenNamespace]:
+    def namespace(self) -> Optional[ICodegenNamespace]:
         """
         Return the optional live namespace for this request.
 
         Returns:
-            Optional[CodegenNamespace]: Built namespace when assigned.
+            Optional[ICodegenNamespace]: Built namespace when assigned.
         """
         self.check_cleaned()
         with self._lock:
@@ -237,7 +235,7 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
 
     def set_namespace_configuration(
             self,
-            namespace_configuration: Optional[CodegenNamespaceConfiguration],
+            namespace_configuration: Optional[ICodegenNamespaceConfiguration],
     ) -> None:
         """
         Replace the optional namespace configuration stored on this context.
@@ -253,7 +251,7 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
         with self._lock:
             self._namespace_configuration = namespace_configuration
 
-    def set_namespace(self, namespace: Optional[CodegenNamespace]) -> None:
+    def set_namespace(self, namespace: Optional[ICodegenNamespace]) -> None:
         """
         Replace the optional live namespace stored on this context.
 
