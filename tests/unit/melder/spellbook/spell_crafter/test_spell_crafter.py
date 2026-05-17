@@ -12,7 +12,7 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -22,7 +22,7 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency imp
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
 from melder.spellbook.configuration.system_state import SystemState

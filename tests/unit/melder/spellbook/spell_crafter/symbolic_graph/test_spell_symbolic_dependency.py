@@ -2,7 +2,7 @@ import threading
 
 import pytest
 
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (

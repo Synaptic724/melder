@@ -11,7 +11,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError

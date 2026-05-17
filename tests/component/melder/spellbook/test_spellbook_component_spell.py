@@ -8,7 +8,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
     SpellStateChangeReason,
 )
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.spellbook.spellbook import Spellbook

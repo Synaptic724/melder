@@ -15,7 +15,7 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency imp
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import SpellSystemAdjacencyBuilder
@@ -26,13 +26,13 @@ from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract

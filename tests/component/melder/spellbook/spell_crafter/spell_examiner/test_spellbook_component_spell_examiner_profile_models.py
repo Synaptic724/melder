@@ -14,7 +14,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     SpellBindingKind,
     SpellBindingProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
     SpellResolutionProfile,
     SpellSymbolicEdge,
@@ -23,13 +23,13 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile i
     SpellValidationIssue,
     SpellValidationResult,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_parameter_requirements import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
 from melder.spellbook.spell_types.spell_types import SpellType

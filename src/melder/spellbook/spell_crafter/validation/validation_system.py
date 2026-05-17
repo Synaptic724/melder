@@ -39,10 +39,10 @@ from melder.utilities.interfaces import ISpell, ISpellbook
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
 from melder.utilities.synchronization.cancellation_event_signal import (

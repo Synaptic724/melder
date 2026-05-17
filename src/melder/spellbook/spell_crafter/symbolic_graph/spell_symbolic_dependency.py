@@ -2,7 +2,7 @@ import threading
 from typing import Any, Optional, Tuple
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
+from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

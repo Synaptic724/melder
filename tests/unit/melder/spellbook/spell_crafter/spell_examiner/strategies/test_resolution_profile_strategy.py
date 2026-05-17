@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
 from melder.spellbook.spell_crafter.spell_examiner.strategies import (

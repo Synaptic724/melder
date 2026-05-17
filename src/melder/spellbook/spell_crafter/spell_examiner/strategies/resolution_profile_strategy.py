@@ -1,6 +1,6 @@
 # Melder Imports
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import SpellResolutionProfile
-from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import SpellResolutionProfile
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
 from melder.utilities.interfaces import ISpell

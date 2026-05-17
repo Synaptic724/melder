@@ -8,7 +8,7 @@ from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
+from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
 from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
