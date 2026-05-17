@@ -70,3 +70,36 @@ def test_properties_return_copies():
     assert frame.get_override("a") == 1
     assert frame.get_result("n1") == 2
     assert isinstance(frame.get_error("n2"), RuntimeError)
+
+
+def test_cleanup_is_terminal_and_repr_stays_stable():
+    frame = ResolutionFrame({"a": 1})
+    frame.set_result("n1", 2)
+    frame.register_error("n2", RuntimeError("x"))
+
+    frame.cleanup()
+    frame.cleanup()
+
+    assert frame.cleaned is True
+    assert repr(frame) == f"ResolutionFrame(id={frame.id!r}, cleaned=True)"
+
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = frame.overrides
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = frame.results
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = frame.errors
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.has_override("a")
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.get_override("a")
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.has_result("n1")
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.get_result("n1")
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.get_error("n2")
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.set_result("n3", 3)
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        frame.register_error("n3", RuntimeError("boom"))

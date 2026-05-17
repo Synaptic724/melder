@@ -92,19 +92,21 @@ class FrameLinkContract(Cleanable):
         """
         if self._cleaned:
             return
-        lock = self._lock
-        with lock:
+
+        with self._lock:
             if self._cleaned:
                 return
+
             self._cleaned = True
             self._selected_contract_names.clear()
-            self._selected_contract_names = None
             self._metadata.clear()
-            self._metadata = None
-            self._frame_name = None
-            self._rift_id = None
-            self._id = None
-        self._lock = None
+
+            del self._selected_contract_names
+            del self._metadata
+            del self._frame_name
+            del self._rift_id
+            del self._id
+        del self._lock
 
     @property
     def contract_id(self) -> str:

@@ -56,11 +56,12 @@ class SpellMutationNode(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._parent_id = None
             self._metadata.clear()
-            self._metadata = None
-            self._structure = None
-        self._lock = None
+
+            del self._parent_id
+            del self._metadata
+            del self._structure
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Properties
@@ -75,6 +76,7 @@ class SpellMutationNode(Cleanable):
         Returns:
             str: The node's unique ID.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -87,6 +89,7 @@ class SpellMutationNode(Cleanable):
         Returns:
             str: The concrete spell version ID.
         """
+        self.check_cleaned()
         return self._spell_id
 
     @property
@@ -97,6 +100,7 @@ class SpellMutationNode(Cleanable):
         Returns:
             Optional[str]: The ID of the parent node.
         """
+        self.check_cleaned()
         return self._parent_id
 
     @property
@@ -110,6 +114,7 @@ class SpellMutationNode(Cleanable):
         Returns:
             Dict[str, Any]: A copy of the mutation's metadata.
         """
+        self.check_cleaned()
         return dict(self._metadata)
 
     @property
@@ -122,6 +127,7 @@ class SpellMutationNode(Cleanable):
         Returns:
             Optional[Dict[str, Any]]: The structural snapshot data.
         """
+        self.check_cleaned()
         return self._structure
 
     # ------------------------------------------------------------------ #

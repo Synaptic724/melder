@@ -148,8 +148,9 @@ class ClassInspector:
         cls_dict = self.cls.__dict__ # Cache class dict
 
         # Python 3.11+ has classify_members; older versions do not.
-        if callable(getattr(inspect, "classify_members", None)):
-            classified = inspect.classify_members(self.cls)
+        classify_members = getattr(inspect, "classify_members", None)
+        if callable(classify_members):
+            classified = classify_members(self.cls)
         else:
             # crude fallback: label callables as "method", everything else as "data"
             classified = [

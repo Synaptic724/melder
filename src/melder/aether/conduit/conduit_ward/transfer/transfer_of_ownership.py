@@ -1,5 +1,6 @@
 import threading
 import ulid
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Set
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -618,9 +619,10 @@ class TransferOfOwnership(Cleanable):
         prev_validity = state.validity
         prev_reason = state.change_reason
         self._register_rollback(
-            lambda s=state, v=prev_validity, r=prev_reason: s.set_validity(
-                v,
-                change_reason=r,
+            partial(
+                state.set_validity,
+                prev_validity,
+                change_reason=prev_reason,
             )
         )
         state.set_validity(
@@ -832,8 +834,13 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
-            self.target_conduit._creations.remove(spell_obj)
-            self.source_conduit._creations.add(spell_obj, obj)
+            self.target_conduit._creations.extract_spell_creations(
+                spell_obj.spell_id
+            )
+            self.source_conduit._creations.restore_spell_creations(
+                spell_obj.spell_id,
+                [obj],
+            )
         except Exception:
             pass
 
@@ -1286,7 +1293,13 @@ class TransferOfOwnership(Cleanable):
             if not extracted:
                 return
             tgt_creations.restore_spell_creations(spell_obj.spell_id, extracted)
-            self._register_rollback(lambda: self._rollback_creations_move(spell_obj.spell_id, extracted))
+            self._register_rollback(
+                partial(
+                    self._rollback_creations_move,
+                    spell_obj.spell_id,
+                    extracted,
+                )
+            )
         except Exception:
             pass
 
@@ -1310,7 +1323,13 @@ class TransferOfOwnership(Cleanable):
             extracted = creations.extract_spell_creations(spell_obj.spell_id)
             if not extracted:
                 return
-            self._register_rollback(lambda: creations.restore_spell_creations(spell_obj.spell_id, extracted))
+            self._register_rollback(
+                partial(
+                    creations.restore_spell_creations,
+                    spell_obj.spell_id,
+                    extracted,
+                )
+            )
         except Exception:
             pass
 
@@ -1379,14 +1398,13 @@ class TransferOfOwnership(Cleanable):
                                     primary_peer = owner_conduit
                                     fallback_peer = borrower_conduit
                                 self._register_rollback(
-                                    lambda w=primary_ward, fw=fallback_ward, p=primary_peer, fp=fallback_peer: (
-                                        self._restore_contract_entry_with_fallback(
-                                            primary_ward=w,
-                                            fallback_ward=fw,
-                                            primary_peer=p,
-                                            fallback_peer=fp,
-                                            spell_obj=spell_obj,
-                                        )
+                                    partial(
+                                        self._restore_contract_entry_with_fallback,
+                                        primary_ward=primary_ward,
+                                        fallback_ward=fallback_ward,
+                                        primary_peer=primary_peer,
+                                        fallback_peer=fallback_peer,
+                                        spell_obj=spell_obj,
                                     )
                                 )
                                 if owner_conduit is not None:
@@ -1462,15 +1480,20 @@ class TransferOfOwnership(Cleanable):
                                     if existed_before:
                                         ward._remove_spell_from_contract(spell_id=spell_obj.spell_id, conduit=peer, conduit_id=peer._id)
                                     self._register_rollback(
-                                        lambda w=ward, p=peer, existed=existed_before: self._restore_contract_entry(
-                                            w, spell_obj, p, existed
+                                        partial(
+                                            self._restore_contract_entry,
+                                            ward,
+                                            spell_obj,
+                                            peer,
+                                            existed_before,
                                         )
                                     )
                                     self._register_rollback(
-                                        lambda tw=target_ward, p=peer: tw._remove_spell_from_contract(
+                                        partial(
+                                            target_ward._remove_spell_from_contract,
                                             spell_id=spell_obj.spell_id,
-                                            conduit=p,
-                                            conduit_id=p._id,
+                                            conduit=peer,
+                                            conduit_id=peer._id,
                                         )
                                     )
                                 except Exception:

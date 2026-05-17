@@ -113,7 +113,12 @@ class AetherConfiguration(Cleanable, IAetherConfiguration):
             bool: True when `resolve_channel_logger(...)` may auto-attach.
         """
         self.check_cleaned()
-        return self._properties["channel_logger_activation_enabled"]
+        value = self._properties["channel_logger_activation_enabled"]
+        if not isinstance(value, bool):
+            raise TypeError(
+                "channel_logger_activation_enabled must remain a bool."
+            )
+        return value
 
     @property
     def channel_logger_resolver(self) -> Optional[Callable[..., Any]]:
@@ -124,7 +129,12 @@ class AetherConfiguration(Cleanable, IAetherConfiguration):
             Optional[Callable[..., Any]]: Configured resolver.
         """
         self.check_cleaned()
-        return self._properties["channel_logger_resolver"]
+        value = self._properties["channel_logger_resolver"]
+        if value is not None and not callable(value):
+            raise TypeError(
+                "channel_logger_resolver must remain callable or None."
+            )
+        return value
 
     @property
     def default_logger(self) -> Optional[logging.Logger]:
@@ -135,7 +145,10 @@ class AetherConfiguration(Cleanable, IAetherConfiguration):
             Optional[logging.Logger]: Configured default logger.
         """
         self.check_cleaned()
-        return self._properties["default_logger"]
+        value = self._properties["default_logger"]
+        if value is not None and not isinstance(value, logging.Logger):
+            raise TypeError("default_logger must remain logging.Logger or None.")
+        return value
 
     def with_defaults(self) -> "AetherConfiguration":
         """

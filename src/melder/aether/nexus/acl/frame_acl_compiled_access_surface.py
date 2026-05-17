@@ -204,33 +204,34 @@ class CompiledFrameACLAccessSurface(Cleanable):
             self._conduit_payload_sections_by_id.clear()
             self._spell_payload_sections_by_key.clear()
             self._metadata.clear()
-            self._frame_name = None
-            self._configuration_id = None
-            self._view_profile_name = None
-            self._view_profile_version = None
-            self._codegen_profile_name = None
-            self._codegen_profile_version = None
-            self._codegen_imports_enabled = None
-            self._allowed_import_module_roots = None
-            self._denied_import_module_roots = None
-            self._denied_builtin_names = None
-            self._codegen_unsafe_reflection_allowed = None
-            self._codegen_dunder_access_allowed = None
-            self._codegen_recursive_codegen_allowed = None
-            self._command_frame_enabled = None
-            self._allowed_kinds = None
-            self._allowed_commands = None
-            self._frame_payload_fields = None
-            self._visible_conduit_ids = None
-            self._visible_spell_keys = None
-            self._visible_spell_index_ids = None
-            self._enabled_conduit_ids = None
-            self._enabled_spell_index_ids = None
-            self._conduit_payload_sections_by_id = None
-            self._spell_payload_sections_by_key = None
-            self._metadata = None
-            self._id = None
-        self._lock = None
+
+            del self._frame_name
+            del self._configuration_id
+            del self._view_profile_name
+            del self._view_profile_version
+            del self._codegen_profile_name
+            del self._codegen_profile_version
+            del self._codegen_imports_enabled
+            del self._allowed_import_module_roots
+            del self._denied_import_module_roots
+            del self._denied_builtin_names
+            del self._codegen_unsafe_reflection_allowed
+            del self._codegen_dunder_access_allowed
+            del self._codegen_recursive_codegen_allowed
+            del self._command_frame_enabled
+            del self._allowed_kinds
+            del self._allowed_commands
+            del self._frame_payload_fields
+            del self._visible_conduit_ids
+            del self._visible_spell_keys
+            del self._visible_spell_index_ids
+            del self._enabled_conduit_ids
+            del self._enabled_spell_index_ids
+            del self._conduit_payload_sections_by_id
+            del self._spell_payload_sections_by_key
+            del self._metadata
+            del self._id
+        del self._lock
 
     @property
     def frame_name(self) -> str:

@@ -352,39 +352,6 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
-    def get_current_view_frame_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-    ) -> object:
-        """
-        Return the current selected view ACL configuration for one frame/contract.
-        """
-        ...
-
-    def get_current_command_frame_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-    ) -> object:
-        """
-        Return the current selected command ACL configuration for one frame/contract.
-        """
-        ...
-
-    def get_current_codegen_frame_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-    ) -> object:
-        """
-        Return the current selected codegen ACL configuration for one frame/contract.
-        """
-        ...
-
     def check_for_aetheric_frame(self, frame_name: str) -> None:
         """
         Validate that one named Aetheric frame exists and is accessible.

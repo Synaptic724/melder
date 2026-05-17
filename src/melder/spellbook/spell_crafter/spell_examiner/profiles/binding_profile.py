@@ -45,8 +45,8 @@ class SpellBindingProfile(Cleanable):
             None.
         """
         super().__init__()
-        self.kind = kind
-        self.original_object = original_object
+        self.kind: SpellBindingKind = kind
+        self.original_object: Any = original_object
 
     def cleanup(self) -> None:
         """
@@ -57,9 +57,11 @@ class SpellBindingProfile(Cleanable):
         """
         if self._cleaned:
             return
-        self.kind = None
-        self.original_object = None
         self._cleaned = True
+
+        del self.kind
+        del self.original_object
+
 
 
 class ClassBindingProfile(SpellBindingProfile):
@@ -140,18 +142,18 @@ class ClassBindingProfile(SpellBindingProfile):
             None.
         """
         super().__init__(kind=kind, original_object=original_object)
-        self.name = name
-        self.qualname = qualname
-        self.module = module
-        self.bases = list(bases) if bases is not None else []
-        self.mro = list(mro) if mro is not None else []
-        self.annotations = dict(annotations) if annotations is not None else {}
-        self.origin_file = origin_file
-        self.origin_line = origin_line
-        self.source_preview = source_preview
-        self.is_dataclass = is_dataclass
-        self.decorated = decorated
-        self.method_names = list(method_names) if method_names is not None else []
+        self.name: str = name
+        self.qualname: str = qualname
+        self.module: str = module
+        self.bases: List[str] = list(bases) if bases is not None else []
+        self.mro: List[str] = list(mro) if mro is not None else []
+        self.annotations: Dict[str, Any] = dict(annotations) if annotations is not None else {}
+        self.origin_file: Optional[str] = origin_file
+        self.origin_line: Optional[int] = origin_line
+        self.source_preview: Optional[str] = source_preview
+        self.is_dataclass: bool = is_dataclass
+        self.decorated: bool = decorated
+        self.method_names: List[str] = list(method_names) if method_names is not None else []
 
     def cleanup(self) -> None:
         """
@@ -167,18 +169,19 @@ class ClassBindingProfile(SpellBindingProfile):
                 lst.clear()
         if isinstance(self.annotations, dict):
             self.annotations.clear()
-        self.origin_file = None
-        self.origin_line = None
-        self.source_preview = None
-        self.is_dataclass = None
-        self.decorated = None
-        self.name = None
-        self.qualname = None
-        self.module = None
-        self.bases = None
-        self.mro = None
-        self.annotations = None
-        self.method_names = None
+
+        del self.origin_file
+        del self.origin_line
+        del self.source_preview
+        del self.is_dataclass
+        del self.decorated
+        del self.name
+        del self.qualname
+        del self.module
+        del self.bases
+        del self.mro
+        del self.annotations
+        del self.method_names
         super().cleanup()
 
 
@@ -212,10 +215,10 @@ class CallableParameterBindingSummary:
         Returns:
             None.
         """
-        self.name = name
-        self.kind = kind
-        self.default_repr = default_repr
-        self.annotation_repr = annotation_repr
+        self.name: str = name
+        self.kind: str = kind
+        self.default_repr: Optional[str] = default_repr
+        self.annotation_repr: Optional[str] = annotation_repr
 
 
 class CallableBindingProfile(SpellBindingProfile):
@@ -299,18 +302,18 @@ class CallableBindingProfile(SpellBindingProfile):
             None.
         """
         super().__init__(kind=kind, original_object=original_object)
-        self.name = name
-        self.qualname = qualname
-        self.module = module
-        self.object_id = object_id
-        self.type_name = type_name
-        self.repr_string = repr_string
-        self.signature = signature
-        self.parameters = list(parameters) if parameters is not None else []
-        self.builtin_module = builtin_module
-        self.extension_module = extension_module
-        self.lambda_function = lambda_function
-        self.abstract = abstract
+        self.name: str = name
+        self.qualname: Optional[str] = qualname
+        self.module: Optional[str] = module
+        self.object_id: int = object_id
+        self.type_name: str = type_name
+        self.repr_string: str = repr_string
+        self.signature: Optional[str] = signature
+        self.parameters: Optional[List[CallableParameterBindingSummary]] = list(parameters) if parameters is not None else []
+        self.builtin_module: bool = builtin_module
+        self.extension_module: bool = extension_module
+        self.lambda_function: bool = lambda_function
+        self.abstract: bool = abstract
 
     def cleanup(self) -> None:
         """
@@ -323,18 +326,20 @@ class CallableBindingProfile(SpellBindingProfile):
             return
         if isinstance(self.parameters, list):
             self.parameters.clear()
-        self.name = None
-        self.qualname = None
-        self.module = None
-        self.object_id = None
-        self.type_name = None
-        self.repr_string = None
-        self.signature = None
-        self.parameters = None
-        self.builtin_module = None
-        self.extension_module = None
-        self.lambda_function = None
-        self.abstract = None
+
+        del self.name
+        del self.qualname
+        del self.module
+        del self.object_id
+        del self.type_name
+        del self.repr_string
+        del self.signature
+        del self.parameters
+        del self.builtin_module
+        del self.extension_module
+        del self.lambda_function
+        del self.abstract
+
         super().cleanup()
 
 
@@ -377,9 +382,9 @@ class InstanceBindingProfile(SpellBindingProfile):
             None.
         """
         super().__init__(kind=kind, original_object=original_object)
-        self.type_name = type_name
-        self.module = module
-        self.repr_string = repr_string
+        self.type_name: str = type_name
+        self.module: str = module
+        self.repr_string: str = repr_string
 
     def cleanup(self) -> None:
         """
@@ -390,9 +395,11 @@ class InstanceBindingProfile(SpellBindingProfile):
         """
         if self._cleaned:
             return
-        self.type_name = None
-        self.module = None
-        self.repr_string = None
+
+        del self.type_name
+        del self.module
+        del self.repr_string
+
         super().cleanup()
 
 
@@ -439,9 +446,9 @@ class OtherBindingProfile(SpellBindingProfile):
             None.
         """
         super().__init__(kind=kind, original_object=original_object)
-        self.type_name = type_name
-        self.module = module
-        self.repr_string = repr_string
+        self.type_name: str = type_name
+        self.module: str = module
+        self.repr_string: str = repr_string
 
     def cleanup(self) -> None:
         """
@@ -452,7 +459,7 @@ class OtherBindingProfile(SpellBindingProfile):
         """
         if self._cleaned:
             return
-        self.type_name = None
-        self.module = None
-        self.repr_string = None
+        del self.type_name
+        del self.module
+        del self.repr_string
         super().cleanup()

@@ -78,8 +78,8 @@ class SpellExaminer(Cleanable):
             return
         self._cleaned = True
         self._profile_builders_by_name.clear()
-        self._profile_builders_by_name = None
-        self._id = None
+        del self._profile_builders_by_name
+        del self._id
 
     @property
     def id(self) -> str:

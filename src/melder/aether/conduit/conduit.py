@@ -186,10 +186,11 @@ class Conduit(Cleanable, IConduit):
         if automatic is not None:
             self.__dynamic_environment__ = not automatic
 
-        if conduit_state is ConduitState.lesser:
-            self._root_conduit_id: str = root_conduit_id
-        else:
-            self._root_conduit_id: str = self._id
+        self._root_conduit_id: str = (
+            root_conduit_id
+            if conduit_state is ConduitState.lesser
+            else self._id
+        )
         self._creations: Creations = self._creations_configuration(configuration)
         self._dev_ops_manager: Any | None = self._resolve_dev_ops_manager()
         self._creation_gate_controller: CreationGateController = self._resolve_creation_gate_controller()

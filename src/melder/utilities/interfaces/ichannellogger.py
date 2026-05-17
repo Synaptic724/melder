@@ -143,6 +143,26 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
+    def setLevel(self, level: int) -> None:
+        """
+        Apply one concrete numeric logging threshold to this channel logger.
+
+        Purpose:
+            Mirror the stdlib logger-style level-setting contract used by
+            `SafeLogger` so the adapter can push its resolved numeric threshold
+            onto either a channel logger or a stdlib logger through one shared
+            path.
+
+        Args:
+            level:
+                Concrete numeric logging threshold (for example
+                `logging.INFO`).
+
+        Returns:
+            None.
+        """
+        ...
+
     def set_min_level(self, level: str) -> None:
         """
         Set the local minimum logging level.

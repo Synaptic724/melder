@@ -2739,15 +2739,15 @@ class ConduitWard(Cleanable, IConduitWard):
             # Outbound: spells we have granted to the peer (live in our detail map).
             our_map = contract._get_detail_map(self)
             for sid, detail in our_map.items():
-                spell: Optional[ISpell] = None
+                owned_spell: Optional[ISpell] = None
                 try:
                     # This is a local spell we own; resolve via SpellIndex-aware get_spell_by_id.
-                    spell = self._conduit.get_spell_by_id(sid)
+                    owned_spell = self._conduit.get_spell_by_id(sid)
                 except Exception:
-                    spell = None
+                    owned_spell = None
 
-                if spell is not None:
-                    spells_result["outbound"].append((sid, spell))
+                if owned_spell is not None:
+                    spells_result["outbound"].append((sid, owned_spell))
 
         return spells_result
 

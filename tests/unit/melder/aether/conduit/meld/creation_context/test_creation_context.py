@@ -536,10 +536,10 @@ def test_cleanup_swallows_route_config_cleanup_failures_and_nulls_runtime_refs()
 
     assert failing_no_mutation.calls == 1
     assert failing_mutation.calls == 1
-    assert context._spell is None
-    assert context._spell_id is None
-    assert context._override_specialization_cache is None
-    assert context._override_last_executor is None
+    assert not hasattr(context, "_spell")
+    assert not hasattr(context, "_spell_id")
+    assert not hasattr(context, "_override_specialization_cache")
+    assert not hasattr(context, "_override_last_executor")
 
 
 def test_seed_baseline_override_executor_noops_without_shape_or_executor() -> None:
@@ -1557,11 +1557,11 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     context.cleanup()
 
     assert context.cleaned is True
-    assert context._override_specialization_cache is None
-    assert context._override_executor_source_cache_by_plan_signature is None
-    assert context._override_executor_code_object_cache_by_plan_signature is None
-    assert context._override_prefilter_step_targets_cache is None
-    assert context._override_prefilter_path_metadata_cache is None
-    assert context._override_apply_with_socket_shape_prechecked_phase10 is None
+    assert not hasattr(context, "_override_specialization_cache")
+    assert not hasattr(context, "_override_executor_source_cache_by_plan_signature")
+    assert not hasattr(context, "_override_executor_code_object_cache_by_plan_signature")
+    assert not hasattr(context, "_override_prefilter_step_targets_cache")
+    assert not hasattr(context, "_override_prefilter_path_metadata_cache")
+    assert not hasattr(context, "_override_apply_with_socket_shape_prechecked_phase10")
     assert route_config_no_mutation.plan_signature is None
     assert route_config_mutation.plan_signature is None

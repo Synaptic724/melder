@@ -53,9 +53,10 @@ class CreationMutationNode(Cleanable):
             self._cleaned = True
             self._parent_id = None
             self._metadata.clear()
-            self._metadata = None
-            self._snapshot = None
-        self._lock = None
+
+            del self._metadata
+            del self._snapshot
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Properties
@@ -68,6 +69,7 @@ class CreationMutationNode(Cleanable):
         Returns:
             str: The node's unique ID.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -80,6 +82,7 @@ class CreationMutationNode(Cleanable):
         Returns:
             str: The ID of the target creation.
         """
+        self.check_cleaned()
         return self._creation_id
 
     @property
@@ -90,6 +93,7 @@ class CreationMutationNode(Cleanable):
         Returns:
             Optional[str]: The ID of the parent node.
         """
+        self.check_cleaned()
         return self._parent_id
 
     @property
@@ -100,6 +104,7 @@ class CreationMutationNode(Cleanable):
         Returns:
             Dict[str, Any]: A copy of the mutation's metadata.
         """
+        self.check_cleaned()
         return dict(self._metadata)
 
     @property
@@ -110,6 +115,7 @@ class CreationMutationNode(Cleanable):
         Returns:
             Optional[Dict[str, Any]]: The runtime state snapshot.
         """
+        self.check_cleaned()
         return self._snapshot
 
     # ------------------------------------------------------------------ #

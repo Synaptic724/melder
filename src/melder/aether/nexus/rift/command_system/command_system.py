@@ -1,6 +1,6 @@
 import threading
 from contextlib import contextmanager
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aether import Aether
@@ -273,7 +273,10 @@ class CommandSystem(Cleanable):
             )
         )
 
-    def _get_target_method_locked(self, method_name: str) -> object:
+    def _get_target_method_locked(
+            self,
+            method_name: str,
+    ) -> Callable[..., object]:
         """
         Resolve one callable from the current workstation target while the
         command lock is already held.
@@ -288,7 +291,7 @@ class CommandSystem(Cleanable):
                 Method name to resolve from the active workstation target.
 
         Returns:
-            object: Bound callable from the current target.
+            Callable[..., object]: Bound callable from the current target.
 
         Raises:
             ValueError:
@@ -822,7 +825,10 @@ class CommandSystem(Cleanable):
             target = self._workstation.get_target()
             return getattr(target, attribute_name)
 
-    def get_target_method(self, method_name: str) -> object:
+    def get_target_method(
+            self,
+            method_name: str,
+    ) -> Callable[..., object]:
         """
         Return one method/callable from the current workstation target.
 
@@ -831,7 +837,7 @@ class CommandSystem(Cleanable):
                 Method name to retrieve from the active target.
 
         Returns:
-            object: Bound callable from the target.
+            Callable[..., object]: Bound callable from the target.
 
         Raises:
             ValueError:

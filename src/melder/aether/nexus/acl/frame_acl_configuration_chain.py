@@ -102,13 +102,14 @@ class FrameACLConfigurationChain(Cleanable):
             for configuration in self._configurations_by_id.values():
                 configuration.cleanup()
             self._configurations_by_id.clear()
-            self._configurations_by_id = None
-            self._family_name = None
-            self._contract_name = None
-            self._history_limit = None
-            self._head_configuration_id = None
-            self._current_configuration_id = None
-        self._lock = None
+
+            del self._configurations_by_id
+            del self._family_name
+            del self._contract_name
+            del self._history_limit
+            del self._head_configuration_id
+            del self._current_configuration_id
+        del self._lock
 
     @property
     def family_name(self) -> str:

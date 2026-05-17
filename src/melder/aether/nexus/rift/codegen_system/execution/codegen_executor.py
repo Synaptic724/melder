@@ -1,5 +1,6 @@
 import threading
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from types import CodeType
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -57,7 +58,7 @@ class CodegenExecutor(Cleanable):
 
     def execute(
             self,
-            compiled_code: object,
+            compiled_code: CodeType,
             transaction_context: ICodegenTransactionContext,
     ) -> ICodegenExecutionResult:
         """
@@ -65,7 +66,7 @@ class CodegenExecutor(Cleanable):
 
         Args:
             compiled_code:
-                Compiled Python code object.
+                Compiled Python code object produced by `CodegenCompiler`.
             transaction_context:
                 Per-call transaction context holding the built namespace.
 

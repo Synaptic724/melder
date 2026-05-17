@@ -6,6 +6,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
+from melder.utilities.interfaces import ISpell
 
 
 class MutationContract(Cleanable):
@@ -117,16 +118,16 @@ class MutationContract(Cleanable):
             )
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
-        self._spell = spell
-        self._spellframe = spellframe
-        self._binding_name = (
+        self._spell: ISpell | None = spell
+        self._spellframe: Optional[Any] = spellframe
+        self._binding_name: Optional[str] = (
             SpellInputUtils.normalize_binding_name(binding_name)
             if binding_name is not None
             else None
         )
         # Preserve the caller payload; None means no override is attached.
-        self._spell_override = spell_override
-        self._late_binding = late_binding
+        self._spell_override: Optional[Union[dict, list, tuple]] = spell_override
+        self._late_binding: bool = late_binding
 
     def cleanup(self) -> None:
         """
@@ -151,13 +152,12 @@ class MutationContract(Cleanable):
             if isinstance(self._spell_override, (list, dict)):
                 self._spell_override.clear()
 
-            self._spell_override = None
-            self._spell = None
-            self._spellframe = None
-            self._binding_name = None
-            self._late_binding = None
-
-        self._lock = None
+            del self._spell_override
+            del self._spell
+            del self._spellframe
+            del self._binding_name
+            del self._late_binding
+        del self._lock
 
 
     @property

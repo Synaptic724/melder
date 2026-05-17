@@ -86,12 +86,12 @@ class FrameACLSetCompatibilityReport(Cleanable):
             self._cleaned = True
             self._warnings.clear()
             self._errors.clear()
-            self._frame_name = None
-            self._configuration_id = None
-            self._warnings = None
-            self._errors = None
-            self._id = None
-            self._lock = None
+            del self._frame_name
+            del self._configuration_id
+            del self._warnings
+            del self._errors
+            del self._id
+        del self._lock
 
     @property
     def frame_name(self) -> str:

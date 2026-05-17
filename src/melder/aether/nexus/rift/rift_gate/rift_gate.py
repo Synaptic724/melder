@@ -70,11 +70,11 @@ class RiftGate(Cleanable):
             None.
         """
         super().__init__()
-        self._lock: Optional[threading.RLock] = threading.RLock()
-        self.enabled: Optional[bool] = enabled
+        self._lock: threading.RLock = threading.RLock()
+        self.enabled: bool = enabled
         self._entry_mode: str = self._normalize_entry_mode(entry_mode)
-        self._event: Optional[threading.Event] = threading.Event()
-        self._tickets: Optional[Deque[None]] = deque()
+        self._event: threading.Event = threading.Event()
+        self._tickets: Deque[None] = deque()
         self._closed: bool = False
 
         if enabled:
@@ -105,17 +105,17 @@ class RiftGate(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
+            self._cleaned = True
             self._closed = True
             self.enabled = True
             self._event.set()
             self._tickets.clear()
-            self._cleaned = True
-            self.enabled = None
-            self._entry_mode = None
-            self._event = None
-            self._tickets = None
 
-        self._lock = None
+            del self.enabled
+            del self._entry_mode
+            del self._event
+            del self._tickets
+        del self._lock
 
     @property
     def entry_mode(self) -> str:

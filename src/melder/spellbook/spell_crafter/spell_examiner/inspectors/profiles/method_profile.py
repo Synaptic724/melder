@@ -133,40 +133,40 @@ class MethodProfile(Cleanable):
             tags: Derived tag list (may be empty).
         """
         super().__init__()
-        self.name = name
-        self.qualname = qualname
-        self.module = module
-        self.id = id
-        self.type = type
-        self.repr = repr
-        self.builtin_mod = builtin_mod
-        self.extension_mod = extension_mod
-        self.file = file
-        self.preview = preview
-        self.src_offset = src_offset
-        self.start_line = start_line
-        self.end_line = end_line
-        self.source_text = source_text
-        self.signature = signature
-        self.parameters = list(parameters) if parameters is not None else []
-        self.uninspectable = uninspectable
-        self.func = func
-        self.method = method
-        self.builtin = builtin
-        self.classmethod = classmethod
-        self.staticmethod = staticmethod
-        self.generator = generator
-        self.async_gen = async_gen
-        self.coroutine = coroutine
-        self.lambda_fn = lambda_fn
-        self.abstract = abstract
-        self.closure = list(closure) if closure is not None else None
-        self.decorated = decorated
-        self.wrapped_repr = wrapped_repr
-        self.docstring_raw = docstring_raw
-        self.docstring_summary = docstring_summary
-        self.behavior_summary = behavior_summary
-        self.tags = list(tags) if tags is not None else []
+        self.name: str = name
+        self.qualname: Optional[str]= qualname
+        self.module: Optional[str]= module
+        self.id:int  = id
+        self.type:str = type
+        self.repr: str = repr
+        self.builtin_mod: bool = builtin_mod
+        self.extension_mod: bool = extension_mod
+        self.file: Optional[str] = file
+        self.preview: Optional[str] = preview
+        self.src_offset: int = src_offset
+        self.start_line: int = start_line
+        self.end_line: int = end_line
+        self.source_text: Optional[str] = source_text
+        self.signature: Optional[str] = signature
+        self.parameters: Optional[List[Dict[str, Any]]] = list(parameters) if parameters is not None else []
+        self.uninspectable: bool = uninspectable
+        self.func: bool = func
+        self.method: bool = method
+        self.builtin: bool = builtin
+        self.classmethod: bool = classmethod
+        self.staticmethod: bool = staticmethod
+        self.generator: bool = generator
+        self.async_gen: bool = async_gen
+        self.coroutine: bool = coroutine
+        self.lambda_fn: bool = lambda_fn
+        self.abstract: bool = abstract
+        self.closure: Optional[List[str]] = list(closure) if closure is not None else None
+        self.decorated: Optional[bool] = decorated
+        self.wrapped_repr: Optional[str] = wrapped_repr
+        self.docstring_raw: Optional[str] = docstring_raw
+        self.docstring_summary: str = docstring_summary
+        self.behavior_summary: str = behavior_summary
+        self.tags: Optional[List[str]] = list(tags) if tags is not None else []
 
     def cleanup(self) -> None:
         """
@@ -184,38 +184,39 @@ class MethodProfile(Cleanable):
             self.parameters.clear()
         if isinstance(self.closure, list):
             self.closure.clear()
-        self.name = None
-        self.qualname = None
-        self.module = None
-        self.id = None
-        self.type = None
-        self.repr = None
-        self.builtin_mod = None
-        self.extension_mod = None
-        self.file = None
-        self.preview = None
-        self.src_offset = None
-        self.start_line = None
-        self.end_line = None
-        self.source_text = None
-        self.signature = None
-        self.parameters = None
-        self.uninspectable = None
-        self.func = None
-        self.method = None
-        self.builtin = None
-        self.classmethod = None
-        self.staticmethod = None
-        self.generator = None
-        self.async_gen = None
-        self.coroutine = None
-        self.lambda_fn = None
-        self.abstract = None
-        self.closure = None
-        self.decorated = None
-        self.wrapped_repr = None
-        self.docstring_raw = None
-        self.docstring_summary = None
-        self.behavior_summary = None
-        self.tags = None
         self._cleaned = True
+
+        del self.name
+        del self.qualname
+        del self.module
+        del self.id
+        del self.type
+        del self.repr
+        del self.builtin_mod
+        del self.extension_mod
+        del self.file
+        del self.preview
+        del self.src_offset
+        del self.start_line
+        del self.end_line
+        del self.source_text
+        del self.signature
+        del self.parameters
+        del self.uninspectable
+        del self.func
+        del self.method
+        del self.builtin
+        del self.classmethod
+        del self.staticmethod
+        del self.generator
+        del self.async_gen
+        del self.coroutine
+        del self.lambda_fn
+        del self.abstract
+        del self.closure
+        del self.decorated
+        del self.wrapped_repr
+        del self.docstring_raw
+        del self.docstring_summary
+        del self.behavior_summary
+        del self.tags

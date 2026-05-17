@@ -116,7 +116,7 @@ def test_cleanup_clears_state(ward):
     assert ward._cleaned
     assert ward._initiated_index == {}
     assert ward._contracts == {}
-    assert ward._conduit is None
+    assert not hasattr(ward, "_conduit")
 
 def test_cleanup_noops_when_marked_cleaned_inside_lock(ward) -> None:
     """

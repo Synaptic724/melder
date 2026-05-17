@@ -625,23 +625,23 @@ class InjectionPlanBuilder(object):
                 dependencies = plan.occurrence_graph[occurrence]
                 contract_payload = plan.contract_overrides_by_occurrence.get(occurrence)
                 normalized_contract_payload = self._clone_contract_payload(contract_payload)
-                param_sources: Dict[str, ParamSource] = {}
+                instance_param_sources: Dict[str, ParamSource] = {}
                 allow_list_aggregation = False
                 uses_positional_override = False
 
                 for param_name, dependency_occurrences in dependencies.items():
-                    dependency_keys: List[InstanceKey] = []
+                    instance_dependency_keys: List[InstanceKey] = []
                     for dependency_occurrence in dependency_occurrences:
                         dependency_spell_id, dependency_path = dependency_occurrence
                         if dependency_spell_id in shared_spell_ids:
-                            dependency_keys.append((dependency_spell_id, None))
+                            instance_dependency_keys.append((dependency_spell_id, None))
                         else:
-                            dependency_keys.append((dependency_spell_id, dependency_path))
-                    if len(dependency_keys) > 1:
+                            instance_dependency_keys.append((dependency_spell_id, dependency_path))
+                    if len(instance_dependency_keys) > 1:
                         allow_list_aggregation = True
-                    param_sources[param_name] = ParamSource(
+                    instance_param_sources[param_name] = ParamSource(
                         kind="dependency",
-                        dependency_keys=dependency_keys,
+                        dependency_keys=instance_dependency_keys,
                         override_key=param_name,
                     )
 
@@ -651,16 +651,16 @@ class InjectionPlanBuilder(object):
                     for param_name in normalized_contract_payload.keys():
                         if param_name == "__args__":
                             continue
-                        existing = param_sources.get(param_name)
+                        existing = instance_param_sources.get(param_name)
                         if existing is None:
-                            param_sources[param_name] = ParamSource(
+                            instance_param_sources[param_name] = ParamSource(
                                 kind="contract",
                                 dependency_keys=[],
                                 override_key=param_name,
                                 contract_key=param_name,
                             )
                         else:
-                            param_sources[param_name] = ParamSource(
+                            instance_param_sources[param_name] = ParamSource(
                                 kind=existing.kind,
                                 dependency_keys=existing.dependency_keys,
                                 override_key=existing.override_key or param_name,
@@ -668,7 +668,7 @@ class InjectionPlanBuilder(object):
                             )
 
                 instance_injections[instance_key] = InjectionSpec(
-                    param_sources=param_sources,
+                    param_sources=instance_param_sources,
                     allow_list_aggregation=allow_list_aggregation,
                     uses_positional_override=uses_positional_override,
                     contract_payload=normalized_contract_payload,

@@ -125,5 +125,5 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             return
         if self._codegen_system is not None:
             self._codegen_system.cleanup()
-            self._codegen_system = None
+            del self._codegen_system
         super().cleanup()

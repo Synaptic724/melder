@@ -6,7 +6,8 @@ from types import SimpleNamespace
 import ulid
 from melder.utilities.general_base.cleanable import Cleanable
 from typing import Callable, Generic, ParamSpec, TypeVar, Iterable, Union, Optional, Collection, overload, Dict, Tuple, \
-    Any, List
+    Awaitable, \
+    Any, List, cast
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -66,7 +67,7 @@ class Package(Cleanable, Generic[P, R]):
     'HELLO, ALICE.'
     """
 
-    __slots__ = Cleanable.__slots__ + ["_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
+    __slots__ = Cleanable.__slots__ + ["_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
 
     def __init__(self, func: Callable[..., R], *args: Any, **kwargs: Any):
         """
@@ -92,7 +93,13 @@ class Package(Cleanable, Generic[P, R]):
 
         # Check if the normalized function is a coroutine and store the flag.
         self._is_async = inspect.iscoroutinefunction(normalized)
+        self._async_func: Optional[Callable[..., Awaitable[Any]]] = (
+            cast(Callable[..., Awaitable[Any]], normalized)
+            if self._is_async
+            else None
+        )
 
+        self._wrapped_func: Callable[..., R] = normalized
         self._func: Callable[..., R] = update_wrapper(lambda *a, **kw: normalized(*a, **kw), normalized)
         self._args: List[Any] = list(args) if args else []
         self._kwargs: Dict[str, Any] = dict(kwargs) if kwargs else {}
@@ -158,24 +165,24 @@ class Package(Cleanable, Generic[P, R]):
               then always drops the lock reference.
         """
         # --- Nullify All Component References ---
-        self._func = None
-        self._args = None
-        self._kwargs = None
-        self._signature_cache = None
+        del self._func
+        del self._wrapped_func
+        del self._async_func
+        del self._args
+        del self._kwargs
+        del self._signature_cache
 
         # --- Final Teardown of the Lock ---
         # The lock for a standard threading.RLock doesn't have a cleanup,
         # but we nullify the reference. This structure is ready for AgenticRLock.
-        lock = self._lock
-        if lock is not None:
-            try:
-                if hasattr(lock, 'cleanup'):
-                    lock.cleanup()
-            except Exception:
-                # Per request, pass silently on exceptions
-                pass
-            finally:
-                self._lock = None
+        try:
+            if hasattr(self._lock, 'cleanup'):
+                self._lock.cleanup()
+        except Exception:
+            # Per request, pass silently on exceptions
+            pass
+        finally:
+            del self._lock
 
     @property
     def id(self) -> str:
@@ -204,7 +211,7 @@ class Package(Cleanable, Generic[P, R]):
         """
         with self._lock:
             # The original function is stored in the __wrapped__ attribute by functools.update_wrapper
-            func = self._func.__wrapped__
+            func = self._wrapped_func
 
             # Return copies to prevent modification of the Package's internal state
             args = tuple(self._args)
@@ -238,13 +245,14 @@ class Package(Cleanable, Generic[P, R]):
                 raise RuntimeError("Cannot unpack and clean a cleaned Package.")
 
             # 1. Get the components to return before cleaning
-            func = self._func.__wrapped__
+            func = self._wrapped_func
             args = tuple(self._args)
             kwargs = dict(self._kwargs)
 
             # 2. Perform cleanup of internal state
             self._cleaned = True
             self._func = None
+            del self._wrapped_func
             self._args.clear()
             self._args = None
             self._kwargs.clear()
@@ -266,7 +274,7 @@ class Package(Cleanable, Generic[P, R]):
             if self._cleaned:
                 return "Package(cleaned)"
 
-            func = self._func.__wrapped__
+            func = self._wrapped_func
             func_name = getattr(func, '__name__', 'unnamed')
             qual_name = getattr(func, '__qualname__', func_name)
 
@@ -290,7 +298,7 @@ class Package(Cleanable, Generic[P, R]):
         """
         return self._is_async
 
-    def get_coroutine(self) -> Callable[..., Any]:
+    def get_coroutine(self) -> Callable[..., Awaitable[Any]]:
         """
         Returns the underlying coroutine function if the Package is async.
 
@@ -300,9 +308,10 @@ class Package(Cleanable, Generic[P, R]):
         Raises:
             TypeError: If the wrapped function is not a coroutine.
         """
-        if not self._is_async:
+        async_func = self._async_func
+        if async_func is None:
             raise TypeError("Package does not contain a coroutine function.")
-        return self._func.__wrapped__
+        return async_func
 
     @property
     def __doc__(self):
@@ -317,8 +326,7 @@ class Package(Cleanable, Generic[P, R]):
         Returns:
             True if the original function was a coroutine function.
         """
-        target = getattr(self._func, '__wrapped__', self._func)
-        return inspect.iscoroutinefunction(target)
+        return inspect.iscoroutinefunction(self._wrapped_func)
 
     def __or__(self: "Package[P, A]", other: "Package[[A], B]") -> "Package[P, B]":
         """
@@ -408,7 +416,7 @@ class Package(Cleanable, Generic[P, R]):
         first, second = Package._acquire_two(self, other)
         with first._lock, second._lock:
             return (
-                    self._func.__wrapped__ is other._func.__wrapped__ and
+                    self._wrapped_func is other._wrapped_func and
                     tuple(self._args) == tuple(other._args) and
                     dict(self._kwargs) == dict(other._kwargs)
             )
@@ -424,7 +432,7 @@ class Package(Cleanable, Generic[P, R]):
         """
         # copy under lock, then compute hash lock-free
         with self._lock:
-            f = self._func.__wrapped__
+            f = self._wrapped_func
             a = tuple(self._args)
             k = frozenset(self._kwargs.items())
         return hash((id(f), a, k))
@@ -484,14 +492,15 @@ class Package(Cleanable, Generic[P, R]):
             TypeError: If the wrapped callable is synchronous.
         """
         # Invoke outside the lock to avoid deadlocks during nested calls.
-        if not self._is_async:
+        async_func = self._async_func
+        if async_func is None:
             raise TypeError("Cannot execute synchronously wrapped function as async.")
         # Snapshot bound args/kwargs under the lock, then invoke lock-free.
         with self._lock:
             all_args = tuple(self._args) + extra_args
             all_kwargs = {**dict(self._kwargs), **extra_kwargs}
 
-        return await self._func(*all_args, **all_kwargs)
+        return await async_func(*all_args, **all_kwargs)
 
 
     @staticmethod
@@ -575,7 +584,7 @@ class Package(Cleanable, Generic[P, R]):
         if task is None:
             raise TypeError("Cannot normalize None as a task.")
         if isinstance(task, Package):
-            return task._func.__wrapped__  # allow deeper introspection for equality, etc.
+            return task._wrapped_func
         if not callable(task):
             raise TypeError(f"Expected callable, got {type(task).__name__}")
         if inspect.isgeneratorfunction(task):
@@ -611,7 +620,7 @@ class Package(Cleanable, Generic[P, R]):
         if not isinstance(tasks, Iterable):
             raise TypeError(f"Expected a callable or iterable of callables, got {type(tasks).__name__}")
 
-        result = []
+        result: List["Package[P, R]"] = []
         for i, task in enumerate(tasks):
             try:
                 if task is None:
@@ -665,7 +674,7 @@ class Package(Cleanable, Generic[P, R]):
         if not isinstance(tasks, Iterable) or isinstance(tasks, str):
             raise TypeError(f"Expected a callable or iterable of callables, got {type(tasks).__name__}")
 
-        result = []
+        result: List["Package[P, R]"] = []
         for i, task in enumerate(tasks):
             try:
                 result.append(Package._pack(task))
@@ -753,7 +762,7 @@ class Package(Cleanable, Generic[P, R]):
             A new Package with combined arguments.
         """
         with self._lock:
-            func = self._func.__wrapped__
+            func = self._wrapped_func
             # Merge new bindings on top of the package's stored arguments.
             combined_args = tuple(self._args) + args
             combined_kwargs = {**dict(self._kwargs), **kwargs}
@@ -789,7 +798,7 @@ class Package(Cleanable, Generic[P, R]):
         """
         with self._lock:
             if self._signature_cache is None:
-                sig = inspect.signature(self._func.__wrapped__)
+                sig = inspect.signature(self._wrapped_func)
                 arg_map = {}
                 for i, value in enumerate(self._args):
                     arg_map[f"arg{i}"] = value
@@ -832,7 +841,7 @@ class Package(Cleanable, Generic[P, R]):
         return sorted(
             set(super().__dir__())
             | set(dir(self._func))
-            | set(dir(self._func.__wrapped__))
+            | set(dir(self._wrapped_func))
         )
 
     def __repr__(self) -> str:

@@ -28,6 +28,7 @@ class ResolutionFrame(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_errors",
         "_id",
+        "_lock",
         "_overrides",
         "_results",
     ]
@@ -42,6 +43,7 @@ class ResolutionFrame(Cleanable):
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
+        self._lock: RLock = RLock()
         self._overrides: Dict[str, Any] = dict(overrides) if overrides else {}
         self._results: Dict[str, Any] = {}
         self._errors: Dict[str, BaseException] = {}
@@ -51,53 +53,27 @@ class ResolutionFrame(Cleanable):
     # ------------------------------------------------------------------ #
     def cleanup(self) -> None:
         """
-        Cleans up the frame, dropping references to overrides, results, and errors.
+        Clean the frame and permanently release the mutable resolution payload.
 
         Idempotent.
         """
         if self._cleaned:
             return
 
-        self._overrides.clear()
-        self._results.clear()
-        self._errors.clear()
+        with self._lock:
 
-        self._overrides = None
-        self._results = None
-        self._errors = None
+            if self._cleaned:
+                return
+            
+            self._cleaned = True
 
-        # We keep _lock and _id intact; only logical state is wiped.
-        self._cleaned = True
-
-    def reset(self, overrides: Optional[Dict[str, Any]] = None) -> None:
-        """
-        Reset the frame for reuse in another meld execution.
-
-        Contract:
-            - Clears overrides, results, and errors.
-            - Reinitializes internal mappings if they were cleaned.
-            - Generates a fresh id for the new execution run.
-        """
-        self._cleaned = False
-        self._id = IDBuilder.create_id()
-
-        if self._overrides is None:
-            self._overrides = {}
-        else:
             self._overrides.clear()
-
-        if overrides:
-            self._overrides.update(overrides)
-
-        if self._results is None:
-            self._results = {}
-        else:
             self._results.clear()
-
-        if self._errors is None:
-            self._errors = {}
-        else:
             self._errors.clear()
+
+            del self._overrides
+            del self._results
+            del self._errors
 
 
     # ------------------------------------------------------------------ #
@@ -108,6 +84,7 @@ class ResolutionFrame(Cleanable):
         """
         Returns the unique identifier for this ResolutionFrame instance.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -117,7 +94,9 @@ class ResolutionFrame(Cleanable):
 
         Keys are parameter names or other resolution keys chosen by SpellCrafter.
         """
-        return dict(self._overrides)
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._overrides)
 
     @property
     def results(self) -> Dict[str, Any]:
@@ -126,7 +105,9 @@ class ResolutionFrame(Cleanable):
 
         Keys are node ids (as used in the resolution DAG).
         """
-        return dict(self._results)
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._results)
 
     @property
     def errors(self) -> Dict[str, BaseException]:
@@ -135,7 +116,9 @@ class ResolutionFrame(Cleanable):
 
         Keys are node ids; values are the associated exceptions.
         """
-        return dict(self._errors)
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._errors)
 
     # ------------------------------------------------------------------ #
     # Overrides
@@ -144,7 +127,9 @@ class ResolutionFrame(Cleanable):
         """
         Returns True if a caller override exists for the given key.
         """
-        return key in self._overrides
+        self.check_cleaned()
+        with self._lock:
+            return key in self._overrides
 
     def get_override(self, key: str) -> Any:
         """
@@ -153,7 +138,9 @@ class ResolutionFrame(Cleanable):
         Raises:
             KeyError: If the key is not present in overrides.
         """
-        return self._overrides[key]
+        self.check_cleaned()
+        with self._lock:
+            return self._overrides[key]
 
     # ------------------------------------------------------------------ #
     # Results
@@ -162,16 +149,19 @@ class ResolutionFrame(Cleanable):
         """
         Registers the resolved value for a given node id.
         """
-        if not node_id:
-            raise ValueError("node_id cannot be empty.")
-
-        self._results[node_id] = value
+        self.check_cleaned()
+        with self._lock:
+            if not node_id:
+                raise ValueError("node_id cannot be empty.")
+            self._results[node_id] = value
 
     def has_result(self, node_id: str) -> bool:
         """
         Returns True if a result exists for the given node id.
         """
-        return node_id in self._results
+        self.check_cleaned()
+        with self._lock:
+            return node_id in self._results
 
     def get_result(self, node_id: str) -> Any:
         """
@@ -180,7 +170,9 @@ class ResolutionFrame(Cleanable):
         Raises:
             KeyError: If no result is registered for the node id.
         """
-        return self._results[node_id]
+        self.check_cleaned()
+        with self._lock:
+            return self._results[node_id]
 
     # ------------------------------------------------------------------ #
     # Errors
@@ -191,12 +183,13 @@ class ResolutionFrame(Cleanable):
 
         The resolver can use this for debugging or to build richer error reports.
         """
-        if not node_id:
-            raise ValueError("node_id cannot be empty.")
-        if error is None:
-            raise ValueError("error cannot be None.")
-
-        self._errors[node_id] = error
+        self.check_cleaned()
+        with self._lock:
+            if not node_id:
+                raise ValueError("node_id cannot be empty.")
+            if error is None:
+                raise ValueError("error cannot be None.")
+            self._errors[node_id] = error
 
     def get_error(self, node_id: str) -> Optional[BaseException]:
         """
@@ -205,13 +198,18 @@ class ResolutionFrame(Cleanable):
         Returns:
             The recorded exception instance, or None if no error is recorded.
         """
-        return self._errors.get(node_id)
+        self.check_cleaned()
+        with self._lock:
+            return self._errors.get(node_id)
 
     def __repr__(self) -> str:
         """Return a compact debug summary of stored overrides, results, and errors."""
-        return (
-            f"ResolutionFrame(id={self._id!r}, "
-            f"overrides={len(self._overrides)}, "
-            f"results={len(self._results)}, "
-            f"errors={len(self._errors)})"
-        )
+        with self._lock:
+            if self._cleaned:
+                return f"ResolutionFrame(id={self._id!r}, cleaned=True)"
+            return (
+                f"ResolutionFrame(id={self._id!r}, "
+                f"overrides={len(self._overrides)}, "
+                f"results={len(self._results)}, "
+                f"errors={len(self._errors)})"
+            )

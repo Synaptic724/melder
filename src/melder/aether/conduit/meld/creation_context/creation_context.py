@@ -412,9 +412,7 @@ class CreationContext(Cleanable):
         del self._override_prefilter_step_targets_cache
         del self._override_prefilter_path_metadata_cache
         del self._override_socket_shape_cache
-        del self._override_last_socket_shape
         del self._override_last_root_positional_arity
-        del self._override_last_executor
 
     def execute(
             self,
@@ -1018,19 +1016,19 @@ class CreationContext(Cleanable):
                     first_ref_node_id,
                 )
             if first_ref_node_id == second_ref_node_id:
-                by_spell_id = {
+                pair_by_spell_id = {
                     first_ref_node_id: (
                         first_ref,
                         second_ref,
                     ),
                 }
             else:
-                by_spell_id = {
+                pair_by_spell_id = {
                     first_ref_node_id: (first_ref,),
                     second_ref_node_id: (second_ref,),
                 }
             return (
-                by_spell_id,
+                pair_by_spell_id,
                 (
                     first_shape_row,
                     second_shape_row,

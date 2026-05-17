@@ -984,10 +984,10 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
 
         assert root_spell._cleaned is True
         assert root_spell._crafter is None
-        assert root_spell.spell is None
-        assert root_spell.spell_index is None
-        assert root_spell.dependencies is None
-        assert root_spell.dependency_graph is None
+        assert not hasattr(root_spell, "spell")
+        assert not hasattr(root_spell, "spell_index")
+        assert not hasattr(root_spell, "dependencies")
+        assert not hasattr(root_spell, "dependency_graph")
         assert root_spell.requirements is None
         assert root_spell.symbolic_graph is None
         assert root_spell.resolution_frame is None

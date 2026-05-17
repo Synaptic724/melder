@@ -165,3 +165,55 @@ class ICreations(ICleanable, Protocol):
             RuntimeError: If the Creations manager is cleaned.
         """
         ...
+
+    def extract_spell_creations(self, spell_id: str) -> List[Dict[str, Any]]:
+        """
+        Remove and serialize all tracked creation state for one spell lineage.
+
+        Purpose:
+            Support ownership-transfer and rollback flows that need to move one
+            lineage's live creation payload between conduit-owned `Creations`
+            stores without destroying the underlying runtime objects first.
+
+        Args:
+            spell_id: Current version spell identifier whose creation payload
+                should be extracted.
+
+        Returns:
+            List[Dict[str, Any]]:
+                Serialized creation entries suitable for
+                `restore_spell_creations(...)`.
+
+        Raises:
+            RuntimeError:
+                If the Creations manager is cleaned.
+        """
+        ...
+
+    def restore_spell_creations(
+            self,
+            spell_id: str,
+            creations: List[Dict[str, Any]],
+    ) -> None:
+        """
+        Restore previously extracted creation state for one spell lineage.
+
+        Purpose:
+            Rehydrate lineage-owned creation payloads that were previously
+            extracted by `extract_spell_creations(...)`, typically during
+            ownership transfer or rollback.
+
+        Args:
+            spell_id: Current version spell identifier that should regain the
+                supplied creation payload.
+            creations:
+                Serialized entries produced by `extract_spell_creations(...)`.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the Creations manager is cleaned.
+        """
+        ...

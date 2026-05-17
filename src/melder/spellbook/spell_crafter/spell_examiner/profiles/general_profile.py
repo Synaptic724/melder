@@ -173,14 +173,15 @@ class SpellGeneralProfile(Cleanable):
         """
         if self._cleaned:
             return
+        self._cleaned = True
         for profile in (self.binding_profile, self.resolution_profile):
             if isinstance(profile, Cleanable):
                 try:
                     profile.cleanup()
                 except Exception:
                     pass
-        self.profile_name = None
-        self.profile_version = None
-        self.binding_profile = None
-        self.resolution_profile = None
-        self._cleaned = True
+        del self.profile_name
+        del self.profile_version
+        del self.binding_profile
+        del self.resolution_profile
+

@@ -134,12 +134,10 @@ class SpellRequirementsFinder(Cleanable):
                 except Exception:
                     # Cleanup must never propagate failures upward.
                     pass
-
-            self._requirements = None
-            self._spell = None
             self._cleaned = True
-
-        self._lock = None
+            del self._requirements
+            del self._spell
+        del self._lock
 
     # ------------------------------------------------------------------
     # Public API

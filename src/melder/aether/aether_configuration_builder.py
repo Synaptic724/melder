@@ -50,8 +50,9 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._configuration.cleanup()
-            del self._configuration
+            if self._configuration is not None:
+                self._configuration.cleanup()
+                self._configuration = None
             del self._id
 
     def with_defaults(self) -> "AetherConfigurationBuilder":
@@ -152,5 +153,7 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
                     "AetherConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
-            self.cleanup()
+            self._configuration = None
+            self._cleaned = True
+            del self._id
         return configuration

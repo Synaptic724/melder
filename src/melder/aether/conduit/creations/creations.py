@@ -463,12 +463,12 @@ class Creations(Cleanable, ICreations):
             # Transfer restore semantics are replace-by-spell_id, not merge.
             value = self._creations.get(spell_id)
             if isinstance(value, Creation):
-                creation = self._creations.pop(spell_id)
-                self._remove_disposal_creation(creation)
+                existing_creation = self._creations.pop(spell_id)
+                self._remove_disposal_creation(existing_creation)
             elif isinstance(value, list):
                 many_entries = self._creations.pop(spell_id)
-                for creation in many_entries:
-                    self._remove_disposal_creation(creation)
+                for existing_creation in many_entries:
+                    self._remove_disposal_creation(existing_creation)
 
             for spellspace_id, bucket in list(self._creations.items()):
                 if not isinstance(bucket, dict):
@@ -483,10 +483,10 @@ class Creations(Cleanable, ICreations):
 
             for entry in creations:
                 scope = entry["scope"]
-                creation: Creation = entry["creation"]
+                restored_creation: Creation = entry["creation"]
                 if scope == "unique":
-                    self._creations[spell_id] = creation
-                    self._push_disposal_creation(creation)
+                    self._creations[spell_id] = restored_creation
+                    self._push_disposal_creation(restored_creation)
                 elif scope == "many":
                     if spell_id not in self._creations:
                         self._creations[spell_id] = []
@@ -495,8 +495,8 @@ class Creations(Cleanable, ICreations):
                         raise RuntimeError(
                             f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
                         )
-                    many_list.append(creation)
-                    self._push_disposal_creation(creation)
+                    many_list.append(restored_creation)
+                    self._push_disposal_creation(restored_creation)
                 elif scope == "spellspace":
                     spellspace_id = entry["spellspace_id"]
                     bucket = self._creations.setdefault(spellspace_id, {})
@@ -505,8 +505,11 @@ class Creations(Cleanable, ICreations):
                             f"Cannot restore spellspace creation for spellspace '{spellspace_id}' "
                             "into non-dict slot."
                         )
-                    bucket[spell_id] = creation
-                    self._push_spellspace_disposal_creation(spellspace_id, creation)
+                    bucket[spell_id] = restored_creation
+                    self._push_spellspace_disposal_creation(
+                        spellspace_id,
+                        restored_creation,
+                    )
                 else:
                     raise RuntimeError(
                         f"Unknown creation scope '{scope}' while restoring spell '{spell_id}'."

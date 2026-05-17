@@ -440,13 +440,6 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
-        """
-        Return a user-facing dump of spell targeting details currently visible
-        through this Spellbook.
-        """
-        ...
-
     def find_spell_index(
             self,
             spellframe: str,

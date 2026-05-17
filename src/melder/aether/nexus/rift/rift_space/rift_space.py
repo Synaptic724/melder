@@ -165,11 +165,11 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._space_kind: str = space_kind
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
         self._rift_gate: Optional[IRiftGate] = rift_gate
-        self._memory_system: IRiftMemorySystem = RiftMemorySystem(
+        self._memory_system: RiftMemorySystem = RiftMemorySystem(
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
         )
-        self._event_system: IRiftEventSystem = RiftEventSystem(
+        self._event_system: RiftEventSystem = RiftEventSystem(
             rift_id=self._owner_rift_id,
             space_id=self._id,
             space_kind=self._space_kind,
@@ -239,8 +239,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         if self._cleaned:
             return
-        lock = self._lock
-        with lock:
+        with self._lock:
             if self._cleaned:
                 return
             self._cleaned = True
@@ -249,32 +248,34 @@ class RiftSpace(Cleanable, IRiftSpace):
             self._command_system.cleanup()
             self._workstation.cleanup()
             self._event_system.cleanup()
-            self._space_name = None
-            self._owner_rift_id = None
-            self._space_kind = None
-            self._metadata.clear()
-            self._metadata = None
-            self._frame_viewer = None
-            self._rift_gate = None
-            self._memory_system.cleanup()
-            self._memory_system = None
-            self._event_system = None
-            self._workstation = None
-            self._command_system = None
             self._pre_category_hooks_by_name.clear()
             self._post_category_hooks_by_name.clear()
             self._pre_action_hooks_by_key.clear()
             self._post_action_hooks_by_key.clear()
             self._action_hook_keys_by_subscription_id.clear()
             self._action_hook_depth_by_category.clear()
-            self._pre_category_hooks_by_name = None
-            self._post_category_hooks_by_name = None
-            self._pre_action_hooks_by_key = None
-            self._post_action_hooks_by_key = None
-            self._action_hook_keys_by_subscription_id = None
-            self._action_hook_depth_by_category = None
-            self._id = None
-        self._lock = None
+            self._metadata.clear()
+            self._memory_system.cleanup()
+
+            del self._space_name
+            del self._owner_rift_id
+            del self._space_kind
+            del self._metadata
+            del self._frame_viewer
+            del self._rift_gate
+            del self._memory_system
+            del self._event_system
+            del self._workstation
+            del self._command_system
+            del self._pre_category_hooks_by_name
+            del self._post_category_hooks_by_name
+            del self._pre_action_hooks_by_key
+            del self._post_action_hooks_by_key
+            del self._action_hook_keys_by_subscription_id
+            del self._action_hook_depth_by_category
+            del self._id
+
+        del self._lock
 
     def register_category_pre_hook(
             self,
@@ -294,6 +295,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         Returns:
             str: Stable subscription id for later unregistration.
         """
+        self.check_cleaned()
         return self._register_category_hook(
             phase="pre",
             category=category,
@@ -318,6 +320,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         Returns:
             str: Stable subscription id for later unregistration.
         """
+        self.check_cleaned()
         return self._register_category_hook(
             phase="post",
             category=category,
@@ -472,6 +475,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         Returns:
             CommandSystem: Room-local command system for this space.
         """
+        self.check_cleaned()
         return CommandSystem(
             rift=rift,
             space=self,
@@ -559,6 +563,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         Returns:
             str: Stable subscription id for later unregistration.
         """
+        self.check_cleaned()
         return self._register_action_hook(
             phase="post",
             category=category,
@@ -806,6 +811,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             Dict[Tuple[str, str], Dict[str, Callable[[], None]]]:
                 Registry keyed by `(category, action_name)`.
         """
+        self.check_cleaned()
         if phase == "pre":
             return self._pre_action_hooks_by_key
         if phase == "post":
@@ -827,6 +833,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             Dict[str, Dict[str, Callable[[], None]]]:
                 Registry keyed by category name.
         """
+        self.check_cleaned()
         if phase == "pre":
             return self._pre_category_hooks_by_name
         if phase == "post":
@@ -844,6 +851,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         Returns:
             None.
         """
+        self.check_cleaned()
         if not category:
             raise ValueError("category cannot be empty.")
         if category not in self._ACTION_HOOK_CATEGORIES:

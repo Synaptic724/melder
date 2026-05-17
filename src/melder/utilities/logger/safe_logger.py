@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Iterable, Dict, Any, Union
+from typing import Optional, Iterable, Dict, Any, Union, cast
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -139,16 +139,21 @@ class SafeLogger(Cleanable, ISafeLogger):
         - Preserves channel-specific metadata when using `IChannelLogger`.
         - Ignores masking on stdlib logger paths by design.
         """
-        if self._logger is None:
+        logger = self._logger
+        if logger is None:
             return
         if level < self._level:
             return
 
         if self._is_channel:
+            # `_is_channel` is the runtime contract for this branch. Tests may
+            # swap in channel-like doubles after init, so a static cast keeps
+            # the branch semantics while letting mypy use the protocol surface.
+            channel_logger = cast(IChannelLogger, logger)
             # Channel path
             if mask:
                 # Use the real masking API; enforce your manual stack metadata.
-                self._logger.mask_log(
+                channel_logger.mask_log(
                     level,
                     msg,
                     owner=owner,
@@ -165,16 +170,16 @@ class SafeLogger(Cleanable, ISafeLogger):
 
             # Non-masked channel path mirrors your existing behavior.
             if level == logging.DEBUG:
-                self._logger.debug(msg, _manual_stack=True, _method_name=method_name)
+                channel_logger.debug(msg, _manual_stack=True, _method_name=method_name)
                 return
             if level == logging.INFO:
-                self._logger.info(msg, _manual_stack=True, _method_name=method_name)
+                channel_logger.info(msg, _manual_stack=True, _method_name=method_name)
                 return
             if level == logging.WARNING:
-                self._logger.warning(msg, _manual_stack=True, _method_name=method_name)
+                channel_logger.warning(msg, _manual_stack=True, _method_name=method_name)
                 return
             if level == logging.ERROR:
-                self._logger.error(
+                channel_logger.error(
                     msg,
                     exc_info=exc_info if exc_info is not None else False,
                     _manual_stack=True,
@@ -182,35 +187,36 @@ class SafeLogger(Cleanable, ISafeLogger):
                 )
                 return
             if level >= logging.CRITICAL:
-                self._logger.critical(msg, _manual_stack=True, _method_name=method_name)
+                channel_logger.critical(msg, _manual_stack=True, _method_name=method_name)
                 return
 
             # Fallback for uncommon numeric levels
-            self._logger._log(level, msg, _manual_stack=True, _method_name=method_name)  # type: ignore[attr-defined]
+            channel_logger._log(level, msg, _manual_stack=True, _method_name=method_name)
             return
 
         # Std logger path (masking is intentionally ignored)
+        std_logger = cast(logging.Logger, logger)
         if level == logging.DEBUG:
-            self._logger.debug(msg)
+            std_logger.debug(msg)
             return
         if level == logging.INFO:
-            self._logger.info(msg)
+            std_logger.info(msg)
             return
         if level == logging.WARNING:
-            self._logger.warning(msg)
+            std_logger.warning(msg)
             return
         if level == logging.ERROR:
             if exc_info:
                 # Match your current semantics: exception() when exc_info truthy.
-                self._logger.exception(msg)
+                std_logger.exception(msg)
             else:
-                self._logger.error(msg)
+                std_logger.error(msg)
             return
         if level >= logging.CRITICAL:
-            self._logger.critical(msg)
+            std_logger.critical(msg)
             return
 
-        self._logger.log(level, msg)
+        std_logger.log(level, msg)
 
     # ---- Public API (now with optional masking on every call) ---------------------
 

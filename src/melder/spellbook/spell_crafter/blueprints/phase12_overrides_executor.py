@@ -2841,12 +2841,12 @@ def _build_kwargs_with_overrides(
             return {}
         if not plan_step.uses_positional_override:
             return dict(contract_payload)
-        kwargs: Dict[str, Any] = {}
+        contract_kwargs: Dict[str, Any] = {}
         for param_name, value in contract_payload.items():
             if param_name == "__args__":
                 continue
-            kwargs[param_name] = value
-        return kwargs
+            contract_kwargs[param_name] = value
+        return contract_kwargs
 
     spell = plan_step.spell
     spell_id = spell.spell_index.current

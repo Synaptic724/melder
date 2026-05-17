@@ -100,12 +100,12 @@ class FrameACLRule(Cleanable):
             self._cleaned = True
             if self._conditions is not None:
                 self._conditions.clear()
-            self._rule_name = None
-            self._operation = None
-            self._effect = None
-            self._conditions = None
-            self._id = None
-            self._lock = None
+            del self._rule_name
+            del self._operation
+            del self._effect
+            del self._conditions
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:
