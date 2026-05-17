@@ -144,16 +144,17 @@ class UnitOfWork(Cleanable, Future):
         with self._lock:
             if self._cleaned:
                 return
-            # Null out references for GC friendliness.
-            self._func = None
-            self._args = None
-            self._kwargs = None
-            self._cancel_event = None
-            self._label = None
-            self._metadata = None
             self._cleaned = True
+
+            # Null out references for GC friendliness.
+            del self._func
+            del self._args
+            del self._kwargs
+            del self._cancel_event
+            del self._label
+            del self._metadata
         # Drop the lock reference last.
-        self._lock = None
+        del self._lock
 
     # ------------------------------------------------------------------
     # Context manager support

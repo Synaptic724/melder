@@ -148,8 +148,9 @@ class SpellLocalTopology(Cleanable):
         for descriptor in self._by_param_name.values():
             descriptor.clear()
         self._by_param_name.clear()
-        self._by_param_name = None
-        self._sockets = None
+
+        del self._by_param_name
+        del self._sockets
 
 
     # ------------------------------------------------------------------ #

@@ -4,11 +4,13 @@ import inspect
 import re
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, get_args, get_origin
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args, get_origin
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
 
 class ProtocolCrafter(Cleanable):
@@ -588,7 +590,7 @@ class ProtocolCrafter(Cleanable):
     def _build_method_lines(
             self,
             method_name: str,
-            function_object: object,
+            function_object: Callable[..., Any],
     ) -> List[str]:
         """
         Build the generated protocol lines for one mirrored method.
@@ -616,7 +618,7 @@ class ProtocolCrafter(Cleanable):
         method_lines.append("        ...")
         return method_lines
 
-    def _render_signature(self, function_object: object) -> str:
+    def _render_signature(self, function_object: Callable[..., Any]) -> str:
         """
         Render one function signature using protocol-safe annotation text.
 
@@ -840,7 +842,10 @@ class ProtocolCrafter(Cleanable):
             return Any
         return inspect.signature(property_object.fget).return_annotation
 
-    def _unwrap_method_candidate(self, value: object) -> Optional[object]:
+    def _unwrap_method_candidate(
+            self,
+            value: object,
+    ) -> Optional[Callable[..., Any]]:
         """
         Return the underlying function for one method-like class member.
 
@@ -849,8 +854,9 @@ class ProtocolCrafter(Cleanable):
                 Raw class member value from `__dict__`.
 
         Returns:
-            Optional[object]: Underlying function object when the member is a
-            mirrorable method, otherwise None.
+            Optional[Callable[..., Any]]:
+                Underlying function object when the member is a mirrorable
+                method, otherwise None.
         """
         if isinstance(value, staticmethod):
             return value.__func__
@@ -984,6 +990,12 @@ class ProtocolCrafter(Cleanable):
         ):
             attribute_source = "{0}: {1}".format(attribute_name, annotation_text)
             parsed_attribute = ast.parse(attribute_source).body[0]
+            if not isinstance(parsed_attribute, ast.AnnAssign):
+                raise ValueError(
+                    "ProtocolCrafter generated a non-attribute node for '{0}'.".format(
+                        attribute_name,
+                    )
+                )
             attribute_nodes.append(parsed_attribute)
         return attribute_nodes
 
@@ -1151,7 +1163,14 @@ class ProtocolCrafter(Cleanable):
                     attribute_name,
                     final_annotation_text,
                 )
-                attribute_nodes.append(ast.parse(attribute_source).body[0])
+                parsed_attribute = ast.parse(attribute_source).body[0]
+                if not isinstance(parsed_attribute, ast.AnnAssign):
+                    raise ValueError(
+                        "ProtocolCrafter generated a non-attribute node for shared attribute '{0}'.".format(
+                            attribute_name,
+                        )
+                    )
+                attribute_nodes.append(parsed_attribute)
         return attribute_nodes
 
     def _build_joined_protocol_methods(
@@ -1226,12 +1245,12 @@ class ProtocolCrafter(Cleanable):
 
     def _build_protocol_method_from_source(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            function_node: FunctionNode,
             class_name: str,
             protocol_name: str,
             *,
             override_docstring: Optional[str] = None,
-    ) -> Union[ast.FunctionDef, ast.AsyncFunctionDef]:
+    ) -> FunctionNode:
         """
         Build one protocol method node from one source function node.
 
@@ -1273,11 +1292,17 @@ class ProtocolCrafter(Cleanable):
         )
         method_lines.append("    ...")
         parsed_method = ast.parse("\n".join(method_lines)).body[0]
+        if not isinstance(parsed_method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            raise ValueError(
+                "ProtocolCrafter generated a non-function node for '{0}'.".format(
+                    function_node.name,
+                )
+            )
         return parsed_method
 
     def _render_source_function_signature_text(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            function_node: FunctionNode,
             class_name: str,
             self_protocol_name: str,
     ) -> str:
@@ -1474,12 +1499,12 @@ class ProtocolCrafter(Cleanable):
         attribute_items: List[Tuple[str, str]] = []
         for statement in init_node.body:
             if isinstance(statement, ast.AnnAssign):
-                target = statement.target
-                if not self._is_public_self_attribute_target(target):
+                public_target = self._get_public_self_attribute_target(statement.target)
+                if public_target is None:
                     continue
                 attribute_items.append(
                     (
-                        target.attr,
+                        public_target.attr,
                         self._render_source_annotation_text(
                             statement.annotation,
                             class_name,
@@ -1489,12 +1514,12 @@ class ProtocolCrafter(Cleanable):
                 )
                 continue
             if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
-                target = statement.targets[0]
-                if not self._is_public_self_attribute_target(target):
+                public_target = self._get_public_self_attribute_target(statement.targets[0])
+                if public_target is None:
                     continue
                 attribute_items.append(
                     (
-                        target.attr,
+                        public_target.attr,
                         self._infer_init_assignment_annotation_text(
                             statement.value,
                             parameter_annotations,
@@ -1590,23 +1615,28 @@ class ProtocolCrafter(Cleanable):
         return self._infer_source_attribute_annotation_text(value_node)
 
     @staticmethod
-    def _is_public_self_attribute_target(target: ast.expr) -> bool:
+    def _get_public_self_attribute_target(target: ast.expr) -> Optional[ast.Attribute]:
         """
-        Return whether one assignment target is `self.<public_name>`.
+        Return one public `self.<name>` assignment target when present.
 
         Args:
             target:
                 Candidate assignment target.
 
         Returns:
-            bool: True when the target is a public self attribute.
+            Optional[ast.Attribute]:
+                The narrowed attribute target when it is a public self
+                attribute, otherwise `None`.
         """
-        return (
-            isinstance(target, ast.Attribute)
-            and isinstance(target.value, ast.Name)
-            and target.value.id == "self"
-            and not target.attr.startswith("_")
-        )
+        if not isinstance(target, ast.Attribute):
+            return None
+        if not isinstance(target.value, ast.Name):
+            return None
+        if target.value.id != "self":
+            return None
+        if target.attr.startswith("_"):
+            return None
+        return target
 
     def _render_source_annotation_text(
             self,
@@ -2272,6 +2302,12 @@ class ProtocolCrafter(Cleanable):
         Returns:
             str: Stored string value.
         """
+        if not isinstance(statement, ast.Expr):
+            raise ValueError("Expected ast.Expr when extracting a string expression.")
+        if not isinstance(statement.value, ast.Constant):
+            raise ValueError("Expected ast.Constant when extracting a string expression.")
+        if not isinstance(statement.value.value, str):
+            raise ValueError("Expected string literal when extracting a string expression.")
         return statement.value.value
 
     @staticmethod

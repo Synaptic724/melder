@@ -97,28 +97,28 @@ class ClassProfile(Cleanable):
             dynamic_access: Dynamic access flags for __getattr__/__getattribute__/__setattr__.
         """
         super().__init__()
-        self.name = name
-        self.qualname = qualname
-        self.module = module
-        self.mro = list(mro) if mro is not None else []
-        self.bases = list(bases) if bases is not None else []
-        self.annotations = dict(annotations) if annotations is not None else {}
-        self.protocols = dict(protocols) if protocols is not None else {}
-        self.slots = list(slots) if slots is not None else None
-        self.origin_file = origin_file
-        self.origin_line = origin_line
-        self.origin_end_line = origin_end_line
-        self.source_preview = source_preview
-        self.source_text = source_text
-        self.members = dict(members) if members is not None else {}
-        self.methods = dict(methods) if methods is not None else {}
-        self.is_dataclass = is_dataclass
-        self.decorated = decorated
-        self.docstring_raw = docstring_raw
-        self.docstring_summary = docstring_summary
-        self.behavior_summary = behavior_summary
-        self.tags = list(tags) if tags is not None else []
-        self.dynamic_access = dict(dynamic_access) if dynamic_access is not None else {}
+        self.name: str = name
+        self.qualname: str = qualname
+        self.module: str = module
+        self.mro: Optional[List[str]] = list(mro) if mro is not None else []
+        self.bases: Optional[List[str]] = list(bases) if bases is not None else []
+        self.annotations: Optional[Dict[str, Any]] = dict(annotations) if annotations is not None else {}
+        self.protocols: Optional[Dict[str, bool]] = dict(protocols) if protocols is not None else {}
+        self.slots: Optional[List[str]] = list(slots) if slots is not None else None
+        self.origin_file: Optional[str] = origin_file
+        self.origin_line: Optional[int] = origin_line
+        self.origin_end_line: Optional[int] = origin_end_line
+        self.source_preview: Optional[str] = source_preview
+        self.source_text: Optional[str] = source_text
+        self.members: Optional[Dict[str, Dict[str, Any]]] = dict(members) if members is not None else {}
+        self.methods: Optional[Dict[str, MethodProfile]] = dict(methods) if methods is not None else {}
+        self.is_dataclass: bool = is_dataclass
+        self.decorated: bool = decorated
+        self.docstring_raw: Optional[str] = docstring_raw
+        self.docstring_summary: str = docstring_summary
+        self.behavior_summary: str = behavior_summary
+        self.tags: Optional[List[str]] = list(tags) if tags is not None else []
+        self.dynamic_access: Optional[Dict[str, bool]] = dict(dynamic_access) if dynamic_access is not None else {}
 
     def cleanup(self) -> None:
         """
@@ -134,12 +134,13 @@ class ClassProfile(Cleanable):
         if self._cleaned:
             return
         # Clean nested method profiles
-        for method in self.methods.values():
-            if isinstance(method, Cleanable):
-                try:
-                    method.cleanup()
-                except Exception:
-                    pass
+        if self.methods is not None:
+            for method in self.methods.values():
+                if isinstance(method, Cleanable):
+                    try:
+                        method.cleanup()
+                    except Exception:
+                        pass
         # Clear collections
         for lst in (self.mro, self.bases, self.slots):
             if isinstance(lst, list):
@@ -147,27 +148,28 @@ class ClassProfile(Cleanable):
         for dct in (self.annotations, self.protocols, self.members, self.methods):
             if isinstance(dct, dict):
                 dct.clear()
-        # Drop references
-        self.name = None
-        self.qualname = None
-        self.module = None
-        self.mro = None
-        self.bases = None
-        self.annotations = None
-        self.protocols = None
-        self.slots = None
-        self.origin_file = None
-        self.origin_line = None
-        self.origin_end_line = None
-        self.source_preview = None
-        self.source_text = None
-        self.members = None
-        self.methods = None
-        self.is_dataclass = None
-        self.decorated = None
-        self.docstring_raw = None
-        self.docstring_summary = None
-        self.behavior_summary = None
-        self.tags = None
-        self.dynamic_access = None
         self._cleaned = True
+
+        # Drop references
+        del self.name
+        del self.qualname
+        del self.module
+        del self.mro
+        del self.bases
+        del self.annotations
+        del self.protocols
+        del self.slots
+        del self.origin_file
+        del self.origin_line
+        del self.origin_end_line
+        del self.source_preview
+        del self.source_text
+        del self.members
+        del self.methods
+        del self.is_dataclass
+        del self.decorated
+        del self.docstring_raw
+        del self.docstring_summary
+        del self.behavior_summary
+        del self.tags
+        del self.dynamic_access

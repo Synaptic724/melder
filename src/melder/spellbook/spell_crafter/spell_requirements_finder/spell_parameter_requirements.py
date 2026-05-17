@@ -138,23 +138,22 @@ class SpellParameterRequirement(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-
-            self._name = None
+            self._cleaned = True
             self._position = -1
-            self._kind = None
-            self._annotation = None
-            self._default_value = None
             self._has_default = False
             self._is_var_positional = False
             self._is_var_keyword = False
             self._is_keyword_only = False
             self._is_optional = False
-            self._di_shape = None
-            self._collection_element_annotation = None
-            self._spellmap_default = None
-            self._cleaned = True
 
-        self._lock = None
+            del self._name
+            del self._kind
+            del self._annotation
+            del self._default_value
+            del self._di_shape
+            del self._collection_element_annotation
+            del self._spellmap_default
+        del self._lock
 
     # ------------------------------------------------------------------
     # Properties

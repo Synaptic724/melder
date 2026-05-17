@@ -90,18 +90,16 @@ class SpellSystemNode(Cleanable):
             return
 
         self._cleaned = True
-
-        self._dependencies.clear()
-        self._dependencies = None
-
-        self.existence = None
-        self.spell_type = None
-        self.conduit_id = None
-        self.ward_id = None
         self.is_root = False
+        self._dependencies.clear()
 
-        self._spell_id = None
-        self._lineage_id = None
+        del self._dependencies
+        del self.existence
+        del self.spell_type
+        del self.conduit_id
+        del self.ward_id
+        del self._spell_id
+        del self._lineage_id
 
     # ------------------------------------------------------------------ #
     # Properties                                                         #

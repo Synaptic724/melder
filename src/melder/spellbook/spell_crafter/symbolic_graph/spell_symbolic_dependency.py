@@ -143,20 +143,20 @@ class SpellSymbolicDependency(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-
-            self._spell_id = None
-            self._param_name = None
-            self._position = -1
-            self._di_shape = None
-            self._is_optional = False
-            self._target_annotation = None
-            self._is_collection = False
-            self._spellmap_default = None
-            self._contract_key = None
-            self._contract_late_binding = None
             self._cleaned = True
 
-        self._lock = None
+            self._position = -1
+            self._is_optional = False
+            self._is_collection = False
+
+            del self._spell_id
+            del self._param_name
+            del self._di_shape
+            del self._target_annotation
+            del self._spellmap_default
+            del self._contract_key
+            del self._contract_late_binding
+        del self._lock
 
     # ------------------------------------------------------------------
     # Properties
