@@ -1,6 +1,9 @@
 from typing import Optional, List
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
+    SpellValidationIssue,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationResult(Cleanable):

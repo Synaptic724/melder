@@ -1,7 +1,10 @@
 from typing import Dict, Optional, Protocol, runtime_checkable
+
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
 from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+
 
 @runtime_checkable
 class ICodegenTransactionContext(ICleanable, Protocol):

@@ -10,7 +10,13 @@ from melder.mutation_research.mutation_configuration_builder import (
 )
 from melder.mutation_research.mutation_conduit import MutationConduit
 from melder.mutation_research.mutation_frame import MutationFrame
+from melder.mutation_research.research.creation.node.creation_mutation_node import (
+    CreationMutationNode,
+)
 from melder.mutation_research.research.research import Research
+from melder.mutation_research.research.spell.node.spell_mutation_node import (
+    SpellMutationNode,
+)
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder

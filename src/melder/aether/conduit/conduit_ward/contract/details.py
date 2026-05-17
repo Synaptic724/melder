@@ -73,7 +73,7 @@ class Detail(Cleanable, IDetail):
             current-head resolution.
         """
         super().__init__()
-        self._lock = RLock()
+        self._lock: RLock = RLock()
         self._id: str = IDBuilder.create_id()
 
         if not isinstance(spell_index, SpellIndex):
@@ -97,14 +97,12 @@ class Detail(Cleanable, IDetail):
                 f"sources must be a set of spell_ids when provided, got {type(sources).__name__}"
             )
 
-        # Note: spell_id is the version at contract creation time.
-        with self._lock:
-            self.spell_index: SpellIndex = spell_index
-            self.spell_id: str = spell_id
-            self.permissions: Permissions = permissions
-            self.contract_type: ContractTypes = contract_type
-            self.reason: DetailReason = reason
-            self.sources: Set[str] = sources if sources is not None else set()
+        self.spell_index: SpellIndex = spell_index
+        self.spell_id: str = spell_id
+        self.permissions: Permissions = permissions
+        self.contract_type: ContractTypes = contract_type
+        self.reason: DetailReason = reason
+        self.sources: Set[str] = sources if sources is not None else set()
 
 
     # ------------------------------------------------------------------
@@ -127,17 +125,15 @@ class Detail(Cleanable, IDetail):
 
             self._cleaned = True
 
-            self.spell_index = None
-            self.spell_id = None
-            self.permissions = None
-            self.contract_type = None
-            self.reason = None
+            del self.spell_index
+            del self.spell_id
+            del self.permissions
+            del self.contract_type
+            del self.reason
             if self.sources is not None:
                 self.sources.clear()
-            self.sources = None
-
-            self._id = None
-        self._lock = None
+            del self.sources
+            del self._id
 
 
     # ------------------------------------------------------------------

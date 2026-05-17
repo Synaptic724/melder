@@ -1,3 +1,6 @@
+from melder.utilities.interfaces.ispell import ISpell
+
+
 class SpellbookValidationError(RuntimeError):
     """
     Raised when the Spellbook resolution pipeline (requirements -> symbolic
@@ -25,7 +28,7 @@ class SpellbookValidationError(RuntimeError):
           cleaned while the error is being rendered.
     """
 
-    def __init__(self, broken_spells: list["Spell"]) -> None:
+    def __init__(self, broken_spells: list[ISpell]) -> None:
         """
         Purpose:
             Build a validation error with a readable diagnostic summary.

@@ -161,10 +161,10 @@ def test_contract_cleanup_success(contract, sample_detail_a, sample_detail_b):
     contract.cleanup()
     
     assert contract._cleaned
-    assert contract._ward_a is None
-    assert contract._ward_b is None
-    assert contract._details_a is None
-    assert contract._details_b is None
+    assert not hasattr(contract, "_ward_a")
+    assert not hasattr(contract, "_ward_b")
+    assert not hasattr(contract, "_details_a")
+    assert not hasattr(contract, "_details_b")
     assert sample_detail_a.cleanup.called
     assert sample_detail_b.cleanup.called
 

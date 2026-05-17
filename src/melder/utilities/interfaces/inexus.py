@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.irift import IRift
@@ -232,7 +233,7 @@ class INexus(ICleanable, Protocol):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
-    ) -> "IConduit":
+    ) -> IConduit:
         """
         Return one existing accessible rooted Nexus conduit for the specified Rift.
         """
@@ -244,7 +245,7 @@ class INexus(ICleanable, Protocol):
             frame_name: Optional[str] = None,
             root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> "IConduit":
+    ) -> IConduit:
         """
         Create and return one rooted Nexus conduit scoped for the specified Rift.
         """

@@ -18,6 +18,7 @@ from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import (
+    IConduit,
     ISpell,
     IConfiguration,
     ISpellIndex,
@@ -29,7 +30,6 @@ from melder.utilities.interfaces import (
     ISafeLogger,
 )
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -177,13 +177,13 @@ class Spellbook(Cleanable, ISpellbook):
         # Internal state
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
-        self._nexus: Optional[Nexus] = Nexus()
+        self._nexus: Nexus = Nexus()
         self._conjured = False
         self._binding_transaction_active: bool = True
         self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[ISpell] = []
-        self._conduit: Optional[Conduit] = None
+        self._conduit: Optional[IConduit] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -195,7 +195,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._configuration: IConfiguration = configuration
         self._aetheric_frame_configuration: Optional[Any] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
-        self._logger: Optional[ISafeLogger] = InitHelpers.resolve_safe_logger(None)
+        self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()
         self._initialize_configuration()
 
@@ -247,9 +247,6 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             None.
         """
-        if self._logger is not None:
-            pass
-
         if self._cleaned:
             return
 
@@ -286,97 +283,80 @@ class Spellbook(Cleanable, ISpellbook):
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
 
-        if self._spells is not None:
-            try:
-                self._spells.clear()
-            except Exception as e:
-                self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
-            self._spells = None
+        try:
+            self._spells.clear()
+        except Exception as e:
+            self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
+        del self._spells
 
-        if self._spells_by_id is not None:
-            try:
-                self._spells_by_id.clear()
-            except Exception as e:
-                self._logger.error(f"Error clearing _spells_by_id: {e}", "_cleanup_components", exc_info=True)
-            self._spells_by_id = None
-        if self._spell_id_pool is not None:
-            try:
-                self._spell_id_pool.clear()
-            except Exception as e:
-                self._logger.error(f"Error clearing _spell_id_pool: {e}", "_cleanup_components", exc_info=True)
-            self._spell_id_pool = None
+        try:
+            self._spells_by_id.clear()
+        except Exception as e:
+            self._logger.error(f"Error clearing _spells_by_id: {e}", "_cleanup_components", exc_info=True)
+        del self._spells_by_id
+
+        try:
+            self._spell_id_pool.clear()
+        except Exception as e:
+            self._logger.error(f"Error clearing _spell_id_pool: {e}", "_cleanup_components", exc_info=True)
+        del self._spell_id_pool
 
         # 2) Clean lookup/contracted maps and local maps
-        if self._lookup_spells is not None:
-            try:
-                self._lookup_spells.clear()
-            except Exception as e:
-                self._logger.error(f"Error cleaning _lookup_spells: {e}", "_cleanup_components", exc_info=True)
-            self._lookup_spells = None
+        try:
+            self._lookup_spells.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _lookup_spells: {e}", "_cleanup_components", exc_info=True)
+        del self._lookup_spells
 
-        if self._contracted_spells is not None:
-            try:
-                self._contracted_spells.clear()
-            except Exception as e:
-                self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
-            self._contracted_spells = None
+        try:
+            self._contracted_spells.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
+        del self._contracted_spells
 
-        if self._contracted_spells_by_id is not None:
-            try:
-                self._contracted_spells_by_id.clear()
-            except Exception as e:
-                self._logger.error(
-                    f"Error cleaning _contracted_spells_by_id: {e}",
-                    "_cleanup_components",
-                    exc_info=True,
-                )
-            self._contracted_spells_by_id = None
+        try:
+            self._contracted_spells_by_id.clear()
+        except Exception as e:
+            self._logger.error(
+                f"Error cleaning _contracted_spells_by_id: {e}",
+                "_cleanup_components",
+                exc_info=True,
+            )
+        del self._contracted_spells_by_id
 
-        if self._lookup_contracted_spells is not None:
-            try:
-                self._lookup_contracted_spells.clear()
-            except Exception as e:
-                self._logger.error(f"Error cleaning _lookup_contracted_spells: {e}", "_cleanup_components", exc_info=True)
-            self._lookup_contracted_spells = None
-
-        if self._spells is not None:
-            try:
-                self._spells.clear()
-            except Exception as e:
-                self._logger.error(f"Error cleaning _spells: {e}", "_cleanup_components", exc_info=True)
-            self._spells = None
+        try:
+            self._lookup_contracted_spells.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _lookup_contracted_spells: {e}", "_cleanup_components", exc_info=True)
+        del self._lookup_contracted_spells
 
         # 3) cleanup configuration
-        if self._configuration is not None:
-            try:
-                if not self._is_frame_owned_shared_configuration(self._configuration):
-                    self._configuration.cleanup()
-            except Exception as e:
-                self._logger.error(f"Error cleaning configuration: {e}", "_cleanup_components", exc_info=True)
-            self._configuration = None
+        try:
+            if not self._is_frame_owned_shared_configuration(self._configuration):
+                self._configuration.cleanup()
+        except Exception as e:
+            self._logger.error(f"Error cleaning configuration: {e}", "_cleanup_components", exc_info=True)
+        del self._configuration
 
         self._aetheric_frame_configuration = None
 
-        if self._spell_versions is not None:
-            try:
-                self._spell_versions.clear()
-            except Exception as e:
-                self._logger.error(f"Error cleaning _spell_versions: {e}", "_cleanup_components", exc_info=True)
-            self._spell_versions = None
+        try:
+            self._spell_versions.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _spell_versions: {e}", "_cleanup_components", exc_info=True)
+        del self._spell_versions
 
-        if self._contracted_versions is not None:
-            try:
-                self._contracted_versions.clear()
-            except Exception as e:
-                self._logger.error(f"Error cleaning _contracted_versions: {e}", "_cleanup_components", exc_info=True)
-            self._contracted_versions = None
+        try:
+            self._contracted_versions.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _contracted_versions: {e}", "_cleanup_components", exc_info=True)
+        del self._contracted_versions
 
-        if self._spell_validator is not None:
-            try:
-                self._spell_validator.cleanup()
-            except Exception as e:
-                self._logger.error(f"Error cleaning spell validator: {e}", "_cleanup_components", exc_info=True)
-            self._spell_validator = None
+        try:
+            self._spell_validator.cleanup()
+        except Exception as e:
+            self._logger.error(f"Error cleaning spell validator: {e}", "_cleanup_components", exc_info=True)
+        del self._spell_validator
 
 
     def _cleanup_spells(self) -> None:
@@ -393,9 +373,6 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             None.
         """
-        if self._spells is None:
-            return
-
         for spell_index, spell in self._spells.items():
             try:
                 self._spell_system_states.unregister_index(spell_index)
@@ -422,32 +399,27 @@ class Spellbook(Cleanable, ISpellbook):
     def _cleanup_core(self) -> None:
 
         # Nullify high-level refs (no try/catch for simple None assignments)
-        self._bind = None
-        self._aetheric_frame = None
-        self._id = None
-        self._conduit = None
-        self._conjured = None
-        self._binding_transaction_active = None
-        self._active_change_request = None
-        self._pending_binding_frame_keys = None
-        self._pending_structural_spells = None
-        self._spell_system_states = None
-        self._configuration_locked = None
-        self._spellbook_validation_required = None
-        self._nexus_publish_enabled = None
-        self._nexus = None
+        del self._bind
+        del self._aetheric_frame
+        del self._id
+        del self._conduit
+        del self._conjured
+        del self._binding_transaction_active
+        del self._active_change_request
+        del self._pending_binding_frame_keys
+        del self._pending_structural_spells
+        del self._spell_system_states
+        del self._configuration_locked
+        del self._spellbook_validation_required
+        del self._nexus_publish_enabled
+        del self._nexus
 
-        # Lock: just null it (no getattr/hasattr)
-        self._lock = None
-
-        # Destroy logger LAST
-        if self._logger is not None:
-            try:
-                if hasattr(self._logger, "cleanup"):
-                    self._logger.cleanup()
-            except Exception as e:
-                self._logger.error(f"Error during logger cleanup: {e}", "_cleanup_core", exc_info=True)
-            self._logger = None
+        try:
+            if hasattr(self._logger, "cleanup"):
+                self._logger.cleanup()
+        except Exception as e:
+            self._logger.error(f"Error during logger cleanup: {e}", "_cleanup_core", exc_info=True)
+        del self._logger
 
 
     #endregion Disposal
@@ -464,6 +436,7 @@ class Spellbook(Cleanable, ISpellbook):
             Spellbook:
                 This Spellbook instance while the lock is held.
         """
+        self.check_cleaned()
         self._lock.acquire()
         return self
 
@@ -958,6 +931,7 @@ class Spellbook(Cleanable, ISpellbook):
             str:
                 This Spellbook's unique identifier.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -978,6 +952,7 @@ class Spellbook(Cleanable, ISpellbook):
                 Immutable map of local `SpellIndex` keys to spell
                 objects.
         """
+        self.check_cleaned()
         return MappingProxyType(self._spells)
 
     @property
@@ -996,6 +971,7 @@ class Spellbook(Cleanable, ISpellbook):
                 Immutable map of peer conduit id to immutable borrowed-spell
                 map.
         """
+        self.check_cleaned()
         return MappingProxyType({
             conduit_id: MappingProxyType(dict(spells))
             for conduit_id, spells in self._contracted_spells.items()
@@ -1074,6 +1050,7 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             Optional[ISpell]: The spell if found, otherwise None.
         """
+        self.check_cleaned()
         for spell_index, spell in self._spells.items():
             # SpellIndex is responsible for telling us whether it owns this version
             if spell_index.has_version(spell_id):
@@ -2609,7 +2586,7 @@ class Spellbook(Cleanable, ISpellbook):
             existence: str | Existence,
             permissions: str = "create",
             spellframe: Any = None,
-            binding_name: str = None,
+            binding_name: str | None = None,
             profile: str = "general",
             **kwargs,
     ) -> str:
@@ -3052,7 +3029,7 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self._spellbook_validation_required = bool(required)
 
-    def _register_conduit_with_risk_manager(self, conduit: Conduit) -> None:
+    def _register_conduit_with_risk_manager(self, conduit: IConduit) -> None:
         """
         Internal
 
@@ -3302,7 +3279,7 @@ class Spellbook(Cleanable, ISpellbook):
         )
         return self._nexus_publish_enabled
 
-    def _publish_nexus_state_for_conjure(self, conduit: Conduit) -> None:
+    def _publish_nexus_state_for_conjure(self, conduit: IConduit) -> None:
         """
         Internal
 
@@ -3428,7 +3405,7 @@ class Spellbook(Cleanable, ISpellbook):
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: str| None  = None, conduit_logger: Any | None = None) -> Conduit:
+    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: str| None  = None, conduit_logger: Any | None = None) -> IConduit:
         """
         Public API
 
@@ -3519,7 +3496,6 @@ class Spellbook(Cleanable, ISpellbook):
                 automatic=automatic,
                 name=name,
                 conduit_logger=conduit_logger,
-                conduit_cls=Conduit,
                 phase_scheduler_cls=PhaseScheduler,
             )
             try:

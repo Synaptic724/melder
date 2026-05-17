@@ -1986,17 +1986,17 @@ def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
 
     sb._cleanup_components()
 
-    assert sb._spells is None
-    assert sb._spells_by_id is None
-    assert sb._spell_id_pool is None
-    assert sb._lookup_spells is None
-    assert sb._contracted_spells is None
-    assert sb._contracted_spells_by_id is None
-    assert sb._lookup_contracted_spells is None
-    assert sb._configuration is None
-    assert sb._spell_versions is None
-    assert sb._contracted_versions is None
-    assert sb._spell_validator is None
+    assert not hasattr(sb, "_spells")
+    assert not hasattr(sb, "_spells_by_id")
+    assert not hasattr(sb, "_spell_id_pool")
+    assert not hasattr(sb, "_lookup_spells")
+    assert not hasattr(sb, "_contracted_spells")
+    assert not hasattr(sb, "_contracted_spells_by_id")
+    assert not hasattr(sb, "_lookup_contracted_spells")
+    assert not hasattr(sb, "_configuration")
+    assert not hasattr(sb, "_spell_versions")
+    assert not hasattr(sb, "_contracted_versions")
+    assert not hasattr(sb, "_spell_validator")
     assert len(sb._logger.error_calls) >= 1
 
 
@@ -2832,11 +2832,11 @@ def test_cleanup_idempotent_and_clears_fields():
     sb._spell_validator = DummySpellValidationSystem()
     sb.cleanup()
     assert sb._cleaned is True
-    assert sb._spells is None
-    assert sb._logger is None
-    assert sb._configuration is None
-    assert sb._spell_validator is None
-    assert sb._lock is None
+    assert not hasattr(sb, "_spells")
+    assert not hasattr(sb, "_logger")
+    assert not hasattr(sb, "_configuration")
+    assert not hasattr(sb, "_spell_validator")
+    assert hasattr(sb, "_lock")
 
 
 def test_cleanup_spells_cleans_each_and_swallows_errors():
@@ -3278,12 +3278,13 @@ def test_find_contracted_spell_raises_when_missing():
         sb._find_contracted_spell(DummySpellIndex())
 
 
-def test_cleanup_spells_is_safe_when_none():
+def test_cleanup_spells_requires_live_spell_map():
     """
     Purpose:
-        Verify cleanup handles a None spell map safely.
+    Verify the internal spell cleanup helper requires a live spell map.
     Contract:
-        _cleanup_spells returns without raising and keeps _spells as None.
+        `_cleanup_spells()` is an internal helper and raises when `_spells`
+        has already been torn down or replaced with `None`.
     Returns:
         None.
     Raises:
@@ -3292,8 +3293,8 @@ def test_cleanup_spells_is_safe_when_none():
     sb = Spellbook()
     sb._spells = None
     sb._logger = DummySafeLogger()
-    sb._cleanup_spells()
-    assert sb._spells is None
+    with pytest.raises(AttributeError):
+        sb._cleanup_spells()
 
 
 def test_cleanup_components_clears_contracts_and_versions():
@@ -3318,11 +3319,11 @@ def test_cleanup_components_clears_contracts_and_versions():
     sb._contracted_spells_by_id = {"c": {"contracted": DummySpell(spell_id="contracted")}}
     sb._logger = DummySafeLogger()
     sb._cleanup_components()
-    assert sb._spells is None
-    assert sb._spells_by_id is None
-    assert sb._contracted_spells is None
-    assert sb._contracted_versions is None
-    assert sb._contracted_spells_by_id is None
+    assert not hasattr(sb, "_spells")
+    assert not hasattr(sb, "_spells_by_id")
+    assert not hasattr(sb, "_contracted_spells")
+    assert not hasattr(sb, "_contracted_versions")
+    assert not hasattr(sb, "_contracted_spells_by_id")
 
 
 def test_cleanup_core_nulls_bind_and_lock_last_logger_cleanup_safe():
@@ -3339,9 +3340,9 @@ def test_cleanup_core_nulls_bind_and_lock_last_logger_cleanup_safe():
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._cleanup_core()
-    assert sb._bind is None
-    assert sb._lock is None
-    assert sb._logger is None
+    assert not hasattr(sb, "_bind")
+    assert hasattr(sb, "_lock")
+    assert not hasattr(sb, "_logger")
 
 
 def test_context_manager_reacquire_after_exit():
@@ -3642,7 +3643,7 @@ def test_cleanup_components_handles_none_configuration():
     sb._spell_versions = set()
     sb._logger = DummySafeLogger()
     sb._cleanup_components()
-    assert sb._configuration is None
+    assert not hasattr(sb, "_configuration")
 
 
 def test_cleanup_core_swallows_logger_cleanup_errors():
@@ -3677,7 +3678,7 @@ def test_cleanup_core_swallows_logger_cleanup_errors():
     sb = Spellbook()
     sb._logger = BadLogger()
     sb._cleanup_core()
-    assert sb._logger is None
+    assert not hasattr(sb, "_logger")
 
 
 def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
@@ -3810,7 +3811,7 @@ def test_context_manager_after_cleanup_raises_on_lock_use():
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb.cleanup()
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         sb.__enter__()
 
 
@@ -3918,12 +3919,13 @@ def test_cleanup_spells_cleans_index_even_when_spell_raises():
     assert idx.cleaned is True
 
 
-def test_cleanup_components_idempotent():
+def test_cleanup_components_is_single_use_internal_helper():
     """
     Purpose:
-        Verify _cleanup_components can be called multiple times.
+    Verify `_cleanup_components()` is not an idempotent public surface.
     Contract:
-        Repeated cleanup leaves _spells as None without raising.
+        A second direct call fails once the first call has deleted owned
+        fields.
     Returns:
         None.
     Raises:
@@ -3932,8 +3934,8 @@ def test_cleanup_components_idempotent():
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._cleanup_components()
-    sb._cleanup_components()
-    assert sb._spells is None
+    with pytest.raises(AttributeError):
+        sb._cleanup_components()
 
 
 def test_cleanup_core_handles_logger_none():
@@ -3950,7 +3952,7 @@ def test_cleanup_core_handles_logger_none():
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._cleanup_core()
-    assert sb._bind is None
+    assert not hasattr(sb, "_bind")
 
 
 def test_fire_conjure_hooks_passes_args_and_kwargs():
@@ -4862,8 +4864,8 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
             """
             pass
 
-    import melder.spellbook.spellbook as spellbook_module
-    monkeypatch.setattr(spellbook_module, "Conduit", StubConduit)
+    import melder.spellbook.spellbook_creation_system as creation_system_module
+    monkeypatch.setattr(creation_system_module, "Conduit", StubConduit)
     # Stub binder to avoid building a real conduit; return the stub directly.
     sb._bind.build_conduit = lambda *a, **k: StubConduit(None, None, None, None, None, None, None)
     sb.conjure(name="root")
@@ -5017,7 +5019,7 @@ def test_conjure_sets_conduit_and_marks_conjured(monkeypatch):
             pass
 
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", NoopScheduler)
-    monkeypatch.setattr("melder.spellbook.spellbook.Conduit", StubConduit)
+    monkeypatch.setattr("melder.spellbook.spellbook_creation_system.Conduit", StubConduit)
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
     sb.conjure(name="root")
@@ -5095,7 +5097,7 @@ def test_conjure_twice_raises(monkeypatch):
             pass
 
     monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", NoopScheduler)
-    monkeypatch.setattr("melder.spellbook.spellbook.Conduit", StubConduit)
+    monkeypatch.setattr("melder.spellbook.spellbook_creation_system.Conduit", StubConduit)
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
     sb.conjure(name="root")

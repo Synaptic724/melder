@@ -229,12 +229,11 @@ class Rift(Cleanable, IRift):
         """
         if self._cleaned:
             return
-        lock = self._lock
-        with lock:
+        with self._lock:
             if self._cleaned:
                 return
-            self._logger.info("Cleaning Rift runtime state.", "cleanup")
             self._cleaned = True
+            self._logger.info("Cleaning Rift runtime state.", "cleanup")
             if self._space is not None:
                 self._space.cleanup()
             if self._configuration is not None:
@@ -242,27 +241,26 @@ class Rift(Cleanable, IRift):
             if self._rift_gate is not None:
                 self._rift_gate.cleanup()
             self._metadata.clear()
-            self._nexus = None
-            self._configuration = None
-            self._rift_gate = None
             for projection_set in self._projection_sets_by_frame_name.values():
                 projection_set.cleanup()
             self._projection_sets_by_frame_name.clear()
-            self._projection_sets_by_frame_name = None
             for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
                 frame_link_contract.cleanup()
             self._frame_link_contracts_by_frame_name.clear()
-            self._frame_link_contracts_by_frame_name = None
-            self._space = None
-            self._is_registered = None
-            self._is_active = None
-            self._metadata = None
-            self._rift_name = None
-            self._id = None
-        if self._logger is not None:
             self._logger.cleanup()
-            self._logger = None
-        self._lock = None
+
+            del self._projection_sets_by_frame_name
+            del self._nexus
+            del self._configuration
+            del self._rift_gate
+            del self._frame_link_contracts_by_frame_name
+            del self._space
+            del self._is_registered
+            del self._is_active
+            del self._metadata
+            del self._rift_name
+            del self._id
+            del self._logger
 
     @property
     def id(self) -> str:
@@ -363,6 +361,7 @@ class Rift(Cleanable, IRift):
         Returns:
             Dict[str, str]: Selected view/command/codegen contract names.
         """
+        self.check_cleaned()
         return self.get_frame_link_contract(frame_name).get_selected_contract_names()
 
     def create_frame_link(self, frame_name: str) -> None:

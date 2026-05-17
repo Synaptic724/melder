@@ -120,15 +120,15 @@ class FrameDescriptorPayload(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self.payload_version = None
-            self.system_state = None
-            self.ai_native_enabled = None
-            self.rift_enabled = None
-            self.root_conduit_count = None
-            self.root_conduit_ids = None
-            self.named_root_conduits = None
-            self.conduit_cloud_entry_count = None
-            self.conduit_cloud_names = None
-            self.cluster_count = None
-            self.cluster_names = None
-            self._lock = None
+            del self.payload_version
+            del self.system_state
+            del self.ai_native_enabled
+            del self.rift_enabled
+            del self.root_conduit_count
+            del self.root_conduit_ids
+            del self.named_root_conduits
+            del self.conduit_cloud_entry_count
+            del self.conduit_cloud_names
+            del self.cluster_count
+            del self.cluster_names
+            del self._lock

@@ -1,5 +1,7 @@
 from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftspace import IRiftSpace
@@ -85,7 +87,7 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    def _get_required_codegen_projection(self, frame_name: str) -> "CodegenProjection":
+    def _get_required_codegen_projection(self, frame_name: str) -> CodegenProjection:
         """
         Return the required codegen projection for one frame.
         """
@@ -127,7 +129,7 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    def get_nexus_frame(self, frame_name: Optional[str] = None) -> "IConduit":
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> IConduit:
         """
         Return one rooted Nexus conduit accessible through this Rift.
         """
@@ -138,7 +140,7 @@ class IRift(ICleanable, Protocol):
             frame_name: Optional[str] = None,
             root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> "IConduit":
+    ) -> IConduit:
         """
         Create and return one rooted Nexus conduit through this Rift's Nexus access surface.
         """

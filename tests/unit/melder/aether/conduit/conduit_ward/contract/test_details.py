@@ -275,14 +275,14 @@ def test_detail_cleanup_success(sample_detail):
     """
     sample_detail.cleanup()
     assert sample_detail._cleaned
-    assert sample_detail.spell_index is None
-    assert sample_detail.spell_id is None
-    assert sample_detail.permissions is None
-    assert sample_detail.contract_type is None
-    assert sample_detail.reason is None
-    assert sample_detail.sources is None
-    assert sample_detail._lock is None
-    assert sample_detail._id is None
+    assert not hasattr(sample_detail, "spell_index")
+    assert not hasattr(sample_detail, "spell_id")
+    assert not hasattr(sample_detail, "permissions")
+    assert not hasattr(sample_detail, "contract_type")
+    assert not hasattr(sample_detail, "reason")
+    assert not hasattr(sample_detail, "sources")
+    assert hasattr(sample_detail, "_lock")
+    assert not hasattr(sample_detail, "_id")
 
 def test_detail_cleanup_idempotent(sample_detail):
     """

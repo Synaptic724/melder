@@ -1,3 +1,4 @@
+from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 

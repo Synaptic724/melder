@@ -1,6 +1,9 @@
 import threading
 from typing import List, Optional
 # Melder Imports
+from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
+    SpellSymbolicDependency,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 

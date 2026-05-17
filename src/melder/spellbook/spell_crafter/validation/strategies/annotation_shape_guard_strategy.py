@@ -4,6 +4,9 @@ import inspect
 import typing
 from typing import Any, Tuple, get_args, get_origin
 
+from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+    SpellValidationContext,
+)
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )

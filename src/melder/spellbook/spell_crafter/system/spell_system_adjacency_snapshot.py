@@ -1,5 +1,6 @@
 from typing import Collection, Dict, Iterable, Optional, Set
 # Melder imports
+from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 

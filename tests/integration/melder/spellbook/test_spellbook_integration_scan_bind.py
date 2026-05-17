@@ -504,6 +504,7 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
         None.
     """
     spellbook = _make_spellbook()
+    spellbook_id = spellbook.id
     config = spellbook.get_configuration()
     set_frame_rift_enabled_for_spellbook_configuration(config, True)
     frame_name = spellbook._aetheric_frame
@@ -516,10 +517,10 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
 
         descriptor = Nexus()._get_required_frame_descriptor(frame_name)
         for spell_id in spell_ids:
-            assert (spellbook.id, spell_id) in descriptor.spell_records_by_key
+            assert (spellbook_id, spell_id) in descriptor.spell_records_by_key
     finally:
         conduit.cleanup()
 
     descriptor = Nexus()._get_required_frame_descriptor(frame_name)
     for spell_id in spell_ids:
-        assert (spellbook.id, spell_id) not in descriptor.spell_records_by_key
+        assert (spellbook_id, spell_id) not in descriptor.spell_records_by_key

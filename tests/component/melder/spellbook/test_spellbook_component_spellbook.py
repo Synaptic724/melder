@@ -753,6 +753,7 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+    spellbook_id = spellbook.id
 
     conduit = spellbook.conjure(name="root")
     late_spell_id = None
@@ -766,12 +767,12 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
             )
 
         descriptor = Nexus()._get_required_frame_descriptor("ops")
-        assert (spellbook.id, late_spell_id) in descriptor.spell_records_by_key
+        assert (spellbook_id, late_spell_id) in descriptor.spell_records_by_key
     finally:
         conduit.cleanup()
 
     descriptor = Nexus()._get_required_frame_descriptor("ops")
-    assert (spellbook.id, late_spell_id) not in descriptor.spell_records_by_key
+    assert (spellbook_id, late_spell_id) not in descriptor.spell_records_by_key
     spellbook.cleanup()
 
 
@@ -792,6 +793,7 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+    spellbook_id = spellbook.id
 
     conduit = spellbook.conjure(name="root")
     spell_ids = []
@@ -801,13 +803,13 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
 
         descriptor = Nexus()._get_required_frame_descriptor("ops")
         for spell_id in spell_ids:
-            assert (spellbook.id, spell_id) in descriptor.spell_records_by_key
+            assert (spellbook_id, spell_id) in descriptor.spell_records_by_key
     finally:
         conduit.cleanup()
 
     descriptor = Nexus()._get_required_frame_descriptor("ops")
     for spell_id in spell_ids:
-        assert (spellbook.id, spell_id) not in descriptor.spell_records_by_key
+        assert (spellbook_id, spell_id) not in descriptor.spell_records_by_key
     spellbook.cleanup()
 
 

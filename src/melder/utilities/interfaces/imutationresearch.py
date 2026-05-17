@@ -1,6 +1,14 @@
 from typing import Dict, List, Optional, Protocol, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.imutationconduit import IMutationConduit
+from melder.utilities.interfaces.imutationframe import IMutationFrame
+from melder.utilities.interfaces.imutationresearchconfiguration import (
+    IMutationResearchConfiguration,
+)
+from melder.utilities.interfaces.imutationresearchconfigurationbuilder import (
+    IMutationResearchConfigurationBuilder,
+)
 
 
 @runtime_checkable

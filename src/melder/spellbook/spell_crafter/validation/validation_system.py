@@ -34,6 +34,9 @@ from melder.spellbook.spell_crafter.validation.strategies.contract_provider_pres
 from melder.spellbook.spell_crafter.validation.strategies.binding_resolution_cycle_strategy import (
     BindingResolutionCycleStrategy,
 )
+from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
+    SpellValidationStrategy,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces import ISpell, ISpellbook, ISpellValidationSystem
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (

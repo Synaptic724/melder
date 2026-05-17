@@ -9,6 +9,9 @@ from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape
 from melder.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
+from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+    SpellValidationContext,
+)
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )

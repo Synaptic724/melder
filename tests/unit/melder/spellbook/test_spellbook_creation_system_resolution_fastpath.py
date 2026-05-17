@@ -532,7 +532,6 @@ def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
         automatic=True,
         name="root",
         conduit_logger=object(),
-        conduit_cls=object,
         phase_scheduler_cls=object,
     )
 
@@ -564,7 +563,6 @@ def test_creation_system_cleanup_rechecks_cleaned_state_under_lock() -> None:
         automatic=True,
         name="root",
         conduit_logger=object(),
-        conduit_cls=object,
         phase_scheduler_cls=object,
     )
     original_lock = system._lock

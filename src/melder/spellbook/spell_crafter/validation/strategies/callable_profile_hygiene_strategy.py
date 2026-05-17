@@ -8,6 +8,9 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     InstanceBindingProfile,
     OtherBindingProfile,
 )
+from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+    SpellValidationContext,
+)
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )

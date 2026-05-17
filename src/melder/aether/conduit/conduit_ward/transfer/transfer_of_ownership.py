@@ -1,9 +1,18 @@
+import threading
 import ulid
 from typing import Any, Callable, Dict, List, Optional, Set
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces import (
+    IConduit,
+    ISpell,
+    IAether,
+    IChangeControlManager,
+    IIncidentManager,
+)
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -13,7 +22,7 @@ from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidi
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 
 
-class TransferOfOwnership:
+class TransferOfOwnership(Cleanable):
     """
     Control-plane helper that migrates a spell lineage between conduit owners.
 
@@ -46,9 +55,9 @@ class TransferOfOwnership:
     def __init__(
         self,
         *,
-        source_conduit: Any,
-        target_conduit: Any,
-        spell: Any,
+        source_conduit: IConduit,
+        target_conduit: IConduit,
+        spell: ISpell,
         move_creations: bool = False,
         include_dependencies: bool = False,
         force_unshare: bool = True,
@@ -84,23 +93,78 @@ class TransferOfOwnership:
             mark_dependencies_dirty: If dependencies are not moved, mark their
                 lineages dirty so stale downstream state is not reused.
         """
-        self.source_conduit = source_conduit
-        self.target_conduit = target_conduit
-        self.spell = spell
-        self.move_creations = move_creations
-        self.include_dependencies = include_dependencies
-        self.force_unshare = force_unshare
-        self.invalidate_after_transfer = invalidate_after_transfer
-        self.mark_dependencies_dirty = mark_dependencies_dirty
+        super().__init__()
+        self.source_conduit: IConduit = source_conduit
+        self.target_conduit: IConduit = target_conduit
+        self.spell: ISpell = spell
+        self.move_creations: bool = move_creations
+        self.include_dependencies: bool = include_dependencies
+        self.force_unshare: bool = force_unshare
+        self.invalidate_after_transfer: bool = invalidate_after_transfer
+        self.mark_dependencies_dirty: bool = mark_dependencies_dirty
 
-        self._locks: List[Any] = []
-        self._aether = type(source_conduit)._aether
-        self._frame_name = source_conduit._aetheric_frame
+        self._lock: threading.RLock = threading.RLock()
+        self._aether: IAether = type(source_conduit)._aether
+        self._frame_name: str = source_conduit._aetheric_frame
         self._preflight_summary: Dict[str, Any] = {}
-        self._change_control_manager = self._aether._get_change_control_manager(self._frame_name)
-        self._incident_manager = self._aether._get_incident_manager(self._frame_name)
+        self._change_control_manager: IChangeControlManager = self._aether._get_change_control_manager(self._frame_name)
+        self._incident_manager: IIncidentManager = self._aether._get_incident_manager(self._frame_name)
         self._rollback_actions: List[Any] = []
         self._op_id: str = str(ulid.ULID())
+
+
+    def cleanup(self) -> None:
+        """
+        Release transfer-owned runtime references and permanently retire this helper.
+
+        Contract:
+            - Idempotent: repeated calls are safe after `_cleaned` flips.
+            - Clears mutable rollback/preflight containers under the transfer
+              lock first, then drops high-level references afterward.
+            - Does not cleanup source/target conduits or managers because this
+              helper only borrows them.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._cleanup_components()
+
+        self._cleanup_core()
+
+    def _cleanup_components(self) -> None:
+        """
+        Clear mutable transfer bookkeeping under the helper lock.
+        """
+        if self._preflight_summary is not None:
+            self._preflight_summary.clear()
+        if self._rollback_actions is not None:
+            self._rollback_actions.clear()
+
+    def _cleanup_core(self) -> None:
+        """
+        Drop high-level borrowed references after cleanup bookkeeping completes.
+        """
+        del self.source_conduit
+        del self.target_conduit
+        del self.spell
+        del self.move_creations
+        del self.include_dependencies
+        del self.force_unshare
+        del self.invalidate_after_transfer
+        del self.mark_dependencies_dirty
+        del self._aether
+        del self._frame_name
+        del self._preflight_summary
+        del self._change_control_manager
+        del self._incident_manager
+        del self._rollback_actions
+        del self._op_id
+        del self._lock
+
 
     # ------------------------------------------------------------------
     # Preflight
@@ -125,6 +189,7 @@ class TransferOfOwnership:
                 the transfer was requested without dependency migration even
                 though the target side cannot resolve the current dependencies.
         """
+        self.check_cleaned()
         self._assert_dynamic_mode()
         spell_obj = self._resolve_spell()
         self._assert_ownership(spell_obj)
@@ -176,6 +241,7 @@ class TransferOfOwnership:
             Exception: Re-raises the underlying transfer failure after rollback
                 and incident recording have been attempted.
         """
+        self.check_cleaned()
         summary = self._preflight_summary or self.preflight()
         spell_obj = self._resolve_spell()
 
@@ -241,6 +307,7 @@ class TransferOfOwnership:
             RuntimeError: If either endpoint conduit is not running in dynamic
                 mode.
         """
+        self.check_cleaned()
         if not self.source_conduit.__dynamic_environment__ or not self.target_conduit.__dynamic_environment__:
             raise RuntimeError("Transfer requires dynamic mode on both source and target.")
 
@@ -259,6 +326,7 @@ class TransferOfOwnership:
             RuntimeError: If the provided spell reference cannot be resolved
                 into a live spell object.
         """
+        self.check_cleaned()
         # spell may be object, id, or SpellIndex
         if hasattr(self.spell, "spell_id"):
             return self.spell
@@ -278,6 +346,7 @@ class TransferOfOwnership:
         Raises:
             RuntimeError: if the source does not own the spell.
         """
+        self.check_cleaned()
         if spell_obj._owner_conduit_id != self.source_conduit._id:
             raise RuntimeError("Source conduit does not own the spell.")
 
@@ -294,6 +363,7 @@ class TransferOfOwnership:
             mechanism (`contract` or `cluster`) plus the ids needed for later
             reconciliation.
         """
+        self.check_cleaned()
         borrowers: List[Dict[str, Any]] = []
         ward = self.source_conduit._conduit_ward
         # Contracts
@@ -323,6 +393,7 @@ class TransferOfOwnership:
         Returns:
             List of dependency spell_ids.
         """
+        self.check_cleaned()
         return list(spell_obj.dependencies)
 
     def _enumerate_creations(self, spell_obj: Any) -> Dict[str, Any]:
@@ -338,6 +409,7 @@ class TransferOfOwnership:
             Dict[str, Any]: Creation/existence snapshot for preflight and
             rollback planning.
         """
+        self.check_cleaned()
         return {"existence": spell_obj.existence}
 
     def _deps_resolvable_on_target(self, deps: List[str]) -> bool:
@@ -352,6 +424,7 @@ class TransferOfOwnership:
             bool: `True` when every dependency id resolves on the target side,
             otherwise `False`.
         """
+        self.check_cleaned()
         if not deps:
             return True
         for dep_id in deps:
@@ -375,6 +448,7 @@ class TransferOfOwnership:
         Args:
             spell_index: Lineage whose spell-system state should be marked dirty.
         """
+        self.check_cleaned()
         spellbook = spell_index._owner_spellbook
         if spellbook is None:
             raise RuntimeError("Cannot mark lineage dirty without an owner Spellbook.")
@@ -402,6 +476,7 @@ class TransferOfOwnership:
         lineage may all need to rerun later spell-crafter phases before their
         local view is trustworthy again.
         """
+        self.check_cleaned()
         spell_index = spell_obj.spell_index
         spell_states = spell_obj._spell_system_states
         if spell_states is None:
@@ -445,6 +520,7 @@ class TransferOfOwnership:
         That broader closure is what lets the transfer leave the runtime in a
         safe gated state instead of assuming only the two owners were touched.
         """
+        self.check_cleaned()
         conduit_ids: Set[str] = set()
         if self.source_conduit._id:
             conduit_ids.add(self.source_conduit._id)
@@ -499,6 +575,7 @@ class TransferOfOwnership:
         fallout is not limited to direct ownership; a borrower can also carry a
         stale view that needs revalidation.
         """
+        self.check_cleaned()
         if conduit is None or not impacted_lineages:
             return False
         spellbook = conduit._spellbook
@@ -528,6 +605,7 @@ class TransferOfOwnership:
         Args:
             spell_index: Lineage being moved between conduit owners.
         """
+        self.check_cleaned()
         spell_states = self.source_conduit._spellbook._spell_system_states
         state = spell_states.get_by_index_id(spell_index.id)
         if state is None:
@@ -564,6 +642,7 @@ class TransferOfOwnership:
             fn: Callable to execute during rollback. `None` is ignored so call
                 sites can register handlers conditionally without branching.
         """
+        self.check_cleaned()
         if fn is not None:
             self._rollback_actions.append(fn)
 
@@ -578,6 +657,7 @@ class TransferOfOwnership:
         state from the preflight snapshot because cluster exposure lives partly
         outside the spellbook/registry flip itself.
         """
+        self.check_cleaned()
         while self._rollback_actions:
             fn = self._rollback_actions.pop()
             try:
@@ -614,6 +694,7 @@ class TransferOfOwnership:
             tgt_book: Partially updated target spellbook that must release the
                 lineage.
         """
+        self.check_cleaned()
         spell_id = spell_obj.spell_index.current
         with SafeGuard(tgt_book._lock, src_book._lock):
             tgt_book._spells.pop(spell_obj.spell_index, None)
@@ -674,6 +755,7 @@ class TransferOfOwnership:
         Raises:
             Any exception from `configuration.get_property` when configuration exists.
         """
+        self.check_cleaned()
         try:
             configuration = spellbook._configuration
         except AttributeError:
@@ -705,6 +787,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose borrowed target-side contract entry may need
                 to be removed temporarily.
         """
+        self.check_cleaned()
         try:
             target_ward = self.target_conduit._conduit_ward
             contract = target_ward._find_contract_by_id(self.source_conduit._id)
@@ -747,6 +830,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose creation ownership is being restored.
             obj: Creation instance that must be reattached to the source.
         """
+        self.check_cleaned()
         try:
             self.target_conduit._creations.remove(spell_obj)
             self.source_conduit._creations.add(spell_obj, obj)
@@ -768,6 +852,7 @@ class TransferOfOwnership:
             extracted: Bulk creation snapshot previously extracted from the
                 source conduit.
         """
+        self.check_cleaned()
         try:
             # Remove from target
             tgt_extracted = self.target_conduit._creations.extract_spell_creations(spell_id)
@@ -792,6 +877,7 @@ class TransferOfOwnership:
             Dict[str, Any]: Minimal rollback/idempotence snapshot for the
             current transfer target.
         """
+        self.check_cleaned()
         snapshot = {
             "in_target_registry": self._spell_in_registry(self.target_conduit, spell_obj.spell_index),
             "in_target_spellbook": self._spell_in_spellbook(self.target_conduit, spell_obj),
@@ -814,6 +900,7 @@ class TransferOfOwnership:
         Returns:
             bool: `True` when the lineage is already registered for the conduit.
         """
+        self.check_cleaned()
         try:
             frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
             registry = frame._spell_registry.get(conduit._id, set())
@@ -836,6 +923,7 @@ class TransferOfOwnership:
         Returns:
             bool: `True` when the spellbook currently contains the lineage.
         """
+        self.check_cleaned()
         try:
             with conduit._spellbook._lock:
                 return spell_obj.spell_index in conduit._spellbook._spells
@@ -858,6 +946,7 @@ class TransferOfOwnership:
             peer: Peer conduit that participates in the contract relationship.
             existed_before: Whether the entry existed before pre-cleanup began.
         """
+        self.check_cleaned()
         try:
             permissions = spell_obj.permissions
         except AttributeError:
@@ -907,6 +996,7 @@ class TransferOfOwnership:
             fallback_peer: Peer conduit paired with the fallback ward.
             spell_obj: Spell whose contract visibility is being restored.
         """
+        self.check_cleaned()
         try:
             primary_ward._add_spell_to_contract(
                 spell=spell_obj,
@@ -949,6 +1039,7 @@ class TransferOfOwnership:
             List[Dict[str, Any]]: Cluster-share descriptors sufficient to
             restore source-owned sharing if rollback is required.
         """
+        self.check_cleaned()
         shares: List[Dict[str, Any]] = []
         try:
             frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
@@ -977,6 +1068,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose source-owned cluster exposure is being
                 restored.
         """
+        self.check_cleaned()
         try:
             frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
             for entry in snapshot or []:
@@ -1013,6 +1105,7 @@ class TransferOfOwnership:
             gated: Whether the lineage should remain blocked behind validation
                 (`True`) or return to the weaker unknown state (`False`).
         """
+        self.check_cleaned()
         spell_states = self.source_conduit._spellbook._spell_system_states
         try:
             state = spell_states.get_by_index_id(spell_index.id)
@@ -1062,6 +1155,7 @@ class TransferOfOwnership:
             RuntimeError: If either the frame-level registry move or the
                 spellbook/risk-state move cannot be completed coherently.
         """
+        self.check_cleaned()
         # Aether registry: move SpellIndex ownership (idempotent)
         try:
             if self._spell_in_registry(self.source_conduit, spell_obj.spell_index):
@@ -1184,6 +1278,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose existing creations should follow the new
                 owner.
         """
+        self.check_cleaned()
         try:
             creations = self.source_conduit._creations
             tgt_creations = self.target_conduit._creations
@@ -1209,6 +1304,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose current creations should be torn down rather
                 than migrated.
         """
+        self.check_cleaned()
         try:
             creations = self.source_conduit._creations
             extracted = creations.extract_spell_creations(spell_obj.spell_id)
@@ -1238,6 +1334,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose downstream borrowed visibility is being
                 removed.
         """
+        self.check_cleaned()
         for b in borrowers:
             if b["type"] == "contract":
                 try:
@@ -1333,6 +1430,7 @@ class TransferOfOwnership:
             spell_obj: Spell whose borrowers should be migrated to the new
                 owner.
         """
+        self.check_cleaned()
         # Rebuild contracts to point to target
         for b in borrowers:
             if b["type"] == "contract":
@@ -1397,6 +1495,7 @@ class TransferOfOwnership:
         Args:
             deps: Dependency spell ids discovered during preflight.
         """
+        self.check_cleaned()
         for dep_id in deps:
             try:
                 dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
@@ -1434,6 +1533,7 @@ class TransferOfOwnership:
         Args:
             deps: Dependency spell ids whose lineages should be marked dirty.
         """
+        self.check_cleaned()
         for dep_id in deps:
             try:
                 dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
@@ -1463,6 +1563,7 @@ class TransferOfOwnership:
             summary: Preflight payload that describes the lineage, endpoints,
                 borrowers, dependencies, creations, and transfer options.
         """
+        self.check_cleaned()
         try:
             existing = self._change_control_manager.get_pending_change(summary["spell_index"].id)
             if existing and existing.get("op_id") == summary["op_id"]:
@@ -1498,6 +1599,7 @@ class TransferOfOwnership:
             spell_index: Lineage whose pending transfer record should be
                 cleared.
         """
+        self.check_cleaned()
         try:
             self._change_control_manager.clear_pending_change(spell_index.id)
         except Exception:
@@ -1519,6 +1621,7 @@ class TransferOfOwnership:
                 lineage and participants.
             exc: Exception that triggered the failure path.
         """
+        self.check_cleaned()
         try:
             self._incident_manager.create_incident(
                 kind="ownership_transfer_failed",
@@ -1556,4 +1659,3 @@ class TransferOfOwnership:
                 )
         except Exception:
             pass
-

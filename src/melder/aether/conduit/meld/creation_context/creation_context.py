@@ -371,9 +371,9 @@ class CreationContext(Cleanable):
         override_prefilter_path_metadata_cache.clear()
         override_socket_shape_cache = self._override_socket_shape_cache
         override_socket_shape_cache.clear()
-        self._override_last_socket_shape = None
         self._override_last_root_positional_arity = -2
-        self._override_last_executor = None
+        del self._override_last_executor
+        del self._override_last_socket_shape
 
         override_route_config_no_mutation = self._override_route_config_no_mutation
         if override_route_config_no_mutation is not None:
@@ -389,32 +389,32 @@ class CreationContext(Cleanable):
             except Exception:
                 pass
 
-        self._spell = None
-        self._spell_id = None
-        self._dynamic_environment = None
-        self._creation_gate = None
-        self._creation_gate_index_id = None
-        self._owner_creations = None
-        self._execute_hooks_overrides_compiled = None
-        self._execute_hooks_no_overrides_compiled = None
-        self._execute_no_hooks_overrides_compiled = None
-        self._execute_no_hooks_no_overrides_compiled = None
-        self._no_overrides_executor = None
-        self._override_patch_map_phase10 = None
-        self._override_apply_with_socket_shape_prechecked_phase10 = None
-        self._override_route_config_no_mutation = None
-        self._override_route_config_mutation = None
-        self._override_route_config_active = None
-        self._override_empty_shape_key = None
-        self._override_specialization_cache = None
-        self._override_executor_source_cache_by_plan_signature = None
-        self._override_executor_code_object_cache_by_plan_signature = None
-        self._override_prefilter_step_targets_cache = None
-        self._override_prefilter_path_metadata_cache = None
-        self._override_socket_shape_cache = None
-        self._override_last_socket_shape = None
-        self._override_last_root_positional_arity = None
-        self._override_last_executor = None
+        del self._spell
+        del self._spell_id
+        del self._dynamic_environment
+        del self._creation_gate
+        del self._creation_gate_index_id
+        del self._owner_creations
+        del self._execute_hooks_overrides_compiled
+        del self._execute_hooks_no_overrides_compiled
+        del self._execute_no_hooks_overrides_compiled
+        del self._execute_no_hooks_no_overrides_compiled
+        del self._no_overrides_executor
+        del self._override_patch_map_phase10
+        del self._override_apply_with_socket_shape_prechecked_phase10
+        del self._override_route_config_no_mutation
+        del self._override_route_config_mutation
+        del self._override_route_config_active
+        del self._override_empty_shape_key
+        del self._override_specialization_cache
+        del self._override_executor_source_cache_by_plan_signature
+        del self._override_executor_code_object_cache_by_plan_signature
+        del self._override_prefilter_step_targets_cache
+        del self._override_prefilter_path_metadata_cache
+        del self._override_socket_shape_cache
+        del self._override_last_socket_shape
+        del self._override_last_root_positional_arity
+        del self._override_last_executor
 
     def execute(
             self,

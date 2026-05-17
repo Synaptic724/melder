@@ -3,6 +3,9 @@ from typing import Dict, List, Iterable, Callable, Sequence, Tuple, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellSocketDescriptor,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 

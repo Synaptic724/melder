@@ -63,10 +63,10 @@ class Contract(Cleanable, IContract):
             if self._cleaned:
                 return
             self._clean_up()
-            self._ward_a = None
-            self._ward_b = None
-            self._details_a = None
-            self._details_b = None
+            del self._ward_a
+            del self._ward_b
+            del self._details_a
+            del self._details_b
             self._cleaned = True
 
     def _clean_up(self):

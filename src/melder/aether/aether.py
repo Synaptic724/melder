@@ -51,7 +51,7 @@ class Aether(Cleanable, IAether):
       create a fresh singleton after teardown.
     """
     __melder_internal__ = _mrg.sentinel
-    _instance = None
+    _instance: Optional[IAether] = None
     _lock = RLock()
     _initialized = False
 

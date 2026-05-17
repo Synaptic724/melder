@@ -93,7 +93,6 @@ class ViewSpell(Cleanable):
                 return
             self._cleaned = True
             self._frame_view = None
-            self._lock = None
 
     @contextmanager
     def _entered_view_action(self, *, action_name: str) -> Any:

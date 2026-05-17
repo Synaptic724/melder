@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from threading import RLock
 from melder.utilities.interfaces.icleanable import ICleanable
 

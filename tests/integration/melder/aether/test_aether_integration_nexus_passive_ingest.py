@@ -125,6 +125,7 @@ def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_r
     """
     configuration = _make_rift_publishable_configuration(aether_frame="ops")
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+    spellbook_id = spellbook.id
 
     conduit = spellbook.conjure(name="root")
     late_spell_id = None
@@ -139,10 +140,10 @@ def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_r
 
         nexus = Nexus()
         descriptor = nexus._get_required_frame_descriptor("ops")
-        assert (spellbook.id, late_spell_id) in descriptor.spell_records_by_key
+        assert (spellbook_id, late_spell_id) in descriptor.spell_records_by_key
     finally:
         conduit.cleanup()
 
     nexus = Nexus()
     descriptor = nexus._get_required_frame_descriptor("ops")
-    assert (spellbook.id, late_spell_id) not in descriptor.spell_records_by_key
+    assert (spellbook_id, late_spell_id) not in descriptor.spell_records_by_key

@@ -22,6 +22,7 @@ from melder.utilities.interfaces import (
     ISpellDetailedProfile,
     ISpellGeneralProfile,
     IUnitOfWork,
+    ISpellbook,
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
@@ -57,7 +58,6 @@ class SpellbookCreationSystem(Cleanable):
     _DEFAULT_ROOT_CONDUIT_NAME = "default"
     __slots__ = Cleanable.__slots__ + [
         "_automatic",
-        "_conduit_cls",
         "_conduit_logger",
         "_lock",
         "_name",
@@ -69,12 +69,11 @@ class SpellbookCreationSystem(Cleanable):
     def __init__(
             self,
             *,
-            spellbook: Any,
+            spellbook: ISpellbook,
             policy: Optional[str],
             automatic: bool,
             name: Optional[str],
             conduit_logger: Optional[Any],
-            conduit_cls: Type[Conduit],
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> None:
         """
@@ -90,8 +89,6 @@ class SpellbookCreationSystem(Cleanable):
             automatic: Automatic-mode flag.
             name: Optional conduit name.
             conduit_logger: Optional conduit logger.
-            conduit_cls:
-                Conduit class to construct for this run.
             phase_scheduler_cls:
                 Scheduler class used for structural and resolution phases.
         Returns:
@@ -100,13 +97,12 @@ class SpellbookCreationSystem(Cleanable):
             None.
         """
         super().__init__()
-        self._spellbook = spellbook
-        self._policy = policy
-        self._automatic = automatic
-        self._name = name
+        self._spellbook: ISpellbook = spellbook
+        self._policy: Optional[str] = policy
+        self._automatic: bool = automatic
+        self._name: Optional[str] = name
         self._conduit_logger = conduit_logger
-        self._conduit_cls = conduit_cls
-        self._phase_scheduler_cls = phase_scheduler_cls
+        self._phase_scheduler_cls: Type[PhaseScheduler] = phase_scheduler_cls
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -133,15 +129,12 @@ class SpellbookCreationSystem(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._spellbook = None
-            self._policy = None
-            self._automatic = None
-            self._name = None
-            self._conduit_logger = None
-            self._conduit_cls = None
-            self._phase_scheduler_cls = None
-
-        self._lock = None
+            del self._spellbook
+            del self._policy
+            del self._automatic
+            del self._name
+            del self._conduit_logger
+            del self._phase_scheduler_cls
 
     def conjure(self) -> Conduit:
         """
@@ -185,7 +178,6 @@ class SpellbookCreationSystem(Cleanable):
 
         conduit = SpellbookCreationSystem._build_conduit(
             spellbook=spellbook,
-            conduit_cls=self._conduit_cls,
             name=self._name,
             conduit_logger=self._conduit_logger,
             automatic=self._automatic,
@@ -291,7 +283,6 @@ class SpellbookCreationSystem(Cleanable):
     def _build_conduit(
             *,
             spellbook: Any,
-            conduit_cls: Type[Conduit],
             name: Optional[str],
             conduit_logger: Optional[Any],
             automatic: bool,
@@ -302,11 +293,10 @@ class SpellbookCreationSystem(Cleanable):
         Purpose:
             Build a conduit instance from resolved conjure inputs.
         Contract:
-            - Uses injected `conduit_cls` to preserve test monkeypatch behavior.
             - Passes through the resolved policy and generated conduit id.
+            - Owns the concrete `Conduit` construction boundary directly.
         Args:
             spellbook: Owning Spellbook instance.
-            conduit_cls: Conduit class/factory to instantiate.
             name: Optional conduit name.
             conduit_logger: Optional conduit logger.
             automatic: Automatic-mode flag.
@@ -315,10 +305,10 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Conduit: Newly constructed conduit instance.
         Raises:
-            Exception: Propagates constructor failures from `conduit_cls`.
+            Exception: Propagates constructor failures from `Conduit`.
         """
         resolved_name = name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
-        return conduit_cls(
+        return Conduit(
             spellbook=spellbook,
             name=resolved_name,
             conduit_state=ConduitState.normal,
