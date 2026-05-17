@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
@@ -760,7 +760,7 @@ class Rift(Cleanable, IRift):
             FrameViewer: Attached frame viewer for the owned space.
         """
         self.check_cleaned()
-        return self.space.frame_viewer
+        return cast(FrameViewer, self.space.frame_viewer)
 
     @property
     def space(self) -> IRiftSpace:

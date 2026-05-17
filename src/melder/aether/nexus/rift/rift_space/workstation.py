@@ -136,30 +136,32 @@ class Workstation(Cleanable):
         """
         if self._cleaned:
             return
-        lock = self._lock
-        with lock:
+        with self._lock:
             if self._cleaned:
                 return
+
             self._cleaned = True
+
             self._strong_objects_by_name.clear()
             self._strong_attributes_by_name.clear()
             self._strong_methods_by_name.clear()
             self._weak_objects_by_name.cleanup()
             self._weak_attributes_by_name.cleanup()
             self._weak_methods_by_name.cleanup()
-            self._strong_objects_by_name = None
-            self._strong_attributes_by_name = None
-            self._strong_methods_by_name = None
-            self._weak_objects_by_name = None
-            self._weak_attributes_by_name = None
-            self._weak_methods_by_name = None
-            self._default_weak_ref_bindings = None
-            self._event_publisher = None
-            self._target_name = None
-            self._target_store = None
-            self._owner_space_id = None
-            self._id = None
-        self._lock = None
+
+            del self._strong_objects_by_name
+            del self._strong_attributes_by_name
+            del self._strong_methods_by_name
+            del self._weak_objects_by_name
+            del self._weak_attributes_by_name
+            del self._weak_methods_by_name
+            del self._default_weak_ref_bindings
+            del self._event_publisher
+            del self._target_name
+            del self._target_store
+            del self._owner_space_id
+            del self._id
+        del self._lock
 
     @property
     def workstation_id(self) -> str:
@@ -219,6 +221,7 @@ class Workstation(Cleanable):
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
         """
+        self.check_cleaned()
         self._bind("objects", name, value, weak_ref=weak_ref)
 
     def bind_attribute(
@@ -255,6 +258,7 @@ class Workstation(Cleanable):
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
         """
+        self.check_cleaned()
         self._bind("attributes", name, value, weak_ref=weak_ref)
 
     def bind_method(
@@ -291,6 +295,7 @@ class Workstation(Cleanable):
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
         """
+        self.check_cleaned()
         self._bind("methods", name, value, weak_ref=weak_ref)
 
     def get(self, name: str, *, store: Optional[str] = None) -> object:

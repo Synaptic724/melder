@@ -180,17 +180,17 @@ class SpellDescriptorPayload(Cleanable):
                 "source_profile_version requires source_profile_name."
             )
         self._lock: threading.RLock = threading.RLock()
-        self.payload_type = payload_type
-        self.payload_version = payload_version
-        self.source_profile_name = source_profile_name
-        self.source_profile_version = source_profile_version
-        self.binding_payload = dict(binding_payload)
-        self.resolution_payload = resolution_payload
-        self.class_profile = class_profile
-        self.callable_profile = callable_profile
-        self.metadata = dict(metadata) if metadata is not None else {}
-        self.instance_members = dict(instance_members) if instance_members is not None else {}
-        self.dynamic_access = dict(dynamic_access) if dynamic_access is not None else {}
+        self.payload_type: str = payload_type
+        self.payload_version: str = payload_version
+        self.source_profile_name: Optional[str] = source_profile_name
+        self.source_profile_version: Optional[str] = source_profile_version
+        self.binding_payload: Dict[str, Any] = dict(binding_payload)
+        self.resolution_payload: Any = resolution_payload
+        self.class_profile: Optional[Any] = class_profile
+        self.callable_profile: Optional[Any] = callable_profile
+        self.metadata: Dict[str, Any] = dict(metadata) if metadata is not None else {}
+        self.instance_members: Dict[str, Any] = dict(instance_members) if instance_members is not None else {}
+        self.dynamic_access: Dict[str, bool] = dict(dynamic_access) if dynamic_access is not None else {}
 
     @classmethod
     def from_spell_profile(
@@ -278,15 +278,16 @@ class SpellDescriptorPayload(Cleanable):
                 self.instance_members.clear()
             if isinstance(self.dynamic_access, dict):
                 self.dynamic_access.clear()
-            self.payload_type = None
-            self.payload_version = None
-            self.source_profile_name = None
-            self.source_profile_version = None
-            self.binding_payload = None
-            self.resolution_payload = None
-            self.class_profile = None
-            self.callable_profile = None
-            self.metadata = None
-            self.instance_members = None
-            self.dynamic_access = None
-            self._lock = None
+
+            del self.payload_type
+            del self.payload_version
+            del self.source_profile_name
+            del self.source_profile_version
+            del self.binding_payload
+            del self.resolution_payload
+            del self.class_profile
+            del self.callable_profile
+            del self.metadata
+            del self.instance_members
+            del self.dynamic_access
+            del self._lock

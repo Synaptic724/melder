@@ -40,7 +40,7 @@ class RiftGateController(Cleanable):
             None.
         """
         super().__init__()
-        self._lock: Optional[threading.RLock] = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
         self._rift_gates_by_rift_id: Dict[str, RiftGate] = {}
 
     def cleanup(self) -> None:
@@ -60,8 +60,9 @@ class RiftGateController(Cleanable):
                 gate.cleanup()
             self._rift_gates_by_rift_id.clear()
             self._cleaned = True
-            self._rift_gates_by_rift_id = None
-        self._lock = None
+
+            del self._rift_gates_by_rift_id
+        del self._lock
 
     @staticmethod
     def _require_rift_id(rift_id: str) -> None:

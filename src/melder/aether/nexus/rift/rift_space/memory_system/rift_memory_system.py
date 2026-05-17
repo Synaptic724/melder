@@ -101,19 +101,20 @@ class RiftMemorySystem(Cleanable):
                 return
             self._cleaned = True
             self._metadata.clear()
-            self._metadata = None
-            self._task_name = None
-            self._activity_name = None
-            self._mission_name = None
-            self._agent_name = None
-            self._agent_id = None
             self._memory_callbacks_by_subscription_id.clear()
-            self._memory_callbacks_by_subscription_id = None
-            self._step_counter = None
-            self._epoch_counter = None
-            self._space_type = None
-            self._rift_id = None
-        self._lock = None
+
+            del self._metadata
+            del self._task_name
+            del self._activity_name
+            del self._mission_name
+            del self._agent_name
+            del self._agent_id
+            del self._memory_callbacks_by_subscription_id
+            del self._step_counter
+            del self._epoch_counter
+            del self._space_type
+            del self._rift_id
+        del self._lock
 
     @property
     def rift_id(self) -> str:
@@ -376,6 +377,7 @@ class RiftMemorySystem(Cleanable):
         Returns:
             RiftMemory: Emitted immutable memory record.
         """
+        self.check_cleaned()
         memory = self.create_memory(
             frame_name=frame_name,
             action_name=action_name,

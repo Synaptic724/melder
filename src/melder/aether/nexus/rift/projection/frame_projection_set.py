@@ -61,13 +61,15 @@ class FrameProjectionSet(Cleanable):
         self._view_projection.cleanup()
         self._command_projection.cleanup()
         self._codegen_projection.cleanup()
-        self._frame_name = None
-        self._id = None
-        self._view_projection = None
-        self._command_projection = None
-        self._codegen_projection = None
         self._metadata.clear()
-        self._metadata = None
+
+        del self._frame_name
+        del self._id
+        del self._view_projection
+        del self._command_projection
+        del self._codegen_projection
+
+        del self._metadata
 
     @property
     def frame_name(self) -> str:

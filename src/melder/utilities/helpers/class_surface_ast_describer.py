@@ -6,7 +6,10 @@ import ast
 import inspect
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
+
+
+FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
 
 class ClassSurfaceAstDescriber:
@@ -103,12 +106,13 @@ class ClassSurfaceAstDescriber:
             include_private=include_private,
             include_dunder=include_dunder,
         )
+        methods = cast(List[Dict[str, object]], class_surface["methods"])
         return json.dumps(
             {
                 "class_name": class_surface["class_name"],
                 "method_names": [
                     current_method["method_name"]
-                    for current_method in class_surface["methods"]
+                    for current_method in methods
                 ],
             },
             separators=(",", ":"),
@@ -321,30 +325,35 @@ class ClassSurfaceAstDescriber:
         Returns:
             Dict[str, object]: Method/property description.
         """
-        docstring = ast.get_docstring(function_node) or ""
+        typed_function_node = cast(FunctionNode, function_node)
+        docstring = ast.get_docstring(typed_function_node) or ""
         return {
-            "method_name": function_node.name,
+            "method_name": typed_function_node.name,
             "signature": ClassSurfaceAstDescriber._format_function_signature(
-                function_node
+                typed_function_node
             ),
             "docstring": docstring,
             "summary": ClassSurfaceAstDescriber._docstring_summary(docstring),
             "decorators": tuple(
                 ClassSurfaceAstDescriber._format_decorator(current_decorator)
-                for current_decorator in function_node.decorator_list
+                for current_decorator in typed_function_node.decorator_list
             ),
-            "line_number": function_node.lineno,
-            "end_line": getattr(function_node, "end_lineno", function_node.lineno),
-            "is_async": isinstance(function_node, ast.AsyncFunctionDef),
+            "line_number": typed_function_node.lineno,
+            "end_line": getattr(
+                typed_function_node,
+                "end_lineno",
+                typed_function_node.lineno,
+            ),
+            "is_async": isinstance(typed_function_node, ast.AsyncFunctionDef),
             "call_style": (
                 "attribute"
-                if ClassSurfaceAstDescriber._is_property_node(function_node)
+                if ClassSurfaceAstDescriber._is_property_node(typed_function_node)
                 else "method"
             ),
         }
 
     @staticmethod
-    def _is_property_node(function_node: ast.AST) -> bool:
+    def _is_property_node(function_node: FunctionNode) -> bool:
         """
         Return whether one function node represents a property.
 
@@ -382,7 +391,7 @@ class ClassSurfaceAstDescriber:
 
     @staticmethod
     def _format_function_signature(
-            function_node: ast.AST,
+            function_node: FunctionNode,
     ) -> str:
         """
         Return a stable source-level signature string for one method node.

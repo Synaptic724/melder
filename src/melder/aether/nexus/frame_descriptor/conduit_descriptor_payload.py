@@ -87,12 +87,12 @@ class ConduitDescriptorPayload(Cleanable):
             raise ValueError("lineage_depth cannot be negative.")
         self._lock: threading.RLock = threading.RLock()
         self.payload_version: str = payload_version
-        self.conduit_name = conduit_name
-        self.conduit_state = conduit_state
-        self.policy = policy
-        self.peer_conduit_ids = tuple(peer_conduit_ids)
-        self.parent_conduit_id = parent_conduit_id
-        self.lineage_depth = lineage_depth
+        self.conduit_name: Optional[str] = conduit_name
+        self.conduit_state: ConduitState = conduit_state
+        self.policy: Optional[Policies] = policy
+        self.peer_conduit_ids: Tuple[str, ...] = tuple(peer_conduit_ids)
+        self.parent_conduit_id: Optional[str] = parent_conduit_id
+        self.lineage_depth: int = lineage_depth
 
     def cleanup(self) -> None:
         """
@@ -110,11 +110,12 @@ class ConduitDescriptorPayload(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self.payload_version = None
-            self.conduit_name = None
-            self.conduit_state = None
-            self.policy = None
-            self.peer_conduit_ids = None
-            self.parent_conduit_id = None
-            self.lineage_depth = None
-            self._lock = None
+
+            del self.payload_version
+            del self.conduit_name
+            del self.conduit_state
+            del self.policy
+            del self.peer_conduit_ids
+            del self.parent_conduit_id
+            del self.lineage_depth
+            del self._lock

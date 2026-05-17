@@ -81,10 +81,11 @@ class FrameACLRuleSet(Cleanable):
             for rule in self._rules_by_name.values():
                 rule.cleanup()
             self._rules_by_name.clear()
-            self._rules_by_name = None
-            self._name = None
-            self._id = None
-        self._lock = None
+
+            del self._rules_by_name
+            del self._name
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:
