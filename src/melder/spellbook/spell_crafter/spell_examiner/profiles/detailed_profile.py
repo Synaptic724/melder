@@ -100,20 +100,52 @@ class SpellDetailedProfile(SpellGeneralProfile):
             binding_profile=binding_profile,
             resolution_profile=resolution_profile,
         )
-        self._show_dunders = show_dunders
-        self._max_repr = max_repr
-        self.profile_name = "detailed"
-        self.profile_version = "0.0.1"
-        self._detail_complete = False
+        self._show_dunders: bool = show_dunders
+        self._max_repr: int = max_repr
+        self.profile_name: str = "detailed"
+        self.profile_version: str = "0.0.1"
+        self._detail_complete: bool = False
         self.class_profile = class_profile
         self.callable_profile = callable_profile
-        self.metadata = dict(metadata) if metadata is not None else {}
-        self.instance_members = (
+        self.metadata: Optional[dict[str, Any]] = dict(metadata) if metadata is not None else {}
+        self.instance_members: Optional[dict[str, dict[str, Any]]] = (
             dict(instance_members) if instance_members is not None else {}
         )
         self.dynamic_access = (
             dict(dynamic_access) if dynamic_access is not None else {}
         )
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clean the nested detailed-profile artifacts.
+
+        Contract:
+            Cascades cleanup into nested class/callable profiles before
+            delegating to the inherited general-profile cleanup.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        for profile in (self.class_profile, self.callable_profile):
+            if isinstance(profile, Cleanable):
+                try:
+                    profile.cleanup()
+                except Exception:
+                    pass
+        if isinstance(self.metadata, dict):
+            self.metadata.clear()
+        super().cleanup()
+
+        del self._show_dunders
+        del self._max_repr
+        del self._detail_complete
+        del self.class_profile
+        del self.callable_profile
+        del self.metadata
+        del self.instance_members
+        del self.dynamic_access
 
     @classmethod
     def create_from_target(
@@ -243,37 +275,6 @@ class SpellDetailedProfile(SpellGeneralProfile):
             instance_members=self.instance_members,
             dynamic_access=self.dynamic_access,
         )
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clean the nested detailed-profile artifacts.
-
-        Contract:
-            Cascades cleanup into nested class/callable profiles before
-            delegating to the inherited general-profile cleanup.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        for profile in (self.class_profile, self.callable_profile):
-            if isinstance(profile, Cleanable):
-                try:
-                    profile.cleanup()
-                except Exception:
-                    pass
-        if isinstance(self.metadata, dict):
-            self.metadata.clear()
-        super().cleanup()
-        self._show_dunders = None
-        self._max_repr = None
-        self._detail_complete = None
-        self.class_profile = None
-        self.callable_profile = None
-        self.metadata = None
-        self.instance_members = None
-        self.dynamic_access = None
 
     def _inspect_class(self, spell: ISpell) -> ClassProfile:
         """
