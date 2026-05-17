@@ -1,5 +1,5 @@
 from typing import Protocol, runtime_checkable
-
+from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
 @runtime_checkable
 class IFrameACLCommandProfileStrategy(Protocol):
     """
@@ -22,7 +22,7 @@ class IFrameACLCommandProfileStrategy(Protocol):
         """
         ...
 
-    def build(self) -> "IFrameACLCommandProfile":
+    def build(self) -> IFrameACLCommandProfile:
         """
         Build and return one configured command ACL profile instance.
 

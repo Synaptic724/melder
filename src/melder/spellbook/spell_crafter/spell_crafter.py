@@ -37,7 +37,7 @@ from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellbook
+from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellValidationSystem, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -255,7 +255,7 @@ class SpellCrafter(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
         self._spell: ISpell = spell
-        self._spell_validator: 'SpellValidationSystem' = self._spell._spellbook._spell_validator
+        self._spell_validator: ISpellValidationSystem = self._spell._spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = self._spell._spell_system_states
         self._requirements: Optional[SpellRequirements] = None
         if resolution_profile is not None:

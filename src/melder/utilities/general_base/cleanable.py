@@ -20,7 +20,7 @@ class Cleanable(ABC):
 
     __slots__ = ['_cleaned']
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the live/cleaned lifecycle flag for a new cleanable object.
 
@@ -53,7 +53,7 @@ class Cleanable(ABC):
         """
         return self._cleaned
 
-    def check_cleaned(self):
+    def check_cleaned(self) -> None:
         """
         Raise when the object has already been cleaned.
 
@@ -68,7 +68,7 @@ class Cleanable(ABC):
             raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
 
     @abstractmethod
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Release owned resources and mark the object cleaned.
 
@@ -79,7 +79,7 @@ class Cleanable(ABC):
         """
         raise NotImplementedError("Subclasses must implement cleanup().")
 
-    async def async_cleanup(self):
+    async def async_cleanup(self) -> None:
         """
         Async cleanup hook for subclasses that support asynchronous teardown.
 
@@ -104,7 +104,7 @@ class Cleanable(ABC):
         """
         __slots__ = ("_owner", "_cleaned", "_lock")
 
-        def __init__(self, owner):
+        def __init__(self, owner) -> None:
             """
             Bind the helper context to one cleanable owner.
 
@@ -117,18 +117,18 @@ class Cleanable(ABC):
             self._cleaned = False
             self._lock: threading.RLock = threading.RLock()
 
-        def __enter__(self):
+        def __enter__(self) -> bool:
             """
             Enter the cleanup helper context and return the owner.
 
             Returns:
-                Any:
+                bool:
                     The owner object protected by this helper.
             """
             self._lock.acquire()
             return self._owner
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(self, exc_type, exc, tb) -> bool:
             """
             Exit the cleanup helper context and trigger owner cleanup once.
 
@@ -155,7 +155,7 @@ class Cleanable(ABC):
                 self._lock.release()
 
 
-    def using_cleanup(self):
+    def using_cleanup(self) -> "_CleanupContext":
         """
         Return a helper context manager that guarantees `cleanup()` on exit.
 

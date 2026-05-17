@@ -35,7 +35,7 @@ from melder.spellbook.spell_crafter.validation.strategies.binding_resolution_cyc
     BindingResolutionCycleStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell, ISpellbook
+from melder.utilities.interfaces import ISpell, ISpellbook, ISpellValidationSystem
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
@@ -51,7 +51,7 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
-class SpellValidationSystem(Cleanable):
+class SpellValidationSystem(Cleanable, ISpellValidationSystem):
     """
     Central registry + runner for spell validation strategies.
 

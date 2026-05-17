@@ -6,6 +6,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.idescriptorpayload import IDescriptorPayload
@@ -93,6 +94,7 @@ __all__ = [
     "ISpellIndex",
     "ISpellBinder",
     "ISpellbook",
+    "ISpellValidationSystem",
     "ISpellGeneralProfile",
     "ISpellDetailedProfile",
     "IDescriptorPayload",

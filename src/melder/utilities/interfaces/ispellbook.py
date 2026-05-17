@@ -1,10 +1,14 @@
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, runtime_checkable
 from types import ModuleType
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):
@@ -45,7 +49,7 @@ class ISpellbook(ICleanable, Protocol):
     _spell_id_pool: Optional[Any]
 
     # Spell Validator
-    _spell_validator: 'SpellValidationSystem'
+    _spell_validator: ISpellValidationSystem
     _spell_system_states: "ISpellSystemStates"
 
     # ------------------------------------------------------------------

@@ -23,6 +23,7 @@ from melder.utilities.interfaces import (
     ISpellIndex,
     ISpellBinder,
     ISpellSystemStates,
+    ISpellValidationSystem,
     ISpellbook,
     IUnitOfWork,
 )
@@ -216,7 +217,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
 
         # Spell validator
-        self._spell_validator: SpellValidationSystem = SpellValidationSystem()
+        self._spell_validator: ISpellValidationSystem = SpellValidationSystem()
         # Spell States System
         self._spell_system_states: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
         # Validation gate used by Meld to skip safety checks when risk is zero.
