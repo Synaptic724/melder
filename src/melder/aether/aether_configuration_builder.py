@@ -35,7 +35,7 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._configuration: AetherConfiguration = AetherConfiguration()
+        self._configuration: AetherConfiguration | None = AetherConfiguration()
 
     def cleanup(self) -> None:
         """
@@ -105,7 +105,10 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             AetherConfigurationBuilder: This builder.
         """
         self.check_cleaned()
-        self._configuration.with_default_logger(logger)
+        if self._configuration is not None:
+            self._configuration.with_default_logger(logger)
+        else:
+            raise RuntimeError("AetherConfigurationBuilder no longer owns a configuration.")
         return self
 
     def build(self) -> AetherConfiguration:
@@ -126,7 +129,11 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             AetherConfiguration: Frozen configuration instance.
         """
         self.check_cleaned()
-        self._configuration.finalize()
+        if self._configuration is not None:
+            self._configuration.finalize()
+        else:
+            raise RuntimeError("AetherConfigurationBuilder no longer owns a configuration.")
+
         return self._handoff_configuration()
 
     def activate(self) -> AetherConfiguration:
@@ -137,7 +144,10 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             AetherConfiguration: Activated configuration instance.
         """
         self.check_cleaned()
-        self._configuration.activate()
+        if self._configuration is not None:
+            self._configuration.activate()
+        else:
+            raise RuntimeError("AetherConfigurationBuilder no longer owns a configuration.")
         return self._handoff_configuration()
 
     def _handoff_configuration(self) -> AetherConfiguration:
