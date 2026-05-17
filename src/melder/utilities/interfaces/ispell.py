@@ -2,9 +2,26 @@ from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence, Tupl
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
+from melder.aether.dev_ops.spell_system_states.spell_system_state import (
+    SpellSystemState,
+)
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
+    SpellRequirements,
+)
+from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+    SpellSymbolicGraph,
+)
+from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.synchronization.cancellation_event_signal import (
+    CancellationEvent,
+)
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):

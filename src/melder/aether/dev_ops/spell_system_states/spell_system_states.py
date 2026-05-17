@@ -11,7 +11,11 @@ from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidi
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
+)
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces import ISpell, ISpellIndex, ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -60,7 +64,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         "_risk_manager",
     ]
 
-    def __init__(self, frame: "AethericFrame") -> None:
+    def __init__(self, frame: IAethericFrame) -> None:
         """
         Initialize the SpellSystemStates registry for a given AethericFrame.
 
@@ -74,7 +78,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             raise ValueError("frame cannot be None")
 
         self._lock: threading.RLock = threading.RLock()
-        self._frame: Optional["AethericFrame"] = frame
+        self._frame: Optional[IAethericFrame] = frame
 
         self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
         self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}

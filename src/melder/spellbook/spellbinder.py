@@ -1,7 +1,7 @@
 from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces import ISpellbook
+from melder.utilities.interfaces import ISpellbook, ISpell
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
@@ -94,7 +94,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         # 3. Initialize Transient State directly (Satisfying __slots__)
         # We initialize these to None/Defaults immediately to ensure the object
         # is valid before any methods (like _reset_current) are called.
-        self._spell: Any = None
+        self._spell: ISpell | None = None
         self._existence: Existence = default_existence
         self._permissions: str = default_permissions
         self._profile: str = default_profile
@@ -116,21 +116,20 @@ class SpellBinder(Cleanable, ISpellBinder):
         # Mark cleaned first to prevent race conditions
         self._cleaned = True
 
-        if self._weak_spellbook is not None:
-            try:
-                self._weak_spellbook.cleanup()
-            except Exception:
-                pass
+        try:
+            self._weak_spellbook.cleanup()
+        except Exception:
+            pass
 
         # Nullify all slots to assist GC
-        self._weak_spellbook = None
-        self._spell = None
-        self._existence = None
-        self._permissions = None
-        self._profile = None
-        self._spellframe = None
-        self._binding_name = None
-        self._kwargs = None
+        del self._weak_spellbook
+        del self._spell
+        del self._existence
+        del self._permissions
+        del self._profile
+        del self._spellframe
+        del self._binding_name
+        del self._kwargs
 
     def _still_alive(self) -> None:
         """
@@ -142,10 +141,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder is cleaned or the Spellbook is dead.
         """
-        if self._cleaned:
-            raise RuntimeError(
-                "SpellBinder has been cleaned up and can no longer be used."
-            )
+        self.check_cleaned()
         # Defensive check: if cleanup happened partially, _weak_spellbook might be None
         if self._weak_spellbook is None or not self._weak_spellbook.is_alive():
             raise RuntimeError(
@@ -275,7 +271,6 @@ class SpellBinder(Cleanable, ISpellBinder):
 
         # Clear previous state to ensure a clean slate
         self._reset_current()
-
         self._spell = spell
 
         if existence is not None:

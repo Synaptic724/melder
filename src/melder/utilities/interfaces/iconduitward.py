@@ -1,5 +1,18 @@
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, runtime_checkable
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import (
+    ContractTypes,
+)
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.idetail import IDetail
+from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.ispell import ISpell
 
 @runtime_checkable
 class IConduitWard(ICleanable, Protocol):
@@ -30,7 +43,7 @@ class IConduitWard(ICleanable, Protocol):
     _policy: Optional['Policies']
     _initiated_index: Dict[str, str]
     _received_index: Dict[str, str]
-    _contracts: 'Dict[str, Contract]'
+    _contracts: 'Dict[str, Any]'
     _parent_conduit: Optional['IConduit']
     _root_conduit: Optional['IConduit']
     _lesser_conduits: 'Dict[str, IConduit]'
@@ -325,7 +338,7 @@ class IConduitWard(ICleanable, Protocol):
         """
         ...
 
-    def _find_contract(self, target_conduit: 'IConduit') -> Optional['Contract']:
+    def _find_contract(self, target_conduit: 'IConduit') -> Optional[Any]:
         """
         Internal
 
@@ -335,7 +348,7 @@ class IConduitWard(ICleanable, Protocol):
             target_conduit (IConduit): The target conduit to find the contract for.
 
         Returns:
-            Optional[Contract]: The contract object if it exists, otherwise None.
+            Optional[Any]: The contract object if it exists, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -343,7 +356,7 @@ class IConduitWard(ICleanable, Protocol):
         """
         ...
 
-    def _find_contract_by_id(self, conduit_id: str) -> Optional['Contract']:
+    def _find_contract_by_id(self, conduit_id: str) -> Optional[Any]:
         """
         Internal
 
@@ -353,7 +366,7 @@ class IConduitWard(ICleanable, Protocol):
             conduit_id (str): The ID of the peer conduit in the contract.
 
         Returns:
-            Optional[Contract]: The found contract object or None if not found.
+            Optional[Any]: The found contract object or None if not found.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -569,7 +582,7 @@ class IConduitWard(ICleanable, Protocol):
             spell: 'ISpell',
             permissions: 'Permissions',
             contract_type: 'ContractTypes',
-    ) -> 'Detail':
+    ) -> 'IDetail':
         """
         Internal
 
@@ -582,7 +595,7 @@ class IConduitWard(ICleanable, Protocol):
                 perspective of the ward that will own it.
 
         Returns:
-            Detail: A new Detail instance.
+            IDetail: A new detail instance.
         """
         ...
 

@@ -1,8 +1,20 @@
 from typing import Any, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 import threading
 from types import ModuleType
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.icreations import ICreations
+from melder.utilities.interfaces.imeld import IMeld
+from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.synchronization.creation_gate import CreationGate
 
 @runtime_checkable
 class IConduit(ICleanable, Protocol):
@@ -14,7 +26,7 @@ class IConduit(ICleanable, Protocol):
     """
 
     # Class-level
-    _aether: 'Aether'
+    _aether: Any
 
     # Instance-level core attributes (1:1 with Conduit)
     _lock: threading.RLock
@@ -27,12 +39,12 @@ class IConduit(ICleanable, Protocol):
     _logger: 'ISafeLogger'
 
     _conduit_state: 'ConduitState'
-    _creations: 'Creations'
+    _creations: 'ICreations'
     _spellbook: 'ISpellbook'
-    _meld: 'Meld'
+    _meld: 'IMeld'
     _creation_gate: 'CreationGate'
 
-    _conduit_ward: 'ConduitWard'
+    _conduit_ward: Any
 
     # ------------------------------------------------------------------
     # Logger configuration
@@ -254,7 +266,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _creations_configuration(self, configuration: 'IConfiguration') -> 'Creations':
+    def _creations_configuration(self, configuration: 'IConfiguration') -> 'ICreations':
         """
         Internal
 
@@ -264,7 +276,7 @@ class IConduit(ICleanable, Protocol):
             configuration (IConfiguration): The locked system configuration.
 
         Returns:
-            Creations: The creation manager for this conduit.
+            ICreations: The creation manager for this conduit.
 
         Raises:
             RuntimeError: If the Conduit state is unknown.
@@ -901,7 +913,7 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Conduit Cloud
     # ------------------------------------------------------------------
-    def get_conduit_cloud(self) -> 'IConduitCloud':
+    def get_conduit_cloud(self) -> Any:
         """
         Public API
 
@@ -910,7 +922,7 @@ class IConduit(ICleanable, Protocol):
         This object is designed to be used in dynamic mode only and serves as an Abstract Factory/Service Locator.
 
         Returns:
-            IConduitCloud: The conduit cloud instance.
+            Any: The conduit cloud instance.
 
         Raises:
             RuntimeError: If the Conduit is a lesser conduit.

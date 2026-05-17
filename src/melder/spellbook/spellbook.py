@@ -1100,7 +1100,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Returns:
             Optional[ISpell]:
-                The spell object if found, else ``None``.
+                The spell object if found, else `None`.
         """
         with self._lock:
             spell = self._spells.get(spell_index, None)

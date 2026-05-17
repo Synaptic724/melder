@@ -89,15 +89,15 @@ class SpellIndex(Cleanable, ISpellIndex):
                 return
             # Nullify the pointer and release the lock object.
             self._cleaned = True
-            self._current_id = None
             self._versions.clear()
-            self._versions = None
-            self._owner_spellbook = None
-            self._owner_spell = None
-            self._owner_conduit_id = None
             self._contracted_spellbooks.clear()
-            self._contracted_spellbooks = None
-        self._lock = None
+
+            del self._versions
+            del self._owner_spellbook
+            del self._owner_spell
+            del self._owner_conduit_id
+            del self._contracted_spellbooks
+            del self._current_id
 
     # ------------------------------------------------------------
     # Core API
@@ -363,7 +363,7 @@ class SpellIndex(Cleanable, ISpellIndex):
             return f"<SpellIndex id={self._id} current={self._current_id}>"
 
 
-    def __enter__(self) -> 'SpellIndex':
+    def __enter__(self) -> ISpellIndex:
         """
         Acquire the internal lock and return this index.
 

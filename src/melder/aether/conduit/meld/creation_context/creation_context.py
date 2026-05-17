@@ -372,8 +372,6 @@ class CreationContext(Cleanable):
         override_socket_shape_cache = self._override_socket_shape_cache
         override_socket_shape_cache.clear()
         self._override_last_root_positional_arity = -2
-        del self._override_last_executor
-        del self._override_last_socket_shape
 
         override_route_config_no_mutation = self._override_route_config_no_mutation
         if override_route_config_no_mutation is not None:
@@ -389,6 +387,8 @@ class CreationContext(Cleanable):
             except Exception:
                 pass
 
+        del self._override_last_executor
+        del self._override_last_socket_shape
         del self._spell
         del self._spell_id
         del self._dynamic_environment
