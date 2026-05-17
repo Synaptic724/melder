@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -482,7 +482,7 @@ class Nexus(Cleanable, INexus):
             IRiftGateController: Controller for registered Rift gates.
         """
         self.check_cleaned()
-        return self._rift_gate_controller
+        return cast(IRiftGateController, self._rift_gate_controller)
 
     def create_system_configuration(self) -> INexusConfiguration:
         """

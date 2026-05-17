@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.rift_space.event_system.rift_event import RiftEvent
@@ -193,7 +193,9 @@ class RiftEventSystem(Cleanable):
         self.check_cleaned()
         if not event_type:
             raise ValueError("event_type cannot be empty.")
-        return RiftEvent(
+        return cast(
+            IRiftEvent,
+            RiftEvent(
             event_type=event_type,
             rift_id=self._rift_id,
             space_id=self._space_id,
@@ -201,6 +203,7 @@ class RiftEventSystem(Cleanable):
             frame_name=frame_name,
             payload=payload,
             metadata=metadata,
+            ),
         )
 
     def emit_event(self, event: IRiftEvent) -> None:
@@ -256,4 +259,4 @@ class RiftEventSystem(Cleanable):
             metadata=metadata,
         )
         self.emit_event(event)
-        return event
+        return cast(IRiftEvent, event)

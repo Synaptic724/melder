@@ -2170,11 +2170,17 @@ class FrameViewer(Cleanable):
         Returns:
             List[IFrameLink]: Matching visible targets in deterministic order.
         """
-        return self.get_view_frame(frame_name=frame_name).search_targets_prefix(
+        matching_targets: List[IFrameLink] = [
+            link
+            for link in self.get_view_frame(
+                frame_name=frame_name
+            ).search_targets_prefix(
             prefix,
             frame_name=frame_name,
             source_kind=source_kind,
-        )
+            )
+        ]
+        return matching_targets
 
     def group_targets_by_kind(
             self,
@@ -3776,10 +3782,16 @@ class FrameViewer(Cleanable):
         Returns:
             List[IFrameLink]: Matching visible spell links.
         """
-        return self.get_view_spell(frame_name=frame_name).search_spells_prefix(
+        matching_spells: List[IFrameLink] = [
+            link
+            for link in self.get_view_spell(
+                frame_name=frame_name
+            ).search_spells_prefix(
             prefix,
             frame_name=frame_name,
-        )
+            )
+        ]
+        return matching_spells
 
     def explain_spell_access(
             self,
