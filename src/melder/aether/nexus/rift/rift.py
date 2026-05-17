@@ -900,6 +900,12 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         configured_space_type = self._configuration.get_property("space_type")
         configured_space_name = self._configuration.get_property("space_name")
+        if configured_space_name is not None and not isinstance(
+                configured_space_name,
+                str,
+        ):
+            raise TypeError("space_name must be a string or None.")
+        primary_space: IRiftSpace
         if configured_space_type == RiftSpaceType.codegen:
             primary_space = CodegenRiftSpace(
                 owner_rift_id=self._id,

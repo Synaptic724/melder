@@ -156,19 +156,20 @@ class FrameACLViewProfile(Cleanable):
             self._conduit_ruleset.cleanup()
             self._spell_ruleset.cleanup()
             self._member_ruleset.cleanup()
-            self._frame_ruleset = None
-            self._conduit_ruleset = None
-            self._spell_ruleset = None
-            self._member_ruleset = None
-            self._required_nexus_label = None
-            self._required_nexus_version = None
-            self._minimum_spell_payload_type = None
-            self._minimum_spell_payload_version = None
-            self._validation_strategy_name = None
-            self._version = None
-            self._name = None
-            self._id = None
-        self._lock = None
+
+            del self._frame_ruleset
+            del self._conduit_ruleset
+            del self._spell_ruleset
+            del self._member_ruleset
+            del self._required_nexus_label
+            del self._required_nexus_version
+            del self._minimum_spell_payload_type
+            del self._minimum_spell_payload_version
+            del self._validation_strategy_name
+            del self._version
+            del self._name
+            del self._id
+        del self._lock
 
     @classmethod
     def create_default(cls) -> "FrameACLViewProfile":

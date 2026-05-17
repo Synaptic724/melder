@@ -57,12 +57,13 @@ class CodegenProjection(Cleanable):
             self._compiled_access_surface.cleanup()
         if self._frame_acl_configuration is not None:
             self._frame_acl_configuration.cleanup()
-        self._frame_name = None
-        self._frame_descriptor = None
-        self._frame_acl_configuration = None
-        self._compiled_access_surface = None
         self._metadata.clear()
-        self._metadata = None
+
+        del self._frame_name
+        del self._frame_descriptor
+        del self._frame_acl_configuration
+        del self._compiled_access_surface
+        del self._metadata
 
     @property
     def frame_name(self) -> str:

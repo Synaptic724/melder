@@ -1,3 +1,4 @@
+from collections.abc import Sequence as SequenceABC
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
@@ -142,28 +143,25 @@ class CrystallizerConfiguration(Cleanable):
                 "Unknown CrystallizerConfiguration property: '{0}'.".format(key)
             )
 
-        if isinstance(self.available_properties[key], tuple):
-            if not isinstance(
-                    self._convert_property_value_if_needed(key, value),
-                    self.available_properties[key],
-            ):
+        expected_types = self.available_properties[key]
+        normalized_value = self._convert_property_value_if_needed(key, value)
+
+        if isinstance(expected_types, tuple):
+            if not isinstance(normalized_value, expected_types):
                 raise TypeError(
                     "CrystallizerConfiguration property '{0}' must be one of: {1}.".format(
                         key,
                         ", ".join(
                             expected.__name__
-                            for expected in self.available_properties[key]
+                            for expected in expected_types
                         ),
                     )
                 )
-        elif not isinstance(
-                self._convert_property_value_if_needed(key, value),
-                self.available_properties[key],
-        ):
+        elif not isinstance(normalized_value, expected_types):
             raise TypeError(
                 "CrystallizerConfiguration property '{0}' must be one of: {1}.".format(
                     key,
-                    self.available_properties[key].__name__,
+                    expected_types.__name__,
                 )
             )
 
@@ -172,10 +170,7 @@ class CrystallizerConfiguration(Cleanable):
                 raise RuntimeError(
                     "Cannot modify CrystallizerConfiguration after freeze()."
                 )
-            self._properties[key] = self._convert_property_value_if_needed(
-                key,
-                value,
-            )
+            self._properties[key] = normalized_value
 
     def get_property(self, key: str) -> object:
         """
@@ -229,7 +224,7 @@ class CrystallizerConfiguration(Cleanable):
                     )
                 )
 
-        if len(self.get_property("user_source_root_paths")) == 0:
+        if len(self.user_source_root_paths) == 0:
             raise ValueError(
                 "user_source_root_paths must contain at least one configured root."
             )
@@ -339,10 +334,9 @@ class CrystallizerConfiguration(Cleanable):
 
         if isinstance(value, (str, Path)):
             candidates: Sequence[Union[str, Path]] = (value,)
-        else:
+        elif isinstance(value, SequenceABC):
             candidates = value
-
-        if not isinstance(candidates, Sequence):
+        else:
             raise TypeError(
                 "user_source_root_paths must be a sequence of str/Path values."
             )

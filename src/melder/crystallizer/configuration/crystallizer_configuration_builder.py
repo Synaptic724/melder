@@ -189,5 +189,6 @@ class CrystallizerConfigurationBuilder(Cleanable):
                     "CrystallizerConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
+            self._configuration = None
             self.cleanup()
         return configuration

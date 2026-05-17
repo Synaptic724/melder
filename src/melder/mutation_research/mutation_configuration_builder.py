@@ -60,9 +60,9 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
             self._cleaned = True
             if self._configuration is not None:
                 self._configuration.cleanup()
-            self._configuration = None
-            self._id = None
-        self._lock = None
+            del self._configuration
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:
@@ -149,8 +149,5 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
                     "MutationResearchConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
-            self._cleaned = True
-            self._configuration = None
-            self._id = None
-        self._lock = None
+            self.cleanup()
         return configuration

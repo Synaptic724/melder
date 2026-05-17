@@ -75,14 +75,12 @@ class Research(Cleanable):
                     self._spell_researches.clear()
                 except Exception:
                     pass
-                self._spell_researches = None
 
             if self._spell_research_ids is not None:
                 try:
                     self._spell_research_ids.clear()
                 except Exception:
                     pass
-                self._spell_research_ids = None
 
             # Creation researches
             if self._creation_researches is not None:
@@ -95,21 +93,23 @@ class Research(Cleanable):
                     self._creation_researches.clear()
                 except Exception:
                     pass
-                self._creation_researches = None
 
             if self._creation_research_ids is not None:
                 try:
                     self._creation_research_ids.clear()
                 except Exception:
                     pass
-                self._creation_research_ids = None
-
-            self._target_index = None
-            self._root_version = None
-            self._level = None
             self._metadata.clear()
-            self._metadata = None
-        self._lock = None
+
+            del self._spell_researches
+            del self._spell_research_ids
+            del self._creation_researches
+            del self._creation_research_ids
+            del self._target_index
+            del self._root_version
+            del self._level
+            del self._metadata
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Properties

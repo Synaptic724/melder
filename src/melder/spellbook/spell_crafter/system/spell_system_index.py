@@ -49,11 +49,11 @@ class SpellSystemIndex(Cleanable):
             return
 
         self._cleaned = True
-
         for node in self._nodes.values():
             node.cleanup()
         self._nodes.clear()
-        self._nodes = None
+
+        del self._nodes
 
 
     # ------------------------------------------------------------------ #

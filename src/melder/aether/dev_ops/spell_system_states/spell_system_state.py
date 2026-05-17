@@ -1,11 +1,31 @@
 import threading
-from typing import Iterable, Optional, Set, List
+from typing import Callable, Iterable, List, Optional, Set
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+def _get_risk_manager_callback(
+        risk_manager: Optional[object],
+) -> Optional[Callable[[str, Optional[SpellValidity]], None]]:
+    """
+    Return the structural-validity callback when the collaborator exposes it.
+
+    Contract:
+        - Accepts the current loose collaborator surface (`object | None`).
+        - Returns a callable only when the collaborator exposes a callable
+          `on_structural_validity_change(...)` attribute.
+        - Leaves plain objects and missing callbacks as `None`.
+    """
+    if risk_manager is None:
+        return None
+    callback = getattr(risk_manager, "on_structural_validity_change", None)
+    if not callable(callback):
+        return None
+    return callback
+
 
 class SpellSystemState(Cleanable):
     """
@@ -320,7 +340,7 @@ class SpellSystemState(Cleanable):
             - Ignores None entries in add/remove flag iterables.
         """
         self.check_cleaned()
-        risk_manager = self._risk_manager
+        callback = _get_risk_manager_callback(self._risk_manager)
         lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is None:
@@ -347,12 +367,12 @@ class SpellSystemState(Cleanable):
                 self._transitively_dirty = transitively_dirty
 
         if (
-                risk_manager is not None
+                callback is not None
                 and lineage_id is not None
                 and previous_validity is not validity
         ):
             try:
-                risk_manager.on_structural_validity_change(lineage_id, validity)
+                callback(lineage_id, validity)
             except Exception:
                 pass
 
@@ -554,7 +574,7 @@ class SpellSystemState(Cleanable):
               call actually changes the stored validity.
         """
         self.check_cleaned()
-        risk_manager = self._risk_manager
+        callback = _get_risk_manager_callback(self._risk_manager)
         lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is not None:
@@ -570,12 +590,12 @@ class SpellSystemState(Cleanable):
             self._last_validated_at = last_validated_at
 
         if (
-                risk_manager is not None
+                callback is not None
                 and lineage_id is not None
                 and previous_validity is not SpellValidity.valid
         ):
             try:
-                risk_manager.on_structural_validity_change(lineage_id, SpellValidity.valid)
+                callback(lineage_id, SpellValidity.valid)
             except Exception:
                 pass
 

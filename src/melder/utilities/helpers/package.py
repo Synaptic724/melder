@@ -250,15 +250,7 @@ class Package(Cleanable, Generic[P, R]):
             kwargs = dict(self._kwargs)
 
             # 2. Perform cleanup of internal state
-            self._cleaned = True
-            self._func = None
-            del self._wrapped_func
-            self._args.clear()
-            self._args = None
-            self._kwargs.clear()
-            self._kwargs = None
-            self._signature_cache = None
-            self._lock = None
+            self.cleanup()
 
         # 5. Return the extracted components
         return func, args, kwargs

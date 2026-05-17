@@ -94,12 +94,11 @@ class SpellSymbolicGraph(Cleanable):
                 except Exception:
                     # Dependency cleanup must never blow up tear-down.
                     pass
-
-            self._dependencies = []
-            self._spell_id = None
             self._cleaned = True
 
-        self._lock = None
+            del self._dependencies
+            del self._spell_id
+        del self._lock
 
     # ------------------------------------------------------------------
     # Properties

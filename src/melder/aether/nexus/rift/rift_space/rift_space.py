@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
@@ -514,7 +514,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         self.check_cleaned()
         with self._lock:
-            return self._memory_system
+            return cast(IRiftMemorySystem, self._memory_system)
 
     def register_action_pre_hook(
             self,
@@ -602,13 +602,13 @@ class RiftSpace(Cleanable, IRiftSpace):
                 if len(category_hooks) == 0:
                     registry.pop(category, None)
                 return
-            registry = self._get_action_hook_registry(phase)
-            action_hooks = registry.get((category, action_name))
+            action_registry = self._get_action_hook_registry(phase)
+            action_hooks = action_registry.get((category, action_name))
             if action_hooks is None:
                 return
             action_hooks.pop(subscription_id, None)
             if len(action_hooks) == 0:
-                registry.pop((category, action_name), None)
+                action_registry.pop((category, action_name), None)
 
     @contextmanager
     def _entered_action_hook_scope(

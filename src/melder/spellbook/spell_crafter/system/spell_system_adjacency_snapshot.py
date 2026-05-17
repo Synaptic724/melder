@@ -68,11 +68,12 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._dependencies = None
-        self._reverse_dependencies = None
-        self._all_spell_ids = None
-        self._root_spell_ids = None
-        self._topologies = None
+
+        del self._dependencies
+        del self._reverse_dependencies
+        del self._all_spell_ids
+        del self._root_spell_ids
+        del self._topologies
 
     # ------------------------------------------------------------------
     # Read-only accessors

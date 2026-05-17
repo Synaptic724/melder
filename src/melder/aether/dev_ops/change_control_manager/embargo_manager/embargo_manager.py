@@ -86,11 +86,12 @@ class ChangeControlEmbargoManager(Cleanable):
             self._cleaned = True
             if self._embargoes_by_scope is not None:
                 self._embargoes_by_scope.clear()
-                self._embargoes_by_scope = None
             if self._embargoes_by_owner is not None:
                 self._embargoes_by_owner.clear()
-                self._embargoes_by_owner = None
-        self._lock = None
+
+            del self._embargoes_by_scope
+            del self._embargoes_by_owner
+        del self._lock
 
     def open_embargo(
             self,

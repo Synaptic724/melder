@@ -66,7 +66,7 @@ class ResearchCreation(Cleanable):
                     self._nodes.clear()
                 except Exception:
                     pass
-                self._nodes = None
+                del self._nodes
 
             # Cleanup commit-order index
             if self._node_ids is not None:
@@ -74,7 +74,7 @@ class ResearchCreation(Cleanable):
                     self._node_ids.clear()
                 except Exception:
                     pass
-                self._node_ids = None
+                del self._node_ids
 
             # Cleanup weak ref wrapper
             if self._creation_ref is not None:
@@ -82,12 +82,11 @@ class ResearchCreation(Cleanable):
                     self._creation_ref.cleanup()
                 except Exception:
                     pass
-                self._creation_ref = None
-
-            self._head_id = None
+                del self._creation_ref
             self._metadata.clear()
-            self._metadata = None
-        self._lock = None
+            del self._head_id
+            del self._metadata
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Properties
@@ -100,6 +99,7 @@ class ResearchCreation(Cleanable):
         Returns:
             str: The research line's unique ID.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -110,6 +110,7 @@ class ResearchCreation(Cleanable):
         Returns:
             str: The target creation's ID.
         """
+        self.check_cleaned()
         return self._creation_id
 
     @property
@@ -120,6 +121,7 @@ class ResearchCreation(Cleanable):
         Returns:
             str: The line's name.
         """
+        self.check_cleaned()
         return self._name
 
     @property
@@ -130,6 +132,7 @@ class ResearchCreation(Cleanable):
         Returns:
             Optional[str]: The ID of the HEAD node.
         """
+        self.check_cleaned()
         return self._head_id
 
     @property
@@ -140,6 +143,7 @@ class ResearchCreation(Cleanable):
         Returns:
             Dict[str, Any]: A copy of the line's metadata.
         """
+        self.check_cleaned()
         return dict(self._metadata)
 
     # ------------------------------------------------------------------ #
