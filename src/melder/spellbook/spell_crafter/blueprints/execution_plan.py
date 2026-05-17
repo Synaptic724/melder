@@ -200,32 +200,32 @@ class ExecutionPlanStep:
         if disposal_method_names is None:
             raise ValueError("disposal_method_names must not be None.")
 
-        self._instance_key = instance_key
-        self._occurrence = occurrence
-        self._spell = spell
-        self._existence = existence
-        self._creations_target_kind = creations_target_kind
-        self._shared_instance = shared_instance
-        self._inject_spec = inject_spec
-        self._dependency_keys = dependency_keys
-        self._dependency_keys_by_param = dependency_keys_by_param
-        self._dependency_resolution_order = dependency_resolution_order
-        self._override_keys = override_keys
-        self._override_match_prefix = override_match_prefix
-        self._override_match_prefix_len = override_match_prefix_len
-        self._expects_overrides = expects_overrides
-        self._contract_keys = contract_keys
-        self._allow_list_aggregation = allow_list_aggregation
-        self._uses_positional_override = uses_positional_override
-        self._contract_payload = contract_payload
-        self._contract_positional_override = contract_positional_override
-        self._has_contract_payload = has_contract_payload
-        self._lock_hint = lock_hint
-        self._use_spell_lock_hint = use_spell_lock_hint
-        self._requires_spellspace = requires_spellspace
-        self._owner_conduit_required = owner_conduit_required
-        self._must_register = must_register
-        self._disposal_method_names = disposal_method_names
+        self._instance_key: InstanceKey = instance_key
+        self._occurrence: OccurrenceKey = occurrence
+        self._spell: ISpell = spell
+        self._existence: Existence = existence
+        self._creations_target_kind: int = creations_target_kind
+        self._shared_instance: bool = shared_instance
+        self._inject_spec: Optional[InjectionSpec] = inject_spec
+        self._dependency_keys: List[InstanceKey] = dependency_keys
+        self._dependency_keys_by_param: Dict[str, List[InstanceKey]] = dependency_keys_by_param
+        self._dependency_resolution_order: List[tuple[str, List[InstanceKey]]] = dependency_resolution_order
+        self._override_keys: List[str] = override_keys
+        self._override_match_prefix: Optional[int] = override_match_prefix
+        self._override_match_prefix_len: int = override_match_prefix_len
+        self._expects_overrides: bool = expects_overrides
+        self._contract_keys: List[str] = contract_keys
+        self._allow_list_aggregation: bool = allow_list_aggregation
+        self._uses_positional_override: bool = uses_positional_override
+        self._contract_payload: Optional[Dict[str, Any]] = contract_payload
+        self._contract_positional_override: Optional[Any] = contract_positional_override
+        self._has_contract_payload: bool = has_contract_payload
+        self._lock_hint: str = lock_hint
+        self._use_spell_lock_hint: bool = use_spell_lock_hint
+        self._requires_spellspace: bool = requires_spellspace
+        self._owner_conduit_required: bool = owner_conduit_required
+        self._must_register: bool = must_register
+        self._disposal_method_names: List[str] = disposal_method_names
 
     @property
     def instance_key(self) -> InstanceKey:
@@ -867,73 +867,74 @@ class ExecutionPlan(Cleanable):
             for plan_list in self._fast_transient_plan[2:]:
                 if isinstance(plan_list, list):
                     plan_list.clear()
-        self._root_spell_id = None
-        self._root_instance_key = None
-        self._steps = None
-        self._spell_id_step_index = None
-        self._optimistic_object_refs_by_spell_id = None
-        self._available_param_by_spell_id = None
-        self._plan_variant = None
-        self._fast_dep_indices = None
-        self._fast_param_group_names = None
-        self._fast_param_group_dep_offsets = None
-        self._fast_param_group_dep_counts = None
-        self._fast_param_group_offsets = None
-        self._fast_param_group_counts = None
-        self._fast_use_positional = None
-        self._fast_contract_payload_items = None
-        self._fast_contract_positional_args = None
-        self._fast_instance_keys = None
-        self._fast_creations_target_kinds = None
-        self._fast_existence = None
-        self._fast_must_register = None
-        self._fast_set_result_flags = None
-        self._fast_spells = None
-        self._fast_call_targets = None
-        self._fast_existing_objects = None
-        self._fast_is_existing_creation = None
-        self._fast_is_callable = None
-        self._fast_root_step_index = None
-        self._fast_call_modes = None
-        self._fast_single_dep_indices = None
-        self._fast_call2_dep_indices_a = None
-        self._fast_call2_dep_indices_b = None
-        self._fast_call3_dep_indices_a = None
-        self._fast_call3_dep_indices_b = None
-        self._fast_call3_dep_indices_c = None
-        self._fast_call4_dep_indices_a = None
-        self._fast_call4_dep_indices_b = None
-        self._fast_call4_dep_indices_c = None
-        self._fast_call4_dep_indices_d = None
-        self._fast_call5_dep_indices_a = None
-        self._fast_call5_dep_indices_b = None
-        self._fast_call5_dep_indices_c = None
-        self._fast_call5_dep_indices_d = None
-        self._fast_call5_dep_indices_e = None
-        self._fast_call6_dep_indices_a = None
-        self._fast_call6_dep_indices_b = None
-        self._fast_call6_dep_indices_c = None
-        self._fast_call6_dep_indices_d = None
-        self._fast_call6_dep_indices_e = None
-        self._fast_call6_dep_indices_f = None
-        self._fast_call7_dep_indices_a = None
-        self._fast_call7_dep_indices_b = None
-        self._fast_call7_dep_indices_c = None
-        self._fast_call7_dep_indices_d = None
-        self._fast_call7_dep_indices_e = None
-        self._fast_call7_dep_indices_f = None
-        self._fast_call7_dep_indices_g = None
-        self._fast_call8_dep_indices_a = None
-        self._fast_call8_dep_indices_b = None
-        self._fast_call8_dep_indices_c = None
-        self._fast_call8_dep_indices_d = None
-        self._fast_call8_dep_indices_e = None
-        self._fast_call8_dep_indices_f = None
-        self._fast_call8_dep_indices_g = None
-        self._fast_call8_dep_indices_h = None
-        self._fast_transient_plan = None
-        self._fast_has_contract_payloads = None
-        self._fast_has_existing_creations = None
+
+        del self._root_spell_id
+        del self._root_instance_key
+        del self._steps
+        del self._spell_id_step_index
+        del self._optimistic_object_refs_by_spell_id
+        del self._available_param_by_spell_id
+        del self._plan_variant
+        del self._fast_dep_indices
+        del self._fast_param_group_names
+        del self._fast_param_group_dep_offsets
+        del self._fast_param_group_dep_counts
+        del self._fast_param_group_offsets
+        del self._fast_param_group_counts
+        del self._fast_use_positional
+        del self._fast_contract_payload_items
+        del self._fast_contract_positional_args
+        del self._fast_instance_keys
+        del self._fast_creations_target_kinds
+        del self._fast_existence
+        del self._fast_must_register
+        del self._fast_set_result_flags
+        del self._fast_spells
+        del self._fast_call_targets
+        del self._fast_existing_objects
+        del self._fast_is_existing_creation
+        del self._fast_is_callable
+        del self._fast_root_step_index
+        del self._fast_call_modes
+        del self._fast_single_dep_indices
+        del self._fast_call2_dep_indices_a
+        del self._fast_call2_dep_indices_b
+        del self._fast_call3_dep_indices_a
+        del self._fast_call3_dep_indices_b
+        del self._fast_call3_dep_indices_c
+        del self._fast_call4_dep_indices_a
+        del self._fast_call4_dep_indices_b
+        del self._fast_call4_dep_indices_c
+        del self._fast_call4_dep_indices_d
+        del self._fast_call5_dep_indices_a
+        del self._fast_call5_dep_indices_b
+        del self._fast_call5_dep_indices_c
+        del self._fast_call5_dep_indices_d
+        del self._fast_call5_dep_indices_e
+        del self._fast_call6_dep_indices_a
+        del self._fast_call6_dep_indices_b
+        del self._fast_call6_dep_indices_c
+        del self._fast_call6_dep_indices_d
+        del self._fast_call6_dep_indices_e
+        del self._fast_call6_dep_indices_f
+        del self._fast_call7_dep_indices_a
+        del self._fast_call7_dep_indices_b
+        del self._fast_call7_dep_indices_c
+        del self._fast_call7_dep_indices_d
+        del self._fast_call7_dep_indices_e
+        del self._fast_call7_dep_indices_f
+        del self._fast_call7_dep_indices_g
+        del self._fast_call8_dep_indices_a
+        del self._fast_call8_dep_indices_b
+        del self._fast_call8_dep_indices_c
+        del self._fast_call8_dep_indices_d
+        del self._fast_call8_dep_indices_e
+        del self._fast_call8_dep_indices_f
+        del self._fast_call8_dep_indices_g
+        del self._fast_call8_dep_indices_h
+        del self._fast_transient_plan
+        del self._fast_has_contract_payloads
+        del self._fast_has_existing_creations
 
     @property
     def root_spell_id(self) -> str:

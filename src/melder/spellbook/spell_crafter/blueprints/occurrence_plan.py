@@ -215,17 +215,17 @@ class OccurrencePlan(Cleanable):
         if path_registry is None:
             raise ValueError("path_registry must not be None.")
 
-        self._root_spell_id = root_spell_id
-        self._occurrence_graph = occurrence_graph
-        self._execution_order = execution_order
-        self._instance_keys_by_spell_id = instance_keys_by_spell_id
-        self._canonical_occurrences_by_spell_id = canonical_occurrences_by_spell_id
-        self._root_instance_key = root_instance_key
-        self._shared_spell_ids = shared_spell_ids
-        self._contract_overrides_by_occurrence = contract_overrides_by_occurrence
-        self._contract_overrides_by_spell_id = contract_overrides_by_spell_id
-        self._contract_dependencies_complete = contract_dependencies_complete
-        self._path_registry = path_registry
+        self._root_spell_id: str = root_spell_id
+        self._occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]] = occurrence_graph
+        self._execution_order: List[str] = execution_order
+        self._instance_keys_by_spell_id: Dict[str, List[InstanceKey]] = instance_keys_by_spell_id
+        self._canonical_occurrences_by_spell_id: Dict[str, OccurrenceKey] = canonical_occurrences_by_spell_id
+        self._root_instance_key: InstanceKey = root_instance_key
+        self._shared_spell_ids: Set[str] = shared_spell_ids
+        self._contract_overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]] = contract_overrides_by_occurrence
+        self._contract_overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]] = contract_overrides_by_spell_id
+        self._contract_dependencies_complete: bool = contract_dependencies_complete
+        self._path_registry: PathRegistry = path_registry
 
     def cleanup(self) -> None:
         """
@@ -247,17 +247,17 @@ class OccurrencePlan(Cleanable):
         self._contract_overrides_by_occurrence.clear()
         self._contract_overrides_by_spell_id.clear()
 
-        self._root_spell_id = None
-        self._occurrence_graph = None
-        self._execution_order = None
-        self._instance_keys_by_spell_id = None
-        self._canonical_occurrences_by_spell_id = None
-        self._root_instance_key = None
-        self._shared_spell_ids = None
-        self._contract_overrides_by_occurrence = None
-        self._contract_overrides_by_spell_id = None
-        self._contract_dependencies_complete = None
-        self._path_registry = None
+        del self._root_spell_id
+        del self._occurrence_graph
+        del self._execution_order
+        del self._instance_keys_by_spell_id
+        del self._canonical_occurrences_by_spell_id
+        del self._root_instance_key
+        del self._shared_spell_ids
+        del self._contract_overrides_by_occurrence
+        del self._contract_overrides_by_spell_id
+        del self._contract_dependencies_complete
+        del self._path_registry
 
     @property
     def root_spell_id(self) -> str:
@@ -453,11 +453,11 @@ class OccurrencePlanBuilder(object):
             raise ValueError("root_spell must not be None.")
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
-        self._root_spell = root_spell
-        self._blueprint = blueprint
-        self._spell_lookup = spell_lookup
-        self._system_states = system_states
-        self._path_registry = blueprint.path_registry
+        self._root_spell: ISpell = root_spell
+        self._blueprint: Any = blueprint
+        self._spell_lookup: Dict[str, ISpell] = spell_lookup
+        self._system_states: Any = system_states
+        self._path_registry: Any = blueprint.path_registry
 
     def build(self) -> OccurrencePlan:
         """

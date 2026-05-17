@@ -26,7 +26,7 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
     sanity check layered on top of the existence metadata captured in the
     `SpellSystemIndex`.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

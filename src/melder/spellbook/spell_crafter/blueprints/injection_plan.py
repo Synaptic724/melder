@@ -191,10 +191,10 @@ class InjectionSpec:
         """
         if param_sources is None:
             raise ValueError("param_sources must not be None.")
-        self._param_sources = param_sources
-        self._allow_list_aggregation = allow_list_aggregation
-        self._uses_positional_override = uses_positional_override
-        self._contract_payload = contract_payload
+        self._param_sources: Dict[str, ParamSource] = param_sources
+        self._allow_list_aggregation: bool = allow_list_aggregation
+        self._uses_positional_override: bool = uses_positional_override
+        self._contract_payload: Optional[Dict[str, Any]] = contract_payload
 
     @property
     def param_sources(self) -> Dict[str, ParamSource]:
@@ -389,8 +389,8 @@ class InjectionPlan(Cleanable):
             raise ValueError("root_spell_id must not be None.")
         if instance_injections is None:
             raise ValueError("instance_injections must not be None.")
-        self._root_spell_id = root_spell_id
-        self._instance_injections = instance_injections
+        self._root_spell_id: str = root_spell_id
+        self._instance_injections: Dict[InstanceKey, InjectionSpec] = instance_injections
 
     def cleanup(self) -> None:
         """
@@ -404,8 +404,9 @@ class InjectionPlan(Cleanable):
             return
         self._cleaned = True
         self._instance_injections.clear()
-        self._root_spell_id = None
-        self._instance_injections = None
+
+        del self._root_spell_id
+        del self._instance_injections
 
     @property
     def root_spell_id(self) -> str:

@@ -28,7 +28,7 @@ class StaticFrameViewer(FrameViewer):
     """
 
     __melder_internal__ = _mrg.sentinel
-    __slots__ = []
+    __slots__: tuple[()] = ()
     _aether = Aether()
 
     @classmethod

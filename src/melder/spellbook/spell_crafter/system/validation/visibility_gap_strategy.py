@@ -26,7 +26,7 @@ class VisibilityGapStrategy(SpellSystemValidationStrategy):
     two views to catch missing contracted/borrowed dependencies that were
     filtered out by visibility boundaries.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

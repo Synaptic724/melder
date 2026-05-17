@@ -120,22 +120,19 @@ class RootResolutionBlueprint(Cleanable):
 
         if self._dag is not None:
             self._dag.cleanup()
-            self._dag = None
-
         if self._dag_index is not None:
             self._dag_index.cleanup()
-            self._dag_index = None
-        if self._dag_index_build_lock is not None:
-            self._dag_index_build_lock = None
-
-        self._ordered_node_ids.clear()
-        self._ordered_node_ids = None
 
         self._socket_refs.clear()
-        self._socket_refs = None
+        self._ordered_node_ids.clear()
 
-        self._root_spell_id = None
-        self._root_lineage_id = None
+        del self._dag_index_build_lock
+        del self._ordered_node_ids
+        del self._dag_index
+        del self._socket_refs
+        del self._dag
+        del self._root_spell_id
+        del self._root_lineage_id
 
 
     # ------------------------------------------------------------------ #

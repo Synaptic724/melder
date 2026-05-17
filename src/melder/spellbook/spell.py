@@ -1,4 +1,4 @@
-from typing import Optional, List, Any, Callable, Sequence
+from typing import Optional, List, Any, Callable, Sequence, Protocol
 import ulid
 from threading import RLock
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -34,6 +34,135 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+
+
+class ISpellCrafterSurface(Protocol):
+    """
+    Narrow spell-owned compiler and validation surface consumed by `Spell`.
+
+    Purpose:
+        Break the local `spell.py` <-> `spell_crafter.py` type cycle while
+        still documenting the exact crafter behavior `Spell` relies on.
+
+    Contract:
+        - Exposes read-only phase artifacts and validation status.
+        - Exposes the phase-runner methods `Spell` delegates into.
+        - Supports deterministic cleanup and phase-artifact cleanup.
+    """
+
+    requirements: Optional[SpellRequirements]
+    symbolic_graph: Optional[SpellSymbolicGraph]
+    resolution_frame: Any
+    validation_result_phase4: Any
+    validation_result_phase6: Any
+    validated: bool
+    is_broken: bool
+
+    def cleanup(self) -> None:
+        """
+        Clean up the owned crafter state.
+        """
+        ...
+
+    def run_phase_requirements(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_symbolic_graph(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_local_frame(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_validation(
+            self,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_root_blueprints(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_root_blueprints_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_occurrence_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_injection_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_patch_maps(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_execution_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_system_validation(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_system_validation_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_change_control(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def run_phase_change_control_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
+
+    def cleanup_phase_artifacts(self) -> None:
+        """
+        Drop owned phase artifacts while keeping the crafter itself alive.
+        """
+        ...
 
 
 #region Spell
@@ -354,7 +483,7 @@ class Spell(Cleanable, ISpell):
 
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase artifacts and is disposable.
-        self._crafter: Optional["SpellCrafter"] = None
+        self._crafter: Optional[ISpellCrafterSurface] = None
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
@@ -744,7 +873,7 @@ class Spell(Cleanable, ISpell):
         )
 
     #region Internal helpers
-    def _ensure_crafter(self) -> "SpellCrafter":
+    def _ensure_crafter(self) -> ISpellCrafterSurface:
         """
         Lazily create and attach the spell-owned `SpellCrafter`.
 

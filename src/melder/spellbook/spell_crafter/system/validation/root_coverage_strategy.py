@@ -29,7 +29,7 @@ class RootCoverageStrategy(SpellSystemValidationStrategy):
     representation but not the other, or roots that are present in the index
     but not explicitly marked as such.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

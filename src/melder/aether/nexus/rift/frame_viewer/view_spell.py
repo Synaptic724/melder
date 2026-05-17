@@ -829,7 +829,7 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        dunder_names = set()
+        dunder_names: set[str] = set()
         dunder_names.update(dunder_description["class_member_names"])
         dunder_names.update(dunder_description["class_method_names"])
         dunder_names.update(dunder_description["instance_member_names"])
@@ -1265,7 +1265,7 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        visible_sections = tuple(explanation["visible_sections"])
+        visible_sections: tuple[str, ...] = tuple(explanation["visible_sections"])
         return {
             **explanation,
             "payload_type": detail["payload_type"],
@@ -1363,7 +1363,7 @@ class ViewSpell(Cleanable):
         descriptor = frame_view._get_required_frame_descriptor()
         owner_conduit_id = spell_record.owner_conduit_id
         root_conduit_id = None
-        peer_conduit_ids = tuple()
+        peer_conduit_ids: tuple[str, ...] = tuple()
         if owner_conduit_id is not None:
             conduit_record = descriptor.conduit_records_by_id[owner_conduit_id]
             root_conduit_id = conduit_record.root_conduit_id
@@ -1878,8 +1878,8 @@ class ViewSpell(Cleanable):
             Tuple[Tuple[str, ...], Tuple[str, ...]]: `(member_names,
             method_names)` extracted from the mapping.
         """
-        member_names = tuple()
-        method_names = tuple()
+        member_names: tuple[str, ...] = tuple()
+        method_names: tuple[str, ...] = tuple()
         members = normalized_class_profile.get("members")
         methods = normalized_class_profile.get("methods")
         if isinstance(members, dict):

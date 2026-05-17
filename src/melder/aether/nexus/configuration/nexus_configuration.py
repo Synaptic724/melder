@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.nexus_frame_mode import (
@@ -243,7 +243,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             None.
         """
         self.check_cleaned()
-        defaults = {
+        defaults: Dict[str, Any] = {
             "allow_rift_creation": True,
             "creation_token_required": False,
             "creation_token_value": None,

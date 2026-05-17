@@ -8,7 +8,6 @@ import types
 from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
@@ -376,35 +375,34 @@ class SpellCrafter(Cleanable):
                     self._entire_dag_blueprint_phase5.clear()
                 except Exception:
                     pass
-            self._root_blueprint_phase5 = None
-            self._phase8_occurrence_plan_input_signature = None
-            self._phase8_occurrence_plan_fast_key = None
-            self._occurrence_plan_phase8 = None
-            self._phase9_injection_plan_input_signature = None
-            self._injection_plan_phase9 = None
-            self._override_patch_map_phase10 = None
-            self._mutation_patch_map_phase10 = None
-            self._phase10_patch_maps_input_signature = None
-            self._execution_plan_phase11 = None
-            self._execution_plan_phase11_no_overrides = None
-            self._execution_plan_phase11_overrides = None
-            self._phase12_no_overrides_executor = None
-            self._phase12_no_overrides_executor_signature = None
-            self._phase11_no_overrides_input_signature = None
-            self._phase11_no_overrides_fast_key = None
-            self._codegen_ir = None
+            self._cleaned = True
             self._phase8_11_codegen_ir_dirty = False
-            self._spell_system_index_phase5 = None
-            self._entire_dag_blueprint_phase5 = None
             self._validated_phase4 = False
             self._validated_phase6 = False
             self._is_broken = False
-            self._spell_system_states = None
-            self._spell = None
-            self._spell_validator = None
-            self._cleaned = True
 
-        self._lock = None
+            del self._root_blueprint_phase5
+            del self._phase8_occurrence_plan_input_signature
+            del self._phase8_occurrence_plan_fast_key
+            del self._occurrence_plan_phase8
+            del self._phase9_injection_plan_input_signature
+            del self._injection_plan_phase9
+            del self._override_patch_map_phase10
+            del self._mutation_patch_map_phase10
+            del self._phase10_patch_maps_input_signature
+            del self._execution_plan_phase11
+            del self._execution_plan_phase11_no_overrides
+            del self._execution_plan_phase11_overrides
+            del self._phase12_no_overrides_executor
+            del self._phase12_no_overrides_executor_signature
+            del self._phase11_no_overrides_input_signature
+            del self._phase11_no_overrides_fast_key
+            del self._codegen_ir
+            del self._spell_system_index_phase5
+            del self._entire_dag_blueprint_phase5
+            del self._spell_system_states
+            del self._spell
+            del self._spell_validator
 
     # ------------------------------------------------------------------
     # Core properties

@@ -207,15 +207,19 @@ def test_finalize_propagates_spellbook_errors():
         binder.finalize()
 
 
-def test_cleanup_is_idempotent_and_nulls_slots():
+def test_cleanup_is_idempotent_and_deletes_slots():
     binder = _binder()
     binder.cleanup()
     binder.cleanup()
-    assert binder._weak_spellbook is None
-    assert binder._spell is None
-    assert binder._existence is None
-    assert binder._permissions is None
-    assert binder._kwargs is None
+    assert not hasattr(binder, "_weak_spellbook")
+    assert not hasattr(binder, "_spell")
+    assert not hasattr(binder, "_existence")
+    assert not hasattr(binder, "_permissions")
+    assert not hasattr(binder, "_kwargs")
+    assert not hasattr(binder, "_default_existence")
+    assert not hasattr(binder, "_default_permissions")
+    assert not hasattr(binder, "_default_profile")
+    assert hasattr(binder, "_lock")
     assert binder._cleaned is True
 
 
@@ -230,7 +234,7 @@ def test_cleanup_swallows_weakref_cleanup_failures() -> None:
 
     binder.cleanup()
 
-    assert binder._weak_spellbook is None
+    assert not hasattr(binder, "_weak_spellbook")
     assert binder._cleaned is True
 
 
@@ -256,7 +260,7 @@ def test_reset_current_enforces_liveness():
         binder._reset_current()
 
 
-def test_still_alive_raises_when_spellbook_dead():
+def test_require_spellbook_raises_when_spellbook_dead():
     binder = _binder()
     # Drop strong reference and force gc
     spellbook_ref = binder._weak_spellbook
@@ -265,7 +269,7 @@ def test_still_alive_raises_when_spellbook_dead():
     binder._weak_spellbook = spellbook_ref
     spellbook_ref.cleanup()
     with pytest.raises(RuntimeError):
-        binder._still_alive()
+        binder._require_spellbook()
 
 
 def test_bind_discards_unfinalized_state():
@@ -396,35 +400,35 @@ def test_finalize_reset_does_not_remove_defaults():
     assert binder._permissions == "read"
 
 
-def test_with_kwargs_respects_still_alive_guard():
+def test_with_kwargs_respects_live_spellbook_guard():
     binder = _binder()
     binder._weak_spellbook.cleanup()
     with pytest.raises(RuntimeError):
         binder.with_kwargs(a=1)
 
 
-def test_with_permissions_respects_still_alive_guard():
+def test_with_permissions_respects_live_spellbook_guard():
     binder = _binder()
     binder._weak_spellbook.cleanup()
     with pytest.raises(RuntimeError):
         binder.with_permissions("read")
 
 
-def test_named_respects_still_alive_guard():
+def test_named_respects_live_spellbook_guard():
     binder = _binder()
     binder._weak_spellbook.cleanup()
     with pytest.raises(RuntimeError):
         binder.named("x")
 
 
-def test_under_spellframe_respects_still_alive_guard():
+def test_under_spellframe_respects_live_spellbook_guard():
     binder = _binder()
     binder._weak_spellbook.cleanup()
     with pytest.raises(RuntimeError):
         binder.under_spellframe("frame")
 
 
-def test_with_pre_hook_respects_still_alive_guard():
+def test_with_pre_hook_respects_live_spellbook_guard():
     binder = _binder()
     binder._weak_spellbook.cleanup()
     with pytest.raises(RuntimeError):

@@ -203,17 +203,17 @@ class Spellbook(Cleanable, ISpellbook):
         self._initialize_logging(logger)
 
         # Core spell storage (SpellIndex Maps)
-        self._spells: Dict[SpellIndex, ISpell] = {}
+        self._spells: Dict[ISpellIndex, ISpell] = {}
         self._spell_versions: Set[str] = set()
-        self._lookup_spells: Dict[tuple, SpellIndex]  = {}
+        self._lookup_spells: Dict[tuple, ISpellIndex]  = {}
         self._spells_by_id: Dict[str, ISpell] = {}
         self._spell_id_pool: Dict[str, ISpell] = {}
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
+        self._contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = {}
         self._contracted_versions: Dict[str, Set[str]] = {}
-        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]  = {}
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
 
         # Spell validator
@@ -1106,7 +1106,7 @@ class Spellbook(Cleanable, ISpellbook):
             spell = self._spells.get(spell_index, None)
         return spell
 
-    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
+    def _find_contracted_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
         """
         Internal
 
@@ -1543,7 +1543,7 @@ class Spellbook(Cleanable, ISpellbook):
 
 
 
-    def _create_link_contract(self, conduit_id: str):
+    def _create_link_contract(self, conduit_id: str) -> None:
         """
         Internal
 

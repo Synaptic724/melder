@@ -27,7 +27,7 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
     later validation or change-control logic treats that lineage as belonging to
     one authoritative conduit.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

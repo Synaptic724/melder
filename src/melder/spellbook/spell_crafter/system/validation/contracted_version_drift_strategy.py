@@ -25,7 +25,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     behind the active visible version set and end up validating or planning
     against an outdated node revision.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

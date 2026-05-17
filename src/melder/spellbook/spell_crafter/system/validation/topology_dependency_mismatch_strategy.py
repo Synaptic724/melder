@@ -25,7 +25,7 @@ class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
     makes sure those two representations are still describing the same NORMAL
     dependency edges before later rooted validation and planning trust them.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

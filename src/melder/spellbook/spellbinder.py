@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence
@@ -29,15 +30,17 @@ class SpellBinder(Cleanable, ISpellBinder):
     Guardrails:
     - Only one registration can be active at a time; every `bind(...)` call resets
       any in-flight state.
-    - All fluent methods guard with `_still_alive` and raise `RuntimeError` if the
-      binder has been cleaned or its Spellbook weak reference is dead.
-    - This helper is not thread-safe; use one binder per thread or serialize access.
+    - All fluent methods guard with `check_cleaned()` plus live Spellbook
+      resolution and raise `RuntimeError` if the binder has been cleaned or its
+      Spellbook weak reference is dead.
+    - Uses an internal `RLock` to serialize binder mutation and cleanup.
     - `cleanup()` is idempotent but permanently invalidates the binder for further use.
 
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_weak_spellbook",
+        "_lock",
         "_default_existence",
         "_default_permissions",
         "_default_profile",
@@ -65,7 +68,8 @@ class SpellBinder(Cleanable, ISpellBinder):
             spellbook (ISpellbook):
                 The target Spellbook. The binder holds a weak reference to this
                 book to prevent reference cycles. If the Spellbook is collected or
-                cleaned, future binder calls will raise via `_still_alive()`.
+                cleaned, future binder calls will raise through the cleaned/live
+                Spellbook guard.
             default_existence (Existence):
                 The default lifecycle scope to use if one is not explicitly
                 set during a chain. Defaults to `Existence.unique`.
@@ -87,6 +91,7 @@ class SpellBinder(Cleanable, ISpellBinder):
 
         # 2. Initialize Infrastructure
         self._weak_spellbook: SyncWeakRef[ISpellbook] = SyncWeakRef(spellbook)
+        self._lock: threading.RLock = threading.RLock()
         self._default_existence = default_existence
         self._default_permissions = default_permissions
         self._default_profile = default_profile
@@ -108,32 +113,40 @@ class SpellBinder(Cleanable, ISpellBinder):
 
         Releases the weak reference to the Spellbook and clears all internal
         state. After cleanup, this instance cannot be used; subsequent API calls
-        will fail via `_still_alive()`. The method is idempotent.
+        will fail via `check_cleaned()` / live Spellbook resolution. The method
+        is idempotent.
         """
         if self._cleaned:
             return
 
-        # Mark cleaned first to prevent race conditions
-        self._cleaned = True
+        with self._lock:
+            if self._cleaned:
+                return
 
-        try:
-            self._weak_spellbook.cleanup()
-        except Exception:
-            pass
+            # Mark cleaned first to prevent race conditions
+            self._cleaned = True
 
-        # Nullify all slots to assist GC
-        del self._weak_spellbook
-        del self._spell
-        del self._existence
-        del self._permissions
-        del self._profile
-        del self._spellframe
-        del self._binding_name
-        del self._kwargs
+            try:
+                self._weak_spellbook.cleanup()
+            except Exception:
+                pass
 
-    def _still_alive(self) -> None:
+            # Drop owned references so the binder is terminally dead.
+            del self._weak_spellbook
+            del self._spell
+            del self._existence
+            del self._permissions
+            del self._profile
+            del self._spellframe
+            del self._binding_name
+            del self._kwargs
+            del self._default_existence
+            del self._default_permissions
+            del self._default_profile
+
+    def _require_spellbook(self) -> ISpellbook:
         """
-        Internal guard ensuring the binder and its target Spellbook are valid.
+        Resolve the target Spellbook and prove the binder is still live.
 
         Every public-facing fluent method calls this before mutating state so
         that stale weak references or post-cleanup usage is detected early.
@@ -142,11 +155,16 @@ class SpellBinder(Cleanable, ISpellBinder):
             RuntimeError: If the binder is cleaned or the Spellbook is dead.
         """
         self.check_cleaned()
-        # Defensive check: if cleanup happened partially, _weak_spellbook might be None
-        if self._weak_spellbook is None or not self._weak_spellbook.is_alive():
+        weak_spellbook = self._weak_spellbook
+        if weak_spellbook is None:
             raise RuntimeError(
                 "Spellbook is no longer alive; SpellBinder cannot be used."
             )
+        if not weak_spellbook.is_alive():
+            raise RuntimeError(
+                "Spellbook is no longer alive; SpellBinder cannot be used."
+            )
+        return weak_spellbook.get()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -160,9 +178,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         for the next `bind(...)` call, and at the start of `bind(...)` to drop
         any unfinished configuration. It restores existence/permissions to the
         defaults provided at construction, clears hook kwargs, and enforces
-        liveness via `_still_alive()`.
+        liveness via `check_cleaned()` plus live Spellbook resolution.
         """
-        self._still_alive()
+        self.check_cleaned()
+        self._require_spellbook()
         self._spell = None
         self._existence = self._default_existence
         self._permissions = self._default_permissions
@@ -181,7 +200,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If `finalize()` is called before `bind(...)`.
         """
-        self._still_alive()
+        self.check_cleaned()
+        self._require_spellbook()
         if self._spell is None:
             raise RuntimeError(
                 "SpellBinder.finalize() called with no active spell. "
@@ -201,7 +221,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             TypeError: If an unexpected non-list value is already stored under the key.
         """
-        self._still_alive()
+        self.check_cleaned()
+        self._require_spellbook()
         existing = self._kwargs.get(key)
         if existing is None:
             hooks: list[Callable[..., Any]] = []
@@ -267,25 +288,27 @@ class SpellBinder(Cleanable, ISpellBinder):
                 longer alive.
 
         """
-        self._still_alive()
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
 
-        # Clear previous state to ensure a clean slate
-        self._reset_current()
-        self._spell = spell
+            # Clear previous state to ensure a clean slate
+            self._reset_current()
+            self._spell = spell
 
-        if existence is not None:
-            self._existence = existence
-        if permissions is not None:
-            self._permissions = permissions
-        if profile is not None:
-            self._profile = profile
-        if spellframe is not None:
-            self._spellframe = spellframe
-        if binding_name is not None:
-            self._binding_name = binding_name
+            if existence is not None:
+                self._existence = existence
+            if permissions is not None:
+                self._permissions = permissions
+            if profile is not None:
+                self._profile = profile
+            if spellframe is not None:
+                self._spellframe = spellframe
+            if binding_name is not None:
+                self._binding_name = binding_name
 
-        if kwargs:
-            self._kwargs.update(kwargs)
+            if kwargs:
+                self._kwargs.update(kwargs)
 
         return self
 
@@ -303,8 +326,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = existence
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = existence
         return self
 
     def as_unique(self) -> "SpellBinder":
@@ -323,8 +348,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = Existence.unique
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = Existence.unique
         return self
 
     def as_many(self) -> "SpellBinder":
@@ -343,8 +370,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = Existence.many
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = Existence.many
         return self
 
     def as_unique_per_conduit(self) -> "SpellBinder":
@@ -363,8 +392,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = Existence.unique_per_conduit
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = Existence.unique_per_conduit
         return self
 
     def as_unique_per_conduit_cluster(self) -> "SpellBinder":
@@ -382,8 +413,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = Existence.unique_per_conduit_cluster
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = Existence.unique_per_conduit_cluster
         return self
 
     def as_unique_per_conduit_lineage(self) -> "SpellBinder":
@@ -401,8 +434,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = Existence.unique_per_conduit_lineage
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = Existence.unique_per_conduit_lineage
         return self
 
     def as_unique_per_spell_space(self) -> "SpellBinder":
@@ -421,8 +456,10 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        self._existence = Existence.unique_per_spell_space
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._existence = Existence.unique_per_spell_space
         return self
 
     # ------------------------------------------------------------------
@@ -449,8 +486,10 @@ class SpellBinder(Cleanable, ISpellBinder):
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
         """
-        self._still_alive()
-        self._permissions = permissions
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._permissions = permissions
         return self
 
     def under_spellframe(self, spellframe: Any) -> "SpellBinder":
@@ -472,8 +511,10 @@ class SpellBinder(Cleanable, ISpellBinder):
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
         """
-        self._still_alive()
-        self._spellframe = spellframe
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._spellframe = spellframe
         return self
 
     def named(self, binding_name: str) -> "SpellBinder":
@@ -493,8 +534,10 @@ class SpellBinder(Cleanable, ISpellBinder):
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
         """
-        self._still_alive()
-        self._binding_name = binding_name
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            self._binding_name = binding_name
         return self
 
     def with_kwargs(self, **kwargs: Any) -> "SpellBinder":
@@ -509,9 +552,11 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        if kwargs:
-            self._kwargs.update(kwargs)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            if kwargs:
+                self._kwargs.update(kwargs)
         return self
 
     # ------------------------------------------------------------------
@@ -531,9 +576,11 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        hooks = self._ensure_hook_list("pre_hooks")
-        hooks.append(hook)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            hooks = self._ensure_hook_list("pre_hooks")
+            hooks.append(hook)
         return self
 
     def with_pre_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
@@ -546,11 +593,13 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        if not hooks:
-            return self
-        lst = self._ensure_hook_list("pre_hooks")
-        lst.extend(hooks)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            if not hooks:
+                return self
+            lst = self._ensure_hook_list("pre_hooks")
+            lst.extend(hooks)
         return self
 
     def with_activation_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
@@ -567,9 +616,11 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        hooks = self._ensure_hook_list("activation_hooks")
-        hooks.append(hook)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            hooks = self._ensure_hook_list("activation_hooks")
+            hooks.append(hook)
         return self
 
     def with_activation_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
@@ -582,11 +633,13 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        if not hooks:
-            return self
-        lst = self._ensure_hook_list("activation_hooks")
-        lst.extend(hooks)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            if not hooks:
+                return self
+            lst = self._ensure_hook_list("activation_hooks")
+            lst.extend(hooks)
         return self
 
     def with_post_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
@@ -602,9 +655,11 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        hooks = self._ensure_hook_list("post_hooks")
-        hooks.append(hook)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            hooks = self._ensure_hook_list("post_hooks")
+            hooks.append(hook)
         return self
 
     def with_post_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
@@ -617,11 +672,13 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
-        self._still_alive()
-        if not hooks:
-            return self
-        lst = self._ensure_hook_list("post_hooks")
-        lst.extend(hooks)
+        with self._lock:
+            self.check_cleaned()
+            self._require_spellbook()
+            if not hooks:
+                return self
+            lst = self._ensure_hook_list("post_hooks")
+            lst.extend(hooks)
         return self
 
     # ------------------------------------------------------------------
@@ -653,21 +710,22 @@ class SpellBinder(Cleanable, ISpellBinder):
                 invalid hook payloads.
 
         """
-        self._require_spell_selected()
+        with self._lock:
+            self._require_spell_selected()
 
-        # Access the weakref safely; throws if Spellbook is collected
-        spellbook = self._weak_spellbook.get()
+            # Access the weakref safely; raises if Spellbook is collected.
+            spellbook = self._require_spellbook()
 
-        spell_id: str = spellbook.bind(
-            spell=self._spell,
-            existence=self._existence,
-            permissions=self._permissions,
-            profile=self._profile,
-            spellframe=self._spellframe,
-            binding_name=self._binding_name,
-            **self._kwargs,
-        )
+            spell_id: str = spellbook.bind(
+                spell=self._spell,
+                existence=self._existence,
+                permissions=self._permissions,
+                profile=self._profile,
+                spellframe=self._spellframe,
+                binding_name=self._binding_name,
+                **self._kwargs,
+            )
 
-        # Allow reuse for another registration by clearing state
-        self._reset_current()
-        return spell_id
+            # Allow reuse for another registration by clearing state
+            self._reset_current()
+            return spell_id

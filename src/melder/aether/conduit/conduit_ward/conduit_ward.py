@@ -1,7 +1,7 @@
 import inspect
 import threading
 from contextlib import contextmanager
-from typing import List, Optional, Any, Tuple, Dict, Iterable
+from typing import List, Optional, Any, Tuple, Dict, Iterable, Generator
 # Melder Imports
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
@@ -165,16 +165,11 @@ class ConduitWard(Cleanable, IConduitWard):
             self._clean_up_lesser_conduits_links()
 
             # Clear lineage/contract state
-            self._parent_conduit = None
-            self._root_conduit = None
             self._lesser_conduits.clear()
             self._contracts.clear()
             self._initiated_index.clear()
             self._received_index.clear()
-            self._conduit = None
-            self._dynamic = None
             self._conduit_type = self._conduit_type.cleaned
-            self._policy = None
             self._cleaned = True
             self._logger.info(
                 "cleanup complete",
@@ -182,11 +177,16 @@ class ConduitWard(Cleanable, IConduitWard):
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
-
-        # Null logger metadata last (outside lock)
-        if self._logger is not None and hasattr(self._logger, "cleanup"):
-            self._logger.cleanup()
-        self._logger = None
+            del self._parent_conduit
+            del self._root_conduit
+            del self._policy
+            del self._conduit
+            del self._dynamic
+            
+            # Null logger metadata last (outside lock)
+            if  hasattr(self._logger, "cleanup"):
+                self._logger.cleanup()
+            del self._logger
 
 
     def _clean_up_lesser_conduits_links(self):
@@ -264,7 +264,7 @@ class ConduitWard(Cleanable, IConduitWard):
     #endregion Cleanup
 
     #region Context Manager
-    def __enter__(self):
+    def __enter__(self) -> IConduitWard:
         """
         Acquire the ward lock and return this ward.
 
@@ -275,7 +275,7 @@ class ConduitWard(Cleanable, IConduitWard):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Release the ward lock acquired by `__enter__`.
 
@@ -302,6 +302,7 @@ class ConduitWard(Cleanable, IConduitWard):
         if root_conduit._conduit_state != ConduitState.normal:
             raise RuntimeError("Root conduit must be a normal conduit.")
         return root_conduit
+    
     #endregion Properties
     #region Change Control
     def begin_transaction(
@@ -406,7 +407,7 @@ class ConduitWard(Cleanable, IConduitWard):
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
             metadata: Optional[Dict[str, Any]] = None,
-    ) -> "ConduitWard":
+    ) -> Generator[IConduitWard, Any, None]:
         """
         Public API
 

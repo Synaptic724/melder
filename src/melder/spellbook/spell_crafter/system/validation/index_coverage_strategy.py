@@ -25,7 +25,7 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
     drift between those two products by ensuring every indexed node appears in
     at least one rooted blueprint.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

@@ -23,7 +23,7 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
     still reaches that spell should carry a system-level error so downstream
     planning and viability checks do not treat the root as structurally usable.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

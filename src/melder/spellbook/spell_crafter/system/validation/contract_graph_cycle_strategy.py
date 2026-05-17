@@ -27,7 +27,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
     checks whether it introduces loops that are invisible to the ordinary DAG
     cycle checks.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

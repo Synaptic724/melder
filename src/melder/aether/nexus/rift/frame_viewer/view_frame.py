@@ -486,7 +486,7 @@ class ViewFrame(Cleanable):
             source_kind=source_kind,
             source_id=source_id,
         )
-        visible_payload_keys = tuple()
+        visible_payload_keys: tuple[str, ...] = tuple()
         if source_kind == "frame":
             visible_payload_keys = tuple(explanation["visible_fields"])
         else:
@@ -533,7 +533,7 @@ class ViewFrame(Cleanable):
         descriptor = self._get_required_frame_descriptor()
         compiled_access_surface = self._get_required_compiled_access_surface()
         frame_overview = descriptor.frame_overview
-        all_frame_payload_fields = tuple()
+        all_frame_payload_fields: tuple[str, ...] = tuple()
         if frame_overview is not None:
             all_frame_payload_fields = self._payload_field_names(
                 frame_overview.payload,
@@ -1780,7 +1780,9 @@ class ViewFrame(Cleanable):
             Tuple[str, ...]: Declared payload field names in deterministic
             order.
         """
-        payload_slots = getattr(type(payload), "__slots__", tuple())
+        payload_slots: tuple[str, ...] = tuple(
+            getattr(type(payload), "__slots__", tuple())
+        )
         return tuple(
             current_field_name
             for current_field_name in payload_slots

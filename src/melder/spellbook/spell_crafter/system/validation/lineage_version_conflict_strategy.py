@@ -27,7 +27,7 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
     that mismatch into a root-scoped error before later planning or execution
     phases reason over an internally inconsistent dependency closure.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

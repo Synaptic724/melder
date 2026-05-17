@@ -26,7 +26,7 @@ class MissingPhase4Strategy(SpellSystemValidationStrategy):
     become untrustworthy because the system layer would be validating an
     incompletely checked spell set.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

@@ -1,9 +1,9 @@
 import threading
 import ulid
-from typing import Optional, Dict, Tuple
+from typing import Any, Optional, Dict, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpellIndex, ISpellbook, ISpell
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellIndex(Cleanable, ISpellIndex):
@@ -64,10 +64,10 @@ class SpellIndex(Cleanable, ISpellIndex):
         # The dynamic pointer to the version, which can be updated.
         self._current_id: str = initial_id
         self._versions: set = {initial_id}  # Optional: Track all versions seen.
-        self._owner_spellbook: Optional[ISpellbook] = None
-        self._owner_spell: Optional[ISpell] = None
+        self._owner_spellbook: Optional[Any] = None
+        self._owner_spell: Optional[Any] = None
         self._owner_conduit_id: Optional[str] = None
-        self._contracted_spellbooks: Dict[Tuple[ISpellbook, str], ISpell] = {}
+        self._contracted_spellbooks: Dict[Tuple[Any, str], Any] = {}
 
     # ------------------------------------------------------------
     # Cleanup
@@ -164,7 +164,7 @@ class SpellIndex(Cleanable, ISpellIndex):
             spellbook._update_contracted_spell_id(conduit_id, old_id, new_id, spell)
 
 
-    def _attach_owner(self, spellbook: ISpellbook, spell: ISpell) -> None:
+    def _attach_owner(self, spellbook: Any, spell: Any) -> None:
         """
         Attach this SpellIndex to an owning Spellbook and register the current
         spell_id in the Spellbook's owned id map.
@@ -221,7 +221,7 @@ class SpellIndex(Cleanable, ISpellIndex):
             self._owner_conduit_id = conduit_id
 
 
-    def _attach_contracted(self, spellbook: ISpellbook, conduit_id: str, spell: ISpell) -> None:
+    def _attach_contracted(self, spellbook: Any, conduit_id: str, spell: Any) -> None:
         """
         Attach this SpellIndex to a contracted Spellbook and register the
         current spell_id in the contracted id map for the given conduit.
@@ -253,7 +253,7 @@ class SpellIndex(Cleanable, ISpellIndex):
         spellbook._register_contracted_spell_id(conduit_id, spell_id, spell)
 
 
-    def _detach_contracted(self, spellbook: ISpellbook, conduit_id: str) -> None:
+    def _detach_contracted(self, spellbook: Any, conduit_id: str) -> None:
         """
         Detach this SpellIndex from a contracted Spellbook and remove the
         current spell_id mapping for the given conduit.

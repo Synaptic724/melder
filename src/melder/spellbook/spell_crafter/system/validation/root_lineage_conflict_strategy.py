@@ -26,7 +26,7 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
     planner treats those roots as separate entrypoints with independent
     occurrence, validation, or execution semantics.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

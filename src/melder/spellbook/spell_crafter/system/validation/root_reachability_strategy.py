@@ -25,7 +25,7 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
     execution planning are reasoning over stale or structurally invalid graph
     state. This strategy catches that mismatch.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

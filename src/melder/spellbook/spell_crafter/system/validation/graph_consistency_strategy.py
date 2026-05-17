@@ -28,7 +28,7 @@ class GraphConsistencyStrategy(SpellSystemValidationStrategy):
     blueprint references an edge the index does not know about, or the index
     records an edge that never appears in any rooted blueprint.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

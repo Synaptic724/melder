@@ -29,7 +29,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
           the index.
         - Skips checks when a blueprint intentionally lacks lineage metadata.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

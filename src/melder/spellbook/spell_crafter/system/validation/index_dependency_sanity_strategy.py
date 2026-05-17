@@ -29,7 +29,7 @@ class IndexDependencySanityStrategy(SpellSystemValidationStrategy):
         - Leaves diagnostics unchanged when all indexed dependencies are
           resolvable.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

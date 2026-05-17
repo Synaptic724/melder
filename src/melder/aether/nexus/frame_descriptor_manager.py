@@ -261,14 +261,14 @@ class FrameDescriptorManager(Cleanable):
                         if conduit is not None and conduit._name is not None
                     )
                 )
-                conduit_cloud_names = tuple()
+                conduit_cloud_names: tuple[str, ...] = tuple()
                 conduit_cloud_entry_count = 0
                 if frame._conduit_cloud is not None:
                     conduit_cloud_names = tuple(
                         sorted(frame._conduit_cloud._registry.keys())
                     )
                     conduit_cloud_entry_count = len(conduit_cloud_names)
-                cluster_names = tuple()
+                cluster_names: tuple[str, ...] = tuple()
                 cluster_count = 0
                 if frame._conduit_clusters is not None:
                     cluster_names = tuple(sorted(frame._conduit_clusters.keys()))

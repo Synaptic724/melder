@@ -1048,7 +1048,7 @@ class ViewConduit(Cleanable):
             source_kind="conduit",
             source_id=conduit_id,
         )
-        visible_sections = tuple(explanation["visible_sections"])
+        visible_sections: tuple[str, ...] = tuple(explanation["visible_sections"])
         return {
             **explanation,
             "payload_visible": (

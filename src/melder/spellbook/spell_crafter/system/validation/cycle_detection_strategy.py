@@ -29,7 +29,7 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
         - Emits at most one coarse `cycle_detected` error for the frame.
         - Honors cancellation during traversal.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

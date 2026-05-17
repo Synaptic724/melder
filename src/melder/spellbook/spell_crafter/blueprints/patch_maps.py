@@ -172,24 +172,25 @@ class OverridePatchMap(Cleanable):
         self._targets_by_spec.clear()
         self._specificity_by_spec.clear()
         self._resolved_targets_by_raw_key.clear()
-        self._last_single_raw_key = None
-        self._last_single_value = None
-        self._last_single_override_map = None
-        self._last_single_socket_shape = None
-        self._last_multi_signature = None
-        self._last_multi_override_map = None
-        self._last_multi_socket_shape = None
-        self._root_spell_id = None
-        self._targets_by_spec = None
-        self._specificity_by_spec = None
-        self._resolved_targets_by_raw_key = None
-        self._last_single_raw_key = None
-        self._last_single_value = None
-        self._last_single_override_map = None
-        self._last_single_socket_shape = None
-        self._last_multi_signature = None
-        self._last_multi_override_map = None
-        self._last_multi_socket_shape = None
+
+        del self._last_single_raw_key
+        del self._last_single_value
+        del self._last_single_override_map
+        del self._last_single_socket_shape
+        del self._last_multi_signature
+        del self._last_multi_override_map
+        del self._last_multi_socket_shape
+        del self._root_spell_id
+        del self._targets_by_spec
+        del self._specificity_by_spec
+        del self._resolved_targets_by_raw_key
+        del self._last_single_raw_key
+        del self._last_single_value
+        del self._last_single_override_map
+        del self._last_single_socket_shape
+        del self._last_multi_signature
+        del self._last_multi_override_map
+        del self._last_multi_socket_shape
 
     @property
     def root_spell_id(self) -> str:

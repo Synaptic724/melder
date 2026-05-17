@@ -25,7 +25,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
     ambiguous because the graph is no longer naming executable versions. This
     strategy catches that identity-layer mixing.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

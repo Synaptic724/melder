@@ -1027,7 +1027,7 @@ def _construct_spell_instance(
 
     raw_args = kwargs.get("__args__", _MISSING)
     if raw_args is _MISSING:
-        args = []
+        args: Sequence[Any] = []
         call_kwargs = kwargs
     elif isinstance(raw_args, tuple):
         args = raw_args

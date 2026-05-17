@@ -32,7 +32,7 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
         - Uses WARNING severity so it informs system review without by itself
           gating resolution.
     """
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

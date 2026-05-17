@@ -26,7 +26,7 @@ class RootViabilityStrategy(SpellSystemValidationStrategy):
     error that higher layers can use as a coarse viability signal.
     """
 
-    __slots__ = []
+    __slots__: list[str] = []
 
     def run(
             self,

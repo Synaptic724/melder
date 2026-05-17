@@ -6,7 +6,6 @@ from melder.aether.dev_ops.spell_system_states.spell_system_state import (
     SpellSystemState,
 )
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
@@ -16,12 +15,58 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
+
+@runtime_checkable
+class ISpellSystemStatesSpellSurface(Protocol):
+    """
+    Minimal spell-facing view of the structural state registry.
+
+    Purpose:
+        Let `ISpell` describe the borrowed lineage-state operations it actually
+        needs without importing the full `ISpellSystemStates` protocol back
+        into this module and recreating the interface cycle.
+
+    Contract:
+        - Supports structural invalidation for one spell lineage.
+        - Supports lookup of a `SpellSystemState` by SpellIndex id.
+    """
+
+    def mark_structural_change(
+            self,
+            spell_index: ISpellIndex,
+            reason: SpellStateChangeReason = SpellStateChangeReason.structure_changed,
+    ) -> None:
+        """
+        Mark one lineage structurally changed.
+        """
+        ...
+
+    def get_by_index_id(self, index_id: str) -> Optional[SpellSystemState]:
+        """
+        Return the state entry for one SpellIndex id, if present.
+        """
+        ...
+
+
+@runtime_checkable
+class ISpellbookSpellSurface(Protocol):
+    """
+    Minimal spellbook-facing surface consumed by `ISpell`.
+
+    Purpose:
+        Keep the spell-owned contract narrow and cycle-safe. The concrete spell
+        only borrows spell-system-state access from its owning Spellbook.
+    """
+
+    _spell_system_states: ISpellSystemStatesSpellSurface
+
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
@@ -59,7 +104,7 @@ class ISpell(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Spell metadata / structure
     # ------------------------------------------------------------------
-    spell_index: 'SpellIndex'
+    spell_index: 'ISpellIndex'
     _hooks_enabled: bool
     spell: Any
     spell_id: str
@@ -92,7 +137,7 @@ class ISpell(ICleanable, Protocol):
     dependencies: List[str]
 
     # Spellbook
-    _spellbook: Optional['ISpellbook']
+    _spellbook: Optional['ISpellbookSpellSurface']
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline via SpellCrafter
@@ -124,7 +169,7 @@ class ISpell(ICleanable, Protocol):
     _activation_hooks: Optional[List[Callable[..., Any]]]
     _post_hooks: Optional[List[Callable[..., Any]]]
 
-    _spell_system_states: 'ISpellSystemStates'
+    _spell_system_states: 'ISpellSystemStatesSpellSurface'
     _key: Tuple[str, str]
 
     # ------------------------------------------------------------------
