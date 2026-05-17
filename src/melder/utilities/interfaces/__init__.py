@@ -4,6 +4,7 @@ from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ilessercreations import ILesserCreations
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
@@ -90,6 +91,7 @@ __all__ = [
     "ILesserCreations",
     "ISpell",
     "ISpellIndex",
+    "ISpellBinder",
     "ISpellbook",
     "ISpellGeneralProfile",
     "ISpellDetailedProfile",

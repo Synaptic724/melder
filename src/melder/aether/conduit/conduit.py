@@ -16,6 +16,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces import (
     IConduit,
+    ISpellBinder,
     ISpellbook,
     IConduitCloud,
     ISpell,
@@ -1795,11 +1796,12 @@ class Conduit(Cleanable, IConduit):
             *,
             default_existence: Existence = Existence.unique,
             default_permissions: str = "create",
-    ) -> 'SpellBinder':
+    ) -> ISpellBinder:
         """
         Public API
 
-        Creates a `SpellBinder` instance that provides an Autofac-style
+        Creates an `ISpellBinder` surface backed by `SpellBinder` and providing
+        an Autofac-style
         fluent syntax on top of `Conduit.bind(...)`.
 
         This does *not* introduce a new registration path; it simply
@@ -1829,7 +1831,7 @@ class Conduit(Cleanable, IConduit):
                 Default permissions for fluent registrations (e.g. "create").
 
         Returns:
-            SpellBinder:
+            ISpellBinder:
                 A reusable fluent registration helper bound to this Spellbook.
         """
         self.check_cleaned()

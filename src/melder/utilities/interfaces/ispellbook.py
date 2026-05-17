@@ -2,6 +2,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple
 from types import ModuleType
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 
@@ -354,11 +355,12 @@ class ISpellbook(ICleanable, Protocol):
             *,
             default_existence: Existence = Existence.unique,
             default_permissions: str = "create",
-    ) -> 'SpellBinder':
+    ) -> ISpellBinder:
         """
         Public API
 
-        Creates a `SpellBinder` instance that provides an Autofac-style
+        Creates an `ISpellBinder` surface backed by `SpellBinder` and providing
+        an Autofac-style
         fluent syntax on top of `Spellbook.bind(...)`.
 
         This does *not* introduce a new registration path; it simply
@@ -388,7 +390,7 @@ class ISpellbook(ICleanable, Protocol):
                 Default permissions for fluent registrations (e.g. "create").
 
         Returns:
-            SpellBinder:
+            ISpellBinder:
                 A reusable fluent registration helper bound to this Spellbook.
         """
         ...
