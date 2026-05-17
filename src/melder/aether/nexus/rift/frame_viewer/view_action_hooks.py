@@ -1,9 +1,11 @@
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Concatenate, Generator, ParamSpec, TypeVar
 
 
-ViewMethod = TypeVar("ViewMethod", bound=Callable[..., Any])
+P = ParamSpec("P")
+R = TypeVar("R")
+ViewMethod = Callable[Concatenate[Any, P], R]
 
 
 def decorate_public_view_actions(cls: type) -> type:
@@ -28,7 +30,10 @@ def decorate_public_view_actions(cls: type) -> type:
     return cls
 
 
-def _wrap_view_action(action_name: str, method: ViewMethod) -> ViewMethod:
+def _wrap_view_action(
+        action_name: str,
+        method: ViewMethod[P, R],
+) -> ViewMethod[P, R]:
     """
     Wrap one viewer method in the shared view-action hook boundary.
 
@@ -43,7 +48,7 @@ def _wrap_view_action(action_name: str, method: ViewMethod) -> ViewMethod:
     """
 
     @wraps(method)
-    def _wrapped(self: Any, *args: Any, **kwargs: Any) -> Any:
+    def _wrapped(self: Any, *args: P.args, **kwargs: P.kwargs) -> R:
         with self._entered_view_action(action_name=action_name):
             return method(self, *args, **kwargs)
 
@@ -52,11 +57,11 @@ def _wrap_view_action(action_name: str, method: ViewMethod) -> ViewMethod:
 
 
 @contextmanager
-def noop_action_scope() -> Any:
+def noop_action_scope() -> Generator[None, None, None]:
     """
     Return a no-op action scope when no viewer hook owner is available.
 
-    Returns:
-        Any: No-op context manager.
+    Yields:
+        None: No-op context manager payload.
     """
     yield
