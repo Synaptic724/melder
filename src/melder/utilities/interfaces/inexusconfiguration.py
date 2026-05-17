@@ -1,4 +1,9 @@
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import Optional, Protocol, Sequence, Union, runtime_checkable
+from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.configuration.rift_validation_mode import (
+    RiftValidationMode,
+)
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -138,7 +143,10 @@ class INexusConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def with_nexus_frame_mode(self, mode: object) -> "INexusConfiguration":
+    def with_nexus_frame_mode(
+            self,
+            mode: Union[NexusFrameMode, str],
+    ) -> "INexusConfiguration":
         """
         Set the Nexus frame exposure mode used when Rifts resolve accessible frames.
         """
@@ -200,7 +208,7 @@ class INexusConfiguration(ICleanable, Protocol):
 
     def with_projection_refresh_gate_timeout_seconds(
             self,
-            timeout_seconds: object,
+            timeout_seconds: Union[int, float],
     ) -> "INexusConfiguration":
         """
         Set the timeout used while waiting for impacted Rift gates to drain.
@@ -209,14 +217,17 @@ class INexusConfiguration(ICleanable, Protocol):
 
     def with_projection_refresh_gate_poll_interval_seconds(
             self,
-            interval_seconds: object,
+            interval_seconds: Union[int, float],
     ) -> "INexusConfiguration":
         """
         Set the poll interval used while waiting for impacted Rift gates to drain.
         """
         ...
 
-    def with_default_space_type(self, space_type: object) -> "INexusConfiguration":
+    def with_default_space_type(
+            self,
+            space_type: Union[RiftSpaceType, str],
+    ) -> "INexusConfiguration":
         """
         Set the default RiftSpace type used when new spaces are created implicitly.
         """
@@ -234,7 +245,10 @@ class INexusConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def with_default_validation_mode(self, mode: object) -> "INexusConfiguration":
+    def with_default_validation_mode(
+            self,
+            mode: Union[RiftValidationMode, str],
+    ) -> "INexusConfiguration":
         """
         Set the default validation mode applied to Rift programming and activation flows.
         """

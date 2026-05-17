@@ -1,4 +1,8 @@
-from typing import Dict, Optional, Protocol, runtime_checkable
+from typing import Dict, Optional, Protocol, Union, runtime_checkable
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.configuration.rift_validation_mode import (
+    RiftValidationMode,
+)
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -86,7 +90,10 @@ class IRiftConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def with_space_type(self, space_type: object) -> "IRiftConfiguration":
+    def with_space_type(
+            self,
+            space_type: Union[RiftSpaceType, str],
+    ) -> "IRiftConfiguration":
         """
         Set the top-level RiftSpace type for this Rift configuration.
         """
@@ -104,7 +111,10 @@ class IRiftConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def with_validation_mode(self, mode: object) -> "IRiftConfiguration":
+    def with_validation_mode(
+            self,
+            mode: Union[RiftValidationMode, str],
+    ) -> "IRiftConfiguration":
         """
         Set the validation posture for this Rift configuration.
         """
