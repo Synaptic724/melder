@@ -108,8 +108,8 @@ class ProtocolCrafter(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._id = None
-        self._lock = None
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

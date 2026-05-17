@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypeVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -62,6 +62,8 @@ class FrameACLProfileBuilder(Cleanable):
         "_command_precision_profiles_by_name",
         "_codegen_precision_profiles_by_name",
     ]
+
+    _ProfileT = TypeVar("_ProfileT")
 
     def __init__(self) -> None:
         """
@@ -463,9 +465,9 @@ class FrameACLProfileBuilder(Cleanable):
 
     def _get_required_profile(
             self,
-            registry: Dict[str, object],
+            registry: Dict[str, _ProfileT],
             profile_name: str,
-    ) -> object:
+    ) -> _ProfileT:
         self.check_cleaned()
         with self._lock:
             try:
