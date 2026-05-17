@@ -191,12 +191,12 @@ def test_compile_phase12_no_overrides_executor_raises_on_transient_compile_error
     monkeypatch.setattr(
         phase12_module,
         "_build_phase12_executor_source",
-        lambda transient_schema, use_native_dispatch=False: "def _phase12_executor(:\n    pass",
+        lambda transient_schema: "def _phase12_executor(:\n    pass",
     )
     monkeypatch.setattr(
         phase12_module,
         "_build_executor_namespace",
-        lambda transient_schema, steps, native_dispatch=None: {},
+        lambda transient_schema, steps: {},
     )
 
     with pytest.raises(RuntimeError, match="code generation failed"):
@@ -223,12 +223,12 @@ def test_compile_phase12_no_overrides_executor_raises_when_callable_missing(
     monkeypatch.setattr(
         phase12_module,
         "_build_phase12_executor_source",
-        lambda transient_schema, use_native_dispatch=False: "x = 1",
+        lambda transient_schema: "x = 1",
     )
     monkeypatch.setattr(
         phase12_module,
         "_build_executor_namespace",
-        lambda transient_schema, steps, native_dispatch=None: {},
+        lambda transient_schema, steps: {},
     )
 
     with pytest.raises(RuntimeError, match="did not define a callable _phase12_executor"):
@@ -255,7 +255,7 @@ def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_tra
     monkeypatch.setattr(
         phase12_module,
         "_build_phase12_executor_source",
-        lambda transient_schema, use_native_dispatch=False: None,
+        lambda transient_schema: None,
     )
 
     executor = phase12_module.compile_phase12_no_overrides_executor(
@@ -267,26 +267,16 @@ def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_tra
     assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
 
 
-def test_compile_phase12_no_overrides_executor_transient_native_dispatch_enabled_uses_dispatcher(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_compile_phase12_no_overrides_executor_transient_uses_direct_call_path() -> None:
     """
-    Transient executor routes through native dispatcher when gate is enabled.
+    Transient executor stays on the direct emitted-call path.
 
     Contract:
-        - Env-gated dispatcher wiring invokes native dispatcher for transient
-          call modes.
-        - Dispatcher receives call mode and resolved positional args tuple.
+        - The transient no-overrides executor does not depend on a separate
+          native dispatcher seam.
+        - Generated transient executors invoke the emitted direct-call path and
+          still return the rooted result.
     """
-    dispatch_calls: list[tuple[int, tuple[Any, ...]]] = []
-
-    def _native_dispatch(target: Any, call_mode: int, args: tuple[Any, ...]) -> Any:
-        dispatch_calls.append((call_mode, args))
-        return target(*args)
-
-    monkeypatch.setenv("MELDER_ENABLE_NATIVE_TRANSIENT_DISPATCH", "1")
-    monkeypatch.setattr(phase12_module, "_NATIVE_TRANSIENT_DISPATCHER", _native_dispatch)
-
     codegen_ir = {
         "steps_rows": (_make_step_row("root"),),
         "root_spell_id": "root",
@@ -301,44 +291,6 @@ def test_compile_phase12_no_overrides_executor_transient_native_dispatch_enabled
     assert callable(executor)
     assert executor.__code__.co_filename == "<melder_phase12_no_overrides_transient_executor>"
     assert executor() == "value:root"
-    assert dispatch_calls == [
-        (ExecutionPlanCallMode.CALL0, ()),
-    ]
-
-
-def test_compile_phase12_no_overrides_executor_transient_native_dispatch_disabled_by_default(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Transient executor keeps direct call path when native gate is disabled.
-
-    Contract:
-        - Native dispatcher is ignored unless env gate is explicitly enabled.
-    """
-    dispatch_calls: list[tuple[int, tuple[Any, ...]]] = []
-
-    def _native_dispatch(target: Any, call_mode: int, args: tuple[Any, ...]) -> Any:
-        dispatch_calls.append((call_mode, args))
-        return target(*args)
-
-    monkeypatch.delenv("MELDER_ENABLE_NATIVE_TRANSIENT_DISPATCH", raising=False)
-    monkeypatch.setattr(phase12_module, "_NATIVE_TRANSIENT_DISPATCHER", _native_dispatch)
-
-    codegen_ir = {
-        "steps_rows": (_make_step_row("root"),),
-        "root_spell_id": "root",
-        "transient_schema": _make_transient_schema(),
-    }
-
-    executor = phase12_module.compile_phase12_no_overrides_executor(
-        codegen_ir=codegen_ir,
-        spell_lookup={"root": _make_spell("root")},
-    )
-
-    assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_transient_executor>"
-    assert executor() == "value:root"
-    assert dispatch_calls == []
 
 
 def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> None:
@@ -1207,48 +1159,6 @@ def test_construct_spell_instance_accepts_tuple_positional_payload() -> None:
     assert captured["kwargs"] == {}
     assert plan_step.contract_positional_override == tuple_payload
 
-
-def test_resolve_native_transient_dispatcher_respects_env_gate(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Env-gated native dispatcher stays disabled unless explicitly enabled."""
-    dispatcher = lambda target, call_mode, args: (target, call_mode, args)
-    monkeypatch.setattr(phase12_module, "_NATIVE_TRANSIENT_DISPATCHER", dispatcher)
-    monkeypatch.delenv(phase12_module._NATIVE_TRANSIENT_DISPATCH_ENV, raising=False)
-
-    assert phase12_module._resolve_native_transient_dispatcher() is None
-
-    monkeypatch.setenv(phase12_module._NATIVE_TRANSIENT_DISPATCH_ENV, "1")
-    assert phase12_module._resolve_native_transient_dispatcher() is dispatcher
-
-
-def test_dispatch_transient_call_uses_native_dispatch_and_python_fallback() -> None:
-    """Transient dispatcher helper prefers native dispatch but falls back to direct calls."""
-    calls: list[tuple[int, tuple[Any, ...]]] = []
-
-    def _native_dispatch(target: Any, call_mode: int, args: tuple[Any, ...]) -> str:
-        calls.append((call_mode, args))
-        return "native"
-
-    def _target(*args: Any) -> tuple[Any, ...]:
-        return args
-
-    assert phase12_module._dispatch_transient_call(
-        native_dispatch=_native_dispatch,
-        target=_target,
-        call_mode=ExecutionPlanCallMode.CALL2,
-        args=("a", "b"),
-    ) == "native"
-    assert calls == [(ExecutionPlanCallMode.CALL2, ("a", "b"))]
-
-    assert phase12_module._dispatch_transient_call(
-        native_dispatch=None,
-        target=_target,
-        call_mode=ExecutionPlanCallMode.CALL2,
-        args=("a", "b"),
-    ) == ("a", "b")
-
-
 def test_normalize_transient_schema_normalizes_and_validates() -> None:
     """Transient schema normalization returns tuples and rejects malformed payloads."""
     normalized = phase12_module._normalize_transient_schema(
@@ -1375,46 +1285,6 @@ def test_unrolled_call_helpers_cover_supported_and_unsupported_modes() -> None:
         transient_dep8g=(-1,),
         transient_dep8h=(-1,),
     ) == "t0()"
-    assert phase12_module._build_unrolled_call_args_expression(
-        step_index=0,
-        call_mode=ExecutionPlanCallMode.CALL2,
-        transient_dep1=(-1,),
-        transient_dep2a=(1,),
-        transient_dep2b=(2,),
-        transient_dep3a=(-1,),
-        transient_dep3b=(-1,),
-        transient_dep3c=(-1,),
-        transient_dep4a=(-1,),
-        transient_dep4b=(-1,),
-        transient_dep4c=(-1,),
-        transient_dep4d=(-1,),
-        transient_dep5a=(-1,),
-        transient_dep5b=(-1,),
-        transient_dep5c=(-1,),
-        transient_dep5d=(-1,),
-        transient_dep5e=(-1,),
-        transient_dep6a=(-1,),
-        transient_dep6b=(-1,),
-        transient_dep6c=(-1,),
-        transient_dep6d=(-1,),
-        transient_dep6e=(-1,),
-        transient_dep6f=(-1,),
-        transient_dep7a=(-1,),
-        transient_dep7b=(-1,),
-        transient_dep7c=(-1,),
-        transient_dep7d=(-1,),
-        transient_dep7e=(-1,),
-        transient_dep7f=(-1,),
-        transient_dep7g=(-1,),
-        transient_dep8a=(-1,),
-        transient_dep8b=(-1,),
-        transient_dep8c=(-1,),
-        transient_dep8d=(-1,),
-        transient_dep8e=(-1,),
-        transient_dep8f=(-1,),
-        transient_dep8g=(-1,),
-        transient_dep8h=(-1,),
-    ) == "(v1, v2)"
     assert phase12_module._build_unrolled_call_arg_refs(
         step_index=0,
         call_mode=ExecutionPlanCallMode.CALLN,

@@ -52,63 +52,6 @@ _TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
     "dep8h",
 )
 
-_NATIVE_TRANSIENT_DISPATCH_ENV = "MELDER_ENABLE_NATIVE_TRANSIENT_DISPATCH"
-
-
-def _load_native_transient_dispatcher() -> Optional[Callable[[Any, int, Tuple[Any, ...]], Any]]:
-    """
-    Load optional native transient call dispatcher.
-
-    Contract:
-        - Returns dispatcher callable when optional native module is available.
-        - Returns None when native module is unavailable.
-        - Uses ImportError-only fallback to preserve fail-fast behavior for
-          non-import failures.
-    """
-    try:
-        from melder_native_fast_dispatch import dispatch_transient_call
-    except ImportError:
-        return None
-    return dispatch_transient_call
-
-
-_NATIVE_TRANSIENT_DISPATCHER = _load_native_transient_dispatcher()
-
-
-def _resolve_native_transient_dispatcher() -> Optional[Callable[[Any, int, Tuple[Any, ...]], Any]]:
-    """
-    Resolve optional native transient dispatcher under explicit env gate.
-
-    Contract:
-        - Returns native dispatcher only when env gate is enabled.
-        - Returns None when env gate is disabled or dispatcher is unavailable.
-        - Keeps default runtime behavior unchanged unless explicitly enabled.
-    """
-    if os.getenv(_NATIVE_TRANSIENT_DISPATCH_ENV, "0") != "1":
-        return None
-    return _NATIVE_TRANSIENT_DISPATCHER
-
-
-def _dispatch_transient_call(
-        *,
-        native_dispatch: Optional[Callable[[Any, int, Tuple[Any, ...]], Any]],
-        target: Any,
-        call_mode: int,
-        args: Tuple[Any, ...],
-) -> Any:
-    """
-    Invoke a transient step through optional native dispatcher with fallback.
-
-    Contract:
-        - Uses native dispatcher when provided.
-        - Falls back to direct Python invocation when native dispatcher is None.
-        - Preserves current CALL0..CALL8 argument semantics.
-    """
-    if native_dispatch is not None:
-        return native_dispatch(target, call_mode, args)
-    return target(*args)
-
-
 def compile_phase12_no_overrides_executor(
         *,
         codegen_ir: Dict[str, Any],
@@ -316,16 +259,13 @@ def _compile_no_overrides_executor_from_steps(
         normalized_transient_schema = _normalize_transient_schema(
             transient_schema=transient_schema,
         )
-        native_dispatch = _resolve_native_transient_dispatcher()
         source = _build_phase12_executor_source(
             transient_schema=normalized_transient_schema,
-            use_native_dispatch=native_dispatch is not None,
         )
         if source is not None:
             namespace = _build_executor_namespace(
                 transient_schema=normalized_transient_schema,
                 steps=steps,
-                native_dispatch=native_dispatch,
             )
             return _compile_emitted_no_overrides_executor(
                 source=source,
@@ -1399,14 +1339,12 @@ def _register_spell_instance_prebound(
 def _build_phase12_executor_source(
         *,
         transient_schema: Dict[str, Any],
-        use_native_dispatch: bool = False,
 ) -> Optional[str]:
     """
     Build Python source for a transient-schema unrolled Phase 12 executor.
 
     Contract:
         - Emits one direct call statement per transient step.
-        - Can emit optional native-dispatch statements when enabled.
         - Returns None when any step uses CALLN or an unsupported call mode.
         - Emits a creations-parameter signature for API consistency.
     """
@@ -1494,8 +1432,6 @@ def _build_phase12_executor_source(
         "        transient_dep8g=transient_dep8g,",
         "        transient_dep8h=transient_dep8h,",
     ]
-    if use_native_dispatch:
-        lines.append("        native_dispatch=native_dispatch,")
     lines.extend([
         "        steps=steps,",
         "    ):",
@@ -1509,8 +1445,7 @@ def _build_phase12_executor_source(
 
     for step_index in range(transient_step_count):
         call_mode = transient_call_modes[step_index]
-        if use_native_dispatch:
-            call_args_expression = _build_unrolled_call_args_expression(
+        call_expression = _build_unrolled_call_expression(
                 step_index=step_index,
                 call_mode=call_mode,
                 transient_dep1=transient_dep1,
@@ -1549,64 +1484,12 @@ def _build_phase12_executor_source(
                 transient_dep8f=transient_dep8f,
                 transient_dep8g=transient_dep8g,
                 transient_dep8h=transient_dep8h,
-            )
-            if call_args_expression is None:
-                return None
-            lines.extend([
-                f"        __step_index = {step_index}",
-                f"        v{step_index} = _dispatch_transient_call(",
-                "            native_dispatch=native_dispatch,",
-                f"            target=t{step_index},",
-                f"            call_mode={call_mode},",
-                f"            args={call_args_expression},",
-                "        )",
-            ])
-        else:
-            call_expression = _build_unrolled_call_expression(
-                step_index=step_index,
-                call_mode=call_mode,
-                transient_dep1=transient_dep1,
-                transient_dep2a=transient_dep2a,
-                transient_dep2b=transient_dep2b,
-                transient_dep3a=transient_dep3a,
-                transient_dep3b=transient_dep3b,
-                transient_dep3c=transient_dep3c,
-                transient_dep4a=transient_dep4a,
-                transient_dep4b=transient_dep4b,
-                transient_dep4c=transient_dep4c,
-                transient_dep4d=transient_dep4d,
-                transient_dep5a=transient_dep5a,
-                transient_dep5b=transient_dep5b,
-                transient_dep5c=transient_dep5c,
-                transient_dep5d=transient_dep5d,
-                transient_dep5e=transient_dep5e,
-                transient_dep6a=transient_dep6a,
-                transient_dep6b=transient_dep6b,
-                transient_dep6c=transient_dep6c,
-                transient_dep6d=transient_dep6d,
-                transient_dep6e=transient_dep6e,
-                transient_dep6f=transient_dep6f,
-                transient_dep7a=transient_dep7a,
-                transient_dep7b=transient_dep7b,
-                transient_dep7c=transient_dep7c,
-                transient_dep7d=transient_dep7d,
-                transient_dep7e=transient_dep7e,
-                transient_dep7f=transient_dep7f,
-                transient_dep7g=transient_dep7g,
-                transient_dep8a=transient_dep8a,
-                transient_dep8b=transient_dep8b,
-                transient_dep8c=transient_dep8c,
-                transient_dep8d=transient_dep8d,
-                transient_dep8e=transient_dep8e,
-                transient_dep8f=transient_dep8f,
-                transient_dep8g=transient_dep8g,
-                transient_dep8h=transient_dep8h,
-            )
-            if call_expression is None:
-                return None
+        )
+        if call_expression is None:
+            return None
 
-            lines.append(f"        __step_index = {step_index}")
-            lines.append(f"        v{step_index} = {call_expression}")
+        lines.append(f"        __step_index = {step_index}")
+        lines.append(f"        v{step_index} = {call_expression}")
 
     lines.extend([
         "    except Exception as exc:",
@@ -1714,103 +1597,6 @@ def _build_unrolled_call_expression(
     if not arg_refs:
         return f"t{step_index}()"
     return f"t{step_index}({', '.join(arg_refs)})"
-
-
-def _build_unrolled_call_args_expression(
-        *,
-        step_index: int,
-        call_mode: int,
-        transient_dep1: Sequence[int],
-        transient_dep2a: Sequence[int],
-        transient_dep2b: Sequence[int],
-        transient_dep3a: Sequence[int],
-        transient_dep3b: Sequence[int],
-        transient_dep3c: Sequence[int],
-        transient_dep4a: Sequence[int],
-        transient_dep4b: Sequence[int],
-        transient_dep4c: Sequence[int],
-        transient_dep4d: Sequence[int],
-        transient_dep5a: Sequence[int],
-        transient_dep5b: Sequence[int],
-        transient_dep5c: Sequence[int],
-        transient_dep5d: Sequence[int],
-        transient_dep5e: Sequence[int],
-        transient_dep6a: Sequence[int],
-        transient_dep6b: Sequence[int],
-        transient_dep6c: Sequence[int],
-        transient_dep6d: Sequence[int],
-        transient_dep6e: Sequence[int],
-        transient_dep6f: Sequence[int],
-        transient_dep7a: Sequence[int],
-        transient_dep7b: Sequence[int],
-        transient_dep7c: Sequence[int],
-        transient_dep7d: Sequence[int],
-        transient_dep7e: Sequence[int],
-        transient_dep7f: Sequence[int],
-        transient_dep7g: Sequence[int],
-        transient_dep8a: Sequence[int],
-        transient_dep8b: Sequence[int],
-        transient_dep8c: Sequence[int],
-        transient_dep8d: Sequence[int],
-        transient_dep8e: Sequence[int],
-        transient_dep8f: Sequence[int],
-        transient_dep8g: Sequence[int],
-        transient_dep8h: Sequence[int],
-) -> Optional[str]:
-    """
-    Build tuple-expression argument payload for one transient step.
-
-    Contract:
-        - Returns None for unsupported call modes.
-        - Preserves positional order used by direct transient call emission.
-    """
-    arg_refs = _build_unrolled_call_arg_refs(
-        step_index=step_index,
-        call_mode=call_mode,
-        transient_dep1=transient_dep1,
-        transient_dep2a=transient_dep2a,
-        transient_dep2b=transient_dep2b,
-        transient_dep3a=transient_dep3a,
-        transient_dep3b=transient_dep3b,
-        transient_dep3c=transient_dep3c,
-        transient_dep4a=transient_dep4a,
-        transient_dep4b=transient_dep4b,
-        transient_dep4c=transient_dep4c,
-        transient_dep4d=transient_dep4d,
-        transient_dep5a=transient_dep5a,
-        transient_dep5b=transient_dep5b,
-        transient_dep5c=transient_dep5c,
-        transient_dep5d=transient_dep5d,
-        transient_dep5e=transient_dep5e,
-        transient_dep6a=transient_dep6a,
-        transient_dep6b=transient_dep6b,
-        transient_dep6c=transient_dep6c,
-        transient_dep6d=transient_dep6d,
-        transient_dep6e=transient_dep6e,
-        transient_dep6f=transient_dep6f,
-        transient_dep7a=transient_dep7a,
-        transient_dep7b=transient_dep7b,
-        transient_dep7c=transient_dep7c,
-        transient_dep7d=transient_dep7d,
-        transient_dep7e=transient_dep7e,
-        transient_dep7f=transient_dep7f,
-        transient_dep7g=transient_dep7g,
-        transient_dep8a=transient_dep8a,
-        transient_dep8b=transient_dep8b,
-        transient_dep8c=transient_dep8c,
-        transient_dep8d=transient_dep8d,
-        transient_dep8e=transient_dep8e,
-        transient_dep8f=transient_dep8f,
-        transient_dep8g=transient_dep8g,
-        transient_dep8h=transient_dep8h,
-    )
-    if arg_refs is None:
-        return None
-    if not arg_refs:
-        return "()"
-    if len(arg_refs) == 1:
-        return f"({arg_refs[0]},)"
-    return f"({', '.join(arg_refs)})"
 
 
 def _build_unrolled_call_arg_refs(
@@ -1930,14 +1716,12 @@ def _build_executor_namespace(
         *,
         transient_schema: Dict[str, Any],
         steps: Tuple[Any, ...],
-        native_dispatch: Optional[Callable[[Any, int, Tuple[Any, ...]], Any]] = None,
 ) -> Dict[str, Any]:
     """
     Build the globals namespace for transient unrolled compilation.
 
     Contract:
         - Exposes transient schema arrays and derived call targets.
-        - Exposes optional native transient dispatcher and Python fallback.
         - Exposes hydrated steps for deterministic error reporting.
     """
     transient_step_count = transient_schema["step_count"]
@@ -1948,8 +1732,6 @@ def _build_executor_namespace(
 
     return {
         "MeldExecutionError": MeldExecutionError,
-        "_dispatch_transient_call": _dispatch_transient_call,
-        "native_dispatch": native_dispatch,
         "transient_root_index": transient_schema["root_step_index"],
         "transient_targets": transient_targets,
         "transient_dep1": transient_schema["dep1"],

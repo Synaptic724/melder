@@ -1,4 +1,7 @@
 from typing import List, Mapping, Optional, Protocol, Sequence, runtime_checkable
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable

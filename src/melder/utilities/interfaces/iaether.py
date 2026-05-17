@@ -1,19 +1,42 @@
 import logging
-from typing import Any, Optional, Protocol, Tuple, Union, runtime_checkable
-from melder.utilities.interfaces.ichannellogger import IChannelLogger
+from typing import Any, List, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
     """
-    An Interface for the global singleton that holds and manages all AethericFrames.
+    The interface of global the singleton root that owns all `AethericFrame` instances.
 
-    Aether is the top-level "universe" of the melder system and acts as the
-    central service provider for other internal components of the library.
+    `Aether` is the top-level runtime host for Melder. It owns the named frame
+    registry, the always-present default frame, and the frame-level services
+    that other runtime objects resolve through when they need configuration,
+    conduit, cluster, spell, or DevOps state.
+
+    Contract:
+        - Enforces singleton construction through `__new__`.
+        - Owns the lifecycle of registered `AethericFrame` instances.
+        - Owns the default frame and ensures it exists while the singleton is live.
+        - Hosts singleton-level subsystems such as Nexus, Crystallizer, and the
+          utility system.
+        - Hosts the singleton MutationResearch root above frame-local runtime
+          state.
+        - Owns one optional Aether root configuration that applies policy into
+          the hosted utility system.
+        - Becomes reinitializable only after `cleanup()` fully resets singleton state.
+
+    Threading / Concurrency:
+    - Uses the class-level `_lock` to serialize singleton construction and reset.
+    - Uses the instance `_lock` to guard cleanup and frame-registry mutation.
+
+    Lifecycle / Cleanup:
+    - Cleans registered frames before dropping singleton-level references.
+    - Resets `_instance` and `_initialized` so tests or later runtime flows can
+      create a fresh singleton after teardown.
     """
 
     def attach_logger(
@@ -101,112 +124,6 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _bind_configuration(self, configuration: Any, aetheric_frame_name: str = "default") -> None:
-        """
-        Binds a configuration object to a specific Aetheric Frame.
-
-        Args:
-            configuration: The configuration object to bind.
-            aetheric_frame_name: The name of the frame.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        ...
-
-    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[Any]:
-        """
-        Retrieves the configuration object from a specific Aetheric Frame.
-
-        Args:
-            aetheric_frame_name: The name of the frame.
-
-        Returns:
-            The configuration object, or None if not set.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        ...
-
-    def _ensure_frame(self, aetheric_frame_name: str = "default") -> "IAethericFrame":
-        """
-        Ensure an AethericFrame exists for the given name, creating it if missing.
-
-        Purpose:
-            Provide a single, thread-safe creation path for named frames so
-            Spellbooks can initialize against a new frame without raising.
-
-        Contract:
-            - Returns the existing frame when it already exists.
-            - Creates and registers a new frame when absent.
-            - Does not mutate the default frame pointer unless the name is "default".
-
-        Args:
-            aetheric_frame_name: The frame name to ensure exists.
-
-        Returns:
-            IAethericFrame: The existing or newly created frame.
-
-        Raises:
-            RuntimeError: If the Aether is cleaned or its frame registry is unavailable.
-            ValueError: If the frame name is invalid for frame construction.
-
-        Threading:
-            Implementations must synchronize frame creation to prevent duplicates.
-
-        Lifecycle:
-            Frames created via this method are owned by Aether and cleaned by it.
-        """
-        ...
-
-    def _detach_cleaned_frame(
-            self,
-            frame_name: str,
-            frame: "IAethericFrame",
-    ) -> None:
-        """
-        Remove one already-cleaned frame from the Aether registry.
-
-        Args:
-            frame_name:
-                Name of the cleaned frame.
-            frame:
-                Cleaned frame instance requesting detachment.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
-        """
-        Registers a conduit with the ConduitCloud of a specific frame.
-
-        Args:
-            conduit: The conduit to register.
-            aetheric_frame_name: The name of the frame.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        ...
-
-    def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
-        """
-        Retrieves the ConduitCloud instance from a specific frame.
-
-        Args:
-            aetheric_frame_name: The name of the frame.
-
-        Returns:
-            IConduitCloud: The ConduitCloud for that frame.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        ...
-
     def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
         """
         Return the conduit cloud for one frame.
@@ -284,168 +201,6 @@ class IAether(ICleanable, Protocol):
     ) -> IConduit:
         """
         Return one registered root conduit by id.
-        """
-        ...
-
-    def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
-        """
-        Finds a root conduit within a frame by its name.
-
-        Args:
-            name (str): The name of the conduit.
-            aetheric_frame_name (str): The name of the frame to search in.
-
-        Returns:
-            IConduit: The found conduit.
-
-        Raises:
-            ValueError: If the frame does not exist or the conduit is not found.
-        """
-        ...
-
-    def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> IConduit:
-        """
-        Finds a root conduit within a frame by its id.
-
-        Args:
-            signature (str): The id of the conduit.
-            aetheric_frame_name (str): The name of the frame to search in.
-
-        Returns:
-            IConduit: The found conduit.
-
-        Raises:
-            ValueError: If the frame does not exist or the conduit is not found.
-        """
-        ...
-
-    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
-        """
-        Adds a new root conduit to a frame. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit to add.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the conduit ID already exists.
-        """
-        ...
-
-    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
-        """
-        Removes a root conduit from a frame. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit to remove.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the conduit is not found.
-        """
-        ...
-
-    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):
-        """
-        Creates a new conduit cluster within a frame. (Internal use)
-
-        Args:
-            cluster_name (str): The name for the new cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the cluster name is taken.
-        """
-        ...
-
-    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
-        """
-        Adds a conduit's str to a cluster. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit to add.
-            cluster_name (str): The name of the cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame or cluster does not exist.
-        """
-        ...
-
-    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
-        """
-        Removes a conduit's str from a cluster. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit to remove.
-            cluster_name (str): The name of the cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame or cluster does not exist.
-        """
-        ...
-
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> 'List[str]':
-        """
-        Gets a list of all conduit id in a specific cluster.
-
-        Args:
-            cluster_name (str): The name of the cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Returns:
-            List[str]: A list of conduit ids.
-
-        Raises:
-            ValueError: If the frame or cluster does not exist.
-        """
-        ...
-
-    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
-        """
-        Finds the conduit that owns a specific spell ID within a frame.
-
-        Args:
-            spell_id (str): The spell ID (SHA256 hash) to search for.
-            aetheric_frame_name (str): The name of the frame.
-
-        Returns:
-            IConduit: The conduit that owns the spell.
-
-        Raises:
-            ValueError: If the frame does not exist or the spell ID is not found.
-        """
-        ...
-
-    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
-        """
-        Checks if a spell ID is registered in any conduit within a frame.
-
-        Args:
-            spell_id (str): The spell ID to check.
-            aetheric_frame_name (str): The name of the frame.
-
-        Returns:
-            bool: True if the spell exists, False otherwise.
-
-        Raises:
-            ValueError: If the frame does not exist.
-        """
-        ...
-
-    def _add_spells_to_aether(self, conduit_id: str, spell_set: 'Set[str]', aetheric_frame_name: str = "default"):
-        """
-        Registers a set of spell IDs as being owned by a specific conduit.
-
-        Args:
-            conduit_id (str): The id of the owning conduit.
-            spell_set (Set[str]): A set of spell IDs to register.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the conduit ID is
-                already registered.
         """
         ...
 

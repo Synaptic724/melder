@@ -1,6 +1,12 @@
 from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, runtime_checkable
 import threading
+from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
+from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -35,11 +41,11 @@ class ISpellSystemStates(ICleanable, Protocol):
         * `compute_impact_closure(...)` to fan out impacted spell indexes
     """
     _lock: threading.RLock
-    _frame: Optional["AethericFrame"]
-    _states_by_index_id: Optional[Dict[str, 'SpellSystemState']]
-    _states_by_spell_id: Optional[Dict[str, 'SpellSystemState']]
+    _frame: Optional[IAethericFrame]
+    _states_by_index_id: Optional[Dict[str, SpellSystemState]]
+    _states_by_spell_id: Optional[Dict[str, SpellSystemState]]
     _dirty_indexes: Optional['Set[str]']
-    _resolution_by_conduit_id: Optional[Dict[str, 'IConduitResolutionState']]
+    _resolution_by_conduit_id: Optional[Dict[str, IConduitResolutionState]]
     _index_owner_spellbook_id: Optional[Dict[str, str]]
     _collection_frames_by_index: Optional[Dict[str, 'Set[str]']]
     _collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, 'Set[str]']]]
@@ -49,7 +55,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: ISpellIndex, spell: ISpell) -> 'SpellSystemState':
+    def register_index(self, spell_index: ISpellIndex, spell: ISpell) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 
@@ -94,7 +100,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    def unregister_index(self, spell_index: ISpellIndex) -> Optional['SpellSystemState']:
+    def unregister_index(self, spell_index: ISpellIndex) -> Optional[SpellSystemState]:
         """
         Remove a spell index from this registry and return the removed state if present.
 
@@ -110,7 +116,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    def get_by_index_id(self, index_id: str) -> Optional['SpellSystemState']:
+    def get_by_index_id(self, index_id: str) -> Optional[SpellSystemState]:
         """
         Lookup a SpellSystemState by spell-index id.
 
@@ -120,7 +126,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    def get_by_spell_id(self, spell_id: str) -> Optional['SpellSystemState']:
+    def get_by_spell_id(self, spell_id: str) -> Optional[SpellSystemState]:
         """
         Lookup a SpellSystemState by current spell version id.
 
@@ -224,8 +230,8 @@ class ISpellSystemStates(ICleanable, Protocol):
 
     def register_local_topology(
             self,
-            spell_index: "SpellIndex",
-            topology: "SpellLocalTopology",
+            spell_index: ISpellIndex,
+            topology: SpellLocalTopology,
     ) -> None:
         """
         Register or replace the local constructor topology for the given spell.
@@ -236,8 +242,8 @@ class ISpellSystemStates(ICleanable, Protocol):
 
     def get_local_topology(
             self,
-            spell_index: "SpellIndex",
-    ) -> Optional["SpellLocalTopology"]:
+            spell_index: ISpellIndex,
+    ) -> Optional[SpellLocalTopology]:
         """
         Retrieve the local constructor topology for the given spell, if any.
 
@@ -250,7 +256,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     def get_local_topology_by_id(
             self,
             spell_id: str,
-    ) -> Optional["SpellLocalTopology"]:
+    ) -> Optional[SpellLocalTopology]:
         """
         Retrieve the local constructor topology using a version-id key.
 
@@ -301,7 +307,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Introspection helpers
     # ------------------------------------------------------------------
-    def iter_states(self) -> List['SpellSystemState']:
+    def iter_states(self) -> List[SpellSystemState]:
         """
         Snapshot of all SpellSystemState instances currently registered.
 
@@ -314,7 +320,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Per-conduit resolution state (Phases 5-7)
     # ------------------------------------------------------------------
-    def get_conduit_resolution_state(self, conduit_id: str) -> Optional['IConduitResolutionState']:
+    def get_conduit_resolution_state(self, conduit_id: str) -> Optional[IConduitResolutionState]:
         """
         Retrieve the per-conduit resolution state for a conduit id.
 
@@ -325,7 +331,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> 'IConduitResolutionState':
+    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> IConduitResolutionState:
         """
         Retrieve or create the per-conduit resolution state for a conduit id.
 
@@ -344,7 +350,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    def iter_conduit_resolution_states(self) -> Iterator['IConduitResolutionState']:
+    def iter_conduit_resolution_states(self) -> Iterator[IConduitResolutionState]:
         """
         Iterate over registered per-conduit resolution states.
 
@@ -358,7 +364,7 @@ class ISpellSystemStates(ICleanable, Protocol):
             self,
             conduit_id: str,
             spell_id: str,
-            validity: 'SpellValidity',
+            validity: SpellValidity,
             *,
             change_reason: Optional['SpellStateChangeReason'] = None,
     ) -> None:
@@ -370,7 +376,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     def bulk_set_conduit_spell_validity(
             self,
             conduit_id: str,
-            validity_map: Mapping[str, 'SpellValidity'],
+            validity_map: Mapping[str, SpellValidity],
             *,
             change_reason: Optional['SpellStateChangeReason'] = None,
     ) -> None:
@@ -383,7 +389,7 @@ class ISpellSystemStates(ICleanable, Protocol):
             self,
             conduit_id: str,
             root_id: str,
-            validity: 'SpellValidity',
+            validity: SpellValidity,
             *,
             change_reason: Optional['SpellStateChangeReason'] = None,
     ) -> None:
@@ -395,7 +401,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     def bulk_set_conduit_root_validity(
             self,
             conduit_id: str,
-            validity_map: Mapping[str, 'SpellValidity'],
+            validity_map: Mapping[str, SpellValidity],
             *,
             change_reason: Optional['SpellStateChangeReason'] = None,
     ) -> None:
@@ -407,7 +413,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     def record_conduit_diagnostics(
             self,
             conduit_id: str,
-            diagnostics: Sequence['SystemDiagnostic'],
+            diagnostics: Sequence[SystemDiagnostic],
     ) -> None:
         """
         Record per-conduit system diagnostics, replacing on signature change.

@@ -1,32 +1,31 @@
-from typing import runtime_checkable, Any, Optional, Protocol
+from typing import runtime_checkable, Any, Dict, List, Optional, Protocol, Set
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 
+@runtime_checkable
 class IAethericFrame(ICleanable, Protocol):
     """
-    An Interface for an isolated "universe" or "frame" within the Aether.
+    Manage one isolated runtime frame within `Aether`.
 
-    An AethericFrame holds all top-level conduits, spell registries, and
-    configurations for a specific, isolated domain.
+    `AethericFrame` is the per-frame ownership boundary beneath the global
+    `Aether` singleton. It owns the frame-local conduit registry, spell/index
+    registries, cluster state, frame-level posture/config references, and the
+    DevOps and mutation services tied to that frame.
 
-    Attributes:
-        name (str): The unique name of this frame.
-        _configuration (Optional[Any]): The frozen configuration for this frame.
-        _conduit_cloud (IConduitCloud): The abstract factory for named conduits.
-        _conduits (Dict[str, IConduit]): Stores all root conduits.
-        _spell_registry (Dict[str, Set[str]]): Maps
-            conduit ids to their owned spell IDs.
-        _conduit_clusters (Dict[str, List[str]]): Organizes
-            conduits into named groups.
+    Contract:
+      - Owns root conduits and their spell registries.
+      - Owns a stable root-conduit name index for per-frame lookup.
+      - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
+      - Owns one narrow frame-level AR posture object distinct from the richer
+        shared Spellbook configuration object.
+      - Detaches itself from `Aether` only after frame-owned cleanup completes.
+
+    Threading / Concurrency:
+      - Uses one frame-local `RLock` to guard cleanup and frame-owned registry
+        mutation.
+      - Relies on child objects to guard their own internal state.
     """
     name: str
-    _id: str
-    _aether: "IAether"
-    _configuration: Optional[Any]  # Use 'Configuration' if it's a known type
-    _conduit_cloud: IConduitCloud
-    _conduits: 'Dict[str, IConduit]'
-    _spell_registry: 'Dict[str, Set[str]]'
-    _conduit_clusters: 'Dict[str, List[str]]'
 
     @property
     def frame_configuration(self) -> Optional[Any]:

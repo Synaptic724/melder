@@ -61,7 +61,7 @@ class SafeLogger(Cleanable, ISafeLogger):
         if logger is not None:
             logger.setLevel(self._level)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Idempotently release the wrapped logger reference.
 
@@ -79,7 +79,7 @@ class SafeLogger(Cleanable, ISafeLogger):
                 pass
         self._logger = None
 
-    def set_level_by_name(self, level_name: str):
+    def set_level_by_name(self, level_name: str) -> None:
         """
         Set the active log level by symbolic name.
 
@@ -96,7 +96,7 @@ class SafeLogger(Cleanable, ISafeLogger):
         if self._logger is not None:
             self._logger.setLevel(self._level)
 
-    def set_level(self, level: int):
+    def set_level(self, level: int) -> None:
         """
         Set the active log level by its numeric logging value.
 
@@ -342,7 +342,7 @@ class SafeLogger(Cleanable, ISafeLogger):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         """
         Convenience wrapper for emitting an error with exception context.
 
