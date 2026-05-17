@@ -101,14 +101,14 @@ class NexusFrameBuilder(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._manager = None
-        self._frame_name = None
-        self._system_state = None
-        self._ai_native_enabled = None
-        self._rift_enabled = None
-        self._immutable = None
-        self._metadata = None
-        self._root_conduit_name = None
+        del self._manager
+        del self._frame_name
+        del self._system_state
+        del self._ai_native_enabled
+        del self._rift_enabled
+        del self._immutable
+        del self._metadata
+        del self._root_conduit_name
 
     def dynamic_defaults(self) -> "NexusFrameBuilder":
         """
@@ -121,6 +121,7 @@ class NexusFrameBuilder(Cleanable):
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
+        self.check_cleaned()
         self._system_state = SystemState.dynamic
         self._ai_native_enabled = True
         self._rift_enabled = True
@@ -141,6 +142,7 @@ class NexusFrameBuilder(Cleanable):
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
+        self.check_cleaned()
         self._immutable = immutable
         return self
 
@@ -159,6 +161,7 @@ class NexusFrameBuilder(Cleanable):
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
+        self.check_cleaned()
         self._metadata = dict(metadata) if metadata else {}
         return self
 
@@ -181,6 +184,7 @@ class NexusFrameBuilder(Cleanable):
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
+        self.check_cleaned()
         if not root_conduit_name:
             raise ValueError("root_conduit_name cannot be empty.")
         self._root_conduit_name = root_conduit_name
@@ -203,6 +207,7 @@ class NexusFrameBuilder(Cleanable):
         Returns:
             NexusFrameConfiguration: Built authored frame configuration.
         """
+        self.check_cleaned()
         if self._system_state is None:
             raise ValueError("system_state must be configured before build().")
         if self._ai_native_enabled is None:
@@ -231,4 +236,5 @@ class NexusFrameBuilder(Cleanable):
         Returns:
             IConduit: Rooted conduit created through the owning manager.
         """
+        self.check_cleaned()
         return self._manager.create(self.build())

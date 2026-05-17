@@ -106,13 +106,13 @@ class CodegenNamespaceBuilder(Cleanable):
             self._command_strategy.cleanup()
             self._codegen_control_strategy.cleanup()
             self._builtins_strategy.cleanup()
-            self._room_objects_strategy = None
-            self._workstation_strategy = None
-            self._target_strategy = None
-            self._command_strategy = None
-            self._codegen_control_strategy = None
-            self._builtins_strategy = None
-        self._lock = None
+            del self._room_objects_strategy
+            del self._workstation_strategy
+            del self._target_strategy
+            del self._command_strategy
+            del self._codegen_control_strategy
+            del self._builtins_strategy
+        del self._lock
 
     def build(
             self,

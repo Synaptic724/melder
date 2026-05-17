@@ -56,7 +56,7 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-        self._lock = None
+        del self._lock
 
     def validate(
             self,

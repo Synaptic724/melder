@@ -138,18 +138,19 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._owner_space_id = None
-            self._rift = None
-            self._space = None
-            self._validator = None
-            self._validation_reporter = None
-            self._namespace_builder = None
-            self._compiler = None
-            self._executor = None
             self._monitor.cleanup()
-            self._monitor = None
-            self._id = None
-        self._lock = None
+
+            del self._owner_space_id
+            del self._rift
+            del self._space
+            del self._validator
+            del self._validation_reporter
+            del self._namespace_builder
+            del self._compiler
+            del self._executor
+            del self._monitor
+            del self._id
+        del self._lock
 
     @property
     def codegen_system_id(self) -> str:

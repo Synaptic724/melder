@@ -228,15 +228,15 @@ class FrameACLValidator(Cleanable):
             self._cleaned = True
             if self._owns_profile_builder and self._profile_builder is not None:
                 self._profile_builder.cleanup()
-            self._frame_name = None
-            self._profile_builder = None
-            self._owns_profile_builder = None
-            self._view_profile_validation_strategies_by_name = None
-            self._command_profile_validation_strategies_by_name = None
-            self._codegen_profile_validation_strategies_by_name = None
-            self._last_validated_configuration_id = None
-            self._id = None
-        self._lock = None
+            del self._frame_name
+            del self._profile_builder
+            del self._owns_profile_builder
+            del self._view_profile_validation_strategies_by_name
+            del self._command_profile_validation_strategies_by_name
+            del self._codegen_profile_validation_strategies_by_name
+            del self._last_validated_configuration_id
+            del self._id
+        del self._lock
 
     @property
     def frame_name(self) -> str:

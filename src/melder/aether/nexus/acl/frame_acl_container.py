@@ -140,17 +140,17 @@ class FrameACLContainer(Cleanable):
             self._view_configuration_chains_by_name.clear()
             self._command_configuration_chains_by_name.clear()
             self._codegen_configuration_chains_by_name.clear()
-            self._frame_acl_builder = None
-            self._frame_acl_validator = None
-            self._frame_acl_set_compatibility_validator = None
-            self._profile_builder = None
-            self._owns_profile_builder = None
-            self._change_callback = None
-            self._view_configuration_chains_by_name = None
-            self._command_configuration_chains_by_name = None
-            self._codegen_configuration_chains_by_name = None
-            self._frame_name = None
-        self._lock = None
+            del self._frame_acl_builder
+            del self._frame_acl_validator
+            del self._frame_acl_set_compatibility_validator
+            del self._profile_builder
+            del self._owns_profile_builder
+            del self._change_callback
+            del self._view_configuration_chains_by_name
+            del self._command_configuration_chains_by_name
+            del self._codegen_configuration_chains_by_name
+            del self._frame_name
+        del self._lock
 
     @property
     def frame_name(self) -> str:

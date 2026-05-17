@@ -260,28 +260,29 @@ class Nexus(Cleanable, INexus):
                 self._frame_descriptor_manager.cleanup()
             if self._frame_manager is not None:
                 self._frame_manager.cleanup()
-            self._configuration = None
-            self._configured = None
-            self._enabled = None
-            self._aether = None
             self._rifts_by_id.clear()
             self._rift_ids_by_name.clear()
-            self._next_default_rift_number = None
             self._rift_profiles_by_name.clear()
             self._target_frame_ref_counts.clear()
-            self._rifts_by_id = None
-            self._rift_ids_by_name = None
-            self._next_default_rift_number = None
-            self._rift_profiles_by_name = None
-            self._rift_gate_controller = None
-            self._frame_acl_manager = None
-            self._frame_descriptor_manager = None
-            self._frame_manager = None
-            self._target_frame_ref_counts = None
-            self._id = None
             if self._logger is not None:
                 self._logger.cleanup()
-                self._logger = None
+
+            del self._logger
+            del self._configuration
+            del self._configured
+            del self._enabled
+            del self._aether
+            del self._next_default_rift_number
+            del self._rifts_by_id
+            del self._rift_ids_by_name
+            del self._rift_profiles_by_name
+            del self._rift_gate_controller
+            del self._frame_acl_manager
+            del self._frame_descriptor_manager
+            del self._frame_manager
+            del self._target_frame_ref_counts
+            del self._id
+
         with Nexus._lock:
             Nexus._instance = None
             Nexus._initialized = False

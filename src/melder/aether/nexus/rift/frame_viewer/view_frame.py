@@ -124,13 +124,13 @@ class ViewFrame(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._frame_name = None
-            self._frame_descriptor = None
-            self._frame_acl_configuration = None
-            self._compiled_access_surface = None
-            self._default_detail_level = None
-            self._action_hook_scope_factory = None
-        self._lock = None
+            del self._frame_name
+            del self._frame_descriptor
+            del self._frame_acl_configuration
+            del self._compiled_access_surface
+            del self._default_detail_level
+            del self._action_hook_scope_factory
+        del self._lock
 
     @contextmanager
     def _entered_view_action(self, *, action_name: str) -> Any:

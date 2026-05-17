@@ -84,8 +84,8 @@ class ViewConduit(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._frame_view = None
-            self._lock = None
+            del self._frame_view
+            del self._lock
 
     @contextmanager
     def _entered_view_action(self, *, action_name: str) -> Any:

@@ -103,13 +103,13 @@ class NexusFrameManager(Cleanable):
                 configuration.cleanup()
             self._configurations_by_frame_name.clear()
             self._creating_frame_names.clear()
-            self._next_indexed_frame_number = None
-            self._creating_frame_names = None
-            self._frames_by_name = None
-            self._configurations_by_frame_name = None
-            self._nexus = None
-            self._id = None
-        self._lock = None
+            del self._next_indexed_frame_number
+            del self._creating_frame_names
+            del self._frames_by_name
+            del self._configurations_by_frame_name
+            del self._nexus
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

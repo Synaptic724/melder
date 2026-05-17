@@ -113,13 +113,13 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             self._creation_gate_controller.cleanup()
             self._spell_system_states.cleanup()
 
-            self._incident_manager = None
-            self._change_control_manager = None
-            self._risk_manager = None
-            self._creation_gate_controller = None
-            self._spell_system_states = None
+            del self._incident_manager
+            del self._change_control_manager
+            del self._risk_manager
+            del self._creation_gate_controller
+            del self._spell_system_states
 
-        self._lock = None
+        del self._lock
 
     # ------------------------------------------------------------------
     # Public API

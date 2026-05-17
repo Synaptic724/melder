@@ -118,14 +118,14 @@ class CodegenValidator(Cleanable):
             self._attribute_access_strategy.cleanup()
             self._reflection_policy_strategy.cleanup()
             self._recursive_control_strategy.cleanup()
-            self._ast_structure_strategy = None
-            self._import_policy_strategy = None
-            self._builtin_policy_strategy = None
-            self._name_resolution_strategy = None
-            self._attribute_access_strategy = None
-            self._reflection_policy_strategy = None
-            self._recursive_control_strategy = None
-        self._lock = None
+            del self._ast_structure_strategy
+            del self._import_policy_strategy
+            del self._builtin_policy_strategy
+            del self._name_resolution_strategy
+            del self._attribute_access_strategy
+            del self._reflection_policy_strategy
+            del self._recursive_control_strategy
+        del self._lock
 
     def validate(
             self,

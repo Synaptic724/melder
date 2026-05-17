@@ -135,21 +135,23 @@ class FrameACLProfileBuilder(Cleanable):
                 for profile in registry.values():
                     profile.cleanup()
                 registry.clear()
-            self._view_profiles_by_name = None
-            self._command_profiles_by_name = None
-            self._codegen_profiles_by_name = None
-            self._view_precision_profiles_by_name = None
-            self._command_precision_profiles_by_name = None
-            self._codegen_precision_profiles_by_name = None
+
             self._view_profile_builder.cleanup()
             self._command_profile_builder.cleanup()
             self._codegen_profile_builder.cleanup()
-            self._view_profile_builder = None
-            self._command_profile_builder = None
-            self._codegen_profile_builder = None
-            self._version = None
-            self._id = None
-        self._lock = None
+
+            del self._view_profiles_by_name
+            del self._command_profiles_by_name
+            del self._codegen_profiles_by_name
+            del self._view_precision_profiles_by_name
+            del self._command_precision_profiles_by_name
+            del self._codegen_precision_profiles_by_name
+            del self._view_profile_builder
+            del self._command_profile_builder
+            del self._codegen_profile_builder
+            del self._version
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

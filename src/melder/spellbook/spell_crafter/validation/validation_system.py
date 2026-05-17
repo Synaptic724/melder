@@ -121,7 +121,7 @@ class SpellValidationSystem(Cleanable, ISpellValidationSystem):
             self._strategies.clear()
             self._cleaned = True
 
-        self._lock = None
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Strategy registration

@@ -98,13 +98,13 @@ class OverrideRouteConfig(Cleanable):
             return
         self._cleaned = True
 
-        self.plan_signature = None
-        self.path_registry = None
-        self.plan_rows = None
-        self.root_spell_id = None
-        self.spell_lookup = None
-        self.empty_shape_key = None
-        self.baseline_executor = None
+        del self.plan_signature
+        del self.path_registry
+        del self.plan_rows
+        del self.root_spell_id
+        del self.spell_lookup
+        del self.empty_shape_key
+        del self.baseline_executor
 
 
 class CreationContext(Cleanable):

@@ -82,9 +82,9 @@ class FrameACLCompiler(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._profile_builder = None
-            self._id = None
-            self._lock = None
+            del self._profile_builder
+            del self._id
+            del self._lock
 
     def compile_frame_access_surface(
             self,

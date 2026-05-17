@@ -149,5 +149,6 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
                     "MutationResearchConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
+            self._configuration = None
             self.cleanup()
         return configuration

@@ -89,11 +89,12 @@ class CreationContextFactory(Cleanable):
             self._builder.cleanup()
         except Exception:
             pass
-        self._builder = None
-        self._dynamic_environment = None
-        self._creation_gate_controller = None
         self._created_spell_index_ids.clear()
-        self._created_spell_index_ids = None
+
+        del self._builder
+        del self._dynamic_environment
+        del self._creation_gate_controller
+        del self._created_spell_index_ids
 
     @staticmethod
     def _cleanup_creation_context(

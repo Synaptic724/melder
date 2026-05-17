@@ -127,10 +127,10 @@ class FrameViewer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._rift = None
-            self._action_hook_scope_factory = None
-            self._id = None
-        self._lock = None
+            del self._rift
+            del self._action_hook_scope_factory
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

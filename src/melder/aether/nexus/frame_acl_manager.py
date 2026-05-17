@@ -134,13 +134,14 @@ class FrameACLManager(Cleanable):
             self._frame_acl_profile_builder.cleanup()
             self._frame_acl_containers_by_name.clear()
             self._frame_acl_profiles_by_name.clear()
-            self._change_callback = None
-            self._frame_acl_profile_builder = None
-            self._frame_acl_containers_by_name = None
-            self._frame_acl_profiles_by_name = None
-            self._version = None
-            self._id = None
-        self._lock = None
+
+            del self._change_callback
+            del self._frame_acl_profile_builder
+            del self._frame_acl_containers_by_name
+            del self._frame_acl_profiles_by_name
+            del self._version
+            del self._id
+        del self._lock
 
     @property
     def id(self) -> str:

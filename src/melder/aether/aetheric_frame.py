@@ -130,12 +130,13 @@ class AethericFrame(Cleanable, IAethericFrame):
             self._cleanup_data_structures()
             if self._frame_configuration is not None:
                 self._frame_configuration.cleanup()
-                self._frame_configuration = None
             if self._configuration is not None:
                 self._configuration.cleanup()
+            self._aether._detach_cleaned_frame(self.name, self)
+
+            self._frame_configuration = None
             self._configuration = None
             self._id = None
-            self._aether._detach_cleaned_frame(self.name, self)
             self.name = None
             self._aether = None
         self._lock = None
@@ -165,21 +166,17 @@ class AethericFrame(Cleanable, IAethericFrame):
                     # frame cleanup never dies on conduit cleanup.
                     pass
             self._conduits.clear()
-            self._conduits = None
 
         if self._conduit_ids_by_name is not None:
             self._conduit_ids_by_name.clear()
-            self._conduit_ids_by_name = None
 
         # SpellIndex registry
         if self._spell_registry is not None:
             self._spell_registry.clear()
-            self._spell_registry = None
 
         # Version registry
         if self._version_registry is not None:
             self._version_registry.clear()
-            self._version_registry = None
 
         # Conduit clusters
         if self._conduit_clusters is not None:
@@ -189,22 +186,27 @@ class AethericFrame(Cleanable, IAethericFrame):
                 except Exception:
                     pass
             self._conduit_clusters.clear()
-            self._conduit_clusters = None
 
         # Dynamic conduit cloud
         if self._conduit_cloud is not None:
             self._conduit_cloud.cleanup()
-            self._conduit_cloud = None
 
         # Spell system states registry
         if self._spell_system_states is not None:
             self._spell_system_states.cleanup()
-            self._spell_system_states = None
 
         # DevOps manager (incidents + change control)
         if self._dev_ops_manager is not None:
             self._dev_ops_manager.cleanup()
-            self._dev_ops_manager = None
+
+        self._conduits = None
+        self._conduit_ids_by_name = None
+        self._spell_registry = None
+        self._version_registry = None
+        self._conduit_clusters = None
+        self._conduit_cloud = None
+        self._spell_system_states = None
+        self._dev_ops_manager = None
 
     # ------------------------------------------------------------------
     # Context Manager

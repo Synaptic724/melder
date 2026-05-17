@@ -111,12 +111,12 @@ class CommandSystem(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._owner_space_id = None
-            self._rift = None
-            self._space = None
-            self._workstation = None
-            self._id = None
-        self._lock = None
+            del self._owner_space_id
+            del self._rift
+            del self._space
+            del self._workstation
+            del self._id
+        del self._lock
 
     @property
     def command_system_id(self) -> str:

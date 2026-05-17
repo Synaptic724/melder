@@ -111,16 +111,17 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._transaction_id = None
-            self._frame_name = None
-            self._code = None
-            self._code_hash = None
-            self._projection = None
-            self._namespace_configuration = None
-            self._namespace = None
             self._metadata.clear()
-            self._metadata = None
-        self._lock = None
+
+            del self._transaction_id
+            del self._frame_name
+            del self._code
+            del self._code_hash
+            del self._projection
+            del self._namespace_configuration
+            del self._namespace
+            del self._metadata
+        del self._lock
 
     @property
     def transaction_id(self) -> str:

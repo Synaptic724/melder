@@ -133,9 +133,9 @@ class FrameDescriptorManager(Cleanable):
             for descriptor in self._frame_descriptors_by_name.values():
                 descriptor.cleanup()
             self._frame_descriptors_by_name.clear()
-            self._frame_descriptors_by_name = None
-            self._aether = None
-        self._lock = None
+            del self._frame_descriptors_by_name
+            del self._aether
+        del self._lock
 
     def _refresh_frame_posture_cache(
             self,
