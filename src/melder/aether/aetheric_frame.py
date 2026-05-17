@@ -134,12 +134,12 @@ class AethericFrame(Cleanable, IAethericFrame):
                 self._configuration.cleanup()
             self._aether._detach_cleaned_frame(self.name, self)
 
-            self._frame_configuration = None
-            self._configuration = None
-            self._id = None
-            self.name = None
-            self._aether = None
-        self._lock = None
+            del self._frame_configuration
+            del self._configuration
+            del self._id
+            del self.name
+            del self._aether
+        del self._lock
 
 
 
@@ -199,14 +199,14 @@ class AethericFrame(Cleanable, IAethericFrame):
         if self._dev_ops_manager is not None:
             self._dev_ops_manager.cleanup()
 
-        self._conduits = None
-        self._conduit_ids_by_name = None
-        self._spell_registry = None
-        self._version_registry = None
-        self._conduit_clusters = None
-        self._conduit_cloud = None
-        self._spell_system_states = None
-        self._dev_ops_manager = None
+        del self._conduits
+        del self._conduit_ids_by_name
+        del self._spell_registry
+        del self._version_registry
+        del self._conduit_clusters
+        del self._conduit_cloud
+        del self._spell_system_states
+        del self._dev_ops_manager
 
     # ------------------------------------------------------------------
     # Context Manager

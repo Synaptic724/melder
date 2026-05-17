@@ -47,6 +47,7 @@ from melder.utilities.interfaces import (
     IAethericFrame,
     IConduit,
     IConfiguration,
+    IFrameACLConfiguration,
     INexus,
     INexusConfiguration,
     IRiftGate,
@@ -1358,7 +1359,7 @@ class Nexus(Cleanable, INexus):
             view_contract_name: str = "default",
             command_contract_name: str = "default",
             codegen_contract_name: str = "default",
-    ) -> FrameACLConfiguration:
+    ) -> IFrameACLConfiguration:
         """
         Return the current selected frame ACL configuration for one frame.
 
@@ -1377,16 +1378,19 @@ class Nexus(Cleanable, INexus):
                 Selected codegen ACL contract name.
 
         Returns:
-            FrameACLConfiguration:
+            IFrameACLConfiguration:
                 The currently selected ACL configuration for the frame.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._get_current_frame_acl_configuration(
-            frame_name,
-            view_contract_name=view_contract_name,
-            command_contract_name=command_contract_name,
-            codegen_contract_name=codegen_contract_name,
+        return cast(
+            IFrameACLConfiguration,
+            self._frame_acl_manager._get_current_frame_acl_configuration(
+                frame_name,
+                view_contract_name=view_contract_name,
+                command_contract_name=command_contract_name,
+                codegen_contract_name=codegen_contract_name,
+            ),
         )
 
     def get_current_view_frame_acl_configuration(
@@ -1450,7 +1454,7 @@ class Nexus(Cleanable, INexus):
             self,
             frame_name: str,
             contract_name: str = "default",
-    ) -> FrameACLConfiguration:
+    ) -> IFrameACLConfiguration:
         """
         Return one named frame ACL configuration for a frame.
 
@@ -1465,14 +1469,17 @@ class Nexus(Cleanable, INexus):
                 Frame-local contract name to resolve.
 
         Returns:
-            FrameACLConfiguration:
+            IFrameACLConfiguration:
                 Named ACL configuration for the frame.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._get_named_frame_acl_configuration(
-            frame_name,
-            contract_name=contract_name,
+        return cast(
+            IFrameACLConfiguration,
+            self._frame_acl_manager._get_named_frame_acl_configuration(
+                frame_name,
+                contract_name=contract_name,
+            ),
         )
 
     def list_named_frame_acl_configuration_names(
@@ -1503,10 +1510,10 @@ class Nexus(Cleanable, INexus):
     def register_named_frame_acl_configuration(
             self,
             frame_name: str,
-            configuration: FrameACLConfiguration,
+            configuration: IFrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> FrameACLConfiguration:
+    ) -> IFrameACLConfiguration:
         """
         Register one named ACL configuration for a frame.
 
@@ -1522,17 +1529,21 @@ class Nexus(Cleanable, INexus):
                 Frame-local contract name.
 
         Returns:
-            FrameACLConfiguration:
+            IFrameACLConfiguration:
                 Registered named configuration node.
         """
         self.check_cleaned()
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError(
+                "configuration must be a FrameACLConfiguration instance."
+            )
         self._ensure_frame_acl_container(frame_name)
         registered_configuration = self._frame_acl_manager._register_named_frame_acl_configuration(
             frame_name,
             configuration,
             contract_name=contract_name,
         )
-        return registered_configuration
+        return cast(IFrameACLConfiguration, registered_configuration)
 
     @staticmethod
     def _clone_frame_acl_configuration(
@@ -1764,10 +1775,10 @@ class Nexus(Cleanable, INexus):
     def insert_head_frame_acl_configuration(
             self,
             frame_name: str,
-            configuration: FrameACLConfiguration,
+            configuration: IFrameACLConfiguration,
             *,
             select_as_current: bool = True,
-    ) -> FrameACLConfiguration:
+    ) -> IFrameACLConfiguration:
         """
         Install one replacement revision into the selected same-name ACL contract.
 
@@ -1793,15 +1804,22 @@ class Nexus(Cleanable, INexus):
                 Compatibility-only flag preserved for existing callers.
 
         Returns:
-            FrameACLConfiguration:
+            IFrameACLConfiguration:
                 Installed assembled configuration snapshot.
         """
         self.check_cleaned()
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError(
+                "configuration must be a FrameACLConfiguration instance."
+            )
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._install_named_frame_acl_configuration(
-            frame_name,
-            configuration,
-            contract_name="default",
+        return cast(
+            IFrameACLConfiguration,
+            self._frame_acl_manager._install_named_frame_acl_configuration(
+                frame_name,
+                configuration,
+                contract_name="default",
+            ),
         )
 
     def create_frame_projection_sets_for_rift(

@@ -112,10 +112,10 @@ class Creations(Cleanable, ICreations):
             self._spellspace_disposal_stacks.clear()
             self._disposal_stack.clear()
 
-            del self._creations
-            del self._spellspace_disposal_stacks
-            del self._conduit
-            del self._disposal_stack
+            self._creations = None
+            self._spellspace_disposal_stacks = None
+            self._conduit = None
+            self._disposal_stack = None
 
             if errors:
                 raise ExceptionGroup("Errors occurred during cleaning", errors)

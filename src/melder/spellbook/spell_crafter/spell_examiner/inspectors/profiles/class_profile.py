@@ -148,13 +148,13 @@ class ClassProfile(Cleanable):
         for dct in (self.annotations, self.protocols, self.members, self.methods):
             if isinstance(dct, dict):
                 dct.clear()
+        self._cleaned = True
+
         if isinstance(self.tags, list):
             self.tags.clear()
         if isinstance(self.dynamic_access, dict):
             self.dynamic_access.clear()
-        self._cleaned = True
 
-        # Drop references
         del self.name
         del self.qualname
         del self.module

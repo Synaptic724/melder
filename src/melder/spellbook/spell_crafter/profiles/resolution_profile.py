@@ -51,9 +51,9 @@ class SpellSymbolicNode(Cleanable):
         self._cleaned = True
         if self.metadata is not None:
             self.metadata.clear()
-        del self.node_id
-        del self.kind
-        del self.metadata
+        self.node_id = None
+        self.kind = None
+        self.metadata = None
 
 
 class SpellSymbolicEdge(Cleanable):
@@ -96,9 +96,9 @@ class SpellSymbolicEdge(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        del self.from_node
-        del self.to_node
-        del self.via_parameter
+        self.from_node = None
+        self.to_node = None
+        self.via_parameter = None
 
 
 class SpellSymbolicGraph(Cleanable):
@@ -160,9 +160,9 @@ class SpellSymbolicGraph(Cleanable):
                     pass
         self.nodes.clear()
         self.edges.clear()
-        del self.nodes
-        del self.edges
-        del self.spell_id
+        self.nodes = None
+        self.edges = None
+        self.spell_id = None
 
 
 class SpellResolutionFrame(Cleanable):
@@ -205,8 +205,8 @@ class SpellResolutionFrame(Cleanable):
         self._cleaned = True
         if isinstance(self.ordered_node_ids, list):
             self.ordered_node_ids.clear()
-        del self.ordered_node_ids
-        del self.spell_id
+        self.ordered_node_ids = None
+        self.spell_id = None
 
 
 class SpellValidationIssue(Cleanable):
@@ -248,9 +248,9 @@ class SpellValidationIssue(Cleanable):
         self._cleaned = True
         if self.details is not None:
             self.details.clear()
-        del self.details
-        del self.code
-        del self.message
+        self.details = None
+        self.code = None
+        self.message = None
 
 
 class SpellValidationResult(Cleanable):
@@ -310,9 +310,9 @@ class SpellValidationResult(Cleanable):
                     pass
         self.errors.clear()
         self.warnings.clear()
-        del self.is_valid
-        del self.errors
-        del self.warnings
+        self.is_valid = None
+        self.errors = None
+        self.warnings = None
 
 
 class SpellResolutionProfile(Cleanable):
@@ -406,11 +406,11 @@ class SpellResolutionProfile(Cleanable):
                     part.cleanup()
                 except Exception:
                     pass
-        del self.requirements
-        del self.symbolic_graph
-        del self.resolution_frame
-        del self.validation
-        del self.spell_id
-        del self.existence
-        del self.spellframe
-        del self.binding_name
+        self.requirements = None
+        self.symbolic_graph = None
+        self.resolution_frame = None
+        self.validation = None
+        self.spell_id = None
+        self.existence = None
+        self.spellframe = None
+        self.binding_name = None

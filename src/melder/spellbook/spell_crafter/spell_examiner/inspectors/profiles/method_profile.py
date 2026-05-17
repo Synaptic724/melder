@@ -186,6 +186,8 @@ class MethodProfile(Cleanable):
             self.closure.clear()
         self._cleaned = True
 
+        if isinstance(self.tags, list):
+            self.tags.clear()
         del self.name
         del self.qualname
         del self.module
@@ -219,6 +221,4 @@ class MethodProfile(Cleanable):
         del self.docstring_raw
         del self.docstring_summary
         del self.behavior_summary
-        if isinstance(self.tags, list):
-            self.tags.clear()
         del self.tags
