@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Protocol, runtime_checkable
+from typing import Mapping, Optional, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
@@ -12,13 +12,54 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
     Reusable ACL profile builder/library contract.
     """
 
-    version: str
-    view_profiles_by_name: Dict[str, IFrameACLViewProfile]
-    command_profiles_by_name: Dict[str, IFrameACLCommandProfile]
-    codegen_profiles_by_name: Dict[str, IFrameACLCodegenProfile]
-    view_precision_profiles_by_name: Dict[str, IFrameACLViewProfile]
-    command_precision_profiles_by_name: Dict[str, IFrameACLCommandProfile]
-    codegen_precision_profiles_by_name: Dict[str, IFrameACLCodegenProfile]
+    @property
+    def version(self) -> str:
+        """
+        Return the current version string for this ACL profile builder/library.
+        """
+        ...
+
+    @property
+    def view_profiles_by_name(self) -> Mapping[str, IFrameACLViewProfile]:
+        """
+        Return a detached snapshot of the reusable view-profile registry.
+        """
+        ...
+
+    @property
+    def command_profiles_by_name(self) -> Mapping[str, IFrameACLCommandProfile]:
+        """
+        Return a detached snapshot of the reusable command-profile registry.
+        """
+        ...
+
+    @property
+    def codegen_profiles_by_name(self) -> Mapping[str, IFrameACLCodegenProfile]:
+        """
+        Return a detached snapshot of the reusable codegen-profile registry.
+        """
+        ...
+
+    @property
+    def view_precision_profiles_by_name(self) -> Mapping[str, IFrameACLViewProfile]:
+        """
+        Return a detached snapshot of the reusable view precision profiles.
+        """
+        ...
+
+    @property
+    def command_precision_profiles_by_name(self) -> Mapping[str, IFrameACLCommandProfile]:
+        """
+        Return a detached snapshot of the reusable command precision profiles.
+        """
+        ...
+
+    @property
+    def codegen_precision_profiles_by_name(self) -> Mapping[str, IFrameACLCodegenProfile]:
+        """
+        Return a detached snapshot of the reusable codegen precision profiles.
+        """
+        ...
 
     def register_view_profile(self, view_profile: IFrameACLViewProfile) -> None:
         """
@@ -161,7 +202,7 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
-    def list_view_profile_names(self) -> List[str]:
+    def list_view_profile_names(self) -> Sequence[str]:
         """
         Return the registered view-profile names.
 
@@ -170,7 +211,7 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
-    def list_codegen_profile_names(self) -> List[str]:
+    def list_codegen_profile_names(self) -> Sequence[str]:
         """
         Return the registered codegen-profile names.
 
@@ -179,7 +220,7 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
-    def list_command_profile_names(self) -> List[str]:
+    def list_command_profile_names(self) -> Sequence[str]:
         """
         Return the registered command-profile names.
 
@@ -188,7 +229,7 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
-    def list_view_precision_profile_names(self) -> List[str]:
+    def list_view_precision_profile_names(self) -> Sequence[str]:
         """
         Return the registered view precision-profile names.
 
@@ -197,7 +238,7 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
-    def list_command_precision_profile_names(self) -> List[str]:
+    def list_command_precision_profile_names(self) -> Sequence[str]:
         """
         Return the registered command precision-profile names.
 
@@ -206,7 +247,7 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
-    def list_codegen_precision_profile_names(self) -> List[str]:
+    def list_codegen_precision_profile_names(self) -> Sequence[str]:
         """
         Return the registered codegen precision-profile names.
 

@@ -1,4 +1,4 @@
-from typing import Dict, List, Protocol, runtime_checkable
+from typing import Mapping, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
@@ -14,15 +14,70 @@ class IFrameACLContainer(ICleanable, Protocol):
     Frame-local ACL container contract used by the builder boundary.
     """
 
-    frame_name: str
-    frame_acl_configuration: IFrameACLConfiguration
-    frame_acl_builder: IFrameACLBuilder
-    frame_acl_profile_builder: IFrameACLProfileBuilder
-    named_configurations_by_name: Dict[str, IFrameACLConfiguration]
-    frame_acl_set_compatibility_validator: IFrameACLSetCompatibilityValidator
-    view_chain_names: List[str]
-    command_chain_names: List[str]
-    codegen_chain_names: List[str]
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the owning frame name.
+        """
+        ...
+
+    @property
+    def frame_acl_configuration(self) -> IFrameACLConfiguration:
+        """
+        Return the assembled default ACL configuration snapshot.
+        """
+        ...
+
+    @property
+    def frame_acl_builder(self) -> IFrameACLBuilder:
+        """
+        Return the unique builder object for this frame container.
+        """
+        ...
+
+    @property
+    def frame_acl_profile_builder(self) -> IFrameACLProfileBuilder:
+        """
+        Return the shared ACL profile builder/library for this frame container.
+        """
+        ...
+
+    @property
+    def named_configurations_by_name(self) -> Mapping[str, IFrameACLConfiguration]:
+        """
+        Return assembled same-name ACL snapshots keyed by contract name.
+        """
+        ...
+
+    @property
+    def frame_acl_set_compatibility_validator(
+            self,
+    ) -> IFrameACLSetCompatibilityValidator:
+        """
+        Return the frame-scoped ACL set compatibility validator.
+        """
+        ...
+
+    @property
+    def view_chain_names(self) -> Sequence[str]:
+        """
+        Return named view-chain registry keys.
+        """
+        ...
+
+    @property
+    def command_chain_names(self) -> Sequence[str]:
+        """
+        Return named command-chain registry keys.
+        """
+        ...
+
+    @property
+    def codegen_chain_names(self) -> Sequence[str]:
+        """
+        Return named codegen-chain registry keys.
+        """
+        ...
 
     def install_configuration(
             self,
@@ -47,7 +102,7 @@ class IFrameACLContainer(ICleanable, Protocol):
         """
         ...
 
-    def list_named_configuration_names(self) -> List[str]:
+    def list_named_configuration_names(self) -> Sequence[str]:
         """
         Return all registered ACL contract names for this frame.
         """

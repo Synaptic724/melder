@@ -7,6 +7,7 @@ class IDetail(ICleanable, Protocol):
     An Interface for a 'Detail', a single permission or rule within a Contract.
     """
     _id: str
+    _spell_id: str
     @property
     def type(self) -> 'ContractTypes':
         """

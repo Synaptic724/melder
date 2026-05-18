@@ -142,7 +142,7 @@ class Contract(Cleanable, IContract):
             return contract._ward_a._conduit
         return None
 
-    def _get_detail_map(self, ward: IConduitWard) -> Dict[str, Detail]:
+    def _get_detail_map(self, ward: IConduitWard) -> Dict[str, IDetail]:
         """
         Internal
 
@@ -163,7 +163,7 @@ class Contract(Cleanable, IContract):
             return self._details_b
         raise ValueError("Invalid ward for contract access.")
 
-    def _add(self, ward: IConduitWard, contract_detail: Detail) -> bool:
+    def _add(self, ward: IConduitWard, contract_detail: IDetail) -> bool:
         """
         Internal
 
