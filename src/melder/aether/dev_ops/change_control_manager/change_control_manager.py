@@ -23,15 +23,13 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_system_states import (
-    SpellSystemStates,
-)
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -88,7 +86,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         "_dirty_marker",
     ]
 
-    def __init__(self, spell_system_states: "SpellSystemStates") -> None:
+    def __init__(self, spell_system_states: ISpellSystemStates) -> None:
         """
         Initialize a ChangeControlManager.
 
@@ -111,7 +109,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         Cleanable.__init__(self)
 
         self._lock: RLock = RLock()
-        self._spell_system_states: "SpellSystemStates" = spell_system_states
+        self._spell_system_states: ISpellSystemStates = spell_system_states
 
         # spell_index_id -> Dict[str, Any]
         self._pending_changes: Dict[str, Dict[str, Any]] = {}

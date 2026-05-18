@@ -5,6 +5,7 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 @runtime_checkable
 class IDevOpsManager(ICleanable, Protocol):
@@ -24,7 +25,7 @@ class IDevOpsManager(ICleanable, Protocol):
     _incident_manager: IIncidentManager
     _change_control_manager: IChangeControlManager
     _risk_manager: object
-    _creation_gate_controller: object
+    _creation_gate_controller: CreationGateController
     # ------------------------------------------------------------------
     # Public API Properties
     # ------------------------------------------------------------------
@@ -50,7 +51,7 @@ class IDevOpsManager(ICleanable, Protocol):
         ...
 
     @property
-    def creation_gate_controller(self) -> object:
+    def creation_gate_controller(self) -> CreationGateController:
         """
         Read-only exposure of the CreationGateController used for gate governance.
         """

@@ -89,3 +89,15 @@ class IConduitCloud(ICleanable, Protocol):
                 in the registry.
         """
         ...
+
+    def _unregister_conduit(self, conduit: IConduit):
+        """
+        Remove one named conduit from the cloud. (Internal use)
+
+        Args:
+            conduit (IConduit): The conduit instance to unregister.
+
+        Raises:
+            ValueError: If the conduit name is missing or not registered.
+        """
+        ...
