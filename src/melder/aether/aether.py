@@ -8,7 +8,6 @@ from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.mutation_research.mutation_research import MutationResearch
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.utilities.interfaces import (
@@ -30,6 +29,7 @@ from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.mutation_research.mutation_research import MutationResearch
 
 class Aether(Cleanable, IAether):
     """

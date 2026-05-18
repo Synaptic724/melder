@@ -17,6 +17,21 @@ from melder.__components__ import __components__
 from melder.__graph_network__ import __graph_network__
 from melder.__graph_details__ import __graph_details__
 from melder.__melder_registration_guard__ import MelderRegistrationGuard
+from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.nexus import Nexus
+from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
+
+Aether()
+
 # Eagerly instantiate the registration guard at package import time (internal use).
 __melder_registration_guard__ = MelderRegistrationGuard()
 
@@ -68,5 +83,17 @@ __all__ = [
     "__components__",
     "__graph_network__",
     "__graph_details__",
+    "Aether",
+    "Nexus",
+    "Spellbook",
+    "Conduit",
+    "AetherConfiguration",
+    "AetherConfigurationBuilder",
+    "AethericFrameConfiguration",
+    "SpellbookConfiguration",
+    "Existence",
+    "Policies",
+    "Permissions",
+    "SystemState",
 ]
 

@@ -3,7 +3,6 @@ from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 
@@ -21,13 +20,6 @@ class IMutationConduit(ICleanable, Protocol):
     def conduit(self) -> "IConduit":
         """
         Return the underlying conduit this mutation facade is attached to.
-        """
-        ...
-
-    @property
-    def mutation_research(self) -> "IMutationResearch":
-        """
-        Return the owning mutation-research root used by this conduit facade.
         """
         ...
 

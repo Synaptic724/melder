@@ -1200,10 +1200,7 @@ def _build_runtime_dishka(g: _GraphSpec) -> _RuntimeOps:
 
 
 def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
-    from melder.aether.aether import Aether
-    from melder.aether.conduit.conduit import Conduit
-    from melder.spellbook.existence.existence import Existence
-    from melder.spellbook.spellbook import Spellbook
+    from melder import Aether, Conduit, Existence, Spellbook
 
     Aether._reset_singleton_for_tests()
     aether = Aether()
@@ -1604,10 +1601,7 @@ def _build_rotation_dishka(graphs: list[_GraphSpec]) -> _RotationOps:
 
 
 def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
-    from melder.aether.aether import Aether
-    from melder.aether.conduit.conduit import Conduit
-    from melder.spellbook.existence.existence import Existence
-    from melder.spellbook.spellbook import Spellbook
+    from melder import Aether, Conduit, Existence, Spellbook
 
     Aether._reset_singleton_for_tests()
     aether = Aether()

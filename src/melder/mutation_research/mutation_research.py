@@ -17,10 +17,9 @@ from melder.mutation_research.research.research import Research
 from melder.mutation_research.research.spell.node.spell_mutation_node import (
     SpellMutationNode,
 )
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IAether, IConduit
+from melder.utilities.interfaces import IAether, IConduit, ISpellIndex
 from melder.utilities.interfaces.imutationconduit import IMutationConduit
 from melder.utilities.interfaces.imutationframe import IMutationFrame
 from melder.utilities.interfaces.imutationresearch import IMutationResearch
@@ -82,7 +81,7 @@ class MutationResearch(Cleanable, IMutationResearch):
 
     def __init__(
             self,
-            aether: Optional[IAether] = None,
+            aether: IAether,
             *,
             configuration: Optional[MutationResearchConfiguration] = None,
     ) -> None:
@@ -101,16 +100,6 @@ class MutationResearch(Cleanable, IMutationResearch):
         """
         if MutationResearch._initialized:
             return
-
-        if aether is None:
-            with MutationResearch._lock:
-                if MutationResearch._instance is self and not MutationResearch._initialized:
-                    MutationResearch._instance = None
-                    MutationResearch._initialized = False
-            raise ValueError(
-                "Aether must be provided to initialize MutationResearch."
-            )
-
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
@@ -385,7 +374,7 @@ class MutationResearch(Cleanable, IMutationResearch):
 
     def create_session(
             self,
-            target_index: SpellIndex,
+            target_index: ISpellIndex,
             *,
             name: Optional[str] = None,
             level: Optional[int] = None,
@@ -434,7 +423,7 @@ class MutationResearch(Cleanable, IMutationResearch):
             self._sessions_by_index[index_id] = session
             return session
 
-    def get_session_for_index(self, target_index: SpellIndex) -> Optional[Research]:
+    def get_session_for_index(self, target_index: ISpellIndex) -> Optional[Research]:
         """
         Retrieve the `Research` session for a given SpellIndex, if it exists.
 
@@ -491,7 +480,7 @@ class MutationResearch(Cleanable, IMutationResearch):
                 return []
             return list(self._sessions_by_index.values())
 
-    def remove_session_for_index(self, target_index: SpellIndex) -> None:
+    def remove_session_for_index(self, target_index: ISpellIndex) -> None:
         """
         Remove and cleanup the session associated with one SpellIndex, if present.
 
@@ -523,7 +512,7 @@ class MutationResearch(Cleanable, IMutationResearch):
 
     def begin_spell_mutation(
             self,
-            target_index: SpellIndex,
+            target_index: ISpellIndex,
             *,
             research_name: Optional[str] = None,
             message: Optional[str] = None,
@@ -570,7 +559,7 @@ class MutationResearch(Cleanable, IMutationResearch):
 
     def begin_creation_mutation(
             self,
-            target_index: SpellIndex,
+            target_index: ISpellIndex,
             creation_id: str,
             *,
             research_name: Optional[str] = None,
