@@ -289,8 +289,8 @@ class SpellBinder(Cleanable, ISpellBinder):
                 longer alive.
 
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
 
             # Clear previous state to ensure a clean slate
@@ -327,8 +327,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = existence
         return self
@@ -349,8 +349,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = Existence.unique
         return self
@@ -371,8 +371,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = Existence.many
         return self
@@ -393,8 +393,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = Existence.unique_per_conduit
         return self
@@ -414,8 +414,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = Existence.unique_per_conduit_cluster
         return self
@@ -435,8 +435,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = Existence.unique_per_conduit_lineage
         return self
@@ -457,8 +457,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._existence = Existence.unique_per_spell_space
         return self
@@ -487,8 +487,8 @@ class SpellBinder(Cleanable, ISpellBinder):
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._permissions = permissions
         return self
@@ -512,8 +512,8 @@ class SpellBinder(Cleanable, ISpellBinder):
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._spellframe = spellframe
         return self
@@ -535,8 +535,8 @@ class SpellBinder(Cleanable, ISpellBinder):
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             self._binding_name = binding_name
         return self
@@ -553,8 +553,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             if kwargs:
                 self._kwargs.update(kwargs)
@@ -577,8 +577,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             hooks = self._ensure_hook_list("pre_hooks")
             hooks.append(hook)
@@ -594,8 +594,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             if not hooks:
                 return self
@@ -617,8 +617,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             hooks = self._ensure_hook_list("activation_hooks")
             hooks.append(hook)
@@ -634,8 +634,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             if not hooks:
                 return self
@@ -656,8 +656,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             hooks = self._ensure_hook_list("post_hooks")
             hooks.append(hook)
@@ -673,8 +673,8 @@ class SpellBinder(Cleanable, ISpellBinder):
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
         """
+        self.check_cleaned()
         with self._lock:
-            self.check_cleaned()
             self._require_spellbook()
             if not hooks:
                 return self
@@ -711,6 +711,7 @@ class SpellBinder(Cleanable, ISpellBinder):
                 invalid hook payloads.
 
         """
+        self.check_cleaned()
         with self._lock:
             self._require_spell_selected()
 
