@@ -6,6 +6,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconfiguration import IConfiguration
@@ -13,6 +14,7 @@ from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -33,8 +35,10 @@ class IConduit(ICleanable, Protocol):
     _lock: threading.RLock
     _id: str
     _name: Optional[str]
+    _aether: IAether
     __dynamic_environment__: bool
     _aetheric_frame: str
+    _spellbook: ISpellbook
 
     _configuration: 'IConfiguration'
     _logger: 'ISafeLogger'

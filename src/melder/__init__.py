@@ -24,9 +24,11 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbinder import SpellBinder
 from melder.spellbook.spellbook import Spellbook
 
 # Eagerly instantiate the registration guard at package import time (internal use).
@@ -83,7 +85,9 @@ __all__ = [
     "__graph_network__",
     "__graph_details__",
     "Aether",
+    "Nexus",
     "Spellbook",
+    "SpellBinder",
     "Conduit",
     "AetherConfiguration",
     "AetherConfigurationBuilder",

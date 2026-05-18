@@ -4,19 +4,20 @@ from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Set
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.conduit.conduit import IConduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces import (
     IAether,
     IChangeControlManager,
+    IConduit,
     IIncidentManager,
     ISpell,
+    ISpellIndex,
+    ISpellbook,
 )
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -106,6 +107,8 @@ class TransferOfOwnership(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._aether: IAether = self.source_conduit._aether
         self._frame_name: str = self.source_conduit._aetheric_frame
+        self._source_spellbook: ISpellbook = self.source_conduit._spellbook
+        self._target_spellbook: ISpellbook = self.target_conduit._spellbook
         self._preflight_summary: Dict[str, Any] = {}
         change_control_manager = self._aether._get_change_control_manager(
             self._frame_name
@@ -165,6 +168,8 @@ class TransferOfOwnership(Cleanable):
         del self.mark_dependencies_dirty
         del self._aether
         del self._frame_name
+        del self._source_spellbook
+        del self._target_spellbook
         del self._preflight_summary
         del self._change_control_manager
         del self._incident_manager
@@ -337,9 +342,9 @@ class TransferOfOwnership(Cleanable):
         # spell may be object, id, or SpellIndex
         if hasattr(self.spell, "spell_id"):
             return self.spell
-        if isinstance(self.spell, SpellIndex):
+        if isinstance(self.spell, ISpellIndex):
             idx = self.spell
-            book = self.source_conduit._spellbook
+            book = self._source_spellbook
             with book._lock:
                 return book._spells.get(idx)
         if isinstance(self.spell, str):
@@ -447,7 +452,7 @@ class TransferOfOwnership(Cleanable):
                 return False
         return True
 
-    def _mark_lineage_dirty(self, spell_index: SpellIndex) -> None:
+    def _mark_lineage_dirty(self, spell_index: ISpellIndex) -> None:
         """
         Record a structural-change gate for one lineage in `SpellSystemStates`.
 
@@ -462,7 +467,9 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         spellbook = spell_index._owner_spellbook
         if spellbook is None:
-            raise RuntimeError("Cannot mark lineage dirty without an owner Spellbook.")
+            raise RuntimeError(
+                "Cannot use a SpellIndex without an attached owner Spellbook."
+            )
         spell_states = spellbook._spell_system_states
         if spell_states is None:
             raise RuntimeError("Owner Spellbook has no SpellSystemStates.")
@@ -593,8 +600,6 @@ class TransferOfOwnership(Cleanable):
         if conduit is None or not impacted_lineages:
             return False
         spellbook = conduit._spellbook
-        if spellbook is None:
-            return False
         owned = spellbook._spells or {}
         for spell_index in owned.keys():
             if spell_index is not None and spell_index.id in impacted_lineages:
@@ -606,7 +611,7 @@ class TransferOfOwnership(Cleanable):
                     return True
         return False
 
-    def _mark_lineage_disabled(self, spell_index: SpellIndex) -> None:
+    def _mark_lineage_disabled(self, spell_index: ISpellIndex) -> None:
         """
         Hard-disable the lineage while the ownership flip is actively in flight.
 
@@ -620,7 +625,7 @@ class TransferOfOwnership(Cleanable):
             spell_index: Lineage being moved between conduit owners.
         """
         self.check_cleaned()
-        spell_states = self.source_conduit._spellbook._spell_system_states
+        spell_states = self._source_spellbook._spell_system_states
         state = spell_states.get_by_index_id(spell_index.id)
         if state is None:
             spell_states.register_index(spell_index, self.spell)
@@ -905,7 +910,7 @@ class TransferOfOwnership(Cleanable):
         }
         return snapshot
 
-    def _spell_in_registry(self, conduit: Any, spell_index: SpellIndex) -> bool:
+    def _spell_in_registry(self, conduit: Any, spell_index: ISpellIndex) -> bool:
         """
         Check whether Aether already records this lineage under the conduit.
 
@@ -922,8 +927,11 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
+            current_spell_id = spell_index.current
+            if current_spell_id is None:
+                return False
             owner_conduit = self._aether._get_conduit_by_spell_id(
-                spell_index.current,
+                current_spell_id,
                 self._frame_name,
             )
             return owner_conduit._id == conduit._id
@@ -947,8 +955,9 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
-            with conduit._spellbook._lock:
-                return spell_obj.spell_index in conduit._spellbook._spells
+            spellbook = conduit._spellbook
+            with spellbook._lock:
+                return spell_obj.spell_index in spellbook._spells
         except Exception:
             return False
 
@@ -1111,7 +1120,7 @@ class TransferOfOwnership(Cleanable):
         except Exception:
             pass
 
-    def _lift_disable(self, spell_index: SpellIndex, gated: bool) -> None:
+    def _lift_disable(self, spell_index: ISpellIndex, gated: bool) -> None:
         """
         Exit the hard-disabled in-flight state after transfer success or
         failure.
@@ -1133,7 +1142,7 @@ class TransferOfOwnership(Cleanable):
                 (`True`) or return to the weaker unknown state (`False`).
         """
         self.check_cleaned()
-        spell_states = self.source_conduit._spellbook._spell_system_states
+        spell_states = self._source_spellbook._spell_system_states
         try:
             state = spell_states.get_by_index_id(spell_index.id)
             if state is None:
@@ -1216,8 +1225,8 @@ class TransferOfOwnership(Cleanable):
 
         # Move spell between spellbooks (idempotent)
         try:
-            src_book = self.source_conduit._spellbook
-            tgt_book = self.target_conduit._spellbook
+            src_book = self._source_spellbook
+            tgt_book = self._target_spellbook
             spell_id = spell_obj.spell_index.current
             src_states = src_book._spell_system_states
             tgt_states = tgt_book._spell_system_states
@@ -1559,7 +1568,7 @@ class TransferOfOwnership(Cleanable):
                 sub_transfer.execute()
                 # Mark dependency lineage dirty if requested
                 if self.invalidate_after_transfer:
-                    if isinstance(dep_spell.spell_index, SpellIndex):
+                    if isinstance(dep_spell.spell_index, ISpellIndex):
                         self._mark_lineage_dirty(dep_spell.spell_index)
             except Exception:
                 continue
@@ -1583,7 +1592,7 @@ class TransferOfOwnership(Cleanable):
                 dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
                 if dep_spell is None:
                     continue
-                if isinstance(dep_spell.spell_index, SpellIndex):
+                if isinstance(dep_spell.spell_index, ISpellIndex):
                     self._mark_lineage_dirty(dep_spell.spell_index)
             except Exception:
                 continue
@@ -1631,7 +1640,7 @@ class TransferOfOwnership(Cleanable):
             # Best-effort; failures here should not block the transfer.
             pass
 
-    def _clear_change_intent(self, spell_index: SpellIndex) -> None:
+    def _clear_change_intent(self, spell_index: ISpellIndex) -> None:
         """
         Remove the pending-change record after a successful transfer.
 
