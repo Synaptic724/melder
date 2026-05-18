@@ -430,6 +430,48 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def _register_conduit_spells_in_aether(self, conduit_id: str) -> None:
+        """
+        Register this Spellbook's local spell indices into Aether for one conduit.
+        """
+        ...
+
+    def _unregister_conduit_spells_from_aether(self, conduit_id: str) -> None:
+        """
+        Remove this Spellbook's local spell indices from Aether for one conduit.
+        """
+        ...
+
+    def _get_conduit_by_spell_id(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[IConduit]:
+        """
+        Return the conduit that owns the supplied spell id in Aether.
+        """
+        ...
+
+    def _check_spell_id_in_aether(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether the supplied spell id exists in Aether.
+        """
+        ...
+
+    def _get_spell_by_id_via_aether(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[ISpell]:
+        """
+        Resolve a spell by id through Aether ownership lookup.
+        """
+        ...
+
     def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
         """
         Return a user-facing dump of spell targeting details currently visible

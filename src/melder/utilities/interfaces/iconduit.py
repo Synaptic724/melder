@@ -1689,26 +1689,3 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Mutation Research
     # ------------------------------------------------------------------
-    def get_mutation_research(self):
-        """
-        Public API
-
-        Returns the Aether-owned MutationResearch manager for this runtime.
-
-        Mutation Research is a specialized system that allows AI agents to study and mutate spells and creations.
-        If you are a human using this API directly, be aware that Mutation Research is primarily designed for AI-driven
-        experimentation and may not be suitable for manual use.
-
-        This method is only available when:
-          - The Conduit is a NORMAL conduit.
-          - The system is in DYNAMIC mode.
-
-        Returns:
-            MutationResearch: The hosted mutation research manager.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If the Conduit is a lesser conduit.
-            RuntimeError: If dynamic environment is not enabled.
-        """
-        ...

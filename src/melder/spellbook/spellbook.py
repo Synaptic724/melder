@@ -70,7 +70,7 @@ class Spellbook(Cleanable, ISpellbook):
       Aether.
     - Reusing a frame means sharing spell visibility, configuration posture,
       and change-control surfaces with other participants in that frame.
-    - Use the default frame only when shared scope is intentional.
+    - Use the default frame only when the shared scope is intentional.
 
     Responsibilities:
     - Hold and register local spells through `bind()` and `scan()`.
@@ -94,8 +94,8 @@ class Spellbook(Cleanable, ISpellbook):
         - Relies on Aether and downstream managers for cross-object coordination.
 
     Lifecycle / Cleanup:
-        - Local registries, contracted registries, validators, configuration,
-          and logging are owned by this object.
+        - This object owns local registries, contracted registries, validators, configuration,
+and logging.
         - Cleanup is staged so component teardown happens under the lock first
           and high-level references are dropped afterward.
 
@@ -270,7 +270,7 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Cleanup owned registries and component references under the Spellbook lock.
+        Clean up owned registries and component references under the Spellbook lock.
 
         Contract:
             - Cleans local spells and SpellIndex instances.
@@ -370,7 +370,7 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Cleanup local spell objects and unregister their spell indexes.
+        Clean up local spell objects and unregister their spell indexes.
 
         Contract:
             - Unregisters each local SpellIndex entry from SpellSystemStates.
@@ -448,7 +448,7 @@ class Spellbook(Cleanable, ISpellbook):
         Enter the Spellbook lock context and return `self`.
 
         Purpose:
-            Allow internal multi-step operations to hold the Spellbook lock
+            Allow internal multistep operations to hold the Spellbook lock
             across a controlled block without exposing `_lock` directly.
 
         Returns:
@@ -546,7 +546,7 @@ class Spellbook(Cleanable, ISpellbook):
 
     def _get_required_conduit_surface(self) -> IConduit:
         """
-        Return the live conjured conduit surface or raise.
+        Return the live-conjured conduit surface or raise.
         """
         conduit = self._conduit
         if conduit is None:
@@ -578,7 +578,7 @@ class Spellbook(Cleanable, ISpellbook):
         Register the current spell_id mapping for an owned spell.
 
         Purpose:
-            Provide O(1) lookup by current version id for owned spells.
+            Provide O(1) lookup by the current version id for owned spells.
 
         Contract:
             - Only the current version id is stored in the map.
@@ -752,7 +752,7 @@ class Spellbook(Cleanable, ISpellbook):
         Register the current spell_id mapping for a contracted spell.
 
         Purpose:
-            Provide O(1) lookup by current version id for contracted spells.
+            Provide O(1) lookup by the current version id for contracted spells.
 
         Contract:
             - Mapping is stored under the given conduit_id.
@@ -822,7 +822,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
-            old_id (str): Previous version id for the spell index.
+            old_id (str): The previous version id for the spell index.
             new_id (str): New version id for the spell index.
             spell (ISpell): Contracted spell instance.
 
@@ -1041,7 +1041,7 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Build a read-only snapshot of Spellbook state.
+        Build a read-only snapshot of the Spellbook state.
 
         Purpose:
             Provide a stable view of local and contracted spell registries while
@@ -1130,8 +1130,8 @@ class Spellbook(Cleanable, ISpellbook):
 
         Returns:
             Optional[str]:
-                The permissions name (``"read"``, ``"create"``, or
-                ``"block"``) for this spell.
+                The permissions name (``"read"``, ""create"", or
+                ""block"") for this spell.
 
         Raises:
             RuntimeError:
@@ -1204,7 +1204,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Returns:
             Optional[ISpellIndex]:
-                Matching local SpellIndex when found, else ``None``.
+                Matching local SpellIndex when found, else "None".
         """
         self.check_cleaned()
         with self._lock:
@@ -1228,7 +1228,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Returns:
             Optional[ISpellIndex]:
-                Matching contracted SpellIndex when found, else ``None``.
+                Matching contracted SpellIndex when found, else "None".
         """
         self.check_cleaned()
         with self._lock:
@@ -1256,7 +1256,7 @@ class Spellbook(Cleanable, ISpellbook):
             - Once the matching `SpellIndex` object is found, resolves the
               spell directly through the existing index-based helpers instead of
               bouncing back through a second spell-id lookup.
-            - Returns ``None`` when no matching SpellIndex exists.
+            - Returns "None" when no matching SpellIndex exists.
 
         Args:
             spell_index_id:
@@ -1264,7 +1264,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Returns:
             Optional[ISpell]:
-                Matching local or contracted spell when found, else ``None``.
+                Matching local or contracted spell when found, else "None".
         """
         self.check_cleaned()
         local_spell_index = self._find_spell_index_by_index_id(spell_index_id)
@@ -1472,6 +1472,133 @@ class Spellbook(Cleanable, ISpellbook):
                 self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
                 return None
 
+    def _register_conduit_spells_in_aether(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Register this Spellbook's local spell indices in Aether for one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id that should own these local spell indices in the
+                shared Aether registry.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            spell_set = set(self._spells.keys())
+        self._aether._add_spells_to_aether(
+            conduit_id,
+            spell_set,
+            self._aetheric_frame,
+        )
+
+    def _unregister_conduit_spells_from_aether(self, conduit_id: str) -> None:
+        """
+        Internal
+
+        Remove this Spellbook's local spell indices from Aether for one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id whose local spell indices should be removed from the
+                shared Aether registry.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            spell_set = set(self._spells.keys())
+        if spell_set:
+            self._aether._remove_spells_from_aether(
+                conduit_id,
+                spell_set,
+                self._aetheric_frame,
+            )
+
+    def _get_conduit_by_spell_id(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[IConduit]:
+        """
+        Internal
+
+        Resolve the conduit that owns the supplied spell id through Aether.
+
+        Args:
+            spell_id:
+                Version id / spell id to resolve.
+            aetheric_frame_name:
+                Frame name to search. `"default"` is normalized to this
+                Spellbook's current frame.
+
+        Returns:
+            Optional[IConduit]:
+                Owning conduit when found, otherwise "None".
+        """
+        if aetheric_frame_name == "default":
+            aetheric_frame_name = self._aetheric_frame
+        return self._aether._get_conduit_by_spell_id(
+            spell_id,
+            aetheric_frame_name,
+        )
+
+    def _check_spell_id_in_aether(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Internal
+
+        Return whether the supplied spell id exists in Aether.
+
+        Args:
+            spell_id:
+                Version id / spell id to check.
+            aetheric_frame_name:
+                Frame name to search. `"default"` is normalized to this
+                Spellbook's current frame.
+
+        Returns:
+            bool:
+                "True" when Aether resolves the spell id, else "False".
+        """
+        if aetheric_frame_name == "default":
+            aetheric_frame_name = self._aetheric_frame
+        return bool(self._aether._check_for_spell(spell_id, aetheric_frame_name))
+
+    def _get_spell_by_id_via_aether(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[ISpell]:
+        """
+        Internal
+
+        Resolve a spell by id through Aether ownership lookup.
+
+        Args:
+            spell_id:
+                Version id / spell id to resolve.
+            aetheric_frame_name:
+                Frame name to search. `"default"` is normalized to this
+                Spellbook's current frame.
+
+        Returns:
+            Optional[ISpell]:
+                Matching spell when found, otherwise "None".
+        """
+        owner = self._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
+        if owner is None:
+            return None
+        owner_spellbook = owner._spellbook
+        if owner_spellbook is None:
+            raise RuntimeError("Owner conduit has no spellbook.")
+        return owner_spellbook.find_spell_by_id(spell_id)
+
     def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
         """
         Public API
@@ -1541,7 +1668,7 @@ class Spellbook(Cleanable, ISpellbook):
         Contract:
             - Uses the warmed local version cache when available.
             - Falls back to SpellIndex version scans when the cache is empty.
-            - Raises on the first duplicate detected in the Aether registry.
+            - Rises on the first duplicate detected in the Aether registry.
 
         Raises:
             RuntimeError: If a spell ID is found to be duplicated in the Aether.
@@ -1594,7 +1721,7 @@ class Spellbook(Cleanable, ISpellbook):
             Optional[ISpell]: The resolved spell, or None if not found.
         """
 
-        # Pull the map of SpellIndex ? ISpell for this conduit
+        # Pull the map of SpellIndex? ISpell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
@@ -1617,7 +1744,7 @@ class Spellbook(Cleanable, ISpellbook):
         This method ensures `_contracted_spells` (value map), `_lookup_contracted_spells`
         (key map), `_contracted_versions` (version cache), and
         `_contracted_spells_by_id` (id map) are initialized
-        atomically to maintain consistent state.
+        atomically to maintain a consistent state.
 
         Args:
             conduit_id (str): The ID of the peer conduit to create the contract structure for.
@@ -1734,7 +1861,7 @@ class Spellbook(Cleanable, ISpellbook):
             )
             spell_index._attach_contracted(self, conduit_id, spell)
 
-            # Main maps: SpellIndex ? ISpell and key ? SpellIndex
+            # Main maps: SpellIndex? ISpell and key? SpellIndex
             spell_map[spell_index] = spell
             lookup_map[spell_key] = spell_index
 
@@ -1760,7 +1887,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Removes a specific contracted spell from the internal registry.
 
-        The SpellIndex attachment is removed so this Spellbook no longer
+        The SpellIndex attachment is removed, so this Spellbook no longer
         receives spell_id updates for the contracted spell index.
 
         When a link transaction is active, this also refreshes staged contract
@@ -1834,7 +1961,7 @@ class Spellbook(Cleanable, ISpellbook):
         Clears all spells associated with a contracted conduit, retaining
         the contract structure and zeroing the version cache.
 
-        SpellIndex attachments are removed so this Spellbook no longer
+        SpellIndex attachments are removed, so this Spellbook no longer
         receives spell_id updates for the contracted spell index.
 
         When a link transaction is active, this also refreshes staged contract
@@ -1975,7 +2102,7 @@ class Spellbook(Cleanable, ISpellbook):
         This does *not* introduce a new registration path; it simply
         forwards everything into the existing binding pipeline so all
         reflection, `SpellIndex` construction, `SpellType` classification,
-        and validation flows remain exactly the same. :contentReference[oaicite:1]{index=1}
+        and validation flows remain exactly the same. contentReference[officiate:1]{index=1}
 
         Example:
             binder = spellbook.create_binder()
@@ -2088,21 +2215,21 @@ class Spellbook(Cleanable, ISpellbook):
             scope_hashes:
                 Optional normalized scope hashes for conflict checks.
             binding_keys:
-                Optional binding keys affected by the request.
+                Optional binding keys are affected by the request.
             contract_keys:
-                Optional contract keys affected by the request.
+                Optional contract keys are affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
         Returns:
             None.
         Raises:
             RuntimeError: If a change transaction is already active.
-            RuntimeError: If binding transaction is already active for bind requests.
+            RuntimeError: If the binding transaction is already active for bind requests.
             RuntimeError: If change-control admission is denied.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
         Threading:
-            Admission uses the orchestrator lock; local state uses the Spellbook lock.
+            Admission uses the orchestrator lock; the local state uses the Spellbook lock.
         """
         self.check_cleaned()
         request_type = self._normalize_change_transaction_type(transaction_type)
@@ -2244,7 +2371,7 @@ class Spellbook(Cleanable, ISpellbook):
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
         Threading:
-            Uses the Spellbook lock for local state; orchestrator handles admission state.
+            Uses the Spellbook lock for the local state; orchestrator handles admission state.
         """
         self.check_cleaned()
         request: Optional[ChangeControlTransactionRequest] = None
@@ -2311,16 +2438,16 @@ class Spellbook(Cleanable, ISpellbook):
             scope_hashes:
                 Optional normalized scope hashes for conflict checks.
             binding_keys:
-                Optional binding keys affected by the request.
+                Optional binding keys are affected by the request.
             contract_keys:
-                Optional contract keys affected by the request.
+                Optional contract keys are affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
         Yields:
             Spellbook: The current Spellbook instance for the duration of the transaction context.
         Raises:
             RuntimeError: If a change transaction is already active.
-            RuntimeError: If binding transaction is already active for bind requests.
+            RuntimeError: If the binding transaction is already active for bind requests.
             RuntimeError: If change-control admission is denied.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
@@ -2531,7 +2658,7 @@ class Spellbook(Cleanable, ISpellbook):
             Refresh staged binding metadata with the normalized keys for spells
             bound during the active change-control bind transaction.
         Contract:
-            - No-op if no change transaction is active or it is not a bind request.
+            - No-op if no change transaction is active, or it is not a bind request.
             - No-op if there are no pending structural spells to report.
             - Uses the pending structural spells list as the source of truth.
         Returns:
@@ -2579,7 +2706,7 @@ class Spellbook(Cleanable, ISpellbook):
             Refresh staged contract metadata for a peer conduit after contract
             changes are applied to the contracted spell maps.
         Contract:
-            - No-op if no change transaction is active or it is not a link request.
+            - No-op if no change transaction is active, or it is not a link request.
             - Replaces contract keys for the supplied conduit id while preserving
               staged keys for other peers.
             - No-op if conduit_id is empty.
@@ -2686,8 +2813,8 @@ class Spellbook(Cleanable, ISpellbook):
               into the relevant runtime mirrors.
 
         Binding requires an active binding transaction. Use
-        ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
-        before binding and ``end_binding_transaction()`` once registration
+        "begin_transaction("bind")" (or "begin_binding_transaction()")
+        before binding and "end_binding_transaction()" once registration
         is complete.
 
         When a change-control bind transaction is active, binding updates the
@@ -2724,7 +2851,7 @@ class Spellbook(Cleanable, ISpellbook):
             spellframe (Optional[Any]):
                 Logical interface, frame, or grouping key for the spell.
             binding_name (Optional[str]):
-                Secondary key used to distinguish this spell among others in
+                Secondary key is used to distinguish this spell among others in
                 the same frame.
             profile (str):
                 Spell profile family to attach after bind completion.
@@ -2872,8 +2999,8 @@ class Spellbook(Cleanable, ISpellbook):
         scanned module, otherwise the scan fails.
 
         Scanning requires an active binding transaction. Use
-        ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
-        before scanning and ``end_binding_transaction()`` once registration
+        "begin_transaction("bind")" (or "begin_binding_transaction()")
+        before scanning and "end_binding_transaction()" once registration
         is complete.
 
         Args:
@@ -2882,7 +3009,7 @@ class Spellbook(Cleanable, ISpellbook):
             list[str]: Spell IDs bound during the scan, in module dict order.
         Raises:
             TypeError: If `module` is not a module or metadata is invalid.
-            ValueError: If a decorated object is not owned by the module.
+            ValueError: If the module does not own a decorated object.
             RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
@@ -2948,8 +3075,8 @@ class Spellbook(Cleanable, ISpellbook):
 
         Initialize configuration with the following rules:
           - If the canonical frame posture already permits explicit frame-wide
-            rich-config sharing and the frame already has such a config:
-              * If a config was passed in and it's not the same object, throw.
+            rich-config sharing, and the frame already has such a config:
+              * If a config was passed in, and it's different object, throw.
               * Otherwise, adopt the frame-owned config directly.
           - Otherwise:
               * If a config was passed in, verify its frame matches and keep it (unlocked).
@@ -3310,7 +3437,7 @@ class Spellbook(Cleanable, ISpellbook):
             - Uses the `AethericFrame`-owned posture reference already attached
               to this Spellbook.
             - Binds it through the owning `AethericFrame`, which freezes it on
-              first successful bind or accepts Nexus-provided posture that was
+               the first successful bind or accepts Nexus-provided posture that was
               already bound earlier.
 
         Returns:
@@ -3369,7 +3496,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         Args:
             conduit:
-                Root conduit created during conjure.
+                Root conduit created during conjuring.
 
         Returns:
             None.
@@ -3487,7 +3614,7 @@ class Spellbook(Cleanable, ISpellbook):
         Contract:
             - Uses the existing spellbook configuration and frame-configuration
               objects rather than creating a parallel setup path.
-            - Applies only provided values; omitted values leave current state
+            - Applies only provided values; omitted values leave the current state
               unchanged.
             - Freezes the rich spellbook configuration and then binds it to the
               owning Aether frame.
@@ -3571,33 +3698,33 @@ class Spellbook(Cleanable, ISpellbook):
             - **Automatic mode (automatic=True)**: only `"default"` is allowed (linking disabled).
             - **Dynamic mode (automatic=False and `system_state` is dynamic)**:
                 * `"default"`: normal per-spell rules.
-                * `"whitelist_all"` / `"block_all"`: override per-spell whitelist behavior.
+                * `"whitelist_all"` / `"block_all"`: override per-spell whitelist behaviour.
                 * `"inbound_only"` / `"outbound_only"`: directional link restrictions.
 
         Hook integration
         ----------------
         If the active SpellbookConfiguration has Conduit lifecycle hooks registered under this
         Spellbook's ID, they are fetched via
-        ``SpellbookCreationSystem.get_conjure_hook_map()`` and invoked
+        "SpellbookCreationSystem.get_conjure_hook_map()" and invoked
         in the following order:
 
             1. "on_conduit_pre_created()"
                    Fired **before** the Conduit is constructed. No Conduit instance
-                   is passed, because it does not exist yet.
+                   is passed because it does not exist yet.
 
             2. "on_conduit_activated(conduit)"
                    Fired immediately after the Conduit has been constructed
-                   (its ``__init__`` has run), but before it is wired into spells.
+                   (its "__init__" has run), but before it is wired into spells.
 
             3. "on_conduit_post_created(conduit)"
                    Fired after the Conduit has been integrated into all local
                    spells via
-                   ``SpellbookCreationSystem.define_conduit_into_spells``.
+                   "SpellbookCreationSystem.define_conduit_into_spells".
 
         For conjured (root) conduits, these hooks receive:
 
             - pre  : no arguments
-            - act  : (conduit,)
+            - act : (conduit,)
             - post : (conduit,)
         """
         self.check_cleaned()
@@ -3699,7 +3826,7 @@ class Spellbook(Cleanable, ISpellbook):
             - Applies only to the provided spell sequence.
             - Leaves already-conjured conduit state intact.
         Threading:
-            Caller must hold the Spellbook lock while mutating bound spell state.
+            Caller must hold the Spellbook lock while mutating the bound spell state.
         Args:
             spells: Newly bound spells requiring structural validation.
         Returns:
@@ -3727,7 +3854,7 @@ class Spellbook(Cleanable, ISpellbook):
             - Uses Spellbook's `PhaseScheduler` symbol to preserve patch points.
             - Cleans temporary phase artifacts before returning.
         Threading:
-            Caller must hold the Spellbook lock for consistent conduit scope state.
+            Caller must hold the Spellbook lock for a consistent conduit scope state.
         Args:
             conduit_id: Conduit id for resolution scope.
         Returns:

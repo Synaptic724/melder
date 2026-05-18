@@ -382,9 +382,8 @@ class Conduit(Cleanable, IConduit):
 
         # 4) Unregister from Aether (spells + root conduit + cloud)
         try:
-            spell_indices = list(self._spellbook._spells.keys()) if self._spellbook is not None else []
-            if spell_indices:
-                self._aether._remove_spells_from_aether(self._id, set(spell_indices), self._aetheric_frame)
+            if self._spellbook is not None:
+                self._spellbook._unregister_conduit_spells_from_aether(self._id)
             self._aether._remove_conduit(self, self._aetheric_frame)
             if self.__dynamic_environment__ and self._name is not None:
                 self._aether._unregister_conduit_cloud(self, self._aetheric_frame)
@@ -1582,15 +1581,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If Aether is not initialized.
         """
-        if self._aether is None:
-            self._logger.error("Aether is not initialized", "_add_spells_to_aether")
-            raise RuntimeError("Aether is not initialized.")
-
-        # NOTE: these are SpellIndex objects, not raw version SHA strings
-        spell_indices = list(self._spellbook._spells.keys())
-
-        spell_set = set(spell_indices)
-        self._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
+        self._spellbook._register_conduit_spells_in_aether(self._id)
 
 
 
@@ -1614,7 +1605,10 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         with self._lock:
-            return self._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
+            return self._spellbook._get_conduit_by_spell_id(
+                spell_id,
+                aetheric_frame_name,
+            )
 
     def check_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
         """
@@ -1634,9 +1628,10 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         with self._lock:
-            raw = self._aether._check_for_spell(spell_id, aetheric_frame_name)
-            found = bool(raw)
-        return found
+            return self._spellbook._check_spell_id_in_aether(
+                spell_id,
+                aetheric_frame_name,
+            )
 
 
     def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[ISpell]:
@@ -1663,22 +1658,10 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        owner = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
-        if owner is None:
-            result = None
-        else:
-            # Walk the owner's SpellIndex keys and find the lineage that contains this version
-            spellbook = owner._spellbook
-            if spellbook is None:
-                self._logger.error(
-                    "Owner conduit has no spellbook.",
-                    "get_spell_by_id",
-                    exc_info=True,
-                )
-                raise RuntimeError("Owner conduit has no spellbook.")
-            else:
-                result = spellbook.find_spell_by_id(spell_id)
-        return result
+        return self._spellbook._get_spell_by_id_via_aether(
+            spell_id,
+            aetheric_frame_name,
+        )
 
     def get_spell_by_index_id(
             self,
@@ -1769,7 +1752,6 @@ class Conduit(Cleanable, IConduit):
             ValueError: If the spell is not found in the spellbook.
         """
         self.check_cleaned()
-
         # This will raise RuntimeError if the key is not found; we translate to ValueError
         try:
             spell_index = self._spellbook.find_spell_index(spellframe, spell_name, binding_name)
@@ -3639,6 +3621,7 @@ class Conduit(Cleanable, IConduit):
             conduit (IConduit, optional): Target conduit object.
             conduit_id (str, optional): str of target conduit (used if `conduit` is not provided).
             aetheric_frame (str): Optional frame override.
+            root_spell_id (str, optional): str of root spell ID (used if `conduit` is not provided).
 
         Returns:
             dict: Dictionary of `spell_id` -> success boolean for each removal attempt.
@@ -4014,44 +3997,6 @@ class Conduit(Cleanable, IConduit):
 
 
     #endregion Spell Contracting API
-    #region Mutation Research
-    def get_mutation_research(self):
-        """
-        Public API
-
-        Returns the Aether-owned MutationResearch manager for this runtime.
-
-        Mutation Research is a specialized system that allows AI agents to study and mutate spells and creations.
-        If you are a human using this API directly, be aware that Mutation Research is primarily designed for AI-driven
-        experimentation and may not be suitable for manual use.
-
-        This method is only available when:
-          - The Conduit is a NORMAL conduit.
-          - The system is in DYNAMIC mode.
-
-        Returns:
-            MutationResearch: The hosted mutation research manager.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If the Conduit is a lesser conduit.
-            RuntimeError: If dynamic environment is not enabled.
-        """
-        self.check_cleaned()
-
-        # Validate state: must be normal + dynamic
-        if self._conduit_state != ConduitState.normal:
-            self._logger.error("get_mutation_research on non-normal conduit", "get_mutation_research")
-            raise RuntimeError("Only normal conduits can access MutationResearch.")
-
-        if not self.__dynamic_environment__:
-            self._logger.error("get_mutation_research in non-dynamic env", "get_mutation_research")
-            raise RuntimeError("Dynamic environment is not enabled. MutationResearch is unavailable.")
-
-        # Pull from Aether
-        return self._aether._get_mutation_research()
-
-    #endregion Mutation Research
 
 
     #region Hooks
