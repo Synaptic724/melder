@@ -11,7 +11,6 @@ from melder.utilities.interfaces.iaethericframeconfiguration import (
     IAethericFrameConfiguration,
 )
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
@@ -296,7 +295,7 @@ class IAether(ICleanable, Protocol):
             self,
             name: str,
             aetheric_frame_name: str = "default",
-    ) -> IConduit:
+    ) -> "IConduit":
         """
         Return one registered root conduit by name.
         """
@@ -306,7 +305,7 @@ class IAether(ICleanable, Protocol):
             self,
             conduit_id: str,
             aetheric_frame_name: str = "default",
-    ) -> IConduit:
+    ) -> "IConduit":
         """
         Return one registered root conduit by id.
         """
@@ -316,7 +315,7 @@ class IAether(ICleanable, Protocol):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> IConduit:
+    ) -> "IConduit":
         """
         Return the root conduit that currently owns the supplied spell id.
         """
