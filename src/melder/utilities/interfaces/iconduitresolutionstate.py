@@ -139,6 +139,17 @@ class IConduitResolutionState(ICleanable, Protocol):
         """
         ...
 
+    def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
+        """
+        Internal
+
+        Attach or replace the conduit-local risk-manager collaborator.
+
+        Returns:
+            None.
+        """
+        ...
+
     def last_validated_at(self) -> Optional[float]:
         """
         Return the last successful validation timestamp.

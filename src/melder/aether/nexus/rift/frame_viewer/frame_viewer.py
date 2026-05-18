@@ -38,11 +38,16 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IConduitRecord, IFrameLink, ISpellRecord
+from melder.utilities.interfaces import (
+    IConduitRecord,
+    IFrameLink,
+    IFrameViewer,
+    ISpellRecord,
+)
 
 
 @decorate_public_view_actions
-class FrameViewer(Cleanable):
+class FrameViewer(Cleanable, IFrameViewer):
     """
     Purpose:
         Hold one durable viewer asset that reads current frame truth from the

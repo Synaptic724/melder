@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
@@ -261,6 +261,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
         index_id = spell_index.id
         current_id = spell_index.current
+        if current_id is None:
+            raise RuntimeError("spell_index.current is unavailable during registration.")
 
         with self._lock:
             if self._states_by_index_id is None or self._states_by_spell_id is None or self._dirty_indexes is None:
@@ -476,7 +478,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             state = self._states_by_index_id.get(index_id)
             if state is None:
                 # Defensive: create on first use if not present
-                state = SpellSystemState(index_id, spell_index.current)
+                current_id = spell_index.current
+                if current_id is None:
+                    raise RuntimeError(
+                        "spell_index.current is unavailable during dependency update."
+                    )
+                state = SpellSystemState(index_id, current_id)
                 if self._risk_manager is not None:
                     state._set_risk_manager(self._risk_manager)
                 self._states_by_index_id[index_id] = state
@@ -533,7 +540,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
             state = self._states_by_index_id.get(index_id)
             if state is None:
-                state = SpellSystemState(index_id, spell_index.current)
+                current_id = spell_index.current
+                if current_id is None:
+                    raise RuntimeError(
+                        "spell_index.current is unavailable during structural change."
+                    )
+                state = SpellSystemState(index_id, current_id)
                 if self._risk_manager is not None:
                     state._set_risk_manager(self._risk_manager)
                 self._states_by_index_id[index_id] = state
@@ -645,7 +657,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     # ------------------------------------------------------------------
     # Per-conduit resolution state (Phases 5-7)
     # ------------------------------------------------------------------
-    def get_conduit_resolution_state(self, conduit_id: str) -> Optional[ConduitResolutionState]:
+    def get_conduit_resolution_state(self, conduit_id: str) -> Optional[IConduitResolutionState]:
         """
         Retrieve the per-conduit resolution state for a given conduit id.
 
@@ -657,7 +669,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             conduit_id:
                 Conduit identifier used as the resolution-state key.
         Returns:
-            ConduitResolutionState | None:
+            Optional[IConduitResolutionState]:
                 The resolution state if present; otherwise None.
         """
         self.check_cleaned()
@@ -666,10 +678,9 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 return None
-            state = self._resolution_by_conduit_id.get(conduit_id)
-            return cast(Optional[ConduitResolutionState], state)
+            return self._resolution_by_conduit_id.get(conduit_id)
 
-    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> ConduitResolutionState:
+    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> IConduitResolutionState:
         """
         Retrieve or create the per-conduit resolution state for a conduit id.
 
@@ -689,7 +700,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
               risk tracking in sync.
             - Never returns a detached copy.
         Returns:
-            ConduitResolutionState:
+            IConduitResolutionState:
                 The resolution state instance for this conduit.
         Raises:
             ValueError:
@@ -709,7 +720,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 if self._risk_manager is not None:
                     state._set_risk_manager(self._risk_manager)
                 self._resolution_by_conduit_id[conduit_id] = state
-            return cast(ConduitResolutionState, state)
+            return state
 
     def unregister_index(self, spell_index: ISpellIndex) -> Optional[SpellSystemState]:
         """
@@ -745,25 +756,30 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         current_spell_id: Optional[str] = None
         owner_spellbook_id: Optional[str] = None
         dependencies: Set[str] = set()
-        risk_manager = None
         with self._lock:
-            if self._states_by_index_id is not None and index_id in self._states_by_index_id:
+            states_by_index_id = self._states_by_index_id
+            states_by_spell_id = self._states_by_spell_id
+            dirty_indexes = self._dirty_indexes
+            if states_by_index_id is None or states_by_spell_id is None or dirty_indexes is None:
+                raise RuntimeError("SpellSystemStates has been cleaned.")
+
+            if index_id in states_by_index_id:
                 self.compute_impact_closure([index_id])
-            removed_state = self._states_by_index_id.pop(index_id, None)
+            removed_state = states_by_index_id.pop(index_id, None)
             if removed_state is None:
                 # Still clear the spell-id index if it points to this spell index.
                 current_spell_id = spell_index.current
-                if current_spell_id and self._states_by_spell_id.get(current_spell_id) is not None:
-                    self._states_by_spell_id.pop(current_spell_id, None)
-                self._dirty_indexes.discard(index_id)
+                if current_spell_id and states_by_spell_id.get(current_spell_id) is not None:
+                    states_by_spell_id.pop(current_spell_id, None)
+                dirty_indexes.discard(index_id)
                 return None
 
             current_spell_id = removed_state.current_spell_id
 
-            if current_spell_id and self._states_by_spell_id.get(current_spell_id) is removed_state:
-                self._states_by_spell_id.pop(current_spell_id, None)
+            if current_spell_id and states_by_spell_id.get(current_spell_id) is removed_state:
+                states_by_spell_id.pop(current_spell_id, None)
 
-            self._dirty_indexes.discard(index_id)
+            dirty_indexes.discard(index_id)
 
             if self._local_topologies is not None and current_spell_id:
                 self._local_topologies.pop(current_spell_id, None)
@@ -782,15 +798,16 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             # Detach reverse edges from dependencies that still exist.
             for dep_id in dependencies:
                 dep_state = None
-                if self._states_by_spell_id is not None:
-                    dep_state = self._states_by_spell_id.get(dep_id)
-                if dep_state is None and self._states_by_index_id is not None:
-                    dep_state = self._states_by_index_id.get(dep_id)
+                dep_state = states_by_spell_id.get(dep_id)
+                if dep_state is None:
+                    dep_state = states_by_index_id.get(dep_id)
                 if dep_state is not None:
                     dep_state.remove_dependent(index_id)
 
             callback = _get_structural_risk_manager_callback(self._risk_manager)
 
+        if removed_state is None:
+            return None
         if callback is not None:
             callback(
                 index_id,
@@ -821,10 +838,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             if self._resolution_by_conduit_id is not None:
                 for resolution_state in self._resolution_by_conduit_id.values():
                     try:
-                        cast(
-                            ConduitResolutionState,
-                            resolution_state,
-                        )._set_risk_manager(risk_manager)
+                        resolution_state._set_risk_manager(risk_manager)
                     except Exception:
                         pass
 
@@ -855,7 +869,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 except Exception:
                     pass
 
-    def iter_conduit_resolution_states(self) -> Iterator[ConduitResolutionState]:
+    def iter_conduit_resolution_states(self) -> Iterator[IConduitResolutionState]:
         """
         Iterate over a snapshot of all registered per-conduit resolution states.
 
@@ -864,19 +878,14 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         `ConduitResolutionState` objects are still the owned live instances.
 
         Returns:
-            Iterator[ConduitResolutionState]:
+            Iterator[IConduitResolutionState]:
                 Snapshot iterator over registered resolution states.
         """
         self.check_cleaned()
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 return iter(())
-            return iter(
-                [
-                    cast(ConduitResolutionState, state)
-                    for state in self._resolution_by_conduit_id.values()
-                ]
-            )
+            return iter(list(self._resolution_by_conduit_id.values()))
 
     def set_conduit_spell_validity(
             self,
@@ -1243,6 +1252,10 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
         with self._lock:
             spell_id = spell_index.current
+            if spell_id is None:
+                raise RuntimeError(
+                    "spell_index.current is unavailable during topology registration."
+                )
             self._local_topologies[spell_id] = topology
             if self._index_owner_spellbook_id is None:
                 return
@@ -1292,7 +1305,10 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             raise ValueError("spell_index must not be None.")
 
         with self._lock:
-            return self._local_topologies.get(spell_index.current)
+            spell_id = spell_index.current
+            if spell_id is None:
+                return None
+            return self._local_topologies.get(spell_id)
 
     def get_local_topology_by_id(
             self,

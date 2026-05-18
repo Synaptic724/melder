@@ -53,6 +53,7 @@ from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
+from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.iworkstation import IWorkstation
 from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
@@ -143,6 +144,7 @@ __all__ = [
     "INexusConfiguration",
     "INexusFrameConfiguration",
     "IRiftConfiguration",
+    "IFrameViewer",
     "IWorkstation",
     "IFrameLink",
     "ICommandSystem",
