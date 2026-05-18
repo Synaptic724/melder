@@ -180,6 +180,16 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
+    def refresh_runtime_projections(
+            self,
+            frame_names: Optional[Tuple[str, ...]] = None,
+    ) -> None:
+        """
+        Refresh the Rift-owned projection registry for the supplied frames or
+        for all currently assigned frames when omitted.
+        """
+        ...
+
     def mark_registered(self) -> None:
         """
         Mark this Rift as registered with its owning Nexus.

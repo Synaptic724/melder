@@ -2,18 +2,19 @@ import threading
 from typing import Dict, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import (
     IAethericFrame,
+    IAethericFrameConfiguration,
     IConduitRecord,
+    IFrameDescriptor,
     IFrameRecord,
     ISpellRecord,
 )
 
 
-class FrameDescriptor(Cleanable):
+class FrameDescriptor(Cleanable, IFrameDescriptor):
     """
     Purpose:
         Aggregate the Nexus-owned metadata and indexes for one frame-scoped
@@ -78,7 +79,7 @@ class FrameDescriptor(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._frame_handle: Optional[IAethericFrame] = None
-        self._frame_configuration: Optional[AethericFrameConfiguration] = None
+        self._frame_configuration: Optional[IAethericFrameConfiguration] = None
         self._frame_overview: Optional[IFrameRecord] = None
         self._conduit_records_by_id: Dict[str, IConduitRecord] = {}
         self._spell_records_by_key: Dict[Tuple[str, str], ISpellRecord] = {}
@@ -164,7 +165,7 @@ class FrameDescriptor(Cleanable):
             return self._frame_handle
 
     @property
-    def frame_configuration(self) -> Optional[AethericFrameConfiguration]:
+    def frame_configuration(self) -> Optional[IAethericFrameConfiguration]:
         """
         Return the currently attached frame posture/configuration reference.
 
@@ -172,7 +173,7 @@ class FrameDescriptor(Cleanable):
             Expose the bound frame posture cached on the descriptor.
 
         Returns:
-            Optional[AethericFrameConfiguration]: Bound frame configuration
+            Optional[IAethericFrameConfiguration]: Bound frame configuration
             reference when known.
         """
         self.check_cleaned()
@@ -289,7 +290,7 @@ class FrameDescriptor(Cleanable):
 
     def set_frame_configuration(
             self,
-            frame_configuration: Optional[AethericFrameConfiguration],
+            frame_configuration: Optional[IAethericFrameConfiguration],
     ) -> None:
         """
         Attach or replace the bound frame configuration reference.

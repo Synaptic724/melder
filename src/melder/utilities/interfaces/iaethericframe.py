@@ -1,6 +1,7 @@
 from typing import Dict, Optional, runtime_checkable, Protocol
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
+from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
@@ -34,7 +35,7 @@ class IAethericFrame(ICleanable, Protocol):
     _id: str
     _conduits: Dict[str, IConduit]
     _conduit_cloud: IConduitCloud
-    _conduit_clusters: Dict[str, object]
+    _conduit_clusters: Dict[str, IConduitCluster]
     name: str
 
     @property

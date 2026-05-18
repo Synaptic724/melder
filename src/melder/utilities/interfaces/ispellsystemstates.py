@@ -72,33 +72,6 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         ...
 
-    # ------------------------------------------------------------------
-    # Meld Gate Control
-    # ------------------------------------------------------------------
-    def enable_meld(self) -> None:
-        """
-        Public API
-
-        Enable meld execution for this conduit spell-index family.
-
-        Contract:
-            - Delegates to the local CreationGate for this conduit.
-            - CreationGateController can enable all registered gates when needed.
-        """
-        ...
-
-    def disable_meld(self) -> None:
-        """
-        Public API
-
-        Disable meld execution for this conduit spell-index family.
-
-        Contract:
-            - Delegates to the local CreationGate for this conduit.
-            - CreationGateController can disable all registered gates when needed.
-        """
-        ...
-
     def unregister_index(self, spell_index: ISpellIndex) -> Optional[SpellSystemState]:
         """
         Remove a spell index from this registry and return the removed state if present.

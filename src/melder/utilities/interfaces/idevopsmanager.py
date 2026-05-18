@@ -4,6 +4,7 @@ from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlMana
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @runtime_checkable
 class IDevOpsManager(ICleanable, Protocol):
@@ -28,30 +29,40 @@ class IDevOpsManager(ICleanable, Protocol):
     # Public API Properties
     # ------------------------------------------------------------------
     @property
-    def incident_manager(self) -> Optional[IIncidentManager]:
+    def incident_manager(self) -> IIncidentManager:
         """
         Read-only exposure of the IncidentManager (descriptive: what went wrong, where).
         """
         ...
 
     @property
-    def change_control_manager(self) -> Optional[IChangeControlManager]:
+    def change_control_manager(self) -> IChangeControlManager:
         """
         Read-only exposure of the ChangeControlManager (process-level view of pending changes / releases).
         """
         ...
 
     @property
-    def risk_manager(self) -> Optional[object]:
+    def risk_manager(self) -> object:
         """
         Read-only exposure of the RiskManager (validation gating state).
         """
         ...
 
     @property
-    def creation_gate_controller(self) -> Optional[object]:
+    def creation_gate_controller(self) -> object:
         """
         Read-only exposure of the CreationGateController used for gate governance.
+        """
+        ...
+
+    def revalidate_dirty_roots(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Trigger dirty-root revalidation for one conduit scope.
         """
         ...
 
@@ -102,7 +113,7 @@ class IDevOpsManager(ICleanable, Protocol):
         ...
 
     @property
-    def spell_system_states(self) -> Optional['ISpellSystemStates']:
+    def spell_system_states(self) -> 'ISpellSystemStates':
         """
         Expose the underlying SpellSystemStates for callers that want
         direct graph/dirty-state access through the DevOpsManager.

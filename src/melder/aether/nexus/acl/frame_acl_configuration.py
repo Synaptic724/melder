@@ -21,6 +21,7 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces import IFrameACLConfiguration
 
 
 def _parse_json_configuration_string(
@@ -47,7 +48,7 @@ def _parse_json_configuration_string(
     return parsed_payload
 
 
-class FrameACLConfiguration(Cleanable):
+class FrameACLConfiguration(Cleanable, IFrameACLConfiguration):
     """
     Purpose:
         Represent one frame-scoped typed ACL configuration node owned by a

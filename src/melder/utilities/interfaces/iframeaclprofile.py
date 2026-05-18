@@ -11,11 +11,34 @@ class IFrameACLProfile(ICleanable, Protocol):
     Composed frame ACL profile contract.
     """
 
-    name: str
-    version: str
-    view_profile: IFrameACLViewProfile
-    command_profile: IFrameACLCommandProfile
-    codegen_profile: IFrameACLCodegenProfile
-    view_override_ruleset: IFrameACLRuleSet
-    command_override_ruleset: IFrameACLRuleSet
-    codegen_override_ruleset: IFrameACLRuleSet
+    @property
+    def name(self) -> str:
+        ...
+
+    @property
+    def version(self) -> str:
+        ...
+
+    @property
+    def view_profile(self) -> IFrameACLViewProfile:
+        ...
+
+    @property
+    def command_profile(self) -> IFrameACLCommandProfile:
+        ...
+
+    @property
+    def codegen_profile(self) -> IFrameACLCodegenProfile:
+        ...
+
+    @property
+    def view_override_ruleset(self) -> IFrameACLRuleSet:
+        ...
+
+    @property
+    def command_override_ruleset(self) -> IFrameACLRuleSet:
+        ...
+
+    @property
+    def codegen_override_ruleset(self) -> IFrameACLRuleSet:
+        ...

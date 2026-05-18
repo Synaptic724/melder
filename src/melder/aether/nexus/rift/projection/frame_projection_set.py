@@ -6,9 +6,10 @@ from melder.aether.nexus.rift.projection.command_projection import CommandProjec
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces import IFrameProjectionSet
 
 
-class FrameProjectionSet(Cleanable):
+class FrameProjectionSet(Cleanable, IFrameProjectionSet):
     """
     Owned set of consumer-shaped projections for one targeted frame.
 

@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -47,6 +47,8 @@ from melder.utilities.interfaces import (
     IConduit,
     IConfiguration,
     IFrameACLConfiguration,
+    IFrameDescriptor,
+    IFrameProjectionSet,
     INexus,
     INexusConfiguration,
     IRiftGate,
@@ -108,7 +110,7 @@ class Nexus(Cleanable, INexus):
         "_target_frame_ref_counts",
     ]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: object, **kwargs: object) -> "Nexus":
         """
         Ensure `Nexus` behaves as a singleton.
 
@@ -194,8 +196,8 @@ class Nexus(Cleanable, INexus):
             )
             self._target_frame_ref_counts: Dict[str, int] = {}
 
-            self._frame_descriptor_manager: Optional[FrameDescriptorManager] = FrameDescriptorManager(aether)
-            self._frame_manager: Optional[NexusFrameManager] = NexusFrameManager(
+            self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
+            self._frame_manager: NexusFrameManager = NexusFrameManager(
                 nexus=self,
             )
             self._initialize_logging(logger)
@@ -441,7 +443,10 @@ class Nexus(Cleanable, INexus):
             RuntimeError: If Nexus has not been configured yet.
         """
         self._require_configured()
-        return self._configuration
+        configuration = self._configuration
+        if configuration is None:
+            raise RuntimeError("Nexus is not configured.")
+        return configuration
 
     @property
     def is_configured(self) -> bool:
@@ -529,9 +534,9 @@ class Nexus(Cleanable, INexus):
             if configuration is not None:
                 self._configuration = configuration
                 self._configured = True
-            self._require_configured()
-            if not self._configuration.frozen:
-                self._configuration.finalize()
+            configured = self.configuration
+            if not configured.frozen:
+                configured.finalize()
             self._enabled = True
             self._logger.info("Nexus enabled.", "enable")
 
@@ -586,7 +591,7 @@ class Nexus(Cleanable, INexus):
             ValueError:
                 If `profile_name` is unknown.
         """
-        self._require_configured()
+        configured = self.configuration
         if profile_name is not None:
             with self._lock:
                 try:
@@ -596,17 +601,17 @@ class Nexus(Cleanable, INexus):
             return self._clone_rift_configuration(template)
 
         configuration = RiftConfiguration().with_defaults()
-        default_space_type = self._configuration.get_property("default_space_type")
+        default_space_type = configured.get_property("default_space_type")
         if not isinstance(default_space_type, RiftSpaceType):
             raise TypeError("default_space_type must remain a RiftSpaceType.")
-        default_auto_activate_on_program = self._configuration.get_property(
+        default_auto_activate_on_program = configured.get_property(
             "default_auto_activate_on_program"
         )
         if not isinstance(default_auto_activate_on_program, bool):
             raise TypeError(
                 "default_auto_activate_on_program must remain a bool."
             )
-        default_validation_mode = self._configuration.get_property(
+        default_validation_mode = configured.get_property(
             "default_validation_mode"
         )
         if not isinstance(default_validation_mode, RiftValidationMode):
@@ -1705,8 +1710,10 @@ class Nexus(Cleanable, INexus):
             self,
             frame_names: Sequence[str],
             *,
-            contract_names_by_frame_name: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, FrameProjectionSet]:
+            contract_names_by_frame_name: Optional[
+                Mapping[str, Union[str, Mapping[str, str]]]
+            ] = None,
+    ) -> Dict[str, IFrameProjectionSet]:
         """
         Build projection sets for the requested frame names.
 
@@ -1717,7 +1724,7 @@ class Nexus(Cleanable, INexus):
                 Optional per-frame selected ACL contract names.
 
         Returns:
-            Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
+            Dict[str, IFrameProjectionSet]: Fresh projection sets keyed by frame name.
         """
         self.check_cleaned()
         if isinstance(frame_names, str) or not isinstance(frame_names, Sequence):
@@ -1808,7 +1815,7 @@ class Nexus(Cleanable, INexus):
             rift_id: str,
             *,
             frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, FrameProjectionSet]:
+    ) -> Dict[str, IFrameProjectionSet]:
         """
         Build projection sets from one Rift's current frame contracts.
 
@@ -1820,7 +1827,7 @@ class Nexus(Cleanable, INexus):
                 frames.
 
         Returns:
-            Dict[str, FrameProjectionSet]: Projection sets keyed by frame name.
+            Dict[str, IFrameProjectionSet]: Projection sets keyed by frame name.
         """
         self.check_cleaned()
         if not rift_id:
@@ -2351,10 +2358,11 @@ class Nexus(Cleanable, INexus):
             None.
         """
         self._require_enabled()
-        if not self._configuration.get_property("allow_rift_creation"):
+        configuration = self.configuration
+        if not configuration.get_property("allow_rift_creation"):
             raise ValueError("Rift creation is disabled.")
-        if self._configuration.get_property("creation_token_required"):
-            if creation_token != self._configuration.get_property("creation_token_value"):
+        if configuration.get_property("creation_token_required"):
+            if creation_token != configuration.get_property("creation_token_value"):
                 raise ValueError("Valid creation token is required.")
 
     def _require_rift_access_allowed(self, access_token: Optional[str]) -> None:
@@ -2376,10 +2384,11 @@ class Nexus(Cleanable, INexus):
             None.
         """
         self._require_enabled()
-        if not self._configuration.get_property("allow_direct_rift_access"):
+        configuration = self.configuration
+        if not configuration.get_property("allow_direct_rift_access"):
             raise ValueError("Direct Rift access is disabled.")
-        if self._configuration.get_property("rift_access_token_required"):
-            if access_token != self._configuration.get_property("rift_access_token_value"):
+        if configuration.get_property("rift_access_token_required"):
+            if access_token != configuration.get_property("rift_access_token_value"):
                 raise ValueError("Valid Rift access token is required.")
 
     def _validate_target_frame_runtime_requirements(
@@ -2537,8 +2546,9 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
-        denied_target_frame_names = self._configuration.get_property("denied_target_frame_names")
-        allowed_target_frame_names = self._configuration.get_property("allowed_target_frame_names")
+        configuration = self.configuration
+        denied_target_frame_names = configuration.get_property("denied_target_frame_names")
+        allowed_target_frame_names = configuration.get_property("allowed_target_frame_names")
         if not isinstance(denied_target_frame_names, tuple) or not all(
                 isinstance(frame_name, str)
                 for frame_name in denied_target_frame_names
@@ -2578,7 +2588,8 @@ class Nexus(Cleanable, INexus):
                 unique_new_target_frames.append(target_frame_name)
         if not unique_new_target_frames:
             return
-        allow_multiple_target_frames = self._configuration.get_property(
+        configuration = self.configuration
+        allow_multiple_target_frames = configuration.get_property(
             "allow_multiple_target_frames"
         )
         if not isinstance(allow_multiple_target_frames, bool):
@@ -2588,7 +2599,7 @@ class Nexus(Cleanable, INexus):
         if not allow_multiple_target_frames:
             if len(self._target_frame_ref_counts) + len(unique_new_target_frames) > 1:
                 raise ValueError("Multiple target frames are disabled.")
-        max_target_frame_count = self._configuration.get_property(
+        max_target_frame_count = configuration.get_property(
             "max_target_frame_count"
         )
         if not isinstance(max_target_frame_count, int):
@@ -2610,7 +2621,8 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
-        max_active_rift_count = self._configuration.get_property("max_active_rift_count")
+        configuration = self.configuration
+        max_active_rift_count = configuration.get_property("max_active_rift_count")
         if not isinstance(max_active_rift_count, int):
             raise TypeError("max_active_rift_count must remain an int.")
         if max_active_rift_count == 0:
@@ -2658,7 +2670,7 @@ class Nexus(Cleanable, INexus):
     def _get_required_frame_descriptor(
             self,
             frame_name: str,
-    ) -> FrameDescriptor:
+    ) -> IFrameDescriptor:
         """
         Internal
 
@@ -2669,14 +2681,14 @@ class Nexus(Cleanable, INexus):
                 Frame name to resolve.
 
         Returns:
-            FrameDescriptor: Existing descriptor.
+            IFrameDescriptor: Existing descriptor.
         """
         return self._frame_descriptor_manager._get_required_frame_descriptor(frame_name)
 
     def _get_or_create_frame_descriptor(
             self,
             frame_name: str,
-    ) -> FrameDescriptor:
+    ) -> IFrameDescriptor:
         """
         Internal
 
@@ -2687,7 +2699,7 @@ class Nexus(Cleanable, INexus):
                 Frame name to resolve.
 
         Returns:
-            FrameDescriptor: Existing or newly created descriptor.
+            IFrameDescriptor: Existing or newly created descriptor.
         """
         descriptor = self._frame_descriptor_manager._get_or_create_frame_descriptor(frame_name)
         self._ensure_frame_acl_container(frame_name)

@@ -94,11 +94,11 @@ class Bind(Cleanable, IBind):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._spellbook = None
             if self._spell_examiner is not None:
                 self._spell_examiner.cleanup()
-            self._spell_examiner = None
-        self._lock = None
+            del self._spellbook
+            del self._spell_examiner
+        del self._lock
 
     def bind(
             self,
@@ -146,7 +146,7 @@ class Bind(Cleanable, IBind):
         self.check_cleaned()
         if spell is None:
             # Decorator usage
-            def decorator(obj):
+            def decorator(obj) -> ISpell:
                 return self._bind_logic(
                     obj,
                     spellframe,
@@ -179,7 +179,7 @@ class Bind(Cleanable, IBind):
             permissions: Permissions,
             aetheric_frame: str,
             profile: str = "general",
-    ) -> Spell:
+    ) -> ISpell:
         """
         Internal logic for processing the binding of a spell object.
 
@@ -313,7 +313,7 @@ class Bind(Cleanable, IBind):
                 spell_index=spell_index,
                 spellframe=spellframe,
                 binding_name=binding_name,
-                spell_name=spell_name,
+                spell_name=str(spell_name),
                 existence=existence,
                 spell_type=spell_type,
                 profile=provisional_general_profile,

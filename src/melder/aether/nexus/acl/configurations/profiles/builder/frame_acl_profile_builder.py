@@ -28,6 +28,20 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces import (
+    IFrameACLCodegenProfile,
+    IFrameACLCommandProfile,
+    IFrameACLProfile,
+    IFrameACLProfileBuilder,
+    IFrameACLRuleSet,
+    IFrameACLViewProfile,
+)
+from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
+from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
+from melder.utilities.interfaces import IFrameACLProfileBuilder
 
 
 class _NamedCleanableProfile(Protocol):
@@ -46,7 +60,7 @@ class _NamedCleanableProfile(Protocol):
 _ProfileT = TypeVar("_ProfileT", bound=_NamedCleanableProfile)
 
 
-class FrameACLProfileBuilder(Cleanable):
+class FrameACLProfileBuilder(Cleanable, IFrameACLProfileBuilder):
     """
     Registry and composition root for reusable frame ACL profiles.
 
@@ -264,7 +278,7 @@ class FrameACLProfileBuilder(Cleanable):
         with self._lock:
             return dict(self._codegen_precision_profiles_by_name)
 
-    def register_view_profile(self, view_profile: FrameACLViewProfile) -> None:
+    def register_view_profile(self, view_profile: IFrameACLViewProfile) -> None:
         """
         Register or replace one reusable view-family profile.
 
@@ -275,6 +289,8 @@ class FrameACLProfileBuilder(Cleanable):
         Returns:
             None.
         """
+        if not isinstance(view_profile, FrameACLViewProfile):
+            raise TypeError("view_profile must be a FrameACLViewProfile.")
         self._register_profile(
             self._view_profiles_by_name,
             view_profile,
@@ -284,7 +300,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_command_profile(
             self,
-            command_profile: FrameACLCommandProfile,
+            command_profile: IFrameACLCommandProfile,
     ) -> None:
         """
         Register or replace one reusable command-family profile.
@@ -296,6 +312,8 @@ class FrameACLProfileBuilder(Cleanable):
         Returns:
             None.
         """
+        if not isinstance(command_profile, FrameACLCommandProfile):
+            raise TypeError("command_profile must be a FrameACLCommandProfile.")
         self._register_profile(
             self._command_profiles_by_name,
             command_profile,
@@ -305,7 +323,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_codegen_profile(
             self,
-            codegen_profile: FrameACLCodegenProfile,
+            codegen_profile: IFrameACLCodegenProfile,
     ) -> None:
         """
         Register or replace one reusable codegen-family profile.
@@ -317,6 +335,8 @@ class FrameACLProfileBuilder(Cleanable):
         Returns:
             None.
         """
+        if not isinstance(codegen_profile, FrameACLCodegenProfile):
+            raise TypeError("codegen_profile must be a FrameACLCodegenProfile.")
         self._register_profile(
             self._codegen_profiles_by_name,
             codegen_profile,
@@ -326,7 +346,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_view_precision_profile(
             self,
-            precision_profile: FrameACLViewProfile,
+            precision_profile: IFrameACLViewProfile,
     ) -> None:
         """
         Register or replace one reusable view precision profile.
@@ -338,6 +358,8 @@ class FrameACLProfileBuilder(Cleanable):
         Returns:
             None.
         """
+        if not isinstance(precision_profile, FrameACLViewProfile):
+            raise TypeError("precision_profile must be a FrameACLViewProfile.")
         self._register_profile(
             self._view_precision_profiles_by_name,
             precision_profile,
@@ -347,7 +369,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_command_precision_profile(
             self,
-            precision_profile: FrameACLCommandProfile,
+            precision_profile: IFrameACLCommandProfile,
     ) -> None:
         """
         Register or replace one reusable command precision profile.
@@ -359,6 +381,8 @@ class FrameACLProfileBuilder(Cleanable):
         Returns:
             None.
         """
+        if not isinstance(precision_profile, FrameACLCommandProfile):
+            raise TypeError("precision_profile must be a FrameACLCommandProfile.")
         self._register_profile(
             self._command_precision_profiles_by_name,
             precision_profile,
@@ -368,7 +392,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_codegen_precision_profile(
             self,
-            precision_profile: FrameACLCodegenProfile,
+            precision_profile: IFrameACLCodegenProfile,
     ) -> None:
         """
         Register or replace one reusable codegen precision profile.
@@ -380,6 +404,8 @@ class FrameACLProfileBuilder(Cleanable):
         Returns:
             None.
         """
+        if not isinstance(precision_profile, FrameACLCodegenProfile):
+            raise TypeError("precision_profile must be a FrameACLCodegenProfile.")
         self._register_profile(
             self._codegen_precision_profiles_by_name,
             precision_profile,
@@ -590,10 +616,10 @@ class FrameACLProfileBuilder(Cleanable):
             view_profile_name: str = _DEFAULT_PROFILE_NAME,
             command_profile_name: str = _DEFAULT_PROFILE_NAME,
             codegen_profile_name: str = _DEFAULT_PROFILE_NAME,
-            view_override_ruleset: Optional[FrameACLRuleSet] = None,
-            command_override_ruleset: Optional[FrameACLRuleSet] = None,
-            codegen_override_ruleset: Optional[FrameACLRuleSet] = None,
-    ) -> FrameACLProfile:
+            view_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            command_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
+    ) -> IFrameACLProfile:
         """
         Compose one reusable view/command/codegen trio into a frame ACL profile.
 

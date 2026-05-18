@@ -16,9 +16,26 @@ class IFrameACLConfiguration(ICleanable, Protocol):
         - Is the unit selected by named frame ACL contract binding.
     """
 
-    frame_name: str
-    configuration_id: str
-    locked: bool
-    view_configuration: IFrameACLViewConfiguration
-    command_configuration: IFrameACLCommandConfiguration
-    codegen_configuration: IFrameACLCodegenConfiguration
+    @property
+    def frame_name(self) -> str:
+        ...
+
+    @property
+    def configuration_id(self) -> str:
+        ...
+
+    @property
+    def locked(self) -> bool:
+        ...
+
+    @property
+    def view_configuration(self) -> IFrameACLViewConfiguration:
+        ...
+
+    @property
+    def command_configuration(self) -> IFrameACLCommandConfiguration:
+        ...
+
+    @property
+    def codegen_configuration(self) -> IFrameACLCodegenConfiguration:
+        ...
