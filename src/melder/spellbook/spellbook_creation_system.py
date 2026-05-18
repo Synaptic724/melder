@@ -134,7 +134,7 @@ class SpellbookCreationSystem(Cleanable):
             del self._name
             del self._conduit_logger
             del self._phase_scheduler_cls
-        del self._lock
+            del self._lock
 
     def conjure(self) -> Conduit:
         """
