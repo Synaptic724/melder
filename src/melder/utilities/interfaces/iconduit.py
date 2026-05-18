@@ -13,21 +13,12 @@ from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.synchronization.creation_gate import CreationGate
-
-
-@runtime_checkable
-class _ConduitAetherSurface(Protocol):
-    """Minimal Aether surface stored on `IConduit`."""
-
-
-@runtime_checkable
-class _ConduitSpellSpaceSurface(Protocol):
-    """Minimal spellspace surface referenced by `IConduit`."""
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
+
 
 @runtime_checkable
 class IConduit(ICleanable, Protocol):
@@ -38,9 +29,6 @@ class IConduit(ICleanable, Protocol):
     and manage the lifecycle of services registered inside itself.
     """
 
-    # Class-level
-    _aether: _ConduitAetherSurface
-
     # Instance-level core attributes (1:1 with Conduit)
     _lock: threading.RLock
     _id: str
@@ -50,10 +38,10 @@ class IConduit(ICleanable, Protocol):
 
     _configuration: 'IConfiguration'
     _logger: 'ISafeLogger'
+    _nexus_publish_enabled: bool
 
     _conduit_state: 'ConduitState'
     _creations: 'ICreations'
-    _spellbook: 'ISpellbook'
     _meld: 'IMeld'
     _creation_gate: 'CreationGate'
     _creation_gate_controller: 'CreationGateController'
@@ -84,6 +72,13 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If normal conduit registration fails.
+        """
+        ...
+
+    def _register_to_creations(self, spell: 'ISpell', instance: Any) -> None:
+        """
+        Register one user-created object into the conduit-owned creations
+        manager.
         """
         ...
 
@@ -353,7 +348,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_active_spellspace(self) -> Optional[_ConduitSpellSpaceSurface]:
+    def get_active_spellspace(self) -> Optional[ISpellSpace]:
         """
         Return the currently active spellspace for this conduit, if any.
 
@@ -362,7 +357,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _unregister_spellspace(self, space: _ConduitSpellSpaceSurface) -> None:
+    def _unregister_spellspace(self, space: ISpellSpace) -> None:
         """
         Internal
 

@@ -165,7 +165,7 @@ class Conduit(Cleanable, IConduit):
             raise ValueError("conduit_id cannot be empty.")
 
         self._id: str = conduit_id
-        self._name: str = name
+        self._name: Optional[str] = name
         self.__dynamic_environment__: bool = False
         self._nexus_publish_enabled: bool = False
         self._automatic: bool = automatic
@@ -186,11 +186,14 @@ class Conduit(Cleanable, IConduit):
         if automatic is not None:
             self.__dynamic_environment__ = not automatic
 
-        self._root_conduit_id: str = (
-            root_conduit_id
-            if conduit_state is ConduitState.lesser
-            else self._id
-        )
+        if conduit_state is ConduitState.lesser:
+            if root_conduit_id is None:
+                raise RuntimeError(
+                    "Lesser conduits require a root_conduit_id."
+                )
+            self._root_conduit_id: str = root_conduit_id
+        else:
+            self._root_conduit_id = self._id
         self._creations: Creations = self._creations_configuration(configuration)
         self._dev_ops_manager: Any | None = self._resolve_dev_ops_manager()
         self._creation_gate_controller: CreationGateController = self._resolve_creation_gate_controller()
@@ -382,12 +385,12 @@ class Conduit(Cleanable, IConduit):
         try:
             spell_indices = list(self._spellbook._spells.keys()) if self._spellbook is not None else []
             if spell_indices:
-                Conduit._aether._remove_spells_from_aether(self._id, set(spell_indices), self._aetheric_frame)
-            Conduit._aether._remove_conduit(self, self._aetheric_frame)
+                self._aether._remove_spells_from_aether(self._id, set(spell_indices), self._aetheric_frame)
+            self._aether._remove_conduit(self, self._aetheric_frame)
             if self.__dynamic_environment__ and self._name is not None:
-                Conduit._aether._unregister_conduit_cloud(self, self._aetheric_frame)
-            if Conduit._aether.count_conduits(self._aetheric_frame) == 0:
-                Conduit._aether._ensure_frame(self._aetheric_frame).cleanup()
+                self._aether._unregister_conduit_cloud(self, self._aetheric_frame)
+            if self._aether.count_conduits(self._aetheric_frame) == 0:
+                self._aether._ensure_frame(self._aetheric_frame).cleanup()
             else:
                 self._publish_frame_record_to_nexus()
         except Exception as e:
@@ -705,7 +708,7 @@ class Conduit(Cleanable, IConduit):
                 self._add_conduit_to_aether()
                 self._add_spells_to_aether()
                 if self.__dynamic_environment__ and self._name is not None:
-                    Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
+                    self._aether._register_conduit_cloud(self, self._aetheric_frame)
             except Exception as e:
                 self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
                 raise
@@ -940,7 +943,7 @@ class Conduit(Cleanable, IConduit):
         if self._name is None:
             self._logger.error("register_conduit_cloud called without conduit name", "register_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
-        Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
+        self._aether._register_conduit_cloud(conduit, self._aetheric_frame)
         self._publish_frame_record_to_nexus()
 
     def register_conduit_hooks(
@@ -967,7 +970,10 @@ class Conduit(Cleanable, IConduit):
             return
 
         self._ensure_local_conduit_hooks()
-        self._merge_conduit_hooks(self._local_conduit_hooks, hooks)
+        local_conduit_hooks = self._local_conduit_hooks
+        if local_conduit_hooks is None:
+            raise RuntimeError("Local conduit hooks were not initialized.")
+        self._merge_conduit_hooks(local_conduit_hooks, hooks)
 
     def unregister_conduit_cloud(self, conduit: IConduit):
         """
@@ -993,7 +999,7 @@ class Conduit(Cleanable, IConduit):
         if self._name is None:
             self._logger.error("unregister_conduit_cloud called without conduit name", "unregister_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before unregistering from the conduit cloud.")
-        Conduit._aether._unregister_conduit_cloud(conduit, self._aetheric_frame)
+        self._aether._unregister_conduit_cloud(conduit, self._aetheric_frame)
         self._publish_frame_record_to_nexus()
 
     def _apply_configuration_flags(self):
@@ -1020,10 +1026,10 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If Aether is not initialized.
         """
-        if Conduit._aether is None:
+        if self._aether is None:
             self._logger.error("Aether is not initialized", "_add_conduit_to_aether")
             raise RuntimeError("Aether is not initialized.")
-        Conduit._aether._add_conduit(self, self._aetheric_frame)
+        self._aether._add_conduit(self, self._aetheric_frame)
 
     def _remove_conduit_from_aether(self) -> None:
         """
@@ -1034,10 +1040,10 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If Aether is not initialized.
         """
-        if Conduit._aether is None:
+        if self._aether is None:
             self._logger.error("Aether is not initialized", "_remove_conduit_from_aether")
             raise RuntimeError("Aether is not initialized.")
-        Conduit._aether._remove_conduit(self, self._aetheric_frame)
+        self._aether._remove_conduit(self, self._aetheric_frame)
 
 
     def _creations_configuration(self, configuration: IConfiguration) -> Creations:
@@ -1146,7 +1152,7 @@ class Conduit(Cleanable, IConduit):
             Any:
                 Resolved DevOpsManager instance for this frame.
         """
-        return Conduit._aether._get_devops_manager(self._aetheric_frame)
+        return self._aether._get_devops_manager(self._aetheric_frame)
 
     def _resolve_creation_gate_controller(
             self,
@@ -1170,7 +1176,10 @@ class Conduit(Cleanable, IConduit):
             CreationGateController:
                 The frame-owned controller resolved from DevOpsManager.
         """
-        return self._dev_ops_manager.creation_gate_controller
+        dev_ops_manager = self._dev_ops_manager
+        if dev_ops_manager is None:
+            raise RuntimeError("Conduit has no DevOpsManager.")
+        return dev_ops_manager.creation_gate_controller
 
     def _create_gate_for_current_root(self, conduit_id: str) -> CreationGate:
         """
@@ -1422,7 +1431,7 @@ class Conduit(Cleanable, IConduit):
                 # Step 5: Register as a full Conduit in Aether and Conduit Cloud
                 Conduit._add_conduit_to_aether(self)
                 if self.__dynamic_environment__ and self._name is not None:
-                    Conduit._aether._register_conduit_cloud(self, self._aetheric_frame)
+                    self._aether._register_conduit_cloud(self, self._aetheric_frame)
 
                 # Step 6: If the caller supplied per-conduit hooks, register them now.
                 if hooks:
@@ -1574,7 +1583,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If Aether is not initialized.
         """
-        if Conduit._aether is None:
+        if self._aether is None:
             self._logger.error("Aether is not initialized", "_add_spells_to_aether")
             raise RuntimeError("Aether is not initialized.")
 
@@ -1582,7 +1591,7 @@ class Conduit(Cleanable, IConduit):
         spell_indices = list(self._spellbook._spells.keys())
 
         spell_set = set(spell_indices)
-        Conduit._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
+        self._aether._add_spells_to_aether(self._id, spell_set, self._aetheric_frame)
 
 
 
@@ -1606,7 +1615,7 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         with self._lock:
-            return Conduit._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
+            return self._aether._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
 
     def check_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> bool:
         """
@@ -1626,7 +1635,7 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         with self._lock:
-            raw = Conduit._aether._check_for_spell(spell_id, aetheric_frame_name)
+            raw = self._aether._check_for_spell(spell_id, aetheric_frame_name)
             found = bool(raw)
         return found
 
@@ -2349,7 +2358,7 @@ class Conduit(Cleanable, IConduit):
         Create a new conduit cluster in this conduit’s aetheric frame.
         """
         self.check_cleaned()
-        Conduit._aether._create_cluster(cluster_name, self._aetheric_frame)
+        self._aether._create_cluster(cluster_name, self._aetheric_frame)
         self._publish_frame_record_to_nexus()
 
     def delete_cluster(self, cluster_name: str) -> None:
@@ -2359,7 +2368,7 @@ class Conduit(Cleanable, IConduit):
         Delete an existing conduit cluster in this conduit’s aetheric frame.
         """
         self.check_cleaned()
-        Conduit._aether._remove_cluster(cluster_name, self._aetheric_frame)
+        self._aether._remove_cluster(cluster_name, self._aetheric_frame)
         self._publish_frame_record_to_nexus()
 
     def join_cluster(self, cluster_name: str) -> None:
@@ -2369,7 +2378,7 @@ class Conduit(Cleanable, IConduit):
         Join an existing conduit cluster. Auto-sharing of eligible roots occurs on join.
         """
         self.check_cleaned()
-        Conduit._aether._add_conduit_to_cluster(self, cluster_name, self._aetheric_frame)
+        self._aether._add_conduit_to_cluster(self, cluster_name, self._aetheric_frame)
 
     def leave_cluster(self, cluster_name: str) -> None:
         """
@@ -2378,7 +2387,7 @@ class Conduit(Cleanable, IConduit):
         Leave a conduit cluster. Auto-teardown of shared roots occurs on leave.
         """
         self.check_cleaned()
-        Conduit._aether._remove_conduit_from_cluster(self, cluster_name, self._aetheric_frame)
+        self._aether._remove_conduit_from_cluster(self, cluster_name, self._aetheric_frame)
 
     def list_clusters(self) -> list[str]:
         """
@@ -2387,7 +2396,7 @@ class Conduit(Cleanable, IConduit):
         List cluster names this conduit belongs to in its aetheric frame.
         """
         self.check_cleaned()
-        return Conduit._aether._get_clusters_for_conduit(self._id, self._aetheric_frame)
+        return self._aether._get_clusters_for_conduit(self._id, self._aetheric_frame)
 
     def refresh_cluster_shares(self) -> None:
         """
@@ -2396,7 +2405,7 @@ class Conduit(Cleanable, IConduit):
         Refresh sharing of auto-shareable roots for this conduit across all clusters it belongs to.
         """
         self.check_cleaned()
-        Conduit._aether._refresh_cluster_shares_for_conduit(self, self._aetheric_frame)
+        self._aether._refresh_cluster_shares_for_conduit(self, self._aetheric_frame)
 
     def transfer_spell_ownership(
             self,
@@ -2855,7 +2864,7 @@ class Conduit(Cleanable, IConduit):
         if not self.__dynamic_environment__:
             self._logger.error("get_conduit_cloud in non-dynamic env", "get_conduit_cloud")
             raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
-        return Conduit._aether._get_conduit_cloud(self._aetheric_frame)
+        return self._aether._get_conduit_cloud(self._aetheric_frame)
 
     #endregion Conduit Cloud
     #region Aether API
@@ -2884,7 +2893,7 @@ class Conduit(Cleanable, IConduit):
         if aetheric_frame == "default":
             aetheric_frame = self._aetheric_frame
         with self._lock:
-            return Conduit._aether._get_conduit_by_id(conduit_id, aetheric_frame)
+            return self._aether._get_conduit_by_id(conduit_id, aetheric_frame)
 
     def get_conduit_by_name(self, name: str, aetheric_frame:str = "default") -> Optional[IConduit]:
         """
@@ -2910,7 +2919,7 @@ class Conduit(Cleanable, IConduit):
         if aetheric_frame == "default":
             aetheric_frame = self._aetheric_frame
         with self._lock:
-            return Conduit._aether._get_conduit_by_name(name, aetheric_frame)
+            return self._aether._get_conduit_by_name(name, aetheric_frame)
         
     #endregion Aether API
     #region Conduit Ward API
@@ -4041,7 +4050,7 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Dynamic environment is not enabled. MutationResearch is unavailable.")
 
         # Pull from Aether
-        return Conduit._aether._get_mutation_research()
+        return self._aether._get_mutation_research()
 
     #endregion Mutation Research
 
@@ -4086,7 +4095,7 @@ class Conduit(Cleanable, IConduit):
 
         frame = self._aetheric_frame if aetheric_frame == "default" else aetheric_frame
         try:
-            return Conduit._aether._get_conduit_by_id(conduit_id, frame)
+            return self._aether._get_conduit_by_id(conduit_id, frame)
         except Exception:
             # Hooks are advisory; failure to resolve a peer must not
             # break the primary contract APIs.
