@@ -51,7 +51,7 @@ def test_frame_acl_codegen_configuration_init_rejects_invalid_inputs() -> None:
             profile_version="",
         )
 
-    with pytest.raises(TypeError, match="ruleset must be a FrameACLRuleSet"):
+    with pytest.raises(TypeError, match="ruleset must satisfy IFrameACLRuleSet"):
         FrameACLCodegenConfiguration(
             profile_name="safe",
             profile_version="0.0.1",
@@ -119,7 +119,7 @@ def test_frame_acl_codegen_configuration_from_profile_rejects_wrong_type() -> No
     Returns:
         None.
     """
-    with pytest.raises(TypeError, match="profile must be a FrameACLCodegenProfile"):
+    with pytest.raises(TypeError, match="profile must satisfy IFrameACLCodegenProfile"):
         FrameACLCodegenConfiguration.from_profile(None)
 
 

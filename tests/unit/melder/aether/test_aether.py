@@ -144,8 +144,8 @@ def test_cleanup_clears_state(aether_with_mocks):
 
     Contract:
     - All frames are removed and cleaned.
-    - `_aetheric_frames` is set to None.
-    - `_default_frame` is set to None.
+    - `_aetheric_frames` is deleted.
+    - `_default_frame` is deleted.
     - Singleton instance reference (`Aether._instance`) is cleared to allow fresh tests.
     """
     a = aether_with_mocks
@@ -154,10 +154,10 @@ def test_cleanup_clears_state(aether_with_mocks):
     a.cleanup()
     
     assert a._cleaned is True
-    assert a._aetheric_frames is None
-    assert a._default_frame is None
-    assert a._nexus is None
-    assert a._crystallizer is None
+    assert not hasattr(a, "_aetheric_frames")
+    assert not hasattr(a, "_default_frame")
+    assert not hasattr(a, "_nexus")
+    assert not hasattr(a, "_crystallizer")
     default_frame.cleanup.assert_called_once()
     
     # Verify Singleton reset
@@ -422,7 +422,7 @@ def test_aether_cleanup_cleans_hosted_nexus(aether_with_mocks):
     a.cleanup()
 
     assert nexus.cleaned is True
-    assert a._nexus is None
+    assert not hasattr(a, "_nexus")
 
 
 def test_aether_cleanup_cleans_hosted_crystallizer(aether_with_mocks):
@@ -435,7 +435,7 @@ def test_aether_cleanup_cleans_hosted_crystallizer(aether_with_mocks):
     a.cleanup()
 
     assert crystallizer.cleaned is True
-    assert a._crystallizer is None
+    assert not hasattr(a, "_crystallizer")
 
 def test_add_conduit_delegates_to_custom_frame(aether_with_mocks):
     """_add_conduit delegates to a specific frame."""

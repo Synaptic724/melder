@@ -92,7 +92,7 @@ def test_frame_acl_command_configuration_init_rejects_invalid_inputs() -> None:
             profile_version="",
         )
 
-    with pytest.raises(TypeError, match="ruleset must be a FrameACLRuleSet"):
+    with pytest.raises(TypeError, match="ruleset must satisfy IFrameACLRuleSet"):
         FrameACLCommandConfiguration(
             profile_name="default",
             profile_version="0.0.1",
