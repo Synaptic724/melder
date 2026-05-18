@@ -77,7 +77,7 @@ class TicketFlag(Cleanable):
             return
         self._tickets.clear()
         self._cleaned = True
-        del self._tickets
+        self._tickets = None
 
     def __bool__(self) -> bool:
         """

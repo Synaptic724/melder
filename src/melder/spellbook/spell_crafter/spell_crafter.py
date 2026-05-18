@@ -5,7 +5,7 @@ import inspect
 import pickle
 import typing
 import types
-from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin, Generator, cast, Protocol
+from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, Mapping, Sequence, get_args, get_origin, Generator, cast, Protocol
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
@@ -351,6 +351,20 @@ class SpellCrafter(Cleanable):
                 "SpellCrafter requires a live SpellSystemStates surface."
             )
         return spell_system_states
+
+    @staticmethod
+    def _get_required_crafter_from_spell(spell: ISpell) -> Any:
+        """
+        Return the live crafter attached to one spell or raise.
+
+        Purpose:
+            Reuse the spell-owned crafter surface without calling a private
+            initialization helper on the broad `ISpell` contract.
+        """
+        crafter = spell._crafter
+        if crafter is None:
+            raise RuntimeError("Spell must have a live SpellCrafter.")
+        return crafter
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -981,7 +995,7 @@ class SpellCrafter(Cleanable):
                     socket_ref.node_id,
                     socket_ref.param_name,
                     socket_ref.param_path_id,
-                    tuple(sorted(socket_ref.target_spell_ids)),
+                    socket_ref.socket_kind.value,
                 )
                 for socket_ref in (root_blueprint.socket_refs or ())
             )
@@ -1114,7 +1128,7 @@ class SpellCrafter(Cleanable):
                     socket_ref.node_id,
                     socket_ref.param_name,
                     socket_ref.param_path_id,
-                    tuple(sorted(socket_ref.target_spell_ids)),
+                    socket_ref.socket_kind.value,
                 )
                 for socket_ref in (root_blueprint.socket_refs or ())
             )
@@ -1610,6 +1624,32 @@ class SpellCrafter(Cleanable):
         )
 
     @staticmethod
+    def _normalize_instance_key(
+            instance_key: Tuple[str, Optional[int]],
+    ) -> Tuple[str, Optional[int]]:
+        """
+        Return one explicit two-element instance key tuple.
+
+        Purpose:
+            Preserve the stable `(spell_id, path_id)` key shape instead of
+            widening through generic `tuple(...)` reconstruction.
+        """
+        return instance_key[0], instance_key[1]
+
+    @staticmethod
+    def _normalize_occurrence_key(
+            occurrence_key: Tuple[str, Optional[int]],
+    ) -> Tuple[str, Optional[int]]:
+        """
+        Return one explicit two-element occurrence key tuple.
+
+        Purpose:
+            Preserve the stable `(spell_id, path_id)` key shape instead of
+            widening through generic `tuple(...)` reconstruction.
+        """
+        return occurrence_key[0], occurrence_key[1]
+
+    @staticmethod
     def _socket_row_sort_key(
             socket_row: Tuple[str, str, int, str],
     ) -> Tuple[str, int, str, str]:
@@ -1736,7 +1776,10 @@ class SpellCrafter(Cleanable):
 
     def _build_occurrence_graph_rows(
             self,
-            occurrence_graph: Dict[Tuple[str, Optional[int]], Dict[str, List[Tuple[str, Optional[int]]]]],
+            occurrence_graph: Mapping[
+                Tuple[str, Optional[int]],
+                Mapping[str, Sequence[Tuple[str, Optional[int]]]],
+            ],
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
         Build deterministic schema rows for the Phase8 occurrence graph.
@@ -1764,7 +1807,7 @@ class SpellCrafter(Cleanable):
             for param_name in sorted(dependency_map.keys()):
                 dependency_occurrences = dependency_map[param_name]
                 normalized_occurrences_list = [
-                    tuple(dependency_occurrence)
+                    self._normalize_occurrence_key(dependency_occurrence)
                     for dependency_occurrence in dependency_occurrences
                 ]
                 if len(normalized_occurrences_list) > 1:
@@ -1775,7 +1818,7 @@ class SpellCrafter(Cleanable):
                 dependency_rows.append((param_name, normalized_occurrences))
             rows.append(
                 (
-                    tuple(occurrence_key),
+                    self._normalize_occurrence_key(occurrence_key),
                     tuple(dependency_rows),
                 )
             )
@@ -1783,7 +1826,10 @@ class SpellCrafter(Cleanable):
 
     def _build_occurrence_instance_key_rows(
             self,
-            instance_keys_by_spell_id: Dict[str, List[Tuple[str, Optional[int]]]],
+            instance_keys_by_spell_id: Mapping[
+                str,
+                Sequence[Tuple[str, Optional[int]]],
+            ],
     ) -> Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...]:
         """
         Build deterministic schema rows for Phase8 instance-key planning.
@@ -1804,7 +1850,7 @@ class SpellCrafter(Cleanable):
         rows: List[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]]] = []
         for spell_id in sorted(instance_keys_by_spell_id.keys()):
             instance_keys_list = [
-                tuple(instance_key)
+                self._normalize_instance_key(instance_key)
                 for instance_key in instance_keys_by_spell_id[spell_id]
             ]
             if len(instance_keys_list) > 1:
@@ -1815,7 +1861,10 @@ class SpellCrafter(Cleanable):
 
     def _build_occurrence_canonical_rows(
             self,
-            canonical_occurrences_by_spell_id: Dict[str, Tuple[str, Optional[int]]],
+            canonical_occurrences_by_spell_id: Mapping[
+                str,
+                Tuple[str, Optional[int]],
+            ],
     ) -> Tuple[Tuple[str, Tuple[str, Optional[int]]], ...]:
         """
         Build deterministic schema rows for Phase8 canonical occurrences.
@@ -1838,14 +1887,19 @@ class SpellCrafter(Cleanable):
             rows.append(
                 (
                     spell_id,
-                    tuple(canonical_occurrences_by_spell_id[spell_id]),
+                    self._normalize_occurrence_key(
+                        canonical_occurrences_by_spell_id[spell_id]
+                    ),
                 )
             )
         return tuple(rows)
 
     def _build_occurrence_contract_override_rows(
             self,
-            contract_overrides_by_occurrence: Dict[Tuple[str, Optional[int]], Dict[str, Any]],
+            contract_overrides_by_occurrence: Mapping[
+                Tuple[str, Optional[int]],
+                Mapping[str, Any],
+            ],
     ) -> Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]:
         """
         Build deterministic schema rows for occurrence-scoped contract payloads.
@@ -1878,12 +1932,20 @@ class SpellCrafter(Cleanable):
                     for param_name, value in payload.items()
                 )
             )
-            rows.append((tuple(occurrence_key), payload_items))
+            rows.append(
+                (
+                    self._normalize_occurrence_key(occurrence_key),
+                    payload_items,
+                )
+            )
         return tuple(rows)
 
     def _build_occurrence_contract_override_spell_rows(
             self,
-            contract_overrides_by_spell_id: Dict[str, List[Tuple[Tuple[str, Optional[int]], Dict[str, Any]]]],
+            contract_overrides_by_spell_id: Mapping[
+                str,
+                Sequence[Tuple[Tuple[str, Optional[int]], Mapping[str, Any]]],
+            ],
     ) -> Tuple[Tuple[str, Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]], ...]:
         """
         Build deterministic schema rows for spell-grouped contract payloads.
@@ -1914,7 +1976,12 @@ class SpellCrafter(Cleanable):
                         for param_name, value in payload.items()
                     )
                 )
-                grouped_rows.append((tuple(occurrence_key), payload_items))
+                grouped_rows.append(
+                    (
+                        self._normalize_occurrence_key(occurrence_key),
+                        payload_items,
+                    )
+                )
             grouped_rows.sort(
                 key=lambda row: self._occurrence_key_sort_key(row[0]),
             )
@@ -2514,10 +2581,28 @@ class SpellCrafter(Cleanable):
             contract_dependencies_complete = bool(
                 occurrence_plan.contract_dependencies_complete,
             )
-            occurrence_graph = occurrence_plan.occurrence_graph
+            occurrence_graph: Mapping[
+                Tuple[str, Optional[int]],
+                Mapping[str, Sequence[Tuple[str, Optional[int]]]],
+            ] = cast(
+                Mapping[
+                    Tuple[str, Optional[int]],
+                    Mapping[str, Sequence[Tuple[str, Optional[int]]]],
+                ],
+                occurrence_plan.occurrence_graph,
+            )
             instance_keys_by_spell_id = occurrence_plan.instance_keys_by_spell_id
             canonical_occurrences_by_spell_id = occurrence_plan.canonical_occurrences_by_spell_id
-            contract_overrides_by_occurrence = occurrence_plan.contract_overrides_by_occurrence
+            contract_overrides_by_occurrence: Mapping[
+                Tuple[str, Optional[int]],
+                Mapping[str, Any],
+            ] = cast(
+                Mapping[
+                    Tuple[str, Optional[int]],
+                    Mapping[str, Any],
+                ],
+                occurrence_plan.contract_overrides_by_occurrence,
+            )
         except AttributeError:
             return None
 
@@ -2533,9 +2618,13 @@ class SpellCrafter(Cleanable):
             canonical_occurrence = canonical_occurrences_by_spell_id.get(spell_id)
             instance_keys = instance_keys_by_spell_id.get(spell_id, ())
             for instance_key in instance_keys:
-                occurrence = (spell_id, instance_key[1])
+                occurrence = self._normalize_occurrence_key(
+                    (spell_id, instance_key[1])
+                )
                 if spell_id in shared_spell_ids and canonical_occurrence is not None:
-                    occurrence = canonical_occurrence
+                    occurrence = self._normalize_occurrence_key(
+                        canonical_occurrence
+                    )
                 dependencies = occurrence_graph.get(occurrence, {})
                 dependency_rows: List[Tuple[Any, ...]] = []
                 for param_name in sorted(dependencies.keys()):
@@ -2543,7 +2632,9 @@ class SpellCrafter(Cleanable):
                         (
                             param_name,
                             tuple(
-                                tuple(dependency_occurrence)
+                                self._normalize_occurrence_key(
+                                    dependency_occurrence
+                                )
                                 for dependency_occurrence in dependencies[param_name]
                             ),
                         )
@@ -2556,8 +2647,8 @@ class SpellCrafter(Cleanable):
                         contract_payload["__args__"] = tuple(args_payload)
                 occurrence_rows.append(
                     (
-                        tuple(instance_key),
-                        tuple(occurrence),
+                        self._normalize_instance_key(instance_key),
+                        self._normalize_occurrence_key(occurrence),
                         tuple(dependency_rows),
                         contract_payload,
                     )
@@ -2584,7 +2675,7 @@ class SpellCrafter(Cleanable):
                     return None
                 injection_rows_list.append(
                     (
-                        tuple(instance_key),
+                        self._normalize_instance_key(instance_key),
                         injection_spec_row,
                     )
                 )
@@ -2632,7 +2723,9 @@ class SpellCrafter(Cleanable):
         transient_signature = self._build_fast_transient_signature(transient_schema)
         root_instance_key = None
         if plan.root_instance_key is not None:
-            root_instance_key = tuple(plan.root_instance_key)
+            root_instance_key = self._normalize_instance_key(
+                plan.root_instance_key
+            )
         return self._hash_codegen_signature(
             plan.root_spell_id,
             root_instance_key,
@@ -2670,31 +2763,66 @@ class SpellCrafter(Cleanable):
             occurrence_contract_complete = self._occurrence_plan_phase8.contract_dependencies_complete
             try:
                 occurrence_graph_rows = self._build_occurrence_graph_rows(
-                    self._occurrence_plan_phase8.occurrence_graph,
+                    cast(
+                        Mapping[
+                            Tuple[str, Optional[int]],
+                            Mapping[str, Sequence[Tuple[str, Optional[int]]]],
+                        ],
+                        self._occurrence_plan_phase8.occurrence_graph,
+                    ),
                 )
             except AttributeError:
                 occurrence_graph_rows = ()
             try:
                 occurrence_instance_key_rows = self._build_occurrence_instance_key_rows(
-                    self._occurrence_plan_phase8.instance_keys_by_spell_id,
+                    cast(
+                        Mapping[
+                            str,
+                            Sequence[Tuple[str, Optional[int]]],
+                        ],
+                        self._occurrence_plan_phase8.instance_keys_by_spell_id,
+                    ),
                 )
             except AttributeError:
                 occurrence_instance_key_rows = ()
             try:
                 occurrence_canonical_rows = self._build_occurrence_canonical_rows(
-                    self._occurrence_plan_phase8.canonical_occurrences_by_spell_id,
+                    cast(
+                        Mapping[
+                            str,
+                            Tuple[str, Optional[int]],
+                        ],
+                        self._occurrence_plan_phase8.canonical_occurrences_by_spell_id,
+                    ),
                 )
             except AttributeError:
                 occurrence_canonical_rows = ()
             try:
                 occurrence_contract_override_rows = self._build_occurrence_contract_override_rows(
-                    self._occurrence_plan_phase8.contract_overrides_by_occurrence,
+                    cast(
+                        Mapping[
+                            Tuple[str, Optional[int]],
+                            Mapping[str, Any],
+                        ],
+                        self._occurrence_plan_phase8.contract_overrides_by_occurrence,
+                    ),
                 )
             except AttributeError:
                 occurrence_contract_override_rows = ()
             try:
                 occurrence_contract_override_spell_rows = self._build_occurrence_contract_override_spell_rows(
-                    self._occurrence_plan_phase8.contract_overrides_by_spell_id,
+                    cast(
+                        Mapping[
+                            str,
+                            Sequence[
+                                Tuple[
+                                    Tuple[str, Optional[int]],
+                                    Mapping[str, Any],
+                                ]
+                            ],
+                        ],
+                        self._occurrence_plan_phase8.contract_overrides_by_spell_id,
+                    ),
                 )
             except AttributeError:
                 occurrence_contract_override_spell_rows = ()
@@ -2958,7 +3086,7 @@ class SpellCrafter(Cleanable):
 
         compiled_executor = compile_phase12_no_overrides_executor(
             codegen_ir=no_overrides_payload,
-            spell_lookup=self._spell._spellbook._spell_id_pool,
+            spell_lookup=self._get_required_spellbook()._spell_id_pool,
         )
         if no_overrides_payload.get("step_count", 0) > 0 and compiled_executor is None:
             raise RuntimeError(
@@ -3034,12 +3162,15 @@ class SpellCrafter(Cleanable):
         # be torn down as part of frame cleanup.
         self.check_cleaned()
 
-        if self._spell_system_states is None or self._spell.spell_index is None:
+        if self._spell.spell_index is None:
             return
 
         # SpellSystemStates.update_dependencies performs its own internal
         # gating and dirty-tracking based on this new edge set.
-        self._spell_system_states.update_dependencies(self._spell.spell_index, dependency_ids or [])
+        self._get_required_spell_system_states().update_dependencies(
+            self._spell.spell_index,
+            dependency_ids or [],
+        )
 
     def _throw_if_cancelled(self, cancel_event: Optional[CancellationEvent]) -> None:
         """
@@ -3750,12 +3881,13 @@ class SpellCrafter(Cleanable):
         topology = self._build_local_topology(graph, socket_targets)
 
         # Update spell-system state with dependency IDs and local topology.
-        if self._spell_system_states is not None and self._spell.spell_index is not None:
-            self._spell_system_states.update_dependencies(
+        if self._spell.spell_index is not None:
+            spell_system_states = self._get_required_spell_system_states()
+            spell_system_states.update_dependencies(
                 self._spell.spell_index,
                 dependency_spell_ids,
             )
-            self._spell_system_states.register_local_topology(
+            spell_system_states.register_local_topology(
                 self._spell.spell_index,
                 topology,
             )
@@ -4036,7 +4168,9 @@ class SpellCrafter(Cleanable):
 
         # --- 5. Attach artifacts to SpellCrafters -------------------------
         for spell_id, spell_instance in spellbook._spell_id_pool.items():
-            crafter_for_spell = spell_instance._ensure_crafter()
+            crafter_for_spell = self._get_required_crafter_from_spell(
+                spell_instance
+            )
 
             crafter_for_spell.set_spell_system_index_phase5(system_index)
 
@@ -4096,7 +4230,9 @@ class SpellCrafter(Cleanable):
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
                 spell_instance = spellbook._spell_id_pool[root_id]
-                crafter = spell_instance._ensure_crafter()
+                crafter = self._get_required_crafter_from_spell(
+                    spell_instance
+                )
                 crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                 validated_roots.add(root_id)
 
@@ -4230,7 +4366,9 @@ class SpellCrafter(Cleanable):
         self.check_cleaned()
         for spell_id in snapshot.all_spell_ids:
             spell_instance = spell_lookup[spell_id]
-            crafter_for_spell = spell_instance._ensure_crafter()
+            crafter_for_spell = self._get_required_crafter_from_spell(
+                spell_instance
+            )
             crafter_for_spell.set_spell_system_index_phase5(system_index)
 
             if spell_instance.is_existing_creation:
@@ -4392,7 +4530,7 @@ class SpellCrafter(Cleanable):
                 Filtered mapping containing only owned roots.
         """
         self.check_cleaned()
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         owned_spell_ids = spellbook._spells_by_id.keys()
         return {
             root_id: blueprint
@@ -4436,7 +4574,7 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
         root_blueprint = self._root_blueprint_phase5
-        spell_lookup = self._spell._spellbook._spell_id_pool
+        spell_lookup = self._get_required_spellbook()._spell_id_pool
         phase8_occurrence_plan_fast_key = self._build_phase8_occurrence_plan_fast_key(
             root_blueprint=root_blueprint,
             spell_lookup=spell_lookup,
@@ -4749,7 +4887,7 @@ class SpellCrafter(Cleanable):
 
         occurrence_plan = self._occurrence_plan_phase8
         injection_plan = self._injection_plan_phase9
-        spell_lookup = self._spell._spellbook._spell_id_pool
+        spell_lookup = self._get_required_spellbook()._spell_id_pool
 
         # Fast key avoids rebuilding the deep phase11 no-overrides signature
         # when phase8/phase9 inputs and plan references are unchanged.
@@ -5005,10 +5143,10 @@ class SpellCrafter(Cleanable):
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
 
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         spell_lookup: Dict[str, ISpell] = spellbook._spell_id_pool
         for spell_id, spell_instance in spell_lookup.items():
-            crafter = spell_instance._crafter
+            crafter = self._get_required_crafter_from_spell(spell_instance)
             phase4_results[spell_id] = crafter._validation_result_phase4
             if crafter._is_broken:
                 broken_spell_ids.add(spell_id)
@@ -5044,7 +5182,7 @@ class SpellCrafter(Cleanable):
             blueprints=self._entire_dag_blueprint_phase5,
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
-            spell_system_states=self._spell_system_states,
+            spell_system_states=self._get_required_spell_system_states(),
             conduit_id=conduit_id,
             spell_lookup=spell_lookup,
             cancel_event=cancel_event,
@@ -5053,7 +5191,7 @@ class SpellCrafter(Cleanable):
         self._validation_result_phase6 = validation_state
         self._validated_phase6 = True
         for spell_instance in spell_lookup.values():
-            crafter = spell_instance._ensure_crafter()
+            crafter = self._get_required_crafter_from_spell(spell_instance)
             crafter._validation_result_phase6 = validation_state
             crafter._validated_phase6 = True
 
@@ -5081,7 +5219,7 @@ class SpellCrafter(Cleanable):
             None.
         """
         self.check_cleaned()
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         spell_lookup_pool = spellbook._spell_id_pool
         index = self._spell_system_index_phase5
         blueprints = self._entire_dag_blueprint_phase5
@@ -5095,7 +5233,7 @@ class SpellCrafter(Cleanable):
         for spell_id in index.nodes.keys():
             spell_instance = spell_lookup_pool[spell_id]
             scoped_spell_lookup[spell_id] = spell_instance
-            crafter = spell_instance._crafter
+            crafter = self._get_required_crafter_from_spell(spell_instance)
             phase4_results[spell_id] = crafter._validation_result_phase4
             if crafter._is_broken:
                 broken_spell_ids.add(spell_id)
@@ -5112,17 +5250,17 @@ class SpellCrafter(Cleanable):
             )
         )
         if visibility_gap_diagnostics:
-            self._spell_system_states.bulk_set_conduit_spell_validity(
+            self._get_required_spell_system_states().bulk_set_conduit_spell_validity(
                 conduit_id,
                 {spell_id: SpellValidity.invalid for spell_id in index.nodes.keys()},
                 change_reason=SpellStateChangeReason.validation_failed,
             )
-            self._spell_system_states.bulk_set_conduit_root_validity(
+            self._get_required_spell_system_states().bulk_set_conduit_root_validity(
                 conduit_id,
                 {root_id: SpellValidity.invalid for root_id in blueprints.keys()},
                 change_reason=SpellStateChangeReason.validation_failed,
             )
-            self._spell_system_states.record_conduit_diagnostics(
+            self._get_required_spell_system_states().record_conduit_diagnostics(
                 conduit_id,
                 visibility_gap_diagnostics,
             )
@@ -5135,7 +5273,7 @@ class SpellCrafter(Cleanable):
             self._validation_result_phase6 = validation_state
             self._validated_phase6 = True
             for spell_instance in scoped_spell_lookup.values():
-                crafter = spell_instance._ensure_crafter()
+                crafter = self._get_required_crafter_from_spell(spell_instance)
                 crafter._validation_result_phase6 = validation_state
                 crafter._validated_phase6 = True
             return
@@ -5171,7 +5309,7 @@ class SpellCrafter(Cleanable):
             blueprints=blueprints,
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
-            spell_system_states=self._spell_system_states,
+            spell_system_states=self._get_required_spell_system_states(),
             conduit_id=conduit_id,
             spell_lookup=scoped_spell_lookup,
             cancel_event=cancel_event,
@@ -5180,7 +5318,7 @@ class SpellCrafter(Cleanable):
         self._validation_result_phase6 = validation_state
         self._validated_phase6 = True
         for spell_instance in scoped_spell_lookup.values():
-            crafter = spell_instance._ensure_crafter()
+            crafter = self._get_required_crafter_from_spell(spell_instance)
             crafter._validation_result_phase6 = validation_state
             crafter._validated_phase6 = True
 
@@ -5356,7 +5494,7 @@ class SpellCrafter(Cleanable):
         """
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
         """
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)
@@ -5402,7 +5540,7 @@ class SpellCrafter(Cleanable):
             - Uses component-of upsert semantics to preserve unrelated roots.
             - Registers the same revalidator contract as frame-wide wiring.
         """
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)

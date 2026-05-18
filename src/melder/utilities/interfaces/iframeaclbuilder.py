@@ -18,9 +18,35 @@ class IFrameACLBuilder(ICleanable, Protocol):
         - Exposes typed accessors for the currently active family draft.
     """
 
-    change_active: bool
-    draft_family_name: Optional[str]
-    draft_contract_name: Optional[str]
+    @property
+    def change_active(self) -> bool:
+        """
+        Return whether the builder currently owns one open change session.
+
+        Returns:
+            bool: True when a change session is active.
+        """
+        ...
+
+    @property
+    def draft_family_name(self) -> Optional[str]:
+        """
+        Return the ACL family currently targeted by the active draft session.
+
+        Returns:
+            Optional[str]: Draft family name when one exists.
+        """
+        ...
+
+    @property
+    def draft_contract_name(self) -> Optional[str]:
+        """
+        Return the contract name currently targeted by the active draft session.
+
+        Returns:
+            Optional[str]: Draft contract name when one exists.
+        """
+        ...
 
     def begin_view_change(
             self,

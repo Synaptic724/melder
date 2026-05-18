@@ -24,7 +24,7 @@ from melder.utilities.interfaces import (
     IUnitOfWork,
     ISpellbook,
 )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent, CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -41,25 +41,53 @@ class _TargetCrafterSurface(Protocol):
 
 
 class _TargetResolutionSpellSurface(ISpell, Protocol):
-    def run_phase_root_blueprints_local(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_root_blueprints_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
-    def run_phase_system_validation_local(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_system_validation_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
-    def run_phase_change_control_local(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_change_control_local(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
-    def run_phase_occurrence_plan(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_occurrence_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
-    def run_phase_injection_plan(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_injection_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
-    def run_phase_patch_maps(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_patch_maps(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
-    def run_phase_execution_plan(self, conduit_id: str, cancel_event: Any) -> Any:
+    def run_phase_execution_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
         ...
 
     def _ensure_crafter(self) -> _TargetCrafterSurface:
