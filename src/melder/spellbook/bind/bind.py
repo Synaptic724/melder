@@ -12,6 +12,7 @@ from melder.spellbook.spell import Spell
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
@@ -50,6 +51,7 @@ class Bind(Cleanable, IBind):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_lock",
         "_spellbook",
         "_spell_examiner",
@@ -68,6 +70,7 @@ class Bind(Cleanable, IBind):
               all created spell bindings.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self._spellbook: ISpellbook = spellbook
         self._lock = threading.RLock()
         self._spell_examiner: SpellExaminer = SpellExaminer()
@@ -389,7 +392,7 @@ class Bind(Cleanable, IBind):
         elif isinstance(profile, CallableBindingProfile):
             param_parts = [
                 f"{p.name}:{p.kind}={p.default_repr}"
-                for p in profile.parameters
+                for p in (profile.parameters or ())
             ]
             parts += [
                 profile.name,

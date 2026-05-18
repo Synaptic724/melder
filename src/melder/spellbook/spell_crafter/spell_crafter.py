@@ -4311,8 +4311,9 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         system_index = SpellSystemIndex()
+        spell_system_states = self._get_required_spell_system_states()
         for spell_id, deps in snapshot.dependencies.items():
-            state = self._spell_system_states.get_by_spell_id(spell_id)
+            state = spell_system_states.get_by_spell_id(spell_id)
             lineage_id = state.spell_index_id
             spell_instance = spell_lookup[spell_id]
 
@@ -5355,8 +5356,9 @@ class SpellCrafter(Cleanable):
         root_id = ordered_root_ids[0] if ordered_root_ids else self._spell.spell_index.current
         diagnostics: List[SystemDiagnostic] = []
         seen: Set[Tuple[str, str, str]] = set()
+        spell_system_states = self._get_required_spell_system_states()
         for spell_id in scoped_spell_ids:
-            topology = self._spell_system_states.get_local_topology_by_id(spell_id)
+            topology = spell_system_states.get_local_topology_by_id(spell_id)
             if topology is None:
                 continue
             for socket in topology.iter_sockets():
@@ -5523,7 +5525,9 @@ class SpellCrafter(Cleanable):
                 validated_roots: Set[str] = set()
                 for root_id in dirty_roots:
                     spell_instance = spellbook._spell_id_pool[root_id]
-                    crafter = spell_instance._crafter
+                    crafter = self._get_required_crafter_from_spell(
+                        spell_instance
+                    )
                     crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                     validated_roots.add(root_id)
 
@@ -5659,7 +5663,9 @@ class SpellCrafter(Cleanable):
         self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
         self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
 
-        resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
+        resolution_state = self._get_required_spell_system_states().get_conduit_resolution_state(
+            conduit_id
+        )
         if resolution_state is not None and resolution_state.has_errors():
             self.cleanup_phase_artifacts()
             return

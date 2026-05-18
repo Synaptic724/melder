@@ -207,13 +207,13 @@ def test_counter_switch_cleanup_wakes_pending_selector_waiter() -> None:
     switch.cleanup()
     assert done.wait(timeout=1.0) is True
     thread.join(timeout=1.0)
-    assert switch._event is None
-    assert switch._tickets is None
-    assert switch._lock is None
+    assert not hasattr(switch, "_event")
+    assert not hasattr(switch, "_tickets")
+    assert not hasattr(switch, "_lock")
     if "state" in result_holder:
         assert isinstance(result_holder["state"], int)
     else:
-        assert isinstance(result_holder.get("error"), TypeError)
+        assert isinstance(result_holder.get("error"), AttributeError)
 
 
 def test_counter_switch_post_cleanup_usage_breaks_fast() -> None:
@@ -225,5 +225,5 @@ def test_counter_switch_post_cleanup_usage_breaks_fast() -> None:
     """
     switch = CounterSwitch()
     switch.cleanup()
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         _ = switch.selector()

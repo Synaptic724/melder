@@ -96,6 +96,8 @@ def _run_spell_to_phase5(spell: Any) -> None:
     spell.run_phase_symbolic_graph()
     spell.run_phase_local_frame()
     spell.run_phase_validation()
+    for current_spell in spell._spellbook.spells.values():
+        current_spell._ensure_crafter()
     spell.run_phase_root_blueprints(CONDUIT_ID)
 
 

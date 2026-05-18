@@ -137,8 +137,8 @@ def test_creation_gate_cleanup_sets_closed_and_unblocks_waiters() -> None:
     assert waiter_released.wait(timeout=1.0) is True
     worker.join(timeout=1.0)
     assert gate._cleaned is True
-    assert gate._event is None
-    assert gate._tickets is None
+    assert not hasattr(gate, "_event")
+    assert not hasattr(gate, "_tickets")
 
 
 def test_creation_gate_cleanup_idempotent() -> None:
@@ -151,7 +151,7 @@ def test_creation_gate_cleanup_idempotent() -> None:
     gate.cleanup()
     gate.cleanup()
     assert gate._cleaned is True
-    assert gate._lock is None
+    assert not hasattr(gate, "_lock")
 
 
 def test_creation_gate_cleanup_returns_when_marked_clean_inside_lock() -> None:

@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Set, Tuple, Type, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -16,7 +16,115 @@ from melder.utilities.interfaces import (
     IAethericFrame,
     IConduit,
     INexus,
+    INexusFrameConfiguration,
 )
+
+
+class _ManagedConduitSurface(Protocol):
+    _id: str
+    _name: Optional[str]
+    _spellbook: object
+
+    @property
+    def name(self) -> Optional[str]:
+        ...
+
+
+class _ManagedConduitCloudSurface(Protocol):
+    _registry: Dict[str, object]
+
+
+class _ManagedAethericFrameSurface(IAethericFrame, Protocol):
+    _id: str
+    _conduits: Dict[str, _ManagedConduitSurface]
+    _conduit_cloud: _ManagedConduitCloudSurface
+    _conduit_clusters: Dict[str, object]
+
+
+class _AetherRuntimeSurface(Protocol):
+    def _create_frame(self, frame_name: str) -> _ManagedAethericFrameSurface:
+        ...
+
+    def _ensure_frame(self, frame_name: str) -> _ManagedAethericFrameSurface:
+        ...
+
+    def _get_aetheric_frame_configuration(
+            self,
+            frame_name: str,
+    ) -> AethericFrameConfiguration:
+        ...
+
+
+class _FrameDescriptorSurface(Protocol):
+    def set_frame_handle(self, frame: IAethericFrame) -> None:
+        ...
+
+    def set_frame_configuration(
+            self,
+            frame_configuration: AethericFrameConfiguration,
+    ) -> None:
+        ...
+
+    def set_frame_overview(self, frame_record: FrameRecord) -> None:
+        ...
+
+    def clear_runtime_publication_state(self) -> None:
+        ...
+
+
+class _FrameDescriptorManagerSurface(Protocol):
+    def _has_frame_descriptor(self, frame_name: str) -> bool:
+        ...
+
+    def _get_required_frame_descriptor(
+            self,
+            frame_name: str,
+    ) -> _FrameDescriptorSurface:
+        ...
+
+    def _get_or_create_frame_descriptor(
+            self,
+            frame_name: str,
+    ) -> _FrameDescriptorSurface:
+        ...
+
+
+class _FrameACLManagerSurface(Protocol):
+    def _remove_frame_acl_container(self, frame_name: str) -> bool:
+        ...
+
+    def _ensure_frame_acl_container(self, frame_name: str) -> None:
+        ...
+
+
+class _NexusConfigurationSurface(Protocol):
+    def get_property(self, key: str) -> object:
+        ...
+
+
+class _RiftIdentitySurface(Protocol):
+    id: str
+
+
+class _NamedRuntimeValue(Protocol):
+    name: str
+
+
+class _NexusRuntimeSurface(INexus, Protocol):
+    _aether: _AetherRuntimeSurface
+    _configuration: _NexusConfigurationSurface
+    _rifts_by_id: Dict[str, _RiftIdentitySurface]
+    _frame_descriptor_manager: _FrameDescriptorManagerSurface
+    _frame_acl_manager: _FrameACLManagerSurface
+
+    def _require_enabled(self) -> None:
+        ...
+
+    def _get_required_rift(self, rift_id: str) -> _RiftIdentitySurface:
+        ...
+
+    def _ensure_frame_acl_container(self, frame_name: str) -> None:
+        ...
 
 
 class NexusFrameManager(Cleanable):
@@ -73,11 +181,11 @@ class NexusFrameManager(Cleanable):
             raise TypeError("nexus cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._nexus: INexus = nexus
+        self._nexus: _NexusRuntimeSurface = cast(_NexusRuntimeSurface, nexus)
         self._next_indexed_frame_number: int = 1
         self._creating_frame_names: Set[str] = set()
-        self._frames_by_name: Dict[str, IAethericFrame] = {}
-        self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
+        self._frames_by_name: Dict[str, _ManagedAethericFrameSurface] = {}
+        self._configurations_by_frame_name: Dict[str, INexusFrameConfiguration] = {}
 
     def cleanup(self) -> None:
         """
@@ -204,7 +312,7 @@ class NexusFrameManager(Cleanable):
 
     def create(
             self,
-            configuration: NexusFrameConfiguration,
+            configuration: INexusFrameConfiguration,
     ) -> IConduit:
         """
         Create one rooted Nexus-managed conduit from authored configuration.
@@ -230,9 +338,9 @@ class NexusFrameManager(Cleanable):
             IConduit: Root conduit for the managed frame.
         """
         self.check_cleaned()
-        if not isinstance(configuration, NexusFrameConfiguration):
+        if not isinstance(configuration, INexusFrameConfiguration):
             raise TypeError(
-                "configuration must be a NexusFrameConfiguration."
+                "configuration must satisfy INexusFrameConfiguration."
             )
         self._validate_configuration_contract(configuration)
         return self._create_configuration(
@@ -242,7 +350,7 @@ class NexusFrameManager(Cleanable):
 
     def _create_configuration(
             self,
-            configuration: NexusFrameConfiguration,
+            configuration: INexusFrameConfiguration,
             *,
             validate_raw_mode: bool,
     ) -> IConduit:
@@ -269,7 +377,7 @@ class NexusFrameManager(Cleanable):
             self._validate_raw_creation_for_mode(frame_name)
         root_conduit: Optional[IConduit] = None
         spellbook_id: Optional[str] = None
-        frame: Optional[IAethericFrame] = None
+        frame: Optional[_ManagedAethericFrameSurface] = None
         with self._lock:
             if (
                     frame_name in self._frames_by_name
@@ -286,7 +394,7 @@ class NexusFrameManager(Cleanable):
             root_conduit = self._conjure_root_conduit_for_configuration(
                 configuration
             )
-            spellbook_id = root_conduit._spellbook.id
+            spellbook_id = self._get_root_conduit_spellbook_id(root_conduit)
             with self._lock:
                 self._creating_frame_names.discard(frame_name)
                 if frame_name in self._frames_by_name:
@@ -355,21 +463,17 @@ class NexusFrameManager(Cleanable):
                 the requested frame name.
         """
         self.check_cleaned()
-        self._nexus._require_enabled()
-        nexus_frame_mode = self._nexus._configuration.get_property(
-            "nexus_frame_mode"
-        )
-        if nexus_frame_mode.name == "single":
-            shared_frame_name = self._nexus._configuration.get_property(
-                "default_nexus_frame_name"
-            )
+        self._require_nexus_enabled()
+        nexus_frame_mode_name = self._get_nexus_frame_mode_name()
+        if nexus_frame_mode_name == "single":
+            shared_frame_name = self._get_default_nexus_frame_name()
             if frame_name != shared_frame_name:
                 raise ValueError(
                     "single Nexus mode only allows raw creation of the shared "
                     "frame '{0}'.".format(shared_frame_name)
                 )
             return
-        if nexus_frame_mode.name == "one_per_workspace":
+        if nexus_frame_mode_name == "one_per_workspace":
             raise ValueError(
                 "Raw NexusFrameManager creation is not allowed in "
                 "one_per_workspace mode; use Rift.create_nexus_frame() or "
@@ -435,7 +539,7 @@ class NexusFrameManager(Cleanable):
             IAethericFrame: Resolved managed frame.
         """
         self.check_cleaned()
-        self._nexus._require_enabled()
+        self._require_nexus_enabled()
         with self._lock:
             requested_frame_name = self._resolve_frame_name_for_rift(
                 rift_id,
@@ -485,14 +589,14 @@ class NexusFrameManager(Cleanable):
                 valid under the current topology rules.
         """
         self.check_cleaned()
-        self._nexus._require_enabled()
+        self._require_nexus_enabled()
         requested_frame_name = self._resolve_frame_name_for_rift(
             rift_id,
             frame_name=frame_name,
             allow_creation=True,
         )
-        nexus_frame_mode = self._nexus._configuration.get_property("nexus_frame_mode")
-        if nexus_frame_mode.name == "one_per_workspace" and immutable:
+        nexus_frame_mode_name = self._get_nexus_frame_mode_name()
+        if nexus_frame_mode_name == "one_per_workspace" and immutable:
             raise ValueError("one_per_workspace frames cannot be immutable.")
         with self._lock:
             existing_frame = self._frames_by_name.get(requested_frame_name)
@@ -543,7 +647,7 @@ class NexusFrameManager(Cleanable):
             bool: True when the frame is manager-owned and authorized.
         """
         self.check_cleaned()
-        self._nexus._require_enabled()
+        self._require_nexus_enabled()
         self._nexus._get_required_rift(rift_id)
         with self._lock:
             if frame_name not in self._frames_by_name:
@@ -567,20 +671,16 @@ class NexusFrameManager(Cleanable):
             Tuple[str, ...]: Accessible managed frame names.
         """
         self.check_cleaned()
-        self._nexus._require_enabled()
+        self._require_nexus_enabled()
         self._nexus._get_required_rift(rift_id)
         with self._lock:
-            nexus_frame_mode = self._nexus._configuration.get_property(
-                "nexus_frame_mode"
-            )
-            if nexus_frame_mode.name == "single":
-                shared_frame_name = self._nexus._configuration.get_property(
-                    "default_nexus_frame_name"
-                )
+            nexus_frame_mode_name = self._get_nexus_frame_mode_name()
+            if nexus_frame_mode_name == "single":
+                shared_frame_name = self._get_default_nexus_frame_name()
                 if shared_frame_name in self._frames_by_name:
                     return (shared_frame_name,)
                 return tuple()
-            if nexus_frame_mode.name == "one_per_workspace":
+            if nexus_frame_mode_name == "one_per_workspace":
                 private_frame_name = self._determine_frame_name_for_rift(rift_id)
                 if private_frame_name in self._frames_by_name:
                     return (private_frame_name,)
@@ -608,15 +708,11 @@ class NexusFrameManager(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            nexus_frame_mode = self._nexus._configuration.get_property(
-                "nexus_frame_mode"
-            )
-            if nexus_frame_mode.name == "single":
+            nexus_frame_mode_name = self._get_nexus_frame_mode_name()
+            if nexus_frame_mode_name == "single":
                 if len(self._nexus._rifts_by_id) != 0:
                     return []
-                shared_frame_name = self._nexus._configuration.get_property(
-                    "default_nexus_frame_name"
-                )
+                shared_frame_name = self._get_default_nexus_frame_name()
                 configuration = self._configurations_by_frame_name.get(
                     shared_frame_name
                 )
@@ -625,7 +721,7 @@ class NexusFrameManager(Cleanable):
                 if configuration is not None and configuration.immutable:
                     return []
                 return [shared_frame_name]
-            if nexus_frame_mode.name == "one_per_workspace":
+            if nexus_frame_mode_name == "one_per_workspace":
                 private_frame_name = self._determine_frame_name_for_rift(rift_id)
                 configuration = self._configurations_by_frame_name.get(
                     private_frame_name
@@ -688,9 +784,7 @@ class NexusFrameManager(Cleanable):
         Returns:
             str: Derived managed frame name.
         """
-        default_nexus_frame_name = self._nexus._configuration.get_property(
-            "default_nexus_frame_name"
-        )
+        default_nexus_frame_name = self._get_default_nexus_frame_name()
         return "{0}:{1}".format(default_nexus_frame_name, rift_id)
 
     def _resolve_frame_name_for_rift(
@@ -720,20 +814,16 @@ class NexusFrameManager(Cleanable):
             str: Resolved managed frame name.
         """
         self._nexus._get_required_rift(rift_id)
-        nexus_frame_mode = self._nexus._configuration.get_property(
-            "nexus_frame_mode"
-        )
-        if nexus_frame_mode.name == "single":
-            shared_frame_name = self._nexus._configuration.get_property(
-                "default_nexus_frame_name"
-            )
+        nexus_frame_mode_name = self._get_nexus_frame_mode_name()
+        if nexus_frame_mode_name == "single":
+            shared_frame_name = self._get_default_nexus_frame_name()
             requested_frame_name = frame_name or shared_frame_name
             if requested_frame_name != shared_frame_name:
                 raise ValueError(
                     "Shared Nexus mode only exposes the shared frame."
                 )
             return requested_frame_name
-        if nexus_frame_mode.name == "one_per_workspace":
+        if nexus_frame_mode_name == "one_per_workspace":
             private_frame_name = frame_name or self._determine_frame_name_for_rift(
                 rift_id
             )
@@ -763,7 +853,7 @@ class NexusFrameManager(Cleanable):
             str: Newly allocated indexed Nexus-managed frame name.
         """
         indexed_frame_name = "{0}-{1}".format(
-            self._nexus._configuration.get_property("default_nexus_frame_name"),
+            self._get_default_nexus_frame_name(),
             self._next_indexed_frame_number,
         )
         self._next_indexed_frame_number = self._next_indexed_frame_number + 1
@@ -891,14 +981,12 @@ class NexusFrameManager(Cleanable):
             unique_new_frame_names.append(frame_name)
         if not unique_new_frame_names:
             return
-        if len(self._frames_by_name) + len(unique_new_frame_names) > self._nexus._configuration.get_property(
-                "max_nexus_frame_count"
-        ):
+        if len(self._frames_by_name) + len(unique_new_frame_names) > self._get_max_nexus_frame_count():
             raise ValueError("Nexus internal frame cap has been reached.")
 
     @staticmethod
     def _validate_configuration_contract(
-            configuration: NexusFrameConfiguration,
+            configuration: INexusFrameConfiguration,
     ) -> None:
         """
         Validate the fixed Nexus-managed frame posture contract.
@@ -935,7 +1023,7 @@ class NexusFrameManager(Cleanable):
 
     def _conjure_root_conduit_for_configuration(
             self,
-            configuration: NexusFrameConfiguration,
+            configuration: INexusFrameConfiguration,
     ) -> IConduit:
         """
         Conjure the required root conduit for one Nexus-managed frame.
@@ -953,17 +1041,20 @@ class NexusFrameManager(Cleanable):
         Returns:
             IConduit: Newly created root conduit.
         """
+        from melder.aether.aether import Aether
         from melder.aether.conduit.conduit import Conduit
         from melder.spellbook.spellbook import Spellbook
 
-        Spellbook._aether = self._nexus._aether
-        Conduit._aether = self._nexus._aether
+        runtime_aether = cast(Aether, self._nexus._aether)
+        Spellbook._aether = runtime_aether
+        Conduit._aether = runtime_aether
         frame = Spellbook._aether._ensure_frame(configuration.frame_name)
         frame.bind_frame_configuration(
             configuration.to_aetheric_frame_configuration()
         )
         spellbook_configuration = configuration.to_spellbook_configuration()
-        spellbook = Spellbook(
+        spellbook_cls = cast(Type[Spellbook], Spellbook)
+        spellbook = spellbook_cls(
             aetheric_frame=configuration.frame_name,
             configuration=spellbook_configuration,
         )
@@ -1008,9 +1099,9 @@ class NexusFrameManager(Cleanable):
             )
         for conduit in frame._conduits.values():
             if conduit is not None and conduit.name == root_conduit_name:
-                return conduit
+                return cast(IConduit, conduit)
         if len(frame._conduits) == 1:
-            return next(iter(frame._conduits.values()))
+            return cast(IConduit, next(iter(frame._conduits.values())))
         raise ValueError(
             "Nexus managed frame '{0}' has no root conduit named '{1}'.".format(
                 frame_name,
@@ -1045,3 +1136,76 @@ class NexusFrameManager(Cleanable):
             if frame_name in accessible_frame_names:
                 return True
         return False
+
+    def _require_nexus_enabled(self) -> None:
+        """
+        Ensure the owning Nexus is enabled for manager operations.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If Nexus is not enabled.
+        """
+        self._nexus._require_enabled()
+
+    def _get_nexus_frame_mode_name(self) -> str:
+        """
+        Return the current Nexus frame-mode enum name.
+
+        Returns:
+            str: Current Nexus frame-mode name.
+        """
+        frame_mode = cast(
+            _NamedRuntimeValue,
+            self._nexus._configuration.get_property("nexus_frame_mode"),
+        )
+        return frame_mode.name
+
+    def _get_default_nexus_frame_name(self) -> str:
+        """
+        Return the configured default Nexus-managed frame name.
+
+        Returns:
+            str: Default Nexus-managed frame name.
+        """
+        return cast(
+            str,
+            self._nexus._configuration.get_property("default_nexus_frame_name"),
+        )
+
+    def _get_max_nexus_frame_count(self) -> int:
+        """
+        Return the configured Nexus-managed frame budget.
+
+        Returns:
+            int: Maximum Nexus-managed frame count.
+        """
+        return cast(
+            int,
+            self._nexus._configuration.get_property("max_nexus_frame_count"),
+        )
+
+    @staticmethod
+    def _get_root_conduit_spellbook_id(root_conduit: IConduit) -> str:
+        """
+        Return the originating spellbook id from one rooted conduit.
+
+        Purpose:
+            Normalize the spellbook-id lookup across the real runtime spellbook
+            surface and the narrower test doubles used in the frame-manager
+            unit ring.
+
+        Args:
+            root_conduit:
+                Root conduit whose originating spellbook id is required.
+
+        Returns:
+            str: Originating spellbook id.
+        """
+        spellbook = cast(Any, root_conduit._spellbook)
+        try:
+            return cast(str, spellbook._id)
+        except AttributeError:
+            return cast(str, spellbook.id)

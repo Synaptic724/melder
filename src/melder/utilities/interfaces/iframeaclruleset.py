@@ -8,8 +8,25 @@ class IFrameACLRuleSet(ICleanable, Protocol):
     ACL ruleset contract for reusable profile and applied configuration work.
     """
 
-    name: str
-    rules_by_name: Dict[str, IFrameACLRule]
+    @property
+    def name(self) -> str:
+        """
+        Return the stable ruleset name.
+
+        Returns:
+            str: Stable ruleset name.
+        """
+        ...
+
+    @property
+    def rules_by_name(self) -> Dict[str, IFrameACLRule]:
+        """
+        Return a detached snapshot of the rule registry.
+
+        Returns:
+            Dict[str, IFrameACLRule]: Detached rule-registry snapshot.
+        """
+        ...
 
     def list_rule_names(self) -> List[str]:
         """

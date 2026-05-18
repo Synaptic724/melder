@@ -66,10 +66,10 @@ class TestCreation:
         creation.cleanup()
 
         # Assert: References are nulled
-        # We access protected members here to verify the "Null references" contract
-        # strictly required by AGENTS.md Section 10.
-        assert creation._value is None
-        assert creation._lock is None
+        # We access protected members here to verify the deleted-field contract
+        # for owned cleanup surfaces.
+        assert not hasattr(creation, "_value")
+        assert not hasattr(creation, "_lock")
         assert creation._cleaned is True
 
         # Act: Second cleanup (idempotence check)
@@ -90,7 +90,7 @@ class TestCreation:
         creation.cleanup()
 
         # Assert: The wrapper is cleaned, but the inner object was untouched
-        assert creation._value is None
+        assert not hasattr(creation, "_value")
         mock_value.cleanup.assert_not_called()
         mock_value.close.assert_not_called()
 
@@ -113,8 +113,10 @@ class TestCreation:
 
         creation.cleanup()
 
-        assert creation.has_disposal_methods is None
-        assert creation.disposal_method_names is None
+        with pytest.raises(AttributeError):
+            _ = creation.has_disposal_methods
+        with pytest.raises(AttributeError):
+            _ = creation.disposal_method_names
 
     def test_cleanup_returns_when_another_cleanup_completes_before_second_check(self, sample_value):
         """

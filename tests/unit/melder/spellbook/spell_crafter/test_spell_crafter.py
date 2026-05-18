@@ -1268,6 +1268,8 @@ def _make_crafter(
     Returns:
         SpellCrafter: The configured spell crafter.
     """
+    if spell_system_states is None:
+        spell_system_states = _SpellSystemStatesStub()
     validation_result = _ValidationResultStub(has_errors=validator_result_has_errors)
     validator = _ValidationSystemStub(validation_result)
     spellbook = _SpellbookStub(validator=validator)
@@ -1317,6 +1319,8 @@ def _build_spell_and_crafter(
         tuple[SpellCrafter, _SpellStub, _ValidationSystemStub]:
             The crafter, its owning spell, and the validation system stub.
     """
+    if spell_system_states is None:
+        spell_system_states = _SpellSystemStatesStub()
     validation_result = _ValidationResultStub(has_errors=validator_result_has_errors)
     validator = _ValidationSystemStub(validation_result)
     spellbook = _SpellbookStub(validator=validator, aether=aether, frame_name=frame_name)
@@ -1352,6 +1356,10 @@ def _set_spell_id_pool(spellbook: _SpellbookStub, spells: Sequence[_SpellStub]) 
     spellbook._spell_id_pool.clear()
     for spell in spells:
         spellbook._spell_id_pool[spell.spell_index.current] = spell
+        if spell._crafter is None:
+            spell._ensure_crafter()
+        if spell._crafter is None:
+            spell._ensure_crafter()
 
 
 def _make_dependency(
@@ -1626,7 +1634,7 @@ def test_init_sets_default_state() -> None:
     assert crafter.validated is False
     assert crafter.is_broken is False
     assert crafter._spell_validator is validator
-    assert crafter._spell_system_states is None
+    assert crafter._spell_system_states is not None
     assert crafter._lock is not None
 
 
@@ -1911,7 +1919,11 @@ def test_notify_dependencies_updated_skips_when_missing(
     if drop_index:
         spell.spell_index = None
 
-    crafter._notify_dependencies_updated(["a"])
+    if drop_states:
+        with pytest.raises(RuntimeError, match="requires a live SpellSystemStates surface"):
+            crafter._notify_dependencies_updated(["a"])
+    else:
+        crafter._notify_dependencies_updated(["a"])
 
     assert states.update_calls == []
 
@@ -3841,6 +3853,7 @@ def test_run_phase_root_blueprints_filters_component_of_to_owned_roots(
         spell_system_states=states,
     )
     owned_spell._spellbook._spell_id_pool["contracted"] = contracted_spell
+    contracted_spell._ensure_crafter()
 
     snapshot = _AdjacencySnapshotStub(
         dependencies={"owned": set(), "contracted": set()},
@@ -4195,6 +4208,8 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates() -> None:
         spellbook._spells[spell_instance.spell_index] = spell_instance
         spellbook._spells_by_id[spell_instance.spell_index.current] = spell_instance
         spellbook._spell_id_pool[spell_instance.spell_index.current] = spell_instance
+    dep_spell._ensure_crafter()
+    existing_spell._ensure_crafter()
 
     system_index = spell_crafter_module.SpellSystemIndex()
     root_blueprint = _RootBlueprintStub("root")
@@ -4264,6 +4279,7 @@ def test_run_phase_root_blueprints_local_scopes_to_dependency_closure(
         spellbook._spells[spell_instance.spell_index] = spell_instance
         spellbook._spells_by_id[spell_instance.spell_index.current] = spell_instance
         spellbook._spell_id_pool[spell_instance.spell_index.current] = spell_instance
+    dep_spell._ensure_crafter()
 
     full_snapshot = _AdjacencySnapshotStub(
         dependencies={
@@ -5239,6 +5255,7 @@ def test_build_phase8_occurrence_plan_fast_key_serializes_visible_state_and_reje
                 param_name="svc",
                 param_path_id=7,
                 target_spell_ids=("dep",),
+                socket_kind=SocketKind.NORMAL,
             )
         ],
     )
@@ -5252,7 +5269,7 @@ def test_build_phase8_occurrence_plan_fast_key_serializes_visible_state_and_reje
         "root",
         ("dep", "root"),
         id(path_registry),
-        (("root", "svc", 7, ("dep",)),),
+        (("root", "svc", 7, SocketKind.NORMAL.value),),
         (
             ("dep", "dep", Existence.unique.name, False),
             ("root", "root", Existence.unique.name, False),
@@ -5302,6 +5319,7 @@ def test_build_phase8_occurrence_plan_input_signature_hashes_mutation_semantics_
                 param_name="svc",
                 param_path_id=7,
                 target_spell_ids=("dep",),
+                socket_kind=SocketKind.NORMAL,
             )
         ],
     )

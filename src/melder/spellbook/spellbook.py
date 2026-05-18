@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union, cast
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union, cast, Protocol
 import threading
 import time
 # Melder Imports
@@ -28,6 +28,7 @@ from melder.utilities.interfaces import (
     ISpellbook,
     IUnitOfWork,
     ISafeLogger,
+    IChangeControlManager,
 )
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.bind.bind import Bind
@@ -40,6 +41,58 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.nexus import Nexus
+
+class _SpellbookSpellIndexSurface(ISpellIndex, Protocol):
+    """
+    Narrow concrete SpellIndex surface used by Spellbook internals.
+    """
+
+    _versions: Optional[Set[str]]
+
+    def _attach_owner(self, spellbook: Any, spell: ISpell) -> None:
+        ...
+
+    def _attach_contracted(
+            self,
+            spellbook: Any,
+            conduit_id: str,
+            spell: ISpell,
+    ) -> None:
+        ...
+
+    def _detach_contracted(self, spellbook: Any, conduit_id: str) -> None:
+        ...
+
+    def _set_owner_conduit_id(self, conduit_id: str) -> None:
+        ...
+
+
+class _SpellbookConduitSurface(IConduit, Protocol):
+    """
+    Narrow conduit surface used by Spellbook runtime wiring.
+    """
+
+    _id: str
+    _name: Optional[str]
+    _creations: Any
+    _creation_gate_controller: Any
+    _nexus_publish_enabled: bool
+    __dynamic_environment__: bool
+
+    def _register_to_creations(self, spell: ISpell, instance: Any) -> None:
+        ...
+
+
+class _SpellbookChangeControlSurface(IChangeControlManager, Protocol):
+    """
+    Narrow change-control surface used by Spellbook transactions.
+    """
+
+    def transaction_manager(self) -> Any:
+        ...
+
+    def orchestrator(self) -> Any:
+        ...
 
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
@@ -106,6 +159,7 @@ class Spellbook(Cleanable, ISpellbook):
           object already exists on the frame.
     """
     __melder_internal__ = _mrg.sentinel
+    _cleaned: bool
     __slots__ = Cleanable.__slots__ + [
         "_active_change_request",
         "_aetheric_frame",
@@ -183,7 +237,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[ISpell] = []
-        self._conduit: Optional[IConduit] = None
+        self._conduit: Optional[_SpellbookConduitSurface] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -192,7 +246,7 @@ class Spellbook(Cleanable, ISpellbook):
 
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
-        self._configuration: IConfiguration = configuration
+        self._configuration: Optional[IConfiguration] = configuration
         self._aetheric_frame_configuration: Optional[Any] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
@@ -332,8 +386,12 @@ class Spellbook(Cleanable, ISpellbook):
 
         # 3) cleanup configuration
         try:
-            if not self._is_frame_owned_shared_configuration(self._configuration):
-                self._configuration.cleanup()
+            configuration = self._configuration
+            if (
+                    configuration is not None
+                    and not self._is_frame_owned_shared_configuration(configuration)
+            ):
+                configuration.cleanup()
         except Exception as e:
             self._logger.error(f"Error cleaning configuration: {e}", "_cleanup_components", exc_info=True)
         del self._configuration
@@ -527,6 +585,42 @@ class Spellbook(Cleanable, ISpellbook):
         """
         self._refresh_local_spell_versions()
         self._refresh_contracted_spell_versions()
+
+    @staticmethod
+    def _get_required_spell_index_surface(
+            spell_index: ISpellIndex,
+    ) -> _SpellbookSpellIndexSurface:
+        """
+        Return the concrete internal SpellIndex surface used by Spellbook.
+        """
+        return cast(_SpellbookSpellIndexSurface, spell_index)
+
+    def _get_required_conduit_surface(self) -> _SpellbookConduitSurface:
+        """
+        Return the live conjured conduit surface or raise.
+        """
+        conduit = self._conduit
+        if conduit is None:
+            raise RuntimeError("Spellbook requires a live conjured conduit.")
+        return conduit
+
+    def _get_required_change_control_manager(
+            self,
+    ) -> _SpellbookChangeControlSurface:
+        """
+        Return the frame-local change-control manager surface used internally.
+        """
+        manager = self._aether._get_change_control_manager(self._aetheric_frame)
+        return cast(_SpellbookChangeControlSurface, manager)
+
+    def _get_required_configuration(self) -> IConfiguration:
+        """
+        Return the live spellbook configuration or raise.
+        """
+        configuration = self._configuration
+        if configuration is None:
+            raise RuntimeError("Spellbook configuration is unavailable.")
+        return configuration
 
     def _register_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
         """
@@ -1023,12 +1117,12 @@ class Spellbook(Cleanable, ISpellbook):
             lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
             spell_versions = set(self._spell_versions) if self._spell_versions is not None else set()
 
-            contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
+            contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = {}
             if self._contracted_spells is not None:
                 for conduit_id, spells in self._contracted_spells.items():
                     contracted_spells[conduit_id] = dict(spells)
 
-            lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], SpellIndex]] = {}
+            lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], ISpellIndex]] = {}
             if self._lookup_contracted_spells is not None:
                 for conduit_id, lookup_map in self._lookup_contracted_spells.items():
                     lookup_contracted_spells[conduit_id] = dict(lookup_map)
@@ -1259,7 +1353,7 @@ class Spellbook(Cleanable, ISpellbook):
         return count
 
 
-    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[SpellIndex]:
+    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[ISpellIndex]:
         """
         Public API
 
@@ -1273,7 +1367,7 @@ class Spellbook(Cleanable, ISpellbook):
             binding_name (str): The secondary key to distinguish the spell.
 
         Returns:
-            Optional[SpellIndex]: The SpellIndex associated with this spell.
+            Optional[ISpellIndex]: The SpellIndex associated with this spell.
 
         Raises:
             RuntimeError: If the spell is not found in the spellbook (local or contracted).
@@ -1289,19 +1383,24 @@ class Spellbook(Cleanable, ISpellbook):
             self._logger.error("Spell not found in the spellbook.", "find_spell_id", exc_info=True)
         raise RuntimeError("Spell not found in the spellbook.")
 
-    def _make_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> tuple:
+    def _make_spell_key(
+            self,
+            spellframe: Any,
+            spell_name: str,
+            binding_name: Optional[str],
+    ) -> tuple[str, str]:
         """
         Internal
 
         Creates a normalized key for spell lookups.
 
         Args:
-            spellframe (str): The logical frame (can be None).
+            spellframe (Any): The logical frame / spellframe value.
             spell_name (str): The primary name.
-            binding_name (str): The binding name (can be None).
+            binding_name (Optional[str]): Optional binding name.
 
         Returns:
-            tuple: (frame_or_name, binding_name_or_default)
+            tuple[str, str]: (frame_or_name, binding_name_or_default)
         """
         frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(
             spellframe=spellframe,
@@ -1314,7 +1413,7 @@ class Spellbook(Cleanable, ISpellbook):
             self,
             *,
             lookup_key: tuple[str, str],
-            spell_index: SpellIndex,
+            spell_index: ISpellIndex,
             context: str,
             check_local: bool = True,
             check_contracted: bool = True,
@@ -1330,7 +1429,7 @@ class Spellbook(Cleanable, ISpellbook):
             - Allows the lookup key when it maps to the same SpellIndex (idempotent).
         Args:
             lookup_key: Normalized (frame_key, binding_key) tuple for the spell.
-            spell_index: SpellIndex associated with the incoming spell.
+            spell_index: SpellIndex surface associated with the incoming spell.
             context: Method name used for logging/error context.
             check_local: If True, enforce uniqueness against local bindings.
             check_contracted: If True, enforce uniqueness against contracted bindings.
@@ -1679,14 +1778,17 @@ class Spellbook(Cleanable, ISpellbook):
             lookup_map = self._lookup_contracted_spells[conduit_id]
             versions_set = self._contracted_versions[conduit_id]
 
-            spell.spell_index._attach_contracted(self, conduit_id, spell)
+            spell_index = self._get_required_spell_index_surface(
+                spell.spell_index
+            )
+            spell_index._attach_contracted(self, conduit_id, spell)
 
             # Main maps: SpellIndex ? ISpell and key ? SpellIndex
-            spell_map[spell.spell_index] = spell
-            lookup_map[spell_key] = spell.spell_index
+            spell_map[spell_index] = spell
+            lookup_map[spell_key] = spell_index
 
             # Track all known versions for this SpellIndex in the per-conduit version set
-            versions = spell.spell_index._versions
+            versions = spell_index._versions
             if versions:
                 for version_id in versions:
                     versions_set.add(version_id)
@@ -1751,7 +1853,10 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 raise RuntimeError(f"Spell version {spell_id} not found for conduit ID {conduit_id}.")
 
-            spell_index._detach_contracted(self, conduit_id)
+            spell_index_surface = self._get_required_spell_index_surface(
+                spell_index
+            )
+            spell_index_surface._detach_contracted(self, conduit_id)
 
             # Remove from main map
             spell_map.pop(spell_index, None)
@@ -1761,7 +1866,7 @@ class Spellbook(Cleanable, ISpellbook):
             lookup_map.pop(key, None)
 
             # Remove *all* versions for this SpellIndex from the version cache
-            versions = spell_index._versions
+            versions = spell_index_surface._versions
             if versions:
                 for version_id in versions:
                     versions_set.discard(version_id)
@@ -1807,7 +1912,10 @@ class Spellbook(Cleanable, ISpellbook):
             spell_map = self._contracted_spells[conduit_id]
             removed_spells = list(spell_map.values())
             for spell in spell_map.values():
-                spell.spell_index._detach_contracted(self, conduit_id)
+                spell_index_surface = self._get_required_spell_index_surface(
+                    spell.spell_index
+                )
+                spell_index_surface._detach_contracted(self, conduit_id)
 
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
@@ -1859,10 +1967,10 @@ class Spellbook(Cleanable, ISpellbook):
         self.check_cleaned()
         if not conduit_id:
             return
-        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        change_control = self._get_required_change_control_manager()
         transaction_manager = change_control.transaction_manager()
         transaction_manager.register_link(
-            borrower_conduit_id=self._conduit._id,
+            borrower_conduit_id=self._get_required_conduit_surface()._id,
             provider_conduit_id=conduit_id,
         )
 
@@ -1888,10 +1996,10 @@ class Spellbook(Cleanable, ISpellbook):
         self.check_cleaned()
         if not conduit_id:
             return
-        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        change_control = self._get_required_change_control_manager()
         transaction_manager = change_control.transaction_manager()
         transaction_manager.unregister_link(
-            borrower_conduit_id=self._conduit._id,
+            borrower_conduit_id=self._get_required_conduit_surface()._id,
             provider_conduit_id=conduit_id,
         )
 
@@ -2102,7 +2210,7 @@ class Spellbook(Cleanable, ISpellbook):
         if not initiator:
             initiator = f"spellbook:{self._id}"
 
-        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        change_control = self._get_required_change_control_manager()
         transaction_manager = change_control.transaction_manager()
 
         scope_values = list(scope_keys) if scope_keys else []
@@ -2551,7 +2659,7 @@ class Spellbook(Cleanable, ISpellbook):
         if request.request_type is not ChangeTransactionType.LINK:
             return
 
-        change_control = self._aether._get_change_control_manager(self._aetheric_frame)
+        change_control = self._get_required_change_control_manager()
         staged = change_control.orchestrator().get_staged(request.request_id)
         existing_keys = staged.contract_keys if staged is not None else request.contract_keys
         filtered_keys = [key for key in existing_keys if key[2] != conduit_id]
@@ -2728,13 +2836,16 @@ class Spellbook(Cleanable, ISpellbook):
             self._add_hooks_to_spell(new_spell, **kwargs)
 
             # Register into local spell maps
-            self._lookup_spells[new_spell._key] = new_spell.spell_index
-            self._spells[new_spell.spell_index] = new_spell
-            new_spell.spell_index._attach_owner(self, new_spell)
+            spell_index = self._get_required_spell_index_surface(
+                new_spell.spell_index
+            )
+            self._lookup_spells[new_spell._key] = spell_index
+            self._spells[spell_index] = new_spell
+            spell_index._attach_owner(self, new_spell)
 
             # keep local version cache warm
             if self._spell_versions is not None:
-                versions = new_spell.spell_index._versions
+                versions = spell_index._versions
                 if versions:
                     for vid in versions:
                         self._spell_versions.add(vid)
@@ -2745,22 +2856,23 @@ class Spellbook(Cleanable, ISpellbook):
             # resolution defaults for the new spell. Existing-object spells are
             # also eagerly registered into Creations.
             if self._conjured and self._conduit is not None:
-                full_ahead_of_time_compilation = self._configuration.get_property(
+                full_ahead_of_time_compilation = self._get_required_configuration().get_property(
                     "full_ahead_of_time_compilation"
                 )
 
+                conduit = self._get_required_conduit_surface()
                 new_spell._add_owned_conduit(
-                    self._conduit._id,
-                    self._conduit._name,
-                    self._conduit._creations,
-                    dynamic_environment=self._conduit.__dynamic_environment__,
-                    creation_gate_controller=self._conduit._creation_gate_controller,
+                    conduit._id,
+                    conduit._name,
+                    conduit._creations,
+                    dynamic_environment=conduit.__dynamic_environment__,
+                    creation_gate_controller=conduit._creation_gate_controller,
                 )
-                new_spell.spell_index._set_owner_conduit_id(self._conduit._id)
+                spell_index._set_owner_conduit_id(conduit._id)
                 new_spell.resolution_required = not full_ahead_of_time_compilation
                 if new_spell.user_created_object is not None:
                     try:
-                        self._conduit._register_to_creations(
+                        conduit._register_to_creations(
                             new_spell,
                             new_spell.user_created_object,
                         )
@@ -2777,7 +2889,10 @@ class Spellbook(Cleanable, ISpellbook):
                 spell=new_spell,
             )
             if self._conjured and self._conduit is not None:
-                self._register_spell_with_risk_manager(self._conduit._id, new_spell)
+                self._register_spell_with_risk_manager(
+                    self._get_required_conduit_surface()._id,
+                    new_spell,
+                )
             if self._pending_binding_frame_keys is not None:
                 self._pending_binding_frame_keys.add(new_spell.key[0])
             if self._pending_structural_spells is not None:
@@ -2785,8 +2900,8 @@ class Spellbook(Cleanable, ISpellbook):
             self._try_update_staged_binding_keys()
             if self._conjured and self._conduit is not None:
                 Spellbook._aether._register_single_spell_index(
-                    self._conduit._id,
-                    new_spell.spell_index,
+                    self._get_required_conduit_surface()._id,
+                    cast(SpellIndex, spell_index),
                     self._aetheric_frame,
                 )
                 self._publish_spell_record_to_nexus(new_spell)
@@ -3309,10 +3424,12 @@ class Spellbook(Cleanable, ISpellbook):
             None.
         """
         if not self._refresh_nexus_publish_enabled():
-            conduit._nexus_publish_enabled = False
+            conduit_surface = cast(_SpellbookConduitSurface, conduit)
+            conduit_surface._nexus_publish_enabled = False
             return
 
-        conduit._nexus_publish_enabled = True
+        conduit_surface = cast(_SpellbookConduitSurface, conduit)
+        conduit_surface._nexus_publish_enabled = True
         self._nexus._publish_frame_record(self)
         self._nexus._publish_conduit_record(conduit)
         for spell in self._spells.values():
@@ -3401,7 +3518,57 @@ class Spellbook(Cleanable, ISpellbook):
         Returns:
             SpellbookConfiguration: The configuration instance.
         """
-        return self._configuration
+        return cast(SpellbookConfiguration, self._configuration)
+
+    def configure_aether_frame(
+            self,
+            *,
+            system_state: Optional[str],
+            disposal: Optional[bool],
+            disposal_method_names: Optional[List[str]],
+    ) -> None:
+        """
+        Public API
+
+        Apply frame/runtime posture inputs, freeze configuration, and bind the
+        result into Aether for this spellbook's frame.
+
+        Contract:
+            - Uses the existing spellbook configuration and frame-configuration
+              objects rather than creating a parallel setup path.
+            - Applies only provided values; omitted values leave current state
+              unchanged.
+            - Freezes the rich spellbook configuration and then binds it to the
+              owning Aether frame.
+
+        Args:
+            system_state:
+                Optional frame system-state name.
+            disposal:
+                Optional disposal toggle for the rich spellbook configuration.
+            disposal_method_names:
+                Optional replacement disposal-method list.
+        """
+        self.check_cleaned()
+        frame_configuration = self._aetheric_frame_configuration
+        if frame_configuration is None:
+            raise RuntimeError("AethericFrameConfiguration is unavailable.")
+        if system_state is not None:
+            frame_configuration.with_system_state(system_state)
+
+        configuration = self._configuration
+        if configuration is None:
+            raise RuntimeError("Spellbook configuration is unavailable.")
+        if disposal is not None:
+            configuration.set_property("disposal", disposal)
+        if disposal_method_names is not None:
+            configuration.set_property(
+                "disposal_method_names",
+                disposal_method_names,
+            )
+
+        self._validate_and_freeze_configuration()
+        self._bind_configuration_to_aether()
 
     #endregion SpellbookConfiguration API
     #region Conduit API

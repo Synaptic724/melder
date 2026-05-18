@@ -117,6 +117,8 @@ def test_component_phase5_builds_system_index_and_root_blueprint() -> None:
         )
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
+        for current_spell in spellbook.spells.values():
+            current_spell._ensure_crafter()
 
         consumer_spell.run_phase_requirements()
         consumer_spell.run_phase_symbolic_graph()
@@ -200,6 +202,8 @@ def test_component_phase5_attaches_blueprints_to_dependencies() -> None:
         service_spell = _get_spell_by_version_id(spellbook, service_id)
         assert consumer_spell is not None
         assert service_spell is not None
+        for current_spell in spellbook.spells.values():
+            current_spell._ensure_crafter()
 
         service_spell.run_phase_requirements()
         consumer_spell.run_phase_requirements()
@@ -296,6 +300,8 @@ def test_component_phase5_filters_out_non_visible_spells() -> None:
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
+        for current_spell in spellbook.spells.values():
+            current_spell._ensure_crafter()
 
         consumer_spell.run_phase_requirements()
         consumer_spell.run_phase_symbolic_graph()

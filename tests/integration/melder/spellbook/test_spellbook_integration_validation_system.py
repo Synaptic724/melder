@@ -1564,6 +1564,8 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
         )
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
+        for current_spell in spellbook.spells.values():
+            current_spell._ensure_crafter()
 
         consumer_spell.run_phase_requirements()
         consumer_spell.run_phase_symbolic_graph()

@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpellSpace
+from melder.utilities.interfaces import ISpellSpace, IConduit
 from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
@@ -55,9 +55,9 @@ class SpellSpace(Cleanable, ISpellSpace):
         super().__init__()
         if owner_conduit is None:
             raise ValueError("owner_conduit must not be None.")
-        self._lock: Optional[threading.RLock] = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
-        self._owner_conduit = owner_conduit
+        self._owner_conduit: IConduit = owner_conduit
         self._version: int = 0
 
     def cleanup(self) -> None:
@@ -81,8 +81,8 @@ class SpellSpace(Cleanable, ISpellSpace):
             owner = self._owner_conduit
             if owner is not None:
                 owner._unregister_spellspace(self)
-            self._owner_conduit = None
             self._cleaned = True
+            del self._owner_conduit
 
     @property
     def id(self) -> str:
@@ -92,6 +92,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         Returns:
             str: Unique id assigned at construction.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -102,6 +103,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         Returns:
             The conduit instance that created and owns this spellspace.
         """
+        self.check_cleaned()
         return self._owner_conduit
 
     @property
@@ -112,6 +114,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         Returns:
             int: Current version, incremented by each successful `reset()`.
         """
+        self.check_cleaned()
         return self._version
 
     def meld(

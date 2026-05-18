@@ -39,13 +39,16 @@ from melder.utilities.interfaces import (
     IFrameACLBuilder,
     IFrameACLCommandBuilder,
     IFrameACLCommandConfiguration,
+    IFrameACLCommandProfile,
     IFrameACLCodegenBuilder,
     IFrameACLCodegenConfiguration,
+    IFrameACLCodegenProfile,
     IFrameACLConfiguration,
     IFrameACLContainer,
     IFrameACLProfile,
     IFrameACLViewBuilder,
     IFrameACLViewConfiguration,
+    IFrameACLViewProfile,
 )
 
 FrameACLDraftConfiguration = Optional[
@@ -530,12 +533,12 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 view_configuration = self._require_active_view_configuration()
                 view_configuration.set_profiles(
                     cast(
-                        FrameACLViewProfile,
+                        IFrameACLViewProfile,
                         profile_builder.get_required_view_profile(profile_name),
                     ),
                     precision_profile=(
                         cast(
-                            FrameACLViewProfile,
+                            IFrameACLViewProfile,
                             profile_builder.get_required_view_precision_profile(
                                 view_configuration.precision_profile_name
                             ),
@@ -549,12 +552,12 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 command_configuration = self._require_active_command_configuration()
                 command_configuration.set_profiles(
                     cast(
-                        FrameACLCommandProfile,
+                        IFrameACLCommandProfile,
                         profile_builder.get_required_command_profile(profile_name),
                     ),
                     precision_profile=(
                         cast(
-                            FrameACLCommandProfile,
+                            IFrameACLCommandProfile,
                             profile_builder.get_required_command_precision_profile(
                                 command_configuration.precision_profile_name
                             ),
@@ -568,12 +571,12 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 codegen_configuration = self._require_active_codegen_configuration()
                 codegen_configuration.set_profiles(
                     cast(
-                        FrameACLCodegenProfile,
+                        IFrameACLCodegenProfile,
                         profile_builder.get_required_codegen_profile(profile_name),
                     ),
                     precision_profile=(
                         cast(
-                            FrameACLCodegenProfile,
+                            IFrameACLCodegenProfile,
                             profile_builder.get_required_codegen_precision_profile(
                                 codegen_configuration.precision_profile_name
                             ),
@@ -613,14 +616,14 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 view_configuration = self._require_active_view_configuration()
                 view_configuration.set_profiles(
                     cast(
-                        FrameACLViewProfile,
+                        IFrameACLViewProfile,
                         profile_builder.get_required_view_profile(
                             view_configuration.profile_name
                         ),
                     ),
                     precision_profile=(
                         cast(
-                            FrameACLViewProfile,
+                            IFrameACLViewProfile,
                             profile_builder.get_required_view_precision_profile(profile_name),
                         )
                         if profile_name is not None
@@ -632,14 +635,14 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 command_configuration = self._require_active_command_configuration()
                 command_configuration.set_profiles(
                     cast(
-                        FrameACLCommandProfile,
+                        IFrameACLCommandProfile,
                         profile_builder.get_required_command_profile(
                             command_configuration.profile_name
                         ),
                     ),
                     precision_profile=(
                         cast(
-                            FrameACLCommandProfile,
+                            IFrameACLCommandProfile,
                             profile_builder.get_required_command_precision_profile(
                                 profile_name
                             ),
@@ -653,14 +656,14 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 codegen_configuration = self._require_active_codegen_configuration()
                 codegen_configuration.set_profiles(
                     cast(
-                        FrameACLCodegenProfile,
+                        IFrameACLCodegenProfile,
                         profile_builder.get_required_codegen_profile(
                             codegen_configuration.profile_name
                         ),
                     ),
                     precision_profile=(
                         cast(
-                            FrameACLCodegenProfile,
+                            IFrameACLCodegenProfile,
                             profile_builder.get_required_codegen_precision_profile(
                                 profile_name
                             ),

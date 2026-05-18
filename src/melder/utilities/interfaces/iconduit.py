@@ -339,6 +339,73 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
+    def create_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Create one conduit cluster rooted at this conduit.
+
+        Args:
+            cluster_name (str): Stable cluster name to create.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def delete_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Delete one conduit cluster rooted at this conduit.
+
+        Args:
+            cluster_name (str): Stable cluster name to delete.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def join_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Join this conduit to one existing conduit cluster.
+
+        Args:
+            cluster_name (str): Stable cluster name to join.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def leave_cluster(self, cluster_name: str) -> None:
+        """
+        Public API
+
+        Leave this conduit's membership in one conduit cluster.
+
+        Args:
+            cluster_name (str): Stable cluster name to leave.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def list_clusters(self) -> list[str]:
+        """
+        Public API
+
+        Return the cluster names currently associated with this conduit.
+
+        Returns:
+            list[str]: Current conduit-cluster names.
+        """
+        ...
+
     # ------------------------------------------------------------------
     # Spellbook Management API
     # ------------------------------------------------------------------

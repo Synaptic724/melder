@@ -83,6 +83,7 @@ class Creation(Cleanable):
         """
         Return the stable ULID assigned to this wrapper.
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -90,6 +91,7 @@ class Creation(Cleanable):
         """
         Return the wrapped runtime object.
         """
+        self.check_cleaned()
         return self._value
 
     @property
@@ -101,6 +103,7 @@ class Creation(Cleanable):
             - True/False while the Creation is active.
             - None after cleanup.
         """
+        self.check_cleaned()
         return self._has_disposal_methods
 
     @property
@@ -112,12 +115,14 @@ class Creation(Cleanable):
             - List of method names while the Creation is active.
             - None after cleanup.
         """
+        self.check_cleaned()
         return self._disposal_methods
 
     def __repr__(self) -> str:
         """
         Return a debug-oriented representation of the wrapper.
         """
+        self.check_cleaned()
         return f"<Creation id={self._id} value={self._value!r}>"
 
     def __enter__(self) -> 'Creation':
@@ -127,6 +132,7 @@ class Creation(Cleanable):
         Returns:
             Creation: The wrapper itself while its internal lock is held.
         """
+        self.check_cleaned()
         self._lock.acquire()
         return self
 

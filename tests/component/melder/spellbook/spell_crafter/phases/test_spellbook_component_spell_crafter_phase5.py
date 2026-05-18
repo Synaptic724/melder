@@ -107,19 +107,28 @@ def test_component_phase5_blueprint_includes_deep_socket_paths() -> None:
             permissions="create",
         )
 
+        logger_spell = _get_spell_by_version_id(spellbook, logger_id)
         repo_spell = _get_spell_by_version_id(spellbook, repo_id)
         root_spell = _get_spell_by_version_id(spellbook, root_id)
+        assert logger_spell is not None
         assert repo_spell is not None
         assert root_spell is not None
+
+        logger_spell.run_phase_requirements()
+        logger_spell.run_phase_symbolic_graph()
+        logger_spell.run_phase_local_frame()
+        logger_spell._ensure_crafter()
 
         repo_spell.run_phase_requirements()
         repo_spell.run_phase_symbolic_graph()
         repo_spell.run_phase_local_frame()
+        repo_spell._ensure_crafter()
 
         root_spell.run_phase_requirements()
         root_spell.run_phase_symbolic_graph()
         root_spell.run_phase_local_frame()
         root_spell.run_phase_validation()
+        root_spell._ensure_crafter()
         root_spell.run_phase_root_blueprints("cid")
 
         crafter = root_spell._crafter
@@ -200,11 +209,13 @@ def test_component_phase5_system_index_marks_root_and_dependencies() -> None:
         service_spell.run_phase_requirements()
         service_spell.run_phase_symbolic_graph()
         service_spell.run_phase_local_frame()
+        service_spell._ensure_crafter()
 
         root_spell.run_phase_requirements()
         root_spell.run_phase_symbolic_graph()
         root_spell.run_phase_local_frame()
         root_spell.run_phase_validation()
+        root_spell._ensure_crafter()
         root_spell.run_phase_root_blueprints("cid")
 
         crafter = root_spell._crafter
@@ -254,7 +265,9 @@ def test_component_phase5_builds_blueprints_for_multiple_roots() -> None:
         service_spell.run_phase_symbolic_graph()
         service_spell.run_phase_local_frame()
         service_spell.run_phase_validation()
+        service_spell._ensure_crafter()
         config_spell.run_phase_requirements()
+        config_spell._ensure_crafter()
 
         service_spell.run_phase_root_blueprints("cid")
 
