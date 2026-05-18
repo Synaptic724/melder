@@ -1,7 +1,5 @@
 from typing import Protocol, runtime_checkable
-from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
-    FrameACLViewProfile,
-)
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 @runtime_checkable
 class IFrameACLViewProfileStrategy(Protocol):
@@ -10,7 +8,7 @@ class IFrameACLViewProfileStrategy(Protocol):
 
     Contract:
         - Exposes one stable strategy/profile name.
-        - Returns a freshly configured `FrameACLViewProfile` instance when
+        - Returns a freshly configured `IFrameACLViewProfile` instance when
           asked to build.
         - Carries no shared mutable module-level state itself.
     """
@@ -25,11 +23,11 @@ class IFrameACLViewProfileStrategy(Protocol):
         """
         ...
 
-    def build(self) -> FrameACLViewProfile:
+    def build(self) -> IFrameACLViewProfile:
         """
         Build and return one configured view ACL profile instance.
 
         Returns:
-            FrameACLViewProfile: Fresh configured profile instance.
+            IFrameACLViewProfile: Fresh configured profile instance.
         """
         ...

@@ -1,14 +1,11 @@
 import threading
-from typing import Dict, List, Optional, Protocol, Set, Tuple, cast
+from typing import Dict, List, Optional, Protocol, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
-)
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
@@ -743,7 +740,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_operation_effects(
-            ruleset: FrameACLRuleSet,
+            ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Split one ruleset into allowed and denied operation sets.
@@ -763,8 +760,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects(
-            base_ruleset: FrameACLRuleSet,
-            override_ruleset: FrameACLRuleSet,
+            base_ruleset: IFrameACLRuleSet,
+            override_ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge base and override rulesets into effective allow/deny sets.
@@ -787,7 +784,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects_from_rulesets(
-            *rulesets: object,
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge an ordered list of base/precision/override rulesets into one effect set.
@@ -813,7 +810,7 @@ class FrameACLCompiler(Cleanable):
     def _collect_condition_string_values_from_rulesets(
             operation_name: str,
             condition_key: str,
-            *rulesets: object,
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect string condition values for one operation across rulesets.
@@ -847,7 +844,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_import_module_roots_from_rulesets(
-            *rulesets: object,
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect import-module roots using narrowing intersection semantics.
@@ -886,7 +883,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _collect_effective_spell_operation_effects_for_record(
             spell_record: ISpellRecord,
-            *rulesets: object,
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge spell operations for one record using selector-aware spell rules.
@@ -1003,7 +1000,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _spell_selector_rules_present_for_operation(
             operation: str,
-            *rulesets: object,
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> bool:
         """
         Return whether any selector-aware rule exists for one spell operation.
@@ -1026,7 +1023,7 @@ class FrameACLCompiler(Cleanable):
     def _collect_selector_spell_operation_effects_for_record(
             operation: str,
             spell_record: ISpellRecord,
-            *rulesets: object,
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect selector-aware effects for one operation and spell record only.
@@ -1055,17 +1052,3 @@ class FrameACLCompiler(Cleanable):
                 elif rule.effect == "deny":
                     deny_operations.add(rule.operation)
         return allow_operations, deny_operations
-
-    @staticmethod
-    def _as_frame_acl_ruleset(ruleset: object) -> FrameACLRuleSet:
-        """
-        Narrow one interface-exposed ACL ruleset back to the concrete ruleset type.
-
-        Args:
-            ruleset:
-                Interface-exposed ACL ruleset.
-
-        Returns:
-            FrameACLRuleSet: Concrete ACL ruleset instance.
-        """
-        return cast(FrameACLRuleSet, ruleset)

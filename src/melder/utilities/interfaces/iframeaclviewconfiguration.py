@@ -17,24 +17,77 @@ class IFrameACLViewConfiguration(ICleanable, Protocol):
           itself.
     """
 
-    configuration_id: str
-    source_configuration_id: Optional[str]
-    previous_configuration_id: Optional[str]
-    created_at: str
-    reason: str
-    locked: bool
-    profile_name: str
-    profile_version: str
-    precision_profile_name: Optional[str]
-    precision_profile_version: Optional[str]
-    required_nexus_label: str
-    required_nexus_version: str
-    minimum_spell_payload_type: str
-    minimum_spell_payload_version: str
-    frame_override_ruleset: IFrameACLRuleSet
-    conduit_override_ruleset: IFrameACLRuleSet
-    spell_override_ruleset: IFrameACLRuleSet
-    member_override_ruleset: IFrameACLRuleSet
+    @property
+    def configuration_id(self) -> str:
+        ...
+
+    @property
+    def source_configuration_id(self) -> Optional[str]:
+        ...
+
+    @property
+    def previous_configuration_id(self) -> Optional[str]:
+        ...
+
+    @property
+    def created_at(self) -> str:
+        ...
+
+    @property
+    def reason(self) -> str:
+        ...
+
+    @property
+    def locked(self) -> bool:
+        ...
+
+    @property
+    def profile_name(self) -> str:
+        ...
+
+    @property
+    def profile_version(self) -> str:
+        ...
+
+    @property
+    def precision_profile_name(self) -> Optional[str]:
+        ...
+
+    @property
+    def precision_profile_version(self) -> Optional[str]:
+        ...
+
+    @property
+    def required_nexus_label(self) -> str:
+        ...
+
+    @property
+    def required_nexus_version(self) -> str:
+        ...
+
+    @property
+    def minimum_spell_payload_type(self) -> str:
+        ...
+
+    @property
+    def minimum_spell_payload_version(self) -> str:
+        ...
+
+    @property
+    def frame_override_ruleset(self) -> IFrameACLRuleSet:
+        ...
+
+    @property
+    def conduit_override_ruleset(self) -> IFrameACLRuleSet:
+        ...
+
+    @property
+    def spell_override_ruleset(self) -> IFrameACLRuleSet:
+        ...
+
+    @property
+    def member_override_ruleset(self) -> IFrameACLRuleSet:
+        ...
 
     def to_json_dict(self) -> Dict[str, Any]:
         """

@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional, cast
+from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
@@ -570,10 +570,13 @@ class FrameACLViewBuilder(Cleanable, IFrameACLViewBuilder):
         """
         self.check_cleaned()
         with self._lock:
-            return cast(
-                IFrameACLViewConfiguration,
-                self._frame_acl_builder.commit_change(),
-            )
+            configuration = self._frame_acl_builder.commit_change()
+            if not isinstance(configuration, IFrameACLViewConfiguration):
+                raise RuntimeError(
+                    "FrameACLViewBuilder commit returned a non-view "
+                    "configuration."
+                )
+            return configuration
 
     def discard_change(self) -> None:
         """

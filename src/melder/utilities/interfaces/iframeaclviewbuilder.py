@@ -8,8 +8,13 @@ class IFrameACLViewBuilder(ICleanable, Protocol):
     Fluent builder contract for one active view-family ACL draft.
     """
 
-    id: str
-    draft_configuration: IFrameACLViewConfiguration
+    @property
+    def id(self) -> str:
+        ...
+
+    @property
+    def draft_configuration(self) -> IFrameACLViewConfiguration:
+        ...
 
     def use_profile(self, profile_name: str) -> "IFrameACLViewBuilder":
         ...

@@ -1,10 +1,11 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
 
 
 class FrameACLRuleSet(Cleanable):
@@ -36,7 +37,7 @@ class FrameACLRuleSet(Cleanable):
     def __init__(
             self,
             name: str,
-            rules: Optional[List[FrameACLRule]] = None,
+            rules: Optional[Sequence[IFrameACLRule]] = None,
     ) -> None:
         """
         Initialize one named ACL ruleset.
@@ -56,7 +57,7 @@ class FrameACLRuleSet(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
-        self._rules_by_name: Dict[str, FrameACLRule] = {}
+        self._rules_by_name: Dict[str, IFrameACLRule] = {}
         if rules is not None:
             for rule in rules:
                 self.register_rule(rule)
@@ -110,7 +111,7 @@ class FrameACLRuleSet(Cleanable):
         return self._name
 
     @property
-    def rules_by_name(self) -> Dict[str, FrameACLRule]:
+    def rules_by_name(self) -> Dict[str, IFrameACLRule]:
         """
         Return a detached snapshot of the rule registry.
 
@@ -135,7 +136,7 @@ class FrameACLRuleSet(Cleanable):
         with self._lock:
             return list(self._rules_by_name.keys())
 
-    def get_required_rule(self, rule_name: str) -> FrameACLRule:
+    def get_required_rule(self, rule_name: str) -> IFrameACLRule:
         """
         Return one existing rule or raise.
 
@@ -156,7 +157,7 @@ class FrameACLRuleSet(Cleanable):
             except KeyError as exc:
                 raise KeyError(rule_name) from exc
 
-    def register_rule(self, rule: FrameACLRule) -> None:
+    def register_rule(self, rule: IFrameACLRule) -> None:
         """
         Register or replace one rule in the ruleset.
 
@@ -172,8 +173,8 @@ class FrameACLRuleSet(Cleanable):
             None.
         """
         self.check_cleaned()
-        if not isinstance(rule, FrameACLRule):
-            raise TypeError("rule must be a FrameACLRule.")
+        if not isinstance(rule, IFrameACLRule):
+            raise TypeError("rule must satisfy IFrameACLRule.")
         with self._lock:
             existing = self._rules_by_name.get(rule.rule_name)
             if existing is not None and existing is not rule:

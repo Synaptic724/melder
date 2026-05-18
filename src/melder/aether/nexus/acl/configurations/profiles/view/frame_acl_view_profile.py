@@ -6,6 +6,7 @@ from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 
 class FrameACLViewProfile(Cleanable):
@@ -51,10 +52,10 @@ class FrameACLViewProfile(Cleanable):
             required_nexus_label: str = "default",
             required_nexus_version: str = "0.0.1",
             minimum_spell_payload_version: str = "0.0.1",
-            frame_ruleset: Optional[FrameACLRuleSet] = None,
-            conduit_ruleset: Optional[FrameACLRuleSet] = None,
-            spell_ruleset: Optional[FrameACLRuleSet] = None,
-            member_ruleset: Optional[FrameACLRuleSet] = None,
+            frame_ruleset: Optional[IFrameACLRuleSet] = None,
+            conduit_ruleset: Optional[IFrameACLRuleSet] = None,
+            spell_ruleset: Optional[IFrameACLRuleSet] = None,
+            member_ruleset: Optional[IFrameACLRuleSet] = None,
             validation_strategy_name: str = "generic",
             version: str = "0.0.1",
     ) -> None:
@@ -305,34 +306,34 @@ class FrameACLViewProfile(Cleanable):
         return self._minimum_spell_payload_version
 
     @property
-    def frame_ruleset(self) -> FrameACLRuleSet:
+    def frame_ruleset(self) -> IFrameACLRuleSet:
         """Return the owned frame-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._frame_ruleset
 
     @property
-    def conduit_ruleset(self) -> FrameACLRuleSet:
+    def conduit_ruleset(self) -> IFrameACLRuleSet:
         """Return the owned conduit-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._conduit_ruleset
 
     @property
-    def spell_ruleset(self) -> FrameACLRuleSet:
+    def spell_ruleset(self) -> IFrameACLRuleSet:
         """Return the owned spell-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._spell_ruleset
 
     @property
-    def member_ruleset(self) -> FrameACLRuleSet:
+    def member_ruleset(self) -> IFrameACLRuleSet:
         """Return the owned member-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._member_ruleset
 
     @staticmethod
     def coerce_ruleset(
-            ruleset: Optional[FrameACLRuleSet],
+            ruleset: Optional[IFrameACLRuleSet],
             default_name: str,
-    ) -> FrameACLRuleSet:
+    ) -> IFrameACLRuleSet:
         """Normalize one optional ruleset input into a usable ruleset object."""
         return FrameACLViewProfile._coerce_ruleset(ruleset, default_name)
 
@@ -361,20 +362,20 @@ class FrameACLViewProfile(Cleanable):
 
     @staticmethod
     def _coerce_ruleset(
-            ruleset: Optional[FrameACLRuleSet],
+            ruleset: Optional[IFrameACLRuleSet],
             default_name: str,
-    ) -> FrameACLRuleSet:
+    ) -> IFrameACLRuleSet:
         """
         Normalize one optional ruleset into a concrete ruleset instance.
 
         Contract:
             Returns a new empty ruleset when `ruleset` is None and otherwise
-            validates that the supplied object is already a `FrameACLRuleSet`.
+            validates that the supplied object satisfies `IFrameACLRuleSet`.
         """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
-        if not isinstance(ruleset, FrameACLRuleSet):
-            raise TypeError("ruleset must be a FrameACLRuleSet.")
+        if not isinstance(ruleset, IFrameACLRuleSet):
+            raise TypeError("ruleset must satisfy IFrameACLRuleSet.")
         return ruleset
 
     @staticmethod

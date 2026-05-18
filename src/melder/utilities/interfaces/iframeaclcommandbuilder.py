@@ -8,8 +8,13 @@ class IFrameACLCommandBuilder(ICleanable, Protocol):
     Fluent builder contract for one active command-family ACL draft.
     """
 
-    id: str
-    draft_configuration: IFrameACLCommandConfiguration
+    @property
+    def id(self) -> str:
+        ...
+
+    @property
+    def draft_configuration(self) -> IFrameACLCommandConfiguration:
+        ...
 
     def use_profile(self, profile_name: str) -> "IFrameACLCommandBuilder":
         ...
