@@ -21,7 +21,6 @@ from melder.utilities.interfaces import (
     IChangeControlManager,
     IAether,
     IAethericFrame,
-    INexus,
     IAetherConfiguration,
     ISpellIndex,
 )
@@ -126,7 +125,7 @@ class Aether(Cleanable, IAether):
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
             self._crystallizer: Crystallizer = Crystallizer(aether=self)
             self._mutation_research: MutationResearch = MutationResearch(aether=self)
-            self._nexus: INexus = Nexus(aether=self)
+            self._nexus: Nexus = Nexus(aether=self)
 
     def cleanup(self):
         """
@@ -158,27 +157,28 @@ class Aether(Cleanable, IAether):
                 if self._aetheric_frames is not None:
                     self.cleanup_aetheric_frames() # This will clean each individual frame
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
-                    self._aetheric_frames = None
-
                 if self._crystallizer is not None:
                     self._crystallizer.cleanup()
-                    self._crystallizer = None
                 if self._mutation_research is not None:
                     self._mutation_research.cleanup()
-                    self._mutation_research = None
                 if self._configuration is not None:
                     self._configuration.cleanup()
-                    self._configuration = None
                 self._configured = False
                 self._activated = False
                 if self._nexus is not None:
                     self._nexus.cleanup()
-                    self._nexus = None
                 if self._aether_utility_system is not None:
                     self._aether_utility_system.cleanup()
-                    self._aether_utility_system = None
-                self._default_frame = None
-                
+
+                del self._aether_utility_system
+                del self._aetheric_frames
+                del self._crystallizer
+                del self._mutation_research
+                del self._configuration
+                del self._nexus
+                del self._default_frame
+
+
                 # Reset Singleton state to allow re-initialization (e.g. in tests)
                 Aether._instance = None
                 Aether._initialized = False
@@ -189,7 +189,7 @@ class Aether(Cleanable, IAether):
         if self._logger is not None:
             if hasattr(self._logger, 'cleanup'):
                 self._logger.cleanup()
-            self._logger = None
+        del self._logger
 
     @classmethod
     def _reset_singleton_for_tests(cls) -> None:

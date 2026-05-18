@@ -371,3 +371,35 @@ class IAether(ICleanable, Protocol):
         Cleans all aetheric frames and their contents.
         """
         ...
+
+    def _detach_cleaned_frame(
+            self,
+            frame_name: str,
+            frame: IAethericFrame,
+    ) -> None:
+        """
+        Internal
+
+        Remove one already-cleaned frame from the Aether registry.
+
+        Contract:
+            - Used by `AethericFrame.cleanup()` after frame-owned teardown has
+              already completed.
+            - Removes the frame from the Aether registry only when the
+              registered object matches the cleaned frame instance.
+            - Clears the default-frame pointer when the removed frame was the
+              default.
+            - Notifies `Nexus` before the registry entry is removed so any
+              manager-owned frame state, descriptor cache state, and ACL state
+              can be detached consistently.
+
+        Args:
+            frame_name:
+                Name of the cleaned frame.
+            frame:
+                Cleaned frame instance requesting detachment.
+
+        Returns:
+            None.
+        """
+        ...
