@@ -4,6 +4,7 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
 from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.irift import IRift
@@ -304,9 +305,59 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
+    def _validate_frame_acl_configuration_against_descriptor(
+            self,
+            frame_name: str,
+            configuration: IFrameACLConfiguration,
+            descriptor: IFrameDescriptor,
+    ) -> bool:
+        """
+        Validate one frame ACL configuration against the supplied descriptor.
+        """
+        ...
+
     def _remove_frame_acl_container(self, frame_name: str) -> bool:
         """
         Remove the matching frame ACL container for the named frame, if present.
+        """
+        ...
+
+    def _validate_target_frame_names(self, target_frame_names: Tuple[str, ...]) -> None:
+        """
+        Validate target frame names against Nexus allow/deny policy.
+        """
+        ...
+
+    def _validate_target_frame_runtime_requirements(
+            self,
+            target_frame_name: str,
+            requested_space_type: object,
+    ) -> None:
+        """
+        Validate one target frame against the requested Rift room posture.
+        """
+        ...
+
+    def _increment_target_frame_ref_count(self, target_frame_name: str) -> None:
+        """
+        Increment the internal target-frame ref count for the supplied frame.
+        """
+        ...
+
+    def create_frame_projection_sets_for_rift(
+            self,
+            rift_id: str,
+            *,
+            frame_names: Optional[Tuple[str, ...]] = None,
+    ) -> Dict[str, IFrameProjectionSet]:
+        """
+        Build projection sets for the selected frames currently assigned to one Rift.
+        """
+        ...
+
+    def list_accessible_non_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
+        """
+        Return the published non-Nexus frame names currently accessible to one Rift.
         """
         ...
 
