@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union, Protocol
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union
 import threading
 import time
 # Melder Imports
@@ -41,58 +41,6 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.nexus import Nexus
-
-class _SpellbookSpellIndexSurface(ISpellIndex, Protocol):
-    """
-    Narrow concrete SpellIndex surface used by Spellbook internals.
-    """
-
-    _versions: Optional[Set[str]]
-
-    def _attach_owner(self, spellbook: Any, spell: ISpell) -> None:
-        ...
-
-    def _attach_contracted(
-            self,
-            spellbook: Any,
-            conduit_id: str,
-            spell: ISpell,
-    ) -> None:
-        ...
-
-    def _detach_contracted(self, spellbook: Any, conduit_id: str) -> None:
-        ...
-
-    def _set_owner_conduit_id(self, conduit_id: str) -> None:
-        ...
-
-
-class _SpellbookConduitSurface(IConduit, Protocol):
-    """
-    Narrow conduit surface used by Spellbook runtime wiring.
-    """
-
-    _id: str
-    _name: Optional[str]
-    _creations: Any
-    _creation_gate_controller: Any
-    _nexus_publish_enabled: bool
-    __dynamic_environment__: bool
-
-    def _register_to_creations(self, spell: ISpell, instance: Any) -> None:
-        ...
-
-
-class _SpellbookChangeControlSurface(IChangeControlManager, Protocol):
-    """
-    Narrow change-control surface used by Spellbook transactions.
-    """
-
-    def transaction_manager(self) -> Any:
-        ...
-
-    def orchestrator(self) -> Any:
-        ...
 
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
@@ -239,7 +187,7 @@ class Spellbook(Cleanable, ISpellbook):
         self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[ISpell] = []
-        self._conduit: Optional[_SpellbookConduitSurface] = None
+        self._conduit: Optional[IConduit] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -593,12 +541,8 @@ class Spellbook(Cleanable, ISpellbook):
             spell_index: ISpellIndex,
     ) -> ISpellIndex:
         """
-        Return the concrete internal SpellIndex surface used by Spellbook.
+        Return the live SpellIndex surface used by Spellbook.
         """
-        if not isinstance(spell_index, SpellIndex):
-            raise TypeError(
-                "Spellbook requires the concrete internal SpellIndex surface."
-            )
         return spell_index
 
     def _get_required_conduit_surface(self) -> IConduit:

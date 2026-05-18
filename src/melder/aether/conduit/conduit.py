@@ -24,9 +24,10 @@ from melder.utilities.interfaces import (
     ISafeLogger,
     ISpellSpace,
     IConduitResolutionState,
+    IAether,
+    INexus,
 )
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.aether import Aether
 from melder.aether.conduit.meld.meld import Meld
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
@@ -38,7 +39,6 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.nexus import Nexus
 
 #region Conduit
 class Conduit(Cleanable, IConduit):
@@ -82,7 +82,6 @@ class Conduit(Cleanable, IConduit):
         - Logger cleanup is intentionally last.
 
     """
-    _aether = Aether()
     _DEFAULT_ROOT_CONDUIT_NAME = "default"
     __melder_internal__ = _mrg.sentinel
     _CONDUIT_HOOK_NAMES_FROM_CONFIGURATION = (
@@ -169,7 +168,6 @@ class Conduit(Cleanable, IConduit):
         self._name: str = name
         self.__dynamic_environment__: bool = False
         self._nexus_publish_enabled: bool = False
-        self._nexus: Nexus = Nexus()
         self._automatic: bool = automatic
         self._aetheric_frame: str = aetheric_frame
         # Special Configuration
@@ -179,6 +177,8 @@ class Conduit(Cleanable, IConduit):
         self._configuration: IConfiguration = configuration
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._spellbook: ISpellbook = spellbook
+        self._nexus: INexus = spellbook._nexus
+        self._aether: IAether = spellbook._aether
         self._logger: ISafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()
@@ -335,6 +335,7 @@ class Conduit(Cleanable, IConduit):
         del self._configuration
         del self._root_conduit_id
         del self._nexus
+        del self._aether
 
 
     def _cleanup_normal_conduit(self):
@@ -2910,6 +2911,7 @@ class Conduit(Cleanable, IConduit):
             aetheric_frame = self._aetheric_frame
         with self._lock:
             return Conduit._aether._get_conduit_by_name(name, aetheric_frame)
+        
     #endregion Aether API
     #region Conduit Ward API
     def link(self, target_conduit: IConduit) -> bool:
