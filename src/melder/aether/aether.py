@@ -20,6 +20,7 @@ from melder.utilities.interfaces import (
     IIncidentManager,
     IChangeControlManager,
     IAether,
+    IAethericFrame,
     INexus,
     IAetherConfiguration,
     ISpellIndex,
@@ -242,7 +243,7 @@ class Aether(Cleanable, IAether):
     def _detach_cleaned_frame(
             self,
             frame_name: str,
-            frame: AethericFrame,
+            frame: IAethericFrame,
     ) -> None:
         """
         Internal

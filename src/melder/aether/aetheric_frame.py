@@ -1,5 +1,6 @@
 import threading
-from typing import Optional, Set, Dict
+from types import TracebackType
+from typing import Optional, Set, Dict, Type
 
 import ulid
 # Melder Imports
@@ -9,6 +10,7 @@ from melder.utilities.interfaces import (
     IAethericFrame,
     IAethericFrameConfiguration,
 )
+from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
@@ -16,6 +18,7 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.spellbook.configuration.system_state import SystemState
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class AethericFrame(Cleanable, IAethericFrame):
@@ -84,7 +87,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         # Conduit clusters (grouping by logical name):
         #   cluster_name -> ConduitCluster
-        self._conduit_clusters: Dict[str, ConduitCluster] = {}
+        self._conduit_clusters: Dict[str, IConduitCluster] = {}
 
         # Dynamic-mode "cloud" factory for named conduits.
         self._conduit_cloud: ConduitCloud = ConduitCloud(name)
@@ -101,7 +104,7 @@ class AethericFrame(Cleanable, IAethericFrame):
         self._frame_configuration: Optional[AethericFrameConfiguration] = (
             AethericFrameConfiguration(
                 origin_spellbook_id=None,
-                system_state="automatic",
+                system_state=SystemState.automatic,
                 ai_native_enabled=False,
                 rift_enabled=False,
                 shared_framewide_spellbook_configuration=False,
@@ -228,7 +231,12 @@ class AethericFrame(Cleanable, IAethericFrame):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Exit the frame lock context and release the frame-level lock.
 
@@ -372,7 +380,7 @@ class AethericFrame(Cleanable, IAethericFrame):
                     frame_configuration.cleanup()
                 return existing_frame_configuration
 
-            if self._aether is not None and self._aether._logger is not None:
+            if self._aether._logger is not None:
                 self._aether._logger.warning(
                     "Ignored conflicting AethericFrameConfiguration for frame "
                     "'{0}'. Existing={1}, attempted={2}.".format(
