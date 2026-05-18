@@ -2,23 +2,26 @@ import threading
 from typing import Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
-    FrameACLCommandConfiguration,
-)
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
-    FrameACLCodegenConfiguration,
-)
 from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report import (
     FrameACLSetCompatibilityReport,
 )
-from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
-    FrameACLViewConfiguration,
-)
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+    IFrameACLCommandConfiguration,
+)
+from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+    IFrameACLCodegenConfiguration,
+)
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclsetcompatibilityreport import (
+    IFrameACLSetCompatibilityReport,
+)
+from melder.utilities.interfaces.iframeaclviewconfiguration import (
+    IFrameACLViewConfiguration,
+)
 
 
 class FrameACLSetCompatibilityValidator(Cleanable):
@@ -119,12 +122,12 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             return self._frame_name
 
     @property
-    def last_report(self) -> Optional[FrameACLSetCompatibilityReport]:
+    def last_report(self) -> Optional[IFrameACLSetCompatibilityReport]:
         """
         Return the most recent compatibility report when one exists.
 
         Returns:
-            Optional[FrameACLSetCompatibilityReport]: Last report snapshot.
+            Optional[IFrameACLSetCompatibilityReport]: Last report snapshot.
         """
         self.check_cleaned()
         with self._lock:
@@ -132,7 +135,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     def validate_configuration(
             self,
-            configuration: FrameACLConfiguration,
+            configuration: IFrameACLConfiguration,
     ) -> FrameACLSetCompatibilityReport:
         """
         Validate one selected frame ACL bundle for cross-set compatibility.
@@ -159,8 +162,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if not isinstance(configuration, FrameACLConfiguration):
-                raise TypeError("configuration must be a FrameACLConfiguration.")
+            if not isinstance(configuration, IFrameACLConfiguration):
+                raise TypeError(
+                    "configuration must satisfy IFrameACLConfiguration."
+                )
             if configuration.frame_name != self._frame_name:
                 raise ValueError(
                     "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
@@ -199,8 +204,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     def _validate_view_and_command(
             self,
             report: FrameACLSetCompatibilityReport,
-            view_configuration: FrameACLViewConfiguration,
-            command_configuration: FrameACLCommandConfiguration,
+            view_configuration: IFrameACLViewConfiguration,
+            command_configuration: IFrameACLCommandConfiguration,
     ) -> None:
         """
         Validate view/command compatibility for the effective bundle.
@@ -317,8 +322,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     def _validate_command_and_codegen(
             self,
             report: FrameACLSetCompatibilityReport,
-            command_configuration: FrameACLCommandConfiguration,
-            codegen_configuration: FrameACLCodegenConfiguration,
+            command_configuration: IFrameACLCommandConfiguration,
+            codegen_configuration: IFrameACLCodegenConfiguration,
     ) -> None:
         """
         Validate command/codegen compatibility for the effective bundle.
@@ -414,10 +419,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             report: FrameACLSetCompatibilityReport,
             *,
             family_label: str,
-            view_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
-            view_override_ruleset: FrameACLRuleSet,
-            command_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
-            command_override_ruleset: FrameACLRuleSet,
+            view_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
+            view_override_ruleset: IFrameACLRuleSet,
+            command_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
+            command_override_ruleset: IFrameACLRuleSet,
             view_operation: str,
             command_operation: str,
     ) -> None:
@@ -479,10 +484,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             self,
             report: FrameACLSetCompatibilityReport,
             *,
-            view_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
-            view_override_ruleset: FrameACLRuleSet,
-            command_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
-            command_override_ruleset: FrameACLRuleSet,
+            view_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
+            view_override_ruleset: IFrameACLRuleSet,
+            command_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
+            command_override_ruleset: IFrameACLRuleSet,
     ) -> None:
         """
         Compare member-level view exposure to member-level command actions.
@@ -529,7 +534,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     @staticmethod
     def _collect_operation_effects(
-            ruleset: FrameACLRuleSet,
+            ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect allow/deny operations from one ruleset.
@@ -552,8 +557,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects(
-            base_ruleset: FrameACLRuleSet,
-            override_ruleset: FrameACLRuleSet,
+            base_ruleset: IFrameACLRuleSet,
+            override_ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect effective allow/deny operations from base plus override rules.
@@ -584,7 +589,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects_from_rulesets(
-            *rulesets: Optional[FrameACLRuleSet],
+            *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge an ordered list of base/precision/override rulesets into one effect set.

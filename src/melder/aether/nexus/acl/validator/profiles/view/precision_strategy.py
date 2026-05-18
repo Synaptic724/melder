@@ -1,14 +1,14 @@
-from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
-    FrameACLViewConfiguration,
-)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
+)
+from melder.utilities.interfaces.iframeaclviewconfiguration import (
+    IFrameACLViewConfiguration,
 )
 
 
 def validate_profile_configuration(
         profile: FrameACLViewProfile,
-        configuration: FrameACLViewConfiguration,
+        configuration: IFrameACLViewConfiguration,
 ) -> None:
     """
     Validate that a precision view config preserves the required detailed floor.

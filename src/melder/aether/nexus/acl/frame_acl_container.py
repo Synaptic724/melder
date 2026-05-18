@@ -24,6 +24,16 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
     FrameACLViewConfiguration,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+    IFrameACLCodegenConfiguration,
+)
+from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+    IFrameACLCommandConfiguration,
+)
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframeaclviewconfiguration import (
+    IFrameACLViewConfiguration,
+)
 
 
 class FrameACLContainer(Cleanable):
@@ -357,10 +367,10 @@ class FrameACLContainer(Cleanable):
 
     def register_named_configuration(
             self,
-            configuration: FrameACLConfiguration,
+            configuration: IFrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> FrameACLConfiguration:
+    ) -> IFrameACLConfiguration:
         """
         Register one same-name ACL bundle across all three families.
 
@@ -368,8 +378,10 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Registered assembled bundle snapshot.
         """
         self.check_cleaned()
-        if not isinstance(configuration, FrameACLConfiguration):
-            raise TypeError("configuration must be a FrameACLConfiguration.")
+        if not isinstance(configuration, IFrameACLConfiguration):
+            raise TypeError(
+                "configuration must satisfy IFrameACLConfiguration."
+            )
         if configuration.frame_name != self._frame_name:
             raise ValueError(
                 "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
@@ -401,10 +413,10 @@ class FrameACLContainer(Cleanable):
 
     def install_configuration(
             self,
-            configuration: FrameACLConfiguration,
+            configuration: IFrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> FrameACLConfiguration:
+    ) -> IFrameACLConfiguration:
         """
         Install one same-name ACL bundle revision across all three families.
 
@@ -412,8 +424,10 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Newly assembled current ACL snapshot.
         """
         self.check_cleaned()
-        if not isinstance(configuration, FrameACLConfiguration):
-            raise TypeError("configuration must be a FrameACLConfiguration.")
+        if not isinstance(configuration, IFrameACLConfiguration):
+            raise TypeError(
+                "configuration must satisfy IFrameACLConfiguration."
+            )
         if configuration.frame_name != self._frame_name:
             raise ValueError(
                 "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
@@ -506,11 +520,11 @@ class FrameACLContainer(Cleanable):
 
     def insert_head_view_configuration(
             self,
-            configuration: FrameACLViewConfiguration,
+            configuration: IFrameACLViewConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> FrameACLViewConfiguration:
+    ) -> IFrameACLViewConfiguration:
         """
         Insert one view configuration revision at the head of a named chain.
 
@@ -532,11 +546,11 @@ class FrameACLContainer(Cleanable):
 
     def insert_head_command_configuration(
             self,
-            configuration: FrameACLCommandConfiguration,
+            configuration: IFrameACLCommandConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> FrameACLCommandConfiguration:
+    ) -> IFrameACLCommandConfiguration:
         """
         Insert one command configuration revision at the head of a named chain.
 
@@ -558,11 +572,11 @@ class FrameACLContainer(Cleanable):
 
     def insert_head_codegen_configuration(
             self,
-            configuration: FrameACLCodegenConfiguration,
+            configuration: IFrameACLCodegenConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> FrameACLCodegenConfiguration:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Insert one codegen configuration revision at the head of a named chain.
 
@@ -836,9 +850,9 @@ class FrameACLContainer(Cleanable):
             *,
             family_name: str,
             contract_name: str,
-            next_view_configuration: Optional[FrameACLViewConfiguration] = None,
-            next_command_configuration: Optional[FrameACLCommandConfiguration] = None,
-            next_codegen_configuration: Optional[FrameACLCodegenConfiguration] = None,
+            next_view_configuration: Optional[IFrameACLViewConfiguration] = None,
+            next_command_configuration: Optional[IFrameACLCommandConfiguration] = None,
+            next_codegen_configuration: Optional[IFrameACLCodegenConfiguration] = None,
     ) -> None:
         """
         Validate one family change by assembling a same-name snapshot.

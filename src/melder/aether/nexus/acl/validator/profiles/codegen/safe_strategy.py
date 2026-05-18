@@ -1,14 +1,12 @@
 from typing import Set
 
-from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
-    FrameACLCodegenConfiguration,
-)
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
+from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+    IFrameACLCodegenConfiguration,
 )
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 
 _SAFE_CODEGEN_FORBIDDEN_OVERRIDES = {
@@ -39,7 +37,7 @@ _SAFE_CODEGEN_FORBIDDEN_OVERRIDES = {
 
 def validate_profile_configuration(
         profile: FrameACLCodegenProfile,
-        configuration: FrameACLCodegenConfiguration,
+        configuration: IFrameACLCodegenConfiguration,
 ) -> None:
     """
     Validate that the `safe` codegen profile stays restrictive.
@@ -67,7 +65,7 @@ def validate_profile_configuration(
 
 
 def _assert_forbidden_operations_are_not_allowed(
-        ruleset: FrameACLRuleSet,
+        ruleset: IFrameACLRuleSet,
         forbidden_operations: Set[str],
         label: str,
 ) -> None:
@@ -82,7 +80,7 @@ def _assert_forbidden_operations_are_not_allowed(
 
 
 def _assert_safe_builtins_not_reallowed(
-        ruleset: FrameACLRuleSet,
+        ruleset: IFrameACLRuleSet,
 ) -> None:
     """
     Validate that safe overrides do not re-allow dangerous builtin names.

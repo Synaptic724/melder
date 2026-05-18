@@ -1,14 +1,12 @@
 from typing import Set
 
-from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
-    FrameACLCommandConfiguration,
-)
 from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
+from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+    IFrameACLCommandConfiguration,
 )
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 
 _SAFE_COMMAND_FORBIDDEN_MEMBER_OVERRIDES: Set[str] = {
@@ -20,7 +18,7 @@ _SAFE_COMMAND_FORBIDDEN_MEMBER_OVERRIDES: Set[str] = {
 
 def validate_profile_configuration(
         profile: FrameACLCommandProfile,
-        configuration: FrameACLCommandConfiguration,
+        configuration: IFrameACLCommandConfiguration,
 ) -> None:
     """
     Validate that the `safe` command profile stays restrictive.
@@ -37,7 +35,7 @@ def validate_profile_configuration(
 
 
 def _assert_forbidden_operations_are_not_allowed(
-        ruleset: FrameACLRuleSet,
+        ruleset: IFrameACLRuleSet,
         forbidden_operations: Set[str],
         label: str,
 ) -> None:

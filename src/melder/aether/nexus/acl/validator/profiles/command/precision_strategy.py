@@ -1,14 +1,14 @@
-from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
-    FrameACLCommandConfiguration,
-)
 from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
+)
+from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+    IFrameACLCommandConfiguration,
 )
 
 
 def validate_profile_configuration(
         profile: FrameACLCommandProfile,
-        configuration: FrameACLCommandConfiguration,
+        configuration: IFrameACLCommandConfiguration,
 ) -> None:
     """
     Validate that a precision command config keeps spell-level enablement.

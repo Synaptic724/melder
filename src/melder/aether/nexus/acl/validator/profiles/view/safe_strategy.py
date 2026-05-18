@@ -3,11 +3,12 @@ from typing import Set
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
-)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
+)
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclviewconfiguration import (
+    IFrameACLViewConfiguration,
 )
 
 
@@ -24,7 +25,7 @@ _SAFE_VIEW_FORBIDDEN_OVERRIDES = {
 
 def validate_profile_configuration(
         profile: FrameACLViewProfile,
-        configuration: FrameACLViewConfiguration,
+        configuration: IFrameACLViewConfiguration,
 ) -> None:
     """
     Validate that the `safe` view profile stays restrictive.
@@ -59,7 +60,7 @@ def validate_profile_configuration(
 
 
 def _assert_forbidden_operations_are_not_allowed(
-        ruleset: FrameACLRuleSet,
+        ruleset: IFrameACLRuleSet,
         forbidden_operations: Set[str],
         label: str,
 ) -> None:

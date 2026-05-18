@@ -22,6 +22,15 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import IFrameACLConfiguration
+from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+    IFrameACLCodegenConfiguration,
+)
+from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+    IFrameACLCommandConfiguration,
+)
+from melder.utilities.interfaces.iframeaclviewconfiguration import (
+    IFrameACLViewConfiguration,
+)
 
 
 def _parse_json_configuration_string(
@@ -206,9 +215,9 @@ class FrameACLConfiguration(Cleanable, IFrameACLConfiguration):
             cls,
             *,
             frame_name: str,
-            view_configuration: FrameACLViewConfiguration,
-            command_configuration: FrameACLCommandConfiguration,
-            codegen_configuration: FrameACLCodegenConfiguration,
+            view_configuration: IFrameACLViewConfiguration,
+            command_configuration: IFrameACLCommandConfiguration,
+            codegen_configuration: IFrameACLCodegenConfiguration,
             reason: str,
             locked: bool = True,
             configuration_id: Optional[str] = None,
@@ -244,11 +253,48 @@ class FrameACLConfiguration(Cleanable, IFrameACLConfiguration):
         Returns:
             FrameACLConfiguration: Detached assembled ACL bundle snapshot.
         """
+        if not isinstance(view_configuration, IFrameACLViewConfiguration):
+            raise TypeError(
+                "view_configuration must satisfy IFrameACLViewConfiguration."
+            )
+        if not isinstance(command_configuration, IFrameACLCommandConfiguration):
+            raise TypeError(
+                "command_configuration must satisfy "
+                "IFrameACLCommandConfiguration."
+            )
+        if not isinstance(codegen_configuration, IFrameACLCodegenConfiguration):
+            raise TypeError(
+                "codegen_configuration must satisfy "
+                "IFrameACLCodegenConfiguration."
+            )
+        cloned_view_configuration = view_configuration.clone()
+        cloned_command_configuration = command_configuration.clone()
+        cloned_codegen_configuration = codegen_configuration.clone()
+        if not isinstance(cloned_view_configuration, FrameACLViewConfiguration):
+            raise TypeError(
+                "view_configuration.clone() must return a FrameACLViewConfiguration."
+            )
+        if not isinstance(
+                cloned_command_configuration,
+                FrameACLCommandConfiguration,
+        ):
+            raise TypeError(
+                "command_configuration.clone() must return a "
+                "FrameACLCommandConfiguration."
+            )
+        if not isinstance(
+                cloned_codegen_configuration,
+                FrameACLCodegenConfiguration,
+        ):
+            raise TypeError(
+                "codegen_configuration.clone() must return a "
+                "FrameACLCodegenConfiguration."
+            )
         configuration = cls(
             frame_name=frame_name,
-            view_configuration=view_configuration.clone(),
-            command_configuration=command_configuration.clone(),
-            codegen_configuration=codegen_configuration.clone(),
+            view_configuration=cloned_view_configuration,
+            command_configuration=cloned_command_configuration,
+            codegen_configuration=cloned_codegen_configuration,
             source_configuration_id=None,
             previous_configuration_id=None,
             reason=reason,
