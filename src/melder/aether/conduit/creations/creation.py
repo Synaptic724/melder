@@ -73,7 +73,7 @@ class Creation(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._value = None   # Underlying object is not disposed here.
+            del self._value   # Underlying object is not disposed here.
             del self._has_disposal_methods
             del self._disposal_methods
         del self._lock

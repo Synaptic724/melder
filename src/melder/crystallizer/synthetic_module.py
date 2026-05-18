@@ -247,7 +247,7 @@ class SyntheticModule(ModuleType, ISyntheticModule):
 
         ModuleType.__init__(self, module_name, module_docstring)
 
-        self._lock: Optional[threading.RLock] = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
         self._cleaned: bool = False
         self._spell_crystal_id: Optional[str] = spell_crystal_id
         self._source_text: Optional[str] = source_text
@@ -319,25 +319,24 @@ class SyntheticModule(ModuleType, ISyntheticModule):
             ]
             for name in removable_names:
                 del self.__dict__[name]
-
-            self._spell_crystal_id = None
-            self._source_text = None
-            self._source_sha256 = None
-            self._binding_signature = None
-            self._export_names = None
-            self._internal_dependency_names = None
-            self._external_dependency_names = None
-            self._physical_file_path = None
-            self._materialized_directory_path = None
             self._published_in_sys_modules = False
-            self._parent_name = None
             self._is_package = False
             self._executed_source = False
-            self.__loader__ = None
-            self.__spec__ = None
             if hasattr(self, "__path__"):
                 delattr(self, "__path__")
-            self._lock = None
+            del self._spell_crystal_id
+            del self._source_text
+            del self._source_sha256
+            del self._binding_signature
+            del self._export_names
+            del self._internal_dependency_names
+            del self._external_dependency_names
+            del self._physical_file_path
+            del self._materialized_directory_path
+            del self._parent_name
+            del self.__loader__
+            del self.__spec__
+            del self._lock
 
     @property
     def cleaned(self) -> bool:

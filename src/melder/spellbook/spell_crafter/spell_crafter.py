@@ -5,7 +5,7 @@ import inspect
 import pickle
 import typing
 import types
-from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin, Generator
+from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin, Generator, cast, Protocol
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
@@ -36,7 +36,7 @@ from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellValidationSystem, ISpellbook
+from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellValidationSystem, ISpellbook, ISpellIndex
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -133,6 +133,22 @@ from melder.spellbook.spell_crafter.system.validation.contract_graph_cycle_strat
 from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import RootViabilityStrategy
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+
+class _SpellCrafterSpellbookSurface(Protocol):
+    """
+    Narrow borrowed Spellbook runtime surface used by SpellCrafter.
+    """
+
+    _spell_validator: ISpellValidationSystem
+    _spell_system_states: ISpellSystemStates
+    _spell_id_pool: Dict[str, ISpell]
+    _spells_by_id: Dict[str, ISpell]
+    _lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], ISpellIndex]]
+    _contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]]
+    _aetheric_frame_configuration: Optional[Any]
+    _aetheric_frame: str
+    _aether: Any
 
 class SpellCrafter(Cleanable):
     """
@@ -254,8 +270,11 @@ class SpellCrafter(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
         self._spell: ISpell = spell
-        self._spell_validator: ISpellValidationSystem = self._spell._spellbook._spell_validator
-        self._spell_system_states: Optional[ISpellSystemStates] = self._spell._spell_system_states
+        spellbook = self._get_required_spellbook_from_spell(spell)
+        self._spell_validator: ISpellValidationSystem = spellbook._spell_validator
+        self._spell_system_states: Optional[ISpellSystemStates] = (
+            cast(Optional[ISpellSystemStates], spell._spell_system_states)
+        )
         self._requirements: Optional[SpellRequirements] = None
         if resolution_profile is not None:
             self._requirements = resolution_profile.requirements
@@ -288,6 +307,50 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
+
+    @staticmethod
+    def _get_required_spellbook_from_spell(
+            spell: ISpell,
+    ) -> _SpellCrafterSpellbookSurface:
+        """
+        Return the owning spellbook for one spell or raise.
+
+        Args:
+            spell:
+                Owning spell whose borrowed spellbook surface is required.
+
+        Returns:
+            _SpellCrafterSpellbookSurface: Borrowed owning spellbook runtime
+            surface.
+        """
+        spellbook_surface = spell._spellbook
+        if spellbook_surface is None:
+            raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
+        return cast(_SpellCrafterSpellbookSurface, spellbook_surface)
+
+    def _get_required_spellbook(self) -> _SpellCrafterSpellbookSurface:
+        """
+        Return the owning spellbook for this crafter or raise.
+
+        Returns:
+            _SpellCrafterSpellbookSurface: Borrowed owning spellbook runtime
+            surface.
+        """
+        return self._get_required_spellbook_from_spell(self._spell)
+
+    def _get_required_spell_system_states(self) -> ISpellSystemStates:
+        """
+        Return the borrowed spell-system-state registry or raise.
+
+        Returns:
+            ISpellSystemStates: Borrowed spell-system-state registry.
+        """
+        spell_system_states = self._spell_system_states
+        if spell_system_states is None:
+            raise RuntimeError(
+                "SpellCrafter requires a live SpellSystemStates surface."
+            )
+        return spell_system_states
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -966,10 +1029,13 @@ class SpellCrafter(Cleanable):
                 return None
 
         try:
-            spellbook = self._spell._spellbook
+            spellbook = self._get_required_spellbook()
             contracted_lookup = spellbook._lookup_contracted_spells
             contracted_maps = spellbook._contracted_spells
-            system_state = spellbook._aetheric_frame_configuration.system_state
+            frame_configuration = spellbook._aetheric_frame_configuration
+            if frame_configuration is None:
+                return None
+            system_state = frame_configuration.system_state
         except Exception:
             return None
 
@@ -1093,10 +1159,13 @@ class SpellCrafter(Cleanable):
                 return None
 
         try:
-            spellbook = self._spell._spellbook
+            spellbook = self._get_required_spellbook()
             contracted_lookup = spellbook._lookup_contracted_spells
             contracted_maps = spellbook._contracted_spells
-            system_state = spellbook._aetheric_frame_configuration.system_state
+            frame_configuration = spellbook._aetheric_frame_configuration
+            if frame_configuration is None:
+                return None
+            system_state = frame_configuration.system_state
         except Exception:
             return None
 
@@ -2937,14 +3006,17 @@ class SpellCrafter(Cleanable):
         self._phase8_11_codegen_ir_dirty = False
         self._spell.resolution_complete = False
 
-        del self._phase12_no_overrides_executor
-        del self._phase12_no_overrides_executor_signature
-        del self._phase8_occurrence_plan_input_signature
-        del self._phase8_occurrence_plan_fast_key
-        del self._phase9_injection_plan_input_signature
-        del self._phase10_patch_maps_input_signature
-        del self._phase11_no_overrides_input_signature
-        del self._phase11_no_overrides_fast_key
+        # This path resets caches on a still-live crafter. Later Phase 11/12
+        # logic reads these attributes directly, so they must remain present
+        # and revert to their empty-cache state instead of being deleted.
+        self._phase12_no_overrides_executor = None
+        self._phase12_no_overrides_executor_signature = None
+        self._phase8_occurrence_plan_input_signature = None
+        self._phase8_occurrence_plan_fast_key = None
+        self._phase9_injection_plan_input_signature = None
+        self._phase10_patch_maps_input_signature = None
+        self._phase11_no_overrides_input_signature = None
+        self._phase11_no_overrides_fast_key = None
 
 
     def _notify_dependencies_updated(self, dependency_ids: List[str]) -> None:
@@ -2991,7 +3063,7 @@ class SpellCrafter(Cleanable):
         Returns:
             Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
         """
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         for spell_instance in spellbook._spell_id_pool.values():
             yield spell_instance.spell_index, spell_instance
 
@@ -3924,11 +3996,12 @@ class SpellCrafter(Cleanable):
 
         # --- 1. Build adjacency snapshot from system states ----------------
         adjacency_builder = SpellSystemAdjacencyBuilder()
-        snapshot = adjacency_builder.build(self._spell_system_states)
+        spell_system_states = self._get_required_spell_system_states()
+        snapshot = adjacency_builder.build(spell_system_states)
 
         # --- 2. Filter to spellbook-visible spells -------------------------
         # Use the live spell_id_pool (no copies) for version-id -> Spell lookup.
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         visible_spell_ids = spellbook._spell_id_pool.keys()
 
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
@@ -3944,7 +4017,7 @@ class SpellCrafter(Cleanable):
         system_index = SpellSystemIndex()
 
         for spell_id, deps in filtered_snapshot.dependencies.items():
-            state = self._spell_system_states.get_by_spell_id(spell_id)
+            state = spell_system_states.get_by_spell_id(spell_id)
             lineage_id: str = state.spell_index_id
             spell_instance = spellbook._spell_id_pool[spell_id]
 
@@ -4200,9 +4273,10 @@ class SpellCrafter(Cleanable):
         target_spell_id = self._spell.spell_index.current
 
         adjacency_builder = SpellSystemAdjacencyBuilder()
-        snapshot = adjacency_builder.build(self._spell_system_states)
+        spell_system_states = self._get_required_spell_system_states()
+        snapshot = adjacency_builder.build(spell_system_states)
 
-        spellbook = self._spell._spellbook
+        spellbook = self._get_required_spellbook()
         spell_lookup = spellbook._spell_id_pool
         visible_spell_ids = spell_lookup.keys()
         visible_snapshot = self._filter_snapshot_to_visible_spells(

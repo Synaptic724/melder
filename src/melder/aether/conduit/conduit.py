@@ -666,6 +666,30 @@ class Conduit(Cleanable, IConduit):
             channels="system",
         )
 
+    def _resolve_logger_from_config(self, configuration: IConfiguration) -> ISafeLogger:
+        """
+        Internal
+
+        Resolve a channel-backed SafeLogger from the supplied configuration context.
+
+        Args:
+            configuration (IConfiguration):
+                The locked configuration driving conduit construction.
+
+        Returns:
+            ISafeLogger: Resolved conduit logger instance.
+        """
+        return InitHelpers.resolve_channel_logger(
+            self,
+            groups=["lifecycle", "organization"],
+            system_groups=["spellbook", "aether"],
+            props={
+                "aether_frame": self._aetheric_frame,
+                "conduit_state": str(self._conduit_state),
+            },
+            channels="system",
+        )
+
     def _configure_conduit_state(self):
         """
         Internal

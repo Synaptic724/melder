@@ -20,7 +20,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameACLProfileBuilder
+from melder.utilities.interfaces import IFrameACLProfileBuilder, IFrameACLViewProfile
 
 
 class FrameACLCompiler(Cleanable):
@@ -271,8 +271,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_frame_payload_fields(
-            view_profile: FrameACLViewProfile,
-            precision_profile: FrameACLViewProfile,
+            view_profile: IFrameACLViewProfile,
+            precision_profile: IFrameACLViewProfile,
             configuration: FrameACLConfiguration,
     ) -> Set[str]:
         """

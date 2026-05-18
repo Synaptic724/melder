@@ -143,9 +143,9 @@ class MethodProfile(Cleanable):
         self.extension_mod: bool = extension_mod
         self.file: Optional[str] = file
         self.preview: Optional[str] = preview
-        self.src_offset: int = src_offset
-        self.start_line: int = start_line
-        self.end_line: int = end_line
+        self.src_offset: Optional[int] = src_offset
+        self.start_line: Optional[int] = start_line
+        self.end_line: Optional[int] = end_line
         self.source_text: Optional[str] = source_text
         self.signature: Optional[str] = signature
         self.parameters: Optional[List[Dict[str, Any]]] = list(parameters) if parameters is not None else []

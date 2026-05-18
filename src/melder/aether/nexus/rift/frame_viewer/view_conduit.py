@@ -17,8 +17,9 @@ from melder.aether.nexus.rift.frame_viewer.view_frame import (
 from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IFrameLink
+from melder.utilities.interfaces import IConduitRecord, IFrameLink
 
 
 @decorate_public_view_actions
@@ -47,6 +48,8 @@ class ViewConduit(Cleanable):
         "_lock",
         "_frame_view",
     ]
+
+    _cleaned: bool
 
     def __init__(self, *, frame_view: Optional[ViewFrame]) -> None:
         """
@@ -197,11 +200,12 @@ class ViewConduit(Cleanable):
         descriptor = frame_view._get_required_frame_descriptor()
         compiled_access_surface = frame_view._get_required_compiled_access_surface()
         conduit_record = descriptor.conduit_records_by_id[conduit_id]
-        visible_sections = tuple(
+        visible_sections = self._get_required_string_tuple(
             compiled_access_surface.conduit_payload_sections_by_id.get(
                 conduit_id,
                 tuple(),
-            )
+            ),
+            field_name="visible_sections",
         )
         return {
             "target_id": conduit_link.link_id,
@@ -252,7 +256,9 @@ class ViewConduit(Cleanable):
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
         filtered_links: List[IFrameLink] = []
         for spell_link in spell_links:
-            record_key = spell_link.metadata["record_key"]
+            record_key = self._get_required_record_key(
+                spell_link.metadata["record_key"]
+            )
             spell_record = descriptor.spell_records_by_key[record_key]
             if spell_record.owner_conduit_id == conduit_id:
                 filtered_links.append(spell_link)
@@ -290,10 +296,12 @@ class ViewConduit(Cleanable):
             conduit_id,
             frame_name=frame_name,
         )
+        payload = self._get_required_payload_map(conduit_description["payload"])
         return {
             "conduit_id": conduit_id,
-            "peer_conduit_ids": tuple(
-                conduit_description["payload"].get("peer_conduit_ids", tuple())
+            "peer_conduit_ids": self._get_required_string_tuple(
+                payload.get("peer_conduit_ids", tuple()),
+                field_name="peer_conduit_ids",
             ),
             "spell_count": len(spell_links),
             "spell_source_ids": tuple(
@@ -341,7 +349,12 @@ class ViewConduit(Cleanable):
                 conduit_id,
                 frame_name=frame_name,
             ),
-            "visible_section_count": len(conduit_description["visible_sections"]),
+            "visible_section_count": len(
+                self._get_required_string_tuple(
+                    conduit_description["visible_sections"],
+                    field_name="visible_sections",
+                )
+            ),
             "visible_spell_count": len(spell_links),
         }
 
@@ -381,7 +394,10 @@ class ViewConduit(Cleanable):
             conduit_record.payload,
             excluded_fields=("payload_version",),
         )
-        visible_sections = conduit_description["visible_sections"]
+        visible_sections = self._get_required_string_tuple(
+            conduit_description["visible_sections"],
+            field_name="visible_sections",
+        )
         return {
             "conduit_id": conduit_id,
             "visible_sections": visible_sections,
@@ -481,8 +497,10 @@ class ViewConduit(Cleanable):
             conduit_id,
             frame_name=frame_name,
         )
-        peer_conduit_ids = tuple(
-            conduit_description["payload"].get("peer_conduit_ids", tuple())
+        payload = self._get_required_payload_map(conduit_description["payload"])
+        peer_conduit_ids: Tuple[str, ...] = self._get_required_string_tuple(
+            payload.get("peer_conduit_ids", tuple()),
+            field_name="peer_conduit_ids",
         )
         return {
             "conduit_id": conduit_id,
@@ -917,7 +935,9 @@ class ViewConduit(Cleanable):
                 conduit_id,
                 frame_name=frame_name,
         ):
-            record_key = spell_link.metadata["record_key"]
+            record_key = self._get_required_record_key(
+                spell_link.metadata["record_key"]
+            )
             binding_name = descriptor.spell_records_by_key[record_key].binding_name
             if binding_name is None:
                 continue
@@ -947,7 +967,11 @@ class ViewConduit(Cleanable):
         frame_view = self._get_required_frame_view()
         descriptor = frame_view._get_required_frame_descriptor()
         return tuple(
-            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].spell_name
+            descriptor.spell_records_by_key[
+                self._get_required_record_key(
+                    spell_link.metadata["record_key"]
+                )
+            ].spell_name
             for spell_link in self.list_conduit_spells(
                 conduit_id,
                 frame_name=frame_name,
@@ -1048,7 +1072,10 @@ class ViewConduit(Cleanable):
             source_kind="conduit",
             source_id=conduit_id,
         )
-        visible_sections: tuple[str, ...] = tuple(explanation["visible_sections"])
+        visible_sections = self._get_required_string_tuple(
+            explanation["visible_sections"],
+            field_name="visible_sections",
+        )
         return {
             **explanation,
             "payload_visible": (
@@ -1088,7 +1115,10 @@ class ViewConduit(Cleanable):
             conduit_id,
             frame_name=frame_name,
         )
-        visible_sections = conduit_description["visible_sections"]
+        visible_sections = self._get_required_string_tuple(
+            conduit_description["visible_sections"],
+            field_name="visible_sections",
+        )
         if field_name not in visible_sections:
             raise ValueError(
                 "Conduit payload field '{0}' is not visible for conduit '{1}'.".format(
@@ -1096,7 +1126,8 @@ class ViewConduit(Cleanable):
                     conduit_id,
                 )
             )
-        return conduit_description["payload"][field_name]
+        payload = self._get_required_payload_map(conduit_description["payload"])
+        return payload[field_name]
 
     def get_required_conduit(
             self,
@@ -1137,12 +1168,87 @@ class ViewConduit(Cleanable):
             raise ValueError("ViewConduit is not bound to a frame view.")
         return self._frame_view
 
+    @staticmethod
+    def _get_required_record_key(record_key: object) -> Tuple[str, str]:
+        """
+        Return one validated spell-record key.
+
+        Args:
+            record_key:
+                Candidate spell-record key from frame-link metadata.
+
+        Returns:
+            Tuple[str, str]: Validated `(origin_spellbook_id, spell_id)` key.
+        """
+        if (
+                not isinstance(record_key, tuple)
+                or len(record_key) != 2
+                or not isinstance(record_key[0], str)
+                or not isinstance(record_key[1], str)
+        ):
+            raise TypeError(
+                "spell_link.metadata['record_key'] must be a tuple[str, str]."
+            )
+        return record_key[0], record_key[1]
+
+    @staticmethod
+    def _get_required_string_tuple(
+            values: object,
+            *,
+            field_name: str,
+    ) -> Tuple[str, ...]:
+        """
+        Return one validated tuple of string values.
+
+        Args:
+            values:
+                Candidate iterable of string values.
+            field_name:
+                User-facing field name used in validation errors.
+
+        Returns:
+            Tuple[str, ...]: Validated string tuple.
+        """
+        if not isinstance(values, (tuple, list)):
+            raise TypeError(
+                "{0} must be a tuple[str, ...].".format(field_name)
+            )
+        normalized_values: List[str] = []
+        for current_value in values:
+            if not isinstance(current_value, str):
+                raise TypeError(
+                    "{0} must contain only strings.".format(field_name)
+                )
+            normalized_values.append(current_value)
+        return tuple(normalized_values)
+
+    @staticmethod
+    def _get_required_payload_map(payload: object) -> Dict[str, object]:
+        """
+        Return one validated conduit payload mapping.
+
+        Args:
+            payload:
+                Candidate conduit payload map.
+
+        Returns:
+            Dict[str, object]: Validated conduit payload map.
+        """
+        if not isinstance(payload, dict):
+            raise TypeError("payload must be a dict[str, object].")
+        normalized_payload: Dict[str, object] = {}
+        for current_key, current_value in payload.items():
+            if not isinstance(current_key, str):
+                raise TypeError("payload keys must be strings.")
+            normalized_payload[current_key] = current_value
+        return normalized_payload
+
     def _get_required_conduit_record(
             self,
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> object:
+    ) -> IConduitRecord:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -1154,14 +1260,14 @@ class ViewConduit(Cleanable):
                 frame helper.
 
         Returns:
-            object: Descriptor-owned conduit record.
+            IConduitRecord: Descriptor-owned conduit record.
         """
         self.get_required_conduit(conduit_id, frame_name=frame_name)
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
         return descriptor.conduit_records_by_id[conduit_id]
 
     @staticmethod
-    def _normalize_policy_name(policy: object) -> Optional[str]:
+    def _normalize_policy_name(policy: Optional[Policies]) -> Optional[str]:
         """
         Return one stable string view of a conduit policy value.
 

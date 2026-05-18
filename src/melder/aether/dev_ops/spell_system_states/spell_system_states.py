@@ -16,7 +16,12 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces import ISpell, ISpellIndex, ISpellSystemStates
+from melder.utilities.interfaces import (
+    ISpell,
+    ISpellIndex,
+    ISpellSystemStates,
+    IConduitResolutionState,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
@@ -106,7 +111,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         # Version-id keyed topologies captured during Phase 3.
         self._local_topologies: Dict[str, 'SpellLocalTopology'] = {}
         # Per-conduit resolution state for Phases 5-7.
-        self._resolution_by_conduit_id: Optional[Dict[str, ConduitResolutionState]] = {}
+        self._resolution_by_conduit_id: Optional[Dict[str, IConduitResolutionState]] = {}
         # Spellbook-scoped indices for collection dependencies (list[Frame]).
         self._index_owner_spellbook_id: Optional[Dict[str, str]] = {}
         self._collection_frames_by_index: Optional[Dict[str, Set[str]]] = {}

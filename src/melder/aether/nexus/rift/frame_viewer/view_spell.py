@@ -56,6 +56,8 @@ class ViewSpell(Cleanable):
         "_frame_view",
     ]
 
+    _cleaned: bool
+
     def __init__(self, *, frame_view: Optional[ViewFrame]) -> None:
         """
         Initialize one spell-scoped helper surface.
@@ -916,10 +918,10 @@ class ViewSpell(Cleanable):
                 class_profile_view["detail_available"]
                 or instance_member_view["detail_available"]
             ),
-            "class_member_names": tuple(
+            "class_member_names": self._get_required_visible_sections(
                 class_profile_payload.get("dunder_member_names", tuple())
             ),
-            "class_method_names": tuple(
+            "class_method_names": self._get_required_visible_sections(
                 class_profile_payload.get("dunder_method_names", tuple())
             ),
             "instance_member_names": tuple(
@@ -1757,7 +1759,9 @@ class ViewSpell(Cleanable):
             frame_name=frame_name,
         )
         payload_type = spell_description["payload_type"]
-        visible_sections = spell_description["visible_sections"]
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
+        )
         detailed_only_sections = {
             "class_profile",
             "callable_profile",
@@ -1881,14 +1885,16 @@ class ViewSpell(Cleanable):
             )
             return normalized_class_profile
         if isinstance(class_profile, ClassProfile):
-            member_names = tuple(sorted(class_profile.members.keys()))
-            method_names = tuple(sorted(class_profile.methods.keys()))
+            members = class_profile.members or {}
+            methods = class_profile.methods or {}
+            member_names = tuple(sorted(members.keys()))
+            method_names = tuple(sorted(methods.keys()))
             return {
                 "name": class_profile.name,
                 "qualname": class_profile.qualname,
                 "module": class_profile.module,
-                "mro": tuple(class_profile.mro),
-                "bases": tuple(class_profile.bases),
+                "mro": tuple(class_profile.mro or []),
+                "bases": tuple(class_profile.bases or []),
                 "annotations": ViewFrame._normalize_value(
                     class_profile.annotations
                 ),
@@ -1902,7 +1908,7 @@ class ViewSpell(Cleanable):
                 "source_preview": class_profile.source_preview,
                 "docstring_summary": class_profile.docstring_summary,
                 "behavior_summary": class_profile.behavior_summary,
-                "tags": tuple(class_profile.tags),
+                "tags": tuple(class_profile.tags or []),
                 "is_dataclass": class_profile.is_dataclass,
                 "decorated": class_profile.decorated,
                 "member_names": member_names,
@@ -1917,10 +1923,10 @@ class ViewSpell(Cleanable):
                     for current_name in method_names
                     if self._is_dunder_name(current_name)
                 ),
-                "members": ViewFrame._normalize_value(class_profile.members),
+                "members": ViewFrame._normalize_value(members),
                 "methods": {
                     method_name: self._normalize_callable_profile_value(method_profile)
-                    for method_name, method_profile in class_profile.methods.items()
+                    for method_name, method_profile in methods.items()
                 },
                 "dynamic_access": ViewFrame._normalize_value(
                     class_profile.dynamic_access
@@ -1959,7 +1965,7 @@ class ViewSpell(Cleanable):
                 "end_line": callable_profile.end_line,
                 "docstring_summary": callable_profile.docstring_summary,
                 "behavior_summary": callable_profile.behavior_summary,
-                "tags": tuple(callable_profile.tags),
+                "tags": tuple(callable_profile.tags or []),
                 "uninspectable": callable_profile.uninspectable,
                 "func": callable_profile.func,
                 "method": callable_profile.method,

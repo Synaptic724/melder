@@ -131,32 +131,32 @@ class SpellCrystal(Cleanable):
         if spell is None:
             raise TypeError("spell cannot be None.")
 
-        self._lock: Optional[threading.RLock] = threading.RLock()
+        self._lock: threading.RLock = threading.RLock()
         if spell.spell_id is None:
             raise ValueError("spell must expose a non-empty spell_id.")
-        self._id: Optional[str] = spell.spell_id
-        self._module_targets: Optional[List[str]] = []
-        self._path_targets: Optional[List[str]] = []
-        self._synthetic_module_targets: Optional[List[str]] = []
-        self._user_source_targets: Optional[List[str]] = []
-        self._site_package_targets: Optional[List[str]] = []
-        self._unknown_targets: Optional[List[str]] = []
-        self._module_to_path: Optional[Dict[str, str]] = {}
-        self._module_to_kind: Optional[Dict[str, str]] = {}
-        self._module_to_extension: Optional[Dict[str, str]] = {}
-        self._module_to_direct_dependencies: Optional[Dict[str, List[str]]] = {}
-        self._ast_import_targets_by_module: Optional[Dict[str, List[str]]] = {}
-        self._ast_from_import_targets_by_module: Optional[Dict[str, Dict[str, List[str]]]] = {}
-        self._walk_errors: Optional[List[str]] = []
+        self._id: str = spell.spell_id
+        self._module_targets: List[str] = []
+        self._path_targets: List[str] = []
+        self._synthetic_module_targets: List[str] = []
+        self._user_source_targets: List[str] = []
+        self._site_package_targets: List[str] = []
+        self._unknown_targets: List[str] = []
+        self._module_to_path: Dict[str, str] = {}
+        self._module_to_kind: Dict[str, str] = {}
+        self._module_to_extension: Dict[str, str] = {}
+        self._module_to_direct_dependencies: Dict[str, List[str]] = {}
+        self._ast_import_targets_by_module: Dict[str, List[str]] = {}
+        self._ast_from_import_targets_by_module: Dict[str, Dict[str, List[str]]] = {}
+        self._walk_errors: List[str] = []
 
         self._created_from_synthetic_root: bool = False
         self._created_from_site_package_root: bool = False
         self._created_from_user_source_root: bool = False
 
-        self._user_root_paths: Optional[Tuple[Path, ...]] = (
+        self._user_root_paths: Tuple[Path, ...] = (
             self._resolve_user_root_paths(user_source_root_paths)
         )
-        self._site_package_root_paths: Optional[Tuple[Path, ...]] = self._resolve_site_package_root_paths()
+        self._site_package_root_paths: Tuple[Path, ...] = self._resolve_site_package_root_paths()
 
         (
             root_target,
@@ -166,10 +166,10 @@ class SpellCrystal(Cleanable):
             root_module_name,
         ) = self._resolve_root_target_from_spell(spell)
 
-        self._root_target_name: Optional[str] = root_target_name
-        self._root_target_qualname: Optional[str] = root_target_qualname
-        self._root_target_kind: Optional[str] = root_target_kind
-        self._root_module_name: Optional[str] = root_module_name
+        self._root_target_name: str = root_target_name
+        self._root_target_qualname: str = root_target_qualname
+        self._root_target_kind: str = root_target_kind
+        self._root_module_name: str = root_module_name
 
         root_module_obj, root_module_path = self._resolve_root_module(
             root_target=root_target,
@@ -217,33 +217,34 @@ class SpellCrystal(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._id = None
-            self._root_module_name = None
-            self._root_module_path = None
-            self._root_module_kind = None
-            self._root_file_extension = None
-            self._root_target_name = None
-            self._root_target_qualname = None
-            self._root_target_kind = None
-            self._module_targets = None
-            self._path_targets = None
-            self._synthetic_module_targets = None
-            self._user_source_targets = None
-            self._site_package_targets = None
-            self._unknown_targets = None
-            self._module_to_path = None
-            self._module_to_kind = None
-            self._module_to_extension = None
-            self._module_to_direct_dependencies = None
-            self._ast_import_targets_by_module = None
-            self._ast_from_import_targets_by_module = None
-            self._walk_errors = None
+
             self._created_from_synthetic_root = False
             self._created_from_site_package_root = False
             self._created_from_user_source_root = False
-            self._user_root_paths = None
-            self._site_package_root_paths = None
-        self._lock = None
+            del self._id
+            del self._root_module_name
+            del self._root_module_path
+            del self._root_module_kind
+            del self._root_file_extension
+            del self._root_target_name
+            del self._root_target_qualname
+            del self._root_target_kind
+            del self._module_targets
+            del self._path_targets
+            del self._synthetic_module_targets
+            del self._user_source_targets
+            del self._site_package_targets
+            del self._unknown_targets
+            del self._module_to_path
+            del self._module_to_kind
+            del self._module_to_extension
+            del self._module_to_direct_dependencies
+            del self._ast_import_targets_by_module
+            del self._ast_from_import_targets_by_module
+            del self._walk_errors
+            del self._user_root_paths
+            del self._site_package_root_paths
+        del self._lock
 
 
     @property
@@ -300,7 +301,7 @@ class SpellCrystal(Cleanable):
             return self._root_module_path
 
     @property
-    def root_module_kind(self) -> str:
+    def root_module_kind(self) -> str | None:
         """
         Return the classified authority kind for the root module.
 

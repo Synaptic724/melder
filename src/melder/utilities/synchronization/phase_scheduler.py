@@ -1,10 +1,10 @@
 import threading
 import time
-from concurrent.futures import wait, FIRST_EXCEPTION
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from concurrent.futures import FIRST_EXCEPTION, Future, wait
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
 from queue import SimpleQueue, Empty as QueueEmpty
 
-from melder.utilities.interfaces import IConfiguration, ISpellbook
+from melder.utilities.interfaces import IConfiguration, ISpellbook, IUnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
     CancellationEventSignal,
@@ -55,7 +55,7 @@ class PhaseScheduler(Cleanable):
         scheduler.register_phase("build_dags", phase3_factory)
 
         results = scheduler.run_all_phases()
-        # results["scan_spells"] -> Sequence[UnitOfWork] (inspect .result())
+        # results["scan_spells"] -> Sequence[IUnitOfWork] (inspect .result())
 
         scheduler.cleanup()
 
@@ -121,7 +121,7 @@ class PhaseScheduler(Cleanable):
         self._lock: threading.RLock = threading.RLock()
 
         # Phase registry (concurrent containers).
-        self._phase_factories: Dict[str, Callable[[], Sequence[UnitOfWork]]] = {}
+        self._phase_factories: Dict[str, Callable[[], Sequence[IUnitOfWork]]] = {}
         self._phase_order: List[str] = []
 
         # Unique sentinel object to signal worker shutdown
@@ -325,7 +325,7 @@ class PhaseScheduler(Cleanable):
     # Phase registration API
     # ------------------------------------------------------------------
 
-    def register_phase(self, name: str, factory: Callable[[], Sequence[UnitOfWork]]) -> None:
+    def register_phase(self, name: str, factory: Callable[[], Sequence[IUnitOfWork]]) -> None:
         """
         Register a phase in the scheduler.
 
@@ -335,7 +335,7 @@ class PhaseScheduler(Cleanable):
             name:
                 Logical phase name (e.g. "scan_spells", "build_graphs").
             factory:
-                Callable[[] -> Sequence[UnitOfWork]] that, when invoked, builds
+                Callable[[] -> Sequence[IUnitOfWork]] that, when invoked, builds
                 all UnitsOfWork for this phase. Factories should use
                 :meth:`create_unit_of_work` to ensure each unit is bound to
                 this scheduler's CancellationEvent.
@@ -351,7 +351,7 @@ class PhaseScheduler(Cleanable):
             raise ValueError("Phase name must be a non-empty string.")
 
         if not callable(factory):
-            raise TypeError("Phase factory must be callable() -> Sequence[UnitOfWork].")
+            raise TypeError("Phase factory must be callable() -> Sequence[IUnitOfWork].")
 
         with self._lock:
             if name in self._phase_factories:
@@ -437,8 +437,8 @@ class PhaseScheduler(Cleanable):
     def _run_single_phase(
             self,
             phase_name: str,
-            factory: Callable[[], Sequence[UnitOfWork]],
-    ) -> Sequence[UnitOfWork]:
+            factory: Callable[[], Sequence[IUnitOfWork]],
+    ) -> Sequence[IUnitOfWork]:
         """
         Internal
 
@@ -453,11 +453,11 @@ class PhaseScheduler(Cleanable):
             phase_name:
                 Logical name of the phase.
             factory:
-                Callable[[] -> Sequence[UnitOfWork]] used to build the phase's
+                Callable[[] -> Sequence[IUnitOfWork]] used to build the phase's
                 UnitsOfWork.
 
         Returns:
-            Sequence[UnitOfWork]:
+            Sequence[IUnitOfWork]:
                 The sequence produced by the factory. Callers may inspect
                 `result()` or `exception()` on these as needed.
 
@@ -472,7 +472,7 @@ class PhaseScheduler(Cleanable):
             )
 
         # Build the work for this phase.
-        units: Sequence[UnitOfWork] = factory()
+        units: Sequence[IUnitOfWork] = factory()
 
         # No work = trivial barrier.
         if not units:
@@ -491,8 +491,9 @@ class PhaseScheduler(Cleanable):
         # - returns early on first exception (fail-fast)
         # - otherwise returns when all complete
         # - or returns at timeout with pending non-empty
+        wait_targets = cast(Sequence[Future[Any]], units)
         done, pending = wait(
-            units,
+            wait_targets,
             timeout=timeout_sec,
             return_when=FIRST_EXCEPTION,
         )
@@ -560,7 +561,7 @@ class PhaseScheduler(Cleanable):
     # Public run API
     # ------------------------------------------------------------------
 
-    def run_all_phases(self, conduit_id: Optional[str] = None) -> Dict[str, Sequence[UnitOfWork]]:
+    def run_all_phases(self, conduit_id: Optional[str] = None) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Execute all registered phases in registration order.
 
@@ -571,8 +572,8 @@ class PhaseScheduler(Cleanable):
                 scheduler does not use this value directly; phase factories
                 may capture it via closure as needed.
         Returns:
-            Dict[str, Sequence[UnitOfWork]]:
-                Mapping of phase_name -> Sequence[UnitOfWork]. Callers may
+            Dict[str, Sequence[IUnitOfWork]]:
+                Mapping of phase_name -> Sequence[IUnitOfWork]. Callers may
                 inspect individual results via `uow.result()` after a
                 successful run.
 
@@ -589,7 +590,7 @@ class PhaseScheduler(Cleanable):
         if not phase_names:
             return {}
 
-        results: Dict[str, Sequence[UnitOfWork]] = {}
+        results: Dict[str, Sequence[IUnitOfWork]] = {}
 
         for name in phase_names:
             factory = self._phase_factories.get(name)

@@ -23,8 +23,8 @@ class IContract(ICleanable, Protocol):
     _id: str
     _ward_a: IConduitWard
     _ward_b: IConduitWard
-    _details_a: 'Dict[str, IDetail]'
-    _details_b: 'Dict[str, IDetail]'
+    _details_a: Dict[str, IDetail]
+    _details_b: Dict[str, IDetail]
 
     def _clean_up(self) -> None:
         """

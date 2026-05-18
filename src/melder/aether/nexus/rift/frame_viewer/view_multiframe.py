@@ -7,7 +7,7 @@ local descriptor or ACL state.
 """
 
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
@@ -15,6 +15,72 @@ from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces import IConduitRecord, ISpellRecord
+
+
+class _RiftViewerSurface(Protocol):
+    """
+    Narrow borrowed Rift surface used by ViewMultiFrame.
+    """
+
+    def list_assigned_frame_names(self) -> Tuple[str, ...]:
+        ...
+
+    def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
+        ...
+
+    def list_accessible_non_nexus_frame_names(self) -> Tuple[str, ...]:
+        ...
+
+
+class _FrameViewerSurface(Protocol):
+    """
+    Narrow borrowed FrameViewer surface used by ViewMultiFrame.
+    """
+
+    _lock: object
+    _rift: _RiftViewerSurface
+
+    def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
+        ...
+
+    @contextmanager
+    def _entered_view_action(self, *, action_name: str) -> Any:
+        ...
+
+    def _get_frame_names_for_query(
+            self,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        ...
+
+    def _iter_conduit_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[object]:
+        ...
+
+    def _iter_spell_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[object]:
+        ...
+
+    def _build_spell_source_id(self, spell_record: ISpellRecord) -> str:
+        ...
+
+    def _normalize_spellframe_value(self, spellframe: object) -> Optional[str]:
+        ...
+
+    def _get_required_spell_record(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, object]:
+        ...
 
 
 @decorate_public_view_actions
@@ -40,7 +106,7 @@ class ViewMultiFrame(Cleanable):
         "_viewer",
     ]
 
-    def __init__(self, *, viewer: object) -> None:
+    def __init__(self, *, viewer: _FrameViewerSurface) -> None:
         """
         Initialize one multi-frame helper.
 
@@ -75,7 +141,7 @@ class ViewMultiFrame(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._viewer = None
+        self._viewer = cast(_FrameViewerSurface, None)
 
     @property
     def _lock(self):
@@ -129,7 +195,11 @@ class ViewMultiFrame(Cleanable):
         """
         return self._viewer._get_frame_names_for_query(frame_name)
 
-    def _iter_conduit_records(self, *, frame_name: Optional[str] = None) -> Iterator[Tuple[str, object]]:
+    def _iter_conduit_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[IConduitRecord]:
         """
         Yield descriptor-owned conduit records for the selected frame scope.
 
@@ -138,11 +208,18 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            object: Descriptor-owned conduit records.
+            IConduitRecord: Descriptor-owned conduit records.
         """
-        yield from self._viewer._iter_conduit_records(frame_name=frame_name)
+        for conduit_record in self._viewer._iter_conduit_records(
+                frame_name=frame_name,
+        ):
+            yield cast(IConduitRecord, conduit_record)
 
-    def _iter_spell_records(self, *, frame_name: Optional[str] = None) -> Iterator[object]:
+    def _iter_spell_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[ISpellRecord]:
         """
         Yield descriptor-owned spell records for the selected frame scope.
 
@@ -151,11 +228,14 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            object: Descriptor-owned spell records.
+            ISpellRecord: Descriptor-owned spell records.
         """
-        yield from self._viewer._iter_spell_records(frame_name=frame_name)
+        for spell_record in self._viewer._iter_spell_records(
+                frame_name=frame_name,
+        ):
+            yield cast(ISpellRecord, spell_record)
 
-    def _build_spell_source_id(self, spell_record: object) -> str:
+    def _build_spell_source_id(self, spell_record: ISpellRecord) -> str:
         """
         Build one published spell source id from a spell record.
 
@@ -181,7 +261,12 @@ class ViewMultiFrame(Cleanable):
         """
         return self._viewer._normalize_spellframe_value(spellframe)
 
-    def _get_required_spell_record(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Tuple[str, object]:
+    def _get_required_spell_record(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ISpellRecord]:
         """
         Return one descriptor-owned spell record plus its hosted frame.
 
@@ -192,15 +277,21 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, object]: `(frame_name, spell_record)` for the resolved
+            Tuple[str, ISpellRecord]: `(frame_name, spell_record)` for the resolved
             record.
         """
-        return self._viewer._get_required_spell_record(
+        resolved_frame_name, spell_record = self._viewer._get_required_spell_record(
             spell_source_id,
             frame_name=frame_name,
         )
+        return resolved_frame_name, cast(ISpellRecord, spell_record)
 
-    def _get_required_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Tuple[str, object]:
+    def _get_required_conduit_record(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, IConduitRecord]:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -211,18 +302,20 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, object]: `(frame_name, conduit_record)` for the
+            Tuple[str, IConduitRecord]: `(frame_name, conduit_record)` for the
             resolved record.
         """
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
-        matching_records: List[Tuple[str, object]] = []
+        matching_records: List[Tuple[str, IConduitRecord]] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
             record = descriptor.conduit_records_by_id.get(conduit_id)
             if record is None:
                 continue
-            matching_records.append((current_frame_name, record))
+            matching_records.append(
+                (current_frame_name, cast(IConduitRecord, record))
+            )
         if len(matching_records) == 0:
             raise ValueError(
                 "Conduit id '{0}' was not found.".format(conduit_id)
@@ -256,7 +349,57 @@ class ViewMultiFrame(Cleanable):
             "right_only": tuple(sorted(right_set - left_set)),
         }
 
-    def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
+    @staticmethod
+    def _get_required_object_map(value: object, *, name: str) -> Dict[str, object]:
+        """
+        Return one validated string-keyed object map.
+
+        Args:
+            value:
+                Candidate mapping.
+            name:
+                Field label for error reporting.
+
+        Returns:
+            Dict[str, object]: Validated string-keyed object map.
+        """
+        if not isinstance(value, dict):
+            raise TypeError("{0} must be a dict[str, object].".format(name))
+        normalized: Dict[str, object] = {}
+        for current_key, current_value in value.items():
+            if not isinstance(current_key, str):
+                raise TypeError("{0} keys must be strings.".format(name))
+            normalized[current_key] = current_value
+        return normalized
+
+    @staticmethod
+    def _get_required_string_tuple(
+            value: object,
+            *,
+            name: str,
+    ) -> Tuple[str, ...]:
+        """
+        Return one validated tuple of strings.
+
+        Args:
+            value:
+                Candidate iterable of strings.
+            name:
+                Field label for error reporting.
+
+        Returns:
+            Tuple[str, ...]: Validated tuple of strings.
+        """
+        if not isinstance(value, (tuple, list)):
+            raise TypeError("{0} must be a tuple[str, ...].".format(name))
+        normalized: List[str] = []
+        for current_value in value:
+            if not isinstance(current_value, str):
+                raise TypeError("{0} must contain only strings.".format(name))
+            normalized.append(current_value)
+        return tuple(normalized)
+
+    def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[ISpellRecord], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
         """
         Group spell source ids by one normalized spell-record value.
 
@@ -285,7 +428,7 @@ class ViewMultiFrame(Cleanable):
             for current_value, source_ids in grouped_source_ids_by_value.items()
         }
 
-    def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]):
+    def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[ISpellRecord], Optional[object]]):
         """
         Return spell value groups that have more than one published member.
 
@@ -309,7 +452,12 @@ class ViewMultiFrame(Cleanable):
             if len(source_ids) > 1
         }
 
-    def _describe_spellbook_mismatches(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]):
+    def _describe_spellbook_mismatches(
+            self,
+            *,
+            frame_name: Optional[str],
+            value_getter: Callable[[ISpellRecord], Optional[object]],
+    ):
         """
         Return spellbook groups whose selected value is not uniform.
 
@@ -323,7 +471,7 @@ class ViewMultiFrame(Cleanable):
         Returns:
             Dict[str, Dict[str, object]]: Spellbook mismatch summaries.
         """
-        grouped_records_by_spellbook_id: Dict[str, List[object]] = {}
+        grouped_records_by_spellbook_id: Dict[str, List[ISpellRecord]] = {}
         for spell_record in self._iter_spell_records(frame_name=frame_name):
             grouped_records_by_spellbook_id.setdefault(
                 spell_record.origin_spellbook_id,
@@ -362,7 +510,12 @@ class ViewMultiFrame(Cleanable):
         """
         if policy is None:
             return None
-        return policy.name
+        if isinstance(policy, str):
+            return policy
+        policy_name = getattr(policy, "name", None)
+        if isinstance(policy_name, str):
+            return policy_name
+        return str(policy)
 
     @staticmethod
     def _parse_spell_source_id(spell_source_id: str) -> Tuple[str, str]:
@@ -763,26 +916,70 @@ class ViewMultiFrame(Cleanable):
         """
         self.check_cleaned()
         full_comparison = self.compare_frames(left_frame_name, right_frame_name)
+        conduit_comparison = self._get_required_object_map(
+            full_comparison["conduits"],
+            name="conduits",
+        )
+        conduit_id_comparison = self._get_required_object_map(
+            conduit_comparison["conduit_ids"],
+            name="conduit_ids",
+        )
+        spell_comparison = self._get_required_object_map(
+            full_comparison["spells"],
+            name="spells",
+        )
+        spell_source_id_comparison = self._get_required_object_map(
+            spell_comparison["spell_source_ids"],
+            name="spell_source_ids",
+        )
+        permissions_comparison = self._get_required_object_map(
+            full_comparison["permissions"],
+            name="permissions",
+        )
+        existence_comparison = self._get_required_object_map(
+            full_comparison["existence_kinds"],
+            name="existence_kinds",
+        )
         return {
             "left_frame_name": left_frame_name,
             "right_frame_name": right_frame_name,
             "same_frame_id": full_comparison["same_frame_id"],
             "same_nexus_contract": full_comparison["same_nexus_contract"],
             "left_only_conduit_count": len(
-                full_comparison["conduits"]["conduit_ids"]["left_only"]
+                self._get_required_string_tuple(
+                    conduit_id_comparison["left_only"],
+                    name="left_only_conduit_ids",
+                )
             ),
             "right_only_conduit_count": len(
-                full_comparison["conduits"]["conduit_ids"]["right_only"]
+                self._get_required_string_tuple(
+                    conduit_id_comparison["right_only"],
+                    name="right_only_conduit_ids",
+                )
             ),
             "left_only_spell_count": len(
-                full_comparison["spells"]["spell_source_ids"]["left_only"]
+                self._get_required_string_tuple(
+                    spell_source_id_comparison["left_only"],
+                    name="left_only_spell_source_ids",
+                )
             ),
             "right_only_spell_count": len(
-                full_comparison["spells"]["spell_source_ids"]["right_only"]
+                self._get_required_string_tuple(
+                    spell_source_id_comparison["right_only"],
+                    name="right_only_spell_source_ids",
+                )
             ),
-            "shared_permission_count": len(full_comparison["permissions"]["shared"]),
+            "shared_permission_count": len(
+                self._get_required_string_tuple(
+                    permissions_comparison["shared"],
+                    name="shared_permissions",
+                )
+            ),
             "shared_existence_kind_count": len(
-                full_comparison["existence_kinds"]["shared"]
+                self._get_required_string_tuple(
+                    existence_comparison["shared"],
+                    name="shared_existence_kinds",
+                )
             ),
         }
 
@@ -1559,9 +1756,13 @@ class ViewMultiFrame(Cleanable):
         """
         self.check_cleaned()
         spellframes = {
-            self._normalize_spellframe_value(spell_record.spellframe)
+            normalized_spellframe
             for spell_record in self._iter_spell_records(frame_name=frame_name)
-            if self._normalize_spellframe_value(spell_record.spellframe) is not None
+            if (
+                (normalized_spellframe := self._normalize_spellframe_value(
+                    spell_record.spellframe
+                )) is not None
+            )
         }
         return list(sorted(spellframes))
 

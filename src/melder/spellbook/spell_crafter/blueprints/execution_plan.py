@@ -14,6 +14,9 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces import ISpell
 
+FastPlanData = Tuple[Any, ...]
+FastTransientPlan = Tuple[Any, ...]
+
 
 class ExecutionPlanVariant:
     """
@@ -450,6 +453,8 @@ class ExecutionPlan(Cleanable):
         "_fast_has_existing_creations",
     ]
 
+    _cleaned: bool
+
     def __init__(
             self,
             *,
@@ -517,54 +522,7 @@ class ExecutionPlan(Cleanable):
             fast_call8_dep_indices_f: Optional[List[int]] = None,
             fast_call8_dep_indices_g: Optional[List[int]] = None,
             fast_call8_dep_indices_h: Optional[List[int]] = None,
-            fast_transient_plan: Optional[
-                Tuple[
-                    int,
-                    int,
-                    List[Any],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                    List[int],
-                ]
-            ] = None,
+            fast_transient_plan: Optional[FastTransientPlan] = None,
             fast_has_contract_payloads: Optional[bool] = None,
             fast_has_existing_creations: Optional[bool] = None,
     ) -> None:
@@ -974,19 +932,7 @@ class ExecutionPlan(Cleanable):
     @property
     def fast_plan(
             self,
-    ) -> tuple[
-             list[int], list[str] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                 bool] | None, list[list[tuple[str, Any]] | None] | None, list[Any | None] | None, list[
-                            tuple[str, int | None]] | None, list[int] | None, list[Existence] | None, list[bool] | None,
-                        list[bool] | None, list[ISpell] | None, list[Any] | None, list[Any] | None, list[bool] | None,
-                        list[bool] | None, int | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
-                            int] | None, list[int] | None, list[int] | None, list[int] | None] | None:
+    ) -> Optional[FastPlanData]:
         """
         Return precompiled fast-path arrays for no-override execution.
 
@@ -1065,54 +1011,7 @@ class ExecutionPlan(Cleanable):
     @property
     def fast_transient_plan(
             self,
-    ) -> Optional[
-        Tuple[
-            int,
-            int,
-            List[Any],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-        ]
-    ]:
+    ) -> Optional[FastTransientPlan]:
         """
         Return a specialized transient-only plan for the no-overrides path.
 
@@ -1440,35 +1339,7 @@ class ExecutionPlanBuilder:
             steps: List[ExecutionPlanStep],
             instance_key_to_step_index: Dict[InstanceKey, int],
             root_instance_key: InstanceKey,
-    ) -> Tuple[
-        List[int],
-        List[str],
-        List[int],
-        List[int],
-        List[int],
-        List[int],
-        List[bool],
-        List[Optional[List[Tuple[str, Any]]]],
-        List[Optional[Any]],
-        List[InstanceKey],
-        List[int],
-        List[Existence],
-        List[bool],
-        List[bool],
-        List[ISpell],
-        List[Any],
-        List[Any],
-        List[bool],
-        List[bool],
-        int,
-        List[int],
-        List[int],
-        List[int],
-        List[int],
-        List[int],
-        List[int],
-        List[int],
-    ]:
+    ) -> FastPlanData:
         """
         Build compact arrays for the no-override fast path.
 
@@ -1493,12 +1364,21 @@ class ExecutionPlanBuilder:
         fast_use_positional: List[bool] = [False] * step_count
         fast_contract_payload_items: List[Optional[List[Tuple[str, Any]]]] = [None] * step_count
         fast_contract_positional_args: List[Optional[Any]] = [None] * step_count
-        fast_instance_keys: List[InstanceKey] = [None] * step_count
+        fast_instance_keys: List[InstanceKey] = [
+            step.instance_key
+            for step in steps
+        ]
         fast_creations_target_kinds: List[int] = [0] * step_count
-        fast_existence: List[Existence] = [None] * step_count
+        fast_existence: List[Existence] = [
+            step.existence
+            for step in steps
+        ]
         fast_must_register: List[bool] = [False] * step_count
         fast_set_result_flags: List[bool] = [False] * step_count
-        fast_spells: List[ISpell] = [None] * step_count
+        fast_spells: List[ISpell] = [
+            step.spell
+            for step in steps
+        ]
         fast_call_targets: List[Any] = [None] * step_count
         fast_existing_objects: List[Any] = [None] * step_count
         fast_is_existing_creation: List[bool] = [False] * step_count
@@ -1924,52 +1804,7 @@ class ExecutionPlanBuilder:
             fast_call8_dep_indices_g: List[int],
             fast_call8_dep_indices_h: List[int],
             root_step_index: int,
-    ) -> Optional[
-        Tuple[
-            int,
-            int,
-            List[Any],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-        ]
-    ]:
+    ) -> Optional[FastTransientPlan]:
         """
         Build a specialized transient-only plan for no-overrides execution.
 

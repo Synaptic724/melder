@@ -1233,7 +1233,7 @@ class Aether(Cleanable, IAether):
         self._logger.error(f"Conduit with signature {signature} not found.", "_get_conduit_by_id", exc_info=True)
         raise ValueError(f"Conduit with signature {signature} not found.")
 
-    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
+    def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default") -> None:
         """
         Add a new root conduit to one frame.
 
@@ -1242,9 +1242,6 @@ class Aether(Cleanable, IAether):
                 Conduit to register.
             aetheric_frame_name (str):
                 Name of the target frame.
-
-        Returns:
-            None.
 
         Raises:
             ValueError: If the frame does not exist, the conduit id already
@@ -1284,7 +1281,7 @@ class Aether(Cleanable, IAether):
         conduits[cid] = conduit
         frame._conduit_ids_by_name[conduit_name] = cid
 
-    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
+    def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default") -> None:
         """
         Remove a root conduit from one frame.
 
@@ -1293,9 +1290,6 @@ class Aether(Cleanable, IAether):
                 Conduit to remove.
             aetheric_frame_name (str):
                 Name of the target frame.
-
-        Returns:
-            None.
 
         Raises:
             ValueError: If the frame does not exist or the conduit is not found.
@@ -1325,7 +1319,7 @@ class Aether(Cleanable, IAether):
                 frame._conduit_ids_by_name.pop(conduit_name, None)
 
 
-    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):
+    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
         Creates a new conduit cluster within a frame. (Internal use)
 
@@ -1410,7 +1404,7 @@ class Aether(Cleanable, IAether):
     # ------------------------------------------------------------------
     # Cluster sharing hooks and helpers
     # ------------------------------------------------------------------
-    def _on_conduit_joined_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
+    def _on_conduit_joined_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
         Internal hook: auto-share eligible spells when a conduit joins a cluster.
 
@@ -1426,7 +1420,7 @@ class Aether(Cleanable, IAether):
         frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._default_frame
         cluster.handle_join(conduit, frame, aetheric_frame_name)
 
-    def _on_conduit_left_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
+    def _on_conduit_left_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
         Internal hook: teardown auto-shared spells when a conduit leaves a cluster.
 
@@ -1442,7 +1436,7 @@ class Aether(Cleanable, IAether):
         frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._default_frame
         cluster.handle_leave(conduit, frame, aetheric_frame_name)
 
-    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
+    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
         Adds a conduit's id to a cluster. (Internal use)
 
@@ -1464,7 +1458,7 @@ class Aether(Cleanable, IAether):
         except Exception as e:
             self._logger.error(f"_add_conduit_to_cluster: cluster join hook failed: {e}", "_add_conduit_to_cluster", exc_info=True)
 
-    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default"):
+    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
         Removes a conduit's id from a cluster. (Internal use)
 

@@ -54,7 +54,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         self._all_spell_ids: Collection[str] = all_spell_ids
         self._root_spell_ids: Set[str] = root_spell_ids
         # SpellLocalTopology references (owned by SpellSystemStates).
-        self._topologies: Dict[str, 'SpellLocalTopology'] = topologies
+        self._topologies: Optional[Dict[str, 'SpellLocalTopology']] = topologies
 
 
     def cleanup(self) -> None:

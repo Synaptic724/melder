@@ -6,7 +6,7 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IConduitWard, IConduit, IContract
+from melder.utilities.interfaces import IConduitWard, IConduit, IContract, IDetail
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -46,8 +46,8 @@ class Contract(Cleanable, IContract):
         self._ward_b: IConduitWard = ward_b
 
         # Each side stores its own view of spell permissions.
-        self._details_a: Dict[str, Detail] = {} # Borrowed from conduit b
-        self._details_b: Dict[str, Detail] = {} # Borrowed from conduit a
+        self._details_a: Dict[str, IDetail] = {} # Borrowed from conduit b
+        self._details_b: Dict[str, IDetail] = {} # Borrowed from conduit a
 
     #region Cleanup
     def cleanup(self):

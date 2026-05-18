@@ -21,7 +21,7 @@ from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IFrameLink
+from melder.utilities.interfaces import IFrameLink, ISpellRecord
 
 
 @decorate_public_view_actions
@@ -438,13 +438,17 @@ class ViewFrame(Cleanable):
         self._assert_optional_frame_name(frame_name)
         frame_inventory = self.describe_frame_inventory(frame_name=frame_name)
         frame_contract = self.describe_frame_access_contract(frame_name=frame_name)
+        frame_payload_fields = self._get_required_string_tuple(
+            frame_contract["frame_payload_fields"],
+            name="frame_payload_fields",
+        )
         return {
             "frame_name": self._get_required_frame_name(),
             "visible_target_count": frame_inventory["target_count"],
             "visible_conduit_count": frame_inventory["conduit_count"],
             "visible_spell_count": frame_inventory["spell_count"],
             "allowed_kinds": frame_contract["allowed_kinds"],
-            "frame_payload_field_count": len(frame_contract["frame_payload_fields"]),
+            "frame_payload_field_count": len(frame_payload_fields),
         }
 
     def describe_target_brief(
@@ -488,9 +492,15 @@ class ViewFrame(Cleanable):
         )
         visible_payload_keys: tuple[str, ...] = tuple()
         if source_kind == "frame":
-            visible_payload_keys = tuple(explanation["visible_fields"])
+            visible_payload_keys = self._get_required_string_tuple(
+                explanation["visible_fields"],
+                name="visible_fields",
+            )
         else:
-            visible_payload_keys = tuple(explanation["visible_sections"])
+            visible_payload_keys = self._get_required_string_tuple(
+                explanation["visible_sections"],
+                name="visible_sections",
+            )
         return {
             "target_id": frame_link.link_id,
             "source_kind": frame_link.source_kind,
@@ -707,10 +717,12 @@ class ViewFrame(Cleanable):
         """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
+        frame_summary = self.describe_frame()
         return {
             "frame_name": self._get_required_frame_name(),
-            "available_kinds": tuple(
-                self.describe_frame()["available_kinds"]
+            "available_kinds": self._get_required_string_tuple(
+                frame_summary["available_kinds"],
+                name="available_kinds",
             ),
             "inventory_by_kind": self.describe_visible_inventory_by_kind(
                 frame_name=frame_name
@@ -982,7 +994,9 @@ class ViewFrame(Cleanable):
                 frame_name=frame_name,
                 source_kind="spell",
         ):
-            record_key = spell_link.metadata["record_key"]
+            record_key = self._get_required_record_key(
+                spell_link.metadata["record_key"]
+            )
             binding_name = descriptor.spell_records_by_key[record_key].binding_name
             if binding_name is None:
                 continue
@@ -1009,7 +1023,11 @@ class ViewFrame(Cleanable):
         self._assert_optional_frame_name(frame_name)
         descriptor = self._get_required_frame_descriptor()
         return [
-            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].spell_name
+            descriptor.spell_records_by_key[
+                self._get_required_record_key(
+                    spell_link.metadata["record_key"]
+                )
+            ].spell_name
             for spell_link in self.list_targets(
                 frame_name=frame_name,
                 source_kind="spell",
@@ -1042,7 +1060,9 @@ class ViewFrame(Cleanable):
                 frame_name=frame_name,
                 source_kind="spell",
         ):
-            record_key = spell_link.metadata["record_key"]
+            record_key = self._get_required_record_key(
+                spell_link.metadata["record_key"]
+            )
             spellframe_name = self._normalize_spellframe_value(
                 descriptor.spell_records_by_key[record_key].spellframe
             )
@@ -1072,7 +1092,11 @@ class ViewFrame(Cleanable):
         self._assert_optional_frame_name(frame_name)
         descriptor = self._get_required_frame_descriptor()
         return [
-            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].spell_index_id
+            descriptor.spell_records_by_key[
+                self._get_required_record_key(
+                    spell_link.metadata["record_key"]
+                )
+            ].spell_index_id
             for spell_link in self.list_targets(
                 frame_name=frame_name,
                 source_kind="spell",
@@ -1104,7 +1128,9 @@ class ViewFrame(Cleanable):
                 frame_name=frame_name,
                 source_kind="spell",
         ):
-            record_key = spell_link.metadata["record_key"]
+            record_key = self._get_required_record_key(
+                spell_link.metadata["record_key"]
+            )
             owner_conduit_id = descriptor.spell_records_by_key[record_key].owner_conduit_id
             if owner_conduit_id is None:
                 continue
@@ -1319,7 +1345,9 @@ class ViewFrame(Cleanable):
                 "nexus_label": conduit_record.nexus_label,
                 "nexus_version": conduit_record.nexus_version,
             }
-        record_key = frame_link.metadata["record_key"]
+        record_key = self._get_required_record_key(
+            frame_link.metadata["record_key"]
+        )
         spell_record = descriptor.spell_records_by_key[record_key]
         return {
             "frame_name": self._get_required_frame_name(),
@@ -1510,7 +1538,10 @@ class ViewFrame(Cleanable):
         if not field_name:
             raise ValueError("field_name cannot be empty.")
         payload_description = self.describe_frame_payload(frame_name=frame_name)
-        visible_fields = payload_description["visible_fields"]
+        visible_fields = self._get_required_string_tuple(
+            payload_description["visible_fields"],
+            name="visible_fields",
+        )
         if field_name not in visible_fields:
             raise ValueError(
                 "Frame payload field '{0}' is not visible for frame '{1}'.".format(
@@ -1518,7 +1549,8 @@ class ViewFrame(Cleanable):
                     self._get_required_frame_name(),
                 )
             )
-        return payload_description["payload"][field_name]
+        payload = self._get_required_payload_map(payload_description["payload"])
+        return payload[field_name]
 
     def get_required_target_by_source(
             self,
@@ -1685,6 +1717,77 @@ class ViewFrame(Cleanable):
         return links
 
     @staticmethod
+    def _get_required_record_key(record_key: object) -> Tuple[str, str]:
+        """
+        Return one validated spell-record key.
+
+        Args:
+            record_key:
+                Candidate spell-record key from frame-link metadata.
+
+        Returns:
+            Tuple[str, str]: Validated `(origin_spellbook_id, spell_id)` key.
+        """
+        if (
+                not isinstance(record_key, tuple)
+                or len(record_key) != 2
+                or not isinstance(record_key[0], str)
+                or not isinstance(record_key[1], str)
+        ):
+            raise TypeError(
+                "frame_link.metadata['record_key'] must be a tuple[str, str]."
+            )
+        return record_key[0], record_key[1]
+
+    @staticmethod
+    def _get_required_string_tuple(
+            value: object,
+            *,
+            name: str,
+    ) -> Tuple[str, ...]:
+        """
+        Return one validated tuple of strings.
+
+        Args:
+            value:
+                Candidate iterable of strings.
+            name:
+                Field label for error reporting.
+
+        Returns:
+            Tuple[str, ...]: Validated tuple of strings.
+        """
+        if not isinstance(value, (tuple, list)):
+            raise TypeError("{0} must be a tuple[str, ...].".format(name))
+        normalized: List[str] = []
+        for current_value in value:
+            if not isinstance(current_value, str):
+                raise TypeError("{0} must contain only strings.".format(name))
+            normalized.append(current_value)
+        return tuple(normalized)
+
+    @staticmethod
+    def _get_required_payload_map(value: object) -> Dict[str, object]:
+        """
+        Return one validated string-keyed payload map.
+
+        Args:
+            value:
+                Candidate payload mapping.
+
+        Returns:
+            Dict[str, object]: Validated payload map.
+        """
+        if not isinstance(value, dict):
+            raise TypeError("payload must be a dict[str, object].")
+        normalized: Dict[str, object] = {}
+        for current_key, current_value in value.items():
+            if not isinstance(current_key, str):
+                raise TypeError("payload keys must be strings.")
+            normalized[current_key] = current_value
+        return normalized
+
+    @staticmethod
     def _filter_frame_payload(
             payload: Any,
             visible_fields: tuple[str, ...],
@@ -1791,7 +1894,7 @@ class ViewFrame(Cleanable):
         )
 
     @staticmethod
-    def _build_spell_source_id(spell_record: object) -> str:
+    def _build_spell_source_id(spell_record: ISpellRecord) -> str:
         """
         Build the published spell source id for one spell record.
 
@@ -1890,7 +1993,7 @@ class ViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[IFrameLink, object]]:
+    ) -> List[Tuple[IFrameLink, ISpellRecord]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -1900,14 +2003,18 @@ class ViewFrame(Cleanable):
                 bound frame.
 
         Returns:
-            List[Tuple[FrameLink, object]]: Visible spell links paired with
+            List[Tuple[IFrameLink, ISpellRecord]]: Visible spell links paired with
             spell records.
         """
         descriptor = self._get_required_frame_descriptor()
         return [
             (
                 spell_link,
-                descriptor.spell_records_by_key[spell_link.metadata["record_key"]],
+                descriptor.spell_records_by_key[
+                    self._get_required_record_key(
+                        spell_link.metadata["record_key"]
+                    )
+                ],
             )
             for spell_link in self.list_targets(
                 frame_name=frame_name,

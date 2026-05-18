@@ -1,4 +1,5 @@
-from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, Union, runtime_checkable
+from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, Union, runtime_checkable, \
+    Set
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.spellbook.existence.existence import Existence
@@ -34,19 +35,19 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Core backing fields (shape only; concrete types live in impl)
     # ------------------------------------------------------------------
-    _lookup_contracted_spells: Optional[Any]
-    _lookup_spells: Optional[Any]
-    _contracted_spells: Optional[Any]
-    _contracted_versions: Optional[Any]
-    _contracted_spells_by_id: Optional[Any]
-    _spells: Optional[Any]
-    _spell_versions: Optional[Any]
-    _spells_by_id: Optional[Any]
+    _lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]
+    _lookup_spells: Dict[tuple, ISpellIndex]
+    _contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]]
+    _contracted_versions: Dict[str, Set[str]]
+    _contracted_spells_by_id: Dict[str, Dict[str, ISpell]]
+    _spells: Dict[ISpellIndex, ISpell]
+    _spell_versions: Set[str]
+    _spells_by_id: Dict[str, ISpell]
     _bind: Optional[Any]
     _id: str
     _aetheric_frame: Optional[str]
     _configuration: 'Optional[IConfiguration]'
-    _spell_id_pool: Optional[Any]
+    _spell_id_pool: Dict[str, ISpell]
 
     # Spell Validator
     _spell_validator: ISpellValidationSystem
