@@ -53,7 +53,7 @@ class Contract(Cleanable, IContract):
         self._details_b: Dict[str, IDetail] = {} # Borrowed from conduit a
 
     #region Cleanup
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Idempotently tear down this contract and all contained Details.
 
@@ -66,13 +66,13 @@ class Contract(Cleanable, IContract):
             if self._cleaned:
                 return
             self._clean_up()
+            self._cleaned = True
             del self._ward_a
             del self._ward_b
             del self._details_a
             del self._details_b
-            self._cleaned = True
 
-    def _clean_up(self):
+    def _clean_up(self) -> None:
         """
         Internal helper to cleanup all Detail entries for both wards.
         """
@@ -233,7 +233,7 @@ class Contract(Cleanable, IContract):
             return True
         return False
 
-    def _clear_contract(self):
+    def _clear_contract(self) -> None:
         """
         Internal
 
@@ -286,7 +286,7 @@ class Contract(Cleanable, IContract):
             return None
 
 
-    def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions):
+    def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions) -> None:
         """
         Internal
 

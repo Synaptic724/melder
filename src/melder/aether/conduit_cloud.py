@@ -67,7 +67,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._registry: Dict[str, IConduit] = {}
         self._id: str = str(ulid.ULID())
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Clear the owned dynamic cloud registry and finalize the cloud.
 
@@ -267,7 +267,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         with self._lock:
             return self._conduit_ids_by_name.get(name)
 
-    def _register_conduit(self, conduit: IConduit):
+    def _register_conduit(self, conduit: IConduit) -> None:
         """
         Register one named conduit in the cloud.
 
@@ -300,7 +300,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 )
             self._registry[conduit.name] = conduit
 
-    def _unregister_conduit(self, conduit: IConduit):
+    def _unregister_conduit(self, conduit: IConduit) -> None:
         """
         Remove one named conduit from the cloud.
 

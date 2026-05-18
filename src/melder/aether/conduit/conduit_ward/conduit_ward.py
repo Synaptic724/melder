@@ -142,7 +142,7 @@ class ConduitWard(Cleanable, IConduitWard):
             raise
 
     #region Cleanup
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Public API
 
@@ -193,7 +193,7 @@ class ConduitWard(Cleanable, IConduitWard):
             del self._logger
 
 
-    def _clean_up_lesser_conduits_links(self):
+    def _clean_up_lesser_conduits_links(self) -> None:
         """
         Internal
 
@@ -219,7 +219,7 @@ class ConduitWard(Cleanable, IConduitWard):
                 )
         self._lesser_conduits.clear()
 
-    def _clean_up_links(self):
+    def _clean_up_links(self) -> None:
         """
         Internal
 
