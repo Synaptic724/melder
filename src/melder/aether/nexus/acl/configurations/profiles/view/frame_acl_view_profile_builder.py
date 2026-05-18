@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, cast
+from typing import Dict, List
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
@@ -150,4 +150,4 @@ class FrameACLViewProfileBuilder(Cleanable):
         """
         self.check_cleaned()
         strategy = self.get_required_strategy(strategy_name)
-        return cast(FrameACLViewProfile, strategy.build())
+        return strategy.build()

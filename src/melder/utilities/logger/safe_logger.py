@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Iterable, Dict, Any, Union, cast
+from typing import Optional, Iterable, Dict, Any, Union
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -23,7 +23,7 @@ class SafeLogger(Cleanable, ISafeLogger):
     - Falls back to a no-op surface when no logger is configured.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id", "_level", "_level_name"]
+    __slots__ = Cleanable.__slots__ + ["_logger", "_id", "_level", "_level_name"]
     _LEVELS: Dict[str, int] = {
         "notset": logging.NOTSET,
         "debug": logging.DEBUG,
@@ -52,7 +52,6 @@ class SafeLogger(Cleanable, ISafeLogger):
                 f"got {type(logger).__name__} instead."
             )
         self._logger = logger
-        self._is_channel = isinstance(logger, _IChannelLogger)
         normalized = level_name.lower()
         if normalized not in self._LEVELS:
             raise ValueError(f"Invalid log level name '{level_name}'. Expected one of: {list(self._LEVELS)}")
@@ -145,15 +144,11 @@ class SafeLogger(Cleanable, ISafeLogger):
         if level < self._level:
             return
 
-        if self._is_channel:
-            # `_is_channel` is the runtime contract for this branch. Tests may
-            # swap in channel-like doubles after init, so a static cast keeps
-            # the branch semantics while letting mypy use the protocol surface.
-            channel_logger = cast(IChannelLogger, logger)
+        if isinstance(logger, IChannelLogger):
             # Channel path
             if mask:
                 # Use the real masking API; enforce your manual stack metadata.
-                channel_logger.mask_log(
+                logger.mask_log(
                     level,
                     msg,
                     owner=owner,
@@ -170,16 +165,16 @@ class SafeLogger(Cleanable, ISafeLogger):
 
             # Non-masked channel path mirrors your existing behavior.
             if level == logging.DEBUG:
-                channel_logger.debug(msg, _manual_stack=True, _method_name=method_name)
+                logger.debug(msg, _manual_stack=True, _method_name=method_name)
                 return
             if level == logging.INFO:
-                channel_logger.info(msg, _manual_stack=True, _method_name=method_name)
+                logger.info(msg, _manual_stack=True, _method_name=method_name)
                 return
             if level == logging.WARNING:
-                channel_logger.warning(msg, _manual_stack=True, _method_name=method_name)
+                logger.warning(msg, _manual_stack=True, _method_name=method_name)
                 return
             if level == logging.ERROR:
-                channel_logger.error(
+                logger.error(
                     msg,
                     exc_info=exc_info if exc_info is not None else False,
                     _manual_stack=True,
@@ -187,36 +182,37 @@ class SafeLogger(Cleanable, ISafeLogger):
                 )
                 return
             if level >= logging.CRITICAL:
-                channel_logger.critical(msg, _manual_stack=True, _method_name=method_name)
+                logger.critical(msg, _manual_stack=True, _method_name=method_name)
                 return
 
             # Fallback for uncommon numeric levels
-            channel_logger._log(level, msg, _manual_stack=True, _method_name=method_name)
+            logger._log(level, msg, _manual_stack=True, _method_name=method_name)
             return
 
         # Std logger path (masking is intentionally ignored)
-        std_logger = cast(logging.Logger, logger)
+        if not isinstance(logger, logging.Logger):
+            raise TypeError("SafeLogger requires a stdlib logger in the non-channel branch.")
         if level == logging.DEBUG:
-            std_logger.debug(msg)
+            logger.debug(msg)
             return
         if level == logging.INFO:
-            std_logger.info(msg)
+            logger.info(msg)
             return
         if level == logging.WARNING:
-            std_logger.warning(msg)
+            logger.warning(msg)
             return
         if level == logging.ERROR:
             if exc_info:
                 # Match your current semantics: exception() when exc_info truthy.
-                std_logger.exception(msg)
+                logger.exception(msg)
             else:
-                std_logger.error(msg)
+                logger.error(msg)
             return
         if level >= logging.CRITICAL:
-            std_logger.critical(msg)
+            logger.critical(msg)
             return
 
-        std_logger.log(level, msg)
+        logger.log(level, msg)
 
     # ---- Public API (now with optional masking on every call) ---------------------
 

@@ -6,10 +6,52 @@ import ast
 import inspect
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
+
+
+class InheritedAgentPurposeDescription(TypedDict):
+    """
+    Typed inherited-purpose payload for one parent class in the MRO.
+    """
+
+    class_name: str
+    agent_purpose: str
+
+
+class ClassMemberDescription(TypedDict):
+    """
+    Typed method/property payload emitted from one AST-described class member.
+    """
+
+    method_name: str
+    signature: str
+    docstring: str
+    summary: str
+    decorators: Tuple[str, ...]
+    line_number: int
+    end_line: int
+    is_async: bool
+    call_style: str
+
+
+class ClassSurfaceDescription(TypedDict):
+    """
+    Typed top-level AST class-surface payload returned by the describer.
+    """
+
+    class_name: str
+    module: str
+    source_file: str
+    ast_helper_access: str
+    agent_purpose: str
+    inherited_agent_purposes: List[InheritedAgentPurposeDescription]
+    class_docstring: str
+    class_summary: str
+    methods: List[ClassMemberDescription]
+    properties: List[ClassMemberDescription]
 
 
 class ClassSurfaceAstDescriber:
@@ -106,7 +148,7 @@ class ClassSurfaceAstDescriber:
             include_private=include_private,
             include_dunder=include_dunder,
         )
-        methods = cast(List[Dict[str, object]], class_surface["methods"])
+        methods = class_surface["methods"]
         return json.dumps(
             {
                 "class_name": class_surface["class_name"],
@@ -180,7 +222,7 @@ class ClassSurfaceAstDescriber:
             *,
             include_private: bool = False,
             include_dunder: bool = False,
-    ) -> Dict[str, object]:
+    ) -> ClassSurfaceDescription:
         """
         Build a structured class-surface description from AST.
 
@@ -193,7 +235,7 @@ class ClassSurfaceAstDescriber:
                 Whether `__dunder__` members should be included.
 
         Returns:
-            Dict[str, object]: Structured class-surface description.
+            ClassSurfaceDescription: Structured class-surface description.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object
@@ -221,8 +263,8 @@ class ClassSurfaceAstDescriber:
                     source_file,
                 )
             )
-        methods: List[Dict[str, object]] = []
-        properties: List[Dict[str, object]] = []
+        methods: List[ClassMemberDescription] = []
+        properties: List[ClassMemberDescription] = []
         for current_node in class_node.body:
             if not isinstance(current_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
@@ -313,8 +355,8 @@ class ClassSurfaceAstDescriber:
 
     @staticmethod
     def _describe_function_node(
-            function_node: ast.AST,
-    ) -> Dict[str, object]:
+            function_node: FunctionNode,
+    ) -> ClassMemberDescription:
         """
         Return the AST-backed description for one method/property node.
 
@@ -323,31 +365,30 @@ class ClassSurfaceAstDescriber:
                 Class function node to describe.
 
         Returns:
-            Dict[str, object]: Method/property description.
+            ClassMemberDescription: Method/property description.
         """
-        typed_function_node = cast(FunctionNode, function_node)
-        docstring = ast.get_docstring(typed_function_node) or ""
+        docstring = ast.get_docstring(function_node) or ""
         return {
-            "method_name": typed_function_node.name,
+            "method_name": function_node.name,
             "signature": ClassSurfaceAstDescriber._format_function_signature(
-                typed_function_node
+                function_node
             ),
             "docstring": docstring,
             "summary": ClassSurfaceAstDescriber._docstring_summary(docstring),
             "decorators": tuple(
                 ClassSurfaceAstDescriber._format_decorator(current_decorator)
-                for current_decorator in typed_function_node.decorator_list
+                for current_decorator in function_node.decorator_list
             ),
-            "line_number": typed_function_node.lineno,
+            "line_number": function_node.lineno,
             "end_line": getattr(
-                typed_function_node,
+                function_node,
                 "end_lineno",
-                typed_function_node.lineno,
+                function_node.lineno,
             ),
-            "is_async": isinstance(typed_function_node, ast.AsyncFunctionDef),
+            "is_async": isinstance(function_node, ast.AsyncFunctionDef),
             "call_style": (
                 "attribute"
-                if ClassSurfaceAstDescriber._is_property_node(typed_function_node)
+                if ClassSurfaceAstDescriber._is_property_node(function_node)
                 else "method"
             ),
         }
@@ -565,7 +606,7 @@ class ClassSurfaceAstDescriber:
     @staticmethod
     def _describe_inherited_agent_purposes(
             target_object: object,
-    ) -> List[Dict[str, str]]:
+    ) -> List[InheritedAgentPurposeDescription]:
         """
         Return parent-class agent-purpose entries for one object.
 
@@ -578,9 +619,10 @@ class ClassSurfaceAstDescriber:
                 Runtime object whose parent-class purposes should be described.
 
         Returns:
-            List[Dict[str, str]]: Parent-class purpose entries in MRO order.
+            List[InheritedAgentPurposeDescription]: Parent-class purpose
+            entries in MRO order.
         """
-        inherited_purposes: List[Dict[str, str]] = []
+        inherited_purposes: List[InheritedAgentPurposeDescription] = []
         for base_class in inspect.getmro(type(target_object))[1:]:
             inherited_purpose = base_class.__dict__.get("__agent_purpose__")
             if not isinstance(inherited_purpose, str) or not inherited_purpose:

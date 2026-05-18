@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.nexus_frame_mode import (
@@ -357,12 +357,10 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 "projection_refresh_gate_poll_interval_seconds must remain numeric."
             )
 
-        allowed_target_frame_names = cast(
-            Tuple[str, ...],
+        allowed_target_frame_names = self._normalize_frame_names(
             allowed_target_frame_names,
         )
-        denied_target_frame_names = cast(
-            Tuple[str, ...],
+        denied_target_frame_names = self._normalize_frame_names(
             denied_target_frame_names,
         )
 
