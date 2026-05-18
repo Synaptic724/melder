@@ -5,6 +5,8 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlAdmissionResult,
     ChangeControlTransactionRequest,
 )
+from melder.utilities.interfaces.ichangecontrolorchestrator import IChangeControlOrchestrator
+from melder.utilities.interfaces.ichangecontroltransactionmanager import IChangeControlTransactionManager
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
@@ -374,6 +376,18 @@ class IChangeControlManager(ICleanable, Protocol):
 
         Returns:
             bool: True when the root is currently dirty for the conduit.
+        """
+        ...
+
+    def transaction_manager(self) -> IChangeControlTransactionManager:
+        """
+        Return the owned transaction-manager surface.
+        """
+        ...
+
+    def orchestrator(self) -> IChangeControlOrchestrator:
+        """
+        Return the owned staged-mutation orchestrator surface.
         """
         ...
 

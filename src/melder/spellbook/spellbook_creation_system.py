@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, Type, cast
+from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
 
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -29,70 +29,6 @@ from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
-
-class _TargetPhase5IndexSurface(Protocol):
-    nodes: Optional[Mapping[str, Any]]
-
-
-class _TargetCrafterSurface(Protocol):
-    spell_system_index_phase5: Optional[_TargetPhase5IndexSurface]
-    _entire_dag_blueprint_phase5: Optional[Mapping[str, Any]]
-
-
-class _TargetResolutionSpellSurface(ISpell, Protocol):
-    def run_phase_root_blueprints_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_system_validation_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_change_control_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_occurrence_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_injection_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_patch_maps(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_execution_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def _ensure_crafter(self) -> _TargetCrafterSurface:
-        ...
-
 
 class SpellbookCreationSystem(Cleanable):
     """
@@ -198,6 +134,7 @@ class SpellbookCreationSystem(Cleanable):
             del self._name
             del self._conduit_logger
             del self._phase_scheduler_cls
+        del self._lock
 
     def conjure(self) -> Conduit:
         """
@@ -1505,29 +1442,27 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        target_resolution_spell = cast(_TargetResolutionSpellSurface, target_spell)
-
         def _register(scheduler: PhaseScheduler) -> None:
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="root_blueprints_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_root_blueprints_local,
+                phase_func=target_spell.run_phase_root_blueprints_local,
             )
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="system_validation_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_system_validation_local,
+                phase_func=target_spell.run_phase_system_validation_local,
             )
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="change_control_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_change_control_local,
+                phase_func=target_spell.run_phase_change_control_local,
             )
 
         return SpellbookCreationSystem._run_scheduler_with_phases(
@@ -1558,17 +1493,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates crafter/index access failures from target spell.
         """
-        target_resolution_spell = cast(_TargetResolutionSpellSurface, target_spell)
-        target_crafter = target_resolution_spell._ensure_crafter()
-        scoped_spell_ids: Set[str] = {target_spell_id}
-        target_index = target_crafter.spell_system_index_phase5
-        if target_index is not None and target_index.nodes is not None:
-            scoped_spell_ids.update(target_index.nodes.keys())
-        root_blueprints = target_crafter._entire_dag_blueprint_phase5
-        if root_blueprints is None:
-            scoped_root_ids: Collection[str] = (target_spell_id,)
-        else:
-            scoped_root_ids = root_blueprints.keys()
+        scoped_spell_ids = target_spell.get_local_resolution_scoped_spell_ids()
+        if target_spell_id not in scoped_spell_ids:
+            scoped_spell_ids.add(target_spell_id)
+        scoped_root_ids = target_spell.get_local_resolution_scoped_root_ids()
+        if len(scoped_root_ids) == 0:
+            scoped_root_ids = (target_spell_id,)
         return scoped_spell_ids, scoped_root_ids
 
     @staticmethod
@@ -1596,36 +1526,34 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        target_resolution_spell = cast(_TargetResolutionSpellSurface, target_spell)
-
         def _register(scheduler: PhaseScheduler) -> None:
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="occurrence_plan_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_occurrence_plan,
+                phase_func=target_spell.run_phase_occurrence_plan,
             )
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="injection_plan_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_injection_plan,
+                phase_func=target_spell.run_phase_injection_plan,
             )
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="patch_maps_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_patch_maps,
+                phase_func=target_spell.run_phase_patch_maps,
             )
             SpellbookCreationSystem._register_target_single_phase(
                 scheduler=scheduler,
                 phase_name="execution_plan_local",
                 target_spell_id=target_spell_id,
                 conduit_id=conduit_id,
-                phase_func=target_resolution_spell.run_phase_execution_plan,
+                phase_func=target_spell.run_phase_execution_plan,
             )
 
         return SpellbookCreationSystem._run_scheduler_with_phases(

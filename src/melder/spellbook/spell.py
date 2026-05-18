@@ -1,4 +1,4 @@
-from typing import Optional, List, Any, Callable, Sequence, Protocol
+from typing import Optional, List, Any, Callable, Sequence, Protocol, Set, Tuple
 import ulid
 from threading import RLock
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -156,6 +156,18 @@ class ISpellCrafterSurface(Protocol):
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
+        ...
+
+    def get_phase5_spell_ids(self) -> Set[str]:
+        """
+        Return the spell ids currently covered by local Phase 5 artifacts.
+        """
+        ...
+
+    def get_phase5_root_ids(self) -> Tuple[str, ...]:
+        """
+        Return the root ids currently covered by local Phase 5 artifacts.
+        """
         ...
 
     def cleanup_phase_artifacts(self) -> None:
@@ -1622,6 +1634,42 @@ class Spell(Cleanable, ISpell):
         self.check_cleaned()
         crafter = self._ensure_crafter()
         crafter.run_phase_change_control_local(conduit_id, cancel_event=cancel_event)
+
+    def get_local_resolution_scoped_spell_ids(self) -> Set[str]:
+        """
+        Return the spell ids currently covered by this spell's local Phase 5 scope.
+
+        Contract:
+            - Always includes this spell's current `spell_id`.
+            - Adds any additional spell ids present in the local Phase 5 system
+              index when that artifact exists.
+
+        Returns:
+            Set[str]: Spell ids in the local target-resolution scope.
+        """
+        self.check_cleaned()
+        scoped_spell_ids: Set[str] = {self.spell_id}
+        crafter = self._ensure_crafter()
+        scoped_spell_ids.update(crafter.get_phase5_spell_ids())
+        return scoped_spell_ids
+
+    def get_local_resolution_scoped_root_ids(self) -> Tuple[str, ...]:
+        """
+        Return the root ids currently covered by this spell's local Phase 5 scope.
+
+        Contract:
+            - Falls back to `(self.spell_id,)` when no local Phase 5 rooted
+              blueprints are available yet.
+
+        Returns:
+            Tuple[str, ...]: Root ids in the local target-resolution scope.
+        """
+        self.check_cleaned()
+        crafter = self._ensure_crafter()
+        scoped_root_ids = crafter.get_phase5_root_ids()
+        if len(scoped_root_ids) == 0:
+            return (self.spell_id,)
+        return scoped_root_ids
 
     def run_structural_phases(
             self,

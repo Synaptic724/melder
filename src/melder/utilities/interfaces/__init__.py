@@ -60,6 +60,8 @@ from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
 from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.icapabilitycommandsystem import ICapabilityCommandSystem
+from melder.utilities.interfaces.ichangecontrolorchestrator import IChangeControlOrchestrator
+from melder.utilities.interfaces.ichangecontroltransactionmanager import IChangeControlTransactionManager
 from melder.utilities.interfaces.istaticcommandsystem import IStaticCommandSystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 from melder.utilities.interfaces.istaticriftspace import IStaticRiftSpace
@@ -78,7 +80,6 @@ from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.inexus_rift_runtime_surface import IFrameACLManagerRiftSurface, INexusRiftRuntimeSurface
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.iaether import IAether
-from melder.utilities.interfaces.iaether_transfer_surface import IAetherTransferFrameSurface, IAetherTransferSurface
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
@@ -155,6 +156,8 @@ __all__ = [
     "IFrameProjectionSet",
     "ICommandSystem",
     "ICapabilityCommandSystem",
+    "IChangeControlOrchestrator",
+    "IChangeControlTransactionManager",
     "IStaticCommandSystem",
     "IRiftSpace",
     "IStaticRiftSpace",
@@ -174,8 +177,6 @@ __all__ = [
     "INexusRiftRuntimeSurface",
     "INexusFrameManager",
     "IAether",
-    "IAetherTransferFrameSurface",
-    "IAetherTransferSurface",
     "IAetherConfiguration",
     "IAetherConfigurationBuilder",
     "IAethericFrameConfiguration",

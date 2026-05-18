@@ -154,3 +154,32 @@ class ISpellIndex(ICleanable, Protocol):
             * Releases the internal lock regardless of outcome.
         """
         ...
+
+    def _attach_owner(self, spellbook: Any, spell: object) -> None:
+        """
+        Attach the owning spellbook and spell to this lineage.
+        """
+        ...
+
+    def _attach_contracted(
+            self,
+            spellbook: Any,
+            conduit_id: str,
+            spell: object,
+    ) -> None:
+        """
+        Attach one contracted spellbook/conduit view to this lineage.
+        """
+        ...
+
+    def _detach_contracted(self, spellbook: Any, conduit_id: str) -> None:
+        """
+        Remove one contracted spellbook/conduit attachment from this lineage.
+        """
+        ...
+
+    def _set_owner_conduit_id(self, conduit_id: str) -> None:
+        """
+        Record the owning conduit identifier for this lineage.
+        """
+        ...

@@ -780,16 +780,6 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
-    def run_phase_root_blueprints_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 5 (local) - Root blueprint construction scoped to one target spell.
-        """
-        ...
-
     def run_phase_occurrence_plan(
             self,
             conduit_id: str,
@@ -844,13 +834,33 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
-    def run_phase_system_validation_local(
+    def run_phase_injection_plan(
             self,
             conduit_id: str,
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 6 (local) - System validation scoped to one target spell.
+        Phase 9 - Injection plan compilation (facade).
+        """
+        ...
+
+    def run_phase_patch_maps(
+            self,
+            conduit_id: str,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Phase 10 - Patch map compilation (facade).
+        """
+        ...
+
+    def run_phase_execution_plan(
+            self,
+            conduit_id: str,
+            cancel_event: Optional['CancellationEvent'] = None,
+    ) -> None:
+        """
+        Phase 11 - Execution plan compilation (facade).
         """
         ...
 
@@ -887,28 +897,6 @@ class ISpell(ICleanable, Protocol):
 
         Returns:
             None.
-        """
-        ...
-
-    def run_phase_change_control_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 7 (local) - Change-control wiring scoped to one target spell.
-        """
-        ...
-
-    def get_local_resolution_scoped_spell_ids(self) -> Set[str]:
-        """
-        Return the spell ids covered by this spell's local Phase 5 target scope.
-        """
-        ...
-
-    def get_local_resolution_scoped_root_ids(self) -> Tuple[str, ...]:
-        """
-        Return the root ids covered by this spell's local Phase 5 target scope.
         """
         ...
 
