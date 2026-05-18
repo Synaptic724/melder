@@ -14,9 +14,9 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
+    TypeGuard,
     TypeVar,
     Union,
-    cast,
 )
 
 import ulid
@@ -28,6 +28,42 @@ from melder.utilities.data_structures.weak_data_structures.weak_ref_node import 
 
 _K = TypeVar("_K")
 _V = TypeVar("_V")
+
+
+def _is_string_key_dict(
+        candidate: "WeakConcurrentDict[_K, _V]",
+) -> TypeGuard["WeakConcurrentDict[str, _V]"]:
+    """
+    Return whether ``candidate`` currently supports string-keyed ``kwargs`` updates.
+
+    Purpose:
+        ``**kwargs`` always supplies ``str`` keys at runtime. This helper
+        narrows the dictionary to its honest string-keyed surface before the
+        keyword-update path mutates the internal mapping.
+
+    Contract:
+        - Empty dictionaries are treated as string-key-compatible so they can
+          be seeded through ``**kwargs``.
+        - Non-empty dictionaries return ``True`` only when every currently
+          stored key is a ``str``.
+
+    Args:
+        candidate:
+            The weak dictionary whose current key surface is being checked.
+
+    Returns:
+        TypeGuard[WeakConcurrentDict[str, _V]]:
+            ``True`` when keyword updates can be applied without mixing a
+            non-string key domain with Python's string-only ``**kwargs``
+            channel.
+    """
+    mapping = candidate._dict
+    if mapping is None or not mapping:
+        return True
+    for existing_key in mapping.keys():
+        if not isinstance(existing_key, str):
+            return False
+    return True
 
 
 class _WeakDictKeysView(Collection[_K]):
@@ -297,6 +333,79 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             return
         for k, v in initial:
             yield k, v
+
+    @staticmethod
+    def _has_mapping_key(
+            key: object,
+            mapping: Mapping[_K, WeakRefNode[_V]],
+    ) -> TypeGuard[_K]:
+        """
+        Return whether ``mapping`` currently accepts ``key`` as one of its keys.
+
+        Purpose:
+            Provide a typed lookup boundary for ``object``-shaped key probes,
+            such as ``__contains__``, without lying about the key type.
+
+        Contract:
+            A ``True`` result means ``key`` is currently a valid lookup object
+            for ``mapping`` under Python's hash/equality rules, so a follow-up
+            ``mapping.get(key)`` is behaviorally valid.
+
+        Args:
+            key:
+                Arbitrary object being tested for membership.
+            mapping:
+                Mapping whose live key set is being queried.
+
+        Returns:
+            TypeGuard[_K]:
+                ``True`` when ``key`` can be used as a typed lookup key for
+                ``mapping``.
+        """
+        return key in mapping
+
+    def _update_keyword_pairs(self, kwargs: Mapping[str, _V]) -> None:
+        """
+        Apply Python ``**kwargs`` updates through the dict's real string-key seam.
+
+        Purpose:
+            Keep the generic ``update(...)`` method honest about Python's
+            keyword-argument behavior without pretending arbitrary ``_K`` keys
+            can arrive through ``**kwargs``.
+
+        Contract:
+            - Keyword updates are only valid when this weak dict is currently
+              string-keyed.
+            - Existing keys are overwritten with the same callback and cleanup
+              behavior used by the main update path.
+
+        Args:
+            kwargs:
+                String-keyed pairs supplied through Python's keyword-argument
+                channel.
+
+        Raises:
+            TypeError:
+                If this weak dict is not currently string-keyed.
+        """
+        if not kwargs:
+            return
+        if not _is_string_key_dict(self):
+            raise TypeError(
+                "WeakConcurrentDict.update() keyword arguments require a string-keyed dictionary."
+            )
+        string_key_mapping = self._dict
+        if string_key_mapping is None:
+            string_key_mapping = {}
+            self._dict = string_key_mapping
+        for kw_key, value in kwargs.items():
+            old = string_key_mapping.get(kw_key)
+            if old is not None:
+                try:
+                    old.fire_callbacks()
+                finally:
+                    old.cleanup()
+            string_key_mapping[kw_key] = self._make_node(value)
 
     # -------------------------------------------------------------------------
     # Alt constructors
@@ -703,9 +812,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
 
         if self._freeze:
-            if self._dict is None:
+            mapping = self._dict
+            if mapping is None or not self._has_mapping_key(key, mapping):
                 return False
-            node = self._dict.get(cast(_K, key))
+            node = mapping.get(key)
             if node is None:
                 return False
             return not node.dead
@@ -713,9 +823,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         with self._lock:
             if self._auto_prune:
                 self._prune_dead_locked()
-            if self._dict is None:
+            mapping = self._dict
+            if mapping is None or not self._has_mapping_key(key, mapping):
                 return False
-            node = self._dict.get(cast(_K, key))
+            node = mapping.get(key)
             return node is not None and not node.dead
 
     def clear(self) -> None:
@@ -926,12 +1037,18 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 Another mapping or iterable of ``(key, value)`` pairs.
             **kwargs:
                 Additional key/value pairs supplied as keyword arguments.
+                This side channel is only supported for string-keyed weak
+                dictionaries because Python always materializes ``**kwargs``
+                with ``str`` keys.
 
         Raises:
             TypeError:
                 If the dict is frozen.
             TypeError:
                 If any incoming value cannot be weak-referenced.
+            TypeError:
+                If keyword arguments are supplied to a weak dict whose current
+                key surface is not string-keyed.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -951,17 +1068,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                     finally:
                         old.cleanup()
                 self._dict[k] = self._make_node(v)
-
-            # kwargs
-            for kw_key, v in kwargs.items():
-                typed_key = cast(_K, kw_key)
-                old = self._dict.get(typed_key)
-                if old is not None:
-                    try:
-                        old.fire_callbacks()
-                    finally:
-                        old.cleanup()
-                self._dict[typed_key] = self._make_node(v)
+            self._update_keyword_pairs(kwargs)
 
     # -------------------------------------------------------------------------
     # Introspection / views
