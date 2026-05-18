@@ -4,9 +4,17 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iaethericframeconfiguration import (
+    IAethericFrameConfiguration,
+)
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -127,16 +135,89 @@ class IAether(ICleanable, Protocol):
     def _get_change_control_manager(
             self,
             aetheric_frame: str,
-    ) -> Optional[IChangeControlManager]:
+    ) -> IChangeControlManager:
         """
-        Return the frame-owned change-control manager for one frame, if present.
+        Return the frame-owned change-control manager for one frame.
 
         Args:
             aetheric_frame:
                 Frame name whose change-control manager is requested.
 
         Returns:
-            Optional[IChangeControlManager]: Frame-owned change-control manager.
+            IChangeControlManager: Frame-owned change-control manager.
+        """
+        ...
+
+    def _ensure_frame(self, aetheric_frame_name: str = "default") -> IAethericFrame:
+        """
+        Return the existing frame for the given name, creating it if needed.
+        """
+        ...
+
+    def _bind_configuration(
+            self,
+            configuration: IConfiguration,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Bind the shared Spellbook configuration object to one frame.
+        """
+        ...
+
+    def _get_configuration(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[IConfiguration]:
+        """
+        Return the shared Spellbook configuration bound to one frame.
+        """
+        ...
+
+    def _get_aetheric_frame_configuration(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[IAethericFrameConfiguration]:
+        """
+        Return the frame-owned AR posture object for one frame.
+        """
+        ...
+
+    def _get_devops_manager(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> IDevOpsManager:
+        """
+        Return the frame-owned DevOps manager for one frame.
+        """
+        ...
+
+    def _get_spell_system_states(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> ISpellSystemStates:
+        """
+        Return the frame-owned spell-system-state registry for one frame.
+        """
+        ...
+
+    def _check_for_spell(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[ISpellIndex]:
+        """
+        Return the registered SpellIndex owning the supplied spell id, if any.
+        """
+        ...
+
+    def _register_single_spell_index(
+            self,
+            conduit_id: str,
+            spell_index: ISpellIndex,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Register one SpellIndex lineage under one conduit in the frame registry.
         """
         ...
 
