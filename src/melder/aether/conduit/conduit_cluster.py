@@ -72,6 +72,7 @@ class ConduitCluster(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
+            self._cleaned = True
             if self.members is not None:
                 self.members.clear()
             if self.shared_spells is not None:
@@ -81,10 +82,9 @@ class ConduitCluster(Cleanable):
                     except Exception:
                         pass
                 self.shared_spells.clear()
-            self.auto_link_dependencies = None
-            self._name = None
-            self._cleaned = True
-        self._lock = None
+            del self.auto_link_dependencies
+            del self._name
+        del self._lock
 
     def add_member(self, conduit_id: str) -> None:
         """
@@ -93,6 +93,7 @@ class ConduitCluster(Cleanable):
         Args:
             conduit_id: Conduit identifier.
         """
+        self.check_cleaned()
         with self._lock:
             self.members.add(conduit_id)
 
@@ -103,6 +104,7 @@ class ConduitCluster(Cleanable):
         Args:
             conduit_id: Conduit identifier.
         """
+        self.check_cleaned()
         with self._lock:
             self.members.discard(conduit_id)
             self.shared_spells.pop(conduit_id, None)
@@ -115,6 +117,7 @@ class ConduitCluster(Cleanable):
             owner_id: Conduit id that owns the spell.
             spell_index: Root SpellIndex to share.
         """
+        self.check_cleaned()
         with self._lock:
             bucket = self.shared_spells.setdefault(owner_id, set())
             bucket.add(spell_index)
@@ -127,6 +130,7 @@ class ConduitCluster(Cleanable):
             owner_id: Conduit id that owns the spell.
             spell_index: Root SpellIndex to remove.
         """
+        self.check_cleaned()
         with self._lock:
             bucket = self.shared_spells.get(owner_id)
             if bucket is None:
@@ -142,6 +146,7 @@ class ConduitCluster(Cleanable):
         Returns:
             Dict mapping owner_id -> set of SpellIndex.
         """
+        self.check_cleaned()
         with self._lock:
             return {k: set(v) for k, v in self.shared_spells.items()}
 
@@ -152,6 +157,7 @@ class ConduitCluster(Cleanable):
         Returns:
             Set of conduit ids.
         """
+        self.check_cleaned()
         with self._lock:
             return set(self.members)
 
@@ -177,6 +183,7 @@ class ConduitCluster(Cleanable):
         Returns:
             None
         """
+        self.check_cleaned()
         with self._lock:
             self.members.add(conduit._id)
             member_ids = set(self.members)
@@ -216,6 +223,7 @@ class ConduitCluster(Cleanable):
         Returns:
             None
         """
+        self.check_cleaned()
         with self._lock:
             self.members.discard(conduit._id)
             member_ids = set(self.members)
@@ -244,6 +252,7 @@ class ConduitCluster(Cleanable):
         Returns:
             None
         """
+        self.check_cleaned()
         shareables = self._get_shareable_spells(owner)
         owner_id = owner._id
         for spell in shareables:
@@ -261,6 +270,7 @@ class ConduitCluster(Cleanable):
         Returns:
             None
         """
+        self.check_cleaned()
         with self._lock:
             member_ids = set(self.members)
         self.refresh_shareable_roots(conduit)
@@ -292,6 +302,7 @@ class ConduitCluster(Cleanable):
             aetheric_frame_name: Frame name for removal calls.
             link_dependencies: Override auto_link_dependencies if provided.
         """
+        self.check_cleaned()
         owner_id = owner._id
         self.add_shared_spell(owner_id, spell.spell_index)
         # Decide dependency behavior (explicit override beats cluster default)
@@ -340,6 +351,7 @@ class ConduitCluster(Cleanable):
             spell: Spell object to remove.
             aetheric_frame_name: Frame name for removal calls.
         """
+        self.check_cleaned()
         owner_id = owner._id
         self.remove_shared_spell(owner_id, spell.spell_index)
 
@@ -399,6 +411,7 @@ class ConduitCluster(Cleanable):
         Returns:
             None
         """
+        self.check_cleaned()
         owner_id = owner._id
         with self._lock:
             indices = set(self.shared_spells.get(owner_id, set()))
@@ -443,6 +456,7 @@ class ConduitCluster(Cleanable):
         Returns:
             None
         """
+        self.check_cleaned()
         owner_id = owner._id
         with self._lock:
             indices = set(self.shared_spells.get(owner_id, set()))
@@ -477,6 +491,7 @@ class ConduitCluster(Cleanable):
         Returns:
             list: Shareable spell objects.
         """
+        self.check_cleaned()
         book = conduit._spellbook
         if book is None or book._spells is None:
             return []
@@ -497,6 +512,7 @@ class ConduitCluster(Cleanable):
         Returns:
             Spell | None: The spell if found.
         """
+        self.check_cleaned()
         book = conduit._spellbook
         if book is None or book._spells is None:
             return None
@@ -513,6 +529,7 @@ class ConduitCluster(Cleanable):
         Args:
             enabled: True to include deps, False for roots only.
         """
+        self.check_cleaned()
         with self._lock:
             self.auto_link_dependencies = bool(enabled)
 
@@ -531,6 +548,7 @@ class ConduitCluster(Cleanable):
         Returns:
             str: Deterministic cluster-scoped root identifier.
         """
+        self.check_cleaned()
         return f"cluster:{self._name}:{owner_id}:{spell_id}"
 
     def describe(self) -> dict:
@@ -542,6 +560,7 @@ class ConduitCluster(Cleanable):
                 Snapshot containing cluster name, dependency-link policy,
                 member ids, and shared-root lineage ids grouped by owner.
         """
+        self.check_cleaned()
         with self._lock:
             shared_summary = {
                 owner: [idx.id for idx in indices]

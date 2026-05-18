@@ -12,19 +12,57 @@ class ISpellRecord(ICleanable, Protocol):
     Descriptor-facing spell record contract.
     """
 
-    nexus_label: str
-    nexus_version: str
-    origin_spellbook_id: str
-    frame_name: str
-    owner_conduit_id: Optional[str]
-    spell_id: str
-    spell_index_id: str
-    spell_name: str
-    spellframe: Any
-    binding_name: Optional[str]
-    permissions: Permissions
-    existence: Existence
-    payload: ISpellDescriptorPayload
+    @property
+    def nexus_label(self) -> str:
+        ...
+
+    @property
+    def nexus_version(self) -> str:
+        ...
+
+    @property
+    def origin_spellbook_id(self) -> str:
+        ...
+
+    @property
+    def frame_name(self) -> str:
+        ...
+
+    @property
+    def owner_conduit_id(self) -> Optional[str]:
+        ...
+
+    @property
+    def spell_id(self) -> str:
+        ...
+
+    @property
+    def spell_index_id(self) -> str:
+        ...
+
+    @property
+    def spell_name(self) -> str:
+        ...
+
+    @property
+    def spellframe(self) -> Any:
+        ...
+
+    @property
+    def binding_name(self) -> Optional[str]:
+        ...
+
+    @property
+    def permissions(self) -> Permissions:
+        ...
+
+    @property
+    def existence(self) -> Existence:
+        ...
+
+    @property
+    def payload(self) -> ISpellDescriptorPayload:
+        ...
 
     @property
     def record_key(self) -> Tuple[str, str]:

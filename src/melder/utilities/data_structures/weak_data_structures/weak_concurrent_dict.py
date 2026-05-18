@@ -1,5 +1,6 @@
 import functools
 import threading
+from collections.abc import Mapping as MappingABC
 from copy import deepcopy
 from typing import (
     Any,
@@ -15,6 +16,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 
 import ulid
@@ -267,19 +269,34 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         # Materialize initial as a simple dict of strong values.
         raw: Dict[_K, _V] = {}
         if initial is not None:
-            if hasattr(initial, "keys"):
-                # Mapping-like
-                for k in initial.keys():
-                    raw[k] = initial[k]
-            else:
-                # Iterable of (k, v)
-                for k, v in initial:
-                    raw[k] = v
+            for k, v in self._iter_initial_pairs(initial):
+                raw[k] = v
 
         # Wrap all values in WeakRefNode
         self._dict: Dict[_K, WeakRefNode[_V]] = {
             k: self._make_node(v) for k, v in raw.items()
         }
+
+    @staticmethod
+    def _iter_initial_pairs(
+            initial: Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
+    ) -> Iterator[Tuple[_K, _V]]:
+        """
+        Normalize mapping-like and pair-iterable inputs into one `(key, value)` iterator.
+
+        Args:
+            initial:
+                Mapping-like or pair-iterable input payload.
+
+        Returns:
+            Iterator[Tuple[_K, _V]]: Normalized `(key, value)` pairs.
+        """
+        if isinstance(initial, MappingABC):
+            for k, v in initial.items():
+                yield k, v
+            return
+        for k, v in initial:
+            yield k, v
 
     # -------------------------------------------------------------------------
     # Alt constructors
@@ -303,7 +320,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             value: Value to associate with every key.
             auto_prune: Whether the resulting dict should auto-prune dead entries.
         """
-        items = [(k, value) for k in keys]
+        items = [(k, cast(_V, value)) for k in keys]
         return cls(initial=items, auto_prune=auto_prune)
 
     # -------------------------------------------------------------------------
@@ -680,7 +697,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         if self._freeze:
             if self._dict is None:
                 return False
-            node = self._dict.get(key)
+            node = self._dict.get(cast(_K, key))
             if node is None:
                 return False
             return not node.dead
@@ -690,7 +707,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 self._prune_dead_locked()
             if self._dict is None:
                 return False
-            node = self._dict.get(key)
+            node = self._dict.get(cast(_K, key))
             return node is not None and not node.dead
 
     def clear(self) -> None:
@@ -883,7 +900,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                     pass
 
             # Either missing, or dead; overwrite with default
-            new_node = self._make_node(default)
+            new_node = self._make_node(cast(_V, default))
             self._dict[key] = new_node
             return default
 
@@ -920,30 +937,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             if self._dict is None:
                 self._dict = {}
 
-            # Mapping-like
-            if hasattr(other, "keys"):
-                for k in other.keys():
-                    v = other[k]
-                    old = self._dict.get(k)
-                    if old is not None:
-                        try:
-                            old.fire_callbacks()
-                        finally:
-                            old.cleanup()
-                    self._dict[k] = self._make_node(v)
-            else:
-                # Iterable of (k, v)
-                for k, v in other:
-                    old = self._dict.get(k)
-                    if old is not None:
-                        try:
-                            old.fire_callbacks()
-                        finally:
-                            old.cleanup()
-                    self._dict[k] = self._make_node(v)
-
-            # kwargs
-            for k, v in kwargs.items():
+            for k, v in self._iter_initial_pairs(other):
                 old = self._dict.get(k)
                 if old is not None:
                     try:
@@ -951,6 +945,17 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                     finally:
                         old.cleanup()
                 self._dict[k] = self._make_node(v)
+
+            # kwargs
+            for kw_key, v in kwargs.items():
+                typed_key = cast(_K, kw_key)
+                old = self._dict.get(typed_key)
+                if old is not None:
+                    try:
+                        old.fire_callbacks()
+                    finally:
+                        old.cleanup()
+                self._dict[typed_key] = self._make_node(v)
 
     # -------------------------------------------------------------------------
     # Introspection / views
@@ -1302,12 +1307,17 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self.check_cleaned()
         if other is None:
             other = {}
-        merged = list(self.items())
-        # other may be mapping-like or iterable
-        if hasattr(other, "items"):
-            merged.extend(list(other.items()))  # type: ignore[arg-type]
+        merged: List[Tuple[_K, _V]] = list(self.items())
+        if isinstance(other, WeakConcurrentDict):
+            merged.extend(list(other.items()))
         else:
-            merged.extend(list(other))  # type: ignore[arg-type]
+            merged.extend(
+                list(
+                    self._iter_initial_pairs(
+                        cast(Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]], other)
+                    )
+                )
+            )
         return WeakConcurrentDict(initial=merged, auto_prune=self._auto_prune)
 
     def __ior__(

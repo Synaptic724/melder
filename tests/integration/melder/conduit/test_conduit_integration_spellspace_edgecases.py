@@ -78,7 +78,8 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
                 raise RuntimeError("boom")
         assert active_space is not None
         assert active_space.cleaned is True
-        assert active_space.owner_conduit is None
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            _ = active_space.owner_conduit
         assert conduit.get_active_spellspace() is None
     finally:
         conduit.cleanup()
@@ -102,10 +103,12 @@ def test_conduit_spellspace_cleanup_idempotent_and_blocks_use() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         space = conduit.create_spellspace()
+        space_id = space.id
         space.cleanup()
         space.cleanup()
         assert space.cleaned is True
-        assert space.owner_conduit is None
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            _ = space.owner_conduit
         with pytest.raises(RuntimeError, match="already been cleaned"):
             space.reset()
         with pytest.raises(RuntimeError, match="already been cleaned"):
@@ -163,7 +166,8 @@ def test_conduit_cleanup_cleans_orphaned_spellspaces() -> None:
 
     conduit.cleanup()
     assert space.cleaned is True
-    assert space.owner_conduit is None
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.owner_conduit
 
 
 def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
@@ -187,4 +191,5 @@ def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
     conduit.cleanup()
 
     assert space.cleaned is True
-    assert space.owner_conduit is None
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.owner_conduit

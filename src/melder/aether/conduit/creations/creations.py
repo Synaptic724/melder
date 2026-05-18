@@ -139,8 +139,7 @@ class Creations(Cleanable, ICreations):
                 continue
             errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
             for item in bucket.values():
-                if not item.has_disposal_methods:
-                    item.cleanup()
+                item.cleanup()
             bucket.clear()
             del self._creations[spellspace_id]
         self._spellspace_disposal_stacks.clear()
@@ -623,8 +622,7 @@ class Creations(Cleanable, ICreations):
         errors: List[Exception] = []
         errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
         for item in bucket.values():
-            if not item.has_disposal_methods:
-                item.cleanup()
+            item.cleanup()
         bucket.clear()
         del self._creations[spellspace_id]
         self._spellspace_disposal_stacks.pop(spellspace_id, None)

@@ -113,9 +113,9 @@ class TestCreation:
 
         creation.cleanup()
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(RuntimeError, match="already been cleaned"):
             _ = creation.has_disposal_methods
-        with pytest.raises(AttributeError):
+        with pytest.raises(RuntimeError, match="already been cleaned"):
             _ = creation.disposal_method_names
 
     def test_cleanup_returns_when_another_cleanup_completes_before_second_check(self, sample_value):
@@ -177,9 +177,15 @@ class TestCreation:
 
         creation.cleanup()
 
-        assert creation.value is None
-        assert creation.has_disposal_methods is None
-        assert creation.disposal_method_names is None
+        assert creation._value is None
+        assert creation._has_disposal_methods is None
+        assert creation._disposal_methods is None
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            _ = creation.value
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            _ = creation.has_disposal_methods
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            _ = creation.disposal_method_names
 
     # ------------------------------------------------------------------
     # Rank B: Concurrency/Locking Tests

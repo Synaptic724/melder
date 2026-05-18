@@ -195,13 +195,16 @@ def test_cleanup_calls_reset_drops_owner_reference_and_marks_cleaned(
 ) -> None:
     """Verify cleanup clears spellspace instances and drops the owner reference."""
     space = SpellSpace(conduit_stub)
+    space_id = space.id
 
     space.cleanup()
 
     assert space.cleaned is True
-    assert space.owner_conduit is None
-    assert creations_stub.cleared_ids == [space.id]
-    assert space.version == 1
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.owner_conduit
+    assert creations_stub.cleared_ids == [space_id]
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.version
 
 
 def test_cleanup_idempotent_no_double_reset(
@@ -210,22 +213,27 @@ def test_cleanup_idempotent_no_double_reset(
 ) -> None:
     """Verify cleanup is idempotent and does not re-clear spellspace storage."""
     space = SpellSpace(conduit_stub)
+    space_id = space.id
 
     space.cleanup()
     space.cleanup()
 
-    assert creations_stub.cleared_ids == [space.id]
-    assert space.version == 1
+    assert creations_stub.cleared_ids == [space_id]
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.version
 
 
 def test_cleanup_marks_cleaned_even_when_reset_raises() -> None:
     """Verify cleanup still marks cleaned and drops owner when reset fails."""
     conduit = _ConduitStub(creations=None)
     space = SpellSpace(conduit)
+    space_id = space.id
 
     with pytest.raises(SpellSpaceScopeError, match="does not expose spellspace storage"):
         space.cleanup()
 
     assert space.cleaned is True
-    assert space.owner_conduit is None
-    assert space.version == 0
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.owner_conduit
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        _ = space.version

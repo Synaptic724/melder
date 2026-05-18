@@ -6,6 +6,9 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
+    FrameACLRuleSet,
+)
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
@@ -20,11 +23,25 @@ from melder.utilities.interfaces import (
 
 
 class _CompiledSpellRecordSurface(Protocol):
-    spell_id: str
-    spell_index_id: str
-    spellframe: Optional[str]
-    spell_name: Optional[str]
-    binding_name: Optional[str]
+    @property
+    def spell_id(self) -> str:
+        ...
+
+    @property
+    def spell_index_id(self) -> str:
+        ...
+
+    @property
+    def spellframe(self) -> object:
+        ...
+
+    @property
+    def spell_name(self) -> str:
+        ...
+
+    @property
+    def binding_name(self) -> Optional[str]:
+        ...
 
 
 class FrameACLCompiler(Cleanable):
@@ -295,7 +312,9 @@ class FrameACLCompiler(Cleanable):
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 view_profile.frame_ruleset,
                 precision_profile.frame_ruleset if precision_profile is not None else None,
-                configuration.view_configuration.frame_override_ruleset,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.view_configuration.frame_override_ruleset
+                ),
             )
         )
         if "show_payload" in allow_operations and "show_payload" not in deny_operations:
@@ -334,7 +353,9 @@ class FrameACLCompiler(Cleanable):
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 view_profile.conduit_ruleset,
                 precision_profile.conduit_ruleset if precision_profile is not None else None,
-                configuration.view_configuration.conduit_override_ruleset,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.view_configuration.conduit_override_ruleset
+                ),
             )
         )
         visible_ids: Set[str] = set()
@@ -393,7 +414,9 @@ class FrameACLCompiler(Cleanable):
         spell_rulesets = (
             view_profile.spell_ruleset,
             precision_profile.spell_ruleset if precision_profile is not None else None,
-            configuration.view_configuration.spell_override_ruleset,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.view_configuration.spell_override_ruleset
+            ),
         )
         selector_visible_rules_present = (
             FrameACLCompiler._spell_selector_rules_present_for_operation(
@@ -484,22 +507,30 @@ class FrameACLCompiler(Cleanable):
                 (
                     codegen_profile.frame_ruleset,
                     precision_profile.frame_ruleset if precision_profile is not None else None,
-                    configuration.codegen_configuration.frame_override_ruleset,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.frame_override_ruleset
+                    ),
                 ),
                 (
                     codegen_profile.conduit_ruleset,
                     precision_profile.conduit_ruleset if precision_profile is not None else None,
-                    configuration.codegen_configuration.conduit_override_ruleset,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.conduit_override_ruleset
+                    ),
                 ),
                 (
                     codegen_profile.spell_ruleset,
                     precision_profile.spell_ruleset if precision_profile is not None else None,
-                    configuration.codegen_configuration.spell_override_ruleset,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.spell_override_ruleset
+                    ),
                 ),
                 (
                     codegen_profile.capability_ruleset,
                     precision_profile.capability_ruleset if precision_profile is not None else None,
-                    configuration.codegen_configuration.capability_override_ruleset,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.capability_override_ruleset
+                    ),
                 ),
         ):
             ruleset_allows, ruleset_denies = (
@@ -529,7 +560,9 @@ class FrameACLCompiler(Cleanable):
         rulesets = (
             codegen_profile.capability_ruleset,
             precision_profile.capability_ruleset if precision_profile is not None else None,
-            configuration.codegen_configuration.capability_override_ruleset,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
+            ),
         )
         allow_operations, deny_operations = (
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
@@ -569,7 +602,9 @@ class FrameACLCompiler(Cleanable):
         rulesets = (
             codegen_profile.capability_ruleset,
             precision_profile.capability_ruleset if precision_profile is not None else None,
-            configuration.codegen_configuration.capability_override_ruleset,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
+            ),
         )
         allowed_builtin_names, denied_builtin_names = (
             FrameACLCompiler._collect_condition_string_values_from_rulesets(
@@ -599,7 +634,9 @@ class FrameACLCompiler(Cleanable):
         rulesets = (
             codegen_profile.capability_ruleset,
             precision_profile.capability_ruleset if precision_profile is not None else None,
-            configuration.codegen_configuration.capability_override_ruleset,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
+            ),
         )
         allow_operations, deny_operations = (
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
@@ -628,7 +665,9 @@ class FrameACLCompiler(Cleanable):
         rulesets = (
             codegen_profile.capability_ruleset,
             precision_profile.capability_ruleset if precision_profile is not None else None,
-            configuration.codegen_configuration.capability_override_ruleset,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
+            ),
         )
         allow_operations, deny_operations = (
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
@@ -658,20 +697,26 @@ class FrameACLCompiler(Cleanable):
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 command_profile.frame_ruleset,
                 precision_profile.frame_ruleset if precision_profile is not None else None,
-                configuration.command_configuration.frame_override_ruleset,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.command_configuration.frame_override_ruleset
+                ),
             )
         )
         conduit_allows, conduit_denies = (
             FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 command_profile.conduit_ruleset,
                 precision_profile.conduit_ruleset if precision_profile is not None else None,
-                configuration.command_configuration.conduit_override_ruleset,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.command_configuration.conduit_override_ruleset
+                ),
             )
         )
         spell_rulesets = (
             command_profile.spell_ruleset,
             precision_profile.spell_ruleset if precision_profile is not None else None,
-            configuration.command_configuration.spell_override_ruleset,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.command_configuration.spell_override_ruleset
+            ),
         )
         command_frame_enabled = (
             "enable" in frame_allows and "enable" not in frame_denies
@@ -719,7 +764,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_operation_effects(
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Split one ruleset into allowed and denied operation sets.
@@ -739,8 +784,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects(
-            base_ruleset: IFrameACLRuleSet,
-            override_ruleset: IFrameACLRuleSet,
+            base_ruleset: FrameACLRuleSet,
+            override_ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge base and override rulesets into effective allow/deny sets.
@@ -763,7 +808,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects_from_rulesets(
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge an ordered list of base/precision/override rulesets into one effect set.
@@ -776,8 +821,9 @@ class FrameACLCompiler(Cleanable):
         for ruleset in rulesets:
             if ruleset is None:
                 continue
+            concrete_ruleset = FrameACLCompiler._as_frame_acl_ruleset(ruleset)
             ruleset_allows, ruleset_denies = (
-                FrameACLCompiler._collect_operation_effects(ruleset)
+                FrameACLCompiler._collect_operation_effects(concrete_ruleset)
             )
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
@@ -787,7 +833,7 @@ class FrameACLCompiler(Cleanable):
     def _collect_condition_string_values_from_rulesets(
             operation_name: str,
             condition_key: str,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect string condition values for one operation across rulesets.
@@ -808,7 +854,7 @@ class FrameACLCompiler(Cleanable):
         for ruleset in rulesets:
             if ruleset is None:
                 continue
-            for rule in ruleset.rules_by_name.values():
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
                 if rule.operation != operation_name:
                     continue
                 condition_values = rule.conditions.get(condition_key, tuple())
@@ -821,7 +867,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_import_module_roots_from_rulesets(
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect import-module roots using narrowing intersection semantics.
@@ -840,7 +886,7 @@ class FrameACLCompiler(Cleanable):
             if ruleset is None:
                 continue
             ruleset_allowed_values: Set[str] = set()
-            for rule in ruleset.rules_by_name.values():
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
                 if rule.operation != "import_modules":
                     continue
                 module_roots = set(rule.conditions.get("module_roots", tuple()))
@@ -860,7 +906,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _collect_effective_spell_operation_effects_for_record(
             spell_record: _CompiledSpellRecordSurface,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge spell operations for one record using selector-aware spell rules.
@@ -874,7 +920,7 @@ class FrameACLCompiler(Cleanable):
         for ruleset in rulesets:
             if ruleset is None:
                 continue
-            for rule in ruleset.rules_by_name.values():
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
                 if not FrameACLCompiler._spell_rule_matches_record(
                         rule.conditions,
                         spell_record,
@@ -963,7 +1009,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _spell_selector_rules_present_for_operation(
             operation: str,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: object,
     ) -> bool:
         """
         Return whether any selector-aware rule exists for one spell operation.
@@ -974,7 +1020,7 @@ class FrameACLCompiler(Cleanable):
         for ruleset in rulesets:
             if ruleset is None:
                 continue
-            for rule in ruleset.rules_by_name.values():
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
                 if (
                         rule.operation == operation and
                         FrameACLCompiler._spell_rule_has_selector(rule.conditions)
@@ -986,7 +1032,7 @@ class FrameACLCompiler(Cleanable):
     def _collect_selector_spell_operation_effects_for_record(
             operation: str,
             spell_record: _CompiledSpellRecordSurface,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect selector-aware effects for one operation and spell record only.
@@ -1000,7 +1046,7 @@ class FrameACLCompiler(Cleanable):
         for ruleset in rulesets:
             if ruleset is None:
                 continue
-            for rule in ruleset.rules_by_name.values():
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
                 if rule.operation != operation:
                     continue
                 if not FrameACLCompiler._spell_rule_has_selector(rule.conditions):
@@ -1015,3 +1061,17 @@ class FrameACLCompiler(Cleanable):
                 elif rule.effect == "deny":
                     deny_operations.add(rule.operation)
         return allow_operations, deny_operations
+
+    @staticmethod
+    def _as_frame_acl_ruleset(ruleset: object) -> FrameACLRuleSet:
+        """
+        Narrow one interface-exposed ACL ruleset back to the concrete ruleset type.
+
+        Args:
+            ruleset:
+                Interface-exposed ACL ruleset.
+
+        Returns:
+            FrameACLRuleSet: Concrete ACL ruleset instance.
+        """
+        return cast(FrameACLRuleSet, ruleset)

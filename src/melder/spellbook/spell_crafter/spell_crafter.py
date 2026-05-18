@@ -38,6 +38,7 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellValidationSystem, ISpellbook, ISpellIndex
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -149,6 +150,36 @@ class _SpellCrafterSpellbookSurface(Protocol):
     _aetheric_frame_configuration: Optional[Any]
     _aetheric_frame: str
     _aether: Any
+
+
+class _SpellCrafterPeerSurface(Protocol):
+    """
+    Narrow peer-crafter surface reused across spell-level phase fanout.
+    """
+
+    _validation_result_phase4: Any
+    _validation_result_phase6: Any
+    _validated_phase6: bool
+    _is_broken: bool
+
+    def set_spell_system_index_phase5(
+            self,
+            index: SpellSystemIndex,
+    ) -> None:
+        ...
+
+    def set_root_blueprint_phase5(
+            self,
+            blueprint: RootResolutionBlueprint,
+    ) -> None:
+        ...
+
+    def run_all_phases(
+            self,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        ...
 
 class SpellCrafter(Cleanable):
     """
@@ -353,7 +384,9 @@ class SpellCrafter(Cleanable):
         return spell_system_states
 
     @staticmethod
-    def _get_required_crafter_from_spell(spell: ISpell) -> Any:
+    def _get_required_crafter_from_spell(
+            spell: ISpell,
+    ) -> _SpellCrafterPeerSurface:
         """
         Return the live crafter attached to one spell or raise.
 
@@ -364,7 +397,94 @@ class SpellCrafter(Cleanable):
         crafter = spell._crafter
         if crafter is None:
             raise RuntimeError("Spell must have a live SpellCrafter.")
-        return crafter
+        return cast(_SpellCrafterPeerSurface, crafter)
+
+    def _get_required_current_spell_id(self) -> str:
+        """
+        Return the current bound spell version id or raise.
+
+        Returns:
+            str: Current spell version id for the bound spell.
+        """
+        current_spell_id = self._spell.spell_index.current
+        if current_spell_id is None:
+            raise RuntimeError("SpellCrafter requires a bound spell current id.")
+        return current_spell_id
+
+    def _get_required_spell_state_by_spell_id(
+            self,
+            spell_id: str,
+    ) -> SpellSystemState:
+        """
+        Return the live system state for one spell id or raise.
+
+        Args:
+            spell_id:
+                Current spell version id to resolve.
+
+        Returns:
+            SpellSystemState: Registered system state for the spell id.
+        """
+        state = self._get_required_spell_system_states().get_by_spell_id(spell_id)
+        if state is None:
+            raise RuntimeError(
+                "SpellCrafter requires a live SpellSystemState for spell id "
+                f"'{spell_id}'."
+            )
+        return state
+
+    def _get_required_root_blueprint_phase5(self) -> RootResolutionBlueprint:
+        """
+        Return the Phase 5 root blueprint or raise.
+
+        Returns:
+            RootResolutionBlueprint: Attached Phase 5 root blueprint.
+        """
+        root_blueprint = self._get_required_root_blueprint_phase5()
+        if root_blueprint is None:
+            raise RuntimeError("SpellCrafter Phase 5 root blueprint is required.")
+        return root_blueprint
+
+    def _get_required_occurrence_plan_phase8(self) -> OccurrencePlan:
+        """
+        Return the Phase 8 occurrence plan or raise.
+
+        Returns:
+            OccurrencePlan: Attached Phase 8 occurrence plan.
+        """
+        occurrence_plan = self._occurrence_plan_phase8
+        if occurrence_plan is None:
+            raise RuntimeError("SpellCrafter Phase 8 occurrence plan is required.")
+        return occurrence_plan
+
+    def _get_required_spell_system_index_phase5(self) -> SpellSystemIndex:
+        """
+        Return the Phase 5 system index or raise.
+
+        Returns:
+            SpellSystemIndex: Attached Phase 5 system index.
+        """
+        system_index = self._spell_system_index_phase5
+        if system_index is None:
+            raise RuntimeError("SpellCrafter Phase 5 system index is required.")
+        return system_index
+
+    def _get_required_entire_dag_blueprint_phase5(
+            self,
+    ) -> Dict[str, RootResolutionBlueprint]:
+        """
+        Return the Phase 5 root-blueprint map or raise.
+
+        Returns:
+            Dict[str, RootResolutionBlueprint]: Root blueprint map keyed by
+            root spell id.
+        """
+        root_blueprints = self._entire_dag_blueprint_phase5
+        if root_blueprints is None:
+            raise RuntimeError(
+                "SpellCrafter Phase 5 root blueprint map is required."
+            )
+        return root_blueprints
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -3605,7 +3725,7 @@ class SpellCrafter(Cleanable):
             )
 
         # Versioned identity from SpellIndex.
-        version_id: str = self._spell.spell_index.current
+        version_id = self._get_required_current_spell_id()
 
         deps: List[SpellSymbolicDependency] = []
 
@@ -3738,7 +3858,7 @@ class SpellCrafter(Cleanable):
         if self._spell is None or self._spell.spell_index is None:
             raise RuntimeError("SpellCrafter has no bound Spell with a SpellIndex.")
 
-        spell_id = self._spell.spell_index.current
+        spell_id = self._get_required_current_spell_id()
         descriptors: List[SpellSocketDescriptor] = []
 
         for dep in graph.dependencies:
@@ -3780,7 +3900,7 @@ class SpellCrafter(Cleanable):
             self,
             requirements: SpellRequirements,
             graph: SpellSymbolicGraph,
-            cancellation_event: CancellationEvent,
+            cancellation_event: Optional[CancellationEvent],
             *,
             return_dependencies: bool = False,
     ) -> Union[DirectedAcyclicWorkGraph, Tuple[DirectedAcyclicWorkGraph, List[str]]]:
@@ -3827,7 +3947,7 @@ class SpellCrafter(Cleanable):
         if self._spell is None or self._spell.spell_index is None:
             raise RuntimeError("SpellCrafter has no bound Spell with a SpellIndex.")
 
-        root_id = self._spell.spell_index.current
+        root_id = self._get_required_current_spell_id()
         dag = DirectedAcyclicWorkGraph()
 
         # Register the root node first.
@@ -3960,18 +4080,22 @@ class SpellCrafter(Cleanable):
             )
 
 
-        dag, dependency_spell_ids = self._build_local_frame_dag(
+        dag_with_dependencies = cast(
+            Tuple[DirectedAcyclicWorkGraph, List[str]],
+            self._build_local_frame_dag(
             requirements=self._requirements,
             graph=self._symbolic_graph,
             cancellation_event=cancel_event,
             return_dependencies=True,
+            ),
         )
+        dag, dependency_spell_ids = dag_with_dependencies
 
         # Topological order of node ids (deps first, then root).
         ordered_node_ids = dag.collect_dependency_ids()
 
         self._resolution_frame  = SpellResolutionFrame(
-            spell_id=self._spell.spell_index.current,
+            spell_id=self._get_required_current_spell_id(),
             ordered_node_ids=ordered_node_ids,
         )
 
@@ -4149,8 +4273,9 @@ class SpellCrafter(Cleanable):
         system_index = SpellSystemIndex()
 
         for spell_id, deps in filtered_snapshot.dependencies.items():
-            state = spell_system_states.get_by_spell_id(spell_id)
-            lineage_id: str = state.spell_index_id
+            lineage_id = self._get_required_spell_state_by_spell_id(
+                spell_id
+            ).spell_index_id
             spell_instance = spellbook._spell_id_pool[spell_id]
 
             node = SpellSystemNode(
@@ -4313,8 +4438,9 @@ class SpellCrafter(Cleanable):
         system_index = SpellSystemIndex()
         spell_system_states = self._get_required_spell_system_states()
         for spell_id, deps in snapshot.dependencies.items():
-            state = spell_system_states.get_by_spell_id(spell_id)
-            lineage_id = state.spell_index_id
+            lineage_id = self._get_required_spell_state_by_spell_id(
+                spell_id
+            ).spell_index_id
             spell_instance = spell_lookup[spell_id]
 
             node = SpellSystemNode(
@@ -4409,7 +4535,7 @@ class SpellCrafter(Cleanable):
             None.
         """
         self.check_cleaned()
-        target_spell_id = self._spell.spell_index.current
+        target_spell_id = self._get_required_current_spell_id()
 
         adjacency_builder = SpellSystemAdjacencyBuilder()
         spell_system_states = self._get_required_spell_system_states()
@@ -4574,7 +4700,7 @@ class SpellCrafter(Cleanable):
         self.check_cleaned()
         if self._spell.is_existing_creation:
             return
-        root_blueprint = self._root_blueprint_phase5
+        root_blueprint = self._get_required_root_blueprint_phase5()
         spell_lookup = self._get_required_spellbook()._spell_id_pool
         phase8_occurrence_plan_fast_key = self._build_phase8_occurrence_plan_fast_key(
             root_blueprint=root_blueprint,
@@ -4607,7 +4733,7 @@ class SpellCrafter(Cleanable):
             root_spell=self._spell,
             blueprint=root_blueprint,
             spell_lookup=spell_lookup,
-            system_states=self._spell_system_states,
+            system_states=self._get_required_spell_system_states(),
         )
         try:
             plan = builder.build()
@@ -4675,7 +4801,7 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
 
-        occurrence_plan = self._occurrence_plan_phase8
+        occurrence_plan = self._get_required_occurrence_plan_phase8()
         injection_plan_input_signature = self._build_phase9_injection_plan_input_signature(
             occurrence_plan=occurrence_plan,
         )
@@ -4752,7 +4878,7 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
 
-        root_blueprint = self._root_blueprint_phase5
+        root_blueprint = self._get_required_root_blueprint_phase5()
         patch_maps_input_signature = self._build_phase10_patch_maps_input_signature(
             root_blueprint,
         )
@@ -4886,7 +5012,7 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
 
-        occurrence_plan = self._occurrence_plan_phase8
+        occurrence_plan = self._get_required_occurrence_plan_phase8()
         injection_plan = self._injection_plan_phase9
         spell_lookup = self._get_required_spellbook()._spell_id_pool
 
@@ -4906,6 +5032,7 @@ class SpellCrafter(Cleanable):
                 or self._phase9_injection_plan_input_signature is not None
             )
         )
+        no_overrides_input_signature: Optional[str]
         if (
                 can_reuse_no_overrides_fast_key
                 and
@@ -5179,8 +5306,8 @@ class SpellCrafter(Cleanable):
 
         validator = SpellSystemValidationSystem(strategies=strategies)
         validation_state: SpellSystemValidationState = validator.validate(
-            index=self._spell_system_index_phase5,
-            blueprints=self._entire_dag_blueprint_phase5,
+            index=self._get_required_spell_system_index_phase5(),
+            blueprints=self._get_required_entire_dag_blueprint_phase5(),
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._get_required_spell_system_states(),
@@ -5499,7 +5626,9 @@ class SpellCrafter(Cleanable):
         spellbook = self._get_required_spellbook()
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)
+        owned_root_blueprints = self._filter_root_blueprints_to_owned(
+            self._get_required_entire_dag_blueprint_phase5()
+        )
         change_control_manager.rebuild_component_of(conduit_id, owned_root_blueprints)
         if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
             def _revalidate_dirty_roots(
@@ -5547,7 +5676,9 @@ class SpellCrafter(Cleanable):
         spellbook = self._get_required_spellbook()
         frame_name = spellbook._aetheric_frame
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        owned_root_blueprints = self._filter_root_blueprints_to_owned(self._entire_dag_blueprint_phase5)
+        owned_root_blueprints = self._filter_root_blueprints_to_owned(
+            self._get_required_entire_dag_blueprint_phase5()
+        )
         change_control_manager.upsert_component_of(conduit_id, owned_root_blueprints)
         if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
             def _revalidate_dirty_roots(
@@ -5572,7 +5703,9 @@ class SpellCrafter(Cleanable):
                 validated_roots: Set[str] = set()
                 for root_id in dirty_roots:
                     spell_instance = spellbook._spell_id_pool[root_id]
-                    crafter = spell_instance._crafter
+                    crafter = self._get_required_crafter_from_spell(
+                        spell_instance
+                    )
                     crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
                     validated_roots.add(root_id)
 

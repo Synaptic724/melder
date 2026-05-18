@@ -7,10 +7,45 @@ class IFrameACLRule(ICleanable, Protocol):
     ACL rule contract for reusable profile and applied configuration work.
     """
 
-    rule_name: str
-    operation: str
-    effect: str
-    conditions: Dict[str, Any]
+    @property
+    def rule_name(self) -> str:
+        """
+        Return the stable rule name.
+
+        Returns:
+            str: Stable rule name.
+        """
+        ...
+
+    @property
+    def operation(self) -> str:
+        """
+        Return the rule operation.
+
+        Returns:
+            str: Rule operation.
+        """
+        ...
+
+    @property
+    def effect(self) -> str:
+        """
+        Return the rule effect.
+
+        Returns:
+            str: Rule effect.
+        """
+        ...
+
+    @property
+    def conditions(self) -> Dict[str, Any]:
+        """
+        Return a detached snapshot of rule conditions.
+
+        Returns:
+            Dict[str, Any]: Detached condition snapshot.
+        """
+        ...
 
     def to_json_dict(self) -> Dict[str, Any]:
         """

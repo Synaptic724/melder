@@ -1,6 +1,6 @@
 import ulid
 import weakref
-from typing import Generic, TypeVar, Optional, Callable, List, Any
+from typing import Generic, TypeVar, Optional, Callable, List, Any, Literal, overload
 
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
@@ -324,6 +324,14 @@ class WeakRefNode(Cleanable, Generic[_T]):
         return fn(obj)
 
     map = transform
+
+    @overload
+    def deref(self, *, strict: Literal[True] = True) -> _T:
+        ...
+
+    @overload
+    def deref(self, *, strict: Literal[False]) -> Optional[_T]:
+        ...
 
     def deref(self, *, strict: bool = True) -> Optional[_T]:
         """
