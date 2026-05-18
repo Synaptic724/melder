@@ -1,7 +1,7 @@
 import threading
 import time
 from concurrent.futures import FIRST_EXCEPTION, Future, wait
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from queue import SimpleQueue, Empty as QueueEmpty
 
 from melder.utilities.interfaces import IConfiguration, ISpellbook, IUnitOfWork
@@ -389,6 +389,36 @@ class PhaseScheduler(Cleanable):
 
             self._workers_started = True
 
+    @staticmethod
+    def _build_wait_targets(
+            units: Sequence[IUnitOfWork],
+    ) -> Tuple[Future[Any], ...]:
+        """
+        Return the concrete Future targets consumed by `wait(...)`.
+
+        Args:
+            units:
+                Phase units to wait on.
+
+        Returns:
+            Tuple[Future[Any], ...]: Concrete Future-backed wait targets in the
+            same order as the supplied units.
+
+        Raises:
+            TypeError:
+                If any supplied unit does not satisfy the concrete
+                `concurrent.futures.Future` runtime contract required by
+                `wait(...)`.
+        """
+        wait_targets: List[Future[Any]] = []
+        for unit in units:
+            if not isinstance(unit, Future):
+                raise TypeError(
+                    "PhaseScheduler requires Future-backed IUnitOfWork values."
+                )
+            wait_targets.append(unit)
+        return tuple(wait_targets)
+
     def _worker_loop(self) -> None:
         """
         Worker thread loop.
@@ -491,7 +521,7 @@ class PhaseScheduler(Cleanable):
         # - returns early on first exception (fail-fast)
         # - otherwise returns when all complete
         # - or returns at timeout with pending non-empty
-        wait_targets = cast(Sequence[Future[Any]], units)
+        wait_targets = self._build_wait_targets(units)
         done, pending = wait(
             wait_targets,
             timeout=timeout_sec,
