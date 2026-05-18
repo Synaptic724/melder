@@ -13,10 +13,10 @@ class TicketFlag(Cleanable):
         derived from ticket count instead of a dedicated boolean field.
 
     Truth model:
-        - ``True`` means at least one active ticket exists.
-        - ``False`` means no active tickets exist.
-        - Setting ``value=True`` appends one ``None`` ticket.
-        - Setting ``value=False`` removes one ticket when available.
+        - "True" means at least one active ticket exists.
+        - "False" means no active tickets exist.
+        - Setting "value=True" appends one "None" ticket.
+        - Setting "value=False" removes one ticket when available.
 
     Threading:
         - This primitive does not use an explicit Python lock.
@@ -32,16 +32,16 @@ class TicketFlag(Cleanable):
         """
         Public API
 
-        Initialize the flag in truthy or falsey state.
+        Initialize the flag in a truthy or falsey state.
 
         Purpose:
-            Create a ticket-backed flag that can be used in ``if`` statements
+            Create a ticket-backed flag that can be used in "if" statements
             while preserving ticket-count introspection.
 
         Contract:
-            - ``value=False`` starts with zero tickets.
-            - ``value=True`` starts with one ticket.
-            - Additional truthy writes may increase ticket count beyond one.
+            - "value=False" starts with zero tickets.
+            - "value=True" starts with one ticket.
+            - Additional truthy writes may increase the ticket count beyond one.
 
         Args:
             value:
@@ -51,7 +51,7 @@ class TicketFlag(Cleanable):
             None.
         """
         super().__init__()
-        self._tickets: Optional[Deque[None]] = deque()
+        self._tickets: Deque[None] = deque()
         if value:
             self._tickets.append(None)
 
@@ -68,7 +68,7 @@ class TicketFlag(Cleanable):
         Contract:
             - Cleanup is idempotent.
             - All tickets are cleared before invalidation.
-            - All guarded operations raise after cleanup.
+            - All guarded operations rise after cleanup.
 
         Returns:
             None.
@@ -77,7 +77,7 @@ class TicketFlag(Cleanable):
             return
         self._tickets.clear()
         self._cleaned = True
-        self._tickets = None
+        del self._tickets
 
     def __bool__(self) -> bool:
         """
@@ -87,11 +87,11 @@ class TicketFlag(Cleanable):
 
         Returns:
             bool:
-                ``True`` when at least one ticket exists; otherwise ``False``.
+                True when at least one ticket exists; otherwise False.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return len(self._tickets) > 0
@@ -108,7 +108,7 @@ class TicketFlag(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         return len(self._tickets)
@@ -118,15 +118,15 @@ class TicketFlag(Cleanable):
         """
         Public API
 
-        Return boolean view of current ticket state.
+        Return a boolean view of the current ticket state.
 
         Returns:
             bool:
-                ``True`` when at least one ticket exists; otherwise ``False``.
+                True when at least one ticket exists; otherwise False.
 
         Raises:
             RuntimeError:
-                If accessed after ``cleanup()``.
+                If accessed after cleanup().
         """
         return bool(self)
 
@@ -138,8 +138,8 @@ class TicketFlag(Cleanable):
         Update the flag using ticket operations.
 
         Contract:
-            - ``new_value=True`` appends one ticket.
-            - ``new_value=False`` removes one ticket when available.
+            - new_value=True appends one ticket.
+            - new_value=False removes one ticket when available.
             - Empty-pop is treated as a no-op.
 
         Args:
@@ -151,7 +151,7 @@ class TicketFlag(Cleanable):
 
         Raises:
             RuntimeError:
-                If set after ``cleanup()``.
+                If set after cleanup().
         """
         self.check_cleaned()
         if new_value:
@@ -173,8 +173,9 @@ class TicketFlag(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If set after cleanup().
         """
+        self.check_cleaned()
         self.value = True
 
     def set_false(self) -> None:
@@ -192,8 +193,9 @@ class TicketFlag(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
+        self.check_cleaned()
         self.value = False
 
     def clear_tickets(self) -> None:
@@ -207,7 +209,7 @@ class TicketFlag(Cleanable):
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         self.check_cleaned()
         self._tickets.clear()
@@ -218,15 +220,14 @@ class TicketFlag(Cleanable):
 
         Return whether at least one active ticket exists.
 
-        This is a thin alias over :meth:`__bool__`.
+        This is a thin alias over: meth:`__bool__`.
 
         Returns:
-            bool:
-                ``True`` when at least one ticket exists.
+            True when at least one ticket exists.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         return bool(self)
 
@@ -236,15 +237,14 @@ class TicketFlag(Cleanable):
 
         Return the number of active tickets.
 
-        This is a thin alias over :meth:`__len__`.
+        This is a thin alias over: meth:`__len__`.
 
         Returns:
-            int:
-                Active ticket count.
+            Active ticket count.
 
         Raises:
             RuntimeError:
-                If called after ``cleanup()``.
+                If called after cleanup().
         """
         return len(self)
 
@@ -255,17 +255,16 @@ class TicketFlag(Cleanable):
         Context-enter by appending one ticket.
 
         Returns:
-            TicketFlag:
-                This flag instance after one truthy increment.
+            This flag instance after one truthy increment.
 
         Raises:
             RuntimeError:
-                If entered after ``cleanup()``.
+                If entered after cleanup().
         """
         self.set_true()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> Literal[False]:
+    def __exit__(self, exc_type, exc, tb) -> bool | Literal[False]:
         """
         Public API
 
@@ -276,12 +275,11 @@ class TicketFlag(Cleanable):
             - Never suppresses exceptions from the with-body.
 
         Returns:
-            bool:
-                Always ``False``.
+            False.
 
         Raises:
             RuntimeError:
-                If exited after ``cleanup()``.
+                If exited after cleanup().
         """
         self.set_false()
         return False

@@ -9,6 +9,7 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces import IConduit
 
 
 class CommandSystem(Cleanable):
@@ -147,7 +148,7 @@ class CommandSystem(Cleanable):
             conduit_id: str,
             *,
             frame_name: str,
-    ) -> object:
+    ) -> IConduit:
         """
         Resolve one conduit object while the command lock is already held.
 

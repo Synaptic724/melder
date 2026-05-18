@@ -14,13 +14,13 @@ class IMutationFrame(ICleanable, Protocol):
         ...
 
     @property
-    def mutation_research(self):
+    def mutation_research(self) -> "IMutationResearch":
         ...
 
     @property
-    def spell_system_states(self):
+    def spell_system_states(self) -> "ISpellSystemStates":
         ...
 
     @property
-    def change_control_manager(self):
+    def change_control_manager(self) -> "IChangeControlManager":
         ...

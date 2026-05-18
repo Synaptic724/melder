@@ -345,7 +345,7 @@ class AethericFrameConfiguration(Cleanable, IAethericFrameConfiguration):
 
     def matches_posture(
             self,
-            other: "AethericFrameConfiguration",
+            other: object,
     ) -> bool:
         """
         Compare this posture against another frame-level posture object.
@@ -366,6 +366,8 @@ class AethericFrameConfiguration(Cleanable, IAethericFrameConfiguration):
         """
         self.check_cleaned()
         if other is None:
+            return False
+        if not isinstance(other, AethericFrameConfiguration):
             return False
         with SafeGuard(self._lock, other._lock):
             return (

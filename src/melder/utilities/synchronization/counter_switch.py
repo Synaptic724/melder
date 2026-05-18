@@ -47,9 +47,9 @@ class CounterSwitch(Cleanable):
                 Initial ticket count. Default ``2`` starts open.
         """
         super().__init__()
-        self._lock: Optional[threading.Lock] = threading.Lock()
-        self._event: Optional[threading.Event] = threading.Event()
-        self._tickets: Optional[Deque[None]] = deque()
+        self._lock: threading.Lock = threading.Lock()
+        self._event: threading.Event = threading.Event()
+        self._tickets: deque[None] = deque()
         if state > 0:
             self._tickets.extend([None] * state)
         if state == 1:
@@ -69,12 +69,16 @@ class CounterSwitch(Cleanable):
               released.
             - Marks the switch cleaned and drops lock/event/ticket storage.
         """
+        if self._cleaned:
+            return
+
         self._tickets.clear()
         self._event.set()
         self._cleaned = True
-        self._event = None
-        self._tickets = None
-        self._lock = None
+
+        del self._event
+        del self._tickets
+        del self._lock
 
     def __len__(self) -> int:
         """

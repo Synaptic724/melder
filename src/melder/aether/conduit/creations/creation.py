@@ -54,9 +54,9 @@ class Creation(Cleanable):
         self._disposal_methods: list[str] = list(disposal_methods) if disposal_methods else []
         self._value: Any = value
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
-        Release the wrapper's references without disposing the wrapped object.
+        Release the wrapper's references without disposing of the wrapped object.
 
         Contract:
         - Idempotent and lock-protected.
@@ -72,9 +72,9 @@ class Creation(Cleanable):
                 return
             self._cleaned = True
             self._value = None   # Underlying object is not disposed here.
-            self._has_disposal_methods = None
-            self._disposal_methods = None
-        self._lock = None
+            del self._has_disposal_methods
+            del self._disposal_methods
+        del self._lock
 
     @property
     def id(self) -> str:

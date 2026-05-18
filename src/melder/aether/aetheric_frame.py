@@ -3,7 +3,12 @@ from typing import Optional, Set, Dict
 
 import ulid
 # Melder Imports
-from melder.utilities.interfaces import IConduit, IAether, IAethericFrame
+from melder.utilities.interfaces import (
+    IConduit,
+    IAether,
+    IAethericFrame,
+    IAethericFrameConfiguration,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
@@ -296,7 +301,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def bind_frame_configuration(
             self,
-            frame_configuration: AethericFrameConfiguration,
+            frame_configuration: IAethericFrameConfiguration,
     ) -> AethericFrameConfiguration:
         """
         Bind one frame-level posture object onto this frame.

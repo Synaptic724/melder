@@ -374,7 +374,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def _resolve_caller(self, tmpl_logger, *, stacklevel: int, manual_stack: bool, kwargs: dict):
+    def _resolve_caller(self, tmpl_logger, *, stacklevel: int, manual_stack: bool, kwargs: dict) -> tuple[str, int, str, object]:
         """
         Compute caller metadata for `LogRecord` creation.
 

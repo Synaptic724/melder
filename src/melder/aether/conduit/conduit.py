@@ -773,7 +773,7 @@ class Conduit(Cleanable, IConduit):
 
 
     #region Context Management
-    def __enter__(self):
+    def __enter__(self) -> IConduit:
         """
         Public API
 
