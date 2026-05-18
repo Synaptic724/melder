@@ -3495,7 +3495,7 @@ class Conduit(Cleanable, IConduit):
 
     def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit  | None= None, conduit_id: str | None = None,
                                permissions: str = "create", aetheric_frame = "default",
-                               reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict:
+                               reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> Dict:
         """
         Public API
 
@@ -3512,7 +3512,7 @@ class Conduit(Cleanable, IConduit):
             aetheric_frame (str): Optional frame override used to locate the target conduit.
 
         Returns:
-            dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
+            Dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).

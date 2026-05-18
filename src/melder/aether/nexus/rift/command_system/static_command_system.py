@@ -65,7 +65,7 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> object:
+    ) -> None:
         """
         Static rooms do not expose the live conduit-cloud runtime object.
 
@@ -73,8 +73,7 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
             frame_name:
                 Unused static-room frame selector.
         Returns:
-            object:
-                Never returns.
+            None:
         Raises:
             AttributeError:
                 Always, because static rooms do not expose direct conduit-cloud
@@ -87,7 +86,7 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> object:
+    ) -> None:
         """
         Static rooms do not expose live conduit runtime objects by id.
 
@@ -97,8 +96,7 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
             frame_name:
                 Unused static-room frame selector.
         Returns:
-            object:
-                Never returns.
+            None:
         Raises:
             AttributeError:
                 Always, because static rooms do not expose direct conduit
@@ -111,7 +109,7 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
             conduit_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> object:
+    ) -> None:
         """
         Static rooms do not expose live conduit runtime objects by name.
 
@@ -121,8 +119,7 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
             frame_name:
                 Unused static-room frame selector.
         Returns:
-            object:
-                Never returns.
+            None:
         Raises:
             AttributeError:
                 Always, because static rooms do not expose direct conduit

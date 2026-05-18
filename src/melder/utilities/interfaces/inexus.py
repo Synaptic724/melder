@@ -1,4 +1,6 @@
 from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
@@ -331,7 +333,7 @@ class INexus(ICleanable, Protocol):
     def _validate_target_frame_runtime_requirements(
             self,
             target_frame_name: str,
-            requested_space_type: object,
+            requested_space_type: RiftSpaceType,
     ) -> None:
         """
         Validate one target frame against the requested Rift room posture.

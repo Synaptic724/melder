@@ -1,5 +1,6 @@
 import logging
 from threading import RLock
+from types import TracebackType
 from typing import Optional, Any, Dict, List, Set, Tuple
 import ulid
 # Melder Imports
@@ -64,7 +65,7 @@ class Aether(Cleanable, IAether):
     _lock = RLock()
     _initialized = False
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: object, **kwargs: object) -> "Aether":
         """
         Return the one process-wide `Aether` singleton instance.
 
@@ -102,28 +103,29 @@ class Aether(Cleanable, IAether):
             None.
         """
         if not Aether._initialized:
-            super().__init__()
-            # Initialize potentially nullable fields early for safe cleanup
-            self._aetheric_frames = None
-            self._default_frame = None
-            self._nexus = None
-            self._crystallizer = None
-            self._mutation_research = None
-            self._aether_utility_system = None
-            self._configuration = None
-            self._configured = False
-            self._activated = False
-            self._logger = InitHelpers.resolve_safe_logger(None)
-            Aether._initialized = True
-
-            self._id: str = str(ulid.ULID())
-            self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
-            # --- Frame setup ---
-            self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame(self, "default")}
-            self._default_frame: AethericFrame = self._aetheric_frames["default"]
-            self._crystallizer: Crystallizer = Crystallizer(aether=self)
-            self._mutation_research: MutationResearch = MutationResearch(aether=self)
-            self._nexus: Nexus = Nexus(aether=self)
+            try:
+                super().__init__()
+                self._id: str = str(ulid.ULID())
+                self._configuration: Optional[AetherConfiguration] = None
+                self._configured: bool = False
+                self._activated: bool = False
+                self._logger = InitHelpers.resolve_safe_logger(None)
+                self._aetheric_frames: Dict[str, AethericFrame] = {}
+                self._default_frame: Optional[AethericFrame] = None
+                self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
+                default_frame = AethericFrame(self, "default")
+                self._aetheric_frames["default"] = default_frame
+                self._default_frame = default_frame
+                self._crystallizer: Crystallizer = Crystallizer(aether=self)
+                self._mutation_research: MutationResearch = MutationResearch(aether=self)
+                self._nexus: Nexus = Nexus(aether=self)
+                Aether._initialized = True
+            except Exception:
+                with Aether._lock:
+                    if Aether._instance is self:
+                        Aether._instance = None
+                    Aether._initialized = False
+                raise
 
     def cleanup(self) -> None:
         """
