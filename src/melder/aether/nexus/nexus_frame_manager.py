@@ -18,6 +18,7 @@ from melder.utilities.interfaces import (
     IAethericFrameConfiguration,
     IConduit,
     INexus,
+    INexusFrameManager,
     INexusFrameConfiguration,
 )
 from melder.utilities.interfaces.inexus_frame_manager_runtime_surface import (
@@ -26,7 +27,7 @@ from melder.utilities.interfaces.inexus_frame_manager_runtime_surface import (
     INexusFrameManagerRuntimeSurface,
 )
 
-class NexusFrameManager(Cleanable):
+class NexusFrameManager(Cleanable, INexusFrameManager):
     """
     Authoring and topology facade for Nexus-managed frames.
 
@@ -589,7 +590,7 @@ class NexusFrameManager(Cleanable):
     def get_frame_names_to_cleanup_for_removed_rift(
             self,
             rift_id: str,
-    ) -> List[str]:
+    ) -> Tuple[str, ...]:
         """
         Return the authored frame names that should be disposed after Rift removal.
 
@@ -603,34 +604,34 @@ class NexusFrameManager(Cleanable):
                 Removed Rift id.
 
         Returns:
-            List[str]: Frame names to dispose.
+            Tuple[str, ...]: Frame names to dispose.
         """
         self.check_cleaned()
         with self._lock:
             nexus_frame_mode_name = self._get_nexus_frame_mode_name()
             if nexus_frame_mode_name == "single":
                 if len(self._nexus._rifts_by_id) != 0:
-                    return []
+                    return tuple()
                 shared_frame_name = self._get_default_nexus_frame_name()
                 configuration = self._configurations_by_frame_name.get(
                     shared_frame_name
                 )
                 if shared_frame_name not in self._frames_by_name:
-                    return []
+                    return tuple()
                 if configuration is not None and configuration.immutable:
-                    return []
-                return [shared_frame_name]
+                    return tuple()
+                return (shared_frame_name,)
             if nexus_frame_mode_name == "one_per_workspace":
                 private_frame_name = self._determine_frame_name_for_rift(rift_id)
                 configuration = self._configurations_by_frame_name.get(
                     private_frame_name
                 )
                 if private_frame_name not in self._frames_by_name:
-                    return []
+                    return tuple()
                 if configuration is not None and configuration.immutable:
-                    return []
-                return [private_frame_name]
-            return []
+                    return tuple()
+                return (private_frame_name,)
+            return tuple()
 
     def handle_aether_frame_disposal(self, frame_name: str) -> bool:
         """
