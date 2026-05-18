@@ -5,7 +5,7 @@ import inspect
 import pickle
 import typing
 import types
-from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin
+from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin, Generator
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
@@ -2935,15 +2935,16 @@ class SpellCrafter(Cleanable):
             self._codegen_ir["phase8_11"] = {}
             self._codegen_ir["signatures"].pop("phase8_11", None)
         self._phase8_11_codegen_ir_dirty = False
-        self._phase12_no_overrides_executor = None
-        self._phase12_no_overrides_executor_signature = None
         self._spell.resolution_complete = False
-        self._phase8_occurrence_plan_input_signature = None
-        self._phase8_occurrence_plan_fast_key = None
-        self._phase9_injection_plan_input_signature = None
-        self._phase10_patch_maps_input_signature = None
-        self._phase11_no_overrides_input_signature = None
-        self._phase11_no_overrides_fast_key = None
+
+        del self._phase12_no_overrides_executor
+        del self._phase12_no_overrides_executor_signature
+        del self._phase8_occurrence_plan_input_signature
+        del self._phase8_occurrence_plan_fast_key
+        del self._phase9_injection_plan_input_signature
+        del self._phase10_patch_maps_input_signature
+        del self._phase11_no_overrides_input_signature
+        del self._phase11_no_overrides_fast_key
 
 
     def _notify_dependencies_updated(self, dependency_ids: List[str]) -> None:
@@ -2975,7 +2976,7 @@ class SpellCrafter(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-    def _iter_all_spells(self):
+    def _iter_all_spells(self) -> Generator[tuple[Any, Any], Any, None]:
         """
         Iterate all visible spells via the Spellbook's live spell_id_pool.
 

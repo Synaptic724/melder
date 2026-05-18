@@ -1198,7 +1198,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def register_local_topology(
             self,
-            spell_index: SpellIndex,
+            spell_index: ISpellIndex,
             topology: 'SpellLocalTopology',
     ) -> None:
         """
@@ -1255,7 +1255,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def get_local_topology(
             self,
-            spell_index: SpellIndex,
+            spell_index: ISpellIndex,
     ) -> Optional['SpellLocalTopology']:
         """
         Return the local constructor topology for the given spell, if any.
