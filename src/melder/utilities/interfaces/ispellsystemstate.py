@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Set, runtime_checkable
+from typing import Iterable, Optional, Protocol, Set, runtime_checkable
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
@@ -12,6 +12,10 @@ class ISpellSystemState(ICleanable, Protocol):
     """
     Spell-lineage structural state contract consumed by `SpellCrafter`.
     """
+
+    @property
+    def spell_index_id(self) -> str:
+        ...
 
     @property
     def validity(self) -> SpellValidity:
@@ -28,9 +32,13 @@ class ISpellSystemState(ICleanable, Protocol):
     def set_validity(
             self,
             validity: SpellValidity,
-            reason: Optional[SpellStateChangeReason] = None,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+            flags_to_add: Optional[Iterable[SpellState]] = None,
+            flags_to_remove: Optional[Iterable[SpellState]] = None,
+            transitively_dirty: Optional[bool] = None,
     ) -> None:
         ...
 
-    def clear_dirty(self, validated_at: float) -> None:
+    def clear_dirty(self, last_validated_at: Optional[float]) -> None:
         ...

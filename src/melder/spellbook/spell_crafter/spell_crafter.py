@@ -28,17 +28,26 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
-    SpellRequirements,
-)
 from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces import ISpell, ISpellSystemStates, ISpellValidationSystem, ISpellbook, ISpellIndex
+from melder.utilities.interfaces import (
+    IInjectionPlan,
+    IMutationPatchMap,
+    IOccurrencePlan,
+    IOverridePatchMap,
+    IRootResolutionBlueprint,
+    ISpell,
+    ISpellbook,
+    ISpellIndex,
+    ISpellRequirements,
+    ISpellSystemState,
+    ISpellSystemStates,
+    ISpellValidationSystem,
+)
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -48,18 +57,11 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellSocketDescriptor,
 )
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.blueprints.patch_maps import (
-    MutationPatchMap,
-    OverridePatchMap,
-    PatchMapBuilder,
-)
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.spellbook.spell_crafter.blueprints.patch_maps import PatchMapBuilder
 from melder.spellbook.spell_crafter.blueprints.injection_plan import (
-    InjectionPlan,
     InjectionPlanBuilder,
 )
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
-    OccurrencePlan,
     OccurrencePlanBuilder,
 )
 from melder.spellbook.spell_crafter.blueprints.execution_plan import (
@@ -260,7 +262,7 @@ class SpellCrafter(Cleanable):
         self._spell_system_states: Optional[ISpellSystemStates] = (
             self._get_required_spell_system_states_from_spell(spell)
         )
-        self._requirements: Optional[SpellRequirements] = None
+        self._requirements: Optional[ISpellRequirements] = None
         if resolution_profile is not None:
             self._requirements = resolution_profile.requirements
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
@@ -271,14 +273,14 @@ class SpellCrafter(Cleanable):
         self._validated_phase4: bool = False
         self._validation_result_phase6: Any = None
         self._validated_phase6: bool = False
-        self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
+        self._root_blueprint_phase5: Optional[IRootResolutionBlueprint] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
-        self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
+        self._occurrence_plan_phase8: Optional[IOccurrencePlan] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
-        self._injection_plan_phase9: Optional[InjectionPlan] = None
-        self._override_patch_map_phase10: Optional[OverridePatchMap] = None
-        self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
+        self._injection_plan_phase9: Optional[IInjectionPlan] = None
+        self._override_patch_map_phase10: Optional[IOverridePatchMap] = None
+        self._mutation_patch_map_phase10: Optional[IMutationPatchMap] = None
         self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
@@ -290,7 +292,7 @@ class SpellCrafter(Cleanable):
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
-        self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
+        self._entire_dag_blueprint_phase5 : Optional[Dict[str, IRootResolutionBlueprint]] = None
         self._is_broken: bool = False
 
     @staticmethod
@@ -407,7 +409,7 @@ class SpellCrafter(Cleanable):
     def _get_required_spell_state_by_spell_id(
             self,
             spell_id: str,
-    ) -> SpellSystemState:
+    ) -> ISpellSystemState:
         """
         Return the live system state for one spell id or raise.
 
@@ -416,7 +418,7 @@ class SpellCrafter(Cleanable):
                 Current spell version id to resolve.
 
         Returns:
-            SpellSystemState: Registered system state for the spell id.
+            ISpellSystemState: Registered system state for the spell id.
         """
         state = self._get_required_spell_system_states().get_by_spell_id(spell_id)
         if state is None:
@@ -426,24 +428,24 @@ class SpellCrafter(Cleanable):
             )
         return state
 
-    def _get_required_root_blueprint_phase5(self) -> RootResolutionBlueprint:
+    def _get_required_root_blueprint_phase5(self) -> IRootResolutionBlueprint:
         """
         Return the Phase 5 root blueprint or raise.
 
         Returns:
-            RootResolutionBlueprint: Attached Phase 5 root blueprint.
+            IRootResolutionBlueprint: Attached Phase 5 root blueprint.
         """
         root_blueprint = self._root_blueprint_phase5
         if root_blueprint is None:
             raise RuntimeError("SpellCrafter Phase 5 root blueprint is required.")
         return root_blueprint
 
-    def _get_required_occurrence_plan_phase8(self) -> OccurrencePlan:
+    def _get_required_occurrence_plan_phase8(self) -> IOccurrencePlan:
         """
         Return the Phase 8 occurrence plan or raise.
 
         Returns:
-            OccurrencePlan: Attached Phase 8 occurrence plan.
+            IOccurrencePlan: Attached Phase 8 occurrence plan.
         """
         occurrence_plan = self._occurrence_plan_phase8
         if occurrence_plan is None:
@@ -464,12 +466,12 @@ class SpellCrafter(Cleanable):
 
     def _get_required_entire_dag_blueprint_phase5(
             self,
-    ) -> Dict[str, RootResolutionBlueprint]:
+    ) -> Dict[str, IRootResolutionBlueprint]:
         """
         Return the Phase 5 root-blueprint map or raise.
 
         Returns:
-            Dict[str, RootResolutionBlueprint]: Root blueprint map keyed by
+            Dict[str, IRootResolutionBlueprint]: Root blueprint map keyed by
             root spell id.
         """
         root_blueprints = self._entire_dag_blueprint_phase5
@@ -615,7 +617,7 @@ class SpellCrafter(Cleanable):
         return self._spell
 
     @property
-    def requirements(self) -> Optional[SpellRequirements]:
+    def requirements(self) -> Optional[ISpellRequirements]:
         """
         Phase 1 artifact for this spell, if it has been computed.
 
@@ -661,7 +663,7 @@ class SpellCrafter(Cleanable):
         return self._validation_result_phase4
 
     @property
-    def root_blueprint_phase5(self) -> Optional[RootResolutionBlueprint]:
+    def root_blueprint_phase5(self) -> Optional[IRootResolutionBlueprint]:
         """
         Phase 5 root blueprint for this spell, if one has been attached.
 
@@ -674,12 +676,12 @@ class SpellCrafter(Cleanable):
         return self._root_blueprint_phase5
 
     @property
-    def occurrence_plan_phase8(self) -> Optional[OccurrencePlan]:
+    def occurrence_plan_phase8(self) -> Optional[IOccurrencePlan]:
         """
         Phase 8 occurrence plan artifact, if compiled for this spell.
 
         Returns:
-            Optional[OccurrencePlan]:
+            Optional[IOccurrencePlan]:
                 The compiled OccurrencePlan for this spell, or None if Phase 8
                 has not run yet, foundational resolution blocked later phases,
                 or the spell bypasses this plan family.
@@ -688,12 +690,12 @@ class SpellCrafter(Cleanable):
         return self._occurrence_plan_phase8
 
     @property
-    def injection_plan_phase9(self) -> Optional[InjectionPlan]:
+    def injection_plan_phase9(self) -> Optional[IInjectionPlan]:
         """
         Phase 9 injection plan artifact, if compiled for this spell.
 
         Returns:
-            Optional[InjectionPlan]:
+            Optional[IInjectionPlan]:
                 The compiled InjectionPlan for this spell, or None if Phase 9
                 has not run yet, foundational resolution blocked later phases,
                 or the spell bypasses this plan family.
@@ -702,7 +704,7 @@ class SpellCrafter(Cleanable):
         return self._injection_plan_phase9
 
     @property
-    def override_patch_map_phase10(self) -> Optional[OverridePatchMap]:
+    def override_patch_map_phase10(self) -> Optional[IOverridePatchMap]:
         """
         Phase 10 override patch map artifact, if compiled for this spell.
 
@@ -714,7 +716,7 @@ class SpellCrafter(Cleanable):
         return self._override_patch_map_phase10
 
     @property
-    def mutation_patch_map_phase10(self) -> Optional[MutationPatchMap]:
+    def mutation_patch_map_phase10(self) -> Optional[IMutationPatchMap]:
         """
         Phase 10 mutation patch map artifact, if compiled for this spell.
 
@@ -2234,8 +2236,8 @@ class SpellCrafter(Cleanable):
         """
         if override_patch_map is None:
             return ()
-        targets_by_spec = override_patch_map._targets_by_spec
-        specificity_by_spec = override_patch_map._specificity_by_spec
+        targets_by_spec = override_patch_map.targets_by_spec
+        specificity_by_spec = override_patch_map.specificity_by_spec
 
         rows: List[Tuple[Any, ...]] = []
         for spec_key in sorted(targets_by_spec.keys()):
@@ -2291,7 +2293,7 @@ class SpellCrafter(Cleanable):
         """
         if mutation_patch_map is None:
             return ()
-        targets_by_spec = mutation_patch_map._targets_by_spec
+        targets_by_spec = mutation_patch_map.targets_by_spec
         rows: List[Tuple[Any, ...]] = []
         for spec_key in sorted(targets_by_spec.keys()):
             raw_patches = targets_by_spec[spec_key]
@@ -2934,7 +2936,9 @@ class SpellCrafter(Cleanable):
         override_target_specs: Tuple[str, ...] = ()
         override_target_rows: Tuple[Tuple[Any, ...], ...] = ()
         if self._override_patch_map_phase10 is not None:
-            override_target_specs = tuple(sorted(self._override_patch_map_phase10._targets_by_spec.keys()))
+            override_target_specs = tuple(
+                sorted(self._override_patch_map_phase10.targets_by_spec.keys())
+            )
             override_target_rows = self._build_override_target_rows(
                 self._override_patch_map_phase10,
             )
@@ -2942,7 +2946,9 @@ class SpellCrafter(Cleanable):
         mutation_target_specs: Tuple[str, ...] = ()
         mutation_target_rows: Tuple[Tuple[Any, ...], ...] = ()
         if self._mutation_patch_map_phase10 is not None:
-            mutation_target_specs = tuple(sorted(self._mutation_patch_map_phase10._targets_by_spec.keys()))
+            mutation_target_specs = tuple(
+                sorted(self._mutation_patch_map_phase10.targets_by_spec.keys())
+            )
             mutation_target_rows = self._build_mutation_target_rows(
                 self._mutation_patch_map_phase10,
             )
