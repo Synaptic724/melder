@@ -87,9 +87,9 @@ def test_component_method_profile_cleanup_clears_fields() -> None:
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert profile.name is None
-    assert profile.parameters is None
-    assert profile.closure is None
+    assert not hasattr(profile, 'name')
+    assert not hasattr(profile, 'parameters')
+    assert not hasattr(profile, 'closure')
 
 
 def test_component_class_profile_cleanup_cascades_method_profiles() -> None:
@@ -122,10 +122,10 @@ def test_component_class_profile_cleanup_cascades_method_profiles() -> None:
     profile.cleanup()
 
     assert method_profile.cleaned is True
-    assert method_profile.name is None
+    assert not hasattr(method_profile, 'name')
     assert profile.cleaned is True
-    assert profile.methods is None
-    assert profile.name is None
+    assert not hasattr(profile, 'methods')
+    assert not hasattr(profile, 'name')
 
 
 def test_component_spell_validation_result_cleanup_cascades_issues() -> None:
@@ -156,10 +156,10 @@ def test_component_spell_validation_result_cleanup_cascades_issues() -> None:
     result.cleanup()
 
     assert result.cleaned is True
-    assert result.errors is None
-    assert result.warnings is None
+    assert not hasattr(result, 'errors')
+    assert not hasattr(result, 'warnings')
     assert error.cleaned is True
-    assert error.details is None
+    assert not hasattr(error, 'details')
     assert warning.cleaned is True
 
 
@@ -183,8 +183,8 @@ def test_component_spell_symbolic_graph_cleanup_cascades_nodes_and_edges() -> No
     graph.cleanup()
 
     assert graph.cleaned is True
-    assert graph.nodes is None
-    assert graph.edges is None
+    assert not hasattr(graph, 'nodes')
+    assert not hasattr(graph, 'edges')
     assert node.cleaned is True
     assert edge.cleaned is True
 
@@ -232,7 +232,7 @@ def test_component_spell_resolution_profile_cleanup_cascades_requirements() -> N
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert profile.spell_id is None
+    assert not hasattr(profile, 'spell_id')
     assert requirements.cleaned is True
     assert requirement.cleaned is True
     assert graph.cleaned is True

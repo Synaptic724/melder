@@ -122,7 +122,7 @@ def test_descriptor_cleanup_cleans_owned_metadata_and_releases_lock() -> None:
     descriptor.cleanup()
 
     assert frame_overview.cleaned is True
-    assert descriptor._lock is None
+    assert not hasattr(descriptor, '_lock')
 
 
 def test_descriptor_collection_properties_return_snapshots() -> None:

@@ -181,13 +181,13 @@ def test_compiled_access_surface_cleanup_clears_owned_state() -> None:
     surface.cleanup()
 
     assert surface.cleaned is True
-    assert surface._frame_name is None
-    assert surface._configuration_id is None
-    assert surface._allowed_kinds is None
-    assert surface._allowed_commands is None
-    assert surface._visible_spell_index_ids is None
-    assert surface._conduit_payload_sections_by_id is None
-    assert surface._spell_payload_sections_by_key is None
+    assert not hasattr(surface, '_frame_name')
+    assert not hasattr(surface, '_configuration_id')
+    assert not hasattr(surface, '_allowed_kinds')
+    assert not hasattr(surface, '_allowed_commands')
+    assert not hasattr(surface, '_visible_spell_index_ids')
+    assert not hasattr(surface, '_conduit_payload_sections_by_id')
+    assert not hasattr(surface, '_spell_payload_sections_by_key')
 
 
 def test_frame_acl_compiler_selector_rule_compiles_visible_spell_index_ids() -> None:
@@ -283,8 +283,8 @@ def test_frame_acl_compiler_cleanup_is_idempotent() -> None:
     compiler.cleanup()
 
     assert compiler.cleaned is True
-    assert compiler._profile_builder is None
-    assert compiler._id is None
+    assert not hasattr(compiler, '_profile_builder')
+    assert not hasattr(compiler, '_id')
 
 
 def test_frame_acl_compiler_rejects_invalid_descriptor_input() -> None:

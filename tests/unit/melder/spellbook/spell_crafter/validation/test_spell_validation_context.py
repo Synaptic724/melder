@@ -162,8 +162,8 @@ def test_issues_list_shared_and_not_cleared_on_cleanup() -> None:
 
     context.cleanup()
 
-    assert issues == ["keep"]
-    assert context.issues is None
+    assert issues == ['keep']
+    assert not hasattr(context, 'issues')
 
 
 def test_cleanup_marks_cleaned_and_drops_references() -> None:
@@ -190,13 +190,13 @@ def test_cleanup_marks_cleaned_and_drops_references() -> None:
     context.cleanup()
 
     assert context.cleaned is True
-    assert context.spell is None
-    assert context.spellbook is None
-    assert context.requirements is None
-    assert context.symbolic_graph is None
-    assert context.resolution_frame is None
-    assert context.cancel_event is None
-    assert context.issues is None
+    assert not hasattr(context, 'spell')
+    assert not hasattr(context, 'spellbook')
+    assert not hasattr(context, 'requirements')
+    assert not hasattr(context, 'symbolic_graph')
+    assert not hasattr(context, 'resolution_frame')
+    assert not hasattr(context, 'cancel_event')
+    assert not hasattr(context, 'issues')
     with pytest.raises(RuntimeError):
         context.check_cleaned()
 

@@ -332,4 +332,4 @@ def test_frame_acl_profile_builder_cleanup_rechecks_cleaned_inside_lock() -> Non
 
     assert thread_results == [True, True]
     assert builder.cleaned is True
-    assert builder._lock is None
+    assert not hasattr(builder, '_lock')

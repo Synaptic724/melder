@@ -95,12 +95,12 @@ def test_cleanup_idempotent_and_nulls_references():
     uow = UnitOfWork(lambda: 1, args=(1,), kwargs={"x": 2}, label="lbl", metadata="m")
     uow.cleanup()
     uow.cleanup()
-    assert uow._func is None
-    assert uow._args is None
-    assert uow._kwargs is None
-    assert uow._cancel_event is None
-    assert uow._label is None
-    assert uow._metadata is None
+    assert not hasattr(uow, '_func')
+    assert not hasattr(uow, '_args')
+    assert not hasattr(uow, '_kwargs')
+    assert not hasattr(uow, '_cancel_event')
+    assert not hasattr(uow, '_label')
+    assert not hasattr(uow, '_metadata')
     with pytest.raises(RuntimeError):
         uow.run_synchronously()
     with pytest.raises(RuntimeError):

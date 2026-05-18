@@ -200,10 +200,10 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     builder.cleanup()
 
     assert builder.cleaned is True
-    assert builder._lock is None
-    assert builder._container is None
-    assert builder._change_active is None
-    assert builder._draft_configuration is None
+    assert not hasattr(builder, '_lock')
+    assert not hasattr(builder, '_container')
+    assert not hasattr(builder, '_change_active')
+    assert not hasattr(builder, '_draft_configuration')
 
 
 def test_frame_acl_builder_cleanup_is_idempotent() -> None:
@@ -270,7 +270,7 @@ def test_frame_acl_builder_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert builder.cleaned is True
-    assert builder._lock is None
+    assert not hasattr(builder, '_lock')
 
 
 def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:

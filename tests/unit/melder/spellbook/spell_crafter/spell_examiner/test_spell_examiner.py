@@ -197,8 +197,8 @@ def test_spell_examiner_cleanup_clears_registry_and_id() -> None:
     examiner.cleanup()
 
     assert examiner.cleaned is True
-    assert examiner._profile_builders_by_name is None
-    assert examiner._id is None
+    assert not hasattr(examiner, '_profile_builders_by_name')
+    assert not hasattr(examiner, '_id')
 
 
 def test_spell_examiner_id_exposes_stable_value_and_cleanup_is_idempotent() -> None:

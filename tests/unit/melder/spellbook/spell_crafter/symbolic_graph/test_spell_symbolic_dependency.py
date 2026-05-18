@@ -71,8 +71,8 @@ def test_cleanup_nulls_fields_and_blocks_access():
     dep = _dep()
     dep.cleanup()
 
-    assert dep._cleaned is True  # noqa: SLF001
-    assert dep._lock is None  # noqa: SLF001
+    assert dep._cleaned is True
+    assert not hasattr(dep, '_lock')
     with pytest.raises(RuntimeError):
         _ = dep.spell_id
     with pytest.raises(RuntimeError):
@@ -143,14 +143,14 @@ def test_cleanup_resets_fields_to_safe_defaults():
         spellmap_default="map",
     )
     dep.cleanup()
-    assert dep._spell_id is None  # noqa: SLF001
-    assert dep._param_name is None  # noqa: SLF001
-    assert dep._position == -1  # noqa: SLF001
-    assert dep._di_shape is None  # noqa: SLF001
-    assert dep._is_optional is False  # noqa: SLF001
-    assert dep._target_annotation is None  # noqa: SLF001
-    assert dep._is_collection is False  # noqa: SLF001
-    assert dep._spellmap_default is None  # noqa: SLF001
+    assert not hasattr(dep, '_spell_id')
+    assert not hasattr(dep, '_param_name')
+    assert dep._position == -1
+    assert not hasattr(dep, '_di_shape')
+    assert dep._is_optional is False
+    assert not hasattr(dep, '_target_annotation')
+    assert dep._is_collection is False
+    assert not hasattr(dep, '_spellmap_default')
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
@@ -199,4 +199,4 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert dep.cleaned is True
-    assert dep._lock is None  # noqa: SLF001
+    assert not hasattr(dep, '_lock')

@@ -365,4 +365,4 @@ def test_chain_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert chain.cleaned is True
-    assert chain._lock is None
+    assert not hasattr(chain, '_lock')

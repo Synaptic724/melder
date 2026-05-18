@@ -91,8 +91,8 @@ def test_creation_mutation_node_placeholder_methods_raise() -> None:
     node.cleanup()
 
     assert node.cleaned is True
-    assert node._metadata is None
-    assert node._snapshot is None
+    assert not hasattr(node, '_metadata')
+    assert not hasattr(node, '_snapshot')
     assert node._parent_id is None
 
     node.cleanup()

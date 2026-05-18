@@ -56,19 +56,19 @@ def test_cleanup_clears_all_fields_and_marks_cleaned():
     profile = _profile()
     profile.cleanup()
     assert profile.cleaned is True
-    assert profile.parameters is None
-    assert profile.closure is None
-    assert profile.decorated is None
-    assert profile.wrapped_repr is None
-    assert profile.name is None
-    assert profile.signature is None
-    assert profile.start_line is None
-    assert profile.end_line is None
-    assert profile.source_text is None
-    assert profile.docstring_raw is None
-    assert profile.docstring_summary is None
-    assert profile.behavior_summary is None
-    assert profile.tags is None
+    assert not hasattr(profile, 'parameters')
+    assert not hasattr(profile, 'closure')
+    assert not hasattr(profile, 'decorated')
+    assert not hasattr(profile, 'wrapped_repr')
+    assert not hasattr(profile, 'name')
+    assert not hasattr(profile, 'signature')
+    assert not hasattr(profile, 'start_line')
+    assert not hasattr(profile, 'end_line')
+    assert not hasattr(profile, 'source_text')
+    assert not hasattr(profile, 'docstring_raw')
+    assert not hasattr(profile, 'docstring_summary')
+    assert not hasattr(profile, 'behavior_summary')
+    assert not hasattr(profile, 'tags')
     # idempotent
     profile.cleanup()
     assert profile.cleaned is True
@@ -89,8 +89,8 @@ def test_flags_preserved_before_cleanup():
 def test_cleanup_handles_empty_lists():
     profile = _profile(parameters=[], closure=[])
     profile.cleanup()
-    assert profile.parameters is None
-    assert profile.closure is None
+    assert not hasattr(profile, 'parameters')
+    assert not hasattr(profile, 'closure')
 
 
 def test_wrapped_repr_and_decorated_survive_then_clear():
@@ -98,5 +98,5 @@ def test_wrapped_repr_and_decorated_survive_then_clear():
     assert profile.decorated is True
     assert profile.wrapped_repr == "wrapped"
     profile.cleanup()
-    assert profile.decorated is None
-    assert profile.wrapped_repr is None
+    assert not hasattr(profile, 'decorated')
+    assert not hasattr(profile, 'wrapped_repr')

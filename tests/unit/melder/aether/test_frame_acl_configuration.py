@@ -464,16 +464,16 @@ def test_frame_acl_configuration_cleanup_clears_fields() -> None:
     assert view_configuration.cleaned is True
     assert command_configuration.cleaned is True
     assert codegen_configuration.cleaned is True
-    assert configuration._id is None
-    assert configuration._frame_name is None
-    assert configuration._source_configuration_id is None
-    assert configuration._previous_configuration_id is None
-    assert configuration._created_at is None
-    assert configuration._reason is None
-    assert configuration._locked is None
-    assert configuration._view_configuration is None
-    assert configuration._command_configuration is None
-    assert configuration._codegen_configuration is None
+    assert not hasattr(configuration, '_id')
+    assert not hasattr(configuration, '_frame_name')
+    assert not hasattr(configuration, '_source_configuration_id')
+    assert not hasattr(configuration, '_previous_configuration_id')
+    assert not hasattr(configuration, '_created_at')
+    assert not hasattr(configuration, '_reason')
+    assert not hasattr(configuration, '_locked')
+    assert not hasattr(configuration, '_view_configuration')
+    assert not hasattr(configuration, '_command_configuration')
+    assert not hasattr(configuration, '_codegen_configuration')
 
 
 def test_frame_acl_configuration_cleanup_is_idempotent() -> None:

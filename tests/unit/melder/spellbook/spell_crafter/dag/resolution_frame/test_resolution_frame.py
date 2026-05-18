@@ -76,12 +76,13 @@ def test_cleanup_is_terminal_and_repr_stays_stable():
     frame = ResolutionFrame({"a": 1})
     frame.set_result("n1", 2)
     frame.register_error("n2", RuntimeError("x"))
+    frame_id = frame.id
 
     frame.cleanup()
     frame.cleanup()
 
     assert frame.cleaned is True
-    assert repr(frame) == f"ResolutionFrame(id={frame.id!r}, cleaned=True)"
+    assert repr(frame) == f'ResolutionFrame(id={frame_id!r}, cleaned=True)'
 
     with pytest.raises(RuntimeError, match="already been cleaned"):
         _ = frame.overrides

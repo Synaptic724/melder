@@ -146,10 +146,10 @@ def test_cleanup_clears_registries(frame):
     
     frame.cleanup()
     
-    assert frame._conduits is None
-    assert frame._spell_registry is None
-    assert frame._version_registry is None
-    assert frame._conduit_clusters is None
+    assert not hasattr(frame, '_conduits')
+    assert not hasattr(frame, '_spell_registry')
+    assert not hasattr(frame, '_version_registry')
+    assert not hasattr(frame, '_conduit_clusters')
     assert frame._cleaned is True
 
 def test_cleanup_calls_subcomponent_cleanup(frame):
@@ -218,13 +218,13 @@ def test_cleanup_nulls_properties(frame):
     - Lock is nulled.
     """
     frame.cleanup()
-    assert frame._conduit_cloud is None
-    assert frame._dev_ops_manager is None
-    assert frame._spell_system_states is None
-    assert frame._configuration is None
-    assert frame.name is None
-    assert frame._id is None
-    assert frame._lock is None
+    assert not hasattr(frame, '_conduit_cloud')
+    assert not hasattr(frame, '_dev_ops_manager')
+    assert not hasattr(frame, '_spell_system_states')
+    assert not hasattr(frame, '_configuration')
+    assert not hasattr(frame, 'name')
+    assert not hasattr(frame, '_id')
+    assert not hasattr(frame, '_lock')
 
 
 def test_cleanup_cleans_frame_configuration(frame):
@@ -235,7 +235,7 @@ def test_cleanup_cleans_frame_configuration(frame):
     frame.cleanup()
 
     configuration.cleanup.assert_called_once()
-    assert frame._frame_configuration is None
+    assert not hasattr(frame, '_frame_configuration')
 
 def test_cleanup_tolerant_of_errors(frame):
     """Test cleanup continues if a sub-component raises error."""
@@ -246,7 +246,7 @@ def test_cleanup_tolerant_of_errors(frame):
     # Should not raise
     frame.cleanup()
     assert frame._cleaned is True
-    assert frame._conduits is None
+    assert not hasattr(frame, '_conduits')
 
 
 def test_cleanup_tolerant_of_cluster_cleanup_errors(frame):
@@ -258,7 +258,7 @@ def test_cleanup_tolerant_of_cluster_cleanup_errors(frame):
     frame.cleanup()
 
     assert frame._cleaned is True
-    assert frame._conduit_clusters is None
+    assert not hasattr(frame, '_conduit_clusters')
 
 # ----------------------------------------------------------------------
 # 4. Property Accessor Tests

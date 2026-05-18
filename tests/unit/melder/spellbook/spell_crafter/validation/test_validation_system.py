@@ -1047,7 +1047,7 @@ def test_cleanup_clears_strategies_and_marks_cleaned() -> None:
     system.cleanup()
     assert system.cleaned is True
     assert system._strategies == {}
-    assert system._lock is None
+    assert not hasattr(system, '_lock')
 
 
 def test_cleanup_is_idempotent() -> None:
@@ -1065,7 +1065,7 @@ def test_cleanup_is_idempotent() -> None:
     system.cleanup()
     system.cleanup()
     assert system.cleaned is True
-    assert system._lock is None
+    assert not hasattr(system, '_lock')
 
 
 def test_cleanup_returns_early_when_cleaned_inside_lock() -> None:
@@ -1121,8 +1121,8 @@ def test_cleanup_swallows_strategy_cleanup_errors() -> None:
     system.cleanup()
 
     assert system.cleaned is True
-    assert system._strategies == {}  # noqa: SLF001
-    assert system._lock is None  # noqa: SLF001
+    assert system._strategies == {}
+    assert not hasattr(system, '_lock')
 
 
 def test_validate_spell_after_cleanup_raises() -> None:

@@ -260,8 +260,8 @@ def test_cleanup_idempotent_and_nulls_references():
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.set_property("disposal", True)
-    assert cfg._properties is None
-    assert cfg._hooks is None
+    assert not hasattr(cfg, '_properties')
+    assert not hasattr(cfg, '_hooks')
 
 
 def test_convert_enum_helper_matches_configuration_usage():
@@ -469,7 +469,7 @@ def test_cleanup_clears_hooks_registry():
     cfg = SpellbookConfiguration()
     cfg.add_hook("sb", "on_conduit_pre_created", lambda: None)
     cfg.cleanup()
-    assert cfg._hooks is None
+    assert not hasattr(cfg, '_hooks')
 
 
 def test_add_hooks_registers_multiple_names():

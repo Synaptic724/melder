@@ -80,11 +80,11 @@ def test_frame_link_cleanup_clears_owned_state() -> None:
     link.cleanup()
 
     assert link.cleaned is True
-    assert link._frame_name is None
-    assert link._source_kind is None
-    assert link._source_id is None
-    assert link._display_name is None
-    assert link._metadata is None
+    assert not hasattr(link, '_frame_name')
+    assert not hasattr(link, '_source_kind')
+    assert not hasattr(link, '_source_id')
+    assert not hasattr(link, '_display_name')
+    assert not hasattr(link, '_metadata')
     link.cleanup()
 
 

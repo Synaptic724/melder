@@ -227,9 +227,9 @@ def test_cleanup_clears_state(state):
     state.cleanup()
     
     assert state._cleaned
-    assert state._direct_dependencies is None
-    assert state._flags is None
-    assert state._spell_index_id is None
+    assert not hasattr(state, '_direct_dependencies')
+    assert not hasattr(state, '_flags')
+    assert not hasattr(state, '_spell_index_id')
 
 def test_cleanup_idempotent(state):
     state.cleanup()
@@ -279,7 +279,7 @@ def test_cleanup_rechecks_cleaned_inside_lock(state):
 
     assert failures == []
     assert state._cleaned is True
-    assert state._lock is None
+    assert not hasattr(state, '_lock')
 
 
 def test_add_and_remove_dependent_ignore_empty_ids(state):

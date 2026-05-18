@@ -204,11 +204,11 @@ def test_nexus_frame_builder_cleanup_clears_owned_state() -> None:
 
     builder.cleanup()
 
-    assert builder._manager is None
-    assert builder._frame_name is None
-    assert builder._system_state is None
-    assert builder._ai_native_enabled is None
-    assert builder._rift_enabled is None
-    assert builder._immutable is None
-    assert builder._metadata is None
-    assert builder._root_conduit_name is None
+    assert not hasattr(builder, '_manager')
+    assert not hasattr(builder, '_frame_name')
+    assert not hasattr(builder, '_system_state')
+    assert not hasattr(builder, '_ai_native_enabled')
+    assert not hasattr(builder, '_rift_enabled')
+    assert not hasattr(builder, '_immutable')
+    assert not hasattr(builder, '_metadata')
+    assert not hasattr(builder, '_root_conduit_name')

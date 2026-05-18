@@ -223,12 +223,12 @@ def test_nexus_frame_configuration_cleanup_clears_owned_state() -> None:
 
     configuration.cleanup()
 
-    assert configuration._frame_name is None
-    assert configuration._system_state is None
-    assert configuration._ai_native_enabled is None
-    assert configuration._rift_enabled is None
-    assert configuration._immutable is None
-    assert configuration._metadata is None
-    assert configuration._root_conduit_name is None
-    assert configuration._id is None
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_frame_name')
+    assert not hasattr(configuration, '_system_state')
+    assert not hasattr(configuration, '_ai_native_enabled')
+    assert not hasattr(configuration, '_rift_enabled')
+    assert not hasattr(configuration, '_immutable')
+    assert not hasattr(configuration, '_metadata')
+    assert not hasattr(configuration, '_root_conduit_name')
+    assert not hasattr(configuration, '_id')
+    assert not hasattr(configuration, '_lock')

@@ -112,8 +112,8 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
     assert mutation.cleaned is False
     assert states.cleaned is True
     assert devops.cleaned is True
-    assert frame._conduits is None
-    assert frame._spell_registry is None
-    assert frame._version_registry is None
+    assert not hasattr(frame, '_conduits')
+    assert not hasattr(frame, '_spell_registry')
+    assert not hasattr(frame, '_version_registry')
 
     spellbook.cleanup()

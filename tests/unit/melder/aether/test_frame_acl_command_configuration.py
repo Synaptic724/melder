@@ -153,8 +153,8 @@ def test_frame_acl_command_configuration_cleanup_clears_owned_fields() -> None:
     assert configuration.cleaned is True
     assert frame_ruleset.cleaned is True
     assert member_ruleset.cleaned is True
-    assert configuration._profile_name is None
-    assert configuration._profile_version is None
-    assert configuration._frame_override_ruleset is None
-    assert configuration._member_override_ruleset is None
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_profile_name')
+    assert not hasattr(configuration, '_profile_version')
+    assert not hasattr(configuration, '_frame_override_ruleset')
+    assert not hasattr(configuration, '_member_override_ruleset')
+    assert not hasattr(configuration, '_lock')

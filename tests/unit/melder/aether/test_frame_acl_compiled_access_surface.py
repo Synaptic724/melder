@@ -76,7 +76,7 @@ def test_compiled_access_surface_cleanup_is_idempotent() -> None:
     surface.cleanup()
 
     assert surface.cleaned is True
-    assert surface._lock is None
+    assert not hasattr(surface, '_lock')
 
 
 def test_compiled_access_surface_cleanup_rechecks_cleaned_inside_lock() -> None:
@@ -125,4 +125,4 @@ def test_compiled_access_surface_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert surface.cleaned is True
-    assert surface._lock is None
+    assert not hasattr(surface, '_lock')

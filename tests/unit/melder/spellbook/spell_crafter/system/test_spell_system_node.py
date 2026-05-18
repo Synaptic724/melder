@@ -57,7 +57,7 @@ def test_add_dependencies_unions_and_skips_none():
 def test_cleanup_clears_and_blocks_access():
     node = SpellSystemNode("sid", "lid", dependencies=["a"], is_root=True)
     node.cleanup()
-    assert node._dependencies is None  # noqa: SLF001
+    assert not hasattr(node, '_dependencies')
     assert node.is_root is False
     # idempotent
     node.cleanup()

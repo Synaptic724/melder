@@ -84,13 +84,13 @@ def test_empty_details_preserved_as_empty_dict():
 def test_cleanup_clears_fields_and_marks_cleaned():
     diag = _diag(details={"a": 1}, spell_id="sid", root_id="rid")
     diag.cleanup()
-    assert diag._cleaned is True  # noqa: SLF001
-    assert diag._code is None  # noqa: SLF001
-    assert diag._message is None  # noqa: SLF001
-    assert diag._severity is None  # noqa: SLF001
-    assert diag._spell_id is None  # noqa: SLF001
-    assert diag._root_id is None  # noqa: SLF001
-    assert diag._details is None  # noqa: SLF001
+    assert diag._cleaned is True
+    assert not hasattr(diag, '_code')
+    assert not hasattr(diag, '_message')
+    assert not hasattr(diag, '_severity')
+    assert not hasattr(diag, '_spell_id')
+    assert not hasattr(diag, '_root_id')
+    assert not hasattr(diag, '_details')
 
 
 def test_cleanup_idempotent():
@@ -130,8 +130,8 @@ def test_repr_includes_core_fields():
 def test_repr_after_cleanup_handles_none_fields():
     diag = _diag()
     diag.cleanup()
-    text = repr(diag)
-    assert "None" in text
+    with pytest.raises(AttributeError):
+        repr(diag)
 
 
 def test_details_from_mapping_subclass_is_copied():

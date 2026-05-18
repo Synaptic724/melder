@@ -78,10 +78,10 @@ def test_frame_acl_rule_cleanup_clears_owned_state() -> None:
     rule.cleanup()
 
     assert rule.cleaned is True
-    assert rule._rule_name is None
-    assert rule._operation is None
-    assert rule._effect is None
-    assert rule._conditions is None
+    assert not hasattr(rule, '_rule_name')
+    assert not hasattr(rule, '_operation')
+    assert not hasattr(rule, '_effect')
+    assert not hasattr(rule, '_conditions')
 
 
 def test_frame_acl_ruleset_requires_non_empty_name() -> None:
@@ -275,7 +275,7 @@ def test_frame_acl_ruleset_cleanup_cascades_to_owned_rules() -> None:
 
     assert ruleset.cleaned is True
     assert rule.cleaned is True
-    assert ruleset._rules_by_name is None
+    assert not hasattr(ruleset, '_rules_by_name')
 
 
 def test_frame_acl_view_profile_requires_valid_inputs() -> None:
@@ -595,5 +595,5 @@ def test_frame_acl_profile_builder_cleanup_cascades_to_owned_profiles() -> None:
     assert builder.cleaned is True
     assert safe_view.cleaned is True
     assert safe_codegen.cleaned is True
-    assert builder._view_profiles_by_name is None
-    assert builder._codegen_profiles_by_name is None
+    assert not hasattr(builder, '_view_profiles_by_name')
+    assert not hasattr(builder, '_codegen_profiles_by_name')

@@ -499,9 +499,9 @@ class PhaseScheduler(Cleanable):
 
         # If any completed unit failed, fail fast.
         errors: List[BaseException] = []
-        for uow in done:
+        for future in done:
             try:
-                exc = uow.exception()
+                exc = future.exception()
             except BaseException as e:
                 # Defensive: Future.exception() can raise (e.g. CancelledError).
                 exc = e
@@ -514,10 +514,10 @@ class PhaseScheduler(Cleanable):
 
             # Best-effort: mark unfinished units as cancelled so nothing is left "pending forever".
             # IMPORTANT: do NOT call uow.cancel() here because workers still dequeue and call uow().
-            for uow in pending:
-                if not uow.done():
+            for future in pending:
+                if not future.done():
                     try:
-                        uow.set_exception(
+                        future.set_exception(
                             OperationCancelledError(
                                 f"Phase '{phase_name}' aborted due to an earlier failure."
                             )
@@ -540,10 +540,10 @@ class PhaseScheduler(Cleanable):
         if pending:
             self._cancel_signal.cancel()
 
-            for uow in pending:
-                if not uow.done():
+            for future in pending:
+                if not future.done():
                     try:
-                        uow.set_exception(
+                        future.set_exception(
                             OperationCancelledError(
                                 f"Phase '{phase_name}' timed out after {self._barrier_timeout_ms}ms."
                             )

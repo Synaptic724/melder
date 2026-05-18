@@ -139,8 +139,8 @@ def test_cleanup_idempotent_and_blocks_further_usage():
     index.cleanup()
 
     assert index.cleaned is True
-    assert index._by_exact_path_id is None
-    assert index._path_registry is None
+    assert not hasattr(index, '_by_exact_path_id')
+    assert not hasattr(index, '_path_registry')
     with pytest.raises(AttributeError):
         index.get_by_name("p")
 

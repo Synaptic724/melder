@@ -539,19 +539,19 @@ def test_cleanup_records_fatal_sequence_error_and_still_tears_down(
 
     assert len(eg.value.exceptions) == 1
     assert isinstance(eg.value.exceptions[0], RuntimeError)
-    assert creations._creations is None
-    assert creations._spellspace_disposal_stacks is None
-    assert creations._disposal_stack is None
-    assert creations._conduit is None
+    assert not hasattr(creations, '_creations')
+    assert not hasattr(creations, '_spellspace_disposal_stacks')
+    assert not hasattr(creations, '_disposal_stack')
+    assert not hasattr(creations, '_conduit')
 
 
 def test_cleanup_nulls_internal_refs(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
-    assert creations._creations is None
-    assert creations._spellspace_disposal_stacks is None
-    assert creations._disposal_stack is None
-    assert creations._conduit is None
+    assert not hasattr(creations, '_creations')
+    assert not hasattr(creations, '_spellspace_disposal_stacks')
+    assert not hasattr(creations, '_disposal_stack')
+    assert not hasattr(creations, '_conduit')
 
 
 def test_cleanup_raises_exceptiongroup_when_disposal_fails(

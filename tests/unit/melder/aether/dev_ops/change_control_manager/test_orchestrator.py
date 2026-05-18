@@ -85,8 +85,8 @@ def test_orchestrator_cleanup_is_idempotent_and_blocks_reuse() -> None:
     orchestrator.cleanup()
     orchestrator.cleanup()
 
-    assert orchestrator._staged is None
-    assert orchestrator._lock is None
+    assert not hasattr(orchestrator, '_staged')
+    assert not hasattr(orchestrator, '_lock')
 
     with pytest.raises(RuntimeError):
         orchestrator.list_staged()
@@ -125,7 +125,7 @@ def test_orchestrator_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert failures == []
     assert orchestrator._cleaned is True
-    assert orchestrator._lock is None
+    assert not hasattr(orchestrator, '_lock')
 
 
 def test_orchestrator_accessors_handle_empty_ids_and_list_snapshot() -> None:

@@ -552,7 +552,7 @@ class Aether(Cleanable, IAether):
         self.check_cleaned()
         return AetherConfigurationBuilder()
 
-    def configure(self, configuration: AetherConfiguration) -> None:
+    def configure(self, configuration: IAetherConfiguration) -> None:
         """
         Install one root configuration on Aether.
 
@@ -571,7 +571,7 @@ class Aether(Cleanable, IAether):
 
     def activate(
             self,
-            configuration: Optional[AetherConfiguration] = None,
+            configuration: Optional[IAetherConfiguration] = None,
     ) -> None:
         """
         Activate the installed Aether root configuration.

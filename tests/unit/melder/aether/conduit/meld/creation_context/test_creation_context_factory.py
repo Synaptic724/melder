@@ -136,10 +136,10 @@ def test_cleanup_swallows_builder_cleanup_error_and_nulls_fields() -> None:
     factory.cleanup()
 
     assert builder.cleanup_calls == 1
-    assert factory._builder is None
-    assert factory._dynamic_environment is None
-    assert factory._creation_gate_controller is None
-    assert factory._created_spell_index_ids is None
+    assert not hasattr(factory, '_builder')
+    assert not hasattr(factory, '_dynamic_environment')
+    assert not hasattr(factory, '_creation_gate_controller')
+    assert not hasattr(factory, '_created_spell_index_ids')
 
 
 def test_cleanup_creation_context_helper_noops_on_none_and_swallows_errors() -> None:

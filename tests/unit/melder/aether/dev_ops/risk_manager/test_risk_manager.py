@@ -262,8 +262,8 @@ def test_cleanup_clears_tracking_and_is_idempotent() -> None:
 
     assert risk_manager._conduit_states == {}
     assert risk_manager._lineage_conduits == {}
-    assert risk_manager._spell_system_states is None
-    assert risk_manager._lock is None
+    assert not hasattr(risk_manager, '_spell_system_states')
+    assert not hasattr(risk_manager, '_lock')
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
@@ -310,7 +310,7 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert failures == []
     assert risk_manager._cleaned is True
-    assert risk_manager._lock is None
+    assert not hasattr(risk_manager, '_lock')
 
 
 def test_register_conduit_ignores_invalid_inputs() -> None:

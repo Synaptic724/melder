@@ -1,6 +1,7 @@
 import threading
 from abc import ABC, abstractmethod
-from typing import Literal
+from types import TracebackType
+from typing import Literal, Optional, Type
 
 class Cleanable(ABC):
     """
@@ -105,7 +106,7 @@ class Cleanable(ABC):
         """
         __slots__ = ("_owner", "_cleaned", "_lock")
 
-        def __init__(self, owner) -> None:
+        def __init__(self, owner: "Cleanable") -> None:
             """
             Bind the helper context to one cleanable owner.
 
@@ -114,22 +115,29 @@ class Cleanable(ABC):
             - Tracks whether cleanup has already been triggered so exit remains
               idempotent.
             """
-            self._owner = owner
+            self._owner: Optional["Cleanable"] = owner
             self._cleaned = False
             self._lock: threading.RLock = threading.RLock()
 
-        def __enter__(self) -> bool:
+        def __enter__(self) -> "Cleanable":
             """
             Enter the cleanup helper context and return the owner.
 
             Returns:
-                bool:
+                Cleanable:
                     The owner object protected by this helper.
             """
             self._lock.acquire()
+            if self._owner is None:
+                raise RuntimeError("Cleanup context no longer owns a live object.")
             return self._owner
 
-        def __exit__(self, exc_type, exc, tb) -> Literal[False]:
+        def __exit__(
+                self,
+                exc_type: Optional[Type[BaseException]],
+                exc: Optional[BaseException],
+                tb: Optional[TracebackType],
+        ) -> Literal[False]:
             """
             Exit the cleanup helper context and trigger owner cleanup once.
 

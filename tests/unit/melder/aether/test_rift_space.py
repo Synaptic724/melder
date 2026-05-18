@@ -115,16 +115,16 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert workstation_cleanup == [True]
     assert command_cleanup == [True]
     assert event_cleanup == [True]
-    assert space._space_name is None
-    assert space._owner_rift_id is None
-    assert space._space_kind is None
-    assert space._metadata is None
-    assert space._frame_viewer is None
-    assert space._memory_system is None
-    assert space._event_system is None
-    assert space._workstation is None
-    assert space._command_system is None
-    assert space._id is None
+    assert not hasattr(space, '_space_name')
+    assert not hasattr(space, '_owner_rift_id')
+    assert not hasattr(space, '_space_kind')
+    assert not hasattr(space, '_metadata')
+    assert not hasattr(space, '_frame_viewer')
+    assert not hasattr(space, '_memory_system')
+    assert not hasattr(space, '_event_system')
+    assert not hasattr(space, '_workstation')
+    assert not hasattr(space, '_command_system')
+    assert not hasattr(space, '_id')
 
 
 def test_rift_space_keeps_same_viewer_asset_without_projection_management() -> None:

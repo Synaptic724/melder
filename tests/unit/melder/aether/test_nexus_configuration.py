@@ -98,7 +98,7 @@ def test_nexus_configuration_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert configuration.cleaned is True
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_lock')
 
 
 def test_nexus_configuration_set_property_normalizes_enums_and_frame_names() -> None:

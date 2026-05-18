@@ -205,4 +205,4 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert reqs.cleaned is True
-    assert reqs._lock is None
+    assert not hasattr(reqs, '_lock')

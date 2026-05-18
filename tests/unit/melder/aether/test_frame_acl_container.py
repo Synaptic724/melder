@@ -209,7 +209,7 @@ def test_frame_acl_container_cleanup_cleans_all_owned_acl_objects() -> None:
     assert view_configuration.cleaned is True
     assert command_configuration.cleaned is True
     assert codegen_configuration.cleaned is True
-    assert container._lock is None
+    assert not hasattr(container, '_lock')
 
 
 def test_frame_acl_container_cleanup_is_idempotent() -> None:
@@ -273,4 +273,4 @@ def test_frame_acl_container_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert container.cleaned is True
-    assert container._lock is None
+    assert not hasattr(container, '_lock')

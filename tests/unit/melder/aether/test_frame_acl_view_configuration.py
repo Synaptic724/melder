@@ -281,17 +281,17 @@ def test_frame_acl_view_configuration_cleanup_clears_fields() -> None:
     assert conduit_ruleset.cleaned is True
     assert spell_ruleset.cleaned is True
     assert member_ruleset.cleaned is True
-    assert configuration._profile_name is None
-    assert configuration._profile_version is None
-    assert configuration._required_nexus_label is None
-    assert configuration._required_nexus_version is None
-    assert configuration._minimum_spell_payload_type is None
-    assert configuration._minimum_spell_payload_version is None
-    assert configuration._frame_override_ruleset is None
-    assert configuration._conduit_override_ruleset is None
-    assert configuration._spell_override_ruleset is None
-    assert configuration._member_override_ruleset is None
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_profile_name')
+    assert not hasattr(configuration, '_profile_version')
+    assert not hasattr(configuration, '_required_nexus_label')
+    assert not hasattr(configuration, '_required_nexus_version')
+    assert not hasattr(configuration, '_minimum_spell_payload_type')
+    assert not hasattr(configuration, '_minimum_spell_payload_version')
+    assert not hasattr(configuration, '_frame_override_ruleset')
+    assert not hasattr(configuration, '_conduit_override_ruleset')
+    assert not hasattr(configuration, '_spell_override_ruleset')
+    assert not hasattr(configuration, '_member_override_ruleset')
+    assert not hasattr(configuration, '_lock')
 
 
 def test_frame_acl_view_configuration_cleanup_is_idempotent() -> None:
@@ -363,4 +363,4 @@ def test_frame_acl_view_configuration_cleanup_rechecks_cleaned_inside_lock() -> 
 
     assert thread_results == [True, True]
     assert configuration.cleaned is True
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_lock')

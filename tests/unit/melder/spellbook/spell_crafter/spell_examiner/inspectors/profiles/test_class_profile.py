@@ -137,24 +137,24 @@ def test_cleanup_cleans_nested_methods_and_collections():
     profile.cleanup()
 
     assert method.cleaned is True
-    assert profile.members is None
-    assert profile.methods is None
-    assert profile.mro is None
-    assert profile.bases is None
-    assert profile.annotations is None
-    assert profile.protocols is None
-    assert profile.slots is None
-    assert profile.origin_file is None
-    assert profile.origin_line is None
-    assert profile.origin_end_line is None
-    assert profile.source_preview is None
-    assert profile.source_text is None
-    assert profile.name is None
-    assert profile.docstring_raw is None
-    assert profile.docstring_summary is None
-    assert profile.behavior_summary is None
-    assert profile.tags is None
-    assert profile.dynamic_access is None
+    assert not hasattr(profile, 'members')
+    assert not hasattr(profile, 'methods')
+    assert not hasattr(profile, 'mro')
+    assert not hasattr(profile, 'bases')
+    assert not hasattr(profile, 'annotations')
+    assert not hasattr(profile, 'protocols')
+    assert not hasattr(profile, 'slots')
+    assert not hasattr(profile, 'origin_file')
+    assert not hasattr(profile, 'origin_line')
+    assert not hasattr(profile, 'origin_end_line')
+    assert not hasattr(profile, 'source_preview')
+    assert not hasattr(profile, 'source_text')
+    assert not hasattr(profile, 'name')
+    assert not hasattr(profile, 'docstring_raw')
+    assert not hasattr(profile, 'docstring_summary')
+    assert not hasattr(profile, 'behavior_summary')
+    assert not hasattr(profile, 'tags')
+    assert not hasattr(profile, 'dynamic_access')
     assert profile.cleaned is True
 
     # idempotent
@@ -184,7 +184,7 @@ def test_cleanup_swallow_exceptions_from_nested_methods():
 def test_slots_list_is_cleared_then_nulled_on_cleanup():
     profile = _class_profile(slots=["a", "b"])
     profile.cleanup()
-    assert profile.slots is None
+    assert not hasattr(profile, 'slots')
 
 
 def test_methods_and_members_can_be_none():
@@ -203,8 +203,8 @@ def test_flags_and_provenance_preserved():
 def test_decorated_and_dataclass_flags_clear_on_cleanup():
     profile = _class_profile(is_dataclass=True, decorated=True)
     profile.cleanup()
-    assert profile.is_dataclass is None
-    assert profile.decorated is None
+    assert not hasattr(profile, 'is_dataclass')
+    assert not hasattr(profile, 'decorated')
 
 
 def test_methods_dict_shallow_copy_only():
@@ -216,8 +216,8 @@ def test_methods_dict_shallow_copy_only():
 def test_cleanup_sets_collections_to_none_even_if_empty():
     profile = _class_profile(mro=[], bases=[], annotations={}, protocols={}, members={}, methods={})
     profile.cleanup()
-    assert profile.mro is None
-    assert profile.annotations is None
+    assert not hasattr(profile, 'mro')
+    assert not hasattr(profile, 'annotations')
 
 
 def test_cleanup_does_not_reclean_already_cleaned_method_profiles():

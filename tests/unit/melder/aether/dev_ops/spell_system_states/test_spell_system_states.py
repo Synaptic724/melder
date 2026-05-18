@@ -319,8 +319,8 @@ def test_cleanup(states_manager, mock_spell_index, mock_spell):
     states_manager.cleanup()
     
     assert states_manager._cleaned
-    assert states_manager._states_by_index_id is None
-    assert states_manager._frame is None
+    assert not hasattr(states_manager, '_states_by_index_id')
+    assert not hasattr(states_manager, '_frame')
     
     with pytest.raises(RuntimeError):
         states_manager.get_by_index_id("idx-1")
@@ -627,14 +627,14 @@ def test_cleanup_cascades_to_resolution_states_topologies_and_indexes(
 
     assert topology.cleaned is True
     assert conduit_state.cleaned is True
-    assert states_manager._local_topologies is None
-    assert states_manager._resolution_by_conduit_id is None
-    assert states_manager._collection_dependents_by_spellbook is None
-    assert states_manager._collection_frames_by_index is None
-    assert states_manager._contract_dependents_by_spellbook is None
-    assert states_manager._contract_keys_by_index is None
-    assert states_manager._index_owner_spellbook_id is None
-    assert states_manager._risk_manager is None
+    assert not hasattr(states_manager, '_local_topologies')
+    assert not hasattr(states_manager, '_resolution_by_conduit_id')
+    assert not hasattr(states_manager, '_collection_dependents_by_spellbook')
+    assert not hasattr(states_manager, '_collection_frames_by_index')
+    assert not hasattr(states_manager, '_contract_dependents_by_spellbook')
+    assert not hasattr(states_manager, '_contract_keys_by_index')
+    assert not hasattr(states_manager, '_index_owner_spellbook_id')
+    assert not hasattr(states_manager, '_risk_manager')
 
 
 def test_register_index_owner_change_rebuilds_topology_indexes_under_new_book(
@@ -914,10 +914,10 @@ def test_cleanup_tolerates_child_cleanup_failures(
 
     states_manager.cleanup()
 
-    assert states_manager._local_topologies is None
-    assert states_manager._resolution_by_conduit_id is None
-    assert states_manager._states_by_index_id is None
-    assert states_manager._dirty_indexes is None
+    assert not hasattr(states_manager, '_local_topologies')
+    assert not hasattr(states_manager, '_resolution_by_conduit_id')
+    assert not hasattr(states_manager, '_states_by_index_id')
+    assert not hasattr(states_manager, '_dirty_indexes')
 
 
 def test_lookup_and_topology_helpers_validate_public_inputs(

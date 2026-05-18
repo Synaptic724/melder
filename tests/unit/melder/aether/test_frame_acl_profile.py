@@ -237,7 +237,7 @@ def test_frame_acl_ruleset_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert ruleset.cleaned is True
-    assert ruleset._lock is None
+    assert not hasattr(ruleset, '_lock')
 
 
 def test_view_and_codegen_profiles_create_named_default_catalog() -> None:
@@ -568,7 +568,7 @@ def test_frame_acl_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert profile.cleaned is True
-    assert profile._lock is None
+    assert not hasattr(profile, '_lock')
 
 
 def test_frame_acl_view_profile_cleanup_is_idempotent() -> None:
@@ -638,7 +638,7 @@ def test_frame_acl_view_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert profile.cleaned is True
-    assert profile._lock is None
+    assert not hasattr(profile, '_lock')
 
 
 def test_frame_acl_view_profile_coerce_ruleset_rejects_invalid_type() -> None:

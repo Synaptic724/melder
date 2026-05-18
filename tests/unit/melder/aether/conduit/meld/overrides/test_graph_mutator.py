@@ -190,11 +190,11 @@ def test_cleanup_clears_references_and_is_idempotent() -> None:
     mutator._engine = engine_mock
     mutator.cleanup()
     engine_mock.cleanup.assert_called_once()
-    assert mutator._engine is None
-    assert mutator._blueprint is None
+    assert not hasattr(mutator, '_engine')
+    assert not hasattr(mutator, '_blueprint')
     mutator.cleanup()
-    assert mutator._engine is None
-    assert mutator._blueprint is None
+    assert not hasattr(mutator, '_engine')
+    assert not hasattr(mutator, '_blueprint')
 
 
 @pytest.mark.parametrize("payload", [None, {}, []])
@@ -694,8 +694,8 @@ def test_cleanup_swallows_engine_cleanup_errors() -> None:
 
     mutator.cleanup()
 
-    assert mutator._engine is None
-    assert mutator._blueprint is None
+    assert not hasattr(mutator, '_engine')
+    assert not hasattr(mutator, '_blueprint')
 
 
 def test_apply_handles_multiple_distinct_override_keys() -> None:

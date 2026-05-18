@@ -204,13 +204,13 @@ def test_frame_acl_codegen_configuration_cleanup_clears_fields() -> None:
     assert conduit_ruleset.cleaned is True
     assert spell_ruleset.cleaned is True
     assert capability_ruleset.cleaned is True
-    assert configuration._profile_name is None
-    assert configuration._profile_version is None
-    assert configuration._frame_override_ruleset is None
-    assert configuration._conduit_override_ruleset is None
-    assert configuration._spell_override_ruleset is None
-    assert configuration._capability_override_ruleset is None
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_profile_name')
+    assert not hasattr(configuration, '_profile_version')
+    assert not hasattr(configuration, '_frame_override_ruleset')
+    assert not hasattr(configuration, '_conduit_override_ruleset')
+    assert not hasattr(configuration, '_spell_override_ruleset')
+    assert not hasattr(configuration, '_capability_override_ruleset')
+    assert not hasattr(configuration, '_lock')
 
 
 def test_frame_acl_codegen_configuration_cleanup_is_idempotent() -> None:
@@ -280,4 +280,4 @@ def test_frame_acl_codegen_configuration_cleanup_rechecks_cleaned_inside_lock() 
 
     assert thread_results == [True, True]
     assert configuration.cleaned is True
-    assert configuration._lock is None
+    assert not hasattr(configuration, '_lock')

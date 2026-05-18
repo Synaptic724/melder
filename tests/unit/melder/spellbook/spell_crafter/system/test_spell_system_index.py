@@ -87,8 +87,8 @@ def test_cleanup_cascades_and_blocks_access():
     n1 = _node("s1", "l1")
     index.upsert_node(n1)
     index.cleanup()
-    assert index._nodes is None  # noqa: SLF001
-    assert n1._cleaned is True  # cascading cleanup
+    assert not hasattr(index, '_nodes')
+    assert n1._cleaned is True
     index.cleanup()  # idempotent
     with pytest.raises(RuntimeError):
         _ = index.nodes

@@ -414,11 +414,11 @@ def test_cleanup_clears_references(manager):
     - The lock is released/nulled.
     """
     manager.cleanup()
-    assert manager._incident_manager is None
-    assert manager._change_control_manager is None
-    assert manager._creation_gate_controller is None
-    assert manager._spell_system_states is None
-    assert manager._lock is None
+    assert not hasattr(manager, '_incident_manager')
+    assert not hasattr(manager, '_change_control_manager')
+    assert not hasattr(manager, '_creation_gate_controller')
+    assert not hasattr(manager, '_spell_system_states')
+    assert not hasattr(manager, '_lock')
 
 def test_cleanup_is_idempotent(manager, mock_dependencies):
     """
@@ -572,7 +572,7 @@ def test_cleanup_lock_nullification(manager):
     # Direct slot access to verify it's None, not just 'cleaned' logic blocking it.
     # Note: accessing via getattr is safer for slots if direct access fails in test logic context.
     # But manager._lock is fine.
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
 def test_multiple_properties_consistency(manager):
     """Verify all properties return consistent objects over multiple calls."""
@@ -647,4 +647,4 @@ def test_cleanup_rechecks_cleaned_inside_lock(manager):
 
     assert failures == []
     assert manager._cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')

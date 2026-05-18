@@ -216,10 +216,10 @@ def test_cleanup_cascades_and_nulls_references() -> None:
 
     assert binding_profile.cleaned_calls == 1
     assert resolution_profile.cleaned_calls == 1
-    assert profile.profile_name is None
-    assert profile.profile_version is None
-    assert profile.binding_profile is None
-    assert profile.resolution_profile is None
+    assert not hasattr(profile, 'profile_name')
+    assert not hasattr(profile, 'profile_version')
+    assert not hasattr(profile, 'binding_profile')
+    assert not hasattr(profile, 'resolution_profile')
     assert profile.cleaned is True
     profile.cleanup()
 
@@ -233,5 +233,5 @@ def test_cleanup_swallows_child_errors() -> None:
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert profile.binding_profile is None
-    assert profile.resolution_profile is None
+    assert not hasattr(profile, 'binding_profile')
+    assert not hasattr(profile, 'resolution_profile')

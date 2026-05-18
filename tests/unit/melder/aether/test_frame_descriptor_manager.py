@@ -320,7 +320,7 @@ def test_manager_cleanup_cleans_owned_descriptors_and_nuls_state() -> None:
     manager.cleanup()
 
     assert descriptor.cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
 
 def test_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
@@ -371,7 +371,7 @@ def test_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert manager.cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
 
 def test_manager_rejects_invalid_published_payload_and_record_contracts() -> None:

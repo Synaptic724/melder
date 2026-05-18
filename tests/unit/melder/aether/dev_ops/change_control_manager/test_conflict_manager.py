@@ -29,7 +29,7 @@ def test_conflict_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
     manager.cleanup()
     manager.cleanup()
 
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
     with pytest.raises(RuntimeError):
         manager.find_conflicts(None, [])
@@ -88,7 +88,7 @@ def test_conflict_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert failures == []
     assert manager._cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
 
 def test_conflict_manager_find_conflicts_returns_empty_for_none_request() -> None:

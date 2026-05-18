@@ -47,8 +47,8 @@ def test_frame_acl_set_compatibility_report_tracks_messages_and_cleanup() -> Non
     report.cleanup()
 
     assert report.cleaned is True
-    assert report._warnings is None
-    assert report._errors is None
+    assert not hasattr(report, '_warnings')
+    assert not hasattr(report, '_errors')
 
 
 def test_frame_acl_set_compatibility_validator_warns_when_actionable_spell_is_hidden() -> None:

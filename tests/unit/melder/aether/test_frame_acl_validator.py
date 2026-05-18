@@ -199,8 +199,8 @@ def test_frame_acl_validator_cleanup_clears_state() -> None:
     validator.cleanup()
 
     assert validator.cleaned is True
-    assert validator._frame_name is None
-    assert validator._last_validated_configuration_id is None
+    assert not hasattr(validator, '_frame_name')
+    assert not hasattr(validator, '_last_validated_configuration_id')
 
 
 def test_frame_acl_validator_cleanup_is_idempotent() -> None:

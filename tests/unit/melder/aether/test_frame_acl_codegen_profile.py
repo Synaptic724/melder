@@ -180,4 +180,4 @@ def test_frame_acl_codegen_profile_cleanup_rechecks_cleaned_inside_lock() -> Non
 
     assert thread_results == [True, True]
     assert profile.cleaned is True
-    assert profile._lock is None
+    assert not hasattr(profile, '_lock')

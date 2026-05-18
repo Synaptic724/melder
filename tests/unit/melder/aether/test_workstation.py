@@ -214,17 +214,17 @@ def test_workstation_cleanup_and_node_none_callback_paths_work(monkeypatch) -> N
     workstation.cleanup()
 
     assert workstation.cleaned is True
-    assert workstation._strong_objects_by_name is None
-    assert workstation._strong_attributes_by_name is None
-    assert workstation._strong_methods_by_name is None
-    assert workstation._weak_objects_by_name is None
-    assert workstation._weak_attributes_by_name is None
-    assert workstation._weak_methods_by_name is None
-    assert workstation._event_publisher is None
-    assert workstation._target_name is None
-    assert workstation._target_store is None
-    assert workstation._owner_space_id is None
-    assert workstation._id is None
+    assert not hasattr(workstation, '_strong_objects_by_name')
+    assert not hasattr(workstation, '_strong_attributes_by_name')
+    assert not hasattr(workstation, '_strong_methods_by_name')
+    assert not hasattr(workstation, '_weak_objects_by_name')
+    assert not hasattr(workstation, '_weak_attributes_by_name')
+    assert not hasattr(workstation, '_weak_methods_by_name')
+    assert not hasattr(workstation, '_event_publisher')
+    assert not hasattr(workstation, '_target_name')
+    assert not hasattr(workstation, '_target_store')
+    assert not hasattr(workstation, '_owner_space_id')
+    assert not hasattr(workstation, '_id')
 
 
 def test_workstation_internal_helpers_cover_weak_binding_callbacks() -> None:

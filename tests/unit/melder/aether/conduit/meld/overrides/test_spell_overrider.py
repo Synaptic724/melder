@@ -122,13 +122,13 @@ def test_cleanup_clears_references_and_is_idempotent() -> None:
     overrider.cleanup()
 
     engine_mock.cleanup.assert_called_once()
-    assert overrider._engine is None
-    assert overrider._blueprint is None
+    assert not hasattr(overrider, '_engine')
+    assert not hasattr(overrider, '_blueprint')
     assert overrider.cleaned is True
 
     overrider.cleanup()
-    assert overrider._engine is None
-    assert overrider._blueprint is None
+    assert not hasattr(overrider, '_engine')
+    assert not hasattr(overrider, '_blueprint')
 
 
 def test_cleanup_ignores_engine_cleanup_errors() -> None:
@@ -159,8 +159,8 @@ def test_cleanup_ignores_engine_cleanup_errors() -> None:
 
     overrider.cleanup()
 
-    assert overrider._engine is None
-    assert overrider._blueprint is None
+    assert not hasattr(overrider, '_engine')
+    assert not hasattr(overrider, '_blueprint')
 
 
 def test_apply_returns_empty_for_none_override() -> None:

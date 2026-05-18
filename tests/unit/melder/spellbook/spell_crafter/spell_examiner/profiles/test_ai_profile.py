@@ -91,14 +91,14 @@ def test_cleanup_cascades_and_nulls_references():
     profile.cleanup()
 
     for stub in (binding, resolution, class_prof, callable_prof):
-        assert getattr(stub, "cleaned", False) or stub.cleaned_calls > 0
-    assert profile.binding_profile is None
-    assert profile.resolution_profile is None
-    assert not hasattr(profile, "class_profile")
-    assert not hasattr(profile, "callable_profile")
-    assert not hasattr(profile, "metadata")
-    assert not hasattr(profile, "instance_members")
-    assert not hasattr(profile, "dynamic_access")
+        assert getattr(stub, 'cleaned', False) or stub.cleaned_calls > 0
+    assert not hasattr(profile, 'binding_profile')
+    assert not hasattr(profile, 'resolution_profile')
+    assert not hasattr(profile, 'class_profile')
+    assert not hasattr(profile, 'callable_profile')
+    assert not hasattr(profile, 'metadata')
+    assert not hasattr(profile, 'instance_members')
+    assert not hasattr(profile, 'dynamic_access')
     assert profile.cleaned is True
 
 

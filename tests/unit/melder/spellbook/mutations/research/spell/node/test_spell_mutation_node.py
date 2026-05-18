@@ -91,8 +91,8 @@ def test_spell_mutation_node_placeholder_methods_raise() -> None:
     node.cleanup()
 
     assert node.cleaned is True
-    assert node._metadata is None
-    assert node._structure is None
-    assert node._parent_id is None
+    assert not hasattr(node, '_metadata')
+    assert not hasattr(node, '_structure')
+    assert not hasattr(node, '_parent_id')
 
     node.cleanup()

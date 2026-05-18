@@ -49,14 +49,14 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Logger configuration
     # ------------------------------------------------------------------
-    def _configure_logger(self, logger: Any, configuration: 'IConfiguration') -> Any:
+    def _configure_logger(self, logger: Any) -> Any:
         """
         Internal
 
         Configures the logger for this Conduit.
 
         Args:
-            logger (Any): The logger instance or configuration.
+            logger (Any): The explicit logger instance, if one was supplied.
         Returns:
             SafeLogger: The configured SafeLogger instance.
         """

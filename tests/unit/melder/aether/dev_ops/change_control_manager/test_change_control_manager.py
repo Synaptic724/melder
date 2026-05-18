@@ -848,10 +848,10 @@ def test_cleanup_clears_state(manager):
     manager.cleanup()
     
     assert manager._cleaned
-    assert manager._pending_changes is None
-    assert manager._component_of_by_conduit is None
-    assert manager._spell_system_states is None
-    assert manager._revalidate_fn_by_conduit is None
+    assert not hasattr(manager, '_pending_changes')
+    assert not hasattr(manager, '_component_of_by_conduit')
+    assert not hasattr(manager, '_spell_system_states')
+    assert not hasattr(manager, '_revalidate_fn_by_conduit')
 
 def test_methods_raise_after_cleanup(manager, mock_spell_index):
     """

@@ -28,11 +28,11 @@ def test_creation_gate_controller_cleanup_clears_registries() -> None:
     controller.create_conduit_gate("c1")
     controller.create_spell_index_gate("i1")
     controller.cleanup()
-    assert controller._conduit_creation_gates is None
-    assert controller._spell_index_creation_gates is None
-    assert controller._conduit_creation_gates_by_root is None
-    assert controller._conduit_root_by_conduit is None
-    assert controller._lock is None
+    assert not hasattr(controller, '_conduit_creation_gates')
+    assert not hasattr(controller, '_spell_index_creation_gates')
+    assert not hasattr(controller, '_conduit_creation_gates_by_root')
+    assert not hasattr(controller, '_conduit_root_by_conduit')
+    assert not hasattr(controller, '_lock')
 
 
 def test_creation_gate_controller_cleanup_cleans_registered_gates() -> None:

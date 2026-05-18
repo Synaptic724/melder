@@ -185,8 +185,8 @@ def test_frame_acl_manager_cleanup_cleans_all_owned_containers() -> None:
 
     assert ops_container.cleaned is True
     assert finance_container.cleaned is True
-    assert manager._lock is None
-    assert manager._frame_acl_containers_by_name is None
+    assert not hasattr(manager, '_lock')
+    assert not hasattr(manager, '_frame_acl_containers_by_name')
 
 
 def test_frame_acl_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
@@ -236,4 +236,4 @@ def test_frame_acl_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert manager.cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')

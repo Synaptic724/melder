@@ -62,11 +62,11 @@ def test_cleanup_clears_internal_state_and_is_idempotent():
     snap = _snapshot()
     snap.cleanup()
 
-    assert snap.dependencies is None
-    assert snap.reverse_dependencies is None
-    assert snap.all_spell_ids is None
-    assert snap.root_spell_ids is None
-    assert snap.topologies is None
+    assert not hasattr(snap, 'dependencies')
+    assert not hasattr(snap, 'reverse_dependencies')
+    assert not hasattr(snap, 'all_spell_ids')
+    assert not hasattr(snap, 'root_spell_ids')
+    assert not hasattr(snap, 'topologies')
 
     # second cleanup should be a no-op
     snap.cleanup()

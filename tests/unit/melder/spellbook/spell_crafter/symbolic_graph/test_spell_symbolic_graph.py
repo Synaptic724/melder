@@ -71,9 +71,9 @@ def test_cleanup_cascades_and_clears_state():
 
     assert d1.cleaned == 1
     assert d2.cleaned == 1
-    assert g._dependencies == []  # noqa: SLF001
-    assert g._lock is None  # noqa: SLF001
-    assert g._cleaned is True  # noqa: SLF001
+    assert not hasattr(g, '_dependencies')
+    assert not hasattr(g, '_lock')
+    assert g._cleaned is True
     with pytest.raises(RuntimeError):
         _ = g.dependencies
     with pytest.raises(RuntimeError):
@@ -87,7 +87,7 @@ def test_cleanup_swallows_dependency_errors():
     g.cleanup()
     assert noisy.cleaned == 1
     assert quiet.cleaned == 1
-    assert g._dependencies == []  # noqa: SLF001
+    assert not hasattr(g, '_dependencies')
 
 
 def test_cleanup_is_idempotent_and_does_not_recall_dependencies():
@@ -158,5 +158,5 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert thread_results == [True, True]
     assert graph.cleaned is True
-    assert graph._lock is None  # noqa: SLF001
+    assert not hasattr(graph, '_lock')
 

@@ -113,7 +113,7 @@ def test_frame_acl_command_profile_cleanup_is_idempotent() -> None:
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert profile._lock is None
+    assert not hasattr(profile, '_lock')
 
 
 def test_frame_acl_command_profile_cleanup_rechecks_cleaned_inside_lock() -> None:

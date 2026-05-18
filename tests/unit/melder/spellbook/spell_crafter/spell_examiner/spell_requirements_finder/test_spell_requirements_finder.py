@@ -174,7 +174,7 @@ def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside
 
     assert thread_results == [True, True]
     assert finder.cleaned is True
-    assert finder._lock is None
+    assert not hasattr(finder, '_lock')
 
 
 def test_resolve_call_target_returns_spell_callable():

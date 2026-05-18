@@ -739,12 +739,12 @@ def test_cleanup_clears_references() -> None:
     meld.cleanup()
 
     assert hook_list == [hook_list[0]]
-    assert meld._owned_spells is None
-    assert meld._contracted_spells is None
-    assert meld._lookup_owned_spells is None
-    assert meld._lookup_contracted_spells is None
-    assert meld._creations is None
-    assert meld._meld_hooks is None
+    assert not hasattr(meld, '_owned_spells')
+    assert not hasattr(meld, '_contracted_spells')
+    assert not hasattr(meld, '_lookup_owned_spells')
+    assert not hasattr(meld, '_lookup_contracted_spells')
+    assert not hasattr(meld, '_creations')
+    assert not hasattr(meld, '_meld_hooks')
 
 
 def test_meld_no_hooks_uses_cached_context_no_overrides_door() -> None:

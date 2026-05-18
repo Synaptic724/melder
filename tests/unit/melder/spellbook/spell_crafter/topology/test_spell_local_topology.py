@@ -59,8 +59,8 @@ def test_cleanup_clears_maps_and_is_idempotent():
     topo.cleanup()
 
     # Internal structures cleared
-    assert topo._by_param_name is None  # noqa: SLF001
-    assert topo._sockets is None  # noqa: SLF001
+    assert not hasattr(topo, '_by_param_name')
+    assert not hasattr(topo, '_sockets')
 
     # Idempotent
     topo.cleanup()

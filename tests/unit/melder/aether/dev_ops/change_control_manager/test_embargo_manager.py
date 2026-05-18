@@ -55,9 +55,9 @@ def test_embargo_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
     manager.cleanup()
     manager.cleanup()
 
-    assert manager._embargoes_by_scope is None
-    assert manager._embargoes_by_owner is None
-    assert manager._lock is None
+    assert not hasattr(manager, '_embargoes_by_scope')
+    assert not hasattr(manager, '_embargoes_by_owner')
+    assert not hasattr(manager, '_lock')
 
     with pytest.raises(RuntimeError):
         manager.find_embargoes(["scope-a"])
@@ -96,7 +96,7 @@ def test_embargo_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert failures == []
     assert manager._cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
 
 def test_embargo_manager_open_and_extend_validate_required_arguments() -> None:

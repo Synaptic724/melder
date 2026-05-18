@@ -155,7 +155,7 @@ def test_cleanup_clears_registry_and_incidents(manager):
     manager.cleanup()
     
     assert manager._cleaned
-    assert manager._incidents_by_id is None
+    assert not hasattr(manager, '_incidents_by_id')
     
     # Check that the incident itself was cleaned
     assert inc._cleaned
@@ -224,4 +224,4 @@ def test_cleanup_rechecks_cleaned_inside_lock(manager):
 
     assert failures == []
     assert manager._cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')

@@ -56,9 +56,9 @@ def test_transaction_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
     manager.cleanup()
     manager.cleanup()
 
-    assert manager._in_flight is None
-    assert manager._link_mirror is None
-    assert manager._lock is None
+    assert not hasattr(manager, '_in_flight')
+    assert not hasattr(manager, '_link_mirror')
+    assert not hasattr(manager, '_lock')
 
     with pytest.raises(RuntimeError):
         manager.describe()
@@ -97,7 +97,7 @@ def test_transaction_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert failures == []
     assert manager._cleaned is True
-    assert manager._lock is None
+    assert not hasattr(manager, '_lock')
 
 
 def test_transaction_manager_scope_key_helpers_validate_required_inputs() -> None:

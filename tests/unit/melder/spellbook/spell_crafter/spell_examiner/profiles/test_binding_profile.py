@@ -17,8 +17,8 @@ def test_spell_binding_profile_stores_and_cleans():
     assert profile.kind is SpellBindingKind.CLASS
     assert profile.original_object is obj
     profile.cleanup()
-    assert profile.kind is None
-    assert profile.original_object is None
+    assert not hasattr(profile, 'kind')
+    assert not hasattr(profile, 'original_object')
     assert profile.cleaned is True
     # idempotent
     profile.cleanup()
@@ -60,11 +60,11 @@ def test_class_binding_profile_copies_mutable_inputs_and_cleanup():
     assert profile.method_names == ["f"]
 
     profile.cleanup()
-    assert profile.bases is None
-    assert profile.mro is None
-    assert profile.annotations is None
-    assert profile.method_names is None
-    assert profile.name is None
+    assert not hasattr(profile, 'bases')
+    assert not hasattr(profile, 'mro')
+    assert not hasattr(profile, 'annotations')
+    assert not hasattr(profile, 'method_names')
+    assert not hasattr(profile, 'name')
     assert profile.cleaned is True
     profile.cleanup()
 
@@ -111,9 +111,9 @@ def test_callable_binding_profile_copies_parameters_and_cleanup():
     assert profile.abstract is True
 
     profile.cleanup()
-    assert profile.parameters is None
-    assert profile.signature is None
-    assert profile.repr_string is None
+    assert not hasattr(profile, 'parameters')
+    assert not hasattr(profile, 'signature')
+    assert not hasattr(profile, 'repr_string')
     assert profile.cleaned is True
     profile.cleanup()
 
@@ -134,11 +134,11 @@ def test_instance_binding_profile_stores_and_cleans():
 
     profile.cleanup()
 
-    assert profile.type_name is None
-    assert profile.module is None
-    assert profile.repr_string is None
-    assert profile.kind is None
-    assert profile.original_object is None
+    assert not hasattr(profile, 'type_name')
+    assert not hasattr(profile, 'module')
+    assert not hasattr(profile, 'repr_string')
+    assert not hasattr(profile, 'kind')
+    assert not hasattr(profile, 'original_object')
     assert profile.cleaned is True
     profile.cleanup()
 
@@ -159,10 +159,10 @@ def test_other_binding_profile_stores_and_cleans():
 
     profile.cleanup()
 
-    assert profile.type_name is None
-    assert profile.module is None
-    assert profile.repr_string is None
-    assert profile.kind is None
-    assert profile.original_object is None
+    assert not hasattr(profile, 'type_name')
+    assert not hasattr(profile, 'module')
+    assert not hasattr(profile, 'repr_string')
+    assert not hasattr(profile, 'kind')
+    assert not hasattr(profile, 'original_object')
     assert profile.cleaned is True
     profile.cleanup()

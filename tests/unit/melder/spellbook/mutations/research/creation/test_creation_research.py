@@ -40,11 +40,11 @@ def test_research_creation_cleanup_cleans_nodes_and_refs() -> None:
 
     assert research.cleaned is True
     assert node.cleaned is True
-    assert research._creation_ref is None
-    assert research._nodes is None
-    assert research._node_ids is None
-    assert research._metadata is None
-    assert research._head_id is None
+    assert not hasattr(research, '_creation_ref')
+    assert not hasattr(research, '_nodes')
+    assert not hasattr(research, '_node_ids')
+    assert not hasattr(research, '_metadata')
+    assert not hasattr(research, '_head_id')
 
     research.cleanup()
 

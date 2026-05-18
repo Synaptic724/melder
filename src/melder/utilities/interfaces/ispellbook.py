@@ -1,4 +1,4 @@
-from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, Union, runtime_checkable
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.spellbook.existence.existence import Existence
@@ -113,12 +113,12 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     def bind(
             self,
-            spell: Any,
-            existence: str | Existence,
             *,
+            spell: Any,
+            existence: Union[str, Existence],
             permissions: str = "create",
             spellframe: Any = None,
-            binding_name: Any = None,
+            binding_name: Optional[str] = None,
             profile: str = "general",
             **kwargs: Any,
     ) -> str:

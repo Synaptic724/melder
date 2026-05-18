@@ -196,13 +196,13 @@ def test_override_route_config_cleanup_nulls_fields_and_is_idempotent() -> None:
     config.cleanup()
     config.cleanup()
 
-    assert config.plan_signature is None
-    assert config.path_registry is None
-    assert config.plan_rows is None
-    assert config.root_spell_id is None
-    assert config.spell_lookup is None
-    assert config.empty_shape_key is None
-    assert config.baseline_executor is None
+    assert not hasattr(config, 'plan_signature')
+    assert not hasattr(config, 'path_registry')
+    assert not hasattr(config, 'plan_rows')
+    assert not hasattr(config, 'root_spell_id')
+    assert not hasattr(config, 'spell_lookup')
+    assert not hasattr(config, 'empty_shape_key')
+    assert not hasattr(config, 'baseline_executor')
 
 
 def test_creation_context_init_requires_creation_gate_in_dynamic_mode() -> None:
@@ -1557,11 +1557,11 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     context.cleanup()
 
     assert context.cleaned is True
-    assert not hasattr(context, "_override_specialization_cache")
-    assert not hasattr(context, "_override_executor_source_cache_by_plan_signature")
-    assert not hasattr(context, "_override_executor_code_object_cache_by_plan_signature")
-    assert not hasattr(context, "_override_prefilter_step_targets_cache")
-    assert not hasattr(context, "_override_prefilter_path_metadata_cache")
-    assert not hasattr(context, "_override_apply_with_socket_shape_prechecked_phase10")
-    assert route_config_no_mutation.plan_signature is None
-    assert route_config_mutation.plan_signature is None
+    assert not hasattr(context, '_override_specialization_cache')
+    assert not hasattr(context, '_override_executor_source_cache_by_plan_signature')
+    assert not hasattr(context, '_override_executor_code_object_cache_by_plan_signature')
+    assert not hasattr(context, '_override_prefilter_step_targets_cache')
+    assert not hasattr(context, '_override_prefilter_path_metadata_cache')
+    assert not hasattr(context, '_override_apply_with_socket_shape_prechecked_phase10')
+    assert not hasattr(route_config_no_mutation, 'plan_signature')
+    assert not hasattr(route_config_mutation, 'plan_signature')

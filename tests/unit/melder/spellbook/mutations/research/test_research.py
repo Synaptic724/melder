@@ -46,14 +46,14 @@ def test_research_cleanup_cleans_lines_and_nulls_target() -> None:
         assert creation_line.cleaned is True
         assert spell_node.cleaned is True
         assert creation_node.cleaned is True
-        assert session._target_index is None
-        assert session._spell_researches is None
-        assert session._spell_research_ids is None
-        assert session._creation_researches is None
-        assert session._creation_research_ids is None
-        assert session._metadata is None
-        assert session._root_version is None
-        assert session._level is None
+        assert not hasattr(session, '_target_index')
+        assert not hasattr(session, '_spell_researches')
+        assert not hasattr(session, '_spell_research_ids')
+        assert not hasattr(session, '_creation_researches')
+        assert not hasattr(session, '_creation_research_ids')
+        assert not hasattr(session, '_metadata')
+        assert not hasattr(session, '_root_version')
+        assert not hasattr(session, '_level')
 
         session.cleanup()
 

@@ -88,11 +88,11 @@ def test_mutation_research_cleanup_cleans_sessions_and_releases_associations() -
         assert creation_line.cleaned is True
         assert spell_node.cleaned is True
         assert creation_node.cleaned is True
-        assert manager._aether is None
-        assert manager._sessions_by_index is None
-        assert session._target_index is None
-        assert spell_line._spell_ref is None
-        assert creation_line._creation_ref is None
+        assert not hasattr(manager, '_aether')
+        assert not hasattr(manager, '_sessions_by_index')
+        assert not hasattr(session, '_target_index')
+        assert not hasattr(spell_line, '_spell_ref')
+        assert not hasattr(creation_line, '_creation_ref')
 
         manager.cleanup()
 

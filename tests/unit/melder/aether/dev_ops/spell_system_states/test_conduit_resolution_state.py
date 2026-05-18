@@ -633,4 +633,4 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert failures == []
     assert state._cleaned is True
-    assert state._lock is None
+    assert not hasattr(state, '_lock')

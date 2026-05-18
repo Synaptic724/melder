@@ -196,9 +196,9 @@ def test_cleanup_clears_state(incident):
     incident.cleanup()
     
     assert incident._cleaned
-    assert incident._root_ids is None
-    assert incident._details is None
-    assert incident._id is None
+    assert not hasattr(incident, '_root_ids')
+    assert not hasattr(incident, '_details')
+    assert not hasattr(incident, '_id')
 
 def test_cleanup_is_idempotent(incident):
     incident.cleanup()
@@ -275,4 +275,4 @@ def test_cleanup_rechecks_cleaned_inside_lock(incident):
 
     assert failures == []
     assert incident._cleaned is True
-    assert incident._lock is None
+    assert not hasattr(incident, '_lock')

@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union, cast
 import threading
 import time
 # Melder Imports
@@ -947,7 +947,7 @@ class Spellbook(Cleanable, ISpellbook):
         return self._id
 
     @property
-    def spells(self) -> Mapping[SpellIndex, ISpell]:
+    def spells(self) -> Mapping[ISpellIndex, ISpell]:
         """
         Public API
 
@@ -960,15 +960,15 @@ class Spellbook(Cleanable, ISpellbook):
               mutation.
 
         Returns:
-            Mapping[SpellIndex, ISpell]:
+            Mapping[ISpellIndex, ISpell]:
                 Immutable map of local `SpellIndex` keys to spell
                 objects.
         """
         self.check_cleaned()
-        return MappingProxyType(self._spells)
+        return cast(Mapping[ISpellIndex, ISpell], MappingProxyType(self._spells))
 
     @property
-    def contracted_spells(self) -> Mapping[str, Mapping[SpellIndex, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, ISpell]]:
         """
         Public API
 
@@ -979,15 +979,18 @@ class Spellbook(Cleanable, ISpellbook):
             - Each value is an immutable spell map for that peer conduit.
 
         Returns:
-            Mapping[str, Mapping[SpellIndex, ISpell]]:
+            Mapping[str, Mapping[ISpellIndex, ISpell]]:
                 Immutable map of peer conduit id to immutable borrowed-spell
                 map.
         """
         self.check_cleaned()
-        return MappingProxyType({
-            conduit_id: MappingProxyType(dict(spells))
-            for conduit_id, spells in self._contracted_spells.items()
-        })
+        return cast(
+            Mapping[str, Mapping[ISpellIndex, ISpell]],
+            MappingProxyType({
+                conduit_id: MappingProxyType(dict(spells))
+                for conduit_id, spells in self._contracted_spells.items()
+            }),
+        )
 
     def snapshot_state(self) -> Dict[str, Any]:
         """
@@ -2595,7 +2598,7 @@ class Spellbook(Cleanable, ISpellbook):
             self,
             *,
             spell,
-            existence: str | Existence,
+            existence: Union[str, Existence],
             permissions: str = "create",
             spellframe: Any = None,
             binding_name: Optional[str] = None,
