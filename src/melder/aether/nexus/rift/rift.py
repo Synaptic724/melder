@@ -1,11 +1,8 @@
 import threading
-from typing import Any, Dict, Optional, Protocol, Sequence, Tuple, cast
+from typing import Any, Dict, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
@@ -17,79 +14,17 @@ from melder.utilities.interfaces import (
     IConduit,
     IAethericFrame,
     IFrameACLConfiguration,
+    IFrameLinkContract,
+    IFrameProjectionSet,
+    IFrameViewer,
     INexus,
+    INexusRiftRuntimeSurface,
     IRiftGate,
     IRift,
     IRiftConfiguration,
     IRiftSpace,
     ISafeLogger,
 )
-
-
-class _RiftFrameACLManagerSurface(Protocol):
-    def _get_current_frame_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            view_contract_name: str = "default",
-            command_contract_name: str = "default",
-            codegen_contract_name: str = "default",
-    ) -> IFrameACLConfiguration:
-        ...
-
-    def _validate_frame_acl_configuration_against_descriptor(
-            self,
-            frame_name: str,
-            configuration: object,
-            descriptor: object,
-    ) -> None:
-        ...
-
-
-class _RiftNexusRuntimeSurface(INexus, Protocol):
-    _frame_acl_manager: _RiftFrameACLManagerSurface
-    _target_frame_ref_counts: Dict[str, int]
-
-    def _validate_target_frame_names(
-            self,
-            target_frame_names: Sequence[str],
-    ) -> None:
-        ...
-
-    def _validate_target_frame_runtime_requirements(
-            self,
-            target_frame_name: str,
-            requested_space_type: RiftSpaceType,
-    ) -> None:
-        ...
-
-    def _get_required_frame_descriptor(self, frame_name: str) -> object:
-        ...
-
-    def _validate_target_frame_budget(
-            self,
-            target_frame_names: Sequence[str],
-    ) -> None:
-        ...
-
-    def _increment_ref_count(
-            self,
-            ref_counts: Dict[str, int],
-            target_frame_name: str,
-    ) -> None:
-        ...
-
-    def create_frame_projection_sets_for_rift(
-            self,
-            rift_id: str,
-            *,
-            frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, FrameProjectionSet]:
-        ...
-
-    def list_accessible_non_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
-        ...
-
 
 class Rift(Cleanable, IRift):
     """
@@ -161,7 +96,7 @@ class Rift(Cleanable, IRift):
 
     def __init__(
             self,
-            nexus: INexus,
+            nexus: INexusRiftRuntimeSurface,
             *,
             configuration: IRiftConfiguration,
             rift_gate: Optional[IRiftGate] = None,
@@ -223,11 +158,11 @@ class Rift(Cleanable, IRift):
         self._rift_name: Optional[str] = rift_name
         self._lock: threading.RLock = threading.RLock()
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
-        self._nexus: _RiftNexusRuntimeSurface = cast(_RiftNexusRuntimeSurface, nexus)
+        self._nexus: INexusRiftRuntimeSurface = nexus
         self._configuration: IRiftConfiguration = configuration
         self._rift_gate: IRiftGate = rift_gate if rift_gate is not None else RiftGate()
-        self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
-        self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
+        self._frame_link_contracts_by_frame_name: Dict[str, IFrameLinkContract] = {}
+        self._projection_sets_by_frame_name: Dict[str, IFrameProjectionSet] = {}
         self._space: Optional[IRiftSpace] = None
         self._is_registered: bool = False
         self._is_active: bool = False
@@ -293,10 +228,10 @@ class Rift(Cleanable, IRift):
         Returns:
             None.
         """
-        if self._cleaned:
+        if self.is_cleaned:
             return
         with self._lock:
-            if self._cleaned:
+            if self.is_cleaned:
                 return
             self._cleaned = True
             self._logger.info("Cleaning Rift runtime state.", "cleanup")
@@ -388,7 +323,7 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         return tuple(self._frame_link_contracts_by_frame_name.keys())
 
-    def get_frame_link_contract(self, frame_name: str) -> FrameLinkContract:
+    def get_frame_link_contract(self, frame_name: str) -> IFrameLinkContract:
         """
         Return the per-frame contract for one engaged frame.
 
@@ -397,7 +332,7 @@ class Rift(Cleanable, IRift):
                 Engaged target frame name.
 
         Returns:
-            FrameLinkContract: Per-frame contract object.
+            IFrameLinkContract: Per-frame contract object.
 
         Raises:
             ValueError:
@@ -463,10 +398,7 @@ class Rift(Cleanable, IRift):
         )
         if not is_nexus_managed_frame:
             self._nexus._validate_target_frame_names((frame_name,))
-        requested_space_type = cast(
-            RiftSpaceType,
-            self._configuration.get_property("space_type"),
-        )
+        requested_space_type = self._configuration.space_type
         self._nexus._validate_target_frame_runtime_requirements(
             frame_name,
             requested_space_type,
@@ -497,6 +429,9 @@ class Rift(Cleanable, IRift):
         is_new_frame = frame_name not in self._frame_link_contracts_by_frame_name
         if is_new_frame:
             self._nexus._validate_target_frame_budget((frame_name,))
+            from melder.aether.nexus.rift.frame_link.frame_link_contract import (
+                FrameLinkContract,
+            )
             self._frame_link_contracts_by_frame_name[frame_name] = FrameLinkContract(
                 rift_id=self._id,
                 frame_name=frame_name,
@@ -575,7 +510,7 @@ class Rift(Cleanable, IRift):
             self,
             *,
             frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, FrameProjectionSet]:
+    ) -> Dict[str, IFrameProjectionSet]:
         """
         Build fresh runtime projections and sync the hosted room assets.
 
@@ -588,7 +523,8 @@ class Rift(Cleanable, IRift):
                 Optional explicit multi-frame refresh scope.
 
         Returns:
-            Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
+            Dict[str, IFrameProjectionSet]: Fresh projection sets keyed by
+            frame name.
         """
         self.check_cleaned()
         assigned_frame_names = self.list_assigned_frame_names()
@@ -618,7 +554,7 @@ class Rift(Cleanable, IRift):
 
     def _apply_projection_sets(
             self,
-            projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
+            projection_sets_by_frame_name: Dict[str, IFrameProjectionSet],
             *,
             merge: bool = False,
     ) -> None:
@@ -664,7 +600,7 @@ class Rift(Cleanable, IRift):
                 projection_set.cleanup()
             self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
 
-    def _get_required_frame_projection_set(self, frame_name: str) -> FrameProjectionSet:
+    def _get_required_frame_projection_set(self, frame_name: str) -> IFrameProjectionSet:
         """
         Return one required projection set by frame name.
 
@@ -673,7 +609,7 @@ class Rift(Cleanable, IRift):
                 Target frame name.
 
         Returns:
-            FrameProjectionSet: Required projection set.
+            IFrameProjectionSet: Required projection set.
         """
         self.check_cleaned()
         try:
@@ -819,17 +755,17 @@ class Rift(Cleanable, IRift):
             raise ValueError("frame_names cannot be empty.")
         return tuple(normalized_frame_names)
 
-    def get_frame_viewer(self) -> FrameViewer:
+    def get_frame_viewer(self) -> IFrameViewer:
         """
         Internal
 
         Return the attached frame viewer for the owned space or raise.
 
         Returns:
-            FrameViewer: Attached frame viewer for the owned space.
+            IFrameViewer: Attached frame viewer for the owned space.
         """
         self.check_cleaned()
-        return cast(FrameViewer, self.space.frame_viewer)
+        return self.space.frame_viewer
 
     @property
     def space(self) -> IRiftSpace:
@@ -967,7 +903,7 @@ class Rift(Cleanable, IRift):
             IRiftSpace: Primary space for this Rift.
         """
         self.check_cleaned()
-        configured_space_type = self._configuration.get_property("space_type")
+        configured_space_type = self._configuration.space_type
         configured_space_name = self._configuration.get_property("space_name")
         if configured_space_name is not None and not isinstance(
                 configured_space_name,

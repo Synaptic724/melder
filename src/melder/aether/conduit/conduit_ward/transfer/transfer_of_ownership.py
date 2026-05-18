@@ -1,18 +1,21 @@
 import threading
 import ulid
 from functools import partial
-from typing import Any, Callable, Collection, Dict, List, Optional, Protocol, Set, cast
+from typing import Any, Callable, Collection, Dict, List, Optional, Set
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces import (
+    IAetherTransferFrameSurface,
+    IAetherTransferSurface,
+    IChangeControlManager,
     IConduit,
     ISpell,
-    IAether,
-    IChangeControlManager,
+    ISpellbook,
     IIncidentManager,
+    ISpellIndex,
 )
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -21,137 +24,6 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
-
-
-class _TransferSpellbookSurface(Protocol):
-    """Private Spellbook surface consumed by ownership transfer."""
-
-    _lock: threading.RLock
-    _spells: Dict[SpellIndex, ISpell]
-    _lookup_spells: Dict[Any, Any]
-    _spells_by_id: Optional[Dict[str, ISpell]]
-    _spell_id_pool: Optional[Dict[str, ISpell]]
-    _spell_system_states: Any
-    _contracted_spells: Any
-
-    def _unregister_owned_spell_id(self, spell_id: str, spell_obj: Any) -> None:
-        ...
-
-    def _unregister_spell_with_risk_manager(
-            self,
-            conduit_id: str,
-            spell_obj: Any,
-    ) -> None:
-        ...
-
-    def _register_spell_with_risk_manager(
-            self,
-            conduit_id: str,
-            spell_obj: Any,
-    ) -> None:
-        ...
-
-    def _publish_spell_record_to_nexus(self, spell_obj: Any) -> None:
-        ...
-
-
-class _TransferConduitSurface(Protocol):
-    """Private Conduit surface consumed by ownership transfer."""
-
-    _id: str
-    _name: Optional[str]
-    _aetheric_frame: str
-    _lock: threading.RLock
-    _spellbook: _TransferSpellbookSurface
-    _conduit_ward: Any
-    _creations: Any
-    __dynamic_environment__: bool
-    _creation_gate_controller: Any
-
-    def get_spell_by_id(
-            self,
-            spell_id: str,
-            aetheric_frame_name: str = "default",
-    ) -> Optional[Any]:
-        ...
-
-
-class _TransferClusterSurface(Protocol):
-    """Cluster share surface needed for ownership-transfer fallout handling."""
-
-    shared_spells: Dict[str, Set[SpellIndex]]
-
-    def add_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
-        ...
-
-
-class _TransferFrameSurface(Protocol):
-    """Frame surface needed for cluster and registry reconciliation."""
-
-    _conduit_clusters: Dict[str, _TransferClusterSurface]
-    _conduits: Dict[str, _TransferConduitSurface]
-    _spell_registry: Dict[str, Set[SpellIndex]]
-
-
-class _TransferChangeControlManagerSurface(Protocol):
-    """Change-control surface consumed by ownership transfer."""
-
-    _revalidate_fn_by_conduit: Any
-
-    def get_pending_change(self, spell_index_id: str) -> Any:
-        ...
-
-    def register_pending_change(
-            self,
-            *,
-            spell_index: SpellIndex,
-            reason: str,
-            metadata: Dict[str, Any],
-    ) -> None:
-        ...
-
-    def clear_pending_change(self, spell_index_id: str) -> None:
-        ...
-
-
-class _TransferAetherSurface(Protocol):
-    """Private Aether surface consumed by ownership transfer."""
-
-    _aetheric_frames: Dict[str, _TransferFrameSurface]
-    _default_frame: _TransferFrameSurface
-
-    def _get_change_control_manager(
-            self,
-            frame_name: str,
-    ) -> _TransferChangeControlManagerSurface:
-        ...
-
-    def _get_incident_manager(self, frame_name: str) -> IIncidentManager:
-        ...
-
-    def _get_conduits_in_cluster(
-            self,
-            cluster_name: str,
-            frame_name: str,
-    ) -> Collection[str]:
-        ...
-
-    def _remove_single_spell_index(
-            self,
-            conduit_id: str,
-            spell_index: SpellIndex,
-            frame_name: str,
-    ) -> None:
-        ...
-
-    def _register_single_spell_index(
-            self,
-            conduit_id: str,
-            spell_index: SpellIndex,
-            frame_name: str,
-    ) -> None:
-        ...
-
 
 class TransferOfOwnership(Cleanable):
     """
@@ -225,14 +97,8 @@ class TransferOfOwnership(Cleanable):
                 lineages dirty so stale downstream state is not reused.
         """
         super().__init__()
-        self.source_conduit: _TransferConduitSurface = cast(
-            _TransferConduitSurface,
-            source_conduit,
-        )
-        self.target_conduit: _TransferConduitSurface = cast(
-            _TransferConduitSurface,
-            target_conduit,
-        )
+        self.source_conduit: IConduit = source_conduit
+        self.target_conduit: IConduit = target_conduit
         self.spell: ISpell = spell
         self.move_creations: bool = move_creations
         self.include_dependencies: bool = include_dependencies
@@ -241,17 +107,23 @@ class TransferOfOwnership(Cleanable):
         self.mark_dependencies_dirty: bool = mark_dependencies_dirty
 
         self._lock: threading.RLock = threading.RLock()
-        self._aether: _TransferAetherSurface = cast(
-            _TransferAetherSurface,
-            type(source_conduit)._aether,
-        )
-        self._frame_name: str = source_conduit._aetheric_frame
+        if not isinstance(self.source_conduit._aether, IAetherTransferSurface):
+            raise TypeError(
+                "source_conduit._aether must satisfy IAetherTransferSurface."
+            )
+        self._aether: IAetherTransferSurface = self.source_conduit._aether
+        self._frame_name: str = self.source_conduit._aetheric_frame
         self._preflight_summary: Dict[str, Any] = {}
-        self._change_control_manager: _TransferChangeControlManagerSurface = (
-            self._aether._get_change_control_manager(self._frame_name)
+        change_control_manager = self._aether._get_change_control_manager(
+            self._frame_name
         )
+        if change_control_manager is None:
+            raise RuntimeError(
+                "Aether did not provide a ChangeControlManager for ownership transfer."
+            )
+        self._change_control_manager: IChangeControlManager = change_control_manager
         self._incident_manager: IIncidentManager = self._aether._get_incident_manager(self._frame_name)
-        self._rollback_actions: List[Any] = []
+        self._rollback_actions: List[Callable[[], object]] = []
         self._op_id: str = str(ulid.ULID())
 
 
@@ -266,11 +138,11 @@ class TransferOfOwnership(Cleanable):
             - Does not cleanup source/target conduits or managers because this
               helper only borrows them.
         """
-        if self._cleaned:
+        if self.is_cleaned:
             return
 
         with self._lock:
-            if self._cleaned:
+            if self.is_cleaned:
                 return
             self._cleaned = True
             self._cleanup_components()
@@ -519,11 +391,11 @@ class TransferOfOwnership(Cleanable):
                     seen_contracts.add(contract_id)
                     break
         # Clusters: scan cluster registries
-        frame = self._aether._aetheric_frames.get(self._frame_name, self._aether._default_frame)
+        frame = self._get_runtime_frame()
         for cname, cluster in frame._conduit_clusters.items():
             for owner_id, indices in cluster.shared_spells.items():
                 for idx in indices:
-                    if spell_id in idx._versions or idx._current_id == spell_id:
+                    if idx.has_version(spell_id) or idx.current == spell_id:
                         borrowers.append({"type": "cluster", "cluster": cname, "owner_id": owner_id})
                         break
         return borrowers
@@ -690,10 +562,7 @@ class TransferOfOwnership(Cleanable):
             if cluster_members:
                 conduit_ids.update([cid for cid in cluster_members if cid])
 
-        frame = self._aether._aetheric_frames.get(
-            self._frame_name,
-            self._aether._default_frame,
-        )
+        frame = self._get_runtime_frame()
         conduits = frame._conduits if frame is not None else None
         if conduits:
             for conduit in list(conduits.values()):
@@ -772,7 +641,7 @@ class TransferOfOwnership(Cleanable):
             flags_to_add=[SpellState.transfer_in_progress],
         )
 
-    def _register_rollback(self, fn: Optional[Callable[[], None]]) -> None:
+    def _register_rollback(self, fn: Optional[Callable[[], object]]) -> None:
         """
         Register one failure-recovery action for the current transfer.
 
@@ -1050,7 +919,7 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
-            frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
+            frame = self._get_runtime_frame()
             registry = frame._spell_registry.get(conduit._id, set())
             return spell_index in registry
         except Exception:
@@ -1190,7 +1059,7 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         shares: List[Dict[str, Any]] = []
         try:
-            frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
+            frame = self._get_runtime_frame()
             for cname, cluster in frame._conduit_clusters.items():
                 for owner_id, indices in cluster.shared_spells.items():
                     if owner_id != self.source_conduit._id:
@@ -1218,7 +1087,7 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
-            frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
+            frame = self._get_runtime_frame()
             for entry in snapshot or []:
                 cname = entry.get("cluster")
                 owner_id = entry.get("owner_id")
@@ -1410,6 +1279,19 @@ class TransferOfOwnership(Cleanable):
             tgt_book._publish_spell_record_to_nexus(spell_obj)
         except Exception as e:
             raise RuntimeError(f"Failed to flip spellbooks: {e}")
+
+    def _get_runtime_frame(self) -> IAetherTransferFrameSurface:
+        """
+        Return the current runtime frame used by this transfer operation.
+
+        Returns:
+            IAetherTransferFrameSurface: Named frame when present, otherwise the
+                default frame.
+        """
+        return self._aether._aetheric_frames.get(
+            self._frame_name,
+            self._aether._default_frame,
+        )
 
     def _move_creations(self, spell_obj: Any) -> None:
         """
@@ -1668,8 +1550,8 @@ class TransferOfOwnership(Cleanable):
                 if dep_spell._owner_conduit_id != self.source_conduit._id:
                     continue
                 sub_transfer = TransferOfOwnership(
-                    source_conduit=cast(IConduit, self.source_conduit),
-                    target_conduit=cast(IConduit, self.target_conduit),
+                    source_conduit=self.source_conduit,
+                    target_conduit=self.target_conduit,
                     spell=dep_spell,
                     move_creations=self.move_creations,
                     include_dependencies=False,  # avoid deep recursion unless explicitly requested
@@ -1680,7 +1562,8 @@ class TransferOfOwnership(Cleanable):
                 sub_transfer.execute()
                 # Mark dependency lineage dirty if requested
                 if self.invalidate_after_transfer:
-                    self._mark_lineage_dirty(dep_spell.spell_index)
+                    if isinstance(dep_spell.spell_index, SpellIndex):
+                        self._mark_lineage_dirty(dep_spell.spell_index)
             except Exception:
                 continue
 
@@ -1703,7 +1586,8 @@ class TransferOfOwnership(Cleanable):
                 dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
                 if dep_spell is None:
                     continue
-                self._mark_lineage_dirty(dep_spell.spell_index)
+                if isinstance(dep_spell.spell_index, SpellIndex):
+                    self._mark_lineage_dirty(dep_spell.spell_index)
             except Exception:
                 continue
 
@@ -1808,7 +1692,7 @@ class TransferOfOwnership(Cleanable):
 
         # If no revalidator is wired for any conduit, emit a reminder incident.
         try:
-            if not self._change_control_manager._revalidate_fn_by_conduit:
+            if not self._change_control_manager.has_registered_revalidators():
                 self._incident_manager.create_incident(
                     kind="ownership_transfer_needs_revalidation",
                     severity=IncidentSeverity.warning,

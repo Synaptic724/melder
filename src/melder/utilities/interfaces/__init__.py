@@ -56,6 +56,8 @@ from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.iworkstation import IWorkstation
 from melder.utilities.interfaces.iframelink import IFrameLink
+from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
+from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.icapabilitycommandsystem import ICapabilityCommandSystem
 from melder.utilities.interfaces.istaticcommandsystem import IStaticCommandSystem
@@ -73,8 +75,10 @@ from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftgatecontroller import IRiftGateController
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.inexus import INexus
+from melder.utilities.interfaces.inexus_rift_runtime_surface import IFrameACLManagerRiftSurface, INexusRiftRuntimeSurface
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaether_transfer_surface import IAetherTransferFrameSurface, IAetherTransferSurface
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
@@ -147,6 +151,8 @@ __all__ = [
     "IFrameViewer",
     "IWorkstation",
     "IFrameLink",
+    "IFrameLinkContract",
+    "IFrameProjectionSet",
     "ICommandSystem",
     "ICapabilityCommandSystem",
     "IStaticCommandSystem",
@@ -164,8 +170,12 @@ __all__ = [
     "IRiftGateController",
     "IRift",
     "INexus",
+    "IFrameACLManagerRiftSurface",
+    "INexusRiftRuntimeSurface",
     "INexusFrameManager",
     "IAether",
+    "IAetherTransferFrameSurface",
+    "IAetherTransferSurface",
     "IAetherConfiguration",
     "IAetherConfigurationBuilder",
     "IAethericFrameConfiguration",

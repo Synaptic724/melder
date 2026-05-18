@@ -39,7 +39,6 @@ class IAether(ICleanable, Protocol):
     - Resets `_instance` and `_initialized` so tests or later runtime flows can
       create a fresh singleton after teardown.
     """
-
     def attach_logger(
             self,
             logger: Optional[Union[IChannelLogger, logging.Logger]],
@@ -221,7 +220,7 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def cleanup_aetheric_frames(self):
+    def cleanup_aetheric_frames(self) -> None:
         """
         Cleans all aetheric frames and their contents.
         """

@@ -18,30 +18,9 @@ from melder.utilities.interfaces import (
     IFrameACLCommandProfile,
     IFrameACLProfileBuilder,
     IFrameACLRuleSet,
+    ISpellRecord,
     IFrameACLViewProfile,
 )
-
-
-class _CompiledSpellRecordSurface(Protocol):
-    @property
-    def spell_id(self) -> str:
-        ...
-
-    @property
-    def spell_index_id(self) -> str:
-        ...
-
-    @property
-    def spellframe(self) -> object:
-        ...
-
-    @property
-    def spell_name(self) -> str:
-        ...
-
-    @property
-    def binding_name(self) -> Optional[str]:
-        ...
 
 
 class FrameACLCompiler(Cleanable):
@@ -821,9 +800,10 @@ class FrameACLCompiler(Cleanable):
         for ruleset in rulesets:
             if ruleset is None:
                 continue
-            concrete_ruleset = FrameACLCompiler._as_frame_acl_ruleset(ruleset)
             ruleset_allows, ruleset_denies = (
-                FrameACLCompiler._collect_operation_effects(concrete_ruleset)
+                FrameACLCompiler._collect_operation_effects(
+                    FrameACLCompiler._as_frame_acl_ruleset(ruleset)
+                )
             )
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
@@ -905,7 +885,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_spell_operation_effects_for_record(
-            spell_record: _CompiledSpellRecordSurface,
+            spell_record: ISpellRecord,
             *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
@@ -933,9 +913,23 @@ class FrameACLCompiler(Cleanable):
         return allow_operations, deny_operations
 
     @staticmethod
+    def _as_frame_acl_ruleset(ruleset: IFrameACLRuleSet) -> IFrameACLRuleSet:
+        """
+        Preserve the shared ruleset interface surface at existing call sites.
+
+        Args:
+            ruleset:
+                Interface-typed ACL ruleset.
+
+        Returns:
+            IFrameACLRuleSet: The same ruleset object.
+        """
+        return ruleset
+
+    @staticmethod
     def _spell_rule_matches_record(
             conditions: Dict[str, object],
-            spell_record: _CompiledSpellRecordSurface,
+            spell_record: ISpellRecord,
     ) -> bool:
         """
         Return whether one spell rule condition set matches a spell record.
@@ -1031,7 +1025,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _collect_selector_spell_operation_effects_for_record(
             operation: str,
-            spell_record: _CompiledSpellRecordSurface,
+            spell_record: ISpellRecord,
             *rulesets: object,
     ) -> Tuple[Set[str], Set[str]]:
         """
