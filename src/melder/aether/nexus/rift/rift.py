@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, Optional, Protocol, Sequence, Tuple, cast
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
@@ -16,6 +16,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces import (
     IConduit,
     IAethericFrame,
+    IFrameACLConfiguration,
     INexus,
     IRiftGate,
     IRift,
@@ -23,6 +24,71 @@ from melder.utilities.interfaces import (
     IRiftSpace,
     ISafeLogger,
 )
+
+
+class _RiftFrameACLManagerSurface(Protocol):
+    def _get_current_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            view_contract_name: str = "default",
+            command_contract_name: str = "default",
+            codegen_contract_name: str = "default",
+    ) -> IFrameACLConfiguration:
+        ...
+
+    def _validate_frame_acl_configuration_against_descriptor(
+            self,
+            frame_name: str,
+            configuration: object,
+            descriptor: object,
+    ) -> None:
+        ...
+
+
+class _RiftNexusRuntimeSurface(INexus, Protocol):
+    _frame_acl_manager: _RiftFrameACLManagerSurface
+    _target_frame_ref_counts: Dict[str, int]
+
+    def _validate_target_frame_names(
+            self,
+            target_frame_names: Sequence[str],
+    ) -> None:
+        ...
+
+    def _validate_target_frame_runtime_requirements(
+            self,
+            target_frame_name: str,
+            requested_space_type: RiftSpaceType,
+    ) -> None:
+        ...
+
+    def _get_required_frame_descriptor(self, frame_name: str) -> object:
+        ...
+
+    def _validate_target_frame_budget(
+            self,
+            target_frame_names: Sequence[str],
+    ) -> None:
+        ...
+
+    def _increment_ref_count(
+            self,
+            ref_counts: Dict[str, int],
+            target_frame_name: str,
+    ) -> None:
+        ...
+
+    def create_frame_projection_sets_for_rift(
+            self,
+            rift_id: str,
+            *,
+            frame_names: Optional[Sequence[str]] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        ...
+
+    def list_accessible_non_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
+        ...
 
 
 class Rift(Cleanable, IRift):
@@ -157,7 +223,7 @@ class Rift(Cleanable, IRift):
         self._rift_name: Optional[str] = rift_name
         self._lock: threading.RLock = threading.RLock()
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
-        self._nexus: INexus = nexus
+        self._nexus: _RiftNexusRuntimeSurface = cast(_RiftNexusRuntimeSurface, nexus)
         self._configuration: IRiftConfiguration = configuration
         self._rift_gate: IRiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
@@ -397,7 +463,10 @@ class Rift(Cleanable, IRift):
         )
         if not is_nexus_managed_frame:
             self._nexus._validate_target_frame_names((frame_name,))
-        requested_space_type = self._configuration.get_property("space_type")
+        requested_space_type = cast(
+            RiftSpaceType,
+            self._configuration.get_property("space_type"),
+        )
         self._nexus._validate_target_frame_runtime_requirements(
             frame_name,
             requested_space_type,

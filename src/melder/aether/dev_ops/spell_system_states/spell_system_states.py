@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, cast
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
@@ -17,10 +17,10 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces import (
+    IConduitResolutionState,
     ISpell,
     ISpellIndex,
     ISpellSystemStates,
-    IConduitResolutionState,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -118,7 +118,9 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         self._collection_dependents_by_spellbook: Optional[Dict[str, Dict[str, Set[str]]]] = {}
         # Spellbook-scoped indices for SpellContract dependents.
         self._contract_keys_by_index: Optional[Dict[str, Set[Tuple[str, str]]]] = {}
-        self._contract_dependents_by_spellbook: Optional[Dict[str, Dict[Tuple[str, str], Set[str]]]] = {}
+        self._contract_dependents_by_spellbook: Optional[
+            Dict[str, Dict[Tuple[str, str], Set[str]]]
+        ] = {}
         self._risk_manager: Optional[object] = None
 
     # ------------------------------------------------------------------
@@ -167,9 +169,9 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                     pass
                 self._local_topologies.clear()
             if self._resolution_by_conduit_id is not None:
-                for state in list(self._resolution_by_conduit_id.values()):
+                for resolution_state in list(self._resolution_by_conduit_id.values()):
                     try:
-                        state.cleanup()
+                        resolution_state.cleanup()
                     except Exception:
                         pass
                 self._resolution_by_conduit_id.clear()
@@ -193,13 +195,13 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 self._collection_frames_by_index.clear()
 
             if self._contract_dependents_by_spellbook is not None:
-                for book_map in list(self._contract_dependents_by_spellbook.values()):
+                for contract_book_map in list(self._contract_dependents_by_spellbook.values()):
                     try:
-                        for dependents in list(book_map.values()):
+                        for dependents in list(contract_book_map.values()):
                             dependents.clear()
                     except Exception:
                         pass
-                    book_map.clear()
+                    contract_book_map.clear()
                 self._contract_dependents_by_spellbook.clear()
 
             if self._contract_keys_by_index is not None:
@@ -664,7 +666,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 return None
-            return self._resolution_by_conduit_id.get(conduit_id)
+            state = self._resolution_by_conduit_id.get(conduit_id)
+            return cast(Optional[ConduitResolutionState], state)
 
     def get_or_create_conduit_resolution_state(self, conduit_id: str) -> ConduitResolutionState:
         """
@@ -706,7 +709,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 if self._risk_manager is not None:
                     state._set_risk_manager(self._risk_manager)
                 self._resolution_by_conduit_id[conduit_id] = state
-            return state
+            return cast(ConduitResolutionState, state)
 
     def unregister_index(self, spell_index: ISpellIndex) -> Optional[SpellSystemState]:
         """
@@ -816,9 +819,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                     except Exception:
                         pass
             if self._resolution_by_conduit_id is not None:
-                for state in self._resolution_by_conduit_id.values():
+                for resolution_state in self._resolution_by_conduit_id.values():
                     try:
-                        state._set_risk_manager(risk_manager)
+                        cast(
+                            ConduitResolutionState,
+                            resolution_state,
+                        )._set_risk_manager(risk_manager)
                     except Exception:
                         pass
 
@@ -865,7 +871,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 return iter(())
-            return iter(list(self._resolution_by_conduit_id.values()))
+            return iter(
+                [
+                    cast(ConduitResolutionState, state)
+                    for state in self._resolution_by_conduit_id.values()
+                ]
+            )
 
     def set_conduit_spell_validity(
             self,
@@ -1176,6 +1187,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             if not book_index:
                 return impacted
 
+            key_iter: Iterable[Tuple[str, str]]
             if contract_keys is None:
                 key_iter = book_index.keys()
             else:

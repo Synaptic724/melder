@@ -1,5 +1,7 @@
 from typing import Protocol, runtime_checkable
-from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
+    FrameACLCommandProfile,
+)
 @runtime_checkable
 class IFrameACLCommandProfileStrategy(Protocol):
     """
@@ -7,7 +9,7 @@ class IFrameACLCommandProfileStrategy(Protocol):
 
     Contract:
         - Exposes one stable strategy/profile name.
-        - Returns a freshly configured `IFrameACLCommandProfile` instance when
+        - Returns a freshly configured `FrameACLCommandProfile` instance when
           asked to build.
         - Carries no shared mutable module-level state itself.
     """
@@ -22,11 +24,11 @@ class IFrameACLCommandProfileStrategy(Protocol):
         """
         ...
 
-    def build(self) -> IFrameACLCommandProfile:
+    def build(self) -> FrameACLCommandProfile:
         """
         Build and return one configured command ACL profile instance.
 
         Returns:
-            IFrameACLCommandProfile: Fresh configured profile instance.
+            FrameACLCommandProfile: Fresh configured profile instance.
         """
         ...

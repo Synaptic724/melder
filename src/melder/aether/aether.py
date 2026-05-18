@@ -1312,7 +1312,7 @@ class Aether(Cleanable, IAether):
         if removed is None:
             self._logger.error(f"Conduit with ID {conduit_id} does not exist.", "_remove_conduit", exc_info=True)
             raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
-        conduit_name = removed.name
+        conduit_name = removed._name
         if conduit_name:
             mapped_id = frame._conduit_ids_by_name.get(conduit_name)
             if mapped_id == conduit_id:

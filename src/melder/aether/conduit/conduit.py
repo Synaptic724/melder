@@ -815,7 +815,7 @@ class Conduit(Cleanable, IConduit):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Public API
 
@@ -831,7 +831,7 @@ class Conduit(Cleanable, IConduit):
     #region Logger
     #endregion Logger
     #region Utilities
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Public API
 
@@ -842,6 +842,7 @@ class Conduit(Cleanable, IConduit):
                 Human-readable representation including conduit name and id.
 
         """
+        self.check_cleaned()
         return (
             f"<Conduit name={self.name} "
             f"id={self._id}>"
@@ -851,7 +852,7 @@ class Conduit(Cleanable, IConduit):
 
     #region Properties
     @property
-    def id(self):
+    def id(self) -> str:
         """
         Public API
 
@@ -862,6 +863,7 @@ class Conduit(Cleanable, IConduit):
                 This conduit's unique identifier.
 
         """
+        self.check_cleaned()
         return self._id
 
     @property
@@ -876,6 +878,7 @@ class Conduit(Cleanable, IConduit):
                 The configured conduit name, or `None` when the conduit is unnamed.
 
         """
+        self.check_cleaned()
         return self._name if self._name else None
 
 
@@ -900,6 +903,7 @@ class Conduit(Cleanable, IConduit):
                 If the conduit name is already set.
 
         """
+        self.check_cleaned()
         if self._name is not None:
             self._logger.error("Attempt to rename conduit after name set", "name")
             raise RuntimeError("Conduit name is set.")
@@ -925,6 +929,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the conduit is a lesser conduit.
             RuntimeError: If the Conduit name is not set.
         """
+        self.check_cleaned()
         if self.__dynamic_environment__ == False:
             self._logger.error("register_conduit_cloud in non-dynamic env", "register_conduit_cloud")
             raise RuntimeError("Dynamic environment is not enabled. Cannot register in the conduit cloud.")
@@ -977,6 +982,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the conduit is a lesser conduit.
             RuntimeError: If the Conduit name is not set.
         """
+        self.check_cleaned()
         if self.__dynamic_environment__ is False:
             self._logger.error("unregister_conduit_cloud in non-dynamic env", "unregister_conduit_cloud")
             raise RuntimeError("Dynamic environment is not enabled. Cannot unregister from the conduit cloud.")
@@ -1329,6 +1335,7 @@ class Conduit(Cleanable, IConduit):
             - Seeds per-conduit resolution state from the prior root conduit when available.
             - Rebinds lineage gates to the frame DevOps CreationGateController.
         """
+        self.check_cleaned()
         with self._lock:
             if not self.__dynamic_environment__:
                 self._logger.error("upgrade_to_normal in non-dynamic env", "upgrade_to_normal")
@@ -2099,6 +2106,7 @@ class Conduit(Cleanable, IConduit):
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
         """
+        self.check_cleaned()
         self.begin_transaction(
             transaction_type,
             conduit_ids=conduit_ids,
@@ -2152,7 +2160,6 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If no binding transaction is active.
         """
-        self.check_cleaned()
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("end_binding_transaction called when conduit not normal", "end_binding_transaction")
             raise RuntimeError("Only normal conduits can end binding transactions.")

@@ -440,7 +440,7 @@ class SpellCrafter(Cleanable):
         Returns:
             RootResolutionBlueprint: Attached Phase 5 root blueprint.
         """
-        root_blueprint = self._get_required_root_blueprint_phase5()
+        root_blueprint = self._root_blueprint_phase5
         if root_blueprint is None:
             raise RuntimeError("SpellCrafter Phase 5 root blueprint is required.")
         return root_blueprint

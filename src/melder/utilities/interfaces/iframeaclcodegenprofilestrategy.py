@@ -1,5 +1,7 @@
 from typing import Protocol, runtime_checkable
-from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+    FrameACLCodegenProfile,
+)
 
 @runtime_checkable
 class IFrameACLCodegenProfileStrategy(Protocol):
@@ -8,7 +10,7 @@ class IFrameACLCodegenProfileStrategy(Protocol):
 
     Contract:
         - Exposes one stable strategy/profile name.
-        - Returns a freshly configured `IFrameACLCodegenProfile` instance when
+        - Returns a freshly configured `FrameACLCodegenProfile` instance when
           asked to build.
         - Carries no shared mutable module-level state itself.
     """
@@ -23,11 +25,11 @@ class IFrameACLCodegenProfileStrategy(Protocol):
         """
         ...
 
-    def build(self) -> IFrameACLCodegenProfile:
+    def build(self) -> FrameACLCodegenProfile:
         """
         Build and return one configured codegen ACL profile instance.
 
         Returns:
-            IFrameACLCodegenProfile: Fresh configured profile instance.
+            FrameACLCodegenProfile: Fresh configured profile instance.
         """
         ...

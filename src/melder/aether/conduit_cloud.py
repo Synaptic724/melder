@@ -289,13 +289,14 @@ class ConduitCloud(Cleanable, IConduitCloud):
         """
         self.check_cleaned()
         with self._lock:
-            if conduit.name is None:
+            conduit_name = conduit._name
+            if conduit_name is None:
                 raise ValueError("Conduit name cannot be None for cloud unregistration.")
 
-            removed = self._registry.pop(conduit.name, None)
+            removed = self._registry.pop(conduit_name, None)
             if removed is None:
                 raise ValueError(
                     "Conduit with name {0} is not registered in the cloud.".format(
-                        conduit.name
+                        conduit_name
                     )
                 )

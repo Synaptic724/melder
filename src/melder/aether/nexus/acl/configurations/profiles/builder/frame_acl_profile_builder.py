@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, TypeVar
+from typing import Dict, List, Optional, Protocol, TypeVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -30,19 +30,50 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
+class _NamedCleanableProfile(Protocol):
+    """Minimal profile surface needed by the generic registry helpers."""
+
+    @property
+    def name(self) -> str:
+        """Return the stable registry name for this reusable profile."""
+        ...
+
+    def cleanup(self) -> None:
+        """Release any resources owned by this reusable profile."""
+        ...
+
+
+_ProfileT = TypeVar("_ProfileT", bound=_NamedCleanableProfile)
+
+
 class FrameACLProfileBuilder(Cleanable):
     """
+    Registry and composition root for reusable frame ACL profiles.
+
     Purpose:
-        Own the reusable ACL profile registries and compose family bundles from
-        them.
+        Centralize the reusable view, command, and codegen profile catalogs for
+        the Nexus ACL subsystem and compose those reusable family profiles into
+        detached `FrameACLProfile` bundles on demand.
 
     Contract:
-        - Owns base profile registries for view, command, and codegen.
-        - Owns precision profile registries for view, command, and codegen.
-        - Composed `FrameACLProfile` objects returned from `create_profile(...)`
-          do not become builder-owned registry entries automatically.
-        - Uses an instance lock because registry mutation and cleanup are
-          grouped state transitions in a nogil runtime.
+        - Owns the base profile registries for the view, command, and codegen
+          ACL families.
+        - Owns the precision-profile registries for those same families.
+        - Seeds the standard safe/hybrid/permissive/precision reusable
+          profiles during initialization through the family builders it owns.
+        - Returns detached `FrameACLProfile` bundles from `create_profile(...)`
+          without auto-registering those composed bundles back into the builder.
+        - Cleans registered reusable profiles during builder teardown, but
+          does not reach out into caller-owned composed bundles created earlier.
+        - Uses an instance `RLock` because registry mutation, replacement, and
+          cleanup are grouped state transitions in a nogil runtime.
+
+    Threading:
+        Registry reads and writes are serialized under the builder-owned lock.
+
+    Lifecycle:
+        After `cleanup()`, all registries and family builders are gone and the
+        builder must be treated as unusable.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -63,11 +94,13 @@ class FrameACLProfileBuilder(Cleanable):
         "_codegen_precision_profiles_by_name",
     ]
 
-    _ProfileT = TypeVar("_ProfileT")
-
     def __init__(self) -> None:
         """
         Initialize one ACL profile builder/library.
+
+        Purpose:
+            Construct the reusable ACL profile catalogs and seed them with the
+            standard family presets used throughout the Nexus ACL runtime.
 
         Returns:
             None.
@@ -232,6 +265,16 @@ class FrameACLProfileBuilder(Cleanable):
             return dict(self._codegen_precision_profiles_by_name)
 
     def register_view_profile(self, view_profile: FrameACLViewProfile) -> None:
+        """
+        Register or replace one reusable view-family profile.
+
+        Args:
+            view_profile:
+                Concrete view ACL profile to store by name.
+
+        Returns:
+            None.
+        """
         self._register_profile(
             self._view_profiles_by_name,
             view_profile,
@@ -243,6 +286,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             command_profile: FrameACLCommandProfile,
     ) -> None:
+        """
+        Register or replace one reusable command-family profile.
+
+        Args:
+            command_profile:
+                Concrete command ACL profile to store by name.
+
+        Returns:
+            None.
+        """
         self._register_profile(
             self._command_profiles_by_name,
             command_profile,
@@ -254,6 +307,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             codegen_profile: FrameACLCodegenProfile,
     ) -> None:
+        """
+        Register or replace one reusable codegen-family profile.
+
+        Args:
+            codegen_profile:
+                Concrete codegen ACL profile to store by name.
+
+        Returns:
+            None.
+        """
         self._register_profile(
             self._codegen_profiles_by_name,
             codegen_profile,
@@ -265,6 +328,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             precision_profile: FrameACLViewProfile,
     ) -> None:
+        """
+        Register or replace one reusable view precision profile.
+
+        Args:
+            precision_profile:
+                Concrete view precision profile to store by name.
+
+        Returns:
+            None.
+        """
         self._register_profile(
             self._view_precision_profiles_by_name,
             precision_profile,
@@ -276,6 +349,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             precision_profile: FrameACLCommandProfile,
     ) -> None:
+        """
+        Register or replace one reusable command precision profile.
+
+        Args:
+            precision_profile:
+                Concrete command precision profile to store by name.
+
+        Returns:
+            None.
+        """
         self._register_profile(
             self._command_precision_profiles_by_name,
             precision_profile,
@@ -287,6 +370,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             precision_profile: FrameACLCodegenProfile,
     ) -> None:
+        """
+        Register or replace one reusable codegen precision profile.
+
+        Args:
+            precision_profile:
+                Concrete codegen precision profile to store by name.
+
+        Returns:
+            None.
+        """
         self._register_profile(
             self._codegen_precision_profiles_by_name,
             precision_profile,
@@ -298,6 +391,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLViewProfile:
+        """
+        Return one registered reusable view profile by name.
+
+        Args:
+            profile_name:
+                Name of the reusable view profile.
+
+        Returns:
+            FrameACLViewProfile: Registered view profile.
+        """
         return self._get_required_profile(
             self._view_profiles_by_name,
             profile_name,
@@ -307,6 +410,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLCommandProfile:
+        """
+        Return one registered reusable command profile by name.
+
+        Args:
+            profile_name:
+                Name of the reusable command profile.
+
+        Returns:
+            FrameACLCommandProfile: Registered command profile.
+        """
         return self._get_required_profile(
             self._command_profiles_by_name,
             profile_name,
@@ -316,6 +429,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLCodegenProfile:
+        """
+        Return one registered reusable codegen profile by name.
+
+        Args:
+            profile_name:
+                Name of the reusable codegen profile.
+
+        Returns:
+            FrameACLCodegenProfile: Registered codegen profile.
+        """
         return self._get_required_profile(
             self._codegen_profiles_by_name,
             profile_name,
@@ -325,6 +448,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLViewProfile:
+        """
+        Return one registered reusable view precision profile by name.
+
+        Args:
+            profile_name:
+                Name of the reusable view precision profile.
+
+        Returns:
+            FrameACLViewProfile: Registered view precision profile.
+        """
         return self._get_required_profile(
             self._view_precision_profiles_by_name,
             profile_name,
@@ -334,6 +467,16 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLCommandProfile:
+        """
+        Return one registered reusable command precision profile by name.
+
+        Args:
+            profile_name:
+                Name of the reusable command precision profile.
+
+        Returns:
+            FrameACLCommandProfile: Registered command precision profile.
+        """
         return self._get_required_profile(
             self._command_precision_profiles_by_name,
             profile_name,
@@ -343,34 +486,51 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLCodegenProfile:
+        """
+        Return one registered reusable codegen precision profile by name.
+
+        Args:
+            profile_name:
+                Name of the reusable codegen precision profile.
+
+        Returns:
+            FrameACLCodegenProfile: Registered codegen precision profile.
+        """
         return self._get_required_profile(
             self._codegen_precision_profiles_by_name,
             profile_name,
         )
 
     def list_view_profile_names(self) -> List[str]:
+        """Return registered reusable view-profile names in insertion order."""
         return self._list_profile_names(self._view_profiles_by_name)
 
     def list_command_profile_names(self) -> List[str]:
+        """Return registered reusable command-profile names in insertion order."""
         return self._list_profile_names(self._command_profiles_by_name)
 
     def list_codegen_profile_names(self) -> List[str]:
+        """Return registered reusable codegen-profile names in insertion order."""
         return self._list_profile_names(self._codegen_profiles_by_name)
 
     def list_view_precision_profile_names(self) -> List[str]:
+        """Return registered reusable view precision-profile names in insertion order."""
         return self._list_profile_names(self._view_precision_profiles_by_name)
 
     def list_command_precision_profile_names(self) -> List[str]:
+        """Return registered reusable command precision-profile names in insertion order."""
         return self._list_profile_names(
             self._command_precision_profiles_by_name
         )
 
     def list_codegen_precision_profile_names(self) -> List[str]:
+        """Return registered reusable codegen precision-profile names in insertion order."""
         return self._list_profile_names(
             self._codegen_precision_profiles_by_name
         )
 
     def remove_view_profile(self, profile_name: str) -> bool:
+        """Remove one non-default reusable view profile by name."""
         return self._remove_profile(
             self._view_profiles_by_name,
             profile_name,
@@ -379,6 +539,7 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_command_profile(self, profile_name: str) -> bool:
+        """Remove one non-default reusable command profile by name."""
         return self._remove_profile(
             self._command_profiles_by_name,
             profile_name,
@@ -387,6 +548,7 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_codegen_profile(self, profile_name: str) -> bool:
+        """Remove one non-default reusable codegen profile by name."""
         return self._remove_profile(
             self._codegen_profiles_by_name,
             profile_name,
@@ -395,6 +557,7 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_view_precision_profile(self, profile_name: str) -> bool:
+        """Remove one non-default reusable view precision profile by name."""
         return self._remove_profile(
             self._view_precision_profiles_by_name,
             profile_name,
@@ -403,6 +566,7 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_command_precision_profile(self, profile_name: str) -> bool:
+        """Remove one non-default reusable command precision profile by name."""
         return self._remove_profile(
             self._command_precision_profiles_by_name,
             profile_name,
@@ -411,6 +575,7 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_codegen_precision_profile(self, profile_name: str) -> bool:
+        """Remove one non-default reusable codegen precision profile by name."""
         return self._remove_profile(
             self._codegen_precision_profiles_by_name,
             profile_name,
@@ -432,6 +597,22 @@ class FrameACLProfileBuilder(Cleanable):
         """
         Compose one reusable view/command/codegen trio into a frame ACL profile.
 
+        Args:
+            name:
+                Name for the composed frame ACL profile bundle.
+            view_profile_name:
+                Registered reusable view profile name to compose.
+            command_profile_name:
+                Registered reusable command profile name to compose.
+            codegen_profile_name:
+                Registered reusable codegen profile name to compose.
+            view_override_ruleset:
+                Optional detached view override ruleset for the composed bundle.
+            command_override_ruleset:
+                Optional detached command override ruleset for the composed bundle.
+            codegen_override_ruleset:
+                Optional detached codegen override ruleset for the composed bundle.
+
         Returns:
             FrameACLProfile: Newly composed frame ACL profile.
         """
@@ -451,11 +632,27 @@ class FrameACLProfileBuilder(Cleanable):
 
     def _register_profile(
             self,
-            registry: Dict[str, object],
-            profile: object,
-            expected_type: type,
+            registry: Dict[str, _ProfileT],
+            profile: _ProfileT,
+            expected_type: type[_ProfileT],
             label: str,
     ) -> None:
+        """
+        Register or replace one reusable family profile inside one registry.
+
+        Args:
+            registry:
+                Concrete reusable profile registry keyed by profile name.
+            profile:
+                Concrete family profile instance to register.
+            expected_type:
+                Concrete profile type required for this registry.
+            label:
+                User-facing label for validation errors.
+
+        Returns:
+            None.
+        """
         self.check_cleaned()
         if not isinstance(profile, expected_type):
             raise TypeError("{0} must be a {1}.".format(label, expected_type.__name__))
@@ -470,6 +667,7 @@ class FrameACLProfileBuilder(Cleanable):
             registry: Dict[str, _ProfileT],
             profile_name: str,
     ) -> _ProfileT:
+        """Return one registered concrete family profile or raise KeyError."""
         self.check_cleaned()
         with self._lock:
             try:
@@ -479,20 +677,37 @@ class FrameACLProfileBuilder(Cleanable):
 
     def _list_profile_names(
             self,
-            registry: Dict[str, object],
+            registry: Dict[str, _ProfileT],
     ) -> List[str]:
+        """Return the registered names for one concrete family registry."""
         self.check_cleaned()
         with self._lock:
             return list(registry.keys())
 
     def _remove_profile(
             self,
-            registry: Dict[str, object],
+            registry: Dict[str, _ProfileT],
             profile_name: str,
             *,
             default_name: str,
             label: str,
     ) -> bool:
+        """
+        Remove one concrete reusable family profile unless it is the default.
+
+        Args:
+            registry:
+                Concrete reusable profile registry keyed by name.
+            profile_name:
+                Name of the profile to remove.
+            default_name:
+                Registry-specific default profile that may not be removed.
+            label:
+                User-facing family label for error messages.
+
+        Returns:
+            bool: True when a profile was removed, otherwise False.
+        """
         self.check_cleaned()
         if profile_name == default_name:
             raise RuntimeError(
