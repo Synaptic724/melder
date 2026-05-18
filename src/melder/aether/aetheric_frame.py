@@ -98,7 +98,7 @@ class AethericFrame(Cleanable, IAethericFrame):
         # Optional explicit frame-owned shared rich Spellbook configuration.
         self._configuration = None
         # Narrow frame-level AR posture owned by the frame itself.
-        self._frame_configuration: Optional[AethericFrameConfiguration] = (
+        self._frame_configuration: AethericFrameConfiguration = (
             AethericFrameConfiguration(
                 origin_spellbook_id=None,
                 system_state=SystemState.automatic,
