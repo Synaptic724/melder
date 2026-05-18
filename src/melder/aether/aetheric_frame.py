@@ -92,6 +92,7 @@ class AethericFrame(Cleanable, IAethericFrame):
             conduits=self._conduits,
             conduit_ids_by_name=self._conduit_ids_by_name,
             conduit_clusters=self._conduit_clusters,
+            owner_cleanup=self.cleanup,
         )
 
         # Per-frame graph + dirtiness registry for all spell lineages.

@@ -171,6 +171,10 @@ class Nexus(Cleanable, INexus):
         if Nexus._initialized:
             return
         if aether is None:
+            with Nexus._lock:
+                if Nexus._instance is self:
+                    Nexus._instance = None
+                Nexus._initialized = False
             raise ValueError("Nexus must be initialized with an Aether instance.")
         try:
             super().__init__()
