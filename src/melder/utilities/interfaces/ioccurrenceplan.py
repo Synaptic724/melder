@@ -1,8 +1,9 @@
 from typing import Any, Dict, List, Optional, Protocol, Set, Tuple, runtime_checkable
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import InstanceKey, OccurrenceKey
 from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry
 from melder.utilities.interfaces.icleanable import ICleanable
 
+OccurrenceKey = Tuple[str, int]
+InstanceKey = Tuple[str, Optional[int]]
 
 @runtime_checkable
 class IOccurrencePlan(ICleanable, Protocol):

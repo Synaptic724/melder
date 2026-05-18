@@ -1,8 +1,9 @@
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
-from melder.spellbook.spell_crafter.blueprints.injection_plan import InjectionSpec
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import InstanceKey
+from typing import Mapping, Optional, Protocol, runtime_checkable, Tuple
+from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
 from melder.utilities.interfaces.icleanable import ICleanable
 
+OccurrenceKey = Tuple[str, int]
+InstanceKey = Tuple[str, Optional[int]]
 
 @runtime_checkable
 class IInjectionPlan(ICleanable, Protocol):
@@ -15,12 +16,12 @@ class IInjectionPlan(ICleanable, Protocol):
         ...
 
     @property
-    def instance_injections(self) -> Dict[InstanceKey, InjectionSpec]:
+    def instance_injections(self) -> Mapping[InstanceKey, IInjectionSpec]:
         ...
 
     def select_for_runtime(
             self,
             *,
             root_spell_id: str,
-    ) -> Optional[Dict[InstanceKey, InjectionSpec]]:
+    ) -> Optional[Mapping[InstanceKey, IInjectionSpec]]:
         ...

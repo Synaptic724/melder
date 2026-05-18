@@ -1,18 +1,17 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
-    InstanceKey,
-    OccurrencePlan,
-    OccurrenceKey,
-)
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
+from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
+from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+from melder.utilities.interfaces.iparamsource import IParamSource
 
+OccurrenceKey = Tuple[str, int]
+InstanceKey = Tuple[str, Optional[int]]
 
-class ParamSource:
+class ParamSource(IParamSource):
     """
     Internal
 
@@ -129,7 +128,7 @@ class ParamSource:
         return self._contract_key
 
 
-class InjectionSpec:
+class InjectionSpec(IInjectionSpec):
     """
     Internal
 
@@ -199,7 +198,7 @@ class InjectionSpec:
         self._contract_payload: Optional[Dict[str, Any]] = contract_payload
 
     @property
-    def param_sources(self) -> Dict[str, ParamSource]:
+    def param_sources(self) -> Mapping[str, IParamSource]:
         """
         Return the parameter source mapping.
 
@@ -249,7 +248,7 @@ def build_kwargs_from_injection_spec(
         *,
         instance_key: InstanceKey,
         occurrence: OccurrenceKey,
-        injection_spec: "InjectionSpec",
+        injection_spec: IInjectionSpec,
         instance_results: Dict[InstanceKey, Any],
         override_values: Dict[str, Any],
 ) -> Dict[str, Any]:
@@ -429,7 +428,7 @@ class InjectionPlan(IInjectionPlan, Cleanable):
         return self._root_spell_id
 
     @property
-    def instance_injections(self) -> Dict[InstanceKey, InjectionSpec]:
+    def instance_injections(self) -> Mapping[InstanceKey, IInjectionSpec]:
         """
         Return the injection spec mapping by instance key.
 
@@ -451,7 +450,7 @@ class InjectionPlan(IInjectionPlan, Cleanable):
             self,
             *,
             root_spell_id: str,
-    ) -> Optional[Dict[InstanceKey, InjectionSpec]]:
+    ) -> Optional[Mapping[InstanceKey, IInjectionSpec]]:
         """
         Determine whether this Phase 9 plan can drive a meld execution.
 

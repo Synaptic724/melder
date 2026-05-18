@@ -3,19 +3,15 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.injection_plan import (
-    InjectionPlan,
     InjectionSpec,
-)
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
-    InstanceKey,
-    OccurrenceKey,
-    OccurrencePlan,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
 
+OccurrenceKey = Tuple[str, int]
+InstanceKey = Tuple[str, Optional[int]]
 FastPlanData = Tuple[Any, ...]
 FastTransientPlan = Tuple[Any, ...]
 
