@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -37,7 +37,6 @@ from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
-from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -133,7 +132,7 @@ class Nexus(Cleanable, INexus):
     def __init__(
             self,
             *,
-            aether: IAether,
+            aether: Optional[IAether] = None,
             configuration: Optional[INexusConfiguration] = None,
             logger: Optional[Any] = None,
     ) -> None:
@@ -174,6 +173,8 @@ class Nexus(Cleanable, INexus):
         """
         if Nexus._initialized:
             return
+        if aether is None:
+            raise ValueError("Nexus must be initialized with an Aether instance.")
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
@@ -188,7 +189,7 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number: int = 1
             self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
             self._rift_gate_controller: RiftGateController = RiftGateController()
-            self._frame_acl_manager: Optional[FrameACLManager] = FrameACLManager(
+            self._frame_acl_manager: FrameACLManager = FrameACLManager(
                 change_callback=self._on_frame_acl_changed,
             )
             self._target_frame_ref_counts: Dict[str, int] = {}
@@ -475,7 +476,7 @@ class Nexus(Cleanable, INexus):
             IRiftGateController: Controller for registered Rift gates.
         """
         self.check_cleaned()
-        return cast(IRiftGateController, self._rift_gate_controller)
+        return self._rift_gate_controller
 
     def create_system_configuration(self) -> INexusConfiguration:
         """
@@ -785,7 +786,7 @@ class Nexus(Cleanable, INexus):
             if existing_gate is None:
                 self._rift_gate_controller.register_rift_gate(
                     rift.id,
-                    cast(RiftGate, rift.rift_gate),
+                    rift.rift_gate,
                 )
             elif existing_gate is not rift.rift_gate:
                 raise ValueError(
@@ -1372,14 +1373,11 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return cast(
-            IFrameACLConfiguration,
-            self._frame_acl_manager._get_current_frame_acl_configuration(
-                frame_name,
-                view_contract_name=view_contract_name,
-                command_contract_name=command_contract_name,
-                codegen_contract_name=codegen_contract_name,
-            ),
+        return self._frame_acl_manager._get_current_frame_acl_configuration(
+            frame_name,
+            view_contract_name=view_contract_name,
+            command_contract_name=command_contract_name,
+            codegen_contract_name=codegen_contract_name,
         )
 
     def get_current_view_frame_acl_configuration(
@@ -1463,12 +1461,9 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return cast(
-            IFrameACLConfiguration,
-            self._frame_acl_manager._get_named_frame_acl_configuration(
-                frame_name,
-                contract_name=contract_name,
-            ),
+        return self._frame_acl_manager._get_named_frame_acl_configuration(
+            frame_name,
+            contract_name=contract_name,
         )
 
     def list_named_frame_acl_configuration_names(
@@ -1532,7 +1527,7 @@ class Nexus(Cleanable, INexus):
             configuration,
             contract_name=contract_name,
         )
-        return cast(IFrameACLConfiguration, registered_configuration)
+        return registered_configuration
 
     @staticmethod
     def _clone_frame_acl_configuration(
@@ -1802,13 +1797,10 @@ class Nexus(Cleanable, INexus):
                 "configuration must be a FrameACLConfiguration instance."
             )
         self._ensure_frame_acl_container(frame_name)
-        return cast(
-            IFrameACLConfiguration,
-            self._frame_acl_manager._install_named_frame_acl_configuration(
-                frame_name,
-                configuration,
-                contract_name="default",
-            ),
+        return self._frame_acl_manager._install_named_frame_acl_configuration(
+            frame_name,
+            configuration,
+            contract_name="default",
         )
 
     def create_frame_projection_sets_for_rift(

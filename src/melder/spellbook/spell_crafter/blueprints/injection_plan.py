@@ -8,6 +8,7 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces import IInjectionPlan, IOccurrencePlan
 
 
 class ParamSource:
@@ -332,7 +333,7 @@ def build_kwargs_from_injection_spec(
     return kwargs
 
 
-class InjectionPlan(Cleanable):
+class InjectionPlan(IInjectionPlan, Cleanable):
     """
     Internal
 
@@ -517,7 +518,7 @@ class InjectionPlanBuilder(object):
     def __init__(
             self,
             *,
-            occurrence_plan: OccurrencePlan,
+            occurrence_plan: IOccurrencePlan,
     ) -> None:
         """
         Initialize the injection plan builder.

@@ -1,7 +1,9 @@
 import logging
 from typing import Any, List, Optional, Protocol, Set, Tuple, Union, runtime_checkable
+from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
@@ -145,6 +147,15 @@ class IAether(ICleanable, Protocol):
 
         Returns:
             IChangeControlManager: Frame-owned change-control manager.
+        """
+        ...
+
+    def _get_incident_manager(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> IIncidentManager:
+        """
+        Return the frame-owned incident manager for one frame.
         """
         ...
 
@@ -298,6 +309,57 @@ class IAether(ICleanable, Protocol):
     ) -> IConduit:
         """
         Return one registered root conduit by id.
+        """
+        ...
+
+    def _get_conduit_by_spell_id(
+            self,
+            spell_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> IConduit:
+        """
+        Return the root conduit that currently owns the supplied spell id.
+        """
+        ...
+
+    def _get_cluster(
+            self,
+            cluster_name: str,
+            aetheric_frame_name: str = "default",
+    ) -> IConduitCluster:
+        """
+        Return the named conduit cluster for one frame.
+        """
+        ...
+
+    def _get_conduits_in_cluster(
+            self,
+            cluster_name: str,
+            aetheric_frame_name: str = "default",
+    ) -> List[str]:
+        """
+        Return the conduit ids currently present in one named cluster.
+        """
+        ...
+
+    def _get_clusters_for_conduit(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> List[str]:
+        """
+        Return cluster names that currently contain the supplied conduit id.
+        """
+        ...
+
+    def _remove_single_spell_index(
+            self,
+            conduit_id: str,
+            spell_index: ISpellIndex,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Remove one SpellIndex lineage from one conduit in the frame registry.
         """
         ...
 

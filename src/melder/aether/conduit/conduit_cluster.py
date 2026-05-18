@@ -1,15 +1,16 @@
 import threading
 from typing import Dict, Set
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.iconduitcluster import IConduitCluster
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-class ConduitCluster(Cleanable):
+class ConduitCluster(Cleanable, IConduitCluster):
     """
     Cluster-local registry for conduit membership and shared-root policy.
 
@@ -54,7 +55,7 @@ class ConduitCluster(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
         self.members: Set[str] = set()
-        self.shared_spells: Dict[str, Set[SpellIndex]] = {}
+        self.shared_spells: Dict[str, Set[ISpellIndex]] = {}
         self.auto_link_dependencies: bool = auto_link_dependencies
 
     def cleanup(self):
@@ -109,7 +110,7 @@ class ConduitCluster(Cleanable):
             self.members.discard(conduit_id)
             self.shared_spells.pop(conduit_id, None)
 
-    def add_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
+    def add_shared_spell(self, owner_id: str, spell_index: ISpellIndex) -> None:
         """
         Record a shareable root SpellIndex for an owner.
 
@@ -122,7 +123,7 @@ class ConduitCluster(Cleanable):
             bucket = self.shared_spells.setdefault(owner_id, set())
             bucket.add(spell_index)
 
-    def remove_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
+    def remove_shared_spell(self, owner_id: str, spell_index: ISpellIndex) -> None:
         """
         Remove a recorded shareable root for an owner.
 
@@ -139,7 +140,7 @@ class ConduitCluster(Cleanable):
             if not bucket:
                 self.shared_spells.pop(owner_id, None)
 
-    def get_shared_spells(self) -> Dict[str, Set[SpellIndex]]:
+    def get_shared_spells(self) -> Dict[str, Set[ISpellIndex]]:
         """
         Snapshot of shared roots.
 
@@ -501,7 +502,7 @@ class ConduitCluster(Cleanable):
                 if hasattr(spell, "existence") and spell.existence == Existence.unique_per_conduit_cluster
             ]
 
-    def _resolve_spell_from_index(self, conduit, spell_index: SpellIndex):
+    def _resolve_spell_from_index(self, conduit, spell_index: ISpellIndex):
         """
         Resolve a Spell object from a conduit given its SpellIndex.
 

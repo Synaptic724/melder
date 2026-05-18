@@ -2,7 +2,6 @@ from typing import Protocol, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 
@@ -20,13 +19,6 @@ class IMutationFrame(ICleanable, Protocol):
     def aetheric_frame_name(self) -> str:
         """
         Return the owning Aetheric frame name for this mutation facade.
-        """
-        ...
-
-    @property
-    def mutation_research(self) -> "IMutationResearch":
-        """
-        Return the owning mutation-research root used by this frame facade.
         """
         ...
 
