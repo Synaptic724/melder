@@ -18,7 +18,8 @@ from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ICreations, ISpell
+from melder.utilities.interfaces.icreations import ICreations
+from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 
 

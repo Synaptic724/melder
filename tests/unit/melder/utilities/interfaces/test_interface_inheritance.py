@@ -1,4 +1,3 @@
-import importlib
 from typing import Dict
 
 import pytest
@@ -26,32 +25,30 @@ from melder.spellbook.configuration.spellbook_configuration import SpellbookConf
 from melder.spellbook.spell import Spell
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
-from melder.utilities.interfaces import (
-    IAether,
-    IAetherConfiguration,
-    IAetherConfigurationBuilder,
-    IAethericFrame,
-    IBind,
-    IChangeControlManager,
-    ICleanable,
-    IConduit,
-    IConduitCloud,
-    IConduitResolutionState,
-    IConduitWard,
-    IContract,
-    ICreations,
-    IDetail,
-    IDevOpsManager,
-    IIncidentManager,
-    IConfiguration,
-    IMeld,
-    ISafeLogger,
-    ISpell,
-    ISpellbook,
-    ISpellIndex,
-    ISpellSpace,
-    ISpellSystemStates,
-)
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
+from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.ibind import IBind
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
+from melder.utilities.interfaces.iconduitward import IConduitWard
+from melder.utilities.interfaces.icontract import IContract
+from melder.utilities.interfaces.icreations import ICreations
+from melder.utilities.interfaces.idetail import IDetail
+from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
+from melder.utilities.interfaces.iincidentmanager import IIncidentManager
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.imeld import IMeld
+from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellspace import ISpellSpace
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
@@ -90,29 +87,6 @@ def test_interfaces_aggregator_exports_asset_icleanable() -> None:
         None.
     """
     assert ICleanable is AssetICleanable
-
-
-def test_interfaces_star_import_surface_matches___all__() -> None:
-    """
-    Verify the interfaces aggregator can populate a namespace from `__all__`.
-
-    Returns:
-        None.
-    """
-    interfaces_module = importlib.import_module(
-        "melder.utilities.interfaces"
-    )
-    namespace = {}
-    exec(
-        "from melder.utilities.interfaces import *",
-        {},
-        namespace,
-    )
-
-    for exported_name in interfaces_module.__all__:
-        assert exported_name in namespace
-
-
 @pytest.mark.parametrize(("interface_type", "implementation_type"), list(_INTERFACE_MAP.items()))
 def test_concrete_types_explicitly_inherit_interfaces(
         interface_type: type,

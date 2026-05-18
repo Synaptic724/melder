@@ -19,11 +19,9 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import (
-    ISpell,
-    ISpellSystemStates,
-    IRootResolutionBlueprint,
-)
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 

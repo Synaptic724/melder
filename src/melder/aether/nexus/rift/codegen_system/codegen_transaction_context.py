@@ -6,11 +6,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    ICodegenNamespace,
-    ICodegenNamespaceConfiguration,
-    ICodegenTransactionContext,
-)
+from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
+from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
 
 
 class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):

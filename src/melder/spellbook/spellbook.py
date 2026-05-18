@@ -18,20 +18,18 @@ from melder.spellbook.spell_crafter.validation.validation_system import SpellVal
 from melder.spellbook.spellbinder import SpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IConduit,
-    ISpell,
-    IConfiguration,
-    ISpellIndex,
-    ISpellBinder,
-    ISpellSystemStates,
-    ISpellValidationSystem,
-    ISpellbook,
-    IUnitOfWork,
-    ISafeLogger,
-    IChangeControlManager,
-    IAether,
-)
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellbinder import ISpellBinder
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.iunitofwork import IUnitOfWork
+from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.iaether import IAether
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.existence.existence import Existence

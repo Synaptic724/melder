@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Iterable, Optional, Union
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces import IChannelLogger
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.aether.aether_utility_system import AetherUtilitySystem
 
 

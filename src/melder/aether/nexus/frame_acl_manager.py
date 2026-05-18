@@ -30,10 +30,8 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.utilities.interfaces import (
-    IFrameACLConfiguration,
-    IFrameDescriptor,
-)
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
 
 
 class FrameACLManager(Cleanable):

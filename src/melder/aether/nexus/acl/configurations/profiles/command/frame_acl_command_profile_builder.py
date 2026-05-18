@@ -19,7 +19,7 @@ from melder.aether.nexus.acl.configurations.profiles.command.safe_profile import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameACLCommandProfileStrategy
+from melder.utilities.interfaces.iframeaclcommandprofilestrategy import IFrameACLCommandProfileStrategy
 
 
 class FrameACLCommandProfileBuilder(Cleanable):

@@ -2,7 +2,8 @@ import threading
 from typing import Dict, Optional, Tuple
 import ulid
 # Melder imports
-from melder.utilities.interfaces import IConduit, IConduitCloud
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -62,9 +63,10 @@ class ConduitCloud(Cleanable, IConduitCloud):
             if self._cleaned:
                 return
             self._registry.clear()
-            self._registry = None
             self._cleaned = True
-        self._lock = None
+
+            del self._registry
+        del self._lock
 
 
     #region Context Manager

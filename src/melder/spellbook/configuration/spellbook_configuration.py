@@ -3,7 +3,7 @@ from typing import Any, Dict, Type, Callable
 import ulid
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IConfiguration
+from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellbookConfiguration(Cleanable, IConfiguration):

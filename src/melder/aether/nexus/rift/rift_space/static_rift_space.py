@@ -8,7 +8,8 @@ from melder.aether.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces import IStaticRiftSpace, IRiftGate
+from melder.utilities.interfaces.istaticriftspace import IStaticRiftSpace
+from melder.utilities.interfaces.iriftgate import IRiftGate
 
 
 class StaticRiftSpace(RiftSpace, IStaticRiftSpace):

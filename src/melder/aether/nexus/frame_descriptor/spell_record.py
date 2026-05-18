@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.utilities.interfaces import ISpellDescriptorPayload
+from melder.utilities.interfaces.ispelldescriptorpayload import ISpellDescriptorPayload
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 

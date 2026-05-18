@@ -5,6 +5,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
+from melder.utilities.interfaces.iaether import IAether
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
@@ -13,13 +14,12 @@ from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
-from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.ispellbook import ISpellbook
 
 @runtime_checkable
 class IConduit(ICleanable, Protocol):
@@ -29,7 +29,6 @@ class IConduit(ICleanable, Protocol):
     It can spawn lesser Conduits, link to other Conduits if dynamic mode is enabled,
     and manage the lifecycle of services registered inside itself.
     """
-
     # Instance-level core attributes (1:1 with Conduit)
     _lock: threading.RLock
     _id: str

@@ -23,21 +23,19 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IFrameACLBuilder,
-    IFrameACLCommandBuilder,
-    IFrameACLCommandConfiguration,
-    IFrameACLCommandProfile,
-    IFrameACLCodegenBuilder,
-    IFrameACLCodegenConfiguration,
-    IFrameACLCodegenProfile,
-    IFrameACLConfiguration,
-    IFrameACLContainer,
-    IFrameACLProfile,
-    IFrameACLViewBuilder,
-    IFrameACLViewConfiguration,
-    IFrameACLViewProfile,
-)
+from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
+from melder.utilities.interfaces.iframeaclcommandbuilder import IFrameACLCommandBuilder
+from melder.utilities.interfaces.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
+from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
+from melder.utilities.interfaces.iframeaclcodegenbuilder import IFrameACLCodegenBuilder
+from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
+from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframeaclcontainer import IFrameACLContainer
+from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
+from melder.utilities.interfaces.iframeaclviewbuilder import IFrameACLViewBuilder
+from melder.utilities.interfaces.iframeaclviewconfiguration import IFrameACLViewConfiguration
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 FrameACLDraftConfiguration = Optional[
     Union[

@@ -19,7 +19,8 @@ from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
 )
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IConduitRecord, IFrameLink
+from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.utilities.interfaces.iframelink import IFrameLink
 
 
 @decorate_public_view_actions

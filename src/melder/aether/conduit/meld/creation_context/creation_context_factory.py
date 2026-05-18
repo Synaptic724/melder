@@ -5,7 +5,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_builder import
     CreationContextBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell
+from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,

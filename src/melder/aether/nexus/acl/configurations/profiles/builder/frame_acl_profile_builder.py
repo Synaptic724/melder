@@ -28,20 +28,18 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IFrameACLCodegenProfile,
-    IFrameACLCommandProfile,
-    IFrameACLProfile,
-    IFrameACLProfileBuilder,
-    IFrameACLRuleSet,
-    IFrameACLViewProfile,
-)
+from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
+from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
+from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
 from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
-from melder.utilities.interfaces import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 
 
 class _NamedCleanableProfile(Protocol):

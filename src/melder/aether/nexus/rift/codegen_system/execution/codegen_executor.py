@@ -9,10 +9,8 @@ from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result 
     CodegenExecutionResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import (
-    ICodegenExecutionResult,
-    ICodegenTransactionContext,
-)
+from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
 
 
 class CodegenExecutor(Cleanable):

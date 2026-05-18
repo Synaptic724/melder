@@ -5,11 +5,9 @@ from melder.aether.nexus.rift.codegen_system.observability.codegen_event_publish
     CodegenEventPublisher,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import (
-    ICodegenExecutionResult,
-    ICodegenTransactionContext,
-    ICodegenValidationResult,
-)
+from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
+from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
 
 
 class CodegenMonitor(Cleanable):

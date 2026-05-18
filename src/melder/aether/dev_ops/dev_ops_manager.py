@@ -5,7 +5,8 @@ from melder.aether.dev_ops.change_control_manager.change_control_manager import 
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.aether.dev_ops.risk_manager.risk_manager import RiskManager
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IDevOpsManager, ISpellSystemStates
+from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

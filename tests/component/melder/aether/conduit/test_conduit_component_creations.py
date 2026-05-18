@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import pytest
-
-from melder.aether.aether import Aether
-from melder.aether.conduit.conduit import Conduit
+from melder import Aether, Conduit
 from melder.aether.conduit.creations.creations import Creations
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence

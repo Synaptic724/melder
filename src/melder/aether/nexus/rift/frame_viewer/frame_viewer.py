@@ -38,12 +38,10 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IConduitRecord,
-    IFrameLink,
-    IFrameViewer,
-    ISpellRecord,
-)
+from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.utilities.interfaces.iframelink import IFrameLink
+from melder.utilities.interfaces.iframeviewer import IFrameViewer
+from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
 @decorate_public_view_actions

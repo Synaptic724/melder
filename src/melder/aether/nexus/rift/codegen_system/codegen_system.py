@@ -38,16 +38,14 @@ from melder.aether.nexus.rift.codegen_system.validation.codegen_validator import
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    ICodegenExecutionResult,
-    ICodegenNamespace,
-    ICodegenNamespaceConfiguration,
-    ICodegenRiftSpace,
-    ICodegenSystem,
-    ICodegenTransactionContext,
-    ICodegenValidationResult,
-    IRift,
-)
+from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
+from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
+from melder.utilities.interfaces.icodegensystem import ICodegenSystem
+from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
+from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.utilities.interfaces.irift import IRift
 
 
 class CodegenSystem(Cleanable, ICodegenSystem):

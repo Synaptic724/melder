@@ -8,7 +8,8 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IInjectionPlan, IOccurrencePlan
+from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 
 
 class ParamSource:

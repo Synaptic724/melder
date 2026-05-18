@@ -4,7 +4,9 @@ from typing import Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IChangeControlManager, IConduit, ISpellSystemStates
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.imutationconduit import IMutationConduit
 from melder.utilities.interfaces.imutationresearch import IMutationResearch
 

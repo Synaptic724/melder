@@ -5,7 +5,9 @@ from typing import Any, Optional, Union, Protocol
 # Melder Imports
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces import IBind, ISpell, ISpellbook
+from melder.utilities.interfaces.ibind import IBind
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.spell import Spell

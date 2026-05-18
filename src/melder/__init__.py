@@ -17,7 +17,6 @@ from melder.__graph_network__ import __graph_network__
 from melder.__license__ import __license__
 from melder.__melder_registration_guard__ import MelderRegistrationGuard
 from melder.__version__ import __version__ as base_version
-from melder.aether.aether import Aether
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -33,6 +32,7 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbinder import SpellBinder
 from melder.spellbook.spellbook import Spellbook
 from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
+from melder.aether.aether import Aether
 
 # Eagerly instantiate the registration guard at package import time (internal use).
 __melder_registration_guard__ = MelderRegistrationGuard()

@@ -6,7 +6,8 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.utilities.interfaces import IConduit, ISpell
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract

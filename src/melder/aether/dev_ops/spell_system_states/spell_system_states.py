@@ -16,12 +16,10 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces import (
-    IConduitResolutionState,
-    ISpell,
-    ISpellIndex,
-    ISpellSystemStates,
-)
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 

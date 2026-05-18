@@ -19,7 +19,9 @@ from melder.mutation_research.research.spell.node.spell_mutation_node import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IAether, IConduit, ISpellIndex
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.imutationconduit import IMutationConduit
 from melder.utilities.interfaces.imutationframe import IMutationFrame
 from melder.utilities.interfaces.imutationresearch import IMutationResearch

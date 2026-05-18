@@ -5,7 +5,8 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameACLRule, IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 
 class FrameACLRuleSet(Cleanable, IFrameACLRuleSet):

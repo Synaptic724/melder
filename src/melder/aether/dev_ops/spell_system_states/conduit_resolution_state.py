@@ -11,7 +11,7 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IConduitResolutionState
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 
 
 def _get_resolution_risk_manager_callback(

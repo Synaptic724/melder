@@ -2,6 +2,7 @@ from typing import runtime_checkable, Optional, Protocol, Tuple
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 
+@runtime_checkable
 class IConduitCloud(ICleanable, Protocol):
     """
     An Interface for an abstract factory for named conduits.

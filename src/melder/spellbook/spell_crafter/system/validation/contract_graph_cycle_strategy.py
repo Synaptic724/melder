@@ -1,4 +1,4 @@
-﻿from typing import Dict, List, Mapping, Optional, Set, Tuple
+from typing import Dict, List, Mapping, Optional, Set, Tuple
 
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -13,7 +13,8 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces import ISpell, ISpellSystemStates
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 

@@ -10,16 +10,14 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IFrameACLCodegenProfile,
-    IFrameACLConfiguration,
-    IFrameACLCommandProfile,
-    IFrameACLProfileBuilder,
-    IFrameACLRuleSet,
-    IFrameDescriptor,
-    ISpellRecord,
-    IFrameACLViewProfile,
-)
+from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
+from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
 class FrameACLCompiler(Cleanable):

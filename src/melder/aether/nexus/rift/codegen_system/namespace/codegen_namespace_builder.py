@@ -27,12 +27,10 @@ from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_workst
     CodegenWorkstationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import (
-    ICodegenNamespace,
-    ICodegenNamespaceConfiguration,
-    ICodegenRiftSpace,
-    IRift,
-)
+from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
+from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
+from melder.utilities.interfaces.irift import IRift
 
 
 class CodegenNamespaceBuilder(Cleanable):

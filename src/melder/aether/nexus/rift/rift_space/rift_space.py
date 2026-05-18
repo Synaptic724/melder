@@ -17,13 +17,11 @@ from melder.aether.nexus.rift.command_system.command_system import (
 from melder.aether.nexus.rift.rift_space.workstation import Workstation
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    ICommandSystem,
-    IRiftEventSystem,
-    IRiftGate,
-    IRiftMemorySystem,
-    IRiftSpace,
-)
+from melder.utilities.interfaces.icommandsystem import ICommandSystem
+from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
+from melder.utilities.interfaces.iriftgate import IRiftGate
+from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
+from melder.utilities.interfaces.iriftspace import IRiftSpace
 
 
 class RiftSpace(Cleanable, IRiftSpace):

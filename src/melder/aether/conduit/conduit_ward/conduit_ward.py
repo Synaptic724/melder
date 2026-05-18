@@ -9,8 +9,12 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces import IConduit, IConduitWard, ISpell, ISafeLogger, IConfiguration, \
-    ISpellIndex
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitward import IConduitWard
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason

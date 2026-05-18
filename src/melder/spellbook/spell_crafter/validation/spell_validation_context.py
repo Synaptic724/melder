@@ -13,7 +13,8 @@ from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell, ISpellbook
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )

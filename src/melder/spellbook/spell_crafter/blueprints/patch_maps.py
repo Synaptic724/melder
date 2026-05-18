@@ -13,7 +13,7 @@ from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IRootResolutionBlueprint
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 
 
 class _Specificity(IntEnum):

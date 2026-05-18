@@ -7,11 +7,9 @@ from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result 
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
-from melder.utilities.interfaces import (
-    ICodegenExecutionResult,
-    ICodegenSystem,
-    ICodegenValidationResult,
-)
+from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.utilities.interfaces.icodegensystem import ICodegenSystem
+from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
 
 
 class CodegenControlSurface:

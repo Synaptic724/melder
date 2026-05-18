@@ -9,13 +9,11 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces import (
-    ISpell,
-    ISpellDetailedProfile,
-    ISpellGeneralProfile,
-    ISpellbook,
-    ISpellSystemStates,
-)
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
+from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,

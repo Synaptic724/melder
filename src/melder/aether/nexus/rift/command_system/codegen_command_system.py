@@ -14,15 +14,13 @@ from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result 
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
-from melder.utilities.interfaces import (
-    ICodegenExecutionResult,
-    ICodegenRiftSpace,
-    ICodegenSystem,
-    ICodegenTransactionContext,
-    ICodegenValidationResult,
-    IRift,
-    IWorkstation,
-)
+from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
+from melder.utilities.interfaces.icodegensystem import ICodegenSystem
+from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
+from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.utilities.interfaces.irift import IRift
+from melder.utilities.interfaces.iworkstation import IWorkstation
 
 
 class CodegenCommandSystem(CommandSystem):

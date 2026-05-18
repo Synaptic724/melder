@@ -3,7 +3,7 @@ from melder.spellbook.spell_crafter.profiles.resolution_profile import SpellReso
 from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
-from melder.utilities.interfaces import ISpell
+from melder.utilities.interfaces.ispell import ISpell
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResolutionProfileStrategy:

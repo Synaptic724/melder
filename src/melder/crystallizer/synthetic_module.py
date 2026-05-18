@@ -9,7 +9,7 @@ from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.utilities.interfaces import ISyntheticModule
+from melder.utilities.interfaces.isyntheticmodule import ISyntheticModule
 
 
 class _SyntheticModuleImportLoader(importlib.abc.Loader):

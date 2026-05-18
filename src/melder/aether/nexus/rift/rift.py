@@ -10,20 +10,18 @@ from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpac
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces import (
-    IConduit,
-    IAethericFrame,
-    IFrameACLConfiguration,
-    IFrameLinkContract,
-    IFrameProjectionSet,
-    IFrameViewer,
-    INexus,
-    IRiftGate,
-    IRift,
-    IRiftConfiguration,
-    IRiftSpace,
-    ISafeLogger,
-)
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
+from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+from melder.utilities.interfaces.iframeviewer import IFrameViewer
+from melder.utilities.interfaces.inexus import INexus
+from melder.utilities.interfaces.iriftgate import IRiftGate
+from melder.utilities.interfaces.irift import IRift
+from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
+from melder.utilities.interfaces.iriftspace import IRiftSpace
+from melder.utilities.interfaces.isafelogger import ISafeLogger
 
 class Rift(Cleanable, IRift):
     """

@@ -22,7 +22,7 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameACLCodegenProfileStrategy
+from melder.utilities.interfaces.iframeaclcodegenprofilestrategy import IFrameACLCodegenProfileStrategy
 
 
 class FrameACLCodegenProfileBuilder(Cleanable):

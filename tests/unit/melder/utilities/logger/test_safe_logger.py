@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces import IChannelLogger
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
 
 
 class _ChannelMock:

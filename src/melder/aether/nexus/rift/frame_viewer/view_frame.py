@@ -21,7 +21,8 @@ from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IFrameLink, ISpellRecord
+from melder.utilities.interfaces.iframelink import IFrameLink
+from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
 @decorate_public_view_actions

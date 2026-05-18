@@ -33,19 +33,17 @@ from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces import (
-    IInjectionPlan,
-    IMutationPatchMap,
-    IOccurrencePlan,
-    IOverridePatchMap,
-    IRootResolutionBlueprint,
-    ISpell,
-    ISpellbook,
-    ISpellRequirements,
-    ISpellSystemState,
-    ISpellSystemStates,
-    ISpellValidationSystem,
-)
+from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+from melder.utilities.interfaces.imutationpatchmap import IMutationPatchMap
+from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
+from melder.utilities.interfaces.ioverridepatchmap import IOverridePatchMap
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
+from melder.utilities.interfaces.ispellsystemstate import ISpellSystemState
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason

@@ -7,12 +7,10 @@ from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IFrameACLBuilder,
-    IFrameACLRuleSet,
-    IFrameACLViewBuilder,
-    IFrameACLViewConfiguration,
-)
+from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclviewbuilder import IFrameACLViewBuilder
+from melder.utilities.interfaces.iframeaclviewconfiguration import IFrameACLViewConfiguration
 
 
 class FrameACLViewBuilder(Cleanable, IFrameACLViewBuilder):

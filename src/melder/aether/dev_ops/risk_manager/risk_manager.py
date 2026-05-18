@@ -4,7 +4,9 @@ from typing import Dict, Optional, Set, List
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell, ISpellbook, ISpellSystemStates
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 
 class _ConduitRiskState:

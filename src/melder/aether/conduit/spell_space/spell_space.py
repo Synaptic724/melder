@@ -4,7 +4,8 @@ from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpellSpace, IConduit
+from melder.utilities.interfaces.ispellspace import ISpellSpace
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )

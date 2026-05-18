@@ -21,7 +21,7 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameACLConfiguration
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
     IFrameACLCodegenConfiguration,
 )

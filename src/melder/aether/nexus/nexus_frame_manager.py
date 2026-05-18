@@ -13,15 +13,13 @@ from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguratio
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IAethericFrame,
-    IAethericFrameConfiguration,
-    IConduit,
-    IFrameDescriptor,
-    INexus,
-    INexusFrameManager,
-    INexusFrameConfiguration,
-)
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+from melder.utilities.interfaces.inexus import INexus
+from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
+from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
 
 class NexusFrameManager(Cleanable, INexusFrameManager):
     """

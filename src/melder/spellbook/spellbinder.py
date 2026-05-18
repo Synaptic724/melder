@@ -2,7 +2,8 @@ import threading
 from typing import Any, Optional, Callable
 # Melder Imports
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces import ISpellbook, ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef

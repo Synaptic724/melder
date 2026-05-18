@@ -8,10 +8,8 @@ from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces import (
-    ICapabilityRiftSpace,
-    IRiftGate,
-)
+from melder.utilities.interfaces.icapabilityriftspace import ICapabilityRiftSpace
+from melder.utilities.interfaces.iriftgate import IRiftGate
 
 
 class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):

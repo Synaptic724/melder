@@ -20,7 +20,6 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
     FrameACLViewConfiguration,
 )
 from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import FrameACLProfile
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.aether.nexus.nexus_frame_manager import NexusFrameManager
@@ -41,22 +40,18 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces import (
-    IAether,
-    IAethericFrame,
-    IConduit,
-    IConfiguration,
-    IFrameACLConfiguration,
-    IFrameDescriptor,
-    IFrameProjectionSet,
-    INexus,
-    INexusConfiguration,
-    IRiftGate,
-    IRiftGateController,
-    IRift,
-    IRiftConfiguration,
-    ISafeLogger,
-)
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+from melder.utilities.interfaces.inexus import INexus
+from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
+from melder.utilities.interfaces.iriftgate import IRiftGate
+from melder.utilities.interfaces.iriftgatecontroller import IRiftGateController
+from melder.utilities.interfaces.irift import IRift
+from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 
 
 class Nexus(Cleanable, INexus):

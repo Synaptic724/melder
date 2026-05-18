@@ -4,14 +4,12 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    IAethericFrame,
-    IAethericFrameConfiguration,
-    IConduitRecord,
-    IFrameDescriptor,
-    IFrameRecord,
-    ISpellRecord,
-)
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
+from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+from melder.utilities.interfaces.iframerecord import IFrameRecord
+from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
 class FrameDescriptor(Cleanable, IFrameDescriptor):

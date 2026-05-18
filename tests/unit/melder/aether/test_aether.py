@@ -11,7 +11,8 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.utilities.interfaces import IConduit, IConduitCloud
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.configuration.system_state import SystemState

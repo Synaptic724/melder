@@ -3,10 +3,8 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import (
-    IConduit,
-    INexusFrameManager,
-)
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
 

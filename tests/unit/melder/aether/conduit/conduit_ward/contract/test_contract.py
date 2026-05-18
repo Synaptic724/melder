@@ -8,7 +8,9 @@ from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.utilities.interfaces import IConduitWard, IConduit, IContract
+from melder.utilities.interfaces.iconduitward import IConduitWard
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.icontract import IContract
 from melder.spellbook.bind.spell_index import SpellIndex
 
 # Fixtures

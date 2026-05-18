@@ -17,13 +17,11 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import (
-    ISpell,
-    ISpellDetailedProfile,
-    ISpellGeneralProfile,
-    IUnitOfWork,
-    ISpellbook,
-)
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
+from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
+from melder.utilities.interfaces.iunitofwork import IUnitOfWork
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent, CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason

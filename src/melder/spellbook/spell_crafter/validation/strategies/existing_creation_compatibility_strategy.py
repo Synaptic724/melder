@@ -14,10 +14,8 @@ from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
-from melder.utilities.interfaces import (
-    ISpellDetailedProfile,
-    ISpellGeneralProfile,
-)
+from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
+from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 
 
 class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):

@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IRiftGate
+from melder.utilities.interfaces.iriftgate import IRiftGate
 
 
 class RiftGateController(Cleanable):

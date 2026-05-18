@@ -4,7 +4,9 @@ from concurrent.futures import FIRST_EXCEPTION, Future, wait
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from queue import SimpleQueue, Empty as QueueEmpty
 
-from melder.utilities.interfaces import IConfiguration, ISpellbook, IUnitOfWork
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
     CancellationEventSignal,

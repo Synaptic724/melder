@@ -12,7 +12,9 @@ from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell, IOccurrencePlan, IInjectionPlan
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
+from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
 
 FastPlanData = Tuple[Any, ...]
 FastTransientPlan = Tuple[Any, ...]

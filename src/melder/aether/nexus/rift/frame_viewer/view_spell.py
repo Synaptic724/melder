@@ -25,7 +25,8 @@ from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_pr
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IFrameLink, ISpellRecord
+from melder.utilities.interfaces.iframelink import IFrameLink
+from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
 @decorate_public_view_actions

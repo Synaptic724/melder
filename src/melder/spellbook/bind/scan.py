@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional, Sequence
 # Melder Imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces import ISpellbook
+from melder.utilities.interfaces.ispellbook import ISpellbook
 
 _SCAN_BIND_ATTR = "__melder_scan_bind__"
 

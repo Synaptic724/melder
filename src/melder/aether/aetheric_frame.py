@@ -4,12 +4,12 @@ from typing import Optional, Set, Dict, Type
 
 import ulid
 # Melder Imports
-from melder.utilities.interfaces import (
-    IAether,
-    IAethericFrame,
-    IAethericFrameConfiguration,
-    ISpellIndex,
-)
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
@@ -69,7 +69,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         # All root conduits created in this frame:
         #   conduit_id -> IConduit
-        self._conduits: Dict[str, object] = {}
+        self._conduits: Dict[str, IConduit] = {}
         # Stable root-conduit name registry:
         #   conduit_name -> conduit_id
         self._conduit_ids_by_name: Dict[str, str] = {}
@@ -84,7 +84,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         # Conduit clusters (grouping by logical name):
         #   cluster_name -> ConduitCluster
-        self._conduit_clusters: Dict[str, object] = {}
+        self._conduit_clusters: Dict[str, IConduitCluster] = {}
 
         # Dynamic-mode "cloud" factory for named conduits.
         self._conduit_cloud: ConduitCloud = ConduitCloud(name)
@@ -165,8 +165,7 @@ class AethericFrame(Cleanable, IAethericFrame):
         if self._conduits is not None:
             for conduit in list(self._conduits.values()):
                 try:
-                    if hasattr(conduit, 'cleanup'):
-                        conduit.cleanup()
+                    conduit.cleanup()
                 except Exception:
                     # DevOps surfaces can record incidents if you want;
                     # frame cleanup never dies on conduit cleanup.
@@ -188,8 +187,7 @@ class AethericFrame(Cleanable, IAethericFrame):
         if self._conduit_clusters is not None:
             for cluster in list(self._conduit_clusters.values()):
                 try:
-                    if hasattr(cluster, 'cleanup'):
-                        cluster.cleanup()
+                    cluster.cleanup()
                 except Exception:
                     pass
             self._conduit_clusters.clear()

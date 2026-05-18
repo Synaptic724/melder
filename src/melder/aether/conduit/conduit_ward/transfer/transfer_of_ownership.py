@@ -7,15 +7,13 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import (
-    IAether,
-    IChangeControlManager,
-    IConduit,
-    IIncidentManager,
-    ISpell,
-    ISpellIndex,
-    ISpellbook,
-)
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iincidentmanager import IIncidentManager
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason

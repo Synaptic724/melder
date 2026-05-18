@@ -38,7 +38,9 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
     SpellValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell, ISpellbook, ISpellValidationSystem
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )

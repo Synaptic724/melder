@@ -17,10 +17,8 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.utilities.interfaces import (
-    IAether,
-    ISpellGeneralProfile,
-)
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 

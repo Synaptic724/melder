@@ -7,7 +7,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
-from melder.utilities.interfaces import ISpell
+from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicService
 

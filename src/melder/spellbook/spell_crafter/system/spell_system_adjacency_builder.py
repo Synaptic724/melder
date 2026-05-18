@@ -2,7 +2,7 @@ from typing import Dict, Iterable, Optional, Set
 # Melder imports
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
 from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
-from melder.utilities.interfaces import ISpellSystemStates
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemAdjacencyBuilder:
