@@ -17,14 +17,10 @@ from melder.utilities.interfaces import (
     IAethericFrame,
     IAethericFrameConfiguration,
     IConduit,
+    IFrameDescriptor,
     INexus,
     INexusFrameManager,
     INexusFrameConfiguration,
-)
-from melder.utilities.interfaces.inexus_frame_manager_runtime_surface import (
-    IManagedAethericFrameSurface,
-    IManagedRootConduitSurface,
-    INexusFrameManagerRuntimeSurface,
 )
 
 class NexusFrameManager(Cleanable, INexusFrameManager):
@@ -61,7 +57,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         "_configurations_by_frame_name",
     ]
 
-    def __init__(self, *, nexus: INexusFrameManagerRuntimeSurface) -> None:
+    def __init__(self, *, nexus: INexus) -> None:
         """
         Initialize one Nexus frame-authoring facade.
 
@@ -81,10 +77,10 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
             raise TypeError("nexus cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._nexus: INexusFrameManagerRuntimeSurface = nexus
+        self._nexus: INexus = nexus
         self._next_indexed_frame_number: int = 1
         self._creating_frame_names: Set[str] = set()
-        self._frames_by_name: Dict[str, IManagedAethericFrameSurface] = {}
+        self._frames_by_name: Dict[str, IAethericFrame] = {}
         self._configurations_by_frame_name: Dict[str, INexusFrameConfiguration] = {}
 
     def cleanup(self) -> None:
@@ -277,7 +273,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
             self._validate_raw_creation_for_mode(frame_name)
         root_conduit: Optional[IConduit] = None
         spellbook_id: Optional[str] = None
-        frame: Optional[IManagedAethericFrameSurface] = None
+        frame: Optional[IAethericFrame] = None
         with self._lock:
             if (
                     frame_name in self._frames_by_name
@@ -610,7 +606,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         with self._lock:
             nexus_frame_mode_name = self._get_nexus_frame_mode_name()
             if nexus_frame_mode_name == "single":
-                if len(self._nexus._rifts_by_id) != 0:
+                if len(self._nexus.list_rift_ids()) != 0:
                     return tuple()
                 shared_frame_name = self._get_default_nexus_frame_name()
                 configuration = self._configurations_by_frame_name.get(
@@ -660,12 +656,13 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
             return False
         if configuration is not None and not configuration.cleaned:
             configuration.cleanup()
-        if self._nexus._frame_descriptor_manager._has_frame_descriptor(frame_name):
-            descriptor = self._nexus._frame_descriptor_manager._get_required_frame_descriptor(
-                frame_name
-            )
+        try:
+            descriptor = self._nexus._get_required_frame_descriptor(frame_name)
+        except ValueError:
+            descriptor = None
+        if descriptor is not None:
             descriptor.clear_runtime_publication_state()
-        self._nexus._frame_acl_manager._remove_frame_acl_container(frame_name)
+        self._nexus._remove_frame_acl_container(frame_name)
         return True
 
     def _determine_frame_name_for_rift(self, rift_id: str) -> str:
@@ -775,7 +772,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         Returns:
             None.
         """
-        descriptor = self._nexus._frame_descriptor_manager._get_or_create_frame_descriptor(
+        descriptor = self._nexus._get_or_create_frame_descriptor(
             frame_name
         )
         frame = self._frames_by_name[frame_name]
@@ -825,7 +822,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
                     frame_name
                 )
             )
-        descriptor = self._nexus._frame_descriptor_manager._get_or_create_frame_descriptor(
+        descriptor = self._nexus._get_or_create_frame_descriptor(
             frame_name
         )
         root_conduit_ids = tuple(sorted(frame._conduits.keys()))
@@ -836,9 +833,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
                 if conduit is not None and conduit._name is not None
             )
         )
-        conduit_cloud_names = tuple(
-            sorted(frame._conduit_cloud._registry.keys())
-        )
+        conduit_cloud_names = tuple(sorted(frame._conduit_cloud.list_conduit_names()))
         cluster_names = tuple(sorted(frame._conduit_clusters.keys()))
         payload = FrameDescriptorPayload(
             system_state=frame_configuration.system_state,
@@ -936,7 +931,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
     def _conjure_root_conduit_for_configuration(
             self,
             configuration: INexusFrameConfiguration,
-    ) -> IManagedRootConduitSurface:
+    ) -> IConduit:
         """
         Conjure the required root conduit for one Nexus-managed frame.
 
@@ -968,16 +963,10 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
             aetheric_frame=configuration.frame_name,
             configuration=spellbook_configuration,
         )
-        root_conduit = spellbook.conjure(
+        return spellbook.conjure(
             name=configuration.root_conduit_name,
             automatic=False,
         )
-        if not isinstance(root_conduit, IManagedRootConduitSurface):
-            raise TypeError(
-                "Spellbook.conjure() returned a conduit that does not satisfy "
-                "IManagedRootConduitSurface."
-            )
-        return root_conduit
 
     def _get_required_root_conduit_for_frame(
             self,
@@ -1042,10 +1031,10 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
             bool: True when at least one active Rift can still reach the
             frame.
         """
-        for rift in self._nexus._rifts_by_id.values():
+        for rift_id in self._nexus.list_rift_ids():
             try:
                 accessible_frame_names = set(
-                    self.list_accessible_frame_names_for_rift(rift.id)
+                    self.list_accessible_frame_names_for_rift(rift_id)
                 )
             except Exception:
                 continue
@@ -1073,7 +1062,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         Returns:
             str: Current Nexus frame-mode name.
         """
-        frame_mode = self._nexus._configuration.get_property("nexus_frame_mode")
+        frame_mode = self._nexus.configuration.get_property("nexus_frame_mode")
         if not isinstance(frame_mode, NexusFrameMode):
             raise TypeError("nexus_frame_mode must remain a NexusFrameMode.")
         return frame_mode.name
@@ -1085,7 +1074,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         Returns:
             str: Default Nexus-managed frame name.
         """
-        frame_name = self._nexus._configuration.get_property(
+        frame_name = self._nexus.configuration.get_property(
             "default_nexus_frame_name"
         )
         if not isinstance(frame_name, str):
@@ -1099,7 +1088,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         Returns:
             int: Maximum Nexus-managed frame count.
         """
-        max_frame_count = self._nexus._configuration.get_property(
+        max_frame_count = self._nexus.configuration.get_property(
             "max_nexus_frame_count"
         )
         if not isinstance(max_frame_count, int):
@@ -1108,7 +1097,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
 
     @staticmethod
     def _get_root_conduit_spellbook_id(
-            root_conduit: IManagedRootConduitSurface,
+            root_conduit: IConduit,
     ) -> str:
         """
         Return the originating spellbook id from one rooted conduit.

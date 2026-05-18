@@ -2735,6 +2735,21 @@ class Nexus(Cleanable, INexus):
         """
         self._frame_acl_manager._ensure_frame_acl_container(frame_name)
 
+    def _remove_frame_acl_container(self, frame_name: str) -> bool:
+        """
+        Internal
+
+        Remove the matching frame ACL container for a frame, if present.
+
+        Args:
+            frame_name:
+                Frame name whose ACL container should be removed.
+
+        Returns:
+            bool: True when a container was removed.
+        """
+        return self._frame_acl_manager._remove_frame_acl_container(frame_name)
+
     def _increment_ref_count(self, ref_counts: Dict[str, int], key: str) -> None:
         """
         Internal

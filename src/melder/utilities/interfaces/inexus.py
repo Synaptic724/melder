@@ -1,8 +1,11 @@
 from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
+from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iriftgate import IRiftGate
@@ -13,6 +16,7 @@ class INexus(ICleanable, Protocol):
     """
     Interface for the Nexus singleton root.
     """
+    _aether: IAether
 
     @property
     def id(self) -> str:
@@ -46,6 +50,13 @@ class INexus(ICleanable, Protocol):
     def rift_gate_controller(self) -> IRiftGateController:
         """
         Return the Nexus-owned Rift gate controller.
+        """
+        ...
+
+    @property
+    def frame_manager(self) -> INexusFrameManager:
+        """
+        Return the Nexus-owned frame authoring and topology manager.
         """
         ...
 
@@ -260,6 +271,42 @@ class INexus(ICleanable, Protocol):
     def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
         """
         Return the Nexus frame names currently accessible to the specified Rift.
+        """
+        ...
+
+    def _require_enabled(self) -> None:
+        """
+        Ensure Nexus is enabled before internal collaborators continue.
+        """
+        ...
+
+    def _get_required_rift(self, rift_id: str) -> IRift:
+        """
+        Return one registered Rift or raise.
+        """
+        ...
+
+    def _get_required_frame_descriptor(self, frame_name: str) -> IFrameDescriptor:
+        """
+        Return the required frame descriptor for the named frame.
+        """
+        ...
+
+    def _get_or_create_frame_descriptor(self, frame_name: str) -> IFrameDescriptor:
+        """
+        Return one existing frame descriptor or create it.
+        """
+        ...
+
+    def _ensure_frame_acl_container(self, frame_name: str) -> None:
+        """
+        Ensure the matching frame ACL container exists for the named frame.
+        """
+        ...
+
+    def _remove_frame_acl_container(self, frame_name: str) -> bool:
+        """
+        Remove the matching frame ACL container for the named frame, if present.
         """
         ...
 

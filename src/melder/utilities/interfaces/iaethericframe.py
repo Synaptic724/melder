@@ -1,6 +1,8 @@
-from typing import runtime_checkable, Optional, Protocol
+from typing import Dict, Optional, runtime_checkable, Protocol
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
@@ -29,6 +31,10 @@ class IAethericFrame(ICleanable, Protocol):
         mutation.
       - Relies on child objects to guard their own internal state.
     """
+    _id: str
+    _conduits: Dict[str, IConduit]
+    _conduit_cloud: IConduitCloud
+    _conduit_clusters: Dict[str, object]
     name: str
 
     @property

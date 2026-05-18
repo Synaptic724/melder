@@ -16,6 +16,7 @@ from melder.utilities.interfaces.idescriptorpayload import IDescriptorPayload
 from melder.utilities.interfaces.ispelldescriptorpayload import ISpellDescriptorPayload
 from melder.utilities.interfaces.iconduitdescriptorpayload import IConduitDescriptorPayload
 from melder.utilities.interfaces.iframedescriptorpayload import IFrameDescriptorPayload
+from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
 from melder.utilities.interfaces.iframerecord import IFrameRecord
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
 from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
@@ -120,6 +121,7 @@ __all__ = [
     "ISpellDescriptorPayload",
     "IConduitDescriptorPayload",
     "IFrameDescriptorPayload",
+    "IFrameDescriptor",
     "IFrameRecord",
     "IConduitRecord",
     "IFrameACLRule",

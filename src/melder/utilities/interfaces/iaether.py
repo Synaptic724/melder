@@ -11,6 +11,7 @@ from melder.utilities.interfaces.iaethericframeconfiguration import (
     IAethericFrameConfiguration,
 )
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
@@ -161,6 +162,12 @@ class IAether(ICleanable, Protocol):
     def _ensure_frame(self, aetheric_frame_name: str = "default") -> IAethericFrame:
         """
         Return the existing frame for the given name, creating it if needed.
+        """
+        ...
+
+    def _create_frame(self, aetheric_frame_name: str) -> IAethericFrame:
+        """
+        Create and return one new frame with the supplied name.
         """
         ...
 
