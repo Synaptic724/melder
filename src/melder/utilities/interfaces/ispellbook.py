@@ -50,7 +50,7 @@ class ISpellbook(ICleanable, Protocol):
     _id: str
     _aether: IAether
     _aetheric_frame: Optional[str]
-    _aetheric_frame_configuration: IAethericFrameConfiguration
+    _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'
     _spell_id_pool: Dict[str, ISpell]
     _spellbook_validation_required: bool

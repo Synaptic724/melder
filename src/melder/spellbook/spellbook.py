@@ -1,10 +1,9 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType
-from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union, cast, Protocol
+from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union, Protocol
 import threading
 import time
 # Melder Imports
-from melder.aether.aether import Aether
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
     ChangeTransactionType,
@@ -29,6 +28,7 @@ from melder.utilities.interfaces import (
     IUnitOfWork,
     ISafeLogger,
     IChangeControlManager,
+    IAether,
 )
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.bind.bind import Bind
@@ -160,7 +160,8 @@ class Spellbook(Cleanable, ISpellbook):
     """
     __melder_internal__ = _mrg.sentinel
     _cleaned: bool
-    _aether = Aether()
+    _nexus: Nexus = Nexus()
+    _aether: IAether = _nexus._aether
     __slots__ = Cleanable.__slots__ + [
         "_active_change_request",
         "_aetheric_frame",
@@ -590,13 +591,17 @@ class Spellbook(Cleanable, ISpellbook):
     @staticmethod
     def _get_required_spell_index_surface(
             spell_index: ISpellIndex,
-    ) -> _SpellbookSpellIndexSurface:
+    ) -> ISpellIndex:
         """
         Return the concrete internal SpellIndex surface used by Spellbook.
         """
-        return cast(_SpellbookSpellIndexSurface, spell_index)
+        if not isinstance(spell_index, SpellIndex):
+            raise TypeError(
+                "Spellbook requires the concrete internal SpellIndex surface."
+            )
+        return spell_index
 
-    def _get_required_conduit_surface(self) -> _SpellbookConduitSurface:
+    def _get_required_conduit_surface(self) -> IConduit:
         """
         Return the live conjured conduit surface or raise.
         """
@@ -607,12 +612,12 @@ class Spellbook(Cleanable, ISpellbook):
 
     def _get_required_change_control_manager(
             self,
-    ) -> _SpellbookChangeControlSurface:
+    ) -> IChangeControlManager:
         """
         Return the frame-local change-control manager surface used internally.
         """
         manager = self._aether._get_change_control_manager(self._aetheric_frame)
-        return cast(_SpellbookChangeControlSurface, manager)
+        return manager
 
     def _get_required_configuration(self) -> IConfiguration:
         """
@@ -1060,7 +1065,8 @@ class Spellbook(Cleanable, ISpellbook):
                 objects.
         """
         self.check_cleaned()
-        return cast(Mapping[ISpellIndex, ISpell], MappingProxyType(self._spells))
+        spells_view: Mapping[ISpellIndex, ISpell] = MappingProxyType(self._spells)
+        return spells_view
 
     @property
     def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, ISpell]]:
@@ -1079,13 +1085,14 @@ class Spellbook(Cleanable, ISpellbook):
                 map.
         """
         self.check_cleaned()
-        return cast(
-            Mapping[str, Mapping[ISpellIndex, ISpell]],
-            MappingProxyType({
-                conduit_id: MappingProxyType(dict(spells))
-                for conduit_id, spells in self._contracted_spells.items()
-            }),
+        contracted_views: Dict[str, Mapping[ISpellIndex, ISpell]] = {
+            conduit_id: MappingProxyType(dict(spells))
+            for conduit_id, spells in self._contracted_spells.items()
+        }
+        contracted_spells_view: Mapping[str, Mapping[ISpellIndex, ISpell]] = (
+            MappingProxyType(contracted_views)
         )
+        return contracted_spells_view
 
     def snapshot_state(self) -> Dict[str, Any]:
         """
@@ -2902,7 +2909,7 @@ class Spellbook(Cleanable, ISpellbook):
             if self._conjured and self._conduit is not None:
                 Spellbook._aether._register_single_spell_index(
                     self._get_required_conduit_surface()._id,
-                    cast(SpellIndex, spell_index),
+                    spell_index,
                     self._aetheric_frame,
                 )
                 self._publish_spell_record_to_nexus(new_spell)
@@ -3425,11 +3432,11 @@ class Spellbook(Cleanable, ISpellbook):
             None.
         """
         if not self._refresh_nexus_publish_enabled():
-            conduit_surface = cast(_SpellbookConduitSurface, conduit)
+            conduit_surface = conduit
             conduit_surface._nexus_publish_enabled = False
             return
 
-        conduit_surface = cast(_SpellbookConduitSurface, conduit)
+        conduit_surface = conduit
         conduit_surface._nexus_publish_enabled = True
         self._nexus._publish_frame_record(self)
         self._nexus._publish_conduit_record(conduit)
@@ -3510,16 +3517,16 @@ class Spellbook(Cleanable, ISpellbook):
 
 
 
-    def get_configuration(self) -> 'SpellbookConfiguration':
+    def get_configuration(self) -> IConfiguration:
         """
         Public API
 
         Returns the active configuration object for this Spellbook.
 
         Returns:
-            SpellbookConfiguration: The configuration instance.
+            IConfiguration: The active configuration instance.
         """
-        return cast(SpellbookConfiguration, self._configuration)
+        return self._get_required_configuration()
 
     def configure_aether_frame(
             self,
