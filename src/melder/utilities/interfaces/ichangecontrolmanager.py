@@ -363,3 +363,25 @@ class IChangeControlManager(ICleanable, Protocol):
           - explicitly cancelled/abandoned.
         """
         ...
+
+    def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
+        """
+        Return whether the supplied root is currently marked dirty for a conduit.
+
+        Args:
+            conduit_id: Conduit whose dirty-root state is being queried.
+            root_id: Root spell id being checked.
+
+        Returns:
+            bool: True when the root is currently dirty for the conduit.
+        """
+        ...
+
+    def has_registered_revalidators(self) -> bool:
+        """
+        Return whether any conduit revalidator is currently registered.
+
+        Returns:
+            bool: True when at least one conduit has a registered revalidator.
+        """
+        ...

@@ -545,7 +545,7 @@ def test_cleanup_clears_state_and_is_idempotent() -> None:
     assert cluster.cleaned is True
     assert cluster.members == set()
     assert cluster.shared_spells == {}
-    assert cluster.auto_link_dependencies is None
+    assert not hasattr(cluster, "auto_link_dependencies")
 
 
 def test_cleanup_returns_early_when_cleaned_flips_inside_lock() -> None:

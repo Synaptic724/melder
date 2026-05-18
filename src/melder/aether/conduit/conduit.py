@@ -1630,7 +1630,7 @@ class Conduit(Cleanable, IConduit):
         return found
 
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Any]:
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[ISpell]:
         """
         Public API
 
@@ -1648,7 +1648,7 @@ class Conduit(Cleanable, IConduit):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Any]: The spell object if found, otherwise None.
+            Optional[ISpell]: The spell object if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1674,7 +1674,7 @@ class Conduit(Cleanable, IConduit):
     def get_spell_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[Any]:
+    ) -> Optional[ISpell]:
         """
         Public API
 
@@ -1690,7 +1690,7 @@ class Conduit(Cleanable, IConduit):
                 Stable SpellIndex lineage id (ULID) to resolve.
 
         Returns:
-            Optional[Any]:
+            Optional[ISpell]:
                 Matching spell object when found, otherwise None.
 
         Raises:

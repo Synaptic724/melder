@@ -15,6 +15,7 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.view_conduit import (
     ViewConduit,
@@ -37,7 +38,7 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IFrameLink
+from melder.utilities.interfaces import IConduitRecord, IFrameLink, ISpellRecord
 
 
 @decorate_public_view_actions
@@ -1549,7 +1550,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
+    ) -> Iterator[IConduitRecord]:
         """
         Yield descriptor-owned conduit records for the selected frame scope.
 
@@ -1558,7 +1559,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            object: Descriptor-owned conduit records.
+            IConduitRecord: Descriptor-owned conduit records.
         """
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
@@ -1569,7 +1570,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
+    ) -> Iterator[ISpellRecord]:
         """
         Yield descriptor-owned spell records for the selected frame scope.
 
@@ -1578,7 +1579,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            object: Descriptor-owned spell records.
+            ISpellRecord: Descriptor-owned spell records.
         """
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
@@ -1586,7 +1587,7 @@ class FrameViewer(Cleanable):
                 yield descriptor.spell_records_by_key[record_key]
 
     @staticmethod
-    def _build_spell_source_id(spell_record: object) -> str:
+    def _build_spell_source_id(spell_record: ISpellRecord) -> str:
         """
         Build the published spell source id for one spell record.
 
@@ -1623,7 +1624,7 @@ class FrameViewer(Cleanable):
         return str(spellframe)
 
     @staticmethod
-    def _normalize_policy_name(policy: object) -> Optional[str]:
+    def _normalize_policy_name(policy: Optional[Policies]) -> Optional[str]:
         """
         Return one stable string view of a conduit policy value.
 
@@ -1664,7 +1665,7 @@ class FrameViewer(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[str, object]:
+    ) -> Tuple[str, ISpellRecord]:
         """
         Return one descriptor-owned spell record plus its hosted frame.
 
@@ -1675,13 +1676,13 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, object]: `(frame_name, spell_record)` for the resolved
-            record.
+            Tuple[str, ISpellRecord]: `(frame_name, spell_record)` for the
+            resolved record.
         """
         if not spell_source_id:
             raise ValueError("spell_source_id cannot be empty.")
         spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
-        matching_records: List[Tuple[str, object]] = []
+        matching_records: List[Tuple[str, ISpellRecord]] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
             record = descriptor.spell_records_by_key.get((spellbook_id, spell_id))
@@ -1705,7 +1706,7 @@ class FrameViewer(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> object:
+    ) -> IConduitRecord:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -1716,11 +1717,11 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            object: Descriptor-owned conduit record.
+            IConduitRecord: Descriptor-owned conduit record.
         """
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
-        matching_records: List[object] = []
+        matching_records: List[IConduitRecord] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
             conduit_record = descriptor.conduit_records_by_id.get(conduit_id)

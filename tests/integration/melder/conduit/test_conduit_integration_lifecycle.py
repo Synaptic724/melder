@@ -149,10 +149,11 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
     owner = owner_book.conjure(automatic=False, name="owner")
     observer = observer_book.conjure(automatic=False, name="observer")
     try:
+        owner_id = owner.id
         owner_name = owner.name
         cloud = observer.get_conduit_cloud()
 
-        assert observer.get_conduit_by_id(owner.id) is owner
+        assert observer.get_conduit_by_id(owner_id) is owner
         assert observer.get_conduit_by_name(owner_name) is owner
         assert observer.get_conduit_by_spell_id(spell_id) is owner
         assert cloud.get_conduit(owner_name) is owner
@@ -160,7 +161,7 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
         owner.cleanup()
 
         with pytest.raises(ValueError, match="not found"):
-            observer.get_conduit_by_id(owner.id)
+            observer.get_conduit_by_id(owner_id)
         with pytest.raises(ValueError, match="not found"):
             observer.get_conduit_by_name(owner_name)
         with pytest.raises(ValueError, match="Spell version"):

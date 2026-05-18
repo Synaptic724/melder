@@ -16,6 +16,19 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.creation_gate import CreationGate
 
+
+@runtime_checkable
+class _ConduitAetherSurface(Protocol):
+    """Minimal Aether surface stored on `IConduit`."""
+
+
+@runtime_checkable
+class _ConduitSpellSpaceSurface(Protocol):
+    """Minimal spellspace surface referenced by `IConduit`."""
+from melder.utilities.synchronization.creation_gate_controller import (
+    CreationGateController,
+)
+
 @runtime_checkable
 class IConduit(ICleanable, Protocol):
     """
@@ -26,7 +39,7 @@ class IConduit(ICleanable, Protocol):
     """
 
     # Class-level
-    _aether: Any
+    _aether: _ConduitAetherSurface
 
     # Instance-level core attributes (1:1 with Conduit)
     _lock: threading.RLock
@@ -43,6 +56,7 @@ class IConduit(ICleanable, Protocol):
     _spellbook: 'ISpellbook'
     _meld: 'IMeld'
     _creation_gate: 'CreationGate'
+    _creation_gate_controller: 'CreationGateController'
 
     _conduit_ward: Any
 
@@ -339,6 +353,29 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
+    def get_active_spellspace(self) -> Optional[_ConduitSpellSpaceSurface]:
+        """
+        Return the currently active spellspace for this conduit, if any.
+
+        Returns:
+            Optional[ISpellSpace]: Active spellspace or None.
+        """
+        ...
+
+    def _unregister_spellspace(self, space: _ConduitSpellSpaceSurface) -> None:
+        """
+        Internal
+
+        Remove one spellspace from this conduit's active/runtime tracking.
+
+        Args:
+            space: Spellspace being detached from the conduit.
+
+        Returns:
+            None.
+        """
+        ...
+
     def create_cluster(self, cluster_name: str) -> None:
         """
         Public API
@@ -466,7 +503,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Any]:
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[ISpell]:
         """
         Public API
 
@@ -484,7 +521,7 @@ class IConduit(ICleanable, Protocol):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Any]: The spell object if found, otherwise None.
+            Optional[ISpell]: The spell object if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -506,14 +543,14 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[Any]:
+    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[ISpell]:
         """
         Public API
 
         Retrieves a spell object by its stable SpellIndex lineage id.
 
         Returns:
-            Optional[Any]: The spell object if found, otherwise None.
+            Optional[ISpell]: The spell object if found, otherwise None.
         """
         ...
 

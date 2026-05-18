@@ -1,8 +1,10 @@
-from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Tuple, Union, runtime_checkable, \
+from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable, \
     Set
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
@@ -10,6 +12,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):
@@ -45,9 +48,12 @@ class ISpellbook(ICleanable, Protocol):
     _spells_by_id: Dict[str, ISpell]
     _bind: Optional[Any]
     _id: str
+    _aether: IAether
     _aetheric_frame: Optional[str]
+    _aetheric_frame_configuration: IAethericFrameConfiguration
     _configuration: 'Optional[IConfiguration]'
     _spell_id_pool: Dict[str, ISpell]
+    _spellbook_validation_required: bool
 
     # Spell Validator
     _spell_validator: ISpellValidationSystem
@@ -928,6 +934,38 @@ class ISpellbook(ICleanable, Protocol):
         Raises:
             RuntimeError:
                 If no contracted spell maps exist for the given conduit.
+        """
+        ...
+
+    def _run_resolution_phases_for_target_spell(
+            self,
+            conduit_id: str,
+            target_spell: ISpell,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Run target-local conduit resolution phases for one spell.
+        """
+        ...
+
+    def _run_deferred_resolution_phases_for_target_spell(
+            self,
+            conduit_id: str,
+            target_spell: ISpell,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Run deferred target-local plan phases for one spell.
+        """
+        ...
+
+    def _set_spellbook_validation_required(self, required: bool) -> None:
+        """
+        Internal
+
+        Set the spellbook-level validation-required flag.
         """
         ...
 

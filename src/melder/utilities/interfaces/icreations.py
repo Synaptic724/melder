@@ -1,6 +1,26 @@
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from threading import RLock
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.aether.conduit.creations.creation import Creation
+
+
+@runtime_checkable
+class _CreationsSpellSpaceSurface(Protocol):
+    """Minimal spellspace surface consumed by `ICreations`."""
+
+    @property
+    def id(self) -> str:
+        """Return the stable spellspace identifier."""
+        ...
+
+
+@runtime_checkable
+class _CreationsOwnerConduitSurface(Protocol):
+    """Minimal conduit surface consumed by `ICreations` spellspace helpers."""
+
+    def get_active_spellspace(self) -> Optional[_CreationsSpellSpaceSurface]:
+        """Return the currently active spellspace, if any."""
+        ...
 
 @runtime_checkable
 class ICreations(ICleanable, Protocol):
@@ -20,6 +40,7 @@ class ICreations(ICleanable, Protocol):
     # -----------------
     _lock: RLock
     _creations: 'Dict[str, object]'
+    _conduit: _CreationsOwnerConduitSurface
     _id: str
 
     # -----------------
@@ -215,5 +236,34 @@ class ICreations(ICleanable, Protocol):
         Raises:
             RuntimeError:
                 If the Creations manager is cleaned.
+        """
+        ...
+
+    def get_spellspace_creation(
+            self,
+            spellspace_id: str,
+            spell_id: str,
+    ) -> Optional[Creation]:
+        """
+        Return one spellspace-scoped creation wrapper, if present.
+
+        Args:
+            spellspace_id: Spellspace bucket identifier.
+            spell_id: Spell id inside the spellspace bucket.
+
+        Returns:
+            Optional[Creation]: Stored creation wrapper or None.
+        """
+        ...
+
+    def clear_spellspace_instances(self, spellspace_id: str) -> None:
+        """
+        Clear and dispose all creations for one spellspace bucket.
+
+        Args:
+            spellspace_id: Spellspace bucket identifier.
+
+        Returns:
+            None.
         """
         ...

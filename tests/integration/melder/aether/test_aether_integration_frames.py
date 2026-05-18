@@ -252,13 +252,14 @@ def test_bottom_up_frame_cleanup_cleans_conduits_and_removes_frame() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
+    conduit_id = conduit.id
 
     frame.cleanup()
 
     assert frame.cleaned is True
     assert conduit.cleaned is True
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_id(conduit.id, frame_name)
+        aether._get_conduit_by_id(conduit_id, frame_name)
     with pytest.raises(RuntimeError, match="already been cleaned"):
         conduit.meld(spell=spell_id)
 

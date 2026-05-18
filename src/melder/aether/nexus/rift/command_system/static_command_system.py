@@ -1,20 +1,11 @@
-from typing import Optional, Protocol, cast
+from typing import Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.spellbook.existence.existence import Existence
-
-
-class _PublishedSpellRecordSurface(Protocol):
-    spell_index_id: str
-    existence: Existence
-    owner_conduit_id: Optional[str]
-    spell_id: str
-    origin_spellbook_id: str
-    spell_name: Optional[str]
-    binding_name: Optional[str]
+from melder.utilities.interfaces import ISpellRecord
 
 
 class StaticCommandSystem(CommandSystem):
@@ -234,7 +225,7 @@ class StaticCommandSystem(CommandSystem):
                     "reason": "ambiguous_spell_source_id",
                 }
             return self._describe_static_spell_status(
-                self._as_published_spell_record(matching_spell_records[0]),
+                matching_spell_records[0],
                 frame_name=resolved_frame_name,
             )
 
@@ -293,7 +284,7 @@ class StaticCommandSystem(CommandSystem):
                     "reason": "ambiguous_spell_id",
                 }
             return self._describe_static_spell_status(
-                self._as_published_spell_record(matching_spell_records[0]),
+                matching_spell_records[0],
                 frame_name=resolved_frame_name,
             )
 
@@ -352,7 +343,7 @@ class StaticCommandSystem(CommandSystem):
                     "reason": "ambiguous_spell_index_id",
                 }
             return self._describe_static_spell_status(
-                self._as_published_spell_record(matching_spell_records[0]),
+                matching_spell_records[0],
                 frame_name=resolved_frame_name,
             )
 
@@ -483,7 +474,7 @@ class StaticCommandSystem(CommandSystem):
 
     def _describe_static_spell_status(
             self,
-            spell_record: _PublishedSpellRecordSurface,
+            spell_record: ISpellRecord,
             *,
             frame_name: str,
     ) -> dict:
@@ -549,22 +540,6 @@ class StaticCommandSystem(CommandSystem):
             ),
             "reason": reason,
         }
-
-    @staticmethod
-    def _as_published_spell_record(
-            spell_record: object,
-    ) -> _PublishedSpellRecordSurface:
-        """
-        Narrow one published spell record object to the static-command record surface.
-
-        Args:
-            spell_record:
-                Published spell record object read from the descriptor registry.
-
-        Returns:
-            _PublishedSpellRecordSurface: Narrowed published spell record surface.
-        """
-        return cast(_PublishedSpellRecordSurface, spell_record)
 
     def list_supported_command_methods(self) -> tuple[str, ...]:
         """

@@ -459,6 +459,7 @@ def test_add_conduit_duplicate_raises(aether_with_mocks):
     frame_mock = a._default_frame
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit._name = "root"
     conduit.name = "root"
     frame_mock._conduits = {"c1": conduit}
     frame_mock._conduit_ids_by_name = {"root": "c1"}
@@ -503,6 +504,7 @@ def test_remove_conduit_delegates(aether_with_mocks):
     frame_mock = a._default_frame
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit._name = "root"
     conduit.name = "root"
     frame_mock._conduits = {"c1": conduit}
     frame_mock._conduit_ids_by_name = {"root": "c1"}
@@ -519,6 +521,7 @@ def test_remove_conduit_missing_raises(aether_with_mocks):
     frame_mock._conduits = {}
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit._name = "root"
     
     with pytest.raises(ValueError, match="does not exist"):
         a._remove_conduit(conduit)

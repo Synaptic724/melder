@@ -1372,6 +1372,20 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
                     dirty_spells.clear()
                 self._monitor_active_by_conduit[conduit_id] = False
 
+    def has_registered_revalidators(self) -> bool:
+        """
+        Return whether any conduit revalidator is currently registered.
+
+        Returns:
+            bool: True when at least one conduit id has a stored revalidator.
+
+        Raises:
+            RuntimeError: If this manager has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return bool(self._revalidate_fn_by_conduit)
+
     # ----------------------------------------------------------------------
     # Introspection helpers
     # ----------------------------------------------------------------------

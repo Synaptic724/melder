@@ -7,7 +7,7 @@ local descriptor or ACL state.
 """
 
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
@@ -38,8 +38,11 @@ class _FrameViewerSurface(Protocol):
     Narrow borrowed FrameViewer surface used by ViewMultiFrame.
     """
 
-    _lock: object
     _rift: _RiftViewerSurface
+
+    @property
+    def _lock(self) -> object:
+        ...
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
         ...
@@ -58,14 +61,14 @@ class _FrameViewerSurface(Protocol):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
+    ) -> Iterator[IConduitRecord]:
         ...
 
     def _iter_spell_records(
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
+    ) -> Iterator[ISpellRecord]:
         ...
 
     def _build_spell_source_id(self, spell_record: ISpellRecord) -> str:
@@ -79,7 +82,7 @@ class _FrameViewerSurface(Protocol):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[str, object]:
+    ) -> Tuple[str, ISpellRecord]:
         ...
 
 
@@ -141,7 +144,7 @@ class ViewMultiFrame(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._viewer = cast(_FrameViewerSurface, None)
+        del self._viewer
 
     @property
     def _lock(self):
@@ -213,7 +216,7 @@ class ViewMultiFrame(Cleanable):
         for conduit_record in self._viewer._iter_conduit_records(
                 frame_name=frame_name,
         ):
-            yield cast(IConduitRecord, conduit_record)
+            yield conduit_record
 
     def _iter_spell_records(
             self,
@@ -233,7 +236,7 @@ class ViewMultiFrame(Cleanable):
         for spell_record in self._viewer._iter_spell_records(
                 frame_name=frame_name,
         ):
-            yield cast(ISpellRecord, spell_record)
+            yield spell_record
 
     def _build_spell_source_id(self, spell_record: ISpellRecord) -> str:
         """
@@ -284,7 +287,7 @@ class ViewMultiFrame(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        return resolved_frame_name, cast(ISpellRecord, spell_record)
+        return resolved_frame_name, spell_record
 
     def _get_required_conduit_record(
             self,
@@ -313,9 +316,7 @@ class ViewMultiFrame(Cleanable):
             record = descriptor.conduit_records_by_id.get(conduit_id)
             if record is None:
                 continue
-            matching_records.append(
-                (current_frame_name, cast(IConduitRecord, record))
-            )
+            matching_records.append((current_frame_name, record))
         if len(matching_records) == 0:
             raise ValueError(
                 "Conduit id '{0}' was not found.".format(conduit_id)

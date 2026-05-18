@@ -4704,8 +4704,8 @@ def test_run_phase_system_validation_requires_phase5(
     if not missing_index:
         crafter._spell_system_index_phase5 = spell_crafter_module.SpellSystemIndex()
 
-    crafter.run_phase_system_validation("cid", cancel_event=None)
-    assert crafter._validated_phase6 is True
+    with pytest.raises(RuntimeError, match="Phase 5"):
+        crafter.run_phase_system_validation("cid", cancel_event=None)
 
 
 def test_run_phase_system_validation_collects_phase4_and_broken(
@@ -4928,6 +4928,7 @@ def test_ensure_change_control_ready_skips_when_manager_none() -> None:
     """
     crafter, _, _ = _build_spell_and_crafter(aether=_AetherStub(manager=None))
 
+    crafter._entire_dag_blueprint_phase5 = {}
     with pytest.raises(AttributeError):
         crafter._ensure_change_control_ready("cid")
 

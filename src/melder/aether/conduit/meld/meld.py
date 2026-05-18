@@ -11,6 +11,9 @@ from melder.utilities.interfaces import (
     IMeld,
     ICreations, ISpellIndex,
 )
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
+from melder.utilities.interfaces.ispell import ISpellbookSpellSurface
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -20,6 +23,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
+from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.existence.existence import Existence
 
@@ -124,7 +128,7 @@ class Meld(Cleanable, IMeld):
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
         self._spell_id_resolution_cache: Dict[str, ISpell] = {}
         self._max_resolution_cache_size: int = 2048
-        self._change_control_manager_by_frame: Dict[str, Any] = {}
+        self._change_control_manager_by_frame: Dict[str, IChangeControlManager] = {}
 
         # Optional hook map pulled from Configuration (via Conduit).
         # This is stored by reference when provided.
@@ -342,6 +346,8 @@ class Meld(Cleanable, IMeld):
                 creation_context = target_spell._creation_context
             else:
                 creation_context = target_spell._get_or_build_creation_context()
+            if creation_context is None:
+                raise RuntimeError("Spell returned no live CreationContext.")
             if override_map is None:
                 execute_no_hooks_no_overrides_compiled = (
                     creation_context._execute_no_hooks_no_overrides_compiled
@@ -367,6 +373,8 @@ class Meld(Cleanable, IMeld):
                 creation_context = target_spell._creation_context
             else:
                 creation_context = target_spell._get_or_build_creation_context()
+            if creation_context is None:
+                raise RuntimeError("Spell returned no live CreationContext.")
             if override_map is None:
                 execute_hooks_no_overrides_compiled = (
                     creation_context._execute_hooks_no_overrides_compiled
@@ -495,7 +503,7 @@ class Meld(Cleanable, IMeld):
 
         if existence is Existence.unique_per_conduit:
             creation = caller_creations._creations.get(spell_id)
-            if creation is None:
+            if not isinstance(creation, Creation):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
@@ -528,7 +536,7 @@ class Meld(Cleanable, IMeld):
                     "Spell '{0}' is not live.".format(spell_id)
                 )
             creation = owner_creations._creations.get(spell_id)
-            if creation is None:
+            if not isinstance(creation, Creation):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
@@ -589,12 +597,13 @@ class Meld(Cleanable, IMeld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        return self.describe_live_creation_status(
+        status = self.describe_live_creation_status(
             spell_name=spell_name,
             spell=spell,
             spellframe=spellframe,
             binding_name=binding_name,
-        )["is_live"]
+        )
+        return bool(status["is_live"])
 
     def describe_live_creation_status(
             self,
@@ -686,7 +695,8 @@ class Meld(Cleanable, IMeld):
 
                     # If the crafter thinks it's broken, we hard-pin to invalid and bail.
                     if spell.is_broken:
-                        state.set_validity(SpellValidity.invalid)
+                        if state is not None:
+                            state.set_validity(SpellValidity.invalid)
                         raise SpellbookValidationError([spell])
 
                     refreshed_state = spell.system_state
@@ -944,6 +954,8 @@ class Meld(Cleanable, IMeld):
                 )
 
             spellbook = spell._spellbook
+            if spellbook is None:
+                raise RuntimeError("Spell has no owning Spellbook surface.")
             try:
                 spellbook._run_deferred_resolution_phases_for_target_spell(
                     conduit_id,
@@ -959,8 +971,8 @@ class Meld(Cleanable, IMeld):
 
     def _get_cached_change_control_manager(
             self,
-            spellbook: Optional[ISpellbook],
-    ) -> Any:
+            spellbook: Optional[ISpellbookSpellSurface],
+    ) -> Optional[IChangeControlManager]:
         """
         Return a cached change-control manager for the spellbook frame.
 
@@ -974,12 +986,15 @@ class Meld(Cleanable, IMeld):
                 Spellbook owning the spell currently being validated.
 
         Returns:
-            Any: Change-control manager for the frame, or None.
+            Optional[IChangeControlManager]:
+                Change-control manager for the frame, or None.
         """
         if spellbook is None:
             return None
 
         frame_name = spellbook._aetheric_frame
+        if frame_name is None:
+            return None
         cache = self._change_control_manager_by_frame
         cached_manager = cache.get(frame_name)
         if cached_manager is not None:
@@ -1030,6 +1045,8 @@ class Meld(Cleanable, IMeld):
             ccm = self._get_cached_change_control_manager(spellbook)
             if ccm is not None:
                 spell_id = spell.spell_index.current
+                if spell_id is None:
+                    raise RuntimeError("SpellIndex.current is required for meld gating.")
                 try:
                     if ccm.is_root_dirty(conduit_id, spell_id):
                         raise MeldExecutionError(
@@ -1045,6 +1062,9 @@ class Meld(Cleanable, IMeld):
                 except Exception:
                     # If change-control is unavailable, proceed with existing validity gate.
                     pass
+
+        if state is None:
+            return True
 
         validity = state.validity
 
@@ -1117,6 +1137,8 @@ class Meld(Cleanable, IMeld):
                     raise SpellbookValidationError([spell])
 
                 spellbook = spell._spellbook
+                if spellbook is None:
+                    raise RuntimeError("Spell has no owning Spellbook surface.")
                 spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
 
                 resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
@@ -1157,6 +1179,8 @@ class Meld(Cleanable, IMeld):
             return
 
         spell_id = spell.spell_index.current
+        if spell_id is None:
+            raise RuntimeError("SpellIndex.current is required for SpellContract validation.")
         for param_name, contract in contracts:
             if contract is None:
                 continue
@@ -1262,6 +1286,8 @@ class Meld(Cleanable, IMeld):
             return
 
         spell_id = spell.spell_index.current
+        if spell_id is None:
+            raise RuntimeError("SpellIndex.current is required for resolution revalidation.")
         use_root = False
         crafter = spell._crafter
         if crafter is not None:
@@ -1285,7 +1311,7 @@ class Meld(Cleanable, IMeld):
     def _get_resolution_validity(
             self,
             spell: ISpell,
-            resolution_state: Optional[Any],
+            resolution_state: Optional[IConduitResolutionState],
     ) -> Optional[SpellValidity]:
         """
         Return the effective conduit-local validity for this spell.
@@ -1300,6 +1326,8 @@ class Meld(Cleanable, IMeld):
             return SpellValidity.unknown
 
         spell_id = spell.spell_index.current
+        if spell_id is None:
+            return SpellValidity.unknown
         crafter = spell._crafter
         if crafter is not None:
             blueprint = crafter.root_blueprint_phase5
@@ -1360,7 +1388,10 @@ class Meld(Cleanable, IMeld):
         are normalized into `HookExecutionError` so callers see one stable
         hook-failure contract instead of arbitrary raw exceptions.
         """
-        hook_list = self._meld_hooks.get(hook_name)
+        meld_hooks = self._meld_hooks
+        if meld_hooks is None:
+            return
+        hook_list = meld_hooks.get(hook_name)
         if not hook_list:
             return
         for hook in hook_list:
@@ -1682,6 +1713,8 @@ class Meld(Cleanable, IMeld):
                 continue
 
             spell_map = self._contracted_spells.get(conduit_id)
+            if spell_map is None:
+                continue
             result = spell_map.get(spell_index)
             if result is None:
                 raise RuntimeError(
@@ -1695,7 +1728,10 @@ class Meld(Cleanable, IMeld):
         return None
 
     @staticmethod
-    def _execute_hooks(hooks: List[Callable], phase: str) -> None:
+    def _execute_hooks(
+            hooks: Optional[Sequence[Callable[..., Any]]],
+            phase: str,
+    ) -> None:
         """
         Execute lifecycle hooks (e.g., pre-cast, post-cast) that do **not** take
         an instance context (zero-argument callables).
@@ -1710,6 +1746,8 @@ class Meld(Cleanable, IMeld):
         Raises:
             HookExecutionError: Wraps any exception raised by a hook during execution.
         """
+        if not hooks:
+            return
         for hook in hooks:
             try:
                 hook()
@@ -1718,7 +1756,10 @@ class Meld(Cleanable, IMeld):
                 raise HookExecutionError(phase, hook_name, e) from e
 
     @staticmethod
-    def _execute_activation_hooks(hooks: List[Callable], instance: Any) -> None:
+    def _execute_activation_hooks(
+            hooks: Optional[Sequence[Callable[..., Any]]],
+            instance: Any,
+    ) -> None:
         """
         Execute activation hooks, passing the resolved component instance as context.
 
@@ -1735,6 +1776,8 @@ class Meld(Cleanable, IMeld):
         Raises:
             HookExecutionError: Wraps any exception raised by a hook during execution.
         """
+        if not hooks:
+            return
         for hook in hooks:
             try:
                 hook(instance)

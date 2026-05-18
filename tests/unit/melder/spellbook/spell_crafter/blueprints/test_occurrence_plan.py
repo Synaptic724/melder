@@ -400,7 +400,7 @@ def test_run_phase_occurrence_plan_requires_phase5() -> None:
     )
     crafter = SpellCrafter(root_spell)
 
-    with pytest.raises(ValueError, match="blueprint must not be None"):
+    with pytest.raises(RuntimeError, match="Phase 5 root blueprint is required"):
         crafter.run_phase_occurrence_plan(conduit_id="conduit")
 
 

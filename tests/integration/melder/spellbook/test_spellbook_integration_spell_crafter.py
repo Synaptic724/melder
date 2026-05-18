@@ -570,7 +570,7 @@ def test_spell_crafter_phase6_requires_phase5() -> None:
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
         spell.run_phase_validation()
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError, match="Phase 5 system index is required"):
             spell.run_phase_system_validation("cid")
     finally:
         spellbook.cleanup()

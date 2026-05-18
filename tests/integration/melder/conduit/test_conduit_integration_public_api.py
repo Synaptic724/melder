@@ -391,11 +391,12 @@ def test_conduit_public_api_cleanup_lesser_conduits() -> None:
 
     conduit = spellbook.conjure(name="root")
     lesser = conduit.create_lesser_conduit()
+    lesser_id = lesser.id
     try:
         conduit.cleanup_lesser_conduits()
         with pytest.raises(RuntimeError, match="cleaned"):
             lesser.meld(spell=spell_id)
-        assert conduit.get_lesser_conduit(lesser.id) is None
+        assert conduit.get_lesser_conduit(lesser_id) is None
     finally:
         conduit.cleanup()
 

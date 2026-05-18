@@ -630,10 +630,11 @@ def test_component_spellbook_conjure_registers_and_cleanup_unregisters_risk_mana
             assert state.spellbook is spellbook
             assert lineage_id in state.lineages
             assert spellbook._spellbook_validation_required is False
+            conduit_id = conduit.id
         finally:
             conduit.cleanup()
 
-        assert conduit.id not in risk_manager._conduit_states
+        assert conduit_id not in risk_manager._conduit_states
     finally:
         spellbook.cleanup()
 

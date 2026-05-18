@@ -1,6 +1,7 @@
 import logging
 from typing import Any, List, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
@@ -121,6 +122,22 @@ class IAether(ICleanable, Protocol):
 
         Returns:
             None.
+        """
+        ...
+
+    def _get_change_control_manager(
+            self,
+            aetheric_frame: str,
+    ) -> Optional[IChangeControlManager]:
+        """
+        Return the frame-owned change-control manager for one frame, if present.
+
+        Args:
+            aetheric_frame:
+                Frame name whose change-control manager is requested.
+
+        Returns:
+            Optional[IChangeControlManager]: Frame-owned change-control manager.
         """
         ...
 

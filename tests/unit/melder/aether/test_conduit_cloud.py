@@ -26,6 +26,7 @@ def mock_conduit():
     conduit = MagicMock(spec=IConduit)
     conduit.id = "conduit-1"
     conduit.name = "test_conduit"
+    conduit._name = "test_conduit"
     return conduit
 
 # ----------------------------------------------------------------------
@@ -74,6 +75,7 @@ def test_register_conduit_none_name_raises(conduit_cloud):
     """
     conduit = MagicMock(spec=IConduit)
     conduit.name = None
+    conduit._name = None
     
     with pytest.raises(ValueError, match="cannot be None"):
         conduit_cloud._register_conduit(conduit)
@@ -156,6 +158,7 @@ def test_unregister_conduit_none_name_raises(conduit_cloud):
     Test that unregistering a conduit with None name raises ValueError.
     """
     conduit = MagicMock(spec=IConduit)
+    conduit._name = None
     conduit.name = None
     
     with pytest.raises(ValueError, match="cannot be None"):
