@@ -5,7 +5,7 @@ import inspect
 import pickle
 import typing
 import types
-from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, Mapping, Sequence, get_args, get_origin, Generator, cast, Protocol
+from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, Mapping, Sequence, get_args, get_origin, Generator
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
@@ -135,52 +135,6 @@ from melder.spellbook.spell_crafter.system.validation.root_viability_strategy im
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-
-class _SpellCrafterSpellbookSurface(Protocol):
-    """
-    Narrow borrowed Spellbook runtime surface used by SpellCrafter.
-    """
-
-    _spell_validator: ISpellValidationSystem
-    _spell_system_states: ISpellSystemStates
-    _spell_id_pool: Dict[str, ISpell]
-    _spells_by_id: Dict[str, ISpell]
-    _lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], ISpellIndex]]
-    _contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]]
-    _aetheric_frame_configuration: Optional[Any]
-    _aetheric_frame: str
-    _aether: Any
-
-
-class _SpellCrafterPeerSurface(Protocol):
-    """
-    Narrow peer-crafter surface reused across spell-level phase fanout.
-    """
-
-    _validation_result_phase4: Any
-    _validation_result_phase6: Any
-    _validated_phase6: bool
-    _is_broken: bool
-
-    def set_spell_system_index_phase5(
-            self,
-            index: SpellSystemIndex,
-    ) -> None:
-        ...
-
-    def set_root_blueprint_phase5(
-            self,
-            blueprint: RootResolutionBlueprint,
-    ) -> None:
-        ...
-
-    def run_all_phases(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
 class SpellCrafter(Cleanable):
     """
     Per-spell orchestration surface for the SpellCrafter pipeline.
@@ -304,7 +258,7 @@ class SpellCrafter(Cleanable):
         spellbook = self._get_required_spellbook_from_spell(spell)
         self._spell_validator: ISpellValidationSystem = spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = (
-            cast(Optional[ISpellSystemStates], spell._spell_system_states)
+            self._get_required_spell_system_states_from_spell(spell)
         )
         self._requirements: Optional[SpellRequirements] = None
         if resolution_profile is not None:
@@ -342,7 +296,7 @@ class SpellCrafter(Cleanable):
     @staticmethod
     def _get_required_spellbook_from_spell(
             spell: ISpell,
-    ) -> _SpellCrafterSpellbookSurface:
+    ) -> ISpellbook:
         """
         Return the owning spellbook for one spell or raise.
 
@@ -351,23 +305,58 @@ class SpellCrafter(Cleanable):
                 Owning spell whose borrowed spellbook surface is required.
 
         Returns:
-            _SpellCrafterSpellbookSurface: Borrowed owning spellbook runtime
-            surface.
+            ISpellbook: Borrowed owning spellbook runtime surface.
         """
         spellbook_surface = spell._spellbook
         if spellbook_surface is None:
             raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
-        return cast(_SpellCrafterSpellbookSurface, spellbook_surface)
+        from melder.spellbook.spellbook import Spellbook
+        if not isinstance(spellbook_surface, Spellbook):
+            raise TypeError(
+                "SpellCrafter requires the concrete internal Spellbook surface."
+            )
+        return spellbook_surface
 
-    def _get_required_spellbook(self) -> _SpellCrafterSpellbookSurface:
+    def _get_required_spellbook(self) -> ISpellbook:
         """
         Return the owning spellbook for this crafter or raise.
 
         Returns:
-            _SpellCrafterSpellbookSurface: Borrowed owning spellbook runtime
-            surface.
+            ISpellbook: Borrowed owning spellbook runtime surface.
         """
         return self._get_required_spellbook_from_spell(self._spell)
+
+    @staticmethod
+    def _get_required_spell_system_states_from_spell(
+            spell: ISpell,
+    ) -> Optional[ISpellSystemStates]:
+        """
+        Return the concrete spell-system-state registry attached to one spell,
+        when present.
+
+        Args:
+            spell:
+                Owning spell whose spell-system-state surface is required.
+
+        Returns:
+            Optional[ISpellSystemStates]: Concrete registry when available.
+
+        Raises:
+            TypeError:
+                If the attached spell-system-state surface is present but is
+                not the concrete internal `SpellSystemStates` implementation.
+        """
+        spell_system_states = spell._spell_system_states
+        if spell_system_states is None:
+            return None
+        from melder.aether.dev_ops.spell_system_states.spell_system_states import (
+            SpellSystemStates,
+        )
+        if not isinstance(spell_system_states, SpellSystemStates):
+            raise TypeError(
+                "SpellCrafter requires the concrete internal SpellSystemStates surface."
+            )
+        return spell_system_states
 
     def _get_required_spell_system_states(self) -> ISpellSystemStates:
         """
@@ -386,7 +375,7 @@ class SpellCrafter(Cleanable):
     @staticmethod
     def _get_required_crafter_from_spell(
             spell: ISpell,
-    ) -> _SpellCrafterPeerSurface:
+    ) -> "SpellCrafter":
         """
         Return the live crafter attached to one spell or raise.
 
@@ -397,7 +386,11 @@ class SpellCrafter(Cleanable):
         crafter = spell._crafter
         if crafter is None:
             raise RuntimeError("Spell must have a live SpellCrafter.")
-        return cast(_SpellCrafterPeerSurface, crafter)
+        if not isinstance(crafter, SpellCrafter):
+            raise TypeError(
+                "SpellCrafter requires the concrete internal peer SpellCrafter surface."
+            )
+        return crafter
 
     def _get_required_current_spell_id(self) -> str:
         """
@@ -831,6 +824,32 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         return self._spell_system_index_phase5
+
+    def get_phase5_spell_ids(self) -> Set[str]:
+        """
+        Return the spell ids currently covered by local Phase 5 system-index state.
+
+        Returns:
+            Set[str]: Spell ids visible through the local Phase 5 index.
+        """
+        self.check_cleaned()
+        system_index = self._spell_system_index_phase5
+        if system_index is None or system_index.nodes is None:
+            return set()
+        return set(system_index.nodes.keys())
+
+    def get_phase5_root_ids(self) -> Tuple[str, ...]:
+        """
+        Return the root ids currently covered by local Phase 5 rooted blueprints.
+
+        Returns:
+            Tuple[str, ...]: Root ids visible through local Phase 5 blueprints.
+        """
+        self.check_cleaned()
+        root_blueprints = self._entire_dag_blueprint_phase5
+        if root_blueprints is None:
+            return tuple()
+        return tuple(root_blueprints.keys())
 
 
     @property
@@ -2701,27 +2720,11 @@ class SpellCrafter(Cleanable):
             contract_dependencies_complete = bool(
                 occurrence_plan.contract_dependencies_complete,
             )
-            occurrence_graph: Mapping[
-                Tuple[str, Optional[int]],
-                Mapping[str, Sequence[Tuple[str, Optional[int]]]],
-            ] = cast(
-                Mapping[
-                    Tuple[str, Optional[int]],
-                    Mapping[str, Sequence[Tuple[str, Optional[int]]]],
-                ],
-                occurrence_plan.occurrence_graph,
-            )
+            occurrence_graph = occurrence_plan.occurrence_graph
             instance_keys_by_spell_id = occurrence_plan.instance_keys_by_spell_id
             canonical_occurrences_by_spell_id = occurrence_plan.canonical_occurrences_by_spell_id
-            contract_overrides_by_occurrence: Mapping[
-                Tuple[str, Optional[int]],
-                Mapping[str, Any],
-            ] = cast(
-                Mapping[
-                    Tuple[str, Optional[int]],
-                    Mapping[str, Any],
-                ],
-                occurrence_plan.contract_overrides_by_occurrence,
+            contract_overrides_by_occurrence = (
+                occurrence_plan.contract_overrides_by_occurrence
             )
         except AttributeError:
             return None
@@ -2883,66 +2886,31 @@ class SpellCrafter(Cleanable):
             occurrence_contract_complete = self._occurrence_plan_phase8.contract_dependencies_complete
             try:
                 occurrence_graph_rows = self._build_occurrence_graph_rows(
-                    cast(
-                        Mapping[
-                            Tuple[str, Optional[int]],
-                            Mapping[str, Sequence[Tuple[str, Optional[int]]]],
-                        ],
-                        self._occurrence_plan_phase8.occurrence_graph,
-                    ),
+                    self._occurrence_plan_phase8.occurrence_graph,
                 )
             except AttributeError:
                 occurrence_graph_rows = ()
             try:
                 occurrence_instance_key_rows = self._build_occurrence_instance_key_rows(
-                    cast(
-                        Mapping[
-                            str,
-                            Sequence[Tuple[str, Optional[int]]],
-                        ],
-                        self._occurrence_plan_phase8.instance_keys_by_spell_id,
-                    ),
+                    self._occurrence_plan_phase8.instance_keys_by_spell_id,
                 )
             except AttributeError:
                 occurrence_instance_key_rows = ()
             try:
                 occurrence_canonical_rows = self._build_occurrence_canonical_rows(
-                    cast(
-                        Mapping[
-                            str,
-                            Tuple[str, Optional[int]],
-                        ],
-                        self._occurrence_plan_phase8.canonical_occurrences_by_spell_id,
-                    ),
+                    self._occurrence_plan_phase8.canonical_occurrences_by_spell_id,
                 )
             except AttributeError:
                 occurrence_canonical_rows = ()
             try:
                 occurrence_contract_override_rows = self._build_occurrence_contract_override_rows(
-                    cast(
-                        Mapping[
-                            Tuple[str, Optional[int]],
-                            Mapping[str, Any],
-                        ],
-                        self._occurrence_plan_phase8.contract_overrides_by_occurrence,
-                    ),
+                    self._occurrence_plan_phase8.contract_overrides_by_occurrence,
                 )
             except AttributeError:
                 occurrence_contract_override_rows = ()
             try:
                 occurrence_contract_override_spell_rows = self._build_occurrence_contract_override_spell_rows(
-                    cast(
-                        Mapping[
-                            str,
-                            Sequence[
-                                Tuple[
-                                    Tuple[str, Optional[int]],
-                                    Mapping[str, Any],
-                                ]
-                            ],
-                        ],
-                        self._occurrence_plan_phase8.contract_overrides_by_spell_id,
-                    ),
+                    self._occurrence_plan_phase8.contract_overrides_by_spell_id,
                 )
             except AttributeError:
                 occurrence_contract_override_spell_rows = ()
@@ -4080,15 +4048,16 @@ class SpellCrafter(Cleanable):
             )
 
 
-        dag_with_dependencies = cast(
-            Tuple[DirectedAcyclicWorkGraph, List[str]],
-            self._build_local_frame_dag(
+        dag_with_dependencies = self._build_local_frame_dag(
             requirements=self._requirements,
             graph=self._symbolic_graph,
             cancellation_event=cancel_event,
             return_dependencies=True,
-            ),
         )
+        if not isinstance(dag_with_dependencies, tuple):
+            raise RuntimeError(
+                "SpellCrafter Phase 3 expected a DAG/dependency tuple when return_dependencies=True."
+            )
         dag, dependency_spell_ids = dag_with_dependencies
 
         # Topological order of node ids (deps first, then root).
