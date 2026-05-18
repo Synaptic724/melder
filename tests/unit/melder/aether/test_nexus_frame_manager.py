@@ -21,11 +21,18 @@ from tests._frame_posture_test_support import (
 
 
 class _FakeConduitCloud:
-    def __init__(self, cloud_names=None) -> None:
+    def __init__(self, cloud_names=None, cluster_names=None) -> None:
         self._registry = dict(cloud_names or {})
+        self._cluster_names = tuple(sorted(cluster_names or ()))
 
     def list_conduit_names(self):
         return tuple(sorted(self._registry.keys()))
+
+    def list_cloud_names(self):
+        return tuple(sorted(self._registry.keys()))
+
+    def list_cluster_names(self):
+        return self._cluster_names
 
 
 class _FakeFrame:
@@ -43,7 +50,7 @@ class _FakeFrame:
         self._id = frame_id
         self.cleaned = False
         self._conduits = dict(conduit_ids or {})
-        self._conduit_cloud = _FakeConduitCloud(cloud_names)
+        self._conduit_cloud = _FakeConduitCloud(cloud_names, cluster_names)
         self._conduit_clusters = dict(cluster_names or {})
         self.bound_frame_configuration = None
 

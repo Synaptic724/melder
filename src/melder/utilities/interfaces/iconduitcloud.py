@@ -13,6 +13,13 @@ class IConduitCloud(ICleanable, Protocol):
     """
     _id: str
 
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the owning frame name served by this cloud.
+        """
+        ...
+
     def get_conduit(self, name: str) -> IConduit:
         """
         Retrieve a root conduit by its registered name in this frame.
@@ -50,6 +57,12 @@ class IConduitCloud(ICleanable, Protocol):
     def list_conduit_names(self) -> Tuple[str, ...]:
         """
         Return the registered root-conduit names in this frame.
+        """
+        ...
+
+    def list_cloud_names(self) -> Tuple[str, ...]:
+        """
+        Return the explicit dynamic cloud-entry names in this frame.
         """
         ...
 
@@ -151,5 +164,11 @@ class IConduitCloud(ICleanable, Protocol):
     def refresh_cluster_shares_for_conduit(self, conduit: IConduit) -> None:
         """
         Refresh cluster sharing for one conduit across all of its clusters.
+        """
+        ...
+
+    def list_cluster_names(self) -> Tuple[str, ...]:
+        """
+        Return the current frame-local cluster names.
         """
         ...

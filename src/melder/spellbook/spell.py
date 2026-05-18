@@ -6,6 +6,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
+from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -13,6 +14,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -33,146 +35,6 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
-class ISpellCrafterSurface(Protocol):
-    """
-    Narrow spell-owned compiler and validation surface consumed by `Spell`.
-
-    Purpose:
-        Break the local `spell.py` <-> `spell_crafter.py` type cycle while
-        still documenting the exact crafter behavior `Spell` relies on.
-
-    Contract:
-        - Exposes read-only phase artifacts and validation status.
-        - Exposes the phase-runner methods `Spell` delegates into.
-        - Supports deterministic cleanup and phase-artifact cleanup.
-    """
-
-    requirements: Optional[SpellRequirements]
-    symbolic_graph: Optional[SpellSymbolicGraph]
-    resolution_frame: Any
-    validation_result_phase4: Any
-    validation_result_phase6: Any
-    validated: bool
-    is_broken: bool
-
-    def cleanup(self) -> None:
-        """
-        Clean up the owned crafter state.
-        """
-        ...
-
-    def run_phase_requirements(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_symbolic_graph(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_local_frame(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_validation(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_root_blueprints(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_root_blueprints_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_occurrence_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_injection_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_patch_maps(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_execution_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_system_validation(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_system_validation_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_change_control(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def run_phase_change_control_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        ...
-
-    def get_phase5_spell_ids(self) -> Set[str]:
-        """
-        Return the spell ids currently covered by local Phase 5 artifacts.
-        """
-        ...
-
-    def get_phase5_root_ids(self) -> Tuple[str, ...]:
-        """
-        Return the root ids currently covered by local Phase 5 artifacts.
-        """
-        ...
-
-    def cleanup_phase_artifacts(self) -> None:
-        """
-        Drop owned phase artifacts while keeping the crafter itself alive.
-        """
-        ...
 
 
 #region Spell
@@ -417,7 +279,7 @@ class Spell(Cleanable, ISpell):
         self._id: str = str(ulid.ULID())  # Unique internal ID for tracking
 
         # Spell Data
-        self.spell_index: SpellIndex = spell_index
+        self.spell_index: ISpellIndex = spell_index
         self.spell: Any = spell  # Object reference
         self.spell_id: str = spell_id  # SHA256 unique identifier
         self.spellframe: Optional[Any] = spellframe
@@ -493,7 +355,7 @@ class Spell(Cleanable, ISpell):
 
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase artifacts and is disposable.
-        self._crafter: Optional[ISpellCrafterSurface] = None
+        self._crafter: Optional[SpellCrafter] = None
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
@@ -882,7 +744,7 @@ class Spell(Cleanable, ISpell):
         )
 
     #region Internal helpers
-    def _ensure_crafter(self) -> ISpellCrafterSurface:
+    def _ensure_crafter(self) -> "SpellCrafter":
         """
         Lazily create and attach the spell-owned `SpellCrafter`.
 

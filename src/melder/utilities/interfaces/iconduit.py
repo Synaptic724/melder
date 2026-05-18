@@ -196,7 +196,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Build a read-only snapshot of Conduit state.
+        Build a read-only snapshot of the Conduit state.
 
         Purpose:
             Provide a stable view of conduit metadata and Spellbook registries
@@ -227,7 +227,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Return the human-readable name of this conduit, if one has been assigned.
+        Return the human-readable name of this conduit if one has been assigned.
         """
         ...
 
@@ -250,7 +250,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
+        Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit
         to name it afterward and register it. You can only register it once.
 
         Args:
@@ -334,7 +334,7 @@ class IConduit(ICleanable, Protocol):
 
         Args:
             name (str): An optional name to assign to the upgraded conduit.
-            hooks (dict[str, Any] | None, optional): Optional hooks to configure the conduit's behavior.
+            hooks (dict[str, Any] | None, optional): Optional hooks to configure the conduit's behaviour.
 
         Raises:
             RuntimeError: If the dynamic environment is not enabled.
@@ -349,7 +349,7 @@ class IConduit(ICleanable, Protocol):
         Sets a new policy for this Conduit. This is only allowed in dynamic mode.
 
         Args:
-            policy (str): The new policy to set, governing linking behavior.
+            policy (str): The new policy to set, governing linking behaviour.
 
         Raises:
             RuntimeError: If dynamic environment is not enabled.
@@ -638,7 +638,7 @@ class IConduit(ICleanable, Protocol):
 
     def describe_spells_in_conduit(self) -> list[dict[str, Any]]:
         """
-        Return a user-facing dump of spell targeting details visible through
+        Return a user-facing dump of spell-targeting details visible through
         this conduit's Spellbook.
         """
         ...
@@ -649,8 +649,8 @@ class IConduit(ICleanable, Protocol):
             spell,
             existence: str | Existence,
             permissions: str = "create",
-            spellframe=None,
-            binding_name=None,
+            spellframe: Any=None,
+            binding_name:Optional[str] =None,
             profile: str = "general",
             **kwargs,
     ) -> str:
@@ -717,6 +717,7 @@ class IConduit(ICleanable, Protocol):
             spellframe (Optional[Any]): Logical interface or category for grouping.
             binding_name (Optional[str]): Name key to distinguish this spell among
                 others in its frame.
+            profile (str): The profile to use for reflection and metadata.
             **kwargs:
                 - pre_hooks (Optional[list[Callable]]): Hooks executed before casting.
                 - activation_hooks (Optional[list[Callable]]): Hooks executed during
@@ -756,7 +757,7 @@ class IConduit(ICleanable, Protocol):
             RuntimeError: If the Conduit is cleaned or not normal.
             RuntimeError: If no binding transaction is active for this Spellbook.
             TypeError: If `module` is not a module or metadata is invalid.
-            ValueError: If a decorated object is not owned by the module.
+            ValueError: If the module does not own a decorated object.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         ...
@@ -801,9 +802,9 @@ class IConduit(ICleanable, Protocol):
             scope_hashes:
                 Optional normalized scope hashes for conflict checks.
             binding_keys:
-                Optional binding keys affected by the request.
+                Optional binding keys are affected by the request.
             contract_keys:
-                Optional contract keys affected by the request.
+                Optional contract keys are affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
         Returns:
@@ -883,6 +884,25 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
+    def transaction(
+            self,
+            transaction_type: ChangeTransactionType | str,
+            *,
+            conduit_ids: Optional[Iterable[str]] = None,
+            conduits: Optional[Iterable["IConduit"]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> ContextManager["IConduit"]:
+        """
+        Public API
+
+        Context-managed change-control transaction for this Conduit.
+        """
+        ...
+
     def binding_transaction(self) -> ContextManager["IConduit"]:
         """
         Public API
@@ -948,8 +968,8 @@ class IConduit(ICleanable, Protocol):
         These inputs are normalized and delegated to the underlying `Meld`
         instance, which resolves a concrete spell_id via SpellInputUtils.
 
-        Resolution, reuse, and lifecycle behavior are delegated to
-        the underlying ``Meld`` instance.
+        Resolution, reuse, and lifecycle behaviour are delegated to
+        the underlying "Meld" instance.
 
         Args:
             spell_name:
@@ -968,31 +988,31 @@ class IConduit(ICleanable, Protocol):
                 spell. Used as the binding key during resolution.
             spell_override:
                 Optional per-call override payload (dict / list / tuple)
-                passed through to ``Meld.meld`` for constructor/factory
+                passed through to "Meld.meld" for constructor/factory
                 argument overrides.
 
         Returns:
             Any:
                 The resolved component instance (reused or newly
-                created) as returned by ``Meld.meld``.
+                created) as returned by "Meld.meld".
 
         Raises:
             RuntimeError:
                 - If the Conduit has been cleaned.
-                - If the underlying ``Meld`` instance is missing.
+                - If the underlying "Meld" instance is missing.
             ValueError:
                 - If none of `spell_name`, `spell`, or `spellframe` are provided.
             TypeError:
                 - If `spell_name` is not a string when provided.
                 - If `binding_name` is not a string when provided.
             KeyError:
-                Propagated from ``Meld.meld`` when a spell_id cannot be
+                Propagated from "Meld.meld" when a spell_id cannot be
                 resolved.
             NotImplementedError:
-                Propagated from ``Meld.meld`` for spell types or
+                Propagated from "Meld.meld" for spell types or
                 existence modes not yet implemented.
             HookExecutionError:
-                Propagated from ``Meld.meld`` if hook execution fails.
+                Propagated from "Meld.meld" if hook execution fails.
         """
         ...
 
@@ -1044,7 +1064,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit is a lesser conduit.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
         """
         ...
 
@@ -1117,7 +1137,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
             TypeError: If `target_conduit` is not an `IConduit` instance.
             RuntimeError: If the target conduit does not have a valid creation context.
         """
@@ -1140,7 +1160,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
         """
         ...
 
@@ -1157,7 +1177,7 @@ class IConduit(ICleanable, Protocol):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
         """
         ...
 
@@ -1227,7 +1247,7 @@ class IConduit(ICleanable, Protocol):
         This is useful for understanding the dependencies and relationships initiated by this conduit.
 
         Returns:
-            list[IConduit]: Outbound linked conduits.
+            list[IConduit]: Outbound-linked conduits.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1334,7 +1354,7 @@ class IConduit(ICleanable, Protocol):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If the Conduit is not a 'normal' conduit.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
         """
         ...
 
@@ -1369,13 +1389,13 @@ class IConduit(ICleanable, Protocol):
             conduit (IConduit, optional): The target conduit to contract with.
             conduit_id (str, optional): The str of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level granted for this spell (default is "create").
-            aetheric_frame (str): Optional frame override used to locate the target conduit.
+            aetheric_frame (str): Optional frame override is used to locate the target conduit.
 
         Returns:
             bool | None: True if the contract was created, False otherwise. None if an internal error occurs.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
@@ -1402,14 +1422,14 @@ class IConduit(ICleanable, Protocol):
             spell_ids (list[str]): List of spell IDs to contract.
             conduit (IConduit, optional): The target conduit to contract with.
             conduit_id (str, optional): The id of the target conduit (used if `conduit` is not provided).
-            permissions (str): The permission level granted for all spells (default is "create").
-            aetheric_frame (str): Optional frame override used to locate the target conduit.
+            permissions (str): The permission level is granted for all spells (default is "create").
+            aetheric_frame (str): Optional frame override is used to locate the target conduit.
 
         Returns:
             dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
@@ -1444,7 +1464,7 @@ class IConduit(ICleanable, Protocol):
             bool | None: True if the spell was successfully removed from the contract, False otherwise. None if an internal error occurs.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
@@ -1463,7 +1483,7 @@ class IConduit(ICleanable, Protocol):
 
         Removes multiple spells from an existing contract with a target conduit.
 
-        Useful for bulk cleanup or revocation when retiring behaviors or permissions.
+        Useful for bulk cleanup or revocation when retiring behaviours or permissions.
 
         Args:
             spell_ids (list[str], optional): List of spell IDs to remove.
@@ -1476,7 +1496,7 @@ class IConduit(ICleanable, Protocol):
             dict: Dictionary of `spell_id` -> success boolean for each removal attempt.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
@@ -1537,7 +1557,7 @@ class IConduit(ICleanable, Protocol):
             bool | None: True if all spells were successfully removed, False otherwise. None if an internal error occurs.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             RuntimeError: If no active link transaction is present for this contract mutation.
         """
         ...
@@ -1562,7 +1582,7 @@ class IConduit(ICleanable, Protocol):
             or None if no contracts exist.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `validate` is not a boolean.
         """
         ...
@@ -1583,7 +1603,7 @@ class IConduit(ICleanable, Protocol):
             Optional[tuple[str, ISpell]]: Tuple of (`conduit_id`, `spell`) if found, otherwise None.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `spell_id` is not a string.
         """
         ...
@@ -1608,7 +1628,7 @@ class IConduit(ICleanable, Protocol):
             if not found. When a contract exists but contains no spells, inbound/outbound lists are empty.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `conduit_id` is not a str.
         """
         ...
@@ -1631,7 +1651,7 @@ class IConduit(ICleanable, Protocol):
             dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
             TypeError: If `conduit_name` is not a string.
         """
         ...
@@ -1646,11 +1666,11 @@ class IConduit(ICleanable, Protocol):
 
         Returns:
             list[tuple[str, IConduit]] | None:
-                List of ``(conduit_id, conduit)`` tuples, or ``None`` when no
+                List of "(conduit_id, conduit)" tuples, or "None" when no
                 contracts exist.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
 
@@ -1671,7 +1691,7 @@ class IConduit(ICleanable, Protocol):
             dict: Contract metadata payload, including spells and permissions.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
 
@@ -1689,7 +1709,7 @@ class IConduit(ICleanable, Protocol):
                 Mapping of contract ids to validation results.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
 
@@ -1706,7 +1726,7 @@ class IConduit(ICleanable, Protocol):
             bool: True if all active contracts pass validation, False otherwise.
 
         Raises:
-            RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
+            RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
         """
         ...
 

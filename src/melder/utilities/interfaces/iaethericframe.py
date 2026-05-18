@@ -2,7 +2,6 @@ from typing import Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
-from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -15,13 +14,15 @@ class IAethericFrame(ICleanable, Protocol):
 
     `AethericFrame` is the per-frame ownership boundary beneath the global
     `Aether` singleton. It owns the frame-local conduit registry, spell/index
-    registries, cluster state, frame-level posture/config references, and the
-    DevOps and mutation services tied to that frame.
+    registries, frame-level posture/config references, and the DevOps services
+    tied to that frame. It also owns the frame-local `ConduitCloud`, which in
+    turn owns the cluster registry and cluster lifecycle.
 
     Contract:
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
       - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns one `ConduitCloud` over the frame-local conduit registries.
       - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
       - Owns one narrow frame-level AR posture object distinct from the richer
         shared Spellbook configuration object.
@@ -35,7 +36,6 @@ class IAethericFrame(ICleanable, Protocol):
     _id: str
     _conduits: Dict[str, IConduit]
     _conduit_cloud: IConduitCloud
-    _conduit_clusters: Dict[str, IConduitCluster]
     name: str
 
     @property

@@ -9,7 +9,6 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -25,13 +24,15 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     `AethericFrame` is the per-frame ownership boundary beneath the global
     `Aether` singleton. It owns the frame-local conduit registry, spell/index
-    registries, cluster state, frame-level posture/config references, and the
-    DevOps and mutation services tied to that frame.
+    registries, frame-level posture/config references, and the DevOps services
+    tied to that frame. It also owns the frame-local `ConduitCloud`, which in
+    turn owns the cluster registry and cluster lifecycle.
 
     Contract:
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
       - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns one `ConduitCloud` over the frame-local conduit registries.
       - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
       - Owns one narrow frame-level AR posture object distinct from the richer
         shared Spellbook configuration object.
@@ -49,7 +50,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         Args:
             aether:
-                Owning `Aether` singleton responsible for registry attachment
+                Owning `Aether` singleton is responsible for registry attachment
                 and detachment of this frame.
             name: Human-readable name for this frame. Used for identification
                   and logging; uniqueness is expected but not enforced here.
@@ -83,16 +84,11 @@ class AethericFrame(Cleanable, IAethericFrame):
         #   conduit_id -> Set[str]
         self._version_registry: Dict[str, Set[str]] = {}
 
-        # Conduit clusters (grouping by logical name):
-        #   cluster_name -> ConduitCluster
-        self._conduit_clusters: Dict[str, IConduitCluster] = {}
-
-        # Frame-local conduit/cluster facade over the borrowed frame stores.
+        # Frame-local conduit facade over the borrowed frame-owned root stores.
         self._conduit_cloud: ConduitCloud = ConduitCloud(
             name=name,
             conduits=self._conduits,
             conduit_ids_by_name=self._conduit_ids_by_name,
-            conduit_clusters=self._conduit_clusters,
         )
 
         # Per-frame graph + dirtiness registry for all spell lineages.
@@ -160,9 +156,9 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         Contract:
         - Cleans child conduits before clearing conduit registries.
-        - Clears spell, version, and cluster registries owned by the frame.
-        - Cleans conduit cloud, mutation research, spell-system-state, and
-          DevOps services when present.
+        - Clears spell and version registries owned by the frame.
+        - Cleans conduit cloud, spell-system-state, and DevOps services when
+          present.
 
         Returns:
             None.
@@ -189,15 +185,6 @@ class AethericFrame(Cleanable, IAethericFrame):
         if self._version_registry is not None:
             self._version_registry.clear()
 
-        # Conduit clusters
-        if self._conduit_clusters is not None:
-            for cluster in list(self._conduit_clusters.values()):
-                try:
-                    cluster.cleanup()
-                except Exception:
-                    pass
-            self._conduit_clusters.clear()
-
         # Dynamic conduit cloud
         if self._conduit_cloud is not None:
             self._conduit_cloud.cleanup()
@@ -214,7 +201,6 @@ class AethericFrame(Cleanable, IAethericFrame):
         del self._conduit_ids_by_name
         del self._spell_registry
         del self._version_registry
-        del self._conduit_clusters
         del self._conduit_cloud
         del self._spell_system_states
         del self._dev_ops_manager
@@ -290,7 +276,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
         Returns:
             Optional[AethericFrameConfiguration]: Frame posture object while the
-            frame is live. Frames create a default posture during init and later
+            frame is live. Frames create a default posture during init, and later
             Spellbook/Nexus paths freeze that object into its canonical state.
         """
         self.check_cleaned()
@@ -318,8 +304,8 @@ class AethericFrame(Cleanable, IAethericFrame):
         Bind one frame-level posture object onto this frame.
 
         Purpose:
-            Keep frame-posture lifecycle inside the owning `AethericFrame`
-            instead of routing the behavior through `Aether`.
+            Keep the frame-posture lifecycle inside the owning `AethericFrame`
+            instead of routing the behaviour through `Aether`.
 
         Contract:
             - First successful bind freezes the frame-owned posture.

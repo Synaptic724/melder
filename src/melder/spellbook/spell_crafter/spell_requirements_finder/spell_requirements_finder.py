@@ -6,7 +6,6 @@ import typing
 import types
 from typing import Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
 # Melder imports
-from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )

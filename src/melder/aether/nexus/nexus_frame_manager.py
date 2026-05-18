@@ -832,7 +832,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
             )
         )
         conduit_cloud_names = tuple(sorted(frame._conduit_cloud.list_conduit_names()))
-        cluster_names = tuple(sorted(frame._conduit_clusters.keys()))
+        cluster_names = tuple(sorted(frame._conduit_cloud.list_cluster_names()))
         payload = FrameDescriptorPayload(
             system_state=frame_configuration.system_state,
             ai_native_enabled=frame_configuration.ai_native_enabled,

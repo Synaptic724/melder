@@ -263,13 +263,15 @@ class FrameDescriptorManager(Cleanable):
                 conduit_cloud_entry_count = 0
                 if frame._conduit_cloud is not None:
                     conduit_cloud_names = tuple(
-                        sorted(frame._conduit_cloud._registry.keys())
+                        sorted(frame._conduit_cloud.list_cloud_names())
                     )
                     conduit_cloud_entry_count = len(conduit_cloud_names)
                 cluster_names: tuple[str, ...] = tuple()
                 cluster_count = 0
-                if frame._conduit_clusters is not None:
-                    cluster_names = tuple(sorted(frame._conduit_clusters.keys()))
+                if frame._conduit_cloud is not None:
+                    cluster_names = tuple(
+                        sorted(frame._conduit_cloud.list_cluster_names())
+                    )
                     cluster_count = len(cluster_names)
             payload = FrameDescriptorPayload(
                 system_state=frame_posture.system_state,

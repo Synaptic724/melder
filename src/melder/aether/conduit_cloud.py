@@ -22,10 +22,11 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     Contract:
     - One cloud belongs to one frame name.
-    - Borrows frame-owned root-conduit and cluster stores by reference.
+    - Borrows frame-owned root-conduit stores by reference.
+    - Owns the frame-local cluster registry and cluster lifecycle.
     - Owns a separate dynamic cloud registry for explicit named-cloud exposure.
     - Does not own conduit lifecycle; `AethericFrame` remains the owner of the
-      borrowed stores.
+      borrowed conduit stores.
     - Thread-safe access is serialized with the instance `RLock`.
     """
     __melder_internal__ = _mrg.sentinel
@@ -35,14 +36,13 @@ class ConduitCloud(Cleanable, IConduitCloud):
             name: str,
             conduits: Dict[str, IConduit],
             conduit_ids_by_name: Dict[str, str],
-            conduit_clusters: Dict[str, IConduitCluster],
-    ):
+    ) -> None:
         """
         Initialize the frame-scoped conduit and cluster service facade.
 
         Purpose:
             Create the frame-local service surface owned by one
-            `AethericFrame` over its borrowed conduit and cluster stores.
+            `AethericFrame` over its borrowed conduit stores.
 
         Args:
             name (str): The name of the AethericFrame this cloud serves.
@@ -50,20 +50,19 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 Borrowed root-conduit registry owned by the frame.
             conduit_ids_by_name (Dict[str, str]):
                 Borrowed root-conduit name registry owned by the frame.
-            conduit_clusters (Dict[str, IConduitCluster]):
-                Borrowed cluster registry owned by the frame.
         Contract:
             - Starts with an empty dynamic cloud registry.
+            - Starts with an empty owned cluster registry.
             - Stores the owning frame name for later diagnostics/identity.
-            - Retains borrowed references to the frame-owned root-conduit and
-              cluster stores instead of copying them.
+            - Retains borrowed references to the frame-owned root-conduit
+              stores instead of copying them.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
         self._conduits: Dict[str, IConduit] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
-        self._conduit_clusters: Dict[str, IConduitCluster] = conduit_clusters
+        self._conduit_clusters: Dict[str, IConduitCluster] = {}
         self._registry: Dict[str, IConduit] = {}
         self._id: str = str(ulid.ULID())
 
@@ -73,19 +72,25 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
         Purpose:
             Drop the cloud-owned dynamic registry without mutating the
-            frame-owned conduit and cluster stores.
+            frame-owned conduit stores.
 
         Contract:
             - Idempotent and lock-guarded.
-            - Clears only cloud-owned registry state.
-            - Does not clean the conduit objects or clear the borrowed frame
-              stores.
+            - Cleans cloud-owned cluster state before dropping owned refs.
+            - Does not clean the conduit objects or clear the borrowed
+              frame-owned root stores.
         """
         if self._cleaned:
             return
         with self._lock:
             if self._cleaned:
                 return
+            for cluster in list(self._conduit_clusters.values()):
+                try:
+                    cluster.cleanup()
+                except Exception:
+                    pass
+            self._conduit_clusters.clear()
             self._registry.clear()
             self._cleaned = True
 
@@ -99,7 +104,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
 
     #region Context Manager
-    def __enter__(self):
+    def __enter__(self) -> "ConduitCloud":
         """
         Acquire the registry lock and return this cloud.
 
@@ -109,13 +114,24 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Release the registry lock acquired by `__enter__`.
         """
         self._lock.release()
 
     #endregion Context Manager
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the owning frame name served by this cloud.
+
+        Returns:
+            str: The current frame name.
+        """
+        self.check_cleaned()
+        return self._name
 
 
     def get_conduit(self, name: str) -> IConduit:
@@ -210,6 +226,17 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self.check_cleaned()
         with self._lock:
             return tuple(self._conduit_ids_by_name.keys())
+
+    def list_cloud_names(self) -> Tuple[str, ...]:
+        """
+        Return the explicit dynamic cloud-entry names in this frame.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of dynamic cloud-entry names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(self._registry.keys())
 
     def count_conduits(self) -> int:
         """
@@ -435,7 +462,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self.check_cleaned()
         cluster = self._get_cluster(cluster_name)
         cluster.add_member(conduit.id)
-        cluster.handle_join(conduit, self, self._name)
+        cluster.handle_join(conduit, self)
 
     def remove_conduit_from_cluster(
             self,
@@ -452,7 +479,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self.check_cleaned()
         cluster = self._get_cluster(cluster_name)
         cluster.remove_member(conduit.id)
-        cluster.handle_leave(conduit, self, self._name)
+        cluster.handle_leave(conduit, self)
 
     def get_clusters_for_conduit(self, conduit_id: str) -> List[str]:
         """
@@ -483,7 +510,18 @@ class ConduitCloud(Cleanable, IConduitCloud):
         cluster_names = self.get_clusters_for_conduit(conduit.id)
         for cluster_name in cluster_names:
             cluster = self._get_cluster(cluster_name)
-            cluster.refresh_member_shares(conduit, self, self._name)
+            cluster.refresh_member_shares(conduit, self)
+
+    def list_cluster_names(self) -> Tuple[str, ...]:
+        """
+        Return the current frame-local cluster names.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of cluster names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(self._conduit_clusters.keys())
 
     def _get_cluster(self, cluster_name: str) -> IConduitCluster:
         """
