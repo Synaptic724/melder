@@ -91,7 +91,7 @@ def test_frame_acl_view_configuration_init_rejects_invalid_inputs() -> None:
             minimum_spell_payload_version="",
         )
 
-    with pytest.raises(TypeError, match="ruleset must be a FrameACLRuleSet"):
+    with pytest.raises(TypeError, match="ruleset must satisfy IFrameACLRuleSet"):
         FrameACLViewConfiguration(
             profile_name="safe",
             profile_version="0.0.1",
@@ -179,7 +179,7 @@ def test_frame_acl_view_configuration_from_profile_rejects_wrong_type() -> None:
     Returns:
         None.
     """
-    with pytest.raises(TypeError, match="profile must be a FrameACLViewProfile"):
+    with pytest.raises(TypeError, match="profile must satisfy IFrameACLViewProfile"):
         FrameACLViewConfiguration.from_profile(None)
 
 
