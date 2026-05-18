@@ -133,7 +133,7 @@ class Nexus(Cleanable, INexus):
     def __init__(
             self,
             *,
-            aether: Optional[IAether] = None,
+            aether: IAether,
             configuration: Optional[INexusConfiguration] = None,
             logger: Optional[Any] = None,
     ) -> None:
@@ -172,19 +172,8 @@ class Nexus(Cleanable, INexus):
                 If first-time initialization is attempted without an `Aether`
                 substrate reference.
         """
-        self._logger: ISafeLogger
         if Nexus._initialized:
-            if logger is not None:
-                self._logger.cleanup()
-                self._logger = InitHelpers.resolve_safe_logger(logger)
             return
-
-        if aether is None:
-            with Nexus._lock:
-                if Nexus._instance is self and not Nexus._initialized:
-                    Nexus._instance = None
-                    Nexus._initialized = False
-            raise ValueError("Aether must be provided to initialize Nexus.")
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
