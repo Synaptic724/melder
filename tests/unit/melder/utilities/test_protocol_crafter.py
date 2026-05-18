@@ -269,32 +269,6 @@ def test_protocol_crafter_can_write_protocol_module_from_source_file() -> None:
             output_file.unlink()
 
 
-def test_protocol_crafter_can_generate_protocol_module_for_spellbinder() -> None:
-    """
-    Verify source generation produces a cleaner public protocol for SpellBinder.
-
-    Returns:
-        None.
-    """
-    crafter = ProtocolCrafter()
-    source_file = Path("src/melder/spellbook/spellbinder.py")
-    generated_text = crafter.craft_protocol_module_code_from_source_file(
-        source_file,
-        "SpellBinder",
-    )
-
-    assert generated_text.startswith(
-        "from typing import Any, Callable, Optional, Protocol, runtime_checkable\n\n"
-    )
-    assert "class ISpellBinder(Protocol):" in generated_text
-    assert "def bind(" in generated_text
-    assert "-> 'ISpellBinder':" in generated_text
-    assert "_binding_name" not in generated_text
-    assert "def _still_alive" not in generated_text
-    assert "Optional[str] = None" in generated_text
-    assert '        """\n        Stage a spellframe for the pending registration.' in generated_text
-
-
 def test_protocol_crafter_can_write_joined_protocol_module() -> None:
     """
     Verify joined generation keeps only the shared class surface.

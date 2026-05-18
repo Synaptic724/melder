@@ -1115,6 +1115,35 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         with self._lock:
             self._revalidate_fn_by_conduit[conduit_id] = fn
 
+    def has_revalidator_for_conduit(self, conduit_id: str) -> bool:
+        """
+        Return whether a conduit-specific dirty-root revalidator is registered.
+
+        Purpose:
+            Let callers preserve idempotent conduit wiring without probing
+            manager internals.
+        Contract:
+            - Returns True only when the supplied conduit id already has a
+              stored revalidator callback.
+            - Does not mutate change-control manager state.
+        Args:
+            conduit_id:
+                Conduit identifier to inspect.
+        Returns:
+            bool:
+                True when this conduit already has a registered revalidator.
+        Raises:
+            ValueError: If conduit_id is empty.
+            RuntimeError: If this manager has been cleaned.
+        Threading:
+            Acquires the internal lock while reading registration state.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        with self._lock:
+            return conduit_id in self._revalidate_fn_by_conduit
+
     def rebuild_component_of(
             self,
             conduit_id: str,

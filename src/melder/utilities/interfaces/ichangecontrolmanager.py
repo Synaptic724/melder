@@ -402,6 +402,12 @@ class IChangeControlManager(ICleanable, Protocol):
         """
         ...
 
+    def has_revalidator_for_conduit(self, conduit_id: str) -> bool:
+        """
+        Return whether the supplied conduit already has a registered revalidator.
+        """
+        ...
+
     def rebuild_component_of(
             self,
             conduit_id: str,

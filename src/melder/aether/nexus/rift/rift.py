@@ -660,7 +660,7 @@ class Rift(Cleanable, IRift):
             "contract_names_by_frame_name": selected_contract_names_by_frame_name,
         }
 
-    def _get_required_view_projection(self, frame_name: str):
+    def _get_required_view_projection(self, frame_name: str) :
         """
         Return one required view projection.
 

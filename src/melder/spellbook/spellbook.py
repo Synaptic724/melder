@@ -443,7 +443,7 @@ and logging.
 
     #endregion Disposal
     #region Context Manager
-    def __enter__(self):
+    def __enter__(self) -> ISpellbook:
         """
         Enter the Spellbook lock context and return `self`.
 
@@ -452,14 +452,14 @@ and logging.
             across a controlled block without exposing `_lock` directly.
 
         Returns:
-            Spellbook:
+            ISpellbook:
                 This Spellbook instance while the lock is held.
         """
         self.check_cleaned()
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Exit the Spellbook lock context.
 

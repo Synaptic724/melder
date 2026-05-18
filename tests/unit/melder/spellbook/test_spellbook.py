@@ -387,6 +387,7 @@ class DummyConduit:
         self.__dynamic_environment__ = False
         self._creation_gate_controller = CreationGateController()
         self.registered = []
+        self._dev_ops_manager = None
 
     def _register_to_creations(self, spell, obj):
         """
@@ -4782,7 +4783,7 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
         Contract:
             Exposes id/name/creations and a cleanup hook.
         """
-        def __init__(self):
+        def __init__(self, dev_ops_manager):
             """
             Purpose:
                 Initialize the conduit object stub.
@@ -4821,15 +4822,17 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
         """
         def __init__(
                 self,
-                spellbook,
-                name,
-                conduit_state,
-                configuration,
-                aetheric_frame,
-                policy,
-                automatic,
-                logger,
+                spellbook=None,
+                name=None,
+                conduit_state=None,
+                configuration=None,
+                aetheric_frame=None,
+                policy=None,
+                automatic=None,
+                logger=None,
                 conduit_id=None,
+                dev_ops_manager=None,
+                conduit_cloud=None,
         ):
             """
             Purpose:
@@ -4846,23 +4849,14 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 automatic: Automatic mode flag.
                 logger: Logger instance.
                 conduit_id: Optional conduit id override for tests.
+                dev_ops_manager: Optional DevOps manager dependency.
+                conduit_cloud: Optional conduit cloud dependency.
             Returns:
                 None.
             """
             self._id = conduit_id or "cid"
-            self._name = "cname"
+            self._name = name or "cname"
             self._creations = {}
-
-        def cleanup(self):
-            """
-            Purpose:
-                Provide a no-op cleanup method.
-            Contract:
-                Does not raise.
-            Returns:
-                None.
-            """
-            pass
 
     import melder.spellbook.spellbook_creation_system as creation_system_module
     monkeypatch.setattr(creation_system_module, "Conduit", StubConduit)

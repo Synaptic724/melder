@@ -4358,7 +4358,11 @@ class SpellCrafter(Cleanable):
 
             return validated_roots
 
-        change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
+        if not change_control_manager.has_revalidator_for_conduit(conduit_id):
+            change_control_manager.set_revalidator(
+                conduit_id,
+                _revalidate_dirty_roots,
+            )
 
     def _collect_local_scope_spell_ids(
             self,
@@ -5674,7 +5678,11 @@ class SpellCrafter(Cleanable):
 
             return validated_roots
 
-        change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
+        if not change_control_manager.has_revalidator_for_conduit(conduit_id):
+            change_control_manager.set_revalidator(
+                conduit_id,
+                _revalidate_dirty_roots,
+            )
 
     def _ensure_change_control_ready_local(self, conduit_id: str) -> None:
         """
@@ -5718,7 +5726,11 @@ class SpellCrafter(Cleanable):
 
             return validated_roots
 
-        change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
+        if not change_control_manager.has_revalidator_for_conduit(conduit_id):
+            change_control_manager.set_revalidator(
+                conduit_id,
+                _revalidate_dirty_roots,
+            )
 
 
     # ------------------------------------------------------------------

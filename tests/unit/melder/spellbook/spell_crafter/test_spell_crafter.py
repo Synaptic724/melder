@@ -251,6 +251,20 @@ class _ChangeControlManagerStub:
         self._revalidate_fn_by_conduit[conduit_id] = fn
         self.set_calls += 1
 
+    def has_revalidator_for_conduit(self, conduit_id: str) -> bool:
+        """
+        Purpose:
+            Report whether a conduit already has a registered revalidator.
+        Contract:
+            Returns True only when the stub already stores a revalidator for
+            the supplied conduit id.
+        Args:
+            conduit_id: Conduit identifier to inspect.
+        Returns:
+            bool: True when a revalidator exists for the conduit.
+        """
+        return conduit_id in self._revalidate_fn_by_conduit
+
     def upsert_component_of(self, conduit_id: str, root_blueprints: object) -> None:
         """
         Purpose:
@@ -5749,14 +5763,14 @@ def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={
+        targets_by_spec={
             "override-z": [socket_ref_a],
             "override-a": [socket_ref_a, socket_ref_b],
         },
-        _specificity_by_spec={"override-z": 1, "override-a": 3},
+        specificity_by_spec={"override-z": 1, "override-a": 3},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={
+        targets_by_spec={
             "mutation-z": [mutation_patch_b],
             "mutation-a": [mutation_patch_b, mutation_patch_a],
         },
@@ -5900,8 +5914,8 @@ def test_build_override_target_rows_fails_fast_on_invalid_socket_ref_contract() 
     """
     crafter, _, _ = _build_spell_and_crafter(spell_id="root")
     override_patch_map = types.SimpleNamespace(
-        _targets_by_spec={"spec": [object()]},
-        _specificity_by_spec={"spec": 1},
+        targets_by_spec={"spec": [object()]},
+        specificity_by_spec={"spec": 1},
     )
     with pytest.raises(AttributeError):
         crafter._build_override_target_rows(override_patch_map)
@@ -5921,7 +5935,7 @@ def test_build_mutation_target_rows_fails_fast_on_invalid_patch_contract() -> No
     """
     crafter, _, _ = _build_spell_and_crafter(spell_id="root")
     mutation_patch_map = types.SimpleNamespace(
-        _targets_by_spec={"spec": [object()]},
+        targets_by_spec={"spec": [object()]},
     )
     with pytest.raises(AttributeError):
         crafter._build_mutation_target_rows(mutation_patch_map)
@@ -6031,11 +6045,11 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
         old_parent_id="old-b",
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"z": [override_ref_a], "a": [override_ref_a, override_ref_b]},
-        _specificity_by_spec={"z": 1, "a": 3},
+        targets_by_spec={"z": [override_ref_a], "a": [override_ref_a, override_ref_b]},
+        specificity_by_spec={"z": 1, "a": 3},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"z": [mutation_patch_b], "a": [mutation_patch_b, mutation_patch_a]},
+        targets_by_spec={"z": [mutation_patch_b], "a": [mutation_patch_b, mutation_patch_a]},
     )
     crafter._capture_phase8_11_codegen_ir()
     first_signature = crafter.codegen_ir["phase8_11"]["signature"]
@@ -6065,11 +6079,11 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"a": [override_ref_b, override_ref_a], "z": [override_ref_a]},
-        _specificity_by_spec={"a": 3, "z": 1},
+        targets_by_spec={"a": [override_ref_b, override_ref_a], "z": [override_ref_a]},
+        specificity_by_spec={"a": 3, "z": 1},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"a": [mutation_patch_a, mutation_patch_b], "z": [mutation_patch_b]},
+        targets_by_spec={"a": [mutation_patch_a, mutation_patch_b], "z": [mutation_patch_b]},
     )
     crafter._capture_phase8_11_codegen_ir()
     second_signature = crafter.codegen_ir["phase8_11"]["signature"]
@@ -6344,11 +6358,11 @@ def test_capture_phase8_11_codegen_ir_signature_changes_on_enriched_payload_sema
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"**dep": []},
-        _specificity_by_spec={"**dep": 1},
+        targets_by_spec={"**dep": []},
+        specificity_by_spec={"**dep": 1},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"**mut": []},
+        targets_by_spec={"**mut": []},
     )
     crafter._capture_phase8_11_codegen_ir()
     first_signature = crafter.codegen_ir["phase8_11"]["signature"]
@@ -6378,11 +6392,11 @@ def test_capture_phase8_11_codegen_ir_signature_changes_on_enriched_payload_sema
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"**dep": []},
-        _specificity_by_spec={"**dep": 3},
+        targets_by_spec={"**dep": []},
+        specificity_by_spec={"**dep": 3},
     )
     crafter._mutation_patch_map_phase10 = types.SimpleNamespace(
-        _targets_by_spec={"**mut2": []},
+        targets_by_spec={"**mut2": []},
     )
     crafter._capture_phase8_11_codegen_ir()
     second_signature = crafter.codegen_ir["phase8_11"]["signature"]
@@ -7608,12 +7622,12 @@ def test_run_phase_patch_maps_reuses_cached_maps_when_input_signature_unchanged(
         def build_override_patch_map(self) -> object:
             nonlocal override_build_calls
             override_build_calls += 1
-            return types.SimpleNamespace(_targets_by_spec={}, _specificity_by_spec={})
+            return types.SimpleNamespace(targets_by_spec={}, specificity_by_spec={})
 
         def build_mutation_patch_map(self) -> object:
             nonlocal mutation_build_calls
             mutation_build_calls += 1
-            return types.SimpleNamespace(_targets_by_spec={})
+            return types.SimpleNamespace(targets_by_spec={})
 
         def cleanup(self) -> None:
             nonlocal cleanup_calls
@@ -7683,12 +7697,12 @@ def test_run_phase_patch_maps_rebuilds_when_input_signature_changes(
         def build_override_patch_map(self) -> object:
             nonlocal override_build_calls
             override_build_calls += 1
-            return types.SimpleNamespace(_targets_by_spec={}, _specificity_by_spec={})
+            return types.SimpleNamespace(targets_by_spec={}, specificity_by_spec={})
 
         def build_mutation_patch_map(self) -> object:
             nonlocal mutation_build_calls
             mutation_build_calls += 1
-            return types.SimpleNamespace(_targets_by_spec={})
+            return types.SimpleNamespace(targets_by_spec={})
 
         def cleanup(self) -> None:
             nonlocal cleanup_calls
@@ -7776,10 +7790,10 @@ def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
             pass
 
         def build_override_patch_map(self) -> object:
-            return types.SimpleNamespace(_targets_by_spec={}, _specificity_by_spec={})
+            return types.SimpleNamespace(targets_by_spec={}, specificity_by_spec={})
 
         def build_mutation_patch_map(self) -> object:
-            return types.SimpleNamespace(_targets_by_spec={})
+            return types.SimpleNamespace(targets_by_spec={})
 
         def cleanup(self) -> None:
             pass
