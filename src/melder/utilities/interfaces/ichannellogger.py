@@ -1,3 +1,4 @@
+import traceback
 from logging import LogRecord
 from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -88,7 +89,7 @@ class IChannelLogger(ICleanable, Protocol):
     # ===== State (enabled/min level/overrides) =====
     def set_enabled(self, value: bool) -> None:
         """
-        Set the local enabled flag.
+        Set the local-enabled flag.
 
         Args:
             value: True to enable locally, False to disable locally.
@@ -101,7 +102,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def get_enabled(self) -> bool:
         """
-        Get the current local enabled flag (ignoring overrides).
+        Get the current local-enabled flag (ignoring overrides).
 
         Returns:
             bool: The local `enabled` setting.
@@ -151,12 +152,12 @@ class IChannelLogger(ICleanable, Protocol):
         Purpose:
             Mirror the stdlib logger-style level-setting contract used by
             `SafeLogger` so the adapter can push its resolved numeric threshold
-            onto either a channel logger or a stdlib logger through one shared
+            onto either a channel logger or an stdlib logger through one shared
             path.
 
         Args:
             level:
-                Concrete numeric logging threshold (for example
+                Concrete numeric logging threshold (for example,
                 `logging.INFO`).
 
         Returns:
@@ -169,12 +170,12 @@ class IChannelLogger(ICleanable, Protocol):
         Set the local minimum logging level.
 
         Level Reference (standard `logging` levels):
-            - NOTSET   (0):    Special value; if used as a threshold it effectively lets everything through.
-            - DEBUG    (10):   Detailed diagnostic information useful for development and deep troubleshooting.
-            - INFO     (20):   High-level operational events (what the system is doing).
-            - WARNING  (30):   Something unexpected or suboptimal happened, but the system can continue.
-            - ERROR    (40):   A failure occurred for the current operation; the system may still be running.
-            - CRITICAL (50):   The system is in a bad state and may require immediate attention / shutdown.
+            - NOTSET (0): Special value; if used as a threshold, it effectively lets everything through.
+            - DEBUG (10): Detailed diagnostic information useful for development and deep troubleshooting.
+            - INFO (20): High-level operational events (what the system is doing).
+            - WARNING (30): Something unexpected or suboptimal happened, but the system can continue.
+            - ERROR (40): A failure occurred for the current operation; the system may still be running.
+            - CRITICAL (50): The system is in a bad state and may require immediate attention / shutdown.
 
         Args:
             level: A standard logging level name (e.g., "INFO").
@@ -199,12 +200,12 @@ class IChannelLogger(ICleanable, Protocol):
         Set or clear the override for the minimum logging level.
 
         Level Reference (standard `logging` levels):
-            - NOTSET   (0):    Special value; if used as a threshold it effectively lets everything through.
-            - DEBUG    (10):   Detailed diagnostic information useful for development and deep troubleshooting.
-            - INFO     (20):   High-level operational events (what the system is doing).
-            - WARNING  (30):   Something unexpected or suboptimal happened, but the system can continue.
-            - ERROR    (40):   A failure occurred for the current operation; the system may still be running.
-            - CRITICAL (50):   The system is in a bad state and may require immediate attention / shutdown.
+            - NOTSET (0): Special value; if used as a threshold, it effectively lets everything through.
+            - DEBUG (10): Detailed diagnostic information useful for development and deep troubleshooting.
+            - INFO (20): High-level operational events (what the system is doing).
+            - WARNING (30): Something unexpected or suboptimal happened, but the system can continue.
+            - ERROR (40): A failure occurred for the current operation; the system may still be running.
+            - CRITICAL (50): The system is in a bad state and may require immediate attention / shutdown.
 
         Args:
             level: A standard logging level integer (e.g., `INFO`), or None to clear the override.
@@ -240,7 +241,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def _should_emit(self, record_level: int) -> bool:
         """
-        Decide whether a record at `record_level` should be emitted given current state.
+        Decide whether a record at `record_level` should be emitted given the current state.
 
         Args:
             record_level: The logging level of the prospective record (e.g., `logging.DEBUG`).
@@ -263,7 +264,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             name: Non-empty string token. No normalization is applied.
 
-        Behavior:
+        Behaviour:
             - No-op if `name` is falsy.
             - Safe under concurrent calls.
         """
@@ -276,7 +277,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             name: Group token to remove.
 
-        Behavior:
+        Behaviour:
             - No error if not present (discard semantics).
         """
         ...
@@ -330,7 +331,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             key: Property key to remove.
 
-        Behavior:
+        Behaviour:
             - Silent no-op when the key is absent.
         """
         ...
@@ -371,7 +372,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def _should_fast_exit(self, level: int) -> bool:
         """
-        Fast-path filter to avoid work when logger is cleaned/disabled or level is below gates.
+        Fast-path filter to avoid work when logger is cleaned/disabled or the level is below gates.
         """
         ...
 
@@ -381,23 +382,23 @@ class IChannelLogger(ICleanable, Protocol):
 
         Returns:
             tuple[str, int, str, object]:
-                ``(filename, line_number, function_name, stack_info)`` tuple
+                "(filename, line_number, function_name, stack_info)" tuple
                 suitable for downstream record construction.
         """
         ...
 
-    def _normalize_exc_info(self, exc_info):
+    def _normalize_exc_info(self, exc_info) -> Optional[tuple[type, BaseException, Optional[traceback]]]:
         """
         Normalize exc_info to either a (type, value, tb) tuple or None.
 
-        - True           -> sys.exc_info(), unless outside an except block (then None)
-        - tuple          -> passthrough
-        - other truthy   -> None (conservative)
-        - falsy/None     -> None
+        - True -> sys.exc_info(), unless outside an excepted block (then None)
+        - tuple -> passthrough
+        - other truthy -> None (conservative)
+        - falsy/None -> None
 
         Returns:
-            object: Normalized ``exc_info`` payload accepted by record creation,
-            or ``None`` when no exception context should be attached.
+            object: Normalized "exc_info" payload accepted by record creation,
+            or "None" when no exception context should be attached.
         """
         ...
 
@@ -442,7 +443,7 @@ class IChannelLogger(ICleanable, Protocol):
             *args: Positional args used with `msg` if it's a format string.
             mask: If True, use masked identity and optional overrides from kwargs.
             **kwargs: Additional keyword arguments (e.g., `exc_info`).
-                     Internal keys consumed here (and removed):
+                     Internal keys are consumed here (and removed):
                        - _stack_info: bool -> if True, compute caller info (default False)
                        - stacklevel: int -> passed to findCaller (default 3)
                        - _mask_display_name/_mask_display_id/_groups_override/
@@ -455,7 +456,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def info(self, msg: str, *args, **kwargs) -> None:
         """
-        Log a message with `INFO` level.
+        Log a message with the ` INFO ` level.
 
         Args:
             msg: Message string or format string.
@@ -469,7 +470,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def warning(self, msg: str, *args, **kwargs) -> None:
         """
-        Log a message with `WARNING` level.
+        Log a message with the ` WARNING ` level.
 
         Args:
             msg: Message string or format string.
@@ -485,7 +486,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def error(self, msg: str, *args, **kwargs) -> None:
         """
-        Log a message with `ERROR` level.
+        Log a message with the ` ERROR ` level.
 
         Args:
             msg: Message string or format string.
@@ -499,7 +500,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def debug(self, msg: str, *args, **kwargs) -> None:
         """
-        Log a message with `DEBUG` level.
+        Log a message with the ` DEBUG ` level.
 
         Args:
             msg: Message string or format string.
@@ -528,7 +529,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def critical(self, msg: str, *args, **kwargs) -> None:
         """
-        Log a message with `CRITICAL` level.
+        Log a message with the ` CRITICAL ` level.
         """
         ...
 
@@ -542,7 +543,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             name: Non-empty string token. No normalization is applied.
 
-        Behavior:
+        Behaviour:
             - No-op if `name` is falsy.
             - Safe under concurrent calls.
         """
@@ -555,7 +556,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             names: Iterable of tokens. Falsy/empty tokens are skipped. If None, no-op.
 
-        Behavior:
+        Behaviour:
             - Safe under concurrent calls.
         """
         ...
@@ -567,7 +568,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             name: Token to remove.
 
-        Behavior:
+        Behaviour:
             - Silent no-op if not present (discard semantics).
         """
         ...
@@ -579,7 +580,7 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             names: Iterable of tokens to remove. If None, no-op.
 
-        Behavior:
+        Behaviour:
             - Silent no-op on missing tokens.
         """
         ...

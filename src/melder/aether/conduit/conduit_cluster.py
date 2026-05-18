@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Set, Optional
+from typing import Dict, Set, Optional, List
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
@@ -485,7 +485,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
-    def _get_shareable_spells(self, conduit: IConduit):
+    def _get_shareable_spells(self, conduit: IConduit) -> List["Spell"]:
         """
         Return shareable spells from a conduit (existence == unique_per_conduit_cluster).
 

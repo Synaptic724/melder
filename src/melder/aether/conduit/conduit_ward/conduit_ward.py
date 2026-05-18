@@ -934,7 +934,7 @@ class ConduitWard(Cleanable, IConduitWard):
                 return True
         return False
 
-    def _link_lesser_conduit(self, lesser_conduit: IConduit):
+    def _link_lesser_conduit(self, lesser_conduit: IConduit) -> None:
         """
         Internal
 

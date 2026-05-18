@@ -928,7 +928,7 @@ class Conduit(Cleanable, IConduit):
 
 
     #region Conduit Configuration
-    def register_conduit_cloud(self, conduit: IConduit):
+    def register_conduit_cloud(self, conduit: IConduit) -> None:
         """
         Public API
 
@@ -985,7 +985,7 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Local conduit hooks were not initialized.")
         self._merge_conduit_hooks(local_conduit_hooks, hooks)
 
-    def unregister_conduit_cloud(self, conduit: IConduit):
+    def unregister_conduit_cloud(self, conduit: IConduit) -> None:
         """
         Public API
 
