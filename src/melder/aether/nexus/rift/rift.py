@@ -18,7 +18,6 @@ from melder.utilities.interfaces import (
     IFrameProjectionSet,
     IFrameViewer,
     INexus,
-    INexusRiftRuntimeSurface,
     IRiftGate,
     IRift,
     IRiftConfiguration,
@@ -96,7 +95,7 @@ class Rift(Cleanable, IRift):
 
     def __init__(
             self,
-            nexus: INexusRiftRuntimeSurface,
+            nexus: INexus,
             *,
             configuration: IRiftConfiguration,
             rift_gate: Optional[IRiftGate] = None,
@@ -158,7 +157,7 @@ class Rift(Cleanable, IRift):
         self._rift_name: Optional[str] = rift_name
         self._lock: threading.RLock = threading.RLock()
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
-        self._nexus: INexusRiftRuntimeSurface = nexus
+        self._nexus: INexus = nexus
         self._configuration: IRiftConfiguration = configuration
         self._rift_gate: IRiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, IFrameLinkContract] = {}
@@ -412,14 +411,14 @@ class Rift(Cleanable, IRift):
                 )
             ) from exc
         selected_contract_name = self._ensure_frame_link_acl_contract(frame_name)
-        configuration = self._nexus._frame_acl_manager._get_current_frame_acl_configuration(
+        configuration = self._nexus.get_current_frame_acl_configuration(
             frame_name,
             view_contract_name=selected_contract_name,
             command_contract_name=selected_contract_name,
             codegen_contract_name=selected_contract_name,
         )
         try:
-            self._nexus._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
+            self._nexus._validate_frame_acl_configuration_against_descriptor(
                 frame_name,
                 configuration,
                 descriptor,
@@ -440,10 +439,7 @@ class Rift(Cleanable, IRift):
                 },
             )
         if is_new_frame:
-            self._nexus._increment_ref_count(
-                self._nexus._target_frame_ref_counts,
-                frame_name,
-            )
+            self._nexus._increment_target_frame_ref_count(frame_name)
         self.refresh_runtime_projections()
 
     def _authorize_nexus_managed_frame_link(self, frame_name: str) -> bool:

@@ -2747,6 +2747,37 @@ class Nexus(Cleanable, INexus):
         """
         self._frame_acl_manager._ensure_frame_acl_container(frame_name)
 
+    def _validate_frame_acl_configuration_against_descriptor(
+            self,
+            frame_name: str,
+            configuration: IFrameACLConfiguration,
+            descriptor: IFrameDescriptor,
+    ) -> bool:
+        """
+        Internal
+
+        Validate one frame ACL configuration against the supplied descriptor.
+
+        Returns:
+            bool: True when validation succeeds.
+        """
+        return self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
+            frame_name,
+            configuration,
+            descriptor,
+        )
+
+    def _increment_target_frame_ref_count(self, target_frame_name: str) -> None:
+        """
+        Internal
+
+        Increment the internal target-frame ref count for the supplied frame.
+
+        Returns:
+            None.
+        """
+        self._increment_ref_count(self._target_frame_ref_counts, target_frame_name)
+
     def _remove_frame_acl_container(self, frame_name: str) -> bool:
         """
         Internal
