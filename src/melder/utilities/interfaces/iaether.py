@@ -134,15 +134,12 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _get_change_control_manager(
-            self,
-            aetheric_frame: str,
-    ) -> IChangeControlManager:
+    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> IChangeControlManager:
         """
         Return the frame-owned change-control manager for one frame.
 
         Args:
-            aetheric_frame:
+            aetheric_frame_name:
                 Frame name whose change-control manager is requested.
 
         Returns:

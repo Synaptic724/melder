@@ -6,7 +6,6 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconfiguration import IConfiguration
@@ -20,7 +19,7 @@ from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
-
+from melder.utilities.interfaces.iaether import IAether
 
 @runtime_checkable
 class IConduit(ICleanable, Protocol):

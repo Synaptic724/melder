@@ -9,15 +9,14 @@ from melder.utilities.interfaces import (
     IAether,
     IAethericFrame,
     IAethericFrameConfiguration,
+    ISpellIndex,
 )
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
-from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.spellbook.configuration.system_state import SystemState
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -78,8 +77,8 @@ class AethericFrame(Cleanable, IAethericFrame):
         self._conduit_ids_by_name: Dict[str, str] = {}
 
         # SpellIndex registry per conduit:
-        #   conduit_id -> Set[SpellIndex]
-        self._spell_registry: Dict[str, Set[SpellIndex]] = {}
+        #   conduit_id -> Set[ISpellIndex]
+        self._spell_registry: Dict[str, Set[ISpellIndex]] = {}
 
         # SHA256 version registry per conduit:
         #   conduit_id -> Set[str]
@@ -477,7 +476,7 @@ class AethericFrame(Cleanable, IAethericFrame):
                     result.add(version_id)
         return result
 
-    def find_and_return_spell_index(self, version_id: str) -> SpellIndex | None:
+    def find_and_return_spell_index(self, version_id: str) -> ISpellIndex | None:
         """
         Find and return the `SpellIndex` that contains the given version id.
 

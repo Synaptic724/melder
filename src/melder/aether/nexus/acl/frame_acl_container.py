@@ -370,7 +370,7 @@ class FrameACLContainer(Cleanable):
             configuration: IFrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> IFrameACLConfiguration:
+    ) -> FrameACLConfiguration:
         """
         Register one same-name ACL bundle across all three families.
 
@@ -416,7 +416,7 @@ class FrameACLContainer(Cleanable):
             configuration: IFrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> IFrameACLConfiguration:
+    ) -> FrameACLConfiguration:
         """
         Install one same-name ACL bundle revision across all three families.
 

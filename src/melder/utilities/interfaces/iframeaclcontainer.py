@@ -84,12 +84,12 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration: IFrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> None:
+    ) -> IFrameACLConfiguration:
         """
         Install one validated ACL configuration into the container.
 
         Returns:
-            None.
+            IFrameACLConfiguration: Newly assembled current ACL snapshot.
         """
         ...
 
