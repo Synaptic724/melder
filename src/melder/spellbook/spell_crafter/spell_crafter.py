@@ -308,8 +308,7 @@ class SpellCrafter(Cleanable):
         spellbook_surface = spell._spellbook
         if spellbook_surface is None:
             raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
-        from melder.spellbook.spellbook import Spellbook
-        if not isinstance(spellbook_surface, Spellbook):
+        if not isinstance(spellbook_surface, ISpellbook):
             raise TypeError(
                 "SpellCrafter requires the concrete internal Spellbook surface."
             )
@@ -369,10 +368,7 @@ class SpellCrafter(Cleanable):
         spell_system_states = spell._spell_system_states
         if spell_system_states is None:
             return None
-        from melder.aether.dev_ops.spell_system_states.spell_system_states import (
-            SpellSystemStates,
-        )
-        if not isinstance(spell_system_states, SpellSystemStates):
+        if not isinstance(spell_system_states, ISpellSystemStates):
             raise TypeError(
                 "SpellCrafter requires the concrete internal SpellSystemStates surface."
             )

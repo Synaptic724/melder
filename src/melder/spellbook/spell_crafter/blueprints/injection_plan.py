@@ -333,7 +333,7 @@ def build_kwargs_from_injection_spec(
     return kwargs
 
 
-class InjectionPlan(IInjectionPlan, Cleanable):
+class InjectionPlan(Cleanable, IInjectionPlan):
     """
     Internal
 

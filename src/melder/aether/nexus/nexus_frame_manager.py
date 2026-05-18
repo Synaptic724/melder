@@ -951,7 +951,6 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
 
         runtime_aether = self._nexus._aether
         Spellbook._aether = runtime_aether
-        Conduit._aether = runtime_aether
         frame = Spellbook._aether._ensure_frame(configuration.frame_name)
         frame.bind_frame_configuration(
             configuration.to_aetheric_frame_configuration()
