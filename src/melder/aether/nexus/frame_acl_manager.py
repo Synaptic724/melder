@@ -30,6 +30,10 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.utilities.interfaces import (
+    IFrameACLConfiguration,
+    IFrameDescriptor,
+)
 
 
 class FrameACLManager(Cleanable):
@@ -560,8 +564,8 @@ class FrameACLManager(Cleanable):
     def _validate_frame_acl_configuration_against_descriptor(
             self,
             frame_name: str,
-            configuration: FrameACLConfiguration,
-            frame_descriptor: FrameDescriptor,
+            configuration: IFrameACLConfiguration,
+            frame_descriptor: IFrameDescriptor,
     ) -> bool:
         """
         Validate one frame ACL configuration against descriptor payload truth.
@@ -578,6 +582,12 @@ class FrameACLManager(Cleanable):
             bool: True when validation succeeds.
         """
         self.check_cleaned()
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError(
+                "configuration must be a FrameACLConfiguration."
+            )
+        if not isinstance(frame_descriptor, FrameDescriptor):
+            raise TypeError("frame_descriptor must be a FrameDescriptor.")
         container = self._ensure_frame_acl_container(frame_name)
         return container.frame_acl_validator.validate_configuration_against_descriptor(
             configuration,
@@ -816,5 +826,9 @@ class FrameACLManager(Cleanable):
             view_profile_name=view_profile_name,
             codegen_profile_name=codegen_profile_name,
         )
+        if not isinstance(frame_acl_profile, FrameACLProfile):
+            raise TypeError(
+                "create_profile() must return a FrameACLProfile."
+            )
         self._register_frame_acl_profile(frame_acl_profile)
         return frame_acl_profile

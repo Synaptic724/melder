@@ -86,7 +86,6 @@ from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftgatecontroller import IRiftGateController
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.inexus import INexus
-from melder.utilities.interfaces.inexus_rift_runtime_surface import IFrameACLManagerRiftSurface, INexusRiftRuntimeSurface
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
@@ -191,8 +190,6 @@ __all__ = [
     "IRiftGateController",
     "IRift",
     "INexus",
-    "IFrameACLManagerRiftSurface",
-    "INexusRiftRuntimeSurface",
     "INexusFrameManager",
     "IAether",
     "IAetherConfiguration",

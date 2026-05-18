@@ -12,9 +12,11 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import (
     IFrameACLCodegenProfile,
+    IFrameACLConfiguration,
     IFrameACLCommandProfile,
     IFrameACLProfileBuilder,
     IFrameACLRuleSet,
+    IFrameDescriptor,
     ISpellRecord,
     IFrameACLViewProfile,
 )
@@ -85,8 +87,8 @@ class FrameACLCompiler(Cleanable):
 
     def compile_frame_access_surface(
             self,
-            frame_descriptor: FrameDescriptor,
-            configuration: FrameACLConfiguration,
+            frame_descriptor: IFrameDescriptor,
+            configuration: IFrameACLConfiguration,
     ) -> CompiledFrameACLAccessSurface:
         """
         Compile one frame-local consumer-facing ACL access surface.
