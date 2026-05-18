@@ -114,12 +114,6 @@ class IConduitCloud(ICleanable, Protocol):
         """
         ...
 
-    def cleanup_owner_frame_if_empty(self) -> bool:
-        """
-        Cleanup the owning frame when no root conduits remain.
-        """
-        ...
-
     def create_cluster(self, cluster_name: str) -> None:
         """
         Create one frame-local conduit cluster.

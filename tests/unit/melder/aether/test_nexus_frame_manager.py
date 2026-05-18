@@ -192,6 +192,10 @@ class _FakeNexus:
         self.enabled_checked = False
         self.ensured_acl_frames = []
 
+    @property
+    def configuration(self):
+        return self._configuration
+
     def _require_enabled(self) -> None:
         self.enabled_checked = True
 
@@ -200,6 +204,9 @@ class _FakeNexus:
             return self._rifts_by_id[rift_id]
         except KeyError as exc:
             raise ValueError("Rift with id '{0}' was not found.".format(rift_id)) from exc
+
+    def list_rift_ids(self):
+        return tuple(self._rifts_by_id.keys())
 
     def _ensure_frame_acl_container(self, frame_name: str) -> None:
         self.ensured_acl_frames.append(frame_name)

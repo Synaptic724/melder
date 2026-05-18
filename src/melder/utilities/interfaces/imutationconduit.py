@@ -2,7 +2,6 @@ from typing import Protocol, runtime_checkable
 
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 

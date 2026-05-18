@@ -296,6 +296,10 @@ def test_component_external_frame_cleanup_clears_manager_state_matrix(
 
     conduit.cleanup()
 
+    assert nexus.frame_manager.exists(managed_frame_name) is True
+
+    nexus._aether._ensure_frame(managed_frame_name).cleanup()
+
     assert nexus.frame_manager.exists(managed_frame_name) is False
 
 
@@ -355,28 +359,32 @@ def test_component_nexus_remove_rift_cleans_frames_by_topology_matrix(
 
     if nexus_frame_mode == "single":
         shared = first.create_nexus_frame()
+        shared_frame_name = shared._aetheric_frame
         assert second.get_nexus_frame() is shared
         nexus.remove_rift(first.id if remove_kind == "first" else second.id)
-        assert nexus.frame_manager.exists(shared._aetheric_frame) is True
+        assert nexus.frame_manager.exists(shared_frame_name) is True
         nexus.remove_rift(second.id if remove_kind == "first" else first.id)
-        assert nexus.frame_manager.exists(shared._aetheric_frame) is False
+        assert nexus.frame_manager.exists(shared_frame_name) is False
         return
 
     if nexus_frame_mode == "indexed":
         frame_name = "ops" if remove_kind == "named" else "finance"
         created = first.create_nexus_frame(frame_name=frame_name)
+        created_frame_name = created._aetheric_frame
         nexus.remove_rift(first.id)
-        assert nexus.frame_manager.exists(created._aetheric_frame) is True
+        assert nexus.frame_manager.exists(created_frame_name) is True
         return
 
     first_frame = first.create_nexus_frame()
     second_frame = second.create_nexus_frame()
+    first_frame_name = first_frame._aetheric_frame
+    second_frame_name = second_frame._aetheric_frame
     if remove_kind == "private":
         nexus.remove_rift(first.id)
-        assert nexus.frame_manager.exists(first_frame._aetheric_frame) is False
-        assert nexus.frame_manager.exists(second_frame._aetheric_frame) is True
+        assert nexus.frame_manager.exists(first_frame_name) is False
+        assert nexus.frame_manager.exists(second_frame_name) is True
         return
 
     nexus.remove_rift(second.id)
-    assert nexus.frame_manager.exists(second_frame._aetheric_frame) is False
-    assert nexus.frame_manager.exists(first_frame._aetheric_frame) is True
+    assert nexus.frame_manager.exists(second_frame_name) is False
+    assert nexus.frame_manager.exists(first_frame_name) is True

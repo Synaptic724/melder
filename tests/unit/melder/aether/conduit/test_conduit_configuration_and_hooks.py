@@ -76,7 +76,6 @@ def _build_conduit(
         conduit_cloud._remove_root_conduit.return_value = None
         conduit_cloud._register_conduit.return_value = None
         conduit_cloud._unregister_conduit.return_value = None
-        conduit_cloud.cleanup_owner_frame_if_empty.return_value = False
         conduit_cloud.create_cluster.return_value = None
         conduit_cloud.delete_cluster.return_value = None
         conduit_cloud.add_conduit_to_cluster.return_value = None

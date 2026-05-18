@@ -19,6 +19,7 @@ from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
+from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -400,8 +401,7 @@ class Conduit(Cleanable, IConduit):
             self._remove_root_conduit()
             if self.__dynamic_environment__ and self._name is not None:
                 self._conduit_cloud._unregister_conduit(self)
-            if not self._conduit_cloud.cleanup_owner_frame_if_empty():
-                self._publish_frame_record_to_nexus()
+            self._publish_frame_record_to_nexus()
         except Exception as e:
             self._logger.error(f"Error unregistering root conduit state: {e}", "_cleanup_normal_conduit", exc_info=True)
 
@@ -2288,6 +2288,31 @@ class Conduit(Cleanable, IConduit):
 
         self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
+
+    def get_mutation_research(self) -> IMutationResearch:
+        """
+        Public API
+
+        Return the Aether-owned MutationResearch root visible to this conduit.
+
+        Purpose:
+            Expose the process-wide mutation-research root through the conduit
+            façade so callers do not need to reach through private conduit
+            state to access the Aether-owned runtime surface.
+
+        Returns:
+            IMutationResearch: Process-wide mutation-research root.
+
+        Raises:
+            RuntimeError:
+                If the conduit has been cleaned or the Aether-owned
+                MutationResearch root is unavailable.
+        """
+        self.check_cleaned()
+        mutation_research = self._aether.mutation_research
+        if mutation_research is None:
+            raise RuntimeError("MutationResearch is unavailable.")
+        return mutation_research
 
 
 

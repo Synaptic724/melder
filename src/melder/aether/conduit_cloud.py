@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import ulid
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
@@ -36,7 +36,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
             conduits: Dict[str, IConduit],
             conduit_ids_by_name: Dict[str, str],
             conduit_clusters: Dict[str, IConduitCluster],
-            owner_cleanup: Callable[[], None],
     ):
         """
         Initialize the frame-scoped conduit and cluster service facade.
@@ -53,9 +52,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 Borrowed root-conduit name registry owned by the frame.
             conduit_clusters (Dict[str, IConduitCluster]):
                 Borrowed cluster registry owned by the frame.
-            owner_cleanup (Callable[[], None]):
-                Callback used to cleanup the owning frame when the borrowed
-                root-conduit registry becomes empty.
         Contract:
             - Starts with an empty dynamic cloud registry.
             - Stores the owning frame name for later diagnostics/identity.
@@ -68,7 +64,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._conduits: Dict[str, IConduit] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, IConduitCluster] = conduit_clusters
-        self._owner_cleanup: Callable[[], None] = owner_cleanup
         self._registry: Dict[str, IConduit] = {}
         self._id: str = str(ulid.ULID())
 
@@ -98,7 +93,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
             del self._conduits
             del self._conduit_ids_by_name
             del self._conduit_clusters
-            del self._owner_cleanup
             del self._name
             del self._id
         del self._lock
@@ -392,21 +386,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 cloud_entry = self._registry.get(conduit_name)
                 if cloud_entry is removed:
                     self._registry.pop(conduit_name, None)
-
-    def cleanup_owner_frame_if_empty(self) -> bool:
-        """
-        Cleanup the owning frame when no root conduits remain.
-
-        Returns:
-            bool: True when owner cleanup was triggered, else False.
-        """
-        self.check_cleaned()
-        with self._lock:
-            should_cleanup = len(self._conduits) == 0
-        if should_cleanup:
-            self._owner_cleanup()
-            return True
-        return False
 
     def create_cluster(self, cluster_name: str) -> None:
         """

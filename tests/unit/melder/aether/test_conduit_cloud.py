@@ -19,7 +19,6 @@ def conduit_cloud():
         {},
         {},
         {},
-        MagicMock(),
     )
     yield cloud
     cloud.cleanup()

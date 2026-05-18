@@ -190,8 +190,6 @@ def conduit_cloud_stub() -> MagicMock:
         - Supports root-conduit registration/unregistration helpers.
         - Supports dynamic cloud registration helpers.
         - Supports current-frame conduit lookup and cluster-management helpers.
-        - `cleanup_owner_frame_if_empty()` defaults to False so normal conduit
-          cleanup does not attempt owner-frame cleanup in unit tests.
 
     Returns:
         MagicMock: ConduitCloud-like stub.
@@ -201,7 +199,6 @@ def conduit_cloud_stub() -> MagicMock:
     stub._remove_root_conduit.return_value = None
     stub._register_conduit.return_value = None
     stub._unregister_conduit.return_value = None
-    stub.cleanup_owner_frame_if_empty.return_value = False
     stub.create_cluster.return_value = None
     stub.delete_cluster.return_value = None
     stub.add_conduit_to_cluster.return_value = None

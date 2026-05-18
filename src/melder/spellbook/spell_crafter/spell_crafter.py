@@ -291,29 +291,6 @@ class SpellCrafter(Cleanable):
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, IRootResolutionBlueprint]] = None
         self._is_broken: bool = False
 
-    @staticmethod
-    def _get_required_spellbook_from_spell(
-            spell: ISpell,
-    ) -> ISpellbook:
-        """
-        Return the owning spellbook for one spell or raise.
-
-        Args:
-            spell:
-                Owning spell whose borrowed spellbook surface is required.
-
-        Returns:
-            ISpellbook: Borrowed owning spellbook runtime surface.
-        """
-        spellbook_surface = spell._spellbook
-        if spellbook_surface is None:
-            raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
-        if not isinstance(spellbook_surface, ISpellbook):
-            raise TypeError(
-                "SpellCrafter requires the concrete internal Spellbook surface."
-            )
-        return spellbook_surface
-
     def _get_required_spellbook(self) -> ISpellbook:
         """
         Return the owning spellbook for this crafter or raise.
@@ -321,7 +298,7 @@ class SpellCrafter(Cleanable):
         Returns:
             ISpellbook: Borrowed owning spellbook runtime surface.
         """
-        return self._get_required_spellbook_from_spell(self._spell)
+        return self._spell
 
     @staticmethod
     def _get_required_spellbook_frame_name(spellbook: ISpellbook) -> str:

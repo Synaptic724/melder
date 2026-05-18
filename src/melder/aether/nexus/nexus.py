@@ -169,6 +169,8 @@ class Nexus(Cleanable, INexus):
                 substrate reference.
         """
         if Nexus._initialized:
+            if logger is not None:
+                self._initialize_logging(logger)
             return
         if aether is None:
             with Nexus._lock:

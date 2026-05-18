@@ -24,7 +24,7 @@ class SafeLogger(Cleanable, ISafeLogger):
     - Falls back to a no-op surface when no logger is configured.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["_logger", "_id", "_level", "_level_name"]
+    __slots__ = Cleanable.__slots__ + ["_logger", "_id", "_level", "_level_name", "_is_channel"]
     _LEVELS: Dict[str, int] = {
         "notset": logging.NOTSET,
         "debug": logging.DEBUG,
@@ -52,6 +52,7 @@ class SafeLogger(Cleanable, ISafeLogger):
                 f"got {type(logger).__name__} instead."
             )
         self._logger = logger
+        self._is_channel = isinstance(logger, IChannelLogger)
         normalized = level_name.lower()
         if normalized not in self._LEVELS:
             raise ValueError(f"Invalid log level name '{level_name}'. Expected one of: {list(self._LEVELS)}")
@@ -144,7 +145,7 @@ class SafeLogger(Cleanable, ISafeLogger):
         if level < self._level:
             return
 
-        if isinstance(logger, IChannelLogger):
+        if self._is_channel or isinstance(logger, IChannelLogger):
             # Channel path
             if mask:
                 # Use the real masking API; enforce your manual stack metadata.
