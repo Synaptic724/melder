@@ -1,6 +1,6 @@
 import json
 import threading
-from typing import Optional, Union, cast
+from typing import Optional, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.acl.builder.frame_acl_command_builder import (
@@ -20,18 +20,6 @@ from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration impo
 )
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
-)
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
-    FrameACLCodegenProfile,
-)
-from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
-    FrameACLCommandProfile,
-)
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
-)
-from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
-    FrameACLViewProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -355,7 +343,15 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "codegen":
                 raise RuntimeError("FrameACLBuilder has no active codegen change.")
-            return cast(IFrameACLCodegenConfiguration, self._draft_configuration)
+            if not isinstance(
+                    self._draft_configuration,
+                    IFrameACLCodegenConfiguration,
+            ):
+                raise RuntimeError(
+                    "FrameACLBuilder active codegen draft does not satisfy "
+                    "IFrameACLCodegenConfiguration."
+                )
+            return self._draft_configuration
 
     def _require_active_view_configuration(
             self,
@@ -376,7 +372,15 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "view":
                 raise RuntimeError("FrameACLBuilder has no active view change.")
-            return cast(IFrameACLViewConfiguration, self._draft_configuration)
+            if not isinstance(
+                    self._draft_configuration,
+                    IFrameACLViewConfiguration,
+            ):
+                raise RuntimeError(
+                    "FrameACLBuilder active view draft does not satisfy "
+                    "IFrameACLViewConfiguration."
+                )
+            return self._draft_configuration
 
     def _require_active_command_configuration(
             self,
@@ -397,7 +401,15 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "command":
                 raise RuntimeError("FrameACLBuilder has no active command change.")
-            return cast(IFrameACLCommandConfiguration, self._draft_configuration)
+            if not isinstance(
+                    self._draft_configuration,
+                    IFrameACLCommandConfiguration,
+            ):
+                raise RuntimeError(
+                    "FrameACLBuilder active command draft does not satisfy "
+                    "IFrameACLCommandConfiguration."
+                )
+            return self._draft_configuration
 
     def _require_active_contract_name(self) -> str:
         """
@@ -446,41 +458,26 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "view":
                 view_configuration = self._require_active_view_configuration()
                 view_configuration.cleanup()
-                self._draft_configuration = cast(
-                    IFrameACLViewConfiguration,
-                    FrameACLViewConfiguration.from_profile(
-                    cast(FrameACLViewProfile, frame_acl_profile.view_profile),
+                self._draft_configuration = FrameACLViewConfiguration.from_profile(
+                    frame_acl_profile.view_profile,
                     frame_override_ruleset=(
-                        cast(
-                            FrameACLRuleSet,
-                            frame_acl_profile.view_override_ruleset.clone(),
-                        )
+                        frame_acl_profile.view_override_ruleset.clone()
                     ),
                     reason="builder_profile_apply",
                     locked=False,
-                    ),
                 )
                 return
             if self._draft_family_name == "command":
                 command_configuration = self._require_active_command_configuration()
                 command_configuration.cleanup()
                 self._draft_configuration = (
-                    cast(
-                        IFrameACLCommandConfiguration,
-                        FrameACLCommandConfiguration.from_profile(
-                        cast(
-                            FrameACLCommandProfile,
-                            frame_acl_profile.command_profile,
-                        ),
+                    FrameACLCommandConfiguration.from_profile(
+                        frame_acl_profile.command_profile,
                         member_override_ruleset=(
-                            cast(
-                                FrameACLRuleSet,
-                                frame_acl_profile.command_override_ruleset.clone(),
-                            )
+                            frame_acl_profile.command_override_ruleset.clone()
                         ),
                         reason="builder_profile_apply",
                         locked=False,
-                        ),
                     )
                 )
                 return
@@ -488,22 +485,13 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
                 codegen_configuration = self._require_active_codegen_configuration()
                 codegen_configuration.cleanup()
                 self._draft_configuration = (
-                    cast(
-                        IFrameACLCodegenConfiguration,
-                        FrameACLCodegenConfiguration.from_profile(
-                        cast(
-                            FrameACLCodegenProfile,
-                            frame_acl_profile.codegen_profile,
-                        ),
+                    FrameACLCodegenConfiguration.from_profile(
+                        frame_acl_profile.codegen_profile,
                         capability_override_ruleset=(
-                            cast(
-                                FrameACLRuleSet,
-                                frame_acl_profile.codegen_override_ruleset.clone(),
-                            )
+                            frame_acl_profile.codegen_override_ruleset.clone()
                         ),
                         reason="builder_profile_apply",
                         locked=False,
-                        ),
                     )
                 )
                 return
@@ -532,16 +520,10 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "view":
                 view_configuration = self._require_active_view_configuration()
                 view_configuration.set_profiles(
-                    cast(
-                        IFrameACLViewProfile,
-                        profile_builder.get_required_view_profile(profile_name),
-                    ),
+                    profile_builder.get_required_view_profile(profile_name),
                     precision_profile=(
-                        cast(
-                            IFrameACLViewProfile,
-                            profile_builder.get_required_view_precision_profile(
-                                view_configuration.precision_profile_name
-                            ),
+                        profile_builder.get_required_view_precision_profile(
+                            view_configuration.precision_profile_name
                         )
                         if view_configuration.precision_profile_name is not None
                         else None
@@ -551,16 +533,10 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "command":
                 command_configuration = self._require_active_command_configuration()
                 command_configuration.set_profiles(
-                    cast(
-                        IFrameACLCommandProfile,
-                        profile_builder.get_required_command_profile(profile_name),
-                    ),
+                    profile_builder.get_required_command_profile(profile_name),
                     precision_profile=(
-                        cast(
-                            IFrameACLCommandProfile,
-                            profile_builder.get_required_command_precision_profile(
-                                command_configuration.precision_profile_name
-                            ),
+                        profile_builder.get_required_command_precision_profile(
+                            command_configuration.precision_profile_name
                         )
                         if command_configuration.precision_profile_name is not None
                         else None
@@ -570,16 +546,10 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "codegen":
                 codegen_configuration = self._require_active_codegen_configuration()
                 codegen_configuration.set_profiles(
-                    cast(
-                        IFrameACLCodegenProfile,
-                        profile_builder.get_required_codegen_profile(profile_name),
-                    ),
+                    profile_builder.get_required_codegen_profile(profile_name),
                     precision_profile=(
-                        cast(
-                            IFrameACLCodegenProfile,
-                            profile_builder.get_required_codegen_precision_profile(
-                                codegen_configuration.precision_profile_name
-                            ),
+                        profile_builder.get_required_codegen_precision_profile(
+                            codegen_configuration.precision_profile_name
                         )
                         if codegen_configuration.precision_profile_name is not None
                         else None
@@ -615,17 +585,11 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "view":
                 view_configuration = self._require_active_view_configuration()
                 view_configuration.set_profiles(
-                    cast(
-                        IFrameACLViewProfile,
-                        profile_builder.get_required_view_profile(
-                            view_configuration.profile_name
-                        ),
+                    profile_builder.get_required_view_profile(
+                        view_configuration.profile_name
                     ),
                     precision_profile=(
-                        cast(
-                            IFrameACLViewProfile,
-                            profile_builder.get_required_view_precision_profile(profile_name),
-                        )
+                        profile_builder.get_required_view_precision_profile(profile_name)
                         if profile_name is not None
                         else None
                     ),
@@ -634,18 +598,12 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "command":
                 command_configuration = self._require_active_command_configuration()
                 command_configuration.set_profiles(
-                    cast(
-                        IFrameACLCommandProfile,
-                        profile_builder.get_required_command_profile(
-                            command_configuration.profile_name
-                        ),
+                    profile_builder.get_required_command_profile(
+                        command_configuration.profile_name
                     ),
                     precision_profile=(
-                        cast(
-                            IFrameACLCommandProfile,
-                            profile_builder.get_required_command_precision_profile(
-                                profile_name
-                            ),
+                        profile_builder.get_required_command_precision_profile(
+                            profile_name
                         )
                         if profile_name is not None
                         else None
@@ -655,18 +613,12 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if self._draft_family_name == "codegen":
                 codegen_configuration = self._require_active_codegen_configuration()
                 codegen_configuration.set_profiles(
-                    cast(
-                        IFrameACLCodegenProfile,
-                        profile_builder.get_required_codegen_profile(
-                            codegen_configuration.profile_name
-                        ),
+                    profile_builder.get_required_codegen_profile(
+                        codegen_configuration.profile_name
                     ),
                     precision_profile=(
-                        cast(
-                            IFrameACLCodegenProfile,
-                            profile_builder.get_required_codegen_precision_profile(
-                                profile_name
-                            ),
+                        profile_builder.get_required_codegen_precision_profile(
+                            profile_name
                         )
                         if profile_name is not None
                         else None
@@ -698,35 +650,27 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             if not self._change_active or self._draft_configuration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
             self._draft_configuration.cleanup()
+            payload = json.loads(json_configuration_string)
             if self._draft_family_name == "view":
-                self._draft_configuration = cast(
-                    IFrameACLViewConfiguration,
-                    FrameACLViewConfiguration.from_json_dict(
-                        json.loads(json_configuration_string),
-                        reason="builder_json_load",
-                        locked=False,
-                    ),
+                self._draft_configuration = FrameACLViewConfiguration.from_json_dict(
+                    payload,
+                    reason="builder_json_load",
+                    locked=False,
                 )
             elif self._draft_family_name == "command":
                 self._draft_configuration = (
-                    cast(
-                        IFrameACLCommandConfiguration,
-                        FrameACLCommandConfiguration.from_json_dict(
-                            json.loads(json_configuration_string),
-                            reason="builder_json_load",
-                            locked=False,
-                        ),
+                    FrameACLCommandConfiguration.from_json_dict(
+                        payload,
+                        reason="builder_json_load",
+                        locked=False,
                     )
                 )
             elif self._draft_family_name == "codegen":
                 self._draft_configuration = (
-                    cast(
-                        IFrameACLCodegenConfiguration,
-                        FrameACLCodegenConfiguration.from_json_dict(
-                            json.loads(json_configuration_string),
-                            reason="builder_json_load",
-                            locked=False,
-                        ),
+                    FrameACLCodegenConfiguration.from_json_dict(
+                        payload,
+                        reason="builder_json_load",
+                        locked=False,
                     )
                 )
             else:

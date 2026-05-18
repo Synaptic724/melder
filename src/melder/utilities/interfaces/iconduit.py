@@ -45,6 +45,7 @@ class IConduit(ICleanable, Protocol):
     _meld: 'IMeld'
     _creation_gate: 'CreationGate'
     _creation_gate_controller: 'CreationGateController'
+    _spellbook: 'ISpellbook'
 
     _conduit_ward: Any
 

@@ -10,6 +10,8 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
 class FrameACLViewConfiguration(Cleanable):
@@ -67,10 +69,10 @@ class FrameACLViewConfiguration(Cleanable):
             required_nexus_label: str = "default",
             required_nexus_version: str = "0.0.1",
             minimum_spell_payload_version: str = "0.0.1",
-            frame_override_ruleset: Optional[FrameACLRuleSet] = None,
-            conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
-            spell_override_ruleset: Optional[FrameACLRuleSet] = None,
-            member_override_ruleset: Optional[FrameACLRuleSet] = None,
+            frame_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            conduit_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            spell_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            member_override_ruleset: Optional[IFrameACLRuleSet] = None,
             source_configuration_id: Optional[str] = None,
             previous_configuration_id: Optional[str] = None,
             reason: str = "direct",
@@ -183,13 +185,13 @@ class FrameACLViewConfiguration(Cleanable):
     @classmethod
     def from_profile(
             cls,
-            profile: FrameACLViewProfile,
+            profile: IFrameACLViewProfile,
             *,
-            precision_profile: Optional[FrameACLViewProfile] = None,
-            frame_override_ruleset: Optional[FrameACLRuleSet] = None,
-            conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
-            spell_override_ruleset: Optional[FrameACLRuleSet] = None,
-            member_override_ruleset: Optional[FrameACLRuleSet] = None,
+            precision_profile: Optional[IFrameACLViewProfile] = None,
+            frame_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            conduit_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            spell_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            member_override_ruleset: Optional[IFrameACLRuleSet] = None,
             source_configuration_id: Optional[str] = None,
             previous_configuration_id: Optional[str] = None,
             reason: str = "from_profile",
@@ -224,13 +226,13 @@ class FrameACLViewConfiguration(Cleanable):
         Returns:
             FrameACLViewConfiguration: Applied view configuration.
         """
-        if not isinstance(profile, FrameACLViewProfile):
-            raise TypeError("profile must be a FrameACLViewProfile.")
+        if not isinstance(profile, IFrameACLViewProfile):
+            raise TypeError("profile must satisfy IFrameACLViewProfile.")
         if (
                 precision_profile is not None
-                and not isinstance(precision_profile, FrameACLViewProfile)
+                and not isinstance(precision_profile, IFrameACLViewProfile)
         ):
-            raise TypeError("precision_profile must be a FrameACLViewProfile.")
+            raise TypeError("precision_profile must satisfy IFrameACLViewProfile.")
         (
             required_nexus_label,
             required_nexus_version,
@@ -293,6 +295,11 @@ class FrameACLViewConfiguration(Cleanable):
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
+        minimum_spell_payload_type = payload.get("minimum_spell_payload_type")
+        if not isinstance(minimum_spell_payload_type, str):
+            raise TypeError(
+                "payload['minimum_spell_payload_type'] must be a string."
+            )
         return cls(
             profile_name=payload.get("profile_name", "safe"),
             profile_version=payload.get("profile_version", "0.0.1"),
@@ -300,7 +307,7 @@ class FrameACLViewConfiguration(Cleanable):
             precision_profile_version=payload.get("precision_profile_version"),
             required_nexus_label=payload.get("required_nexus_label", "default"),
             required_nexus_version=payload.get("required_nexus_version", "0.0.1"),
-            minimum_spell_payload_type=payload.get("minimum_spell_payload_type"),
+            minimum_spell_payload_type=minimum_spell_payload_type,
             minimum_spell_payload_version=payload.get(
                 "minimum_spell_payload_version",
                 "0.0.1",
@@ -574,48 +581,48 @@ class FrameACLViewConfiguration(Cleanable):
             return self._minimum_spell_payload_version
 
     @property
-    def frame_override_ruleset(self) -> FrameACLRuleSet:
+    def frame_override_ruleset(self) -> IFrameACLRuleSet:
         """
         Return the frame-level override ruleset.
 
         Returns:
-            FrameACLRuleSet: Frame-level override ruleset.
+            IFrameACLRuleSet: Frame-level override ruleset.
         """
         self.check_cleaned()
         with self._lock:
             return self._frame_override_ruleset
 
     @property
-    def conduit_override_ruleset(self) -> FrameACLRuleSet:
+    def conduit_override_ruleset(self) -> IFrameACLRuleSet:
         """
         Return the conduit-level override ruleset.
 
         Returns:
-            FrameACLRuleSet: Conduit-level override ruleset.
+            IFrameACLRuleSet: Conduit-level override ruleset.
         """
         self.check_cleaned()
         with self._lock:
             return self._conduit_override_ruleset
 
     @property
-    def spell_override_ruleset(self) -> FrameACLRuleSet:
+    def spell_override_ruleset(self) -> IFrameACLRuleSet:
         """
         Return the spell-level override ruleset.
 
         Returns:
-            FrameACLRuleSet: Spell-level override ruleset.
+            IFrameACLRuleSet: Spell-level override ruleset.
         """
         self.check_cleaned()
         with self._lock:
             return self._spell_override_ruleset
 
     @property
-    def member_override_ruleset(self) -> FrameACLRuleSet:
+    def member_override_ruleset(self) -> IFrameACLRuleSet:
         """
         Return the member-level override ruleset.
 
         Returns:
-            FrameACLRuleSet: Member-level override ruleset.
+            IFrameACLRuleSet: Member-level override ruleset.
         """
         self.check_cleaned()
         with self._lock:
@@ -708,9 +715,9 @@ class FrameACLViewConfiguration(Cleanable):
 
     def set_profiles(
             self,
-            profile: FrameACLViewProfile,
+            profile: IFrameACLViewProfile,
             *,
-            precision_profile: Optional[FrameACLViewProfile] = None,
+            precision_profile: Optional[IFrameACLViewProfile] = None,
     ) -> None:
         """
         Replace the base and precision profile identity while the config is mutable.
@@ -725,13 +732,13 @@ class FrameACLViewConfiguration(Cleanable):
             None.
         """
         self.check_cleaned()
-        if not isinstance(profile, FrameACLViewProfile):
-            raise TypeError("profile must be a FrameACLViewProfile.")
+        if not isinstance(profile, IFrameACLViewProfile):
+            raise TypeError("profile must satisfy IFrameACLViewProfile.")
         if (
                 precision_profile is not None
-                and not isinstance(precision_profile, FrameACLViewProfile)
+                and not isinstance(precision_profile, IFrameACLViewProfile)
         ):
-            raise TypeError("precision_profile must be a FrameACLViewProfile.")
+            raise TypeError("precision_profile must satisfy IFrameACLViewProfile.")
         with self._lock:
             if self._locked:
                 raise RuntimeError(
@@ -761,9 +768,9 @@ class FrameACLViewConfiguration(Cleanable):
 
     @staticmethod
     def _coerce_ruleset(
-            ruleset: Optional[FrameACLRuleSet],
+            ruleset: Optional[IFrameACLRuleSet],
             default_name: str,
-    ) -> FrameACLRuleSet:
+    ) -> IFrameACLRuleSet:
         """
         Normalize one optional override ruleset input.
 
@@ -774,19 +781,19 @@ class FrameACLViewConfiguration(Cleanable):
                 Ruleset name used when a default ruleset must be created.
 
         Returns:
-            FrameACLRuleSet: Detached existing ruleset clone or a newly created
+            IFrameACLRuleSet: Detached existing ruleset clone or a newly created
             default ruleset.
         """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
-        if not isinstance(ruleset, FrameACLRuleSet):
-            raise TypeError("ruleset must be a FrameACLRuleSet.")
+        if not isinstance(ruleset, IFrameACLRuleSet):
+            raise TypeError("ruleset must satisfy IFrameACLRuleSet.")
         return ruleset.clone()
 
     @staticmethod
     def _resolve_effective_contract_fields(
-            profile: FrameACLViewProfile,
-            precision_profile: Optional[FrameACLViewProfile],
+            profile: IFrameACLViewProfile,
+            precision_profile: Optional[IFrameACLViewProfile],
     ) -> tuple:
         """
         Resolve the effective descriptor floor fields from base + precision.

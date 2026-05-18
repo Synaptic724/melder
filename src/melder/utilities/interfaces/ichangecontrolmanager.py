@@ -5,6 +5,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlAdmissionResult,
     ChangeControlTransactionRequest,
 )
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.interfaces.ichangecontrolorchestrator import IChangeControlOrchestrator
 from melder.utilities.interfaces.ichangecontroltransactionmanager import IChangeControlTransactionManager
 from melder.utilities.interfaces.icleanable import ICleanable
