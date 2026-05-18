@@ -3,7 +3,8 @@ from typing import Optional, Iterable, Dict, Any, Union
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IChannelLogger, ISafeLogger
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
+from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -45,8 +46,7 @@ class SafeLogger(Cleanable, ISafeLogger):
         """
         super().__init__()
         self._id = IDBuilder.create_id()
-        from melder.utilities.interfaces import IChannelLogger as _IChannelLogger
-        if logger is not None and not isinstance(logger, (logging.Logger, _IChannelLogger)):
+        if logger is not None and not isinstance(logger, (logging.Logger, IChannelLogger)):
             raise TypeError(
                 f"SafeLogger expects a logging.Logger or IChannelLogger instance or None, "
                 f"got {type(logger).__name__} instead."

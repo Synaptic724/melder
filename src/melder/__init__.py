@@ -8,15 +8,15 @@ Lightweight dependency injection system designed for high-performance modular Py
 import sys
 import warnings
 
-from melder.__version__ import __version__ as base_version
-from melder.__author__ import CREATOR as __author__
-from melder.__license__ import __license__
-from melder.__description__ import __description__
 from melder.__architecture__ import __architecture__
+from melder.__author__ import CREATOR as __author__
 from melder.__components__ import __components__
-from melder.__graph_network__ import __graph_network__
+from melder.__description__ import __description__
 from melder.__graph_details__ import __graph_details__
+from melder.__graph_network__ import __graph_network__
+from melder.__license__ import __license__
 from melder.__melder_registration_guard__ import MelderRegistrationGuard
+from melder.__version__ import __version__ as base_version
 from melder.aether.aether import Aether
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
@@ -25,11 +25,14 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbinder import SpellBinder
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
 
 # Eagerly instantiate the registration guard at package import time (internal use).
 __melder_registration_guard__ = MelderRegistrationGuard()
@@ -97,5 +100,6 @@ __all__ = [
     "Policies",
     "Permissions",
     "SystemState",
+    "ProtocolCrafter",
 ]
 

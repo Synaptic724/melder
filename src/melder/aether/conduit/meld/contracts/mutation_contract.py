@@ -6,7 +6,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
-from melder.utilities.interfaces import ISpell
+from melder.utilities.interfaces.ispell import ISpell
 
 
 class MutationContract(Cleanable):

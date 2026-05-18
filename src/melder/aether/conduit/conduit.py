@@ -14,19 +14,17 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces import (
-    IConduit,
-    ISpellBinder,
-    ISpellbook,
-    IConduitCloud,
-    ISpell,
-    IConfiguration,
-    ISafeLogger,
-    ISpellSpace,
-    IConduitResolutionState,
-    IAether,
-    INexus,
-)
+from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.ispellbinder import ISpellBinder
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.ispellspace import ISpellSpace
+from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
+from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.inexus import INexus
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
 from melder.utilities.synchronization.creation_gate import CreationGate
@@ -411,19 +409,19 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("Error cleaning spellbook", "_cleanup_normal_conduit", exc_info=True)
 
         # 6) Null internal references
-        self._conduit_ward = None
-        self._meld = None
-        self._creation_gate = None
-        self._creation_gate_controller = None
-        self._dev_ops_manager = None
-        self._creations = None
-        self._spellbook = None
-        self._configuration = None
-        self._spellspace_stack = None
-        self._spellspace_registry = None
-        self._aetheric_frame = None
-        self._root_conduit_id = None
-        self._nexus = None
+        del self._conduit_ward
+        del self._meld
+        del self._creation_gate
+        del self._creation_gate_controller
+        del self._dev_ops_manager
+        del self._creations
+        del self._spellbook
+        del self._configuration
+        del self._spellspace_stack
+        del self._spellspace_registry
+        del self._aetheric_frame
+        del self._root_conduit_id
+        del self._nexus
 
     def _publish_conduit_record_to_nexus(self) -> None:
         """
