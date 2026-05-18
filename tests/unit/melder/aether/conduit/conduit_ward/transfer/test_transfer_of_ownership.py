@@ -410,6 +410,18 @@ class FakeCluster:
         """
         self.shared_spells.setdefault(owner_id, set()).add(spell_index)
 
+    def get_shared_spells(self) -> Dict[str, set[SpellIndex]]:
+        """
+        Return a detached snapshot of shared spell indices by owner id.
+
+        Returns:
+            Dict[str, set[SpellIndex]]: Snapshot of the shared-spell registry.
+        """
+        return {
+            owner_id: set(indices)
+            for owner_id, indices in self.shared_spells.items()
+        }
+
 
 class FakeFrame:
     """
@@ -478,6 +490,37 @@ class FakeAether:
             The configured FakeIncidentManager.
         """
         return self._incident_manager
+
+    def _get_cluster(self, cluster_name: str, frame_name: str) -> FakeCluster:
+        """
+        Return the named cluster for the requested frame.
+
+        Args:
+            cluster_name: Cluster name to resolve.
+            frame_name: Frame name containing the cluster.
+
+        Returns:
+            FakeCluster: Resolved cluster object.
+        """
+        return self._get_frame(frame_name)._conduit_clusters[cluster_name]
+
+    def _get_clusters_for_conduit(self, conduit_id: str, frame_name: str) -> List[str]:
+        """
+        Return cluster names that currently contain the supplied conduit id.
+
+        Args:
+            conduit_id: Conduit id to search for.
+            frame_name: Frame name to resolve.
+
+        Returns:
+            List[str]: Cluster names containing the conduit id.
+        """
+        frame = self._get_frame(frame_name)
+        return [
+            cluster_name
+            for cluster_name, cluster in frame._conduit_clusters.items()
+            if conduit_id in cluster.shared_spells
+        ]
 
     def _get_frame(self, frame_name: str) -> FakeFrame:
         """
@@ -555,6 +598,30 @@ class FakeAether:
         if cluster is None:
             return []
         return [owner_id for owner_id in cluster.shared_spells.keys() if owner_id]
+
+    def _get_conduit_by_spell_id(self, spell_id: str, frame_name: str) -> Any:
+        """
+        Return the conduit that currently owns the supplied spell id.
+
+        Args:
+            spell_id: Spell id to locate.
+            frame_name: Frame name to resolve.
+
+        Returns:
+            Any: Conduit currently owning the supplied spell id.
+
+        Raises:
+            ValueError: If no conduit currently owns the spell id.
+        """
+        frame = self._get_frame(frame_name)
+        for conduit_id, indices in frame._spell_registry.items():
+            for spell_index in indices:
+                if (
+                        spell_index.current == spell_id or
+                        spell_index.has_version(spell_id)
+                ):
+                    return frame._conduits[conduit_id]
+        raise ValueError(spell_id)
 
 
 class FakeSpellbook:

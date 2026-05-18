@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, Set, runtime_checkable
+from typing import Any, Dict, Optional, Protocol, Set, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -31,6 +31,10 @@ class ISpellIndex(ICleanable, Protocol):
     _lock: Any
     _cleaned: bool
     _versions: Optional[Set[str]]
+    _owner_spellbook: Optional[object]
+    _owner_spell: Optional[object]
+    _owner_conduit_id: Optional[str]
+    _contracted_spellbooks: Dict[Tuple[object, str], object]
 
     # ------------------------------------------------------------------
     # Core API
