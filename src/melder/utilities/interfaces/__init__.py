@@ -6,6 +6,9 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispellparameterrequirement import ISpellParameterRequirement
+from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
+from melder.utilities.interfaces.ispellsystemstate import ISpellSystemState
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
@@ -58,6 +61,11 @@ from melder.utilities.interfaces.iworkstation import IWorkstation
 from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
 from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
+from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
+from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+from melder.utilities.interfaces.ioverridepatchmap import IOverridePatchMap
+from melder.utilities.interfaces.imutationpatchmap import IMutationPatchMap
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.icapabilitycommandsystem import ICapabilityCommandSystem
 from melder.utilities.interfaces.ichangecontrolorchestrator import IChangeControlOrchestrator
@@ -102,6 +110,9 @@ __all__ = [
     "ISpellIndex",
     "ISpellBinder",
     "ISpellbook",
+    "ISpellParameterRequirement",
+    "ISpellRequirements",
+    "ISpellSystemState",
     "ISpellValidationSystem",
     "ISpellGeneralProfile",
     "ISpellDetailedProfile",
@@ -154,6 +165,11 @@ __all__ = [
     "IFrameLink",
     "IFrameLinkContract",
     "IFrameProjectionSet",
+    "IRootResolutionBlueprint",
+    "IOccurrencePlan",
+    "IInjectionPlan",
+    "IOverridePatchMap",
+    "IMutationPatchMap",
     "ICommandSystem",
     "ICapabilityCommandSystem",
     "IChangeControlOrchestrator",

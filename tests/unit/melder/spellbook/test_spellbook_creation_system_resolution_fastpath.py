@@ -875,14 +875,9 @@ def test_run_post_conjure_structural_phases_logs_broken_spell_cleanup_fallbacks(
 
 
 def test_collect_target_resolution_scope_uses_index_and_root_blueprint_fallbacks() -> None:
-    spellbook = _StubSpellbook()
     target_spell = types.SimpleNamespace(
-        _ensure_crafter=lambda: types.SimpleNamespace(
-            spell_system_index_phase5=types.SimpleNamespace(
-                nodes={"extra": object()},
-            ),
-            _entire_dag_blueprint_phase5=None,
-        )
+        get_local_resolution_scoped_spell_ids=lambda: {"spell-1", "extra"},
+        get_local_resolution_scoped_root_ids=lambda: tuple(),
     )
 
     scoped_spell_ids, scoped_root_ids = (
@@ -898,10 +893,8 @@ def test_collect_target_resolution_scope_uses_index_and_root_blueprint_fallbacks
 
 def test_collect_target_resolution_scope_uses_root_blueprint_keys_when_present() -> None:
     target_spell = types.SimpleNamespace(
-        _ensure_crafter=lambda: types.SimpleNamespace(
-            spell_system_index_phase5=None,
-            _entire_dag_blueprint_phase5={"root-a": object(), "root-b": object()},
-        )
+        get_local_resolution_scoped_spell_ids=lambda: {"spell-1"},
+        get_local_resolution_scoped_root_ids=lambda: ("root-a", "root-b"),
     )
 
     scoped_spell_ids, scoped_root_ids = (

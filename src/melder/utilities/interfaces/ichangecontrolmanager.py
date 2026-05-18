@@ -391,6 +391,38 @@ class IChangeControlManager(ICleanable, Protocol):
         """
         ...
 
+    def set_revalidator(
+            self,
+            conduit_id: str,
+            fn: Optional[Callable[[set[str], Optional["CancellationEvent"]], Optional[set[str]]]],
+    ) -> None:
+        """
+        Register or clear the conduit-scoped dirty-root revalidator.
+        """
+        ...
+
+    def rebuild_component_of(
+            self,
+            conduit_id: str,
+            root_blueprints: Dict[str, object],
+    ) -> None:
+        """
+        Replace the conduit-scoped component-of map from the supplied owned
+        root blueprints.
+        """
+        ...
+
+    def upsert_component_of(
+            self,
+            conduit_id: str,
+            root_blueprints: Dict[str, object],
+    ) -> None:
+        """
+        Merge or replace the conduit-scoped component-of map from the supplied
+        owned root blueprints.
+        """
+        ...
+
     def has_registered_revalidators(self) -> bool:
         """
         Return whether any conduit revalidator is currently registered.
