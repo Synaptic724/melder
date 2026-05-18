@@ -1,5 +1,6 @@
 from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable, \
     Set
+import threading
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.spellbook.existence.existence import Existence
@@ -48,6 +49,7 @@ class ISpellbook(ICleanable, Protocol):
     _spells_by_id: Dict[str, ISpell]
     _bind: Optional[Any]
     _id: str
+    _lock: threading.RLock
     _aether: IAether
     _aetheric_frame: Optional[str]
     _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
@@ -958,6 +960,40 @@ class ISpellbook(ICleanable, Protocol):
         Internal
 
         Run deferred target-local plan phases for one spell.
+        """
+        ...
+
+    def _unregister_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+        """
+        Remove the owned spell-id mapping for one spell when it no longer
+        belongs to this spellbook.
+        """
+        ...
+
+    def _register_spell_with_risk_manager(
+            self,
+            conduit_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Register one owned spell with the conduit-scoped risk manager surface.
+        """
+        ...
+
+    def _unregister_spell_with_risk_manager(
+            self,
+            conduit_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Remove one owned spell from the conduit-scoped risk manager surface.
+        """
+        ...
+
+    def _publish_spell_record_to_nexus(self, spell: ISpell) -> None:
+        """
+        Publish one incremental spell record into Nexus for an already-conjured
+        spellbook.
         """
         ...
 

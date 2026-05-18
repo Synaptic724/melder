@@ -60,10 +60,10 @@ class MutationFrame(Cleanable, IMutationFrame):
             raise ValueError("change_control_manager cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._aetheric_frame_name: Optional[str] = aetheric_frame_name
+        self._aetheric_frame_name: str = aetheric_frame_name
         self._mutation_research = mutation_research
-        self._spell_system_states: Optional[ISpellSystemStates] = spell_system_states
-        self._change_control_manager: Optional[IChangeControlManager] = change_control_manager
+        self._spell_system_states: ISpellSystemStates = spell_system_states
+        self._change_control_manager: IChangeControlManager = change_control_manager
 
     def cleanup(self) -> None:
         """
