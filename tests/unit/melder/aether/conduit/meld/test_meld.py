@@ -1163,10 +1163,10 @@ def test_resolve_local_by_lookup_key_raises_when_spell_missing() -> None:
 
 def test_resolve_contracted_by_lookup_key_raises_when_conduit_missing() -> None:
     """
-    Verify contracted resolution fails naturally when conduit spell map is absent.
+    Verify contracted resolution skips missing conduit spell maps.
 
     Contract:
-        - Lookup hit with missing conduit map raises AttributeError on direct map access.
+        - Lookup hit with missing conduit map returns None.
     """
     lookup_key = ("frame", "binding")
     spell_index = object()
@@ -1175,8 +1175,7 @@ def test_resolve_contracted_by_lookup_key_raises_when_conduit_missing() -> None:
         lookup_contracted_spells={"peer": {lookup_key: spell_index}},
     )
     meld = _make_meld(spellbook=spellbook)
-    with pytest.raises(AttributeError, match="has no attribute 'get'"):
-        meld._resolve_contracted_by_lookup_key(lookup_key)
+    assert meld._resolve_contracted_by_lookup_key(lookup_key) is None
 
 
 def test_resolve_contracted_by_lookup_key_raises_when_spell_missing() -> None:
@@ -1305,18 +1304,19 @@ def test_set_meld_hooks_local_overwrite_replaces_existing_hooks() -> None:
 
 def test_ensure_lineage_resolvable_skips_without_state() -> None:
     """
-    Verify lineage gating is skipped without system state.
+    Verify lineage gating fails validation when no structural state exists.
 
     Contract:
-        - Missing system_state results in no revalidation.
+        - Missing system_state still triggers one structural rerun attempt.
+        - The spell remains unrunnable and raises SpellbookValidationError.
     """
     meld = _make_meld()
     spell = _SpellStub(spell_id="spell-1", system_state=None)
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(SpellbookValidationError):
         meld._ensure_lineage_resolvable(spell)
 
-    assert spell.run_structural_phases_calls == 0
+    assert spell.run_structural_phases_calls == 1
 
 
 def test_ensure_lineage_resolvable_revalidates_unknown_success() -> None:
@@ -1583,15 +1583,14 @@ def test_iter_spell_contract_defaults_returns_empty_when_signature_unavailable()
 
 def test_gated_validation_required_returns_false_without_state() -> None:
     """
-    Verify gated validation short-circuits without system state.
+    Verify gated validation requires structural rerun without system state.
 
     Contract:
-        - Missing system_state returns False.
+        - Missing system_state returns True so structural validation runs.
     """
     meld = _make_meld()
     spell = _SpellStub(spell_id="spell-1", system_state=None)
-    with pytest.raises(AttributeError):
-        meld._gated_validation_required(spell)
+    assert meld._gated_validation_required(spell) is True
 
 
 def test_gated_validation_required_returns_false_for_valid() -> None:

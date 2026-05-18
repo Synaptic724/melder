@@ -14,7 +14,13 @@ def conduit_cloud():
     Fixture to provide a fresh ConduitCloud instance for each test.
     Ensures cleanup is called after each test.
     """
-    cloud = ConduitCloud("test_frame")
+    cloud = ConduitCloud(
+        "test_frame",
+        {},
+        {},
+        {},
+        MagicMock(),
+    )
     yield cloud
     cloud.cleanup()
 
@@ -85,9 +91,9 @@ def test_get_conduit_success(conduit_cloud, mock_conduit):
     Verify retrieval of a registered conduit.
 
     Contract:
-    - `get_conduit` returns the exact instance registered with the name.
+        - `get_conduit` returns the exact instance registered with the name.
     """
-    conduit_cloud._register_conduit(mock_conduit)
+    conduit_cloud._add_root_conduit(mock_conduit)
     result = conduit_cloud.get_conduit("test_conduit")
     assert result is mock_conduit
 
@@ -109,7 +115,7 @@ def test_conduit_cloud_discovery_helpers_return_registered_names_and_ids(
     Returns:
         None.
     """
-    conduit_cloud._register_conduit(mock_conduit)
+    conduit_cloud._add_root_conduit(mock_conduit)
 
     assert conduit_cloud.list_conduit_ids() == ("conduit-1",)
     assert conduit_cloud.list_conduit_names() == ("test_conduit",)
@@ -177,8 +183,8 @@ def test_cleanup_clears_registry(conduit_cloud, mock_conduit):
     conduit_cloud.cleanup()
     
     assert conduit_cloud._cleaned
-    assert conduit_cloud._registry is None
-    assert conduit_cloud._lock is None
+    assert not hasattr(conduit_cloud, "_registry")
+    assert not hasattr(conduit_cloud, "_lock")
 
 def test_cleanup_is_idempotent(conduit_cloud):
     """
@@ -208,7 +214,7 @@ def test_cleanup_returns_early_when_cleaned_flips_inside_lock(conduit_cloud):
     finally:
         conduit_cloud._lock = original_lock
 
-    assert conduit_cloud._registry is not None
+    assert hasattr(conduit_cloud, "_registry")
 
 def test_context_manager(conduit_cloud):
     """

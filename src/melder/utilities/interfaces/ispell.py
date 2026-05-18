@@ -17,6 +17,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -128,7 +129,7 @@ class ISpell(ICleanable, Protocol):
     _activation_hooks: Optional[List[Callable[..., Any]]]
     _post_hooks: Optional[List[Callable[..., Any]]]
 
-    _spell_system_states: ISpellSystemStatesSpellSurface
+    _spell_system_states: ISpellSystemStates
     _key: Tuple[str, str]
 
     # ------------------------------------------------------------------

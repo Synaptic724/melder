@@ -1235,11 +1235,12 @@ def test_cleanup_normal_unregisters_root_state_and_removes_spells(
         name="alpha",
     )
     try:
-        conduit._conduit_cloud.reset_mock()
+        conduit_cloud = conduit._conduit_cloud
+        conduit_cloud.reset_mock()
         conduit.cleanup()
         spellbook_stub._unregister_conduit_spells_from_aether.assert_called_once_with(conduit._id)
-        conduit._conduit_cloud._remove_root_conduit.assert_called_once_with(conduit)
-        conduit._conduit_cloud._unregister_conduit.assert_called_once_with(conduit)
+        conduit_cloud._remove_root_conduit.assert_called_once_with(conduit)
+        conduit_cloud._unregister_conduit.assert_called_once_with(conduit)
     finally:
         if not conduit._cleaned:
             conduit.cleanup()

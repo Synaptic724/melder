@@ -100,7 +100,7 @@ def select_occurrence_plan(
     )
 
 
-class OccurrencePlan(IOccurrencePlan, Cleanable):
+class OccurrencePlan(Cleanable, IOccurrencePlan):
     """
     Phase 8 occurrence-expansion artifact for one root blueprint.
 

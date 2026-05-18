@@ -453,33 +453,33 @@ def test_get_spell_permissions_raises_when_missing(
 
 def test_get_conduit_by_spell_id_delegates_to_aether(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify get_conduit_by_spell_id delegates to Aether.
+    Verify get_conduit_by_spell_id delegates through the Spellbook-owned helper.
 
     Contract:
-        - The Aether return value is returned to the caller.
+        - The Spellbook helper result is returned to the caller.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        spellbook_stub (MagicMock): Spellbook stub used for delegation.
 
     Raises:
-        AssertionError: If the Aether result is not returned.
+        AssertionError: If the Spellbook helper result is not returned.
     """
     sentinel = object()
-    aether_stub._get_conduit_by_spell_id.return_value = sentinel
+    spellbook_stub._get_conduit_by_spell_id.return_value = sentinel
 
     result = conduit_normal.get_conduit_by_spell_id("sha-1", aetheric_frame_name="frame-1")
 
-    aether_stub._get_conduit_by_spell_id.assert_called_once_with("sha-1", "frame-1")
+    spellbook_stub._get_conduit_by_spell_id.assert_called_once_with("sha-1", "frame-1")
     assert result is sentinel
 
 
 def test_check_spell_id_returns_bool(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    spellbook_stub: MagicMock,
 ) -> None:
     """
     Verify check_spell_id reports presence using boolean semantics.
@@ -489,22 +489,22 @@ def test_check_spell_id_returns_bool(
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        spellbook_stub (MagicMock): Spellbook stub used for delegation.
 
     Raises:
         AssertionError: If the boolean result is incorrect.
     """
-    aether_stub._check_for_spell.return_value = "sha-1"
+    spellbook_stub._check_spell_id_in_aether.return_value = True
 
     result = conduit_normal.check_spell_id("sha-1", aetheric_frame_name="frame-1")
 
-    aether_stub._check_for_spell.assert_called_once_with("sha-1", "frame-1")
+    spellbook_stub._check_spell_id_in_aether.assert_called_once_with("sha-1", "frame-1")
     assert result is True
 
 
 def test_get_spell_by_id_returns_none_when_owner_missing(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    spellbook_stub: MagicMock,
 ) -> None:
     """
     Verify get_spell_by_id returns None when no owner conduit is found.
@@ -514,46 +514,49 @@ def test_get_spell_by_id_returns_none_when_owner_missing(
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for lookup.
+        spellbook_stub (MagicMock): Spellbook stub used for lookup.
 
     Raises:
         AssertionError: If the result is not None.
     """
-    aether_stub._get_conduit_by_spell_id.return_value = None
+    spellbook_stub._get_spell_by_id_via_aether.return_value = None
 
     result = conduit_normal.get_spell_by_id("sha-1")
 
+    spellbook_stub._get_spell_by_id_via_aether.assert_called_once_with(
+        "sha-1",
+        "default",
+    )
     assert result is None
 
 
 def test_get_spell_by_id_returns_owner_spell(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify get_spell_by_id resolves a spell from the owning spellbook.
+    Verify get_spell_by_id delegates through the Spellbook-owned helper.
 
     Contract:
-        - The owning spellbook is scanned for a SpellIndex that has the version.
-        - The matching spell instance is returned.
+        - The Spellbook helper result is returned to the caller.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for lookup.
+        spellbook_stub (MagicMock): Spellbook stub used for lookup.
 
     Raises:
         AssertionError: If the spell is not returned.
     """
     spell = _make_spell("sha-1")
-    owner = MagicMock()
-    owner._spellbook = MagicMock()
-    owner._spellbook.find_spell_by_id = MagicMock(return_value=spell)
-    aether_stub._get_conduit_by_spell_id.return_value = owner
+    spellbook_stub._get_spell_by_id_via_aether.return_value = spell
 
     result = conduit_normal.get_spell_by_id("sha-1")
 
     assert result is spell
-    owner._spellbook.find_spell_by_id.assert_called_once_with("sha-1")
+    spellbook_stub._get_spell_by_id_via_aether.assert_called_once_with(
+        "sha-1",
+        "default",
+    )
 
 
 def test_find_contracted_spell_returns_none_when_empty(

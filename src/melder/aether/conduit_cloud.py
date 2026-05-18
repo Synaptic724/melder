@@ -36,7 +36,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
             conduits: Dict[str, IConduit],
             conduit_ids_by_name: Dict[str, str],
             conduit_clusters: Dict[str, IConduitCluster],
-            owner_cleanup: Callable[[], None],
     ):
         """
         Initialize the frame-scoped conduit and cluster service facade.
@@ -53,9 +52,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 Borrowed root-conduit name registry owned by the frame.
             conduit_clusters (Dict[str, IConduitCluster]):
                 Borrowed cluster registry owned by the frame.
-            owner_cleanup (Callable[[], None]):
-                Callback used to clean the owning frame when the root-conduit
-                registry becomes empty.
         Contract:
             - Starts with an empty dynamic cloud registry.
             - Stores the owning frame name for later diagnostics/identity.
@@ -68,7 +64,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._conduits: Dict[str, IConduit] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, IConduitCluster] = conduit_clusters
-        self._owner_cleanup: Callable[[], None] = owner_cleanup
         self._registry: Dict[str, IConduit] = {}
         self._id: str = str(ulid.ULID())
 
@@ -98,7 +93,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
             del self._conduits
             del self._conduit_ids_by_name
             del self._conduit_clusters
-            del self._owner_cleanup
             del self._name
             del self._id
         del self._lock

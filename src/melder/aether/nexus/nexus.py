@@ -393,7 +393,14 @@ class Nexus(Cleanable, INexus):
                 cls._initialized = False
                 return
             try:
-                instance.cleanup()
+                try:
+                    instance.cleanup()
+                except AttributeError:
+                    # First-time initialization can fail before the Cleanable
+                    # base state and other owned fields are fully attached.
+                    # Test-only singleton reset must still clear class-level
+                    # bookkeeping in that partial-init case.
+                    pass
             finally:
                 cls._instance = None
                 cls._initialized = False

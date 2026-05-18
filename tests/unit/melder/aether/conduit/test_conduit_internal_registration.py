@@ -60,20 +60,18 @@ def test_remove_root_conduit_delegates(
 
 def test_add_spells_to_aether_registers_spell_indices(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
 ) -> None:
     """
-    Verify _add_spells_to_aether registers SpellIndex keys.
+    Verify _add_spells_to_aether delegates through the Spellbook-owned helper.
 
     Contract:
-        - SpellIndex keys are passed as a set to Aether.
+        - The Spellbook helper receives the conduit id.
 
     Args:
         conduit_normal (Conduit): Normal conduit under test.
-        aether_stub (MagicMock): Aether stub for registration checks.
 
     Raises:
-        AssertionError: If Aether registration is incorrect.
+        AssertionError: If Spellbook delegation is incorrect.
     """
     spell_a = SpellIndex("sha-1")
     spell_b = SpellIndex("sha-2")
@@ -81,13 +79,11 @@ def test_add_spells_to_aether_registers_spell_indices(
         spell_a: MagicMock(),
         spell_b: MagicMock(),
     }
-    aether_stub.reset_mock()
+    conduit_normal._spellbook._register_conduit_spells_in_aether = MagicMock()
     try:
         conduit_normal._add_spells_to_aether()
-        aether_stub._add_spells_to_aether.assert_called_once_with(
-            conduit_normal._id,
-            {spell_a, spell_b},
-            "default",
+        conduit_normal._spellbook._register_conduit_spells_in_aether.assert_called_once_with(
+            conduit_normal._id
         )
     finally:
         spell_a.cleanup()

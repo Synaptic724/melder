@@ -675,7 +675,7 @@ def test_nexus_cold_start_requires_aether_and_does_not_publish_singleton() -> No
     Aether._reset_singleton_for_tests()
     AetherUtilitySystem._reset_singleton_for_tests()
 
-    with pytest.raises(ValueError, match="Aether must be provided to initialize Nexus."):
+    with pytest.raises(ValueError, match="Nexus must be initialized with an Aether instance."):
         Nexus()
 
     assert Nexus._instance is None
