@@ -37,6 +37,99 @@ class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
         "describe_spell_status_by_index_id",
     )
 
+    @staticmethod
+    def _raise_static_runtime_helper_absent(method_name: str) -> None:
+        """
+        Raise the static-room absent-method contract for direct conduit helpers.
+
+        Purpose:
+            Keep static rooms aligned to the published command surface by
+            making capability-only conduit-object helpers absent at runtime.
+        Contract:
+            - Always raises `AttributeError`.
+            - Uses the requested method name in the failure message.
+        Args:
+            method_name:
+                Public helper name that static rooms must not expose.
+        Returns:
+            None.
+        Raises:
+            AttributeError:
+                Always, because static rooms do not expose the helper.
+        """
+        raise AttributeError(
+            "Static command surface does not expose '{0}'.".format(method_name)
+        )
+
+    def get_conduit_cloud(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Static rooms do not expose the live conduit-cloud runtime object.
+
+        Args:
+            frame_name:
+                Unused static-room frame selector.
+        Returns:
+            object:
+                Never returns.
+        Raises:
+            AttributeError:
+                Always, because static rooms do not expose direct conduit-cloud
+                runtime access.
+        """
+        self._raise_static_runtime_helper_absent("get_conduit_cloud")
+
+    def get_conduit_by_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Static rooms do not expose live conduit runtime objects by id.
+
+        Args:
+            conduit_id:
+                Unused conduit id.
+            frame_name:
+                Unused static-room frame selector.
+        Returns:
+            object:
+                Never returns.
+        Raises:
+            AttributeError:
+                Always, because static rooms do not expose direct conduit
+                runtime-object access.
+        """
+        self._raise_static_runtime_helper_absent("get_conduit_by_id")
+
+    def get_conduit_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Static rooms do not expose live conduit runtime objects by name.
+
+        Args:
+            conduit_name:
+                Unused conduit name.
+            frame_name:
+                Unused static-room frame selector.
+        Returns:
+            object:
+                Never returns.
+        Raises:
+            AttributeError:
+                Always, because static rooms do not expose direct conduit
+                runtime-object access.
+        """
+        self._raise_static_runtime_helper_absent("get_conduit_by_name")
+
     def _get_spell_by_index_id_locked(
             self,
             spell_index_id: str,

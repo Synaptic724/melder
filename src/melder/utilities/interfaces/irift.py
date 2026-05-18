@@ -1,8 +1,9 @@
-from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
+from typing import Dict, Optional, Protocol, Tuple, runtime_checkable, Sequence
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
+from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftspace import IRiftSpace
@@ -182,8 +183,9 @@ class IRift(ICleanable, Protocol):
 
     def refresh_runtime_projections(
             self,
-            frame_names: Optional[Tuple[str, ...]] = None,
-    ) -> None:
+            *,
+            frame_names: Optional[Sequence[str]] = None,
+    ) -> Dict[str, IFrameProjectionSet]:
         """
         Refresh the Rift-owned projection registry for the supplied frames or
         for all currently assigned frames when omitted.

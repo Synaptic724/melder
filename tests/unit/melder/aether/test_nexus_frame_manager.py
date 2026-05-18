@@ -18,6 +18,16 @@ from tests._frame_posture_test_support import (
     set_frame_system_state_for_spellbook_configuration,
     set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
 )
+
+
+class _FakeConduitCloud:
+    def __init__(self, cloud_names=None) -> None:
+        self._registry = dict(cloud_names or {})
+
+    def list_conduit_names(self):
+        return tuple(sorted(self._registry.keys()))
+
+
 class _FakeFrame:
     def __init__(
             self,
@@ -33,7 +43,7 @@ class _FakeFrame:
         self._id = frame_id
         self.cleaned = False
         self._conduits = dict(conduit_ids or {})
-        self._conduit_cloud = SimpleNamespace(_registry=dict(cloud_names or {}))
+        self._conduit_cloud = _FakeConduitCloud(cloud_names)
         self._conduit_clusters = dict(cluster_names or {})
         self.bound_frame_configuration = None
 
@@ -211,8 +221,16 @@ class _FakeNexus:
     def _ensure_frame_acl_container(self, frame_name: str) -> None:
         self.ensured_acl_frames.append(frame_name)
 
+    def _remove_frame_acl_container(self, frame_name: str) -> bool:
+        return self._frame_acl_manager._remove_frame_acl_container(frame_name)
+
     def _get_required_frame_descriptor(self, frame_name: str):
         return self._frame_descriptor_manager._get_required_frame_descriptor(
+            frame_name
+        )
+
+    def _get_or_create_frame_descriptor(self, frame_name: str):
+        return self._frame_descriptor_manager._get_or_create_frame_descriptor(
             frame_name
         )
 

@@ -6007,7 +6007,7 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_manager_state() -> Non
 
     assert nexus.frame_manager.exists(frame_name) is True
 
-    rift.get_nexus_frame().cleanup()
+    nexus._aether._ensure_frame(frame_name).cleanup()
 
     assert nexus.frame_manager.exists(frame_name) is False
 

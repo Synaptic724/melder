@@ -318,18 +318,21 @@ def test_integration_nexus_frame_cleanup_matrix(
     else:
         conduit = rift.create_nexus_frame()
 
-    assert nexus.frame_manager.exists(conduit._aetheric_frame) is True
+    managed_frame_name = conduit._aetheric_frame
+    assert nexus.frame_manager.exists(managed_frame_name) is True
 
     if cleanup_kind == "external":
         conduit.cleanup()
-        assert nexus.frame_manager.exists(conduit._aetheric_frame) is False
+        assert nexus.frame_manager.exists(managed_frame_name) is True
+        nexus._aether._ensure_frame(managed_frame_name).cleanup()
+        assert nexus.frame_manager.exists(managed_frame_name) is False
         return
 
     nexus.remove_rift(rift.id)
     if nexus_frame_mode == "indexed":
-        assert nexus.frame_manager.exists(conduit._aetheric_frame) is True
+        assert nexus.frame_manager.exists(managed_frame_name) is True
     else:
-        assert nexus.frame_manager.exists(conduit._aetheric_frame) is False
+        assert nexus.frame_manager.exists(managed_frame_name) is False
 
 
 @pytest.mark.parametrize(

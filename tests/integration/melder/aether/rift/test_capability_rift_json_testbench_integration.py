@@ -947,21 +947,18 @@ def _assert_capability_request_result(
         assert result["conduit_name"] == bench.manifest["conduits"]["left"]["name"]
         return
     if kind == "cloud_object":
-        expected_count = 2 if bench.dynamic_frame else 0
+        expected_count = 2
         assert result.count_conduits() == expected_count
         return
     if kind == "cloud_count":
-        expected_count = 2 if bench.dynamic_frame else 0
+        expected_count = 2
         assert result == expected_count
         return
     if kind == "cloud_names":
-        if bench.dynamic_frame:
-            assert result == (
-                bench.manifest["conduits"]["left"]["name"],
-                bench.manifest["conduits"]["right"]["name"],
-            )
-        else:
-            assert result == tuple()
+        assert result == (
+            bench.manifest["conduits"]["left"]["name"],
+            bench.manifest["conduits"]["right"]["name"],
+        )
         return
     raise AssertionError(kind)
 

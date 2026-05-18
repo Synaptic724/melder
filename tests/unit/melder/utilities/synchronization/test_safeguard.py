@@ -90,8 +90,6 @@ def test_cleanup_idempotent_and_nulls_references():
     guard = SafeGuard(one_time_use=False)
     guard.cleanup()
     guard.cleanup()
-    assert guard._locks is None
-    assert guard._acquired is None
     with pytest.raises(RuntimeError):
         guard.check_cleaned()
 

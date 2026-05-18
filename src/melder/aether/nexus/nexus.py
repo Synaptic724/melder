@@ -301,19 +301,32 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
+        previous_logger = getattr(self, "_logger", None)
         try:
             if logger is not None:
-                self._logger = InitHelpers.resolve_safe_logger(logger)
+                next_logger = InitHelpers.resolve_safe_logger(logger)
             else:
-                self._logger = InitHelpers.resolve_channel_logger(
+                next_logger = InitHelpers.resolve_channel_logger(
                     self,
                     groups=self._get_default_logger_groups(),
                     system_groups=self._get_default_logger_system_groups(),
                     props=self._get_default_logger_properties(),
                     channels="system",
                 )
+            if previous_logger is not None and previous_logger is not next_logger:
+                try:
+                    previous_logger.cleanup()
+                except Exception:
+                    pass
+            self._logger = next_logger
         except Exception as e:
-            self._logger = InitHelpers.resolve_safe_logger(None)
+            fallback_logger = InitHelpers.resolve_safe_logger(None)
+            if previous_logger is not None and previous_logger is not fallback_logger:
+                try:
+                    previous_logger.cleanup()
+                except Exception:
+                    pass
+            self._logger = fallback_logger
             self._logger.error(
                 f"Failed to initialize Nexus logger: {e}",
                 "_initialize_logging",

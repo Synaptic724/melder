@@ -1778,7 +1778,7 @@ and logging.
         self._register_link_mirror(conduit_id)
 
 
-    def _remove_link_contract(self, conduit_id: str):
+    def _remove_link_contract(self, conduit_id: str) -> None:
         """
         Internal
 

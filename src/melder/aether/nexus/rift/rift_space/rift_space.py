@@ -18,10 +18,12 @@ from melder.aether.nexus.rift.rift_space.workstation import Workstation
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
+from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
 from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
+from melder.utilities.interfaces.iworkstation import IWorkstation
 
 
 class RiftSpace(Cleanable, IRiftSpace):
@@ -164,11 +166,11 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._space_kind: str = space_kind
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
         self._rift_gate: Optional[IRiftGate] = rift_gate
-        self._memory_system: RiftMemorySystem = RiftMemorySystem(
+        self._memory_system: IRiftMemorySystem = RiftMemorySystem(
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
         )
-        self._event_system: RiftEventSystem = RiftEventSystem(
+        self._event_system: IRiftEventSystem = RiftEventSystem(
             rift_id=self._owner_rift_id,
             space_id=self._id,
             space_kind=self._space_kind,
@@ -398,7 +400,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._metadata
 
     @property
-    def frame_viewer(self) -> FrameViewer:
+    def frame_viewer(self) -> IFrameViewer:
         """
         Purpose:
             Return the attached frame-surface viewer for this space.
@@ -408,7 +410,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             - The viewer may host zero frames before any projection exists.
 
         Returns:
-            FrameViewer: Attached frame viewer for this active space.
+            IFrameViewer: Attached frame viewer for this active space.
         """
         self.check_cleaned()
         with self._lock:
@@ -428,7 +430,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._rift_gate
 
     @property
-    def workstation(self) -> Workstation:
+    def workstation(self) -> IWorkstation:
         """
         Purpose:
             Return the room-local workstation canvas.

@@ -51,7 +51,7 @@ class SafeLogger(Cleanable, ISafeLogger):
                 f"SafeLogger expects a logging.Logger or IChannelLogger instance or None, "
                 f"got {type(logger).__name__} instead."
             )
-        self._logger = logger
+        self._logger: Optional[Union[logging.Logger, IChannelLogger]] = logger
         self._is_channel = isinstance(logger, IChannelLogger)
         normalized = level_name.lower()
         if normalized not in self._LEVELS:
