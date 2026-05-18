@@ -300,7 +300,12 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Conduit Management
     # ------------------------------------------------------------------
-    def upgrade_to_normal(self, name: Optional[str] = None) -> None:
+    def upgrade_to_normal(
+            self,
+            name: str,
+            *,
+            hooks: dict[str, Any] | None = None,
+    ) -> None:
         """
         Public API
 
@@ -314,7 +319,8 @@ class IConduit(ICleanable, Protocol):
         Please name the conduit if your intention is to add it to the Conduit Cloud.
 
         Args:
-            name (str, optional): An optional name to assign to the upgraded conduit.
+            name (str): An optional name to assign to the upgraded conduit.
+            hooks (dict[str, Any] | None, optional): Optional hooks to configure the conduit's behavior.
 
         Raises:
             RuntimeError: If the dynamic environment is not enabled.
