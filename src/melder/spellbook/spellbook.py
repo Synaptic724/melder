@@ -160,6 +160,7 @@ class Spellbook(Cleanable, ISpellbook):
     """
     __melder_internal__ = _mrg.sentinel
     _cleaned: bool
+    _aether = Aether()
     __slots__ = Cleanable.__slots__ + [
         "_active_change_request",
         "_aetheric_frame",
@@ -191,7 +192,7 @@ class Spellbook(Cleanable, ISpellbook):
         "_spells_by_id",
         "_whitelist_all_spells",
     ]
-    _aether = Aether()
+
     def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None,
                  logger: Any | None = None):
         """

@@ -7,12 +7,28 @@ import ulid
 from melder.utilities.general_base.cleanable import Cleanable
 from typing import Callable, Generic, ParamSpec, TypeVar, Iterable, Union, Optional, Collection, overload, Dict, Tuple, \
     Awaitable, \
-    Any, List, cast
+    Any, List, TypeGuard
 
 P = ParamSpec("P")
 R = TypeVar("R")
 A = TypeVar("A")
 B = TypeVar("B")
+
+
+def _is_async_callable(
+        task: Callable[..., object],
+) -> TypeGuard[Callable[..., Awaitable[object]]]:
+    """
+    Return whether one callable is a coroutine function.
+
+    Args:
+        task:
+            Candidate callable to classify.
+
+    Returns:
+        bool: True when `task` is an `async def` coroutine function.
+    """
+    return inspect.iscoroutinefunction(task)
 
 class Package(Cleanable, Generic[P, R]):
     """
@@ -93,10 +109,8 @@ class Package(Cleanable, Generic[P, R]):
 
         # Check if the normalized function is a coroutine and store the flag.
         self._is_async = inspect.iscoroutinefunction(normalized)
-        self._async_func: Optional[Callable[..., Awaitable[Any]]] = (
-            cast(Callable[..., Awaitable[Any]], normalized)
-            if self._is_async
-            else None
+        self._async_func: Optional[Callable[..., Awaitable[object]]] = (
+            normalized if _is_async_callable(normalized) else None
         )
 
         self._wrapped_func: Callable[..., R] = normalized
@@ -290,7 +304,7 @@ class Package(Cleanable, Generic[P, R]):
         """
         return self._is_async
 
-    def get_coroutine(self) -> Callable[..., Awaitable[Any]]:
+    def get_coroutine(self) -> Callable[..., Awaitable[object]]:
         """
         Returns the underlying coroutine function if the Package is async.
 

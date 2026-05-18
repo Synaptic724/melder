@@ -319,8 +319,16 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             keys: Iterable of keys.
             value: Value to associate with every key.
             auto_prune: Whether the resulting dict should auto-prune dead entries.
+
+        Raises:
+            TypeError:
+                If `value` is None or cannot be weak-referenced.
         """
-        items = [(k, cast(_V, value)) for k in keys]
+        if value is None:
+            raise TypeError(
+                "WeakConcurrentDict.fromkeys() requires a non-None weak-referenceable value."
+            )
+        items = [(k, value) for k in keys]
         return cls(initial=items, auto_prune=auto_prune)
 
     # -------------------------------------------------------------------------
@@ -881,12 +889,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         """
         self.check_cleaned()
         self._ensure_mutable()
-
         if default is None:
-            # If default is None, and key is missing, we still insert a
-            # WeakRefNode(None) which will raise TypeError; this mirrors
-            # strong dict semantics except for weakref constraints.
-            pass
+            raise TypeError(
+                "WeakConcurrentDict.setdefault() requires a non-None weak-referenceable default."
+            )
 
         with self._lock:
             if self._dict is None:
@@ -900,7 +906,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                     pass
 
             # Either missing, or dead; overwrite with default
-            new_node = self._make_node(cast(_V, default))
+            new_node = self._make_node(default)
             self._dict[key] = new_node
             return default
 
@@ -1313,9 +1319,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         else:
             merged.extend(
                 list(
-                    self._iter_initial_pairs(
-                        cast(Union[Mapping[_K, _V], Iterable[Tuple[_K, _V]]], other)
-                    )
+                    self._iter_initial_pairs(other)
                 )
             )
         return WeakConcurrentDict(initial=merged, auto_prune=self._auto_prune)
