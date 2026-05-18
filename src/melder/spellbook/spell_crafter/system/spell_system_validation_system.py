@@ -19,7 +19,11 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import ISpell, ISpellSystemStates
+from melder.utilities.interfaces import (
+    ISpell,
+    ISpellSystemStates,
+    IRootResolutionBlueprint,
+)
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -81,7 +85,7 @@ class SpellSystemValidationSystem(Cleanable):
             self,
             *,
             index: SpellSystemIndex,
-            blueprints: Dict[str, RootResolutionBlueprint],
+            blueprints: Dict[str, IRootResolutionBlueprint],
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,
@@ -192,7 +196,7 @@ class SpellSystemValidationSystem(Cleanable):
             spell_system_states: ISpellSystemStates,
             conduit_id: str,
             index: SpellSystemIndex,
-            blueprints: Mapping[str, RootResolutionBlueprint],
+            blueprints: Mapping[str, IRootResolutionBlueprint],
             diagnostics: Sequence[SystemDiagnostic],
             has_error: bool,
     ) -> None:

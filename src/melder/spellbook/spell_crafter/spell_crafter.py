@@ -41,7 +41,6 @@ from melder.utilities.interfaces import (
     IRootResolutionBlueprint,
     ISpell,
     ISpellbook,
-    ISpellIndex,
     ISpellRequirements,
     ISpellSystemState,
     ISpellSystemStates,
@@ -51,7 +50,6 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
@@ -327,6 +325,28 @@ class SpellCrafter(Cleanable):
             ISpellbook: Borrowed owning spellbook runtime surface.
         """
         return self._get_required_spellbook_from_spell(self._spell)
+
+    @staticmethod
+    def _get_required_spellbook_frame_name(spellbook: ISpellbook) -> str:
+        """
+        Return the non-empty owning frame name for one spellbook or raise.
+
+        Args:
+            spellbook:
+                Owning spellbook whose frame name is required.
+
+        Returns:
+            str: Concrete owning frame name.
+
+        Raises:
+            RuntimeError:
+                If the spellbook does not currently expose a concrete frame
+                name.
+        """
+        frame_name = spellbook._aetheric_frame
+        if frame_name is None:
+            raise RuntimeError("SpellCrafter requires a concrete owning frame name.")
+        return frame_name
 
     @staticmethod
     def _get_required_spell_system_states_from_spell(
@@ -962,7 +982,7 @@ class SpellCrafter(Cleanable):
         self._validation_result_phase6 = None
         self._capture_phase2_5_codegen_ir()
 
-    def set_root_blueprint_phase5(self, blueprint: RootResolutionBlueprint) -> None:
+    def set_root_blueprint_phase5(self, blueprint: IRootResolutionBlueprint) -> None:
         """
         Attach the Phase 5 root blueprint for this spell.
 
@@ -1062,7 +1082,7 @@ class SpellCrafter(Cleanable):
 
     def _build_phase10_patch_maps_input_signature(
             self,
-            root_blueprint: Optional[RootResolutionBlueprint],
+            root_blueprint: Optional[IRootResolutionBlueprint],
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build deterministic phase10 input signature for patch-map reuse.
@@ -1101,7 +1121,7 @@ class SpellCrafter(Cleanable):
     def _build_phase8_occurrence_plan_fast_key(
             self,
             *,
-            root_blueprint: Optional[RootResolutionBlueprint],
+            root_blueprint: Optional[IRootResolutionBlueprint],
             spell_lookup: Optional[Dict[str, ISpell]],
     ) -> Optional[Tuple[Any, ...]]:
         """
@@ -1236,7 +1256,7 @@ class SpellCrafter(Cleanable):
     def _build_phase8_occurrence_plan_input_signature(
             self,
             *,
-            root_blueprint: Optional[RootResolutionBlueprint],
+            root_blueprint: Optional[IRootResolutionBlueprint],
             spell_lookup: Optional[Dict[str, ISpell]],
     ) -> Optional[str]:
         """
@@ -1366,7 +1386,7 @@ class SpellCrafter(Cleanable):
     def _build_phase9_injection_plan_input_signature(
             self,
             *,
-            occurrence_plan: Optional[OccurrencePlan],
+            occurrence_plan: Optional[IOccurrencePlan],
     ) -> Optional[str]:
         """
         Build deterministic phase9 input signature for injection-plan reuse.
@@ -1918,8 +1938,8 @@ class SpellCrafter(Cleanable):
     def _build_occurrence_graph_rows(
             self,
             occurrence_graph: Mapping[
-                Tuple[str, Optional[int]],
-                Mapping[str, Sequence[Tuple[str, Optional[int]]]],
+                Tuple[str, int],
+                Mapping[str, Sequence[Tuple[str, int]]],
             ],
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
@@ -2038,7 +2058,7 @@ class SpellCrafter(Cleanable):
     def _build_occurrence_contract_override_rows(
             self,
             contract_overrides_by_occurrence: Mapping[
-                Tuple[str, Optional[int]],
+                Tuple[str, int],
                 Mapping[str, Any],
             ],
     ) -> Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]:
@@ -2686,8 +2706,8 @@ class SpellCrafter(Cleanable):
     def _build_phase11_no_overrides_input_signature(
             self,
             *,
-            occurrence_plan: OccurrencePlan,
-            injection_plan: Optional[InjectionPlan],
+            occurrence_plan: IOccurrencePlan,
+            injection_plan: Optional[IInjectionPlan],
             spell_lookup: Dict[str, ISpell],
     ) -> Optional[str]:
         """
@@ -2746,11 +2766,19 @@ class SpellCrafter(Cleanable):
                 occurrence = self._normalize_occurrence_key(
                     (spell_id, instance_key[1])
                 )
+                graph_occurrence: Optional[Tuple[str, int]] = None
                 if spell_id in shared_spell_ids and canonical_occurrence is not None:
                     occurrence = self._normalize_occurrence_key(
                         canonical_occurrence
                     )
-                dependencies = occurrence_graph.get(occurrence, {})
+                    graph_occurrence = canonical_occurrence
+                elif instance_key[1] is not None:
+                    graph_occurrence = (spell_id, instance_key[1])
+                dependencies = (
+                    occurrence_graph.get(graph_occurrence, {})
+                    if graph_occurrence is not None
+                    else {}
+                )
                 dependency_rows: List[Tuple[Any, ...]] = []
                 for param_name in sorted(dependencies.keys()):
                     dependency_rows.append(
@@ -2764,7 +2792,11 @@ class SpellCrafter(Cleanable):
                             ),
                         )
                     )
-                contract_payload = contract_overrides_by_occurrence.get(occurrence)
+                contract_payload = (
+                    contract_overrides_by_occurrence.get(graph_occurrence)
+                    if graph_occurrence is not None
+                    else None
+                )
                 if contract_payload is not None and "__args__" in contract_payload:
                     args_payload = contract_payload["__args__"]
                     if isinstance(args_payload, list):
@@ -3872,7 +3904,7 @@ class SpellCrafter(Cleanable):
 
     def _build_local_frame_dag(
             self,
-            requirements: SpellRequirements,
+            requirements: ISpellRequirements,
             graph: SpellSymbolicGraph,
             cancellation_event: Optional[CancellationEvent],
             *,
@@ -4291,15 +4323,21 @@ class SpellCrafter(Cleanable):
         # The root-only blueprint map is retained for system validation; per-spell
         # blueprints are attached directly to each SpellCrafter above.
         self._spell_system_index_phase5 = system_index
-        self._entire_dag_blueprint_phase5 = root_blueprints
+        self._entire_dag_blueprint_phase5 = {
+            root_id: blueprint
+            for root_id, blueprint in root_blueprints.items()
+        }
         self._capture_phase2_5_codegen_ir()
         self._reset_phase8_11_codegen_ir()
 
         # Rebuild component-of index and register a revalidation hook for dirty roots.
-        frame_name = spellbook._aetheric_frame
+        frame_name = self._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(root_blueprints)
-        change_control_manager.rebuild_component_of(conduit_id, owned_root_blueprints)
+        change_control_manager.rebuild_component_of(
+            conduit_id,
+            {root_id: blueprint for root_id, blueprint in owned_root_blueprints.items()},
+        )
 
         def _revalidate_dirty_roots(
                 dirty_roots: Set[str],
@@ -4436,7 +4474,7 @@ class SpellCrafter(Cleanable):
             self,
             *,
             snapshot: SpellSystemAdjacencySnapshot,
-            root_blueprints: Dict[str, RootResolutionBlueprint],
+            root_blueprints: Mapping[str, IRootResolutionBlueprint],
             system_index: SpellSystemIndex,
             spell_lookup: Dict[str, ISpell],
             root_builder: SpellSystemRootBlueprintBuilder,
@@ -4548,7 +4586,10 @@ class SpellCrafter(Cleanable):
         )
 
         self._spell_system_index_phase5 = system_index
-        self._entire_dag_blueprint_phase5 = local_root_blueprints
+        self._entire_dag_blueprint_phase5 = {
+            root_id: blueprint
+            for root_id, blueprint in local_root_blueprints.items()
+        }
         self._capture_phase2_5_codegen_ir()
         self._reset_phase8_11_codegen_ir()
 
@@ -4609,8 +4650,8 @@ class SpellCrafter(Cleanable):
 
     def _filter_root_blueprints_to_owned(
             self,
-            root_blueprints: Dict[str, RootResolutionBlueprint],
-    ) -> Dict[str, RootResolutionBlueprint]:
+            root_blueprints: Mapping[str, IRootResolutionBlueprint],
+    ) -> Dict[str, IRootResolutionBlueprint]:
         """
         Internal
 
@@ -4786,7 +4827,10 @@ class SpellCrafter(Cleanable):
                 and self._injection_plan_phase9 is not None
         ):
             return
-
+        if not isinstance(occurrence_plan, IOccurrencePlan):
+            raise TypeError(
+                "SpellCrafter requires the concrete OccurrencePlan for Phase 9 building."
+            )
         builder = InjectionPlanBuilder(
             occurrence_plan=occurrence_plan,
         )
@@ -4854,6 +4898,10 @@ class SpellCrafter(Cleanable):
             return
 
         root_blueprint = self._get_required_root_blueprint_phase5()
+        if not isinstance(root_blueprint, IRootResolutionBlueprint):
+            raise TypeError(
+                "SpellCrafter requires the concrete RootResolutionBlueprint for Phase 10 building."
+            )
         patch_maps_input_signature = self._build_phase10_patch_maps_input_signature(
             root_blueprint,
         )
@@ -4889,7 +4937,7 @@ class SpellCrafter(Cleanable):
     def _cache_execution_plan_metrics(
             self,
             *,
-            occurrence_plan: OccurrencePlan,
+            occurrence_plan: IOccurrencePlan,
             plan: ExecutionPlan,
     ) -> None:
         """
@@ -5096,8 +5144,8 @@ class SpellCrafter(Cleanable):
     def _build_execution_plan_variant(
             self,
             *,
-            occurrence_plan: OccurrencePlan,
-            injection_plan: Optional[InjectionPlan],
+            occurrence_plan: IOccurrencePlan,
+            injection_plan: Optional[IInjectionPlan],
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
     ) -> ExecutionPlan:
@@ -5123,9 +5171,21 @@ class SpellCrafter(Cleanable):
             ExecutionPlan:
                 Fresh execution plan for the requested variant.
         """
+        if not isinstance(occurrence_plan, IOccurrencePlan):
+            raise TypeError(
+                "SpellCrafter requires the concrete OccurrencePlan for Phase 11 building."
+            )
+        concrete_injection_plan: Optional[IInjectionPlan] = None
+        if injection_plan is not None:
+            if not isinstance(injection_plan, IInjectionPlan):
+                raise TypeError(
+                    "SpellCrafter requires the concrete InjectionPlan for Phase 11 building."
+                )
+            concrete_injection_plan = injection_plan
+
         builder = ExecutionPlanBuilder(
             occurrence_plan=occurrence_plan,
-            injection_plan=injection_plan,
+            injection_plan=concrete_injection_plan,
             spell_lookup=spell_lookup,
             plan_variant=plan_variant,
         )
@@ -5280,9 +5340,16 @@ class SpellCrafter(Cleanable):
         ]
 
         validator = SpellSystemValidationSystem(strategies=strategies)
+        concrete_blueprints: Dict[str, IRootResolutionBlueprint] = {}
+        for root_id, blueprint in self._get_required_entire_dag_blueprint_phase5().items():
+            if not isinstance(blueprint, IRootResolutionBlueprint):
+                raise TypeError(
+                    "SpellCrafter requires concrete RootResolutionBlueprint values for Phase 6 validation."
+                )
+            concrete_blueprints[root_id] = blueprint
         validation_state: SpellSystemValidationState = validator.validate(
             index=self._get_required_spell_system_index_phase5(),
-            blueprints=self._get_required_entire_dag_blueprint_phase5(),
+            blueprints=concrete_blueprints,
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._get_required_spell_system_states(),
@@ -5407,9 +5474,16 @@ class SpellCrafter(Cleanable):
         ]
 
         validator = SpellSystemValidationSystem(strategies=strategies)
+        concrete_blueprints: Dict[str, IRootResolutionBlueprint] = {}
+        for root_id, blueprint in blueprints.items():
+            if not isinstance(blueprint, IRootResolutionBlueprint):
+                raise TypeError(
+                    "SpellCrafter requires concrete RootResolutionBlueprint values for local Phase 6 validation."
+                )
+            concrete_blueprints[root_id] = blueprint
         validation_state = validator.validate(
             index=index,
-            blueprints=blueprints,
+            blueprints=concrete_blueprints,
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._get_required_spell_system_states(),
@@ -5495,7 +5569,7 @@ class SpellCrafter(Cleanable):
     def _collect_local_blueprint_visibility_gap_diagnostics(
             self,
             *,
-            blueprints: Dict[str, RootResolutionBlueprint],
+            blueprints: Dict[str, IRootResolutionBlueprint],
             spell_lookup: Dict[str, ISpell],
     ) -> List[SystemDiagnostic]:
         """
@@ -5599,45 +5673,38 @@ class SpellCrafter(Cleanable):
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
         """
         spellbook = self._get_required_spellbook()
-        frame_name = spellbook._aetheric_frame
+        frame_name = self._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(
             self._get_required_entire_dag_blueprint_phase5()
         )
-        change_control_manager.rebuild_component_of(conduit_id, owned_root_blueprints)
-        if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
-            def _revalidate_dirty_roots(
-                    dirty_roots: Set[str],
-                    cancel_event: Optional[CancellationEvent],
-            ) -> Set[str]:
-                """
-                Revalidate dirty roots for the conduit-wide Phase 7 hook.
+        change_control_manager.rebuild_component_of(
+            conduit_id,
+            {root_id: blueprint for root_id, blueprint in owned_root_blueprints.items()},
+        )
+        def _revalidate_dirty_roots(
+                dirty_roots: Set[str],
+                cancel_event: Optional[CancellationEvent],
+        ) -> Set[str]:
+            """
+            Revalidate dirty roots for the conduit-wide Phase 7 hook.
 
-                This closure is registered once on the conduit's
-                ChangeControlManager slot so later dirty-root events can drive
-                a full spell-level recompilation through the current
-                Spellbook/runtime view.
+            This closure is registered on the conduit's change-control slot so
+            later dirty-root events can drive a full spell-level recompilation
+            through the current Spellbook/runtime view.
+            """
+            validated_roots: Set[str] = set()
+            for root_id in dirty_roots:
+                spell_instance = spellbook._spell_id_pool[root_id]
+                crafter = self._get_required_crafter_from_spell(
+                    spell_instance
+                )
+                crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
+                validated_roots.add(root_id)
 
-                Contract:
-                    - Resolves each dirty root from the live spell pool.
-                    - Reuses the spell's attached crafter rather than creating
-                      a new orchestration object.
-                    - Runs full `run_all_phases(...)` recovery for each root in
-                      this conduit context.
-                    - Returns only the roots that completed successfully.
-                """
-                validated_roots: Set[str] = set()
-                for root_id in dirty_roots:
-                    spell_instance = spellbook._spell_id_pool[root_id]
-                    crafter = self._get_required_crafter_from_spell(
-                        spell_instance
-                    )
-                    crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
-                    validated_roots.add(root_id)
+            return validated_roots
 
-                return validated_roots
-
-            change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
+        change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
 
     def _ensure_change_control_ready_local(self, conduit_id: str) -> None:
         """
@@ -5649,44 +5716,39 @@ class SpellCrafter(Cleanable):
             - Registers the same revalidator contract as frame-wide wiring.
         """
         spellbook = self._get_required_spellbook()
-        frame_name = spellbook._aetheric_frame
+        frame_name = self._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(
             self._get_required_entire_dag_blueprint_phase5()
         )
-        change_control_manager.upsert_component_of(conduit_id, owned_root_blueprints)
-        if conduit_id not in change_control_manager._revalidate_fn_by_conduit:
-            def _revalidate_dirty_roots(
-                    dirty_roots: Set[str],
-                    cancel_event: Optional[CancellationEvent],
-            ) -> Set[str]:
-                """
-                Revalidate dirty roots for the local Phase 7 change-control hook.
+        change_control_manager.upsert_component_of(
+            conduit_id,
+            {root_id: blueprint for root_id, blueprint in owned_root_blueprints.items()},
+        )
+        def _revalidate_dirty_roots(
+                dirty_roots: Set[str],
+                cancel_event: Optional[CancellationEvent],
+        ) -> Set[str]:
+            """
+            Revalidate dirty roots for the local Phase 7 change-control hook.
 
-                This local variant mirrors the frame-wide revalidation contract
-                but is installed from the local wiring path so scoped
-                revalidation can still hand dirty roots back into the full
-                spell-phase pipeline for this conduit.
+            This local variant mirrors the frame-wide revalidation contract but
+            is installed from the local wiring path so scoped revalidation can
+            still hand dirty roots back into the full spell-phase pipeline for
+            this conduit.
+            """
+            validated_roots: Set[str] = set()
+            for root_id in dirty_roots:
+                spell_instance = spellbook._spell_id_pool[root_id]
+                crafter = self._get_required_crafter_from_spell(
+                    spell_instance
+                )
+                crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
+                validated_roots.add(root_id)
 
-                Contract:
-                    - Resolves each dirty root from the live spell pool.
-                    - Reuses the spell's attached crafter.
-                    - Runs full `run_all_phases(...)` recovery for each root in
-                      this conduit context.
-                    - Returns only the roots that completed successfully.
-                """
-                validated_roots: Set[str] = set()
-                for root_id in dirty_roots:
-                    spell_instance = spellbook._spell_id_pool[root_id]
-                    crafter = self._get_required_crafter_from_spell(
-                        spell_instance
-                    )
-                    crafter.run_all_phases(conduit_id=conduit_id, cancel_event=cancel_event)
-                    validated_roots.add(root_id)
+            return validated_roots
 
-                return validated_roots
-
-            change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
+        change_control_manager.set_revalidator(conduit_id, _revalidate_dirty_roots)
 
 
     # ------------------------------------------------------------------
