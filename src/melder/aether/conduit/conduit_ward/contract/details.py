@@ -5,10 +5,9 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from typing import Set
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces import IDetail
+from melder.utilities.interfaces import IDetail, ISpellIndex
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Detail(Cleanable, IDetail):
@@ -45,7 +44,7 @@ class Detail(Cleanable, IDetail):
 
     def __init__(
             self,
-            spell_index: SpellIndex,
+            spell_index: ISpellIndex,
             spell_id: str,
             permissions: Permissions,
             contract_type: ContractTypes,
@@ -76,7 +75,7 @@ class Detail(Cleanable, IDetail):
         self._lock: RLock = RLock()
         self._id: str = IDBuilder.create_id()
 
-        if not isinstance(spell_index, SpellIndex):
+        if not isinstance(spell_index, ISpellIndex):
             raise TypeError(
                 f"spell_index must be SpellIndex, got {type(spell_index).__name__}"
             )
@@ -97,7 +96,7 @@ class Detail(Cleanable, IDetail):
                 f"sources must be a set of spell_ids when provided, got {type(sources).__name__}"
             )
 
-        self.spell_index: SpellIndex = spell_index
+        self.spell_index: ISpellIndex = spell_index
         self.spell_id: str = spell_id
         self.permissions: Permissions = permissions
         self.contract_type: ContractTypes = contract_type

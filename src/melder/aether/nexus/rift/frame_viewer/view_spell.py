@@ -623,14 +623,18 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        binding_payload_visible = "binding_payload" in spell_description["visible_sections"]
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
+        )
+        payload = self._get_required_payload_map(spell_description["payload"])
+        binding_payload_visible = "binding_payload" in visible_sections
         return {
             "source_id": spell_source_id,
             "spell_name": spell_record.spell_name,
             "binding_name": spell_record.binding_name,
             "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
             "binding_payload_visible": binding_payload_visible,
-            "binding_payload": spell_description["payload"].get("binding_payload"),
+            "binding_payload": payload.get("binding_payload"),
         }
 
     def describe_spell_resolution(
@@ -657,10 +661,14 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        resolution_payload_visible = (
-            "resolution_payload" in spell_description["visible_sections"]
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
         )
-        resolution_payload = spell_description["payload"].get("resolution_payload")
+        payload = self._get_required_payload_map(spell_description["payload"])
+        resolution_payload_visible = (
+            "resolution_payload" in visible_sections
+        )
+        resolution_payload = payload.get("resolution_payload")
         requirement_count = None
         if isinstance(resolution_payload, dict):
             requirements = resolution_payload.get("requirements")
@@ -697,11 +705,15 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        metadata_visible = "metadata" in spell_description["visible_sections"]
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
+        )
+        payload = self._get_required_payload_map(spell_description["payload"])
+        metadata_visible = "metadata" in visible_sections
         return {
             "source_id": spell_source_id,
             "metadata_visible": metadata_visible,
-            "metadata": spell_description["payload"].get("metadata", {}),
+            "metadata": payload.get("metadata", {}),
         }
 
     def describe_spell_class_profile(
@@ -843,9 +855,21 @@ class ViewSpell(Cleanable):
             frame_name=frame_name,
         )
         dunder_names: set[str] = set()
-        dunder_names.update(dunder_description["class_member_names"])
-        dunder_names.update(dunder_description["class_method_names"])
-        dunder_names.update(dunder_description["instance_member_names"])
+        dunder_names.update(
+            self._get_required_visible_sections(
+                dunder_description["class_member_names"]
+            )
+        )
+        dunder_names.update(
+            self._get_required_visible_sections(
+                dunder_description["class_method_names"]
+            )
+        )
+        dunder_names.update(
+            self._get_required_visible_sections(
+                dunder_description["instance_member_names"]
+            )
+        )
         return tuple(sorted(dunder_names))
 
     def describe_spell_dunder_members(
@@ -880,8 +904,12 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        class_profile_payload = class_profile_view["payload"]
-        instance_member_payload = instance_member_view["payload"]
+        class_profile_payload = self._get_required_payload_map(
+            class_profile_view["payload"]
+        )
+        instance_member_payload = self._get_required_payload_map(
+            instance_member_view["payload"]
+        )
         return {
             "source_id": spell_source_id,
             "detail_available": (
@@ -1280,7 +1308,9 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        visible_sections: tuple[str, ...] = tuple(explanation["visible_sections"])
+        visible_sections = self._get_required_visible_sections(
+            explanation["visible_sections"]
+        )
         return {
             **explanation,
             "payload_type": detail["payload_type"],
@@ -1476,8 +1506,12 @@ class ViewSpell(Cleanable):
                 == right_spell_record.payload.payload_type
             ),
             "visible_sections": self._compare_sorted_value_sets(
-                tuple(left_spell_description["visible_sections"]),
-                tuple(right_spell_description["visible_sections"]),
+                self._get_required_visible_sections(
+                    left_spell_description["visible_sections"]
+                ),
+                self._get_required_visible_sections(
+                    right_spell_description["visible_sections"]
+                ),
             ),
         }
 
@@ -1510,7 +1544,9 @@ class ViewSpell(Cleanable):
             spell_source_id,
             frame_name=frame_name,
         )
-        visible_sections = spell_description["visible_sections"]
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
+        )
         if section_name not in visible_sections:
             raise ValueError(
                 "Spell payload section '{0}' is not visible for spell '{1}'.".format(
@@ -1518,7 +1554,7 @@ class ViewSpell(Cleanable):
                     spell_source_id,
                 )
             )
-        payload = spell_description["payload"]
+        payload = self._get_required_payload_map(spell_description["payload"])
         if section_name not in payload:
             raise ValueError(
                 "Spell payload section '{0}' is not available in the published payload for spell '{1}'.".format(
@@ -2008,7 +2044,7 @@ class ViewSpell(Cleanable):
         return name.startswith("__") and name.endswith("__")
 
     @staticmethod
-    def _build_spell_source_id(spell_record: object) -> str:
+    def _build_spell_source_id(spell_record: ISpellRecord) -> str:
         """
         Build the published spell source id for one spell record.
 
