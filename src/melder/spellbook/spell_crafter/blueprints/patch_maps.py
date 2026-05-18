@@ -203,6 +203,30 @@ class OverridePatchMap(Cleanable):
         self.check_cleaned()
         return self._root_spell_id
 
+    @property
+    def targets_by_spec(self) -> Dict[str, List[SocketRef]]:
+        """
+        Return the cached TargetSpec -> SocketRef mapping.
+
+        Contract:
+            - The returned mapping is owned by the patch map and should be
+              treated as read-only by callers.
+        """
+        self.check_cleaned()
+        return self._targets_by_spec
+
+    @property
+    def specificity_by_spec(self) -> Dict[str, _Specificity]:
+        """
+        Return the cached TargetSpec specificity mapping.
+
+        Contract:
+            - The returned mapping is owned by the patch map and should be
+              treated as read-only by callers.
+        """
+        self.check_cleaned()
+        return self._specificity_by_spec
+
     def apply(self, spell_override: Dict[str, object]) -> Dict[SocketRef, object]:
         """
         Compute the socket->value mapping using cached targets.
@@ -601,6 +625,18 @@ class MutationPatchMap(Cleanable):
         """
         self.check_cleaned()
         return self._root_spell_id
+
+    @property
+    def targets_by_spec(self) -> Dict[str, List[MutationEdgePatch]]:
+        """
+        Return the cached TargetSpec -> mutation-patch mapping.
+
+        Contract:
+            - The returned mapping is owned by the patch map and should be
+              treated as read-only by callers.
+        """
+        self.check_cleaned()
+        return self._targets_by_spec
 
     def apply(self, mutation_override: Dict[str, object]) -> List[MutationEdgePatch]:
         """

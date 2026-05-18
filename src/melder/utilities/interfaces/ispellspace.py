@@ -1,6 +1,5 @@
 from typing import Any, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduit import IConduit
 
 @runtime_checkable
 class ISpellSpace(ICleanable, Protocol):
