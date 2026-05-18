@@ -340,14 +340,14 @@ class SpellIndex(Cleanable, ISpellIndex):
         """
         return hash(self._id)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: ISpellIndex) -> bool:
         """
         Compare two `SpellIndex` objects by immutable SpellIndex identity only.
 
         This guarantees that key equality is stable and not affected
         by version changes.
         """
-        return isinstance(other, SpellIndex) and self._id == other._id
+        return isinstance(other, ISpellIndex) and self._id == other._id
 
     # ------------------------------------------------------------
     # Debug

@@ -401,7 +401,7 @@ class Package(Cleanable, Generic[P, R]):
             f"Cannot Packify input of type {type(item).__name__}. Expected callable, Package, or iterable thereof.")
     # Deterministic dual-lock ordering helper.
     @staticmethod
-    def _acquire_two(a: "Package", b: "Package"):
+    def _acquire_two(a: "Package", b: "Package") -> Tuple["Package", "Package"]:
         """
         Deterministic ordering helper for dual-lock acquisition.
         Always returns the two Package instances in ascending id() order, so
@@ -797,7 +797,7 @@ class Package(Cleanable, Generic[P, R]):
             return self._kwargs
 
     @property
-    def signature(self):
+    def signature(self) ->  Any:
         """
         Return a pseudo-signature object representing bound args.
 
@@ -830,7 +830,7 @@ class Package(Cleanable, Generic[P, R]):
             raise TypeError("+ expects another Package")
         return Package(lambda *a, **kw: self(*a, **kw) + other(*a, **kw))
 
-    def __getattr__(self, item: str):
+    def __getattr__(self, item: str) -> Callable[..., R]:
         """
         Fallback missing-attribute access to the wrapped callable object.
 
@@ -843,7 +843,7 @@ class Package(Cleanable, Generic[P, R]):
         except AttributeError:
             raise AttributeError(item) from None
 
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         """
         Merge package and wrapped-callable attributes for introspection.
         """

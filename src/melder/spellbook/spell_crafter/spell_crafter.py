@@ -4813,10 +4813,6 @@ class SpellCrafter(Cleanable):
                 and self._injection_plan_phase9 is not None
         ):
             return
-        if not isinstance(occurrence_plan, IOccurrencePlan):
-            raise TypeError(
-                "SpellCrafter requires the concrete OccurrencePlan for Phase 9 building."
-            )
         builder = InjectionPlanBuilder(
             occurrence_plan=occurrence_plan,
         )
@@ -4884,10 +4880,6 @@ class SpellCrafter(Cleanable):
             return
 
         root_blueprint = self._get_required_root_blueprint_phase5()
-        if not isinstance(root_blueprint, IRootResolutionBlueprint):
-            raise TypeError(
-                "SpellCrafter requires the concrete RootResolutionBlueprint for Phase 10 building."
-            )
         patch_maps_input_signature = self._build_phase10_patch_maps_input_signature(
             root_blueprint,
         )
@@ -5157,21 +5149,9 @@ class SpellCrafter(Cleanable):
             ExecutionPlan:
                 Fresh execution plan for the requested variant.
         """
-        if not isinstance(occurrence_plan, IOccurrencePlan):
-            raise TypeError(
-                "SpellCrafter requires the concrete OccurrencePlan for Phase 11 building."
-            )
-        concrete_injection_plan: Optional[IInjectionPlan] = None
-        if injection_plan is not None:
-            if not isinstance(injection_plan, IInjectionPlan):
-                raise TypeError(
-                    "SpellCrafter requires the concrete InjectionPlan for Phase 11 building."
-                )
-            concrete_injection_plan = injection_plan
-
         builder = ExecutionPlanBuilder(
             occurrence_plan=occurrence_plan,
-            injection_plan=concrete_injection_plan,
+            injection_plan=injection_plan,
             spell_lookup=spell_lookup,
             plan_variant=plan_variant,
         )

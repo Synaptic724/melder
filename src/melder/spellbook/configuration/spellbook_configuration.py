@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Type, Callable
+from typing import Any, Dict, Type, Callable, Iterator
 import ulid
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -309,7 +309,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.check_cleaned()
         return key in self._properties
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """
         Iterate over configuration property keys.
 

@@ -136,7 +136,7 @@ class Creation(Cleanable):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
         Exit the wrapper lock context.
 

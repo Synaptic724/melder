@@ -77,7 +77,7 @@ class Bind(Cleanable, IBind):
         self._lock = threading.RLock()
         self._spell_examiner: SpellExaminer = SpellExaminer()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Cleans up resources held by the Bind instance.
 
@@ -500,7 +500,7 @@ class Bind(Cleanable, IBind):
                 raise ValueError("Method and lambda spells must use Existence.unique.")
 
     @staticmethod
-    def _existence_check(existence: Existence):
+    def _existence_check(existence: Existence) -> bool:
         """
         Assert that the supplied lifecycle mode is a real `Existence` member.
 

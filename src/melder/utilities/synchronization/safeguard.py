@@ -47,7 +47,7 @@ class SafeGuard(Cleanable):
         self._timeout: Optional[float]  = timeout
         self._one_time_use: bool = one_time_use
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Release internal bookkeeping and invalidate this guard instance.
 
@@ -69,11 +69,11 @@ class SafeGuard(Cleanable):
                 self._locks.clear()
             if self._acquired is not None:
                 self._acquired.clear()
-            self._locks = None
-            self._acquired = None
-            self._timeout = None
             self._cleaned = True
-        self._cleanup_lock = None
+            del self._locks
+            del self._acquired
+            del self._timeout
+        del self._cleanup_lock
 
     def __enter__(self):
         """

@@ -1,3 +1,4 @@
+from logging import LogRecord
 from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -412,25 +413,25 @@ class IChannelLogger(ICleanable, Protocol):
             lno: int,
             func: str,
             sinfo,
-    ):
+    ) -> LogRecord:
         """
         Build one `LogRecord` with resolved caller metadata.
         """
         ...
 
-    def _apply_identity_and_tags(self, record, *, mask: bool, kwargs: dict):
+    def _apply_identity_and_tags(self, record, *, mask: bool, kwargs: dict) -> LogRecord:
         """
         Apply identity masking plus group/property tags to a `LogRecord`.
         """
         ...
 
-    def _emit_record(self, record):
+    def _emit_record(self, record) -> None:
         """
         Fan out one prepared record to backing loggers and channel subscribers.
         """
         ...
 
-    def _log(self, level: int, msg: str, *args, mask: bool = False, **kwargs):
+    def _log(self, level: int, msg: str, *args, mask: bool = False, **kwargs) -> None:
         """
         Internal logging method that creates and dispatches a LogRecord to all
         configured loggers if enabled and above the min level.

@@ -190,7 +190,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
     # Internal helpers
     # ------------------------------------------------------------------
     @classmethod
-    def _coerce(cls, val):
+    def _coerce(cls, val) -> T:
         """
         Return the normalized scalar form expected by this wrapper type.
 
@@ -201,7 +201,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
         """
         return val
 
-    def _unwrap_other(self, other):
+    def _unwrap_other(self, other) -> Union[T, Any]:
         """
         Normalize `other` for comparison against this wrapper's referent.
 
@@ -212,7 +212,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
         """
         return other.get() if ISync._is_sync(other) else other
 
-    def check_cleaned(self):
+    def check_cleaned(self) -> None:
         """
         Raise when the wrapper has already been cleaned.
 
