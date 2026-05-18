@@ -32,7 +32,7 @@ class _SpellStub:
         """Initialize a spell stub with the identifiers and existence scope."""
         self.spell_id = spell_id
         self.spell_index = SpellIndex(spell_id)
-        self.existence = existence
+        self.existence: Existence = existence.unique_per_conduit_cluster
         self.permissions = permissions
 
 

@@ -1,6 +1,8 @@
 from typing import Dict, Protocol, Set, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 
@@ -52,5 +54,44 @@ class IConduitCluster(ICleanable, Protocol):
     def get_members(self) -> Set[str]:
         """
         Return a detached snapshot of current conduit-member ids.
+        """
+        ...
+
+    def handle_join(
+            self,
+            conduit: IConduit,
+            frame: IAethericFrame,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Share eligible roots when one conduit joins the cluster.
+        """
+        ...
+
+    def handle_leave(
+            self,
+            conduit: IConduit,
+            frame: IAethericFrame,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Tear down shared roots when one conduit leaves the cluster.
+        """
+        ...
+
+    def refresh_member_shares(
+            self,
+            conduit: IConduit,
+            frame: IAethericFrame,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Refresh one member's shareable roots against the current peers.
+        """
+        ...
+
+    def share_to_borrower(self, owner: IConduit, borrower: IConduit) -> None:
+        """
+        Push the owner's shareable roots into one borrower conduit.
         """
         ...

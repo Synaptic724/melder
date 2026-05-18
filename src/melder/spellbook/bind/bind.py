@@ -149,6 +149,10 @@ class Bind(Cleanable, IBind):
         if spell is None:
             # Decorator usage
             def decorator(obj) -> ISpell:
+                """
+                Bind the target object with the specified policy and lifecycle settings.
+                """
+
                 return self._bind_logic(
                     obj,
                     spellframe,

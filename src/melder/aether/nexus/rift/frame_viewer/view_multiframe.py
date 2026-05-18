@@ -7,7 +7,7 @@ local descriptor or ACL state.
 """
 import threading
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
@@ -16,75 +16,8 @@ from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
-
-
-class _RiftViewerSurface(Protocol):
-    """
-    Narrow borrowed Rift surface used by ViewMultiFrame.
-    """
-
-    def list_assigned_frame_names(self) -> Tuple[str, ...]:
-        ...
-
-    def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
-        ...
-
-    def list_accessible_non_nexus_frame_names(self) -> Tuple[str, ...]:
-        ...
-
-
-class _FrameViewerSurface(Protocol):
-    """
-    Narrow borrowed FrameViewer surface used by ViewMultiFrame.
-    """
-
-    _rift: _RiftViewerSurface
-
-    @property
-    def _lock(self) -> object:
-        ...
-
-    def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
-        ...
-
-    @contextmanager
-    def _entered_view_action(self, *, action_name: str) -> Any:
-        ...
-
-    def _get_frame_names_for_query(
-            self,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, ...]:
-        ...
-
-    def _iter_conduit_records(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Iterator[IConduitRecord]:
-        ...
-
-    def _iter_spell_records(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Iterator[ISpellRecord]:
-        ...
-
-    def _build_spell_source_id(self, spell_record: ISpellRecord) -> str:
-        ...
-
-    def _normalize_spellframe_value(self, spellframe: object) -> Optional[str]:
-        ...
-
-    def _get_required_spell_record(
-            self,
-            spell_source_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, ISpellRecord]:
-        ...
 
 
 @decorate_public_view_actions
@@ -110,7 +43,7 @@ class ViewMultiFrame(Cleanable):
         "_viewer",
     ]
 
-    def __init__(self, *, viewer: _FrameViewerSurface) -> None:
+    def __init__(self, *, viewer: IFrameViewer) -> None:
         """
         Initialize one multi-frame helper.
 
