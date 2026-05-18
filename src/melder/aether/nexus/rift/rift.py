@@ -3,6 +3,9 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.aether.nexus.rift.projection.command_projection import CommandProjection
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
@@ -658,7 +661,7 @@ class Rift(Cleanable, IRift):
             "contract_names_by_frame_name": selected_contract_names_by_frame_name,
         }
 
-    def _get_required_view_projection(self, frame_name: str):
+    def _get_required_view_projection(self, frame_name: str) -> ViewProjection:
         """
         Return one required view projection.
 
@@ -671,7 +674,7 @@ class Rift(Cleanable, IRift):
         """
         return self._get_required_frame_projection_set(frame_name).view_projection
 
-    def _get_required_command_projection(self, frame_name: str):
+    def _get_required_command_projection(self, frame_name: str) -> CommandProjection:
         """
         Return one required command projection.
 
@@ -684,7 +687,7 @@ class Rift(Cleanable, IRift):
         """
         return self._get_required_frame_projection_set(frame_name).command_projection
 
-    def _get_required_codegen_projection(self, frame_name: str):
+    def _get_required_codegen_projection(self, frame_name: str) -> CodegenProjection:
         """
         Return one required codegen projection.
 

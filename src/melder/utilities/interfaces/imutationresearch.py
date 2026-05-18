@@ -74,7 +74,7 @@ class IMutationResearch(ICleanable, Protocol):
             name: Optional[str] = None,
             level: Optional[int] = None,
             metadata: Optional[Dict[str, object]] = None,
-    ):
+    ) -> object:
         ...
 
     def get_session_for_index(self, target_index) -> Optional[object]:
@@ -96,7 +96,7 @@ class IMutationResearch(ICleanable, Protocol):
             research_name: Optional[str] = None,
             message: Optional[str] = None,
             tags: Optional[List[str]] = None,
-    ):
+    ) -> None:
         ...
 
     def begin_creation_mutation(
@@ -107,5 +107,5 @@ class IMutationResearch(ICleanable, Protocol):
             research_name: Optional[str] = None,
             message: Optional[str] = None,
             tags: Optional[List[str]] = None,
-    ):
+    ) -> None:
         ...

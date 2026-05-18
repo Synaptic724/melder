@@ -77,7 +77,7 @@ class IConduitCloud(ICleanable, Protocol):
         """
         ...
 
-    def _register_conduit(self, conduit: IConduit):
+    def _register_conduit(self, conduit: IConduit) -> None:
         """
         Registers a named conduit into the cloud. (Internal use)
 
@@ -90,7 +90,7 @@ class IConduitCloud(ICleanable, Protocol):
         """
         ...
 
-    def _unregister_conduit(self, conduit: IConduit):
+    def _unregister_conduit(self, conduit: IConduit) -> None:
         """
         Remove one named conduit from the cloud. (Internal use)
 

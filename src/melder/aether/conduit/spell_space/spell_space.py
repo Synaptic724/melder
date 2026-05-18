@@ -97,7 +97,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         return self._id
 
     @property
-    def owner_conduit(self):
+    def owner_conduit(self) -> IConduit:
         """
         Return the conduit that owns this spellspace.
 
@@ -126,7 +126,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         spellframe: str | object | None = None,
         binding_name: str | None = None,
         spell_override: Optional[dict | list | tuple] = None,
-    ):
+    ) -> object:
         """
         Delegate to the owner conduit’s `meld`, enforcing active-scope usage.
 

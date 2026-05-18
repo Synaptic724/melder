@@ -10,6 +10,7 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster
+from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
@@ -101,7 +102,7 @@ class AethericFrame(Cleanable, IAethericFrame):
         self._dev_ops_manager: DevOpsManager = DevOpsManager(self._spell_system_states)
 
         # Optional explicit frame-owned shared rich Spellbook configuration.
-        self._configuration = None
+        self._configuration: Optional[IConfiguration] = None
         # Narrow frame-level AR posture owned by the frame itself.
         self._frame_configuration: AethericFrameConfiguration = (
             AethericFrameConfiguration(

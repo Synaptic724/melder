@@ -5,7 +5,7 @@ This module holds the cross-frame inventory, grouping, and comparison helper
 that reuses `FrameViewer` lookup utilities without taking ownership of frame-
 local descriptor or ACL state.
 """
-
+import threading
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -148,7 +148,7 @@ class ViewMultiFrame(Cleanable):
         del self._viewer
 
     @property
-    def _lock(self):
+    def _lock(self) -> threading.RLock:
         """
         Return the shared viewer lock.
 
@@ -430,7 +430,7 @@ class ViewMultiFrame(Cleanable):
             for current_value, source_ids in grouped_source_ids_by_value.items()
         }
 
-    def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[ISpellRecord], Optional[object]]):
+    def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[ISpellRecord], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
         """
         Return spell value groups that have more than one published member.
 
@@ -459,7 +459,7 @@ class ViewMultiFrame(Cleanable):
             *,
             frame_name: Optional[str],
             value_getter: Callable[[ISpellRecord], Optional[object]],
-    ):
+    ) -> Dict[str, Dict[str, object]]:
         """
         Return spellbook groups whose selected value is not uniform.
 
@@ -499,7 +499,7 @@ class ViewMultiFrame(Cleanable):
             }
         return mismatches_by_spellbook_id
 
-    def _normalize_policy_name(self, policy: object):
+    def _normalize_policy_name(self, policy: object) -> Optional[str]:
         """
         Return one stable string view of a conduit policy value.
 

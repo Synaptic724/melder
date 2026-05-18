@@ -2,6 +2,7 @@ import threading
 from typing import Dict, Set
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -499,10 +500,10 @@ class ConduitCluster(Cleanable, IConduitCluster):
         with book._lock:
             return [
                 spell for spell in book._spells.values()
-                if hasattr(spell, "existence") and spell.existence == Existence.unique_per_conduit_cluster
+                if spell.existence == Existence.unique_per_conduit_cluster
             ]
 
-    def _resolve_spell_from_index(self, conduit, spell_index: ISpellIndex):
+    def _resolve_spell_from_index(self, conduit: IConduit, spell_index: ISpellIndex) -> "Spell" | None:
         """
         Resolve a Spell object from a conduit given its SpellIndex.
 
