@@ -10,6 +10,7 @@ from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
@@ -18,7 +19,6 @@ from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -60,7 +60,7 @@ class Aether(Cleanable, IAether):
       create a fresh singleton after teardown.
     """
     __melder_internal__ = _mrg.sentinel
-    _instance: Optional[IAether] = None
+    _instance: Optional["Aether"] = None
     _lock = RLock()
     _initialized = False
 

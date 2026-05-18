@@ -234,7 +234,7 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
+    def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> "IConduitCloud":
         """
         Return the conduit cloud for one frame.
         """
