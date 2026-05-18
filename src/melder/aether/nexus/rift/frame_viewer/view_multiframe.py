@@ -116,7 +116,7 @@ class ViewMultiFrame(Cleanable):
         with self._viewer._entered_view_action(action_name=action_name):
             yield
 
-    def _get_frame_names_for_query(self, frame_name: Optional[str] = None):
+    def _get_frame_names_for_query(self, frame_name: Optional[str] = None) -> Tuple[str, ...]:
         """
         Return the concrete frame names that should be queried.
 
@@ -129,7 +129,7 @@ class ViewMultiFrame(Cleanable):
         """
         return self._viewer._get_frame_names_for_query(frame_name)
 
-    def _iter_conduit_records(self, *, frame_name: Optional[str] = None) -> Iterator[object]:
+    def _iter_conduit_records(self, *, frame_name: Optional[str] = None) -> Iterator[Tuple[str, object]]:
         """
         Yield descriptor-owned conduit records for the selected frame scope.
 
@@ -168,7 +168,7 @@ class ViewMultiFrame(Cleanable):
         """
         return self._viewer._build_spell_source_id(spell_record)
 
-    def _normalize_spellframe_value(self, spellframe: object):
+    def _normalize_spellframe_value(self, spellframe: object) -> Optional[str]:
         """
         Return one stable string view of a spellframe value.
 
@@ -181,7 +181,7 @@ class ViewMultiFrame(Cleanable):
         """
         return self._viewer._normalize_spellframe_value(spellframe)
 
-    def _get_required_spell_record(self, spell_source_id: str, *, frame_name: Optional[str] = None):
+    def _get_required_spell_record(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Tuple[str, object]:
         """
         Return one descriptor-owned spell record plus its hosted frame.
 
@@ -200,7 +200,7 @@ class ViewMultiFrame(Cleanable):
             frame_name=frame_name,
         )
 
-    def _get_required_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None):
+    def _get_required_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Tuple[str, object]:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -235,7 +235,7 @@ class ViewMultiFrame(Cleanable):
             )
         return matching_records[0]
 
-    def _compare_sorted_value_sets(self, left_values: Tuple[str, ...], right_values: Tuple[str, ...]):
+    def _compare_sorted_value_sets(self, left_values: Tuple[str, ...], right_values: Tuple[str, ...]) -> Dict[str, Tuple[str, ...]]:
         """
         Return one deterministic shared/left-only/right-only value diff.
 
@@ -256,7 +256,7 @@ class ViewMultiFrame(Cleanable):
             "right_only": tuple(sorted(right_set - left_set)),
         }
 
-    def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]):
+    def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
         """
         Group spell source ids by one normalized spell-record value.
 

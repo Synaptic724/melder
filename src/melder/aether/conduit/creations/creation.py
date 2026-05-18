@@ -30,6 +30,8 @@ class Creation(Cleanable):
         "_lock",
     )
 
+    _cleaned: bool
+
     def __init__(
             self,
             value: Any,

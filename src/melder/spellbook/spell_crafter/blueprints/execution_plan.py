@@ -974,63 +974,19 @@ class ExecutionPlan(Cleanable):
     @property
     def fast_plan(
             self,
-    ) -> Optional[
-        Tuple[
-            List[int],
-            List[str],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[bool],
-            List[Optional[List[Tuple[str, Any]]]],
-            List[Optional[Any]],
-            List[InstanceKey],
-            List[int],
-            List[Existence],
-            List[bool],
-            List[bool],
-            List[ISpell],
-            List[Any],
-            List[Any],
-            List[bool],
-            List[bool],
-            int,
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-            List[int],
-        ]
-    ]:
+    ) -> tuple[
+             list[int], list[str] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                 bool] | None, list[list[tuple[str, Any]] | None] | None, list[Any | None] | None, list[
+                            tuple[str, int | None]] | None, list[int] | None, list[Existence] | None, list[bool] | None,
+                        list[bool] | None, list[ISpell] | None, list[Any] | None, list[Any] | None, list[bool] | None,
+                        list[bool] | None, int | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None, list[int] | None, list[
+                            int] | None, list[int] | None, list[int] | None, list[int] | None] | None:
         """
         Return precompiled fast-path arrays for no-override execution.
 

@@ -22,6 +22,8 @@ class Cleanable(ABC):
 
     __slots__ = ['_cleaned']
 
+    _cleaned: bool
+
     def __init__(self) -> None:
         """
         Initialize the live/cleaned lifecycle flag for a new cleanable object.
@@ -31,7 +33,7 @@ class Cleanable(ABC):
         - Subclasses may extend initialization, but they inherit this one
           canonical cleaned-state flag.
         """
-        self._cleaned = False
+        self._cleaned: bool = False
 
     @property
     def cleaned(self) -> bool:
@@ -106,6 +108,8 @@ class Cleanable(ABC):
         """
         __slots__ = ("_owner", "_cleaned", "_lock")
 
+        _cleaned: bool
+
         def __init__(self, owner: "Cleanable") -> None:
             """
             Bind the helper context to one cleanable owner.
@@ -116,7 +120,7 @@ class Cleanable(ABC):
               idempotent.
             """
             self._owner: Optional["Cleanable"] = owner
-            self._cleaned = False
+            self._cleaned: bool = False
             self._lock: threading.RLock = threading.RLock()
 
         def __enter__(self) -> "Cleanable":

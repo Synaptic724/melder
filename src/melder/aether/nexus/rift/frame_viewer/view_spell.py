@@ -25,7 +25,7 @@ from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_pr
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces import IFrameLink
+from melder.utilities.interfaces import IFrameLink, ISpellRecord
 
 
 @decorate_public_view_actions
@@ -206,18 +206,11 @@ class ViewSpell(Cleanable):
         frame_view = self._get_required_frame_view()
         descriptor = frame_view._get_required_frame_descriptor()
         compiled_access_surface = frame_view._get_required_compiled_access_surface()
-        record_key = spell_link.metadata["record_key"]
-        if (
-                not isinstance(record_key, tuple)
-                or len(record_key) != 2
-                or not isinstance(record_key[0], str)
-                or not isinstance(record_key[1], str)
-        ):
-            raise TypeError(
-                "spell_link.metadata['record_key'] must be a tuple[str, str]."
-            )
+        record_key = self._get_required_record_key(
+            spell_link.metadata["record_key"]
+        )
         spell_record = descriptor.spell_records_by_key[record_key]
-        visible_sections = tuple(
+        visible_sections = self._get_required_visible_sections(
             compiled_access_surface.spell_payload_sections_by_key.get(
                 record_key,
                 tuple(),
@@ -319,13 +312,17 @@ class ViewSpell(Cleanable):
             frame_name=frame_name,
         )
         payload_type = spell_description["payload_type"]
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
+        )
+        payload = self._get_required_payload_map(spell_description["payload"])
         if payload_type != "detailed":
             return {
                 "spell_source_id": spell_source_id,
                 "payload_type": payload_type,
                 "detail_available": False,
                 "reason": "payload_not_detailed",
-                "visible_sections": spell_description["visible_sections"],
+                "visible_sections": visible_sections,
                 "payload": {},
             }
         rich_section_names = (
@@ -335,9 +332,9 @@ class ViewSpell(Cleanable):
             "dynamic_access",
         )
         rich_payload = {
-            current_section: spell_description["payload"][current_section]
+            current_section: payload[current_section]
             for current_section in rich_section_names
-            if current_section in spell_description["payload"]
+            if current_section in payload
         }
         if len(rich_payload) == 0:
             return {
@@ -345,7 +342,7 @@ class ViewSpell(Cleanable):
                 "payload_type": payload_type,
                 "detail_available": False,
                 "reason": "acl_restricted",
-                "visible_sections": spell_description["visible_sections"],
+                "visible_sections": visible_sections,
                 "payload": {},
             }
         return {
@@ -353,7 +350,7 @@ class ViewSpell(Cleanable):
             "payload_type": payload_type,
             "detail_available": True,
             "reason": "available",
-            "visible_sections": spell_description["visible_sections"],
+            "visible_sections": visible_sections,
             "payload": rich_payload,
         }
 
@@ -389,7 +386,11 @@ class ViewSpell(Cleanable):
             "source_id": spell_source_id,
             "display_name": spell_description["display_name"],
             "payload_type": spell_description["payload_type"],
-            "visible_section_count": len(spell_description["visible_sections"]),
+            "visible_section_count": len(
+                self._get_required_visible_sections(
+                    spell_description["visible_sections"]
+                )
+            ),
             "detail_reason": self.describe_spell_detail(
                 spell_source_id,
                 frame_name=frame_name,
@@ -438,8 +439,11 @@ class ViewSpell(Cleanable):
                 "source_profile_version",
             ),
         )
-        visible_sections = spell_description["visible_sections"]
-        published_sections = tuple(sorted(spell_description["payload"].keys()))
+        visible_sections = self._get_required_visible_sections(
+            spell_description["visible_sections"]
+        )
+        payload = self._get_required_payload_map(spell_description["payload"])
+        published_sections = tuple(sorted(payload.keys()))
         return {
             "source_id": spell_source_id,
             "visible_sections": visible_sections,
@@ -923,7 +927,9 @@ class ViewSpell(Cleanable):
         frame_view = self._get_required_frame_view()
         descriptor = frame_view._get_required_frame_descriptor()
         for spell_link in self.list_spells(frame_name=frame_name):
-            record_key = spell_link.metadata["record_key"]
+            record_key = self._get_required_record_key(
+                spell_link.metadata["record_key"]
+            )
             spell_record = descriptor.spell_records_by_key[record_key]
             if spell_record.payload.payload_type == payload_type:
                 matching_spells.append(spell_link)
@@ -1561,12 +1567,79 @@ class ViewSpell(Cleanable):
             raise ValueError("ViewSpell is not bound to a frame view.")
         return self._frame_view
 
+    @staticmethod
+    def _get_required_record_key(record_key: object) -> Tuple[str, str]:
+        """
+        Return one validated spell-record key.
+
+        Args:
+            record_key:
+                Candidate spell-record key from frame-link metadata.
+
+        Returns:
+            Tuple[str, str]: Validated `(origin_spellbook_id, spell_id)` key.
+        """
+        if (
+                not isinstance(record_key, tuple)
+                or len(record_key) != 2
+                or not isinstance(record_key[0], str)
+                or not isinstance(record_key[1], str)
+        ):
+            raise TypeError(
+                "spell_link.metadata['record_key'] must be a tuple[str, str]."
+            )
+        return record_key[0], record_key[1]
+
+    @staticmethod
+    def _get_required_visible_sections(
+            visible_sections: object,
+    ) -> Tuple[str, ...]:
+        """
+        Return one validated visible-section tuple.
+
+        Args:
+            visible_sections:
+                Candidate visible-section payload.
+
+        Returns:
+            Tuple[str, ...]: Validated visible section names.
+        """
+        if not isinstance(visible_sections, (tuple, list)):
+            raise TypeError("visible_sections must be a tuple[str, ...].")
+        normalized_sections: List[str] = []
+        for current_section in visible_sections:
+            if not isinstance(current_section, str):
+                raise TypeError("visible_sections must contain only strings.")
+            normalized_sections.append(current_section)
+        return tuple(normalized_sections)
+
+    @staticmethod
+    def _get_required_payload_map(payload: object) -> Dict[str, object]:
+        """
+        Return one validated spell payload mapping.
+
+        Args:
+            payload:
+                Candidate spell payload map.
+
+        Returns:
+            Dict[str, object]: Validated spell payload map.
+        """
+        if not isinstance(payload, dict):
+            raise TypeError("payload must be a dict[str, object].")
+        normalized_payload: Dict[str, object] = {}
+        for current_key, current_value in payload.items():
+            if not isinstance(current_key, str):
+                raise TypeError("payload keys must be strings.")
+            normalized_payload[current_key] = current_value
+        return normalized_payload
+
     def _get_required_spell_record(
             self,
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> object:
+    ) -> ISpellRecord:
         """
         Return one descriptor-owned spell record or raise.
 
@@ -1578,20 +1651,23 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            object: Descriptor-owned spell record.
+            ISpellRecord: Descriptor-owned spell record.
         """
         spell_link = self.get_required_spell(
             spell_source_id,
             frame_name=frame_name,
         )
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
-        return descriptor.spell_records_by_key[spell_link.metadata["record_key"]]
+        record_key = self._get_required_record_key(
+            spell_link.metadata["record_key"]
+        )
+        return descriptor.spell_records_by_key[record_key]
 
     def _iter_visible_spell_links_and_records(
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[IFrameLink, object]]:
+    ) -> List[Tuple[IFrameLink, ISpellRecord]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -1601,14 +1677,18 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            List[Tuple[FrameLink, object]]: Visible spell links paired with
+            List[Tuple[IFrameLink, ISpellRecord]]: Visible spell links paired with
             their backing spell records.
         """
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
         return [
             (
                 spell_link,
-                descriptor.spell_records_by_key[spell_link.metadata["record_key"]],
+                descriptor.spell_records_by_key[
+                    self._get_required_record_key(
+                        spell_link.metadata["record_key"]
+                    )
+                ],
             )
             for spell_link in self.list_spells(frame_name=frame_name)
         ]

@@ -31,6 +31,8 @@ class GraphMutator(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
+    _cleaned: bool
+
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:
         """
         Initialize the mutation-override graph mutator.
