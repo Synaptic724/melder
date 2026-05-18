@@ -29,4 +29,3 @@ class RiftSpaceType(Enum):
     static = "static"
     capability = "capability"
     codegen = "codegen"
-    dynamic = codegen

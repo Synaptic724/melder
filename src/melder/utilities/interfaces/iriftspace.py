@@ -1,6 +1,7 @@
 from typing import Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
+from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
 from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 from melder.utilities.interfaces.iworkstation import IWorkstation
@@ -61,7 +62,7 @@ class IRiftSpace(ICleanable, Protocol):
         ...
 
     @property
-    def frame_viewer(self) -> object:
+    def frame_viewer(self) -> IFrameViewer:
         """
         Return the attached frame-surface viewer.
         """

@@ -103,3 +103,16 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             space=self,
             workstation=self._workstation,
         )
+
+    @property
+    def command_system(self) -> CapabilityCommandSystem:
+        """
+        Return the room-local capability command system.
+
+        Returns:
+            CapabilityCommandSystem: Capability-room command surface owned by
+            this room.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._command_system

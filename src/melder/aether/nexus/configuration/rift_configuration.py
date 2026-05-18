@@ -178,6 +178,24 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self.check_cleaned()
         return self._properties[key]
 
+    @property
+    def space_type(self) -> RiftSpaceType:
+        """
+        Return the typed top-level room kind for this configuration.
+
+        Returns:
+            RiftSpaceType: Stored room kind used when programming the primary
+            Rift space.
+
+        Raises:
+            TypeError:
+                If the stored `space_type` payload is not a `RiftSpaceType`.
+        """
+        value = self.get_property("space_type")
+        if not isinstance(value, RiftSpaceType):
+            raise TypeError("space_type must be a RiftSpaceType.")
+        return value
+
     def has_property(self, key: str) -> bool:
         """
         Internal

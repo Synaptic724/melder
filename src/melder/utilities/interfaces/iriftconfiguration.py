@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Union, runtime_checkable
+from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, Type, Union, runtime_checkable
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
@@ -11,7 +11,7 @@ class IRiftConfiguration(ICleanable, Protocol):
     Interface for per-Rift programming/build configuration.
     """
 
-    available_properties: Dict[str, object]
+    available_properties: Mapping[str, Union[Type[Any], Tuple[Type[Any], ...]]]
 
     @property
     def frozen(self) -> bool:
@@ -24,6 +24,13 @@ class IRiftConfiguration(ICleanable, Protocol):
     def consumed(self) -> bool:
         """
         Return whether this configuration has already been consumed by a Rift creation flow.
+        """
+        ...
+
+    @property
+    def space_type(self) -> RiftSpaceType:
+        """
+        Return the typed top-level room kind for this Rift configuration.
         """
         ...
 

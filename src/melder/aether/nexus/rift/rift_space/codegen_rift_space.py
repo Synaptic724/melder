@@ -86,7 +86,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             rift=rift,
             space=self,
         )
-        self._command_system.attach_codegen_system(self._codegen_system)
+        self.command_system.attach_codegen_system(self._codegen_system)
 
     def _create_command_system(self, rift: IRift) -> CommandSystem:
         """
@@ -100,6 +100,18 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             space=self,
             workstation=self._workstation,
         )
+
+    @property
+    def command_system(self) -> CodegenCommandSystem:
+        """
+        Return the room-local codegen command system.
+
+        Returns:
+            CodegenCommandSystem: Codegen-room command surface owned by this
+            room.
+        """
+        self.check_cleaned()
+        return self._command_system
 
     @property
     def codegen_system(self) -> CodegenSystem:

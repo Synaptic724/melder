@@ -2,9 +2,10 @@ from typing import Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.command_system.command_system import CommandSystem
+from melder.utilities.interfaces import ICapabilityCommandSystem
 
 
-class CapabilityCommandSystem(CommandSystem):
+class CapabilityCommandSystem(CommandSystem, ICapabilityCommandSystem):
     """
     Internal
 

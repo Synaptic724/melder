@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
@@ -18,6 +18,7 @@ from melder.aether.nexus.rift.rift_space.workstation import Workstation
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces import (
+    ICommandSystem,
     IRiftEventSystem,
     IRiftGate,
     IRiftMemorySystem,
@@ -447,7 +448,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._workstation
 
     @property
-    def command_system(self) -> CommandSystem:
+    def command_system(self) -> ICommandSystem:
         """
         Purpose:
             Return the room-local command system.
@@ -458,7 +459,7 @@ class RiftSpace(Cleanable, IRiftSpace):
               detached copy.
 
         Returns:
-            CommandSystem: Room-local command system.
+            ICommandSystem: Room-local command system.
         """
         self.check_cleaned()
         with self._lock:
@@ -516,7 +517,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         self.check_cleaned()
         with self._lock:
-            return cast(IRiftMemorySystem, self._memory_system)
+            return self._memory_system
 
     def register_action_pre_hook(
             self,

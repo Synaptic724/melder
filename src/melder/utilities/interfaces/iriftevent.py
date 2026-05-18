@@ -6,13 +6,54 @@ class IRiftEvent(Protocol):
     Interface for one emitted Rift-space runtime event.
     """
 
-    event_id: str
-    event_type: str
-    emitted_at: str
-    rift_id: str
-    space_id: str
-    space_kind: str
-    frame_name: Optional[str]
+    @property
+    def event_id(self) -> str:
+        """
+        Return the stable event id.
+        """
+        ...
+
+    @property
+    def event_type(self) -> str:
+        """
+        Return the stable event type.
+        """
+        ...
+
+    @property
+    def emitted_at(self) -> str:
+        """
+        Return the UTC emitted timestamp.
+        """
+        ...
+
+    @property
+    def rift_id(self) -> str:
+        """
+        Return the owning Rift id.
+        """
+        ...
+
+    @property
+    def space_id(self) -> str:
+        """
+        Return the emitting space id.
+        """
+        ...
+
+    @property
+    def space_kind(self) -> str:
+        """
+        Return the emitting space kind.
+        """
+        ...
+
+    @property
+    def frame_name(self) -> Optional[str]:
+        """
+        Return the optional related frame name.
+        """
+        ...
 
     @property
     def payload(self) -> Dict[str, object]:

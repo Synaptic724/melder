@@ -255,6 +255,16 @@ class FakeChangeControlManager:
         self._clear_calls.append(index_id)
         self._pending.pop(index_id, None)
 
+    def has_registered_revalidators(self) -> bool:
+        """
+        Return whether any conduit revalidator is currently registered.
+
+        Returns:
+            bool: True when the fake manager has at least one stored
+            revalidator callback.
+        """
+        return bool(self._revalidate_fn_by_conduit)
+
 
 class FakeIncidentManager:
     """

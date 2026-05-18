@@ -233,6 +233,15 @@ class FakeChangeControlManager:
             "metadata": metadata,
         }
 
+    def has_registered_revalidators(self) -> bool:
+        """
+        Return whether any revalidator callback is currently registered.
+
+        Returns:
+            bool: True when the fake manager carries a non-null revalidator.
+        """
+        return self._revalidate_fn is not None
+
     def clear_pending_change(self, index_id: str) -> None:
         """
         Clear a pending change entry by index id.

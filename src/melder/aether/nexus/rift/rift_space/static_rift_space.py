@@ -93,3 +93,16 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             workstation=self._workstation,
         )
 
+    @property
+    def command_system(self) -> StaticCommandSystem:
+        """
+        Return the room-local static command system.
+
+        Returns:
+            StaticCommandSystem: Static-room command surface owned by this
+            room.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._command_system
+
