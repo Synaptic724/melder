@@ -1357,22 +1357,8 @@ class Aether(Cleanable, IAether):
             ValueError: If the frame does not exist or the cluster name is taken.
         """
         self.check_cleaned()
-
-        if aetheric_frame_name != "default":
-            try:
-                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_create_cluster", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            conduit_clusters = frame._conduit_clusters
-
-        if cluster_name in conduit_clusters:
-            self._logger.error(f"Cluster with name {cluster_name} already exists.", "_create_cluster", exc_info=True)
-            raise ValueError(f"Cluster with name {cluster_name} already exists.")
-
-        conduit_clusters[cluster_name] = ConduitCluster(cluster_name)
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
+        conduit_cloud.create_cluster(cluster_name)
 
     def _remove_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
@@ -1386,24 +1372,11 @@ class Aether(Cleanable, IAether):
             ValueError: If the frame does not exist or the cluster is missing.
         """
         self.check_cleaned()
-
-        if aetheric_frame_name != "default":
-            try:
-                conduit_clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_remove_cluster", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            conduit_clusters = frame._conduit_clusters
-
-        cluster = conduit_clusters.pop(cluster_name, None)
-        if cluster is None:
-            self._logger.error(f"Cluster with name {cluster_name} does not exist.", "_remove_cluster", exc_info=True)
-            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
         try:
-            cluster.cleanup()
+            conduit_cloud.delete_cluster(cluster_name)
+        except ValueError:
+            raise
         except Exception:
             self._logger.error(f"Cluster cleanup failed for '{cluster_name}'", "_remove_cluster", exc_info=True)
 
@@ -1412,20 +1385,8 @@ class Aether(Cleanable, IAether):
         """
         Internal helper to fetch a ConduitCluster by name and frame.
         """
-        if aetheric_frame_name != "default":
-            try:
-                clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_cluster", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            clusters = frame._conduit_clusters
-
-        if cluster_name not in clusters:
-            self._logger.error(f"Cluster with name {cluster_name} does not exist.", "_get_cluster", exc_info=True)
-            raise ValueError(f"Cluster with name {cluster_name} does not exist.")
-        return clusters[cluster_name]
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
+        return conduit_cloud._get_cluster(cluster_name)
 
     # ------------------------------------------------------------------
     # Cluster sharing hooks and helpers
@@ -1443,8 +1404,8 @@ class Aether(Cleanable, IAether):
             None
         """
         cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._ensure_default_frame()
-        cluster.handle_join(conduit, frame, aetheric_frame_name)
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
+        cluster.handle_join(conduit, conduit_cloud)
 
     def _on_conduit_left_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
@@ -1459,8 +1420,8 @@ class Aether(Cleanable, IAether):
             None
         """
         cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._ensure_default_frame()
-        cluster.handle_leave(conduit, frame, aetheric_frame_name)
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
+        cluster.handle_leave(conduit, conduit_cloud)
 
     def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
         """
@@ -1475,12 +1436,9 @@ class Aether(Cleanable, IAether):
             ValueError: If the frame or cluster does not exist.
         """
         self.check_cleaned()
-
-        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        conduit_id = conduit._id
-        cluster.add_member(conduit_id)
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
         try:
-            self._on_conduit_joined_cluster(conduit, cluster_name, aetheric_frame_name)
+            conduit_cloud.add_conduit_to_cluster(conduit, cluster_name)
         except Exception as e:
             self._logger.error(f"_add_conduit_to_cluster: cluster join hook failed: {e}", "_add_conduit_to_cluster", exc_info=True)
 
@@ -1497,19 +1455,15 @@ class Aether(Cleanable, IAether):
             ValueError: If the frame or cluster does not exist.
         """
         self.check_cleaned()
-
-        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        conduit_id = conduit._id
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
         try:
-            cluster.remove_member(conduit_id)
+            conduit_cloud.remove_conduit_from_cluster(conduit, cluster_name)
+        except ValueError:
+            raise
         except Exception as e:
+            conduit_id = getattr(conduit, "_id", "<unknown>")
             self._logger.error(f"Error removing conduit '{conduit_id}' from cluster '{cluster_name}': {e}", "_remove_conduit_from_cluster", exc_info=True)
             raise
-
-        try:
-            self._on_conduit_left_cluster(conduit, cluster_name, aetheric_frame_name)
-        except Exception as e:
-            self._logger.error(f"_remove_conduit_from_cluster: cluster leave hook failed: {e}", "_remove_conduit_from_cluster", exc_info=True)
 
     def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> List[str]:
         """
@@ -1540,12 +1494,8 @@ class Aether(Cleanable, IAether):
         Returns:
             List[str]: Cluster names containing the conduit.
         """
-        if aetheric_frame_name != "default":
-            clusters = self._aetheric_frames[aetheric_frame_name]._conduit_clusters
-        else:
-            frame = self._ensure_default_frame()
-            clusters = frame._conduit_clusters
-        return [name for name, cluster in clusters.items() if conduit_id in cluster.get_members()]
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
+        return conduit_cloud.get_clusters_for_conduit(conduit_id)
 
     def _share_new_spell_to_clusters(self, conduit: IConduit, spell: Any, aetheric_frame_name: str = "default") -> None:
         """
@@ -1558,20 +1508,20 @@ class Aether(Cleanable, IAether):
         """
         if spell.existence != Existence.unique_per_conduit_cluster:
             return
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
         conduit_id = conduit._id
-        cluster_names = self._get_clusters_for_conduit(conduit_id, aetheric_frame_name)
+        cluster_names = conduit_cloud.get_clusters_for_conduit(conduit_id)
         if not cluster_names:
             return
-        # For each cluster, add to registry and push to peers
-        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._ensure_default_frame()
         for cname in cluster_names:
-            cluster = self._get_cluster(cname, aetheric_frame_name)
+            cluster = conduit_cloud._get_cluster(cname)
             cluster.add_shared_spell(conduit_id, spell.spell_index)
             for peer_id in cluster.get_members():
                 if peer_id == conduit_id:
                     continue
-                peer = frame._conduits.get(peer_id)
-                if peer is None:
+                try:
+                    peer = conduit_cloud.get_conduit_by_id(peer_id)
+                except ValueError:
                     continue
                 cluster.share_to_borrower(conduit, peer)
 
@@ -1586,14 +1536,8 @@ class Aether(Cleanable, IAether):
         Returns:
             None
         """
-        conduit_id = conduit._id
-        cluster_names = self._get_clusters_for_conduit(conduit_id, aetheric_frame_name)
-        if not cluster_names:
-            return
-        frame = self._aetheric_frames[aetheric_frame_name] if aetheric_frame_name != "default" else self._ensure_default_frame()
-        for cname in cluster_names:
-            cluster = self._get_cluster(cname, aetheric_frame_name)
-            cluster.refresh_member_shares(conduit, frame, aetheric_frame_name)
+        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
+        conduit_cloud.refresh_cluster_shares_for_conduit(conduit)
 
     def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
         """

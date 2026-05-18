@@ -387,12 +387,12 @@ class TransferOfOwnership(Cleanable):
                     seen_contracts.add(contract_id)
                     break
         # Clusters: scan cluster registries
-        cluster_names = self._aether._get_clusters_for_conduit(
-            self.source_conduit._id,
-            self._frame_name,
+        conduit_cloud = self.source_conduit._conduit_cloud
+        cluster_names = conduit_cloud.get_clusters_for_conduit(
+            self.source_conduit._id
         )
         for cname in cluster_names:
-            cluster = self._aether._get_cluster(cname, self._frame_name)
+            cluster = conduit_cloud._get_cluster(cname)
             for owner_id, indices in cluster.get_shared_spells().items():
                 for idx in indices:
                     if idx.has_version(spell_id) or idx.current == spell_id:

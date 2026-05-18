@@ -407,6 +407,36 @@ class FakeFrame:
         self._conduits: Dict[str, Any] = {}
 
 
+class FakeConduitCloud:
+    """
+    Minimal cloud-facing cluster surface for transfer contract tests.
+
+    Contract:
+    - Proxies cluster and conduit lookups to the backing FakeFrame.
+    """
+
+    def __init__(self, frame: FakeFrame, frame_name: str = "default") -> None:
+        """Initialize the cloud facade over one fake frame."""
+        self._frame = frame
+        self.frame_name = frame_name
+
+    def _get_cluster(self, cluster_name: str) -> FakeCluster:
+        """Return one named cluster from the backing frame."""
+        return self._frame._conduit_clusters[cluster_name]
+
+    def get_clusters_for_conduit(self, conduit_id: str) -> List[str]:
+        """Return cluster names containing one conduit id."""
+        return [
+            cluster_name
+            for cluster_name, cluster in self._frame._conduit_clusters.items()
+            if conduit_id in cluster.members or conduit_id in cluster.shared_spells
+        ]
+
+    def get_conduit_by_id(self, conduit_id: str) -> Any:
+        """Return one conduit by id from the backing frame."""
+        return self._frame._conduits[conduit_id]
+
+
 class FakeAether:
     """
     Minimal Aether implementation for registry operations.
@@ -837,6 +867,10 @@ class FakeConduit:
         self._creations = creations
         self._conduit_ward = ward
         self._creation_gate_controller = CreationGateController()
+        self._conduit_cloud = FakeConduitCloud(
+            self._aether._get_frame(frame_name),
+            frame_name,
+        )
         self._lock = threading.RLock()
 
     def get_spell_by_id(self, spell_id: str, frame_name: str) -> Optional[Any]:

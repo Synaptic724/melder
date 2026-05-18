@@ -179,15 +179,19 @@ class _ContractingConduitStub:
 class _FrameStub:
     """
     Purpose:
-        Provide a minimal frame stub for ConduitCluster member lookups.
+        Provide a minimal cloud-facing stub for ConduitCluster member lookups.
     Contract:
-        - Exposes a _conduits mapping keyed by conduit id.
+        - Exposes get_conduit_by_id(...) and frame_name.
     """
 
-    def __init__(self, conduits: list[_ContractingConduitStub]) -> None:
+    def __init__(
+            self,
+            conduits: list[_ContractingConduitStub],
+            frame_name: str = "default",
+    ) -> None:
         """
         Purpose:
-            Initialize the frame stub with a conduit registry.
+            Initialize the stub with a conduit registry and frame name.
         Contract:
             - Builds a dict map of conduit id to conduit instance.
         Args:
@@ -195,7 +199,27 @@ class _FrameStub:
         Returns:
             None.
         """
+        self.frame_name = frame_name
         self._conduits = {conduit._id: conduit for conduit in conduits}
+
+    def get_conduit_by_id(self, conduit_id: str) -> _ContractingConduitStub:
+        """
+        Purpose:
+            Resolve one conduit by id from the stub registry.
+        Contract:
+            - Returns the conduit when present.
+            - Raises ValueError when the conduit id is missing.
+        Args:
+            conduit_id: Conduit id to resolve.
+        Returns:
+            _ContractingConduitStub: Matching conduit.
+        Raises:
+            ValueError: If the conduit id is not present.
+        """
+        conduit = self._conduits.get(conduit_id)
+        if conduit is None:
+            raise ValueError(f"Conduit with id {conduit_id} not found.")
+        return conduit
 
 
 def _make_spellbook() -> Spellbook:
@@ -337,7 +361,7 @@ def test_component_cluster_remove_and_strip_spell_uses_real_spell() -> None:
         conduit_id="borrower-1",
         spellbook=_make_spellbook(),
     )
-    frame = _FrameStub([owner, borrower])
+    frame = _FrameStub([owner, borrower], frame_name="frame-1")
     cluster = ConduitCluster("cluster-a")
     cluster.add_member(owner._id)
     cluster.add_member(borrower._id)
@@ -345,7 +369,7 @@ def test_component_cluster_remove_and_strip_spell_uses_real_spell() -> None:
     assert spell is not None
     cluster.add_shared_spell(owner._id, spell.spell_index)
 
-    cluster.remove_and_strip_spell(owner, frame, spell, aetheric_frame_name="frame-1")
+    cluster.remove_and_strip_spell(owner, frame, spell)
 
     assert borrower.remove_root_calls == [
         {
@@ -401,7 +425,7 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
         spellbook=peer_book,
         aetheric_frame="frame-peer",
     )
-    frame = _FrameStub([owner, peer])
+    frame = _FrameStub([owner, peer], frame_name="frame-owner")
     cluster = ConduitCluster("cluster-a")
 
     cluster.handle_join(owner, frame)
