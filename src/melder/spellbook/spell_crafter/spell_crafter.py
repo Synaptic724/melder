@@ -5321,17 +5321,12 @@ class SpellCrafter(Cleanable):
             SocketRefSanityStrategy(),
         ]
 
+        blueprints = self._get_required_entire_dag_blueprint_phase5()
+        system_index = self._get_required_spell_system_index_phase5()
         validator = SpellSystemValidationSystem(strategies=strategies)
-        concrete_blueprints: Dict[str, IRootResolutionBlueprint] = {}
-        for root_id, blueprint in self._get_required_entire_dag_blueprint_phase5().items():
-            if not isinstance(blueprint, IRootResolutionBlueprint):
-                raise TypeError(
-                    "SpellCrafter requires concrete RootResolutionBlueprint values for Phase 6 validation."
-                )
-            concrete_blueprints[root_id] = blueprint
         validation_state: SpellSystemValidationState = validator.validate(
-            index=self._get_required_spell_system_index_phase5(),
-            blueprints=concrete_blueprints,
+            index=system_index,
+            blueprints=blueprints,
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._get_required_spell_system_states(),
@@ -5456,16 +5451,9 @@ class SpellCrafter(Cleanable):
         ]
 
         validator = SpellSystemValidationSystem(strategies=strategies)
-        concrete_blueprints: Dict[str, IRootResolutionBlueprint] = {}
-        for root_id, blueprint in blueprints.items():
-            if not isinstance(blueprint, IRootResolutionBlueprint):
-                raise TypeError(
-                    "SpellCrafter requires concrete RootResolutionBlueprint values for local Phase 6 validation."
-                )
-            concrete_blueprints[root_id] = blueprint
         validation_state = validator.validate(
             index=index,
-            blueprints=concrete_blueprints,
+            blueprints=blueprints,
             phase4_results=phase4_results,
             broken_spell_ids=broken_spell_ids,
             spell_system_states=self._get_required_spell_system_states(),

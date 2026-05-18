@@ -2305,10 +2305,15 @@ class Conduit(Cleanable, IConduit):
 
         Raises:
             RuntimeError:
-                If the conduit has been cleaned or the Aether-owned
-                MutationResearch root is unavailable.
+                If the conduit has been cleaned, the conduit is not in a
+                dynamic environment, or the Aether-owned MutationResearch root
+                is unavailable.
         """
         self.check_cleaned()
+        if not self.__dynamic_environment__:
+            raise RuntimeError(
+                "Dynamic environment is not enabled. Cannot access MutationResearch."
+            )
         mutation_research = self._aether.mutation_research
         if mutation_research is None:
             raise RuntimeError("MutationResearch is unavailable.")

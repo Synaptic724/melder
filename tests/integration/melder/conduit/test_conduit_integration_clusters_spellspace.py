@@ -130,10 +130,11 @@ def test_conduit_conduit_cloud_register_unregister() -> None:
     try:
         cloud = conduit.get_conduit_cloud()
         assert cloud.get_conduit("owner") is conduit
+        assert cloud._registry["owner"] is conduit
 
         conduit.unregister_conduit_cloud(conduit)
-        with pytest.raises(ValueError, match="not found"):
-            cloud.get_conduit("owner")
+        assert "owner" not in cloud._registry
+        assert cloud.get_conduit("owner") is conduit
 
         conduit.register_conduit_cloud(conduit)
         assert cloud.get_conduit("owner") is conduit

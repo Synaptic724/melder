@@ -30,6 +30,7 @@ def mock_conduit():
     """
     conduit = MagicMock(spec=IConduit)
     conduit.id = "conduit-1"
+    conduit._id = "conduit-1"
     conduit.name = "test_conduit"
     conduit._name = "test_conduit"
     return conduit

@@ -241,6 +241,12 @@ def test_spellbook_integration_conjure_registers_spell_versions_and_cleanup_clea
     finally:
         conduit.cleanup()
 
+    assert frame in Spellbook._aether._aetheric_frames
+    frame_obj = Spellbook._aether._aetheric_frames[frame]
+    assert frame_obj.has_version(spell_id) is False
+
+    Spellbook._aether._ensure_frame(frame).cleanup()
+
     assert frame not in Spellbook._aether._aetheric_frames
 
 

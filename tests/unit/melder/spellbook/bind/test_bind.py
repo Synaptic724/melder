@@ -370,8 +370,8 @@ def test_bind_cleanup_idempotent():
     b.cleanup()
     assert b._cleaned is True
     b.cleanup()
-    assert b._spellbook is None
-    assert b._lock is None
+    assert not hasattr(b, "_spellbook")
+    assert not hasattr(b, "_lock")
 
 
 def test_bind_usage_after_cleanup_is_inert(monkeypatch):
@@ -1151,7 +1151,7 @@ def test_parallel_style_lock_usage(monkeypatch):
 def test_cleanup_nulls_lock(monkeypatch):
     b = Bind(StubSpellbook())
     b.cleanup()
-    assert b._lock is None
+    assert not hasattr(b, "_lock")
 
 
 # Deep SpellType cartesian ---------------------------------------------
