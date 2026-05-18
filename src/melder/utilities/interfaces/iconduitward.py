@@ -60,34 +60,6 @@ class IConduitWard(ICleanable, Protocol):
         """
         ...
 
-    def has_live_creation(
-            self,
-            spell_name: str | None = None,
-            *,
-            spell: str | object | None = None,
-            spellframe: str | object | None = None,
-            binding_name: str | None = None,
-    ) -> bool:
-        """
-        Resolve a spell the same way as `meld(...)`, but report only whether a
-        live creation already exists without creating anything new.
-        """
-        ...
-
-    def describe_live_creation_status(
-            self,
-            spell_name: str | None = None,
-            *,
-            spell: str | object | None = None,
-            spellframe: str | object | None = None,
-            binding_name: str | None = None,
-    ) -> Dict[str, object]:
-        """
-        Resolve a spell the same way as `meld(...)`, but return structured
-        live-creation status without creating anything new.
-        """
-        ...
-
     def _clean_up_lesser_conduits_links(self) -> None:
         """
         Internal

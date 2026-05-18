@@ -324,6 +324,24 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
+    def _publish_frame_record(self, spellbook: Any) -> bool:
+        """
+        Publish one canonical frame record for the supplied Spellbook-owned frame.
+        """
+        ...
+
+    def _publish_conduit_record(self, conduit: IConduit) -> bool:
+        """
+        Publish or update one canonical conduit record.
+        """
+        ...
+
+    def _remove_conduit_record(self, conduit_id: str, frame_name: str) -> bool:
+        """
+        Remove one canonical conduit record from the named frame.
+        """
+        ...
+
     def _validate_target_frame_names(self, target_frame_names: Tuple[str, ...]) -> None:
         """
         Validate target frame names against Nexus allow/deny policy.

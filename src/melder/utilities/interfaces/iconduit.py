@@ -34,6 +34,8 @@ class IConduit(ICleanable, Protocol):
     __dynamic_environment__: bool
     _aetheric_frame: str
     _spellbook: ISpellbook
+    _nexus: 'INexus'
+    _root_conduit_id: str
 
     _configuration: 'IConfiguration'
     _logger: 'ISafeLogger'
@@ -79,6 +81,12 @@ class IConduit(ICleanable, Protocol):
         """
         Register one user-created object into the conduit-owned creations
         manager.
+        """
+        ...
+
+    def _set_creation_gate_controller_for_lineage(self) -> None:
+        """
+        Rebind this conduit's creation-gate controller to the current root lineage.
         """
         ...
 

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterator, Protocol, Type, runtime_checkable
+from typing import Any, Callable, Dict, Iterator, Protocol, Tuple, Type, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -20,6 +20,7 @@ class IConfiguration(ICleanable, Protocol):
     available_properties: 'Dict[str, Type]'
     _aether_frame: str
     _id: str
+    _ALLOWED_HOOKS: Tuple[str, ...]
 
     # --- Lifecycle ---
 

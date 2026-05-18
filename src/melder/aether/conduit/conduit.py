@@ -236,7 +236,7 @@ class Conduit(Cleanable, IConduit):
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
-        self._spellspace_registry: set[SpellSpace] = set()
+        self._spellspace_registry: set[ISpellSpace] = set()
         self._configure_conduit_state()
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -531,9 +531,9 @@ class Conduit(Cleanable, IConduit):
                     self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
             self._spellspace_stack.set([])
             if self._spellspace_registry is not None:
-                for space in list(self._spellspace_registry):
+                for registered_space in list(self._spellspace_registry):
                     try:
-                        space.cleanup()
+                        registered_space.cleanup()
                     except Exception:
                         self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
                 self._spellspace_registry.clear()
@@ -1019,8 +1019,13 @@ class Conduit(Cleanable, IConduit):
         Sets the environment mode for this Conduit based on the configuration
         instance passed.
         """
+        frame_configuration = self._spellbook._aetheric_frame_configuration
+        if frame_configuration is None:
+            raise RuntimeError(
+                "Spellbook frame configuration is not available for this conduit."
+            )
         try:
-            state = self._spellbook._aetheric_frame_configuration.system_state
+            state = frame_configuration.system_state
             self.__dynamic_environment__ = (state == SystemState.dynamic)
         except Exception as e:
             self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
@@ -1467,6 +1472,7 @@ class Conduit(Cleanable, IConduit):
         self.check_cleaned()
 
         with self._lock:
+            root_conduit: Optional[IConduit]
             if self._conduit_state == ConduitState.normal:
                 root_conduit = self
             else:
@@ -1720,6 +1726,10 @@ class Conduit(Cleanable, IConduit):
             self._logger.error(str(e), "find_spell_id")
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.") from e
 
+        if spell_index is None:
+            self._logger.error(f"Spell '{spell_name}' not found", "find_spell_id")
+            raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
+
         spell = self._spellbook._find_spell(spell_index)
         if spell is None:
             self._logger.error(f"Spell '{spell_name}' not found for SpellIndex {spell_index}", "find_spell_id")
@@ -1754,7 +1764,11 @@ class Conduit(Cleanable, IConduit):
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_key
 
-    def inspect_spell(self, spell: Any, aetheric_frame= "default") -> Optional[str]:
+    def inspect_spell(
+            self,
+            spell: Any,
+            aetheric_frame: str = "default",
+    ) -> Optional[str]:
         """
         Public API
 
@@ -2146,7 +2160,17 @@ class Conduit(Cleanable, IConduit):
         finally:
             self.end_binding_transaction()
 
-    def bind(self, *, spell, existence: str | Existence, permissions: str = "create", spellframe=None, binding_name=None, profile: str = "general", **kwargs) -> str:
+    def bind(
+            self,
+            *,
+            spell: Any,
+            existence: str | Existence,
+            permissions: str = "create",
+            spellframe: Any = None,
+            binding_name: Optional[str] = None,
+            profile: str = "general",
+            **kwargs: Any,
+    ) -> str:
         """
         Bind a spell into the Spellbook for future instantiation and dependency injection.
 
@@ -2314,7 +2338,7 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError(
                 "Dynamic environment is not enabled. Cannot access MutationResearch."
             )
-        mutation_research = self._aether.mutation_research
+        mutation_research = self._spellbook._aether.mutation_research
         if mutation_research is None:
             raise RuntimeError("MutationResearch is unavailable.")
         return mutation_research
@@ -3187,6 +3211,8 @@ class Conduit(Cleanable, IConduit):
                     )
                     raise RuntimeError("Root conduit is not set for this lineage.")
                 root_conduit = self._conduit_ward.root_conduit
+                if root_conduit is None:
+                    raise RuntimeError("Root conduit is not set for this lineage.")
                 conduit_id = root_conduit._id
 
             spellbook = self._spellbook
@@ -3245,6 +3271,8 @@ class Conduit(Cleanable, IConduit):
                     )
                     raise RuntimeError("Root conduit is not set for this lineage.")
                 root_conduit = self._conduit_ward.root_conduit
+                if root_conduit is None:
+                    raise RuntimeError("Root conduit is not set for this lineage.")
                 conduit_id = root_conduit._id
 
             spellbook = self._spellbook
@@ -3431,9 +3459,19 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def add_spell_to_contract(self, *, spell: ISpell | None = None, spell_id: str | None = None, conduit: IConduit | None = None, conduit_id: str | None = None,
-                              permissions: str = "create", aetheric_frame = "default", reason: DetailReason = DetailReason.manual,
-                              root_spell_id: str | None = None, link_dependencies: bool = False) -> bool | None:
+    def add_spell_to_contract(
+            self,
+            *,
+            spell: Optional[ISpell] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+            reason: DetailReason = DetailReason.manual,
+            root_spell_id: Optional[str] = None,
+            link_dependencies: bool = False,
+    ) -> bool | None:
         """
         Public API
 
@@ -3493,9 +3531,16 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def add_spells_to_contract(self, spell_ids: list[str], conduit: IConduit  | None= None, conduit_id: str | None = None,
-                               permissions: str = "create", aetheric_frame = "default",
-                               reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> Dict:
+    def add_spells_to_contract(
+            self,
+            spell_ids: list[str],
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+            reason: DetailReason = DetailReason.manual,
+            link_dependencies: bool = False,
+    ) -> Dict[str, bool]:
         """
         Public API
 
@@ -3537,13 +3582,13 @@ class Conduit(Cleanable, IConduit):
 
         normalized: dict[str, bool] = {}
         if isinstance(report, dict):
-            if "success" in report and "failed" in report:
-                for spell_id in report["success"]:
-                    normalized[spell_id] = True
-                for spell_id in report["failed"].keys():
-                    normalized.setdefault(spell_id, False)
-            elif all(isinstance(value, bool) for value in report.values()):
-                normalized = dict(report)
+            success_values = report.get("success")
+            failed_values = report.get("failed")
+            if isinstance(success_values, list) and isinstance(failed_values, dict):
+                for current_spell_id in success_values:
+                    normalized[current_spell_id] = True
+                for current_spell_id in failed_values.keys():
+                    normalized.setdefault(current_spell_id, False)
             else:
                 normalized = {spell_id: bool(value) for spell_id, value in report.items()}
 
@@ -3560,8 +3605,16 @@ class Conduit(Cleanable, IConduit):
         return normalized
 
 
-    def remove_spell_from_contract(self, *, spell: ISpell | None = None, spell_id: str  | None = None, conduit: IConduit  | None = None,
-                                   conduit_id: str  | None = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
+    def remove_spell_from_contract(
+            self,
+            *,
+            spell: Optional[ISpell] = None,
+            spell_id: Optional[str] = None,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
+            root_spell_id: Optional[str] = None,
+            aetheric_frame: str = "default",
+    ) -> bool | None:
         """
         Public API
 
@@ -3611,8 +3664,15 @@ class Conduit(Cleanable, IConduit):
 
         return result
 
-    def remove_spells_from_contract(self, *, spell_ids: list[str] | None = None, conduit: IConduit | None = None,
-                                    conduit_id: str | None = None, root_spell_id: str | None = None, aetheric_frame = "default") -> dict:
+    def remove_spells_from_contract(
+            self,
+            *,
+            spell_ids: Optional[list[str]] = None,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
+            root_spell_id: Optional[str] = None,
+            aetheric_frame: str = "default",
+    ) -> Dict[str, bool]:
         """
         Public API
 
@@ -3651,13 +3711,13 @@ class Conduit(Cleanable, IConduit):
 
         normalized: dict[str, bool] = {}
         if isinstance(report, dict):
-            if "success" in report and "failed" in report:
-                for spell_id in report["success"]:
-                    normalized[spell_id] = True
-                for spell_id in report["failed"].keys():
-                    normalized.setdefault(spell_id, False)
-            elif all(isinstance(value, bool) for value in report.values()):
-                normalized = dict(report)
+            success_values = report.get("success")
+            failed_values = report.get("failed")
+            if isinstance(success_values, list) and isinstance(failed_values, dict):
+                for current_spell_id in success_values:
+                    normalized[current_spell_id] = True
+                for current_spell_id in failed_values.keys():
+                    normalized.setdefault(current_spell_id, False)
             else:
                 normalized = {spell_id: bool(value) for spell_id, value in report.items()}
 
@@ -3726,7 +3786,13 @@ class Conduit(Cleanable, IConduit):
         )
 
 
-    def _remove_all_spells_from_contract(self, *, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None, aetheric_frame = "default") -> bool | None:
+    def _remove_all_spells_from_contract(
+            self,
+            *,
+            conduit: Optional[IConduit] = None,
+            conduit_id: Optional[str] = None,
+            aetheric_frame: str = "default",
+    ) -> bool | None:
         """
         Public API
 
@@ -4052,7 +4118,7 @@ class Conduit(Cleanable, IConduit):
             return None
 
 
-    def _fire_conduit_hooks(self, hook_name: str, *conduits: "Conduit") -> None:
+    def _fire_conduit_hooks(self, hook_name: str, *conduits: IConduit) -> None:
         """
         Internal
 

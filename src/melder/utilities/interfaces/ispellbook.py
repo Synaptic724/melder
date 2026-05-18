@@ -3,6 +3,7 @@ from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional,
 import threading
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
+from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeControlTransactionRequest
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -54,6 +55,8 @@ class ISpellbook(ICleanable, Protocol):
     _configuration: 'Optional[IConfiguration]'
     _spell_id_pool: Dict[str, "ISpell"]
     _spellbook_validation_required: bool
+    _nexus: 'INexus'
+    _active_change_request: Optional[ChangeControlTransactionRequest]
 
     # Spell Validator
     _spell_validator: ISpellValidationSystem
@@ -407,6 +410,12 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def create_new_preset_spellbook(self) -> "ISpellbook":
+        """
+        Create one new Spellbook instance reusing this Spellbook's current frame/configuration preset.
+        """
+        ...
+
     def inspect_spell(self, spell: Any, aetheric_frame: str = "default") -> Optional[str]:
         """
         Public API
@@ -711,6 +720,21 @@ class ISpellbook(ICleanable, Protocol):
         Calls:
             * ``_refresh_local_spell_versions()``
             * ``_refresh_contracted_spell_versions()``
+        """
+        ...
+
+    def _run_structural_phases(self) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Execute structural phases (1-4) for this Spellbook.
+        """
+        ...
+
+    def _run_resolution_phases_for_conduit(
+            self,
+            conduit_id: str,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Execute conduit-scoped resolution phases (5-11) for one conduit id.
         """
         ...
 

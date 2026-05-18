@@ -3,25 +3,6 @@ from threading import RLock
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.aether.conduit.creations.creation import Creation
 
-
-@runtime_checkable
-class _CreationsSpellSpaceSurface(Protocol):
-    """Minimal spellspace surface consumed by `ICreations`."""
-
-    @property
-    def id(self) -> str:
-        """Return the stable spellspace identifier."""
-        ...
-
-
-@runtime_checkable
-class _CreationsOwnerConduitSurface(Protocol):
-    """Minimal conduit surface consumed by `ICreations` spellspace helpers."""
-
-    def get_active_spellspace(self) -> Optional[_CreationsSpellSpaceSurface]:
-        """Return the currently active spellspace, if any."""
-        ...
-
 @runtime_checkable
 class ICreations(ICleanable, Protocol):
     """
@@ -40,66 +21,7 @@ class ICreations(ICleanable, Protocol):
     # -----------------
     _lock: RLock
     _creations: 'Dict[str, object]'
-    _conduit: _CreationsOwnerConduitSurface
     _id: str
-
-    # -----------------
-    # Methods
-    # -----------------
-    def _cleanup_unique(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        ...
-
-    def _cleanup_unique_per_lineage(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique_per_lineage` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        ...
-
-    def _cleanup_unique_per_cluster(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique_per_cluster` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        ...
-
-    def _cleanup_unique_per_scope(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all objects registered under the `unique_per_scope` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        ...
-
-    def _cleanup_many(self) -> List[Exception]:
-        """
-        Internal
-
-        Disposes of all multi-instance objects registered under the `many` existence scope.
-
-        Returns:
-            List[Exception]: List of any cleanup errors encountered.
-        """
-        ...
 
     def _attempt_cleanup(self, item: object) -> Optional[Exception]:
         """
@@ -125,20 +47,6 @@ class ICreations(ICleanable, Protocol):
 
         Returns:
             Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
-        """
-        ...
-
-    def _upgrade_from_lesser_conduit(self, **kwargs: Any) -> None:
-        """
-        Internal
-
-        Transfers creations data from a `LesserCreations` instance during a conduit upgrade.
-
-        Args:
-            **kwargs: Dictionary containing creation scopes (e.g., `unique_per_scope`, `many`).
-
-        Raises:
-            RuntimeError: If the `Creations` manager already contains objects before transfer.
         """
         ...
 

@@ -13,6 +13,7 @@ from melder.utilities.interfaces.iaethericframeconfiguration import (
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
+from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
@@ -130,6 +131,13 @@ class IAether(ICleanable, Protocol):
 
         Returns:
             None.
+        """
+        ...
+
+    @property
+    def mutation_research(self) -> IMutationResearch:
+        """
+        Return the Aether-owned mutation-research root.
         """
         ...
 

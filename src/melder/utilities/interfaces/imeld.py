@@ -9,7 +9,8 @@ class IMeld(ICleanable, Protocol):
     This is responsible for taking a spell request, resolving its dependencies,
     and "casting" it into a live object instance.
     """
-    _id: str
+    _conduit_id: Optional[str]
+    _resolution_conduit_id: Optional[str]
     def meld(
             self,
             spell_name: str | None = None,

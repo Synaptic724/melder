@@ -21,6 +21,12 @@ class IConduitResolutionState(ICleanable, Protocol):
         """
         ...
 
+    def snapshot_spell_validity(self) -> Dict[str, 'SpellValidity']:
+        """
+        Return a snapshot copy of per-spell resolution validity.
+        """
+        ...
+
     def set_spell_validity(
             self,
             spell_id: str,
@@ -53,6 +59,12 @@ class IConduitResolutionState(ICleanable, Protocol):
     def get_root_validity(self, root_id: str) -> Optional['SpellValidity']:
         """
         Return the stored resolution validity for one root id.
+        """
+        ...
+
+    def snapshot_root_validity(self) -> Dict[str, 'SpellValidity']:
+        """
+        Return a snapshot copy of per-root resolution validity.
         """
         ...
 
@@ -118,6 +130,12 @@ class IConduitResolutionState(ICleanable, Protocol):
     def has_warnings(self) -> bool:
         """
         Return whether any stored diagnostic has WARNING severity.
+        """
+        ...
+
+    def is_dirty(self) -> bool:
+        """
+        Return whether this conduit-resolution state currently requires revalidation.
         """
         ...
 
