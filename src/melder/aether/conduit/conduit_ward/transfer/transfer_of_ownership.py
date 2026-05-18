@@ -103,10 +103,10 @@ class TransferOfOwnership(Cleanable):
         self.mark_dependencies_dirty: bool = mark_dependencies_dirty
 
         self._lock: threading.RLock = threading.RLock()
-        self._aether: IAether = self.source_conduit._aether
-        self._frame_name: str = self.source_conduit._aetheric_frame
         self._source_spellbook: ISpellbook = self.source_conduit._spellbook
         self._target_spellbook: ISpellbook = self.target_conduit._spellbook
+        self._aether: IAether = self._source_spellbook._aether
+        self._frame_name: str = self.source_conduit._aetheric_frame
         self._preflight_summary: Dict[str, Any] = {}
         change_control_manager = self._aether._get_change_control_manager(
             self._frame_name

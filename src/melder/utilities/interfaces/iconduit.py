@@ -5,7 +5,6 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.utilities.interfaces.iaether import IAether
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
@@ -33,7 +32,6 @@ class IConduit(ICleanable, Protocol):
     _lock: threading.RLock
     _id: str
     _name: Optional[str]
-    _aether: IAether
     __dynamic_environment__: bool
     _aetheric_frame: str
     _spellbook: ISpellbook
@@ -267,14 +265,25 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _add_conduit_to_aether(self) -> None:
+    def _add_root_conduit(self) -> None:
         """
         Internal
 
-        Adds the newly created Conduit into the shared Aether world.
+        Add this normal conduit into the current frame's root-conduit state.
 
         Raises:
-            RuntimeError: If Aether is not initialized.
+            ValueError: If the conduit id or name already exists in the frame.
+        """
+        ...
+
+    def _remove_root_conduit(self) -> None:
+        """
+        Internal
+
+        Remove this normal conduit from the current frame's root-conduit state.
+
+        Raises:
+            ValueError: If the conduit is not present in the frame.
         """
         ...
 
@@ -1039,11 +1048,14 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Retrieves a conduit by its unique ID from the Aether.
+        Retrieve a root conduit by id through the current frame's ConduitCloud.
 
         Args:
             conduit_id (str): The unique identifier of the conduit.
-            aetheric_frame (str): The aetheric frame to check against. Defaults to this conduit's frame.
+            aetheric_frame (str):
+                Frame hint kept for compatibility. Only "default" or this
+                conduit's own frame name are supported by the current
+                ConduitCloud-backed implementation.
 
         Returns:
             Optional[IConduit]: The conduit instance if found, otherwise None.
@@ -1051,6 +1063,7 @@ class IConduit(ICleanable, Protocol):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             TypeError: If the `aetheric_frame` is not a string.
+            ValueError: If a different frame name is requested.
         """
         ...
 
@@ -1058,11 +1071,14 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Retrieves a conduit by its name from the Aether.
+        Retrieve a root conduit by name through the current frame's ConduitCloud.
 
         Args:
             name (str): The name of the conduit.
-            aetheric_frame (str): The aetheric frame to check against. Defaults to this conduit's frame.
+            aetheric_frame (str):
+                Frame hint kept for compatibility. Only "default" or this
+                conduit's own frame name are supported by the current
+                ConduitCloud-backed implementation.
 
         Returns:
             Optional[IConduit]: The conduit instance if found, otherwise None.
@@ -1070,6 +1086,7 @@ class IConduit(ICleanable, Protocol):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             TypeError: If the `aetheric_frame` is not a string.
+            ValueError: If a different frame name is requested.
         """
         ...
 

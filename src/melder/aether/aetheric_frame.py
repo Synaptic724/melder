@@ -86,8 +86,14 @@ class AethericFrame(Cleanable, IAethericFrame):
         #   cluster_name -> ConduitCluster
         self._conduit_clusters: Dict[str, IConduitCluster] = {}
 
-        # Dynamic-mode "cloud" factory for named conduits.
-        self._conduit_cloud: ConduitCloud = ConduitCloud(name)
+        # Frame-local conduit/cluster facade over the borrowed frame stores.
+        self._conduit_cloud: ConduitCloud = ConduitCloud(
+            name=name,
+            conduits=self._conduits,
+            conduit_ids_by_name=self._conduit_ids_by_name,
+            conduit_clusters=self._conduit_clusters,
+            owner_cleanup=self.cleanup,
+        )
 
         # Per-frame graph + dirtiness registry for all spell lineages.
         self._spell_system_states: SpellSystemStates = SpellSystemStates(self)

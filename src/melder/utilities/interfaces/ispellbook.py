@@ -13,7 +13,7 @@ from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
-
+#from melder.utilities.interfaces.iaether import IAether
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):
@@ -35,7 +35,6 @@ class ISpellbook(ICleanable, Protocol):
       * Aether frame configuration and global registry
       * Conduit conjuration (execution scope)
     """
-    from melder.utilities.interfaces.iaether import IAether
     # ------------------------------------------------------------------
     # Core backing fields (shape only; concrete types live in impl)
     # ------------------------------------------------------------------
@@ -50,7 +49,7 @@ class ISpellbook(ICleanable, Protocol):
     _bind: Optional[Any]
     _id: str
     _lock: threading.RLock
-    _aether: IAether
+    _aether: 'IAether'
     _aetheric_frame: Optional[str]
     _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'
@@ -446,7 +445,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[IConduit]:
+    ) -> Optional['IConduit']:
         """
         Return the conduit that owns the supplied spell id in Aether.
         """

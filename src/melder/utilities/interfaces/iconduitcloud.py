@@ -5,17 +5,17 @@ from melder.utilities.interfaces.iconduit import IConduit
 @runtime_checkable
 class IConduitCloud(ICleanable, Protocol):
     """
-    An Interface for an abstract factory for named conduits.
+    Interface for a frame-local conduit and cluster service facade.
 
-    The ConduitCloud provides a central location to retrieve conduits by a
-    human-readable name, intended for top-level access in
-    highly dynamic systems.
+    The ConduitCloud provides a central location to retrieve root conduits
+    within one frame, manage explicit dynamic cloud registration, and orchestrate
+    frame-local conduit-cluster behavior.
     """
     _id: str
 
     def get_conduit(self, name: str) -> IConduit:
         """
-        Retrieves a conduit by its registered name.
+        Retrieve a root conduit by its registered name in this frame.
 
         Args:
             name (str): The unique name of the conduit.
@@ -31,31 +31,31 @@ class IConduitCloud(ICleanable, Protocol):
 
     def get_conduit_by_name(self, name: str) -> IConduit:
         """
-        Retrieve a conduit by its registered name.
+        Retrieve a root conduit by its registered name in this frame.
         """
         ...
 
     def get_conduit_by_id(self, conduit_id: str) -> IConduit:
         """
-        Retrieve a conduit by its registered identifier.
+        Retrieve a root conduit by its registered identifier in this frame.
         """
         ...
 
     def list_conduit_ids(self) -> Tuple[str, ...]:
         """
-        Return the registered conduit identifiers in this cloud.
+        Return the registered root-conduit identifiers in this frame.
         """
         ...
 
     def list_conduit_names(self) -> Tuple[str, ...]:
         """
-        Return the registered conduit names in this cloud.
+        Return the registered root-conduit names in this frame.
         """
         ...
 
     def count_conduits(self) -> int:
         """
-        Return the number of registered conduits in this cloud.
+        Return the number of registered root conduits in this frame.
         """
         ...
 
@@ -99,5 +99,63 @@ class IConduitCloud(ICleanable, Protocol):
 
         Raises:
             ValueError: If the conduit name is missing or not registered.
+        """
+        ...
+
+    def _add_root_conduit(self, conduit: IConduit) -> None:
+        """
+        Register one root conduit into the borrowed frame-owned root stores.
+        """
+        ...
+
+    def _remove_root_conduit(self, conduit: IConduit) -> None:
+        """
+        Remove one root conduit from the borrowed frame-owned root stores.
+        """
+        ...
+
+    def cleanup_owner_frame_if_empty(self) -> bool:
+        """
+        Cleanup the owning frame when no root conduits remain.
+        """
+        ...
+
+    def create_cluster(self, cluster_name: str) -> None:
+        """
+        Create one frame-local conduit cluster.
+        """
+        ...
+
+    def delete_cluster(self, cluster_name: str) -> None:
+        """
+        Delete one frame-local conduit cluster.
+        """
+        ...
+
+    def add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str) -> None:
+        """
+        Add one conduit to one frame-local cluster.
+        """
+        ...
+
+    def remove_conduit_from_cluster(
+            self,
+            conduit: IConduit,
+            cluster_name: str,
+    ) -> None:
+        """
+        Remove one conduit from one frame-local cluster.
+        """
+        ...
+
+    def get_clusters_for_conduit(self, conduit_id: str) -> list[str]:
+        """
+        Return the cluster names that contain one conduit id.
+        """
+        ...
+
+    def refresh_cluster_shares_for_conduit(self, conduit: IConduit) -> None:
+        """
+        Refresh cluster sharing for one conduit across all of its clusters.
         """
         ...
