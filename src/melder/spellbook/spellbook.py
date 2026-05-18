@@ -3,6 +3,8 @@ from types import MappingProxyType, ModuleType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union
 import threading
 import time
+
+from melder.aether.aether import Aether
 # Melder Imports
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
@@ -107,9 +109,8 @@ class Spellbook(Cleanable, ISpellbook):
           object already exists on the frame.
     """
     __melder_internal__ = _mrg.sentinel
-    _cleaned: bool
+    _aether: IAether = Aether()
     _nexus: Nexus = Nexus()
-    _aether: IAether = _nexus._aether
     __slots__ = Cleanable.__slots__ + [
         "_active_change_request",
         "_aetheric_frame",
