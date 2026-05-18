@@ -96,7 +96,7 @@ def test_aether_frame_isolation_for_conduit_and_spell_lookup() -> None:
         permissions="create",
     )
     spell_id_b = book_b.bind(
-        spell=BasicService,
+        spell=BasicConfig,
         existence=Existence.unique,
         permissions="create",
     )
@@ -124,10 +124,13 @@ def test_aether_frame_isolation_for_conduit_and_spell_lookup() -> None:
         with pytest.raises(ValueError, match="not found"):
             conduit_a.get_conduit_by_name("root-b")
 
-        assert conduit_a.get_conduit_by_name(
-            "root-b",
-            aetheric_frame="frame-b",
-        ) is conduit_b
+        with pytest.raises(ValueError, match="current conduit frame"):
+            conduit_a.get_conduit_by_name(
+                "root-b",
+                aetheric_frame="frame-b",
+            )
+
+        assert Aether().get_conduit_by_name("root-b", "frame-b") is conduit_b
     finally:
         conduit_b.cleanup()
         conduit_a.cleanup()
@@ -377,6 +380,11 @@ def test_aether_spell_versions_drop_after_conduit_cleanup() -> None:
     assert config_id in versions
 
     conduit.cleanup()
+
+    assert frame_name in aether._aetheric_frames
+    assert aether._get_all_spell_versions(frame_name) == set()
+
+    aether._ensure_frame(frame_name).cleanup()
 
     assert frame_name not in aether._aetheric_frames
     with pytest.raises(ValueError, match="does not exist"):

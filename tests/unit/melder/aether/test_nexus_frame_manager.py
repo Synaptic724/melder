@@ -58,7 +58,7 @@ class _FakeConduit:
         self._id = conduit_id
         self._name = conduit_name
         self._aetheric_frame = frame_name
-        self._spellbook = SimpleNamespace(id=spellbook_id)
+        self._spellbook = SimpleNamespace(id=spellbook_id, _id=spellbook_id)
         self.cleaned = False
 
     def cleanup(self) -> None:
@@ -210,6 +210,11 @@ class _FakeNexus:
 
     def _ensure_frame_acl_container(self, frame_name: str) -> None:
         self.ensured_acl_frames.append(frame_name)
+
+    def _get_required_frame_descriptor(self, frame_name: str):
+        return self._frame_descriptor_manager._get_required_frame_descriptor(
+            frame_name
+        )
 
 
 class _PatchableNexusFrameManager(NexusFrameManager):
@@ -723,14 +728,14 @@ def test_nexus_frame_manager_list_accessible_frame_names_for_rift_matrix(
 @pytest.mark.parametrize(
     ("nexus_frame_mode", "frames", "immutable", "rift_count", "expected"),
     [
-        ("single", {}, False, 0, []),
-        ("single", {"aetheric_frame_system": _FakeFrame("aetheric_frame_system")}, False, 0, ["aetheric_frame_system"]),
-        ("single", {"aetheric_frame_system": _FakeFrame("aetheric_frame_system")}, True, 0, []),
-        ("single", {"aetheric_frame_system": _FakeFrame("aetheric_frame_system")}, False, 1, []),
-        ("one_per_workspace", {}, False, 0, []),
-        ("one_per_workspace", {"aetheric_frame_system:rift-1": _FakeFrame("aetheric_frame_system:rift-1")}, False, 0, ["aetheric_frame_system:rift-1"]),
-        ("one_per_workspace", {"aetheric_frame_system:rift-1": _FakeFrame("aetheric_frame_system:rift-1")}, True, 0, []),
-        ("indexed", {"ops": _FakeFrame("ops")}, False, 0, []),
+        ("single", {}, False, 0, tuple()),
+        ("single", {"aetheric_frame_system": _FakeFrame("aetheric_frame_system")}, False, 0, ("aetheric_frame_system",)),
+        ("single", {"aetheric_frame_system": _FakeFrame("aetheric_frame_system")}, True, 0, tuple()),
+        ("single", {"aetheric_frame_system": _FakeFrame("aetheric_frame_system")}, False, 1, tuple()),
+        ("one_per_workspace", {}, False, 0, tuple()),
+        ("one_per_workspace", {"aetheric_frame_system:rift-1": _FakeFrame("aetheric_frame_system:rift-1")}, False, 0, ("aetheric_frame_system:rift-1",)),
+        ("one_per_workspace", {"aetheric_frame_system:rift-1": _FakeFrame("aetheric_frame_system:rift-1")}, True, 0, tuple()),
+        ("indexed", {"ops": _FakeFrame("ops")}, False, 0, tuple()),
     ],
 )
 def test_nexus_frame_manager_get_frame_names_to_cleanup_for_removed_rift_matrix(

@@ -298,7 +298,27 @@ class SpellCrafter(Cleanable):
         Returns:
             ISpellbook: Borrowed owning spellbook runtime surface.
         """
-        return self._spell
+        spellbook = self._spell._spellbook
+        if spellbook is None:
+            raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
+        return spellbook
+
+    @staticmethod
+    def _get_required_spellbook_from_spell(spell: ISpell) -> ISpellbook:
+        """
+        Return the owning spellbook attached to one spell or raise.
+
+        Args:
+            spell:
+                Owning spell whose spellbook is required.
+
+        Returns:
+            ISpellbook: Attached owning spellbook runtime surface.
+        """
+        spellbook = spell._spellbook
+        if spellbook is None:
+            raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
+        return spellbook
 
     @staticmethod
     def _get_required_spellbook_frame_name(spellbook: ISpellbook) -> str:
@@ -327,28 +347,19 @@ class SpellCrafter(Cleanable):
             spell: ISpell,
     ) -> Optional[ISpellSystemStates]:
         """
-        Return the concrete spell-system-state registry attached to one spell,
-        when present.
+        Return the spell-system-state registry attached to one spell, when
+        present.
 
         Args:
             spell:
                 Owning spell whose spell-system-state surface is required.
 
         Returns:
-            Optional[ISpellSystemStates]: Concrete registry when available.
-
-        Raises:
-            TypeError:
-                If the attached spell-system-state surface is present but is
-                not the concrete internal `SpellSystemStates` implementation.
+            Optional[ISpellSystemStates]: Attached registry when available.
         """
         spell_system_states = spell._spell_system_states
         if spell_system_states is None:
             return None
-        if not isinstance(spell_system_states, ISpellSystemStates):
-            raise TypeError(
-                "SpellCrafter requires the concrete internal SpellSystemStates surface."
-            )
         return spell_system_states
 
     def _get_required_spell_system_states(self) -> ISpellSystemStates:

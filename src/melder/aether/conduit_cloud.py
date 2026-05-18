@@ -344,8 +344,8 @@ class ConduitCloud(Cleanable, IConduitCloud):
         """
         self.check_cleaned()
         with self._lock:
-            conduit_id = conduit.id
-            conduit_name = conduit.name
+            conduit_id = conduit._id
+            conduit_name = conduit._name
             if not conduit_name:
                 raise ValueError("Root conduit name is required.")
             if conduit_id in self._conduits:
@@ -372,13 +372,13 @@ class ConduitCloud(Cleanable, IConduitCloud):
         """
         self.check_cleaned()
         with self._lock:
-            conduit_id = conduit.id
+            conduit_id = conduit._id
             removed = self._conduits.pop(conduit_id, None)
             if removed is None:
                 raise ValueError(
                     "Conduit with ID {0} does not exist.".format(conduit_id)
                 )
-            conduit_name = removed.name
+            conduit_name = removed._name
             if conduit_name:
                 mapped_id = self._conduit_ids_by_name.get(conduit_name)
                 if mapped_id == conduit_id:

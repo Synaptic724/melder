@@ -125,8 +125,11 @@ def test_aether_conduit_cloud_unregister_removes_entry() -> None:
     Purpose:
         Validate explicit conduit cloud unregistration removes the entry.
     Contract:
-        - ConduitCloud resolves the named conduit before unregistration.
-        - After unregistration, lookup raises ValueError.
+        - ConduitCloud resolves the root conduit through the borrowed
+          frame-owned root registry before and after explicit cloud
+          unregistration.
+        - `_unregister_conduit_cloud(...)` removes only the explicit dynamic
+          cloud entry from `_registry`.
     Returns:
         None.
     Raises:
@@ -147,10 +150,11 @@ def test_aether_conduit_cloud_unregister_removes_entry() -> None:
     try:
         cloud = aether._get_conduit_cloud(frame_name)
         assert cloud.get_conduit("root") is conduit
+        assert cloud._registry["root"] is conduit
 
         aether._unregister_conduit_cloud(conduit, frame_name)
-        with pytest.raises(ValueError, match="not found"):
-            cloud.get_conduit("root")
+        assert "root" not in cloud._registry
+        assert cloud.get_conduit("root") is conduit
     finally:
         conduit.cleanup()
         spellbook.cleanup()
