@@ -1136,7 +1136,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_links(self):
+    def get_links(self) -> list['IConduit']:
         """
         Public API
 

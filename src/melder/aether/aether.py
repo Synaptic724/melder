@@ -80,7 +80,7 @@ class Aether(Cleanable, IAether):
                     cls._instance = super(Aether, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the Aether singleton and its always-on frame substrate.
 
@@ -125,7 +125,7 @@ class Aether(Cleanable, IAether):
             self._mutation_research: MutationResearch = MutationResearch(aether=self)
             self._nexus: Nexus = Nexus(aether=self)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Cleanup the entire Aether singleton and all owned frame/subsystem state.
 
@@ -299,7 +299,7 @@ class Aether(Cleanable, IAether):
                 "_detach_cleaned_frame",
             )
 
-    def cleanup_aetheric_frames(self):
+    def cleanup_aetheric_frames(self) -> None:
         """
         Cleanup every frame currently owned by the singleton.
 

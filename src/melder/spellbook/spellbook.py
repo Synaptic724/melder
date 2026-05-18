@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from types import MappingProxyType, ModuleType
+from types import MappingProxyType, ModuleType, TracebackType
 from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, Iterable, Tuple, Collection, Generator, Union
 import threading
 import time
@@ -459,7 +459,12 @@ and logging.
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Exit the Spellbook lock context.
 
@@ -1449,7 +1454,11 @@ and logging.
             raise RuntimeError("Spell key not found in the spellbook.")
 
 
-    def inspect_spell(self, spell: Any, aetheric_frame= "default") -> Optional[str]:
+    def inspect_spell(
+            self,
+            spell: Any,
+            aetheric_frame: str = "default",
+    ) -> Optional[str]:
         """
         Public API
 
@@ -2783,13 +2792,13 @@ and logging.
     def bind(
             self,
             *,
-            spell,
+            spell: Any,
             existence: Union[str, Existence],
             permissions: str = "create",
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
-            **kwargs,
+            **kwargs: Any,
     ) -> str:
         """
         Bind a spell into the Spellbook for future instantiation and dependency
@@ -3018,7 +3027,7 @@ and logging.
         scanner = Scan(self)
         return scanner.scan_module(module)
 
-    def _add_hooks_to_spell(self, spell: ISpell, **kwargs) -> None:
+    def _add_hooks_to_spell(self, spell: ISpell, **kwargs: Any) -> None:
         """
         Internal
 

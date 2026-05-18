@@ -234,6 +234,28 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
+    def _add_spells_to_aether(
+            self,
+            conduit_id: str,
+            spell_set: Set[ISpellIndex],
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Register one conduit-owned set of SpellIndex lineages in the frame registry.
+        """
+        ...
+
+    def _remove_spells_from_aether(
+            self,
+            conduit_id: str,
+            spell_set: Set[ISpellIndex],
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Remove one conduit-owned set of SpellIndex lineages from the frame registry.
+        """
+        ...
+
     def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> "IConduitCloud":
         """
         Return the conduit cloud for one frame.

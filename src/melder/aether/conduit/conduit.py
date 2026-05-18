@@ -248,7 +248,7 @@ class Conduit(Cleanable, IConduit):
 
 
     #region Cleanup and Disposal
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Public API
 
@@ -299,7 +299,7 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def _cleanup_lesser_conduit(self):
+    def _cleanup_lesser_conduit(self) -> None:
         """
         Internal
 
@@ -354,7 +354,7 @@ class Conduit(Cleanable, IConduit):
         del self._nexus
 
 
-    def _cleanup_normal_conduit(self):
+    def _cleanup_normal_conduit(self) -> None:
         """
         Internal
 
@@ -704,7 +704,7 @@ class Conduit(Cleanable, IConduit):
             channels="system",
         )
 
-    def _configure_conduit_state(self):
+    def _configure_conduit_state(self) -> None:
         """
         Internal
 
@@ -1012,7 +1012,7 @@ class Conduit(Cleanable, IConduit):
         self._conduit_cloud._unregister_conduit(conduit)
         self._publish_frame_record_to_nexus()
 
-    def _apply_configuration_flags(self):
+    def _apply_configuration_flags(self) -> None:
         """
         Internal
 
@@ -3135,7 +3135,7 @@ class Conduit(Cleanable, IConduit):
         with self._lock:
             return self._conduit_ward._get_provider_conduits()
 
-    def cleanup_lesser_conduits(self):
+    def cleanup_lesser_conduits(self) -> None:
         """
         Public API
 
@@ -3272,7 +3272,7 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Conduit Resolution Validation API
     #region Spell Contracting API
-    def _qualify_contracts(self):
+    def _qualify_contracts(self) -> None:
         """
         Internal
 

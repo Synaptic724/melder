@@ -58,7 +58,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
         self.shared_spells: Dict[str, Set[ISpellIndex]] = {}
         self.auto_link_dependencies: bool = auto_link_dependencies
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Idempotently clear cluster membership state and release references.
 
