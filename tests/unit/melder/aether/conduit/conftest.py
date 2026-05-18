@@ -23,6 +23,24 @@ from tests._frame_posture_test_support import (
     set_frame_system_state_for_spellbook_configuration,
     set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
 )
+
+
+def _cleanup_conduit_if_alive(conduit: Conduit) -> None:
+    """
+    Cleanup a conduit only when the live cleanup surface is still present.
+
+    Purpose:
+        Keep shared fixtures resilient when a test directly calls one of the
+        internal cleanup helpers that delete owned fields without flipping the
+        full public cleanup state.
+    """
+    if getattr(conduit, "_cleaned", False):
+        return
+    if not hasattr(conduit, "_creation_gate_controller"):
+        return
+    conduit.cleanup()
+
+
 @pytest.fixture(autouse=True)
 def fresh_singletons() -> None:
     """
@@ -31,8 +49,6 @@ def fresh_singletons() -> None:
     Contract:
         - AetherUtilitySystem, Nexus, and Aether are reset before and after
           each test.
-        - Conduit._aether is rebound to a fresh Aether singleton so Conduit
-          construction can resolve its owned Nexus reference deterministically.
 
     Returns:
         None.
@@ -40,13 +56,11 @@ def fresh_singletons() -> None:
     AetherUtilitySystem._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
-    Conduit._aether = Aether()
     Spellbook._aether = Aether()
     yield
     AetherUtilitySystem._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
-    Conduit._aether = Aether()
     Spellbook._aether = Aether()
 
 
@@ -113,20 +127,21 @@ def spellbook_stub() -> MagicMock:
     spellbook.inspect_spell = MagicMock()
     spellbook.cleanup = MagicMock()
     spellbook.create_new_preset_spellbook = MagicMock()
+    spellbook._nexus = MagicMock()
     return spellbook
 
 
 @pytest.fixture()
 def aether_stub() -> MagicMock:
     """
-    Patch Conduit._aether with a stub for isolation.
+    Provide an Aether-like stub for test helpers that still consult Aether
+    directly through Spellbook-owned paths.
 
     Contract:
-        - Restores the original Conduit._aether after the test.
-        - Provides no-op methods for Conduit registration and lookup APIs.
+        - Provides no-op methods for spellbook-owned Aether registration and lookup APIs.
 
     Returns:
-        MagicMock: The active Aether stub bound to Conduit._aether.
+        MagicMock: Aether-like stub used by tests.
     """
     stub = MagicMock()
     stub._add_conduit.return_value = None
@@ -147,21 +162,63 @@ def aether_stub() -> MagicMock:
     stub._get_clusters_for_conduit.return_value = []
     stub._refresh_cluster_shares_for_conduit.return_value = None
     stub._get_mutation_research.return_value = MagicMock()
-    dev_ops_manager = MagicMock()
-    dev_ops_manager.creation_gate_controller = CreationGateController()
-    stub._get_devops_manager.return_value = dev_ops_manager
-    previous = Conduit._aether
-    Conduit._aether = stub
-    try:
-        yield stub
-    finally:
-        Conduit._aether = previous
+    yield stub
+
+
+@pytest.fixture()
+def dev_ops_manager_stub() -> MagicMock:
+    """
+    Provide a frame-owned DevOpsManager double for conduit construction.
+
+    Contract:
+        - Exposes a real CreationGateController for gate registration flows.
+
+    Returns:
+        MagicMock: DevOpsManager-like stub.
+    """
+    stub = MagicMock()
+    stub.creation_gate_controller = CreationGateController()
+    return stub
+
+
+@pytest.fixture()
+def conduit_cloud_stub() -> MagicMock:
+    """
+    Provide a ConduitCloud double for current-frame conduit and cluster flows.
+
+    Contract:
+        - Supports root-conduit registration/unregistration helpers.
+        - Supports dynamic cloud registration helpers.
+        - Supports current-frame conduit lookup and cluster-management helpers.
+        - `cleanup_owner_frame_if_empty()` defaults to False so normal conduit
+          cleanup does not attempt owner-frame cleanup in unit tests.
+
+    Returns:
+        MagicMock: ConduitCloud-like stub.
+    """
+    stub = MagicMock()
+    stub._add_root_conduit.return_value = None
+    stub._remove_root_conduit.return_value = None
+    stub._register_conduit.return_value = None
+    stub._unregister_conduit.return_value = None
+    stub.cleanup_owner_frame_if_empty.return_value = False
+    stub.create_cluster.return_value = None
+    stub.delete_cluster.return_value = None
+    stub.add_conduit_to_cluster.return_value = None
+    stub.remove_conduit_from_cluster.return_value = None
+    stub.get_clusters_for_conduit.return_value = []
+    stub.refresh_cluster_shares_for_conduit.return_value = None
+    stub.get_conduit_by_id.return_value = None
+    stub.get_conduit_by_name.return_value = None
+    return stub
 
 
 @pytest.fixture()
 def conduit_lesser(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
+    dev_ops_manager_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> Conduit:
     """
     Build a lesser Conduit for unit tests.
@@ -183,9 +240,12 @@ def conduit_lesser(
         conduit_state=ConduitState.lesser,
         aetheric_frame="default",
         policy=Policies.default,
+        root_conduit_id="root-1",
+        dev_ops_manager=dev_ops_manager_stub,
+        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
-    conduit.cleanup()
+    _cleanup_conduit_if_alive(conduit)
 
 
 @pytest.fixture()
@@ -193,6 +253,8 @@ def conduit_normal(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
+    dev_ops_manager_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> Conduit:
     """
     Build a normal Conduit for unit tests with Aether isolated.
@@ -215,9 +277,11 @@ def conduit_normal(
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
+        dev_ops_manager=dev_ops_manager_stub,
+        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
-    conduit.cleanup()
+    _cleanup_conduit_if_alive(conduit)
 
 
 @pytest.fixture()
@@ -225,6 +289,8 @@ def conduit_dynamic_normal(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
+    dev_ops_manager_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> Conduit:
     """
     Build a dynamic, normal Conduit for contract and link tests.
@@ -248,9 +314,11 @@ def conduit_dynamic_normal(
         aetheric_frame="default",
         policy=Policies.default,
         automatic=False,
+        dev_ops_manager=dev_ops_manager_stub,
+        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
-    conduit.cleanup()
+    _cleanup_conduit_if_alive(conduit)
 
 
 @pytest.fixture()
@@ -258,6 +326,8 @@ def conduit_dynamic_lesser(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
+    dev_ops_manager_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> Conduit:
     """
     Build a dynamic, lesser Conduit for upgrade tests.
@@ -281,6 +351,9 @@ def conduit_dynamic_lesser(
         aetheric_frame="default",
         policy=Policies.default,
         automatic=False,
+        root_conduit_id="root-1",
+        dev_ops_manager=dev_ops_manager_stub,
+        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
-    conduit.cleanup()
+    _cleanup_conduit_if_alive(conduit)

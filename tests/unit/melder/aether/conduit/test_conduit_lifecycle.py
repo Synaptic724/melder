@@ -11,6 +11,7 @@ from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.logger.safe_logger import SafeLogger
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 
 @pytest.fixture(autouse=True)
@@ -24,6 +25,58 @@ def fresh_utility_system() -> None:
     AetherUtilitySystem._reset_singleton_for_tests()
     yield
     AetherUtilitySystem._reset_singleton_for_tests()
+
+
+def _build_conduit(
+    *,
+    spellbook: MagicMock,
+    configuration: object,
+    conduit_state: ConduitState,
+    aetheric_frame: str = "default",
+    policy: Policies = Policies.default,
+    automatic: bool = True,
+    name: str | None = None,
+    logger: object | None = None,
+    conduit_id: str | None = None,
+    root_conduit_id: str | None = None,
+    creation_gate: object | None = None,
+) -> Conduit:
+    """
+    Build a Conduit with the current injected-service constructor contract.
+    """
+    dev_ops_manager = MagicMock()
+    dev_ops_manager.creation_gate_controller = CreationGateController()
+    conduit_cloud = MagicMock()
+    conduit_cloud._add_root_conduit.return_value = None
+    conduit_cloud._remove_root_conduit.return_value = None
+    conduit_cloud._register_conduit.return_value = None
+    conduit_cloud._unregister_conduit.return_value = None
+    conduit_cloud.cleanup_owner_frame_if_empty.return_value = False
+    conduit_cloud.create_cluster.return_value = None
+    conduit_cloud.delete_cluster.return_value = None
+    conduit_cloud.add_conduit_to_cluster.return_value = None
+    conduit_cloud.remove_conduit_from_cluster.return_value = None
+    conduit_cloud.get_clusters_for_conduit.return_value = []
+    conduit_cloud.refresh_cluster_shares_for_conduit.return_value = None
+    conduit_cloud.get_conduit_by_id.return_value = None
+    conduit_cloud.get_conduit_by_name.return_value = None
+    if conduit_state is ConduitState.lesser and root_conduit_id is None:
+        root_conduit_id = "root-1"
+    return Conduit(
+        spellbook=spellbook,
+        configuration=configuration,
+        conduit_state=conduit_state,
+        aetheric_frame=aetheric_frame,
+        policy=policy,
+        dev_ops_manager=dev_ops_manager,
+        conduit_cloud=conduit_cloud,
+        automatic=automatic,
+        name=name,
+        logger=logger,
+        conduit_id=conduit_id,
+        root_conduit_id=root_conduit_id,
+        creation_gate=creation_gate,
+    )
 
 
 class _LockProbe:
@@ -110,7 +163,7 @@ def test_init_rejects_non_configuration(spellbook_stub: MagicMock) -> None:
         AssertionError: If the expected TypeError is not raised.
     """
     with pytest.raises(TypeError, match="IConfiguration"):
-        Conduit(
+        _build_conduit(
             spellbook=spellbook_stub,
             configuration=object(),
             conduit_state=ConduitState.lesser,
@@ -136,7 +189,7 @@ def test_lesser_conduit_drops_name(
     Raises:
         AssertionError: If the name is preserved for a lesser conduit.
     """
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -374,7 +427,7 @@ def test_provider_used_when_logger_missing(
     utility_system = AetherUtilitySystem()
     utility_system.set_channel_logger_activation_enabled(True)
     utility_system.register_channel_logger_resolver(resolver)
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -423,7 +476,7 @@ def test_explicit_logger_skips_provider(
 
     AetherUtilitySystem().register_channel_logger_resolver(resolver)
     explicit_logger = logging.getLogger("explicit")
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -517,9 +570,9 @@ def test_cleanup_normal_conduit_tolerates_child_cleanup_errors(
     Verify normal conduit cleanup tolerates child cleanup failures and nulls state.
 
     Contract:
-        - unregister gate, meld, ward, creations, Aether unregister, state drop,
+        - unregister gate, meld, ward, creations, root-conduit unregister, state drop,
           and spellbook cleanup failures are logged and do not abort cleanup.
-        - Key owned references are nulled after cleanup.
+        - Key owned references are deleted after cleanup.
     """
     conduit_normal._logger = MagicMock()
     conduit_normal._creation_gate_controller = MagicMock()
@@ -535,16 +588,16 @@ def test_cleanup_normal_conduit_tolerates_child_cleanup_errors(
     conduit_normal._creations.cleanup.side_effect = RuntimeError("creations boom")
     conduit_normal._spellbook._spell_system_states.drop_conduit_resolution_state.side_effect = RuntimeError("state boom")
     conduit_normal._spellbook.cleanup.side_effect = RuntimeError("spellbook boom")
-    Conduit._aether._remove_conduit.side_effect = RuntimeError("aether boom")
+    conduit_normal._conduit_cloud._remove_root_conduit.side_effect = RuntimeError("cloud boom")
 
     conduit_normal._cleanup_normal_conduit()
 
-    assert conduit_normal._conduit_ward is None
-    assert conduit_normal._meld is None
-    assert conduit_normal._creation_gate is None
-    assert conduit_normal._creation_gate_controller is None
-    assert conduit_normal._creations is None
-    assert conduit_normal._spellbook is None
+    assert not hasattr(conduit_normal, "_conduit_ward")
+    assert not hasattr(conduit_normal, "_meld")
+    assert not hasattr(conduit_normal, "_creation_gate")
+    assert not hasattr(conduit_normal, "_creation_gate_controller")
+    assert not hasattr(conduit_normal, "_creations")
+    assert not hasattr(conduit_normal, "_spellbook")
     assert conduit_normal._logger.error.call_count >= 6
 
 
@@ -576,7 +629,7 @@ def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     conduit_normal.cleanup()
     assert spellbook.cleanup.called is True
     nexus._publish_frame_record.assert_called_once_with(spellbook)
-    assert conduit_normal._nexus is None
+    assert not hasattr(conduit_normal, "_nexus")
 
 
 def test_cleanup_returns_early_when_cleaned_flips_inside_lock(
@@ -751,3 +804,4 @@ def test_unregister_spellspace_ignores_missing_registry(
     conduit_lesser._unregister_spellspace(MagicMock())
 
     assert conduit_lesser._spellspace_registry is None
+

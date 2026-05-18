@@ -10,120 +10,52 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 
-def test_add_conduit_to_aether_raises_when_aether_none(
-    configuration_automatic: SpellbookConfiguration,
-    spellbook_stub: MagicMock,
-) -> None:
-    """
-    Verify _add_conduit_to_aether rejects missing Aether registration.
-
-    Contract:
-        - Raises RuntimeError when Conduit._aether is None.
-
-    Args:
-        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
-        spellbook_stub (MagicMock): Spellbook stub for construction.
-
-    Raises:
-        AssertionError: If missing Aether does not raise.
-    """
-    conduit = Conduit(
-        spellbook=spellbook_stub,
-        configuration=configuration_automatic,
-        conduit_state=ConduitState.lesser,
-        aetheric_frame="default",
-        policy=Policies.default,
-    )
-    previous = Conduit._aether
-    try:
-        Conduit._aether = None
-        with pytest.raises(RuntimeError, match="Aether is not initialized"):
-            conduit._add_conduit_to_aether()
-    finally:
-        Conduit._aether = previous
-        conduit.cleanup()
-
-
-def test_remove_conduit_from_aether_raises_when_aether_none(
-    configuration_automatic: SpellbookConfiguration,
-    spellbook_stub: MagicMock,
-) -> None:
-    """
-    Verify _remove_conduit_from_aether rejects missing Aether registration.
-
-    Contract:
-        - Raises RuntimeError when Conduit._aether is None.
-
-    Args:
-        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
-        spellbook_stub (MagicMock): Spellbook stub for construction.
-
-    Raises:
-        AssertionError: If missing Aether does not raise.
-    """
-    conduit = Conduit(
-        spellbook=spellbook_stub,
-        configuration=configuration_automatic,
-        conduit_state=ConduitState.lesser,
-        aetheric_frame="default",
-        policy=Policies.default,
-    )
-    previous = Conduit._aether
-    try:
-        Conduit._aether = None
-        with pytest.raises(RuntimeError, match="Aether is not initialized"):
-            conduit._remove_conduit_from_aether()
-    finally:
-        Conduit._aether = previous
-        conduit.cleanup()
-
-
-def test_add_conduit_to_aether_delegates(
+def test_add_root_conduit_delegates(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify _add_conduit_to_aether delegates to Aether.
+    Verify _add_root_conduit delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives _add_conduit with conduit and frame.
+        - ConduitCloud receives _add_root_conduit with this conduit.
 
     Args:
         conduit_normal (Conduit): Normal conduit under test.
-        aether_stub (MagicMock): Aether stub for delegation checks.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub for delegation checks.
 
     Raises:
         AssertionError: If delegation call is missing.
     """
-    aether_stub.reset_mock()
+    conduit_cloud_stub.reset_mock()
 
-    conduit_normal._add_conduit_to_aether()
+    conduit_normal._add_root_conduit()
 
-    aether_stub._add_conduit.assert_called_once_with(conduit_normal, "default")
+    conduit_cloud_stub._add_root_conduit.assert_called_once_with(conduit_normal)
 
 
-def test_remove_conduit_from_aether_delegates(
+def test_remove_root_conduit_delegates(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify _remove_conduit_from_aether delegates to Aether.
+    Verify _remove_root_conduit delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives _remove_conduit with conduit and frame.
+        - ConduitCloud receives _remove_root_conduit with this conduit.
 
     Args:
         conduit_normal (Conduit): Normal conduit under test.
-        aether_stub (MagicMock): Aether stub for delegation checks.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub for delegation checks.
 
     Raises:
         AssertionError: If delegation call is missing.
     """
-    aether_stub.reset_mock()
+    conduit_cloud_stub.reset_mock()
 
-    conduit_normal._remove_conduit_from_aether()
+    conduit_normal._remove_root_conduit()
 
-    aether_stub._remove_conduit.assert_called_once_with(conduit_normal, "default")
+    conduit_cloud_stub._remove_root_conduit.assert_called_once_with(conduit_normal)
 
 
 def test_add_spells_to_aether_registers_spell_indices(
@@ -160,40 +92,6 @@ def test_add_spells_to_aether_registers_spell_indices(
     finally:
         spell_a.cleanup()
         spell_b.cleanup()
-
-
-def test_add_spells_to_aether_raises_when_aether_none(
-    configuration_automatic: SpellbookConfiguration,
-    spellbook_stub: MagicMock,
-) -> None:
-    """
-    Verify _add_spells_to_aether rejects missing Aether registration.
-
-    Contract:
-        - Raises RuntimeError when Conduit._aether is None.
-
-    Args:
-        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
-        spellbook_stub (MagicMock): Spellbook stub for construction.
-
-    Raises:
-        AssertionError: If missing Aether does not raise.
-    """
-    conduit = Conduit(
-        spellbook=spellbook_stub,
-        configuration=configuration_automatic,
-        conduit_state=ConduitState.lesser,
-        aetheric_frame="default",
-        policy=Policies.default,
-    )
-    previous = Conduit._aether
-    try:
-        Conduit._aether = None
-        with pytest.raises(RuntimeError, match="Aether is not initialized"):
-            conduit._add_spells_to_aether()
-    finally:
-        Conduit._aether = previous
-        conduit.cleanup()
 
 
 def test_creations_configuration_returns_creations_for_lesser(

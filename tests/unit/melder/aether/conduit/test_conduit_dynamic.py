@@ -187,28 +187,24 @@ def test_get_conduit_cloud_raises_when_not_dynamic(conduit_normal: Conduit) -> N
 
 def test_get_conduit_cloud_delegates_for_dynamic(
     conduit_dynamic_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify get_conduit_cloud delegates to Aether in dynamic mode.
+    Verify get_conduit_cloud returns the injected ConduitCloud in dynamic mode.
 
     Contract:
-        - Aether return value is passed through unchanged.
+        - The injected ConduitCloud is returned unchanged.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
     """
-    sentinel = MagicMock()
-    aether_stub._get_conduit_cloud.return_value = sentinel
-
     result = conduit_dynamic_normal.get_conduit_cloud()
 
-    aether_stub._get_conduit_cloud.assert_called_once_with("default")
-    assert result is sentinel
+    assert result is conduit_cloud_stub
 
 
 def test_transfer_spell_ownership_raises_when_not_dynamic(
@@ -318,7 +314,7 @@ def test_upgrade_to_normal_raises_when_not_lesser(
 
 def test_upgrade_to_normal_transitions_and_registers(
     conduit_dynamic_lesser: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
     Verify upgrade_to_normal transitions state and registers the conduit.
@@ -327,11 +323,11 @@ def test_upgrade_to_normal_transitions_and_registers(
         - Conduit becomes normal and receives the provided name.
         - Existing Creations manager is preserved and re-wired into Meld.
         - Ward conversion and spellbook reset are invoked.
-        - Aether registration and cloud registration occur for named conduits.
+        - Root registration and cloud registration occur for named conduits.
 
     Args:
         conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
-        aether_stub (MagicMock): Aether stub used for registration checks.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for registration checks.
 
     Raises:
         AssertionError: If the upgrade workflow is incomplete.
@@ -351,8 +347,8 @@ def test_upgrade_to_normal_transitions_and_registers(
     assert conduit_dynamic_lesser._meld._resolution_conduit_id == conduit_dynamic_lesser._id
     conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.assert_called_once_with()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook.assert_called_once_with()
-    aether_stub._add_conduit.assert_called_once_with(conduit_dynamic_lesser, "default")
-    aether_stub._register_conduit_cloud.assert_called_once_with(conduit_dynamic_lesser, "default")
+    conduit_cloud_stub._add_root_conduit.assert_called_once_with(conduit_dynamic_lesser)
+    conduit_cloud_stub._register_conduit.assert_called_once_with(conduit_dynamic_lesser)
     conduit_dynamic_lesser._nexus._publish_conduit_record.assert_called_once_with(
         conduit_dynamic_lesser
     )
@@ -360,14 +356,14 @@ def test_upgrade_to_normal_transitions_and_registers(
 
 def test_upgrade_to_normal_defaults_name_when_omitted(
     conduit_dynamic_lesser: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
     Verify upgrade_to_normal assigns the default root name when omitted.
 
     Contract:
         - Conduit becomes normal with the default name.
-        - Aether registration still occurs for the upgraded conduit.
+        - Root registration still occurs for the upgraded conduit.
     """
     conduit_dynamic_lesser._conduit_ward = MagicMock()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
@@ -378,12 +374,12 @@ def test_upgrade_to_normal_defaults_name_when_omitted(
 
     assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
     assert conduit_dynamic_lesser._name == "default"
-    aether_stub._add_conduit.assert_called_once_with(conduit_dynamic_lesser, "default")
+    conduit_cloud_stub._add_root_conduit.assert_called_once_with(conduit_dynamic_lesser)
 
 
 def test_upgrade_to_normal_registers_hooks(
     conduit_dynamic_lesser: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
     Verify upgrade_to_normal registers per-conduit local hooks when provided.
@@ -393,7 +389,7 @@ def test_upgrade_to_normal_registers_hooks(
 
     Args:
         conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
-        aether_stub (MagicMock): Aether stub for registration calls.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub for registration calls.
 
     Raises:
         AssertionError: If hooks are not registered.
@@ -637,68 +633,6 @@ def test_create_lesser_conduit_raises_when_root_conduit_not_normal(
         conduit_dynamic_lesser.create_lesser_conduit()
 
 
-def test_get_mutation_research_raises_for_lesser(conduit_lesser: Conduit) -> None:
-    """
-    Verify get_mutation_research rejects lesser conduits.
-
-    Contract:
-        - Only normal conduits can access MutationResearch.
-
-    Args:
-        conduit_lesser (Conduit): Lesser conduit instance.
-
-    Raises:
-        AssertionError: If the call does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Only normal conduits"):
-        conduit_lesser.get_mutation_research()
-
-
-def test_get_mutation_research_raises_when_not_dynamic(
-    conduit_normal: Conduit,
-) -> None:
-    """
-    Verify get_mutation_research rejects non-dynamic environments.
-
-    Contract:
-        - Dynamic mode is required for MutationResearch access.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit with dynamic disabled.
-
-    Raises:
-        AssertionError: If the call does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-        conduit_normal.get_mutation_research()
-
-
-def test_get_mutation_research_delegates_when_dynamic(
-    conduit_dynamic_normal: Conduit,
-    aether_stub: MagicMock,
-) -> None:
-    """
-    Verify get_mutation_research delegates to Aether in dynamic mode.
-
-    Contract:
-        - Aether return value is passed through unchanged.
-
-    Args:
-        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    sentinel = MagicMock()
-    aether_stub._get_mutation_research.return_value = sentinel
-
-    result = conduit_dynamic_normal.get_mutation_research()
-
-    aether_stub._get_mutation_research.assert_called_once_with()
-    assert result is sentinel
-
-
 def test_register_conduit_cloud_raises_when_not_dynamic(conduit_normal: Conduit) -> None:
     """
     Verify register_conduit_cloud is blocked in non-dynamic environments.
@@ -752,19 +686,19 @@ def test_register_conduit_cloud_raises_when_name_missing(
         conduit_dynamic_normal.register_conduit_cloud(conduit_dynamic_normal)
 
 
-def test_register_conduit_cloud_delegates_to_aether(
+def test_register_conduit_cloud_delegates_to_cloud(
     conduit_dynamic_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify register_conduit_cloud delegates to Aether.
+    Verify register_conduit_cloud delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the registration call with the conduit and frame.
+        - ConduitCloud receives the registration call with the conduit.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
@@ -775,7 +709,7 @@ def test_register_conduit_cloud_delegates_to_aether(
 
     conduit_dynamic_normal.register_conduit_cloud(conduit_dynamic_normal)
 
-    aether_stub._register_conduit_cloud.assert_called_once_with(conduit_dynamic_normal, "default")
+    conduit_cloud_stub._register_conduit.assert_called_once_with(conduit_dynamic_normal)
     conduit_dynamic_normal._nexus._publish_frame_record.assert_called_once_with(
         conduit_dynamic_normal._spellbook
     )
@@ -834,19 +768,19 @@ def test_unregister_conduit_cloud_raises_when_name_missing(
         conduit_dynamic_normal.unregister_conduit_cloud(conduit_dynamic_normal)
 
 
-def test_unregister_conduit_cloud_delegates_to_aether(
+def test_unregister_conduit_cloud_delegates_to_cloud(
     conduit_dynamic_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify unregister_conduit_cloud delegates to Aether.
+    Verify unregister_conduit_cloud delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the unregistration call with the conduit and frame.
+        - ConduitCloud receives the unregistration call with the conduit.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
@@ -857,25 +791,25 @@ def test_unregister_conduit_cloud_delegates_to_aether(
 
     conduit_dynamic_normal.unregister_conduit_cloud(conduit_dynamic_normal)
 
-    aether_stub._unregister_conduit_cloud.assert_called_once_with(conduit_dynamic_normal, "default")
+    conduit_cloud_stub._unregister_conduit.assert_called_once_with(conduit_dynamic_normal)
     conduit_dynamic_normal._nexus._publish_frame_record.assert_called_once_with(
         conduit_dynamic_normal._spellbook
     )
 
 
-def test_create_cluster_delegates_to_aether(
+def test_create_cluster_delegates_to_cloud(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify create_cluster delegates to Aether.
+    Verify create_cluster delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the create call with the conduit's frame.
+        - ConduitCloud receives the create call with the cluster name.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
@@ -885,25 +819,25 @@ def test_create_cluster_delegates_to_aether(
 
     conduit_normal.create_cluster("cluster-1")
 
-    aether_stub._create_cluster.assert_called_once_with("cluster-1", "default")
+    conduit_cloud_stub.create_cluster.assert_called_once_with("cluster-1")
     conduit_normal._nexus._publish_frame_record.assert_called_once_with(
         conduit_normal._spellbook
     )
 
 
-def test_delete_cluster_delegates_to_aether(
+def test_delete_cluster_delegates_to_cloud(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify delete_cluster delegates to Aether.
+    Verify delete_cluster delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the remove call with the conduit's frame.
+        - ConduitCloud receives the remove call with the cluster name.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
@@ -913,98 +847,98 @@ def test_delete_cluster_delegates_to_aether(
 
     conduit_normal.delete_cluster("cluster-1")
 
-    aether_stub._remove_cluster.assert_called_once_with("cluster-1", "default")
+    conduit_cloud_stub.delete_cluster.assert_called_once_with("cluster-1")
     conduit_normal._nexus._publish_frame_record.assert_called_once_with(
         conduit_normal._spellbook
     )
 
 
-def test_join_cluster_delegates_to_aether(
+def test_join_cluster_delegates_to_cloud(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify join_cluster delegates to Aether.
+    Verify join_cluster delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the add call with the conduit instance and frame.
+        - ConduitCloud receives the add call with the conduit and cluster name.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
     """
     conduit_normal.join_cluster("cluster-1")
 
-    aether_stub._add_conduit_to_cluster.assert_called_once_with(conduit_normal, "cluster-1", "default")
+    conduit_cloud_stub.add_conduit_to_cluster.assert_called_once_with(conduit_normal, "cluster-1")
 
 
-def test_leave_cluster_delegates_to_aether(
+def test_leave_cluster_delegates_to_cloud(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify leave_cluster delegates to Aether.
+    Verify leave_cluster delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the remove call with the conduit instance and frame.
+        - ConduitCloud receives the remove call with the conduit and cluster name.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
     """
     conduit_normal.leave_cluster("cluster-1")
 
-    aether_stub._remove_conduit_from_cluster.assert_called_once_with(conduit_normal, "cluster-1", "default")
+    conduit_cloud_stub.remove_conduit_from_cluster.assert_called_once_with(conduit_normal, "cluster-1")
 
 
-def test_list_clusters_returns_aether_list(
+def test_list_clusters_returns_cloud_list(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify list_clusters returns the Aether cluster list.
+    Verify list_clusters returns the ConduitCloud cluster list.
 
     Contract:
-        - Aether results are passed through unchanged.
+        - ConduitCloud results are passed through unchanged.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If the list is not returned.
     """
-    aether_stub._get_clusters_for_conduit.return_value = ["alpha", "beta"]
+    conduit_cloud_stub.get_clusters_for_conduit.return_value = ["alpha", "beta"]
 
     result = conduit_normal.list_clusters()
 
-    aether_stub._get_clusters_for_conduit.assert_called_once_with(conduit_normal._id, "default")
+    conduit_cloud_stub.get_clusters_for_conduit.assert_called_once_with(conduit_normal._id)
     assert result == ["alpha", "beta"]
 
 
-def test_refresh_cluster_shares_delegates_to_aether(
+def test_refresh_cluster_shares_delegates_to_cloud(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify refresh_cluster_shares delegates to Aether.
+    Verify refresh_cluster_shares delegates to the injected ConduitCloud.
 
     Contract:
-        - Aether receives the refresh call with the conduit instance and frame.
+        - ConduitCloud receives the refresh call with the conduit instance.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If delegation fails.
     """
     conduit_normal.refresh_cluster_shares()
 
-    aether_stub._refresh_cluster_shares_for_conduit.assert_called_once_with(conduit_normal, "default")
+    conduit_cloud_stub.refresh_cluster_shares_for_conduit.assert_called_once_with(conduit_normal)

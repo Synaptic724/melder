@@ -1025,28 +1025,28 @@ def test_get_conduit_by_id_rejects_non_string_frame(
 
 def test_get_conduit_by_id_defaults_frame(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
     Verify get_conduit_by_id maps "default" to the conduit frame.
 
     Contract:
-        - Aether receives the conduit's frame when aetheric_frame="default".
+        - ConduitCloud receives the current-frame id lookup.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If frame mapping is incorrect.
     """
     conduit_normal._aetheric_frame = "frame-1"
     sentinel = MagicMock()
-    aether_stub._get_conduit_by_id.return_value = sentinel
+    conduit_cloud_stub.get_conduit_by_id.return_value = sentinel
 
     result = conduit_normal.get_conduit_by_id("peer", aetheric_frame="default")
 
-    aether_stub._get_conduit_by_id.assert_called_once_with("peer", "frame-1")
+    conduit_cloud_stub.get_conduit_by_id.assert_called_once_with("peer")
     assert result is sentinel
 
 
@@ -1071,26 +1071,26 @@ def test_get_conduit_by_name_rejects_non_string_frame(
 
 def test_get_conduit_by_name_defaults_frame(
     conduit_normal: Conduit,
-    aether_stub: MagicMock,
+    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
     Verify get_conduit_by_name maps "default" to the conduit frame.
 
     Contract:
-        - Aether receives the conduit's frame when aetheric_frame="default".
+        - ConduitCloud receives the current-frame name lookup.
 
     Args:
         conduit_normal (Conduit): Normal conduit instance.
-        aether_stub (MagicMock): Aether stub used for delegation.
+        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
 
     Raises:
         AssertionError: If frame mapping is incorrect.
     """
     conduit_normal._aetheric_frame = "frame-1"
     sentinel = MagicMock()
-    aether_stub._get_conduit_by_name.return_value = sentinel
+    conduit_cloud_stub.get_conduit_by_name.return_value = sentinel
 
     result = conduit_normal.get_conduit_by_name("peer", aetheric_frame="default")
 
-    aether_stub._get_conduit_by_name.assert_called_once_with("peer", "frame-1")
+    conduit_cloud_stub.get_conduit_by_name.assert_called_once_with("peer")
     assert result is sentinel

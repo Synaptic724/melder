@@ -12,7 +12,6 @@ from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -516,7 +515,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[ISpell]:
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional['ISpell']:
         """
         Public API
 
@@ -556,7 +555,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[ISpell]:
+    def get_spell_by_index_id(self, spell_index_id: str) -> Optional['ISpell']:
         """
         Public API
 

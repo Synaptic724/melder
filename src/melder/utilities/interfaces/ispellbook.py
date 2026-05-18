@@ -8,7 +8,6 @@ from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFra
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
@@ -40,12 +39,12 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     _lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]
     _lookup_spells: Dict[tuple, ISpellIndex]
-    _contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]]
+    _contracted_spells: Dict[str, Dict[ISpellIndex, "ISpell"]]
     _contracted_versions: Dict[str, Set[str]]
-    _contracted_spells_by_id: Dict[str, Dict[str, ISpell]]
-    _spells: Dict[ISpellIndex, ISpell]
+    _contracted_spells_by_id: Dict[str, Dict[str, "ISpell"]]
+    _spells: Dict[ISpellIndex, "ISpell"]
     _spell_versions: Set[str]
-    _spells_by_id: Dict[str, ISpell]
+    _spells_by_id: Dict[str, "ISpell"]
     _bind: Optional[Any]
     _id: str
     _lock: threading.RLock
@@ -53,7 +52,7 @@ class ISpellbook(ICleanable, Protocol):
     _aetheric_frame: Optional[str]
     _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'
-    _spell_id_pool: Dict[str, ISpell]
+    _spell_id_pool: Dict[str, "ISpell"]
     _spellbook_validation_required: bool
 
     # Spell Validator
@@ -64,7 +63,7 @@ class ISpellbook(ICleanable, Protocol):
     # Properties
     # ------------------------------------------------------------------
     @property
-    def spells(self) -> Mapping[ISpellIndex, ISpell]:
+    def spells(self) -> Mapping[ISpellIndex, "ISpell"]:
         """
         Public API
 
@@ -81,7 +80,7 @@ class ISpellbook(ICleanable, Protocol):
         ...
 
     @property
-    def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, "ISpell"]]:
         """
         Public API
 
@@ -465,7 +464,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[ISpell]:
+    ) -> Optional["ISpell"]:
         """
         Resolve a spell by id through Aether ownership lookup.
         """
@@ -478,7 +477,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def find_spell_by_id(self, spell_id: str) -> Optional[ISpell]:
+    def find_spell_by_id(self, spell_id: str) -> Optional["ISpell"]:
         """
         Finds a spell by its unique identifier within the spellbook.
 
@@ -561,7 +560,7 @@ class ISpellbook(ICleanable, Protocol):
     def get_spell_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[ISpell]:
+    ) -> Optional["ISpell"]:
         """
         Public API
 
@@ -598,7 +597,7 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Internal local/contracted lookup + version cache API
     # ------------------------------------------------------------------
-    def _find_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+    def _find_spell(self, spell_index: ISpellIndex) -> Optional["ISpell"]:
         """
         Internal
 
@@ -614,7 +613,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def _find_contracted_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+    def _find_contracted_spell(self, spell_index: ISpellIndex) -> Optional["ISpell"]:
         """
         Internal
 
@@ -718,7 +717,7 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # spell_id map helpers (internal)
     # ------------------------------------------------------------------
-    def _register_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+    def _register_owned_spell_id(self, spell_id: str, spell: "ISpell") -> None:
         """
         Internal
 
@@ -736,7 +735,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def _update_owned_spell_id(self, old_id: str, new_id: str, spell: ISpell) -> None:
+    def _update_owned_spell_id(self, old_id: str, new_id: str, spell: "ISpell") -> None:
         """
         Internal
 
@@ -760,7 +759,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             conduit_id: str,
             spell_id: str,
-            spell: ISpell,
+            spell: "ISpell",
     ) -> None:
         """
         Internal
@@ -786,7 +785,7 @@ class ISpellbook(ICleanable, Protocol):
             conduit_id: str,
             old_id: str,
             new_id: str,
-            spell: ISpell,
+            spell: "ISpell",
     ) -> None:
         """
         Internal
@@ -813,7 +812,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             conduit_id: str,
             spell_id: str,
-            spell: ISpell,
+            spell: "ISpell",
     ) -> None:
         """
         Internal
@@ -841,7 +840,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             spell_id: str,
             conduit_id: str,
-    ) -> Optional[ISpell]:
+    ) -> Optional["ISpell"]:
         """
         Internal
 
@@ -916,7 +915,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def _add_contracted_spell(self, spell: ISpell, conduit_id: str) -> None:
+    def _add_contracted_spell(self, spell: "ISpell", conduit_id: str) -> None:
         """
         Internal
 
@@ -983,7 +982,7 @@ class ISpellbook(ICleanable, Protocol):
     def _run_resolution_phases_for_target_spell(
             self,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: "ISpell",
     ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
@@ -995,7 +994,7 @@ class ISpellbook(ICleanable, Protocol):
     def _run_deferred_resolution_phases_for_target_spell(
             self,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: "ISpell",
     ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
@@ -1004,7 +1003,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def _unregister_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+    def _unregister_owned_spell_id(self, spell_id: str, spell: "ISpell") -> None:
         """
         Remove the owned spell-id mapping for one spell when it no longer
         belongs to this spellbook.
@@ -1014,7 +1013,7 @@ class ISpellbook(ICleanable, Protocol):
     def _register_spell_with_risk_manager(
             self,
             conduit_id: str,
-            spell: ISpell,
+            spell: "ISpell",
     ) -> None:
         """
         Register one owned spell with the conduit-scoped risk manager surface.
@@ -1024,14 +1023,14 @@ class ISpellbook(ICleanable, Protocol):
     def _unregister_spell_with_risk_manager(
             self,
             conduit_id: str,
-            spell: ISpell,
+            spell: "ISpell",
     ) -> None:
         """
         Remove one owned spell from the conduit-scoped risk manager surface.
         """
         ...
 
-    def _publish_spell_record_to_nexus(self, spell: ISpell) -> None:
+    def _publish_spell_record_to_nexus(self, spell: "ISpell") -> None:
         """
         Publish one incremental spell record into Nexus for an already-conjured
         spellbook.

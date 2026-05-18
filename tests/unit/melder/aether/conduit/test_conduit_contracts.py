@@ -12,6 +12,53 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+
+
+def _build_conduit(
+    *,
+    spellbook: MagicMock,
+    configuration: SpellbookConfiguration,
+    conduit_state: ConduitState,
+    aetheric_frame: str = "default",
+    policy: Policies = Policies.default,
+    automatic: bool = True,
+    name: str | None = None,
+    root_conduit_id: str | None = None,
+) -> Conduit:
+    """
+    Build a Conduit with the current injected-service constructor contract.
+    """
+    dev_ops_manager = MagicMock()
+    dev_ops_manager.creation_gate_controller = CreationGateController()
+    conduit_cloud = MagicMock()
+    conduit_cloud._add_root_conduit.return_value = None
+    conduit_cloud._remove_root_conduit.return_value = None
+    conduit_cloud._register_conduit.return_value = None
+    conduit_cloud._unregister_conduit.return_value = None
+    conduit_cloud.cleanup_owner_frame_if_empty.return_value = False
+    conduit_cloud.create_cluster.return_value = None
+    conduit_cloud.delete_cluster.return_value = None
+    conduit_cloud.add_conduit_to_cluster.return_value = None
+    conduit_cloud.remove_conduit_from_cluster.return_value = None
+    conduit_cloud.get_clusters_for_conduit.return_value = []
+    conduit_cloud.refresh_cluster_shares_for_conduit.return_value = None
+    conduit_cloud.get_conduit_by_id.return_value = None
+    conduit_cloud.get_conduit_by_name.return_value = None
+    if conduit_state is ConduitState.lesser and root_conduit_id is None:
+        root_conduit_id = "root-1"
+    return Conduit(
+        spellbook=spellbook,
+        configuration=configuration,
+        conduit_state=conduit_state,
+        aetheric_frame=aetheric_frame,
+        policy=policy,
+        dev_ops_manager=dev_ops_manager,
+        conduit_cloud=conduit_cloud,
+        automatic=automatic,
+        name=name,
+        root_conduit_id=root_conduit_id,
+    )
 
 
 def _set_active_link_transaction(conduit: Conduit, peer_id: str) -> None:
@@ -102,7 +149,7 @@ def test_link_rejects_target_without_id(
     Raises:
         AssertionError: If missing target id does not raise.
     """
-    target = Conduit(
+    target = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -137,7 +184,7 @@ def test_link_delegates_to_ward_and_fires_hook(
     Raises:
         AssertionError: If delegation or hook firing fails.
     """
-    target = Conduit(
+    target = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -179,7 +226,7 @@ def test_link_publishes_peer_record_when_target_participates_in_nexus(
     spellbook_stub: MagicMock,
 ) -> None:
     """Successful link should publish the peer conduit record when the peer is Nexus-published and normal."""
-    target = Conduit(
+    target = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
@@ -312,7 +359,7 @@ def test_sever_link_publishes_peer_record_when_target_participates_in_nexus(
     spellbook_stub: MagicMock,
 ) -> None:
     """Successful unlink should publish the peer conduit record when the peer is Nexus-published and normal."""
-    target = Conduit(
+    target = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
@@ -1432,3 +1479,4 @@ def test_cleanup_lesser_conduits_delegates(conduit_normal: Conduit) -> None:
     conduit_normal.cleanup_lesser_conduits()
 
     conduit_normal._conduit_ward.cleanup_all_lesser_conduits.assert_called_once_with()
+

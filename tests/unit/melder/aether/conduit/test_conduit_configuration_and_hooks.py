@@ -13,6 +13,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
+from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -41,6 +42,68 @@ def fresh_utility_system() -> None:
     AetherUtilitySystem._reset_singleton_for_tests()
 
 
+def _build_conduit(
+    *,
+    spellbook: MagicMock,
+    configuration: SpellbookConfiguration,
+    conduit_state: ConduitState,
+    aetheric_frame: str = "default",
+    policy: Policies = Policies.default,
+    automatic: bool = True,
+    name: str | None = None,
+    logger: object | None = None,
+    conduit_id: str | None = None,
+    root_conduit_id: str | None = None,
+    creation_gate: object | None = None,
+    dev_ops_manager: MagicMock | None = None,
+    conduit_cloud: MagicMock | None = None,
+) -> Conduit:
+    """
+    Build a Conduit with the current injected-service constructor contract.
+
+    Contract:
+        - Supplies a real CreationGateController through the DevOpsManager stub.
+        - Supplies a ConduitCloud stub with the root/cloud/cluster helpers the
+          current conduit runtime expects.
+        - Provides a default root_conduit_id for lesser-conduit construction.
+    """
+    if dev_ops_manager is None:
+        dev_ops_manager = MagicMock()
+        dev_ops_manager.creation_gate_controller = CreationGateController()
+    if conduit_cloud is None:
+        conduit_cloud = MagicMock()
+        conduit_cloud._add_root_conduit.return_value = None
+        conduit_cloud._remove_root_conduit.return_value = None
+        conduit_cloud._register_conduit.return_value = None
+        conduit_cloud._unregister_conduit.return_value = None
+        conduit_cloud.cleanup_owner_frame_if_empty.return_value = False
+        conduit_cloud.create_cluster.return_value = None
+        conduit_cloud.delete_cluster.return_value = None
+        conduit_cloud.add_conduit_to_cluster.return_value = None
+        conduit_cloud.remove_conduit_from_cluster.return_value = None
+        conduit_cloud.get_clusters_for_conduit.return_value = []
+        conduit_cloud.refresh_cluster_shares_for_conduit.return_value = None
+        conduit_cloud.get_conduit_by_id.return_value = None
+        conduit_cloud.get_conduit_by_name.return_value = None
+    if conduit_state is ConduitState.lesser and root_conduit_id is None:
+        root_conduit_id = "root-1"
+    return Conduit(
+        spellbook=spellbook,
+        configuration=configuration,
+        conduit_state=conduit_state,
+        aetheric_frame=aetheric_frame,
+        policy=policy,
+        dev_ops_manager=dev_ops_manager,
+        conduit_cloud=conduit_cloud,
+        automatic=automatic,
+        name=name,
+        logger=logger,
+        conduit_id=conduit_id,
+        root_conduit_id=root_conduit_id,
+        creation_gate=creation_gate,
+    )
+
+
 def test_configure_logger_rejects_invalid_logger(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
@@ -59,7 +122,7 @@ def test_configure_logger_rejects_invalid_logger(
         AssertionError: If invalid logger input does not raise.
     """
     with pytest.raises(TypeError, match="Expected logger"):
-        Conduit(
+        _build_conduit(
             spellbook=spellbook_stub,
             configuration=configuration_automatic,
             conduit_state=ConduitState.lesser,
@@ -80,7 +143,7 @@ def test_init_rejects_non_string_conduit_id(
         - __init__ raises TypeError when conduit_id is provided as a non-string.
     """
     with pytest.raises(TypeError, match="conduit_id must be a string"):
-        Conduit(
+        _build_conduit(
             spellbook=spellbook_stub,
             configuration=configuration_automatic,
             conduit_state=ConduitState.lesser,
@@ -101,7 +164,7 @@ def test_init_rejects_empty_conduit_id(
         - __init__ raises ValueError when conduit_id is an empty string.
     """
     with pytest.raises(ValueError, match="conduit_id cannot be empty"):
-        Conduit(
+        _build_conduit(
             spellbook=spellbook_stub,
             configuration=configuration_automatic,
             conduit_state=ConduitState.lesser,
@@ -129,7 +192,7 @@ def test_init_registers_existing_creation_gate_for_current_root(
         "_register_existing_gate_for_current_root",
         autospec=True,
     ) as register_existing_gate:
-        conduit = Conduit(
+        conduit = _build_conduit(
             spellbook=spellbook_stub,
             configuration=configuration_automatic,
             conduit_state=ConduitState.lesser,
@@ -178,7 +241,7 @@ def test_configure_logger_prefers_explicit_logger_over_provider(
 
     AetherUtilitySystem().register_channel_logger_resolver(resolver)
     explicit_logger = logging.Logger("explicit")
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.lesser,
@@ -230,7 +293,7 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
     utility_system = AetherUtilitySystem()
     utility_system.set_channel_logger_activation_enabled(True)
     utility_system.register_channel_logger_resolver(resolver)
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.lesser,
@@ -246,7 +309,6 @@ def test_resolve_logger_uses_provider_and_passes_conduit(
 
 def test_apply_configuration_flags_updates_dynamic_environment(
     spellbook_stub: MagicMock,
-    aether_stub: MagicMock,
 ) -> None:
     """
     Verify configuration flags drive dynamic-environment state.
@@ -257,7 +319,6 @@ def test_apply_configuration_flags_updates_dynamic_environment(
 
     Args:
         spellbook_stub (MagicMock): Spellbook stub for construction.
-        aether_stub (MagicMock): Aether stub for dynamic access checks.
 
     Raises:
         AssertionError: If flags do not update internal state.
@@ -268,7 +329,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
     spellbook_stub._aetheric_frame_configuration = (
         build_aetheric_frame_configuration_for_spellbook_configuration(configuration, )
     )
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.normal,
@@ -278,9 +339,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
     try:
         conduit._apply_configuration_flags()
         assert conduit.__dynamic_environment__ is True
-        aether_stub._get_conduit_cloud.return_value = MagicMock()
-        conduit.get_conduit_cloud()
-        aether_stub._get_conduit_cloud.assert_called_once_with("default")
+        assert conduit.get_conduit_cloud() is conduit._conduit_cloud
     finally:
         conduit.cleanup()
 
@@ -302,7 +361,7 @@ def test_configure_conduit_state_clears_name_for_lesser(
     Raises:
         AssertionError: If the name remains set for a lesser conduit.
     """
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -326,7 +385,7 @@ def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
     Contract:
         - Lesser conduits log a warning when a provided name is discarded.
     """
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -355,7 +414,7 @@ def test_configure_conduit_state_logs_and_reraises_normal_registration_failure(
         - The original error is propagated.
     """
     conduit_normal._logger = MagicMock()
-    conduit_normal._add_conduit_to_aether = MagicMock(side_effect=RuntimeError("register boom"))
+    conduit_normal._add_root_conduit = MagicMock(side_effect=RuntimeError("register boom"))
     conduit_normal._add_spells_to_aether = MagicMock()
 
     with pytest.raises(RuntimeError, match="register boom"):
@@ -404,7 +463,7 @@ def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup
         "on_conduit_cleanup_start",
         hook,
     )
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.normal,
@@ -459,7 +518,7 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
         "on_conduit_cleanup_start",
         hook,
     )
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.lesser,
@@ -518,7 +577,7 @@ def test_initialize_conduit_hooks_copies_hook_lists_from_configuration(
     configuration.add_hook(spellbook_stub._id, "on_conduit_cleanup_start", conduit_hook)
     configuration.add_hook(spellbook_stub._id, "on_meld_pre_resolve", meld_hook)
 
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.lesser,
@@ -581,7 +640,7 @@ def test_snapshot_split_hook_maps_from_configuration_uses_static_hook_lists(
         },
     )
 
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration,
         conduit_state=ConduitState.lesser,
@@ -765,14 +824,14 @@ def test_register_conduit_hooks_local_does_not_propagate_to_lesser(
     Contract:
         - Local-only hooks remain invisible to other conduits.
     """
-    normal = Conduit(
+    normal = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
     )
-    lesser = Conduit(
+    lesser = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
@@ -818,7 +877,7 @@ def test_register_conduit_hooks_local_preserves_shared_map(
         lambda conduit: None,
     )
 
-    conduit = Conduit(
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
@@ -929,20 +988,18 @@ def test_repr_includes_name_and_id(conduit_normal: Conduit) -> None:
     assert conduit_normal._id in text
 
 
-def test_resolve_peer_conduit_for_contract_hooks_uses_aether_for_ids(
+def test_resolve_peer_conduit_for_contract_hooks_uses_cloud_for_current_frame_ids(
     conduit_dynamic_normal: Conduit,
-    aether_stub: MagicMock,
 ) -> None:
     """
-    Verify contract hooks resolve peers by id using Aether.
+    Verify contract hooks resolve peers by id through the current-frame cloud.
 
     Contract:
-        - Aether is queried for conduit_id resolution.
+        - The injected ConduitCloud is queried for same-frame conduit_id resolution.
         - Hook receives the resolved peer conduit.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        aether_stub (MagicMock): Aether stub for resolution.
 
     Raises:
         AssertionError: If peer resolution or hook firing fails.
@@ -950,7 +1007,7 @@ def test_resolve_peer_conduit_for_contract_hooks_uses_aether_for_ids(
     conduit_dynamic_normal._conduit_ward = MagicMock()
     conduit_dynamic_normal._conduit_ward._add_spell_to_contract.return_value = True
     peer = MagicMock()
-    aether_stub._get_conduit_by_id.return_value = peer
+    conduit_dynamic_normal._conduit_cloud.get_conduit_by_id.return_value = peer
     events: list[tuple[Conduit, Conduit]] = []
 
     def hook(left: Conduit, right: Conduit) -> None:
@@ -986,11 +1043,11 @@ def test_resolve_peer_conduit_for_contract_hooks_uses_aether_for_ids(
         spell_id="sha-1",
         conduit_id="peer-1",
         permissions="read",
-        aetheric_frame="frame-2",
+        aetheric_frame="default",
     )
 
     assert result is True
-    aether_stub._get_conduit_by_id.assert_called_once_with("peer-1", "frame-2")
+    conduit_dynamic_normal._conduit_cloud.get_conduit_by_id.assert_called_once_with("peer-1")
     assert events == [(conduit_dynamic_normal, peer)]
 
 
@@ -1147,29 +1204,28 @@ def test_register_to_creations_rejects_non_creations_manager(
     conduit_normal._logger.error.assert_called_once()
 
 
-def test_cleanup_normal_unregisters_from_aether_and_removes_spells(
+def test_cleanup_normal_unregisters_root_state_and_removes_spells(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
-    aether_stub: MagicMock,
 ) -> None:
     """
-    Verify normal cleanup removes spell registrations and unregisters cloud.
+    Verify normal cleanup removes spell registrations and unregisters root/cloud state.
 
     Contract:
-        - Spell registrations are removed from Aether.
-        - Conduit is removed from Aether.
+        - Spell registrations are removed through the Spellbook-owned Aether path.
+        - Root-conduit registration is removed through ConduitCloud.
         - Dynamic cloud registration is removed when named.
 
     Args:
         configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub with spell registry.
-        aether_stub (MagicMock): Aether stub for removal checks.
 
     Raises:
-        AssertionError: If Aether unregister calls are missing.
+        AssertionError: If cleanup calls are missing.
     """
     spellbook_stub._spells = {"spell-1": MagicMock()}
-    conduit = Conduit(
+    spellbook_stub._unregister_conduit_spells_from_aether = MagicMock()
+    conduit = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
@@ -1179,21 +1235,11 @@ def test_cleanup_normal_unregisters_from_aether_and_removes_spells(
         name="alpha",
     )
     try:
-        aether_stub.reset_mock()
+        conduit._conduit_cloud.reset_mock()
         conduit.cleanup()
-        aether_stub._remove_spells_from_aether.assert_called_once_with(
-            conduit._id,
-            {"spell-1"},
-            "default",
-        )
-        aether_stub._remove_conduit.assert_called_once_with(
-            conduit,
-            "default",
-        )
-        aether_stub._unregister_conduit_cloud.assert_called_once_with(
-            conduit,
-            "default",
-        )
+        spellbook_stub._unregister_conduit_spells_from_aether.assert_called_once_with(conduit._id)
+        conduit._conduit_cloud._remove_root_conduit.assert_called_once_with(conduit)
+        conduit._conduit_cloud._unregister_conduit.assert_called_once_with(conduit)
     finally:
         if not conduit._cleaned:
             conduit.cleanup()
@@ -1221,3 +1267,4 @@ def test_cleanup_spellspaces_flushes_stack(
 
     assert space.cleanup.called is True
     assert conduit_lesser._spellspace_stack.get() == []
+

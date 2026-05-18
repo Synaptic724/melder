@@ -15,10 +15,8 @@ from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -26,152 +24,6 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
-
-@runtime_checkable
-class _SpellFrameConfigurationSurface(Protocol):
-    """Minimal frame-configuration surface borrowed through a spellbook."""
-
-    @property
-    def system_state(self) -> Any:
-        """Return the current frame system-state value."""
-        ...
-
-
-@runtime_checkable
-class _SpellAetherSurface(Protocol):
-    """Minimal Aether surface borrowed through a spellbook."""
-
-    def _get_change_control_manager(
-            self,
-            aetheric_frame: str,
-    ) -> object:
-        """Return one frame-scoped change-control manager."""
-        ...
-
-
-@runtime_checkable
-class ISpellSystemStatesSpellSurface(Protocol):
-    """
-    Minimal spell-facing view of the structural state registry.
-
-    Purpose:
-        Let `ISpell` describe the borrowed lineage-state operations it actually
-        needs without importing the full `ISpellSystemStates` protocol back
-        into this module and recreating the interface cycle.
-
-    Contract:
-        - Supports structural invalidation for one spell lineage.
-        - Supports lookup of a `SpellSystemState` by SpellIndex id.
-    """
-
-    def mark_structural_change(
-            self,
-            spell_index: ISpellIndex,
-            reason: SpellStateChangeReason = SpellStateChangeReason.structure_changed,
-    ) -> None:
-        """
-        Mark one lineage structurally changed.
-        """
-        ...
-
-    def get_by_index_id(self, index_id: str) -> Optional[SpellSystemState]:
-        """
-        Return the state entry for one SpellIndex id, if present.
-        """
-        ...
-
-    def get_conduit_resolution_state(
-            self,
-            conduit_id: str,
-    ) -> Optional[IConduitResolutionState]:
-        """
-        Return the conduit-scoped resolution state for one conduit id, if present.
-        """
-        ...
-
-
-@runtime_checkable
-class ISpellbookSpellSurface(Protocol):
-    """
-    Minimal spellbook-facing surface consumed by `ISpell`.
-
-    Purpose:
-        Keep the spell-owned contract narrow and cycle-safe. The concrete spell
-        only borrows spell-system-state access from its owning Spellbook.
-    """
-
-    _id: str
-    _aetheric_frame: Optional[str]
-    _aether: _SpellAetherSurface
-    _aetheric_frame_configuration: _SpellFrameConfigurationSurface
-    _spellbook_validation_required: bool
-    _spell_id_pool: Dict[str, "ISpell"]
-    _lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]
-    _contracted_spells: Dict[str, Dict[ISpellIndex, "ISpell"]]
-    _spell_system_states: ISpellSystemStatesSpellSurface
-
-    def _run_resolution_phases_for_target_spell(
-            self,
-            conduit_id: str,
-            target_spell: "ISpell",
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
-        """
-        Run target-local conduit resolution phases for one spell.
-        """
-        ...
-
-    def _run_deferred_resolution_phases_for_target_spell(
-            self,
-            conduit_id: str,
-            target_spell: "ISpell",
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
-        """
-        Run deferred target-local plan phases for one spell.
-        """
-        ...
-
-    def _set_spellbook_validation_required(self, required: bool) -> None:
-        """
-        Set the spellbook-level validation-required gate.
-        """
-        ...
-
-
-@runtime_checkable
-class ISpellCreationContextSurface(Protocol):
-    """
-    Minimal creation-context execution surface consumed by `Meld`.
-    """
-
-    def _execute_no_hooks_no_overrides_compiled(
-            self,
-            creations: ICreations,
-    ) -> Any:
-        """Execute the no-hook, no-override runtime lane."""
-        ...
-
-    def _execute_no_hooks_overrides_compiled(
-            self,
-            creations: ICreations,
-            override_map: Dict[str, Any],
-    ) -> Any:
-        """Execute the no-hook override runtime lane."""
-        ...
-
-    def _execute_hooks_no_overrides_compiled(
-            self,
-            creations: ICreations,
-    ) -> Tuple[Any, bool]:
-        """Execute the hook-aware, no-override runtime lane."""
-        ...
-
-    def _execute_hooks_overrides_compiled(
-            self,
-            creations: ICreations,
-            override_map: Dict[str, Any],
-    ) -> Tuple[Any, bool]:
-        """Execute the hook-aware override runtime lane."""
-        ...
 
 
 @runtime_checkable
@@ -243,12 +95,12 @@ class ISpell(ICleanable, Protocol):
     dependencies: List[str]
 
     # Spellbook
-    _spellbook: Optional['ISpellbookSpellSurface']
+    _spellbook: Optional['ISpellbook']
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline via SpellCrafter
     _crafter: Optional[Any] # 'SpellCrafter'
-    _creation_context: Optional[ISpellCreationContextSurface]
+    _creation_context: Optional['ICreationContext']
     _creation_context_factory: Optional[Any]
     _creation_context_switch: CounterSwitch
     _dynamic_environment: bool
@@ -276,7 +128,7 @@ class ISpell(ICleanable, Protocol):
     _activation_hooks: Optional[List[Callable[..., Any]]]
     _post_hooks: Optional[List[Callable[..., Any]]]
 
-    _spell_system_states: 'ISpellSystemStatesSpellSurface'
+    _spell_system_states: ISpellSystemStatesSpellSurface
     _key: Tuple[str, str]
 
     # ------------------------------------------------------------------

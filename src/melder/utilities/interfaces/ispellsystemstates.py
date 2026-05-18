@@ -7,7 +7,6 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagno
 from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 @runtime_checkable
@@ -54,7 +53,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: ISpellIndex, spell: ISpell) -> SpellSystemState:
+    def register_index(self, spell_index: ISpellIndex, spell: 'ISpell') -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 

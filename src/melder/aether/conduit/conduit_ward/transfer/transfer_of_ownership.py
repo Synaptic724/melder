@@ -598,6 +598,8 @@ class TransferOfOwnership(Cleanable):
         if conduit is None or not impacted_lineages:
             return False
         spellbook = conduit._spellbook
+        if spellbook is None:
+            return False
         owned = spellbook._spells or {}
         for spell_index in owned.keys():
             if spell_index is not None and spell_index.id in impacted_lineages:
@@ -925,14 +927,22 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
-            current_spell_id = spell_index.current
-            if current_spell_id is None:
+            if conduit is None or not conduit._id:
                 return False
-            owner_conduit = self._aether._get_conduit_by_spell_id(
-                current_spell_id,
-                self._frame_name,
-            )
-            return owner_conduit._id == conduit._id
+            frame_name = getattr(conduit, "_aetheric_frame", self._frame_name)
+            if frame_name == "default":
+                frame = self._aether._default_frame
+            else:
+                frame = self._aether._aetheric_frames.get(frame_name)
+            if frame is None:
+                return False
+            spell_registry = getattr(frame, "_spell_registry", None)
+            if spell_registry is None:
+                return False
+            conduit_registry = spell_registry.get(conduit._id)
+            if conduit_registry is None:
+                return False
+            return spell_index in conduit_registry
         except Exception:
             return False
 

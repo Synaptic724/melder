@@ -5,16 +5,13 @@ from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.ispellbook import (
-    ISpellbook,
-    ISpell,
-    ISpellIndex,
-)
+from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
-from melder.utilities.interfaces.ispell import ISpellbookSpellSurface
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

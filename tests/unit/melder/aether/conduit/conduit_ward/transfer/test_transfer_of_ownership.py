@@ -398,6 +398,7 @@ class FakeCluster:
         """
         Initialize the shared spell registry.
         """
+        self.members: Set[str] = set()
         self.shared_spells: Dict[str, set[SpellIndex]] = {}
 
     def add_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
@@ -408,6 +409,7 @@ class FakeCluster:
             owner_id: Conduit id sharing the spell.
             spell_index: SpellIndex being shared.
         """
+        self.members.add(owner_id)
         self.shared_spells.setdefault(owner_id, set()).add(spell_index)
 
     def get_shared_spells(self) -> Dict[str, set[SpellIndex]]:
@@ -519,7 +521,7 @@ class FakeAether:
         return [
             cluster_name
             for cluster_name, cluster in frame._conduit_clusters.items()
-            if conduit_id in cluster.shared_spells
+            if conduit_id in cluster.members or conduit_id in cluster.shared_spells
         ]
 
     def _get_frame(self, frame_name: str) -> FakeFrame:
@@ -597,7 +599,34 @@ class FakeAether:
         cluster = frame._conduit_clusters.get(cluster_name)
         if cluster is None:
             return []
-        return [owner_id for owner_id in cluster.shared_spells.keys() if owner_id]
+        member_ids = set(cluster.members)
+        member_ids.update(owner_id for owner_id in cluster.shared_spells.keys() if owner_id)
+        return list(member_ids)
+
+    def list_conduit_ids(self, frame_name: str) -> List[str]:
+        """
+        Return registered conduit ids for the requested frame.
+
+        Args:
+            frame_name: Frame name to inspect.
+        Returns:
+            List[str]: Registered conduit ids.
+        """
+        frame = self._get_frame(frame_name)
+        return list(frame._conduits.keys())
+
+    def get_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
+        """
+        Return a conduit by id from the requested frame.
+
+        Args:
+            conduit_id: Conduit id to resolve.
+            frame_name: Frame name to inspect.
+        Returns:
+            Any: Matching conduit instance.
+        """
+        frame = self._get_frame(frame_name)
+        return frame._conduits[conduit_id]
 
     def _get_conduit_by_spell_id(self, spell_id: str, frame_name: str) -> Any:
         """
@@ -635,7 +664,12 @@ class FakeSpellbook:
                 return True
             raise KeyError(key)
 
-    def __init__(self, states_system: FakeSpellStatesSystem) -> None:
+    def __init__(
+        self,
+        states_system: FakeSpellStatesSystem,
+        *,
+        aether: Optional[FakeAether] = None,
+    ) -> None:
         """
         Initialize spellbook storage and state system reference.
 
@@ -654,6 +688,7 @@ class FakeSpellbook:
         self._nexus_publish_enabled: bool = True
         self._nexus_publish_calls: List[Dict[str, Any]] = []
         self._configuration = self._ConfigurationStub()
+        self._aether = aether
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """
@@ -1054,9 +1089,9 @@ def build_environment(
     FakeConduit._aether = aether
 
     states_system = FakeSpellStatesSystem()
-    source_book = FakeSpellbook(states_system)
-    target_book = FakeSpellbook(states_system)
-    peer_book = FakeSpellbook(states_system)
+    source_book = FakeSpellbook(states_system, aether=aether)
+    target_book = FakeSpellbook(states_system, aether=aether)
+    peer_book = FakeSpellbook(states_system, aether=aether)
 
     source_creations_obj = FakeCreations(source_creations)
     target_creations_obj = FakeCreations(target_creations)
