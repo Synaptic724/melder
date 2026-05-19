@@ -249,19 +249,19 @@ class SyntheticModule(ModuleType, ISyntheticModule):
 
         self._lock: threading.RLock = threading.RLock()
         self._cleaned: bool = False
-        self._spell_crystal_id: Optional[str] = spell_crystal_id
-        self._source_text: Optional[str] = source_text
-        self._source_sha256: Optional[str] = source_sha256
-        self._binding_signature: Optional[str] = binding_signature
-        self._export_names: Optional[List[str]] = (
+        self._spell_crystal_id: str = spell_crystal_id
+        self._source_text: str = source_text
+        self._source_sha256: str = source_sha256
+        self._binding_signature: str = binding_signature
+        self._export_names: List[str] = (
             list(export_names) if export_names is not None else []
         )
-        self._internal_dependency_names: Optional[List[str]] = (
+        self._internal_dependency_names: List[str] = (
             list(internal_dependency_names)
             if internal_dependency_names is not None
             else []
         )
-        self._external_dependency_names: Optional[List[str]] = (
+        self._external_dependency_names: List[str] = (
             list(external_dependency_names)
             if external_dependency_names is not None
             else []
@@ -890,7 +890,13 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         if sys.modules.get(self.__name__) is not self:
             self.publish_to_sys_modules()
         self.__class__._attach_importlib_metadata(self)
-        return importlib.reload(self)
+        reloaded_module = importlib.reload(self)
+        if not isinstance(reloaded_module, SyntheticModule):
+            raise RuntimeError(
+                "Synthetic module reload returned a non-synthetic module for "
+                "'{0}'.".format(self.__name__)
+            )
+        return reloaded_module
 
     @classmethod
     def _hash_source_text(cls, source_text: str) -> str:
@@ -1121,9 +1127,16 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         )
         if spec is None:
             return None
-        spec.origin = module.__file__
+        module_file = module.__file__
+        if module_file is None:
+            raise RuntimeError(
+                "Registered synthetic module '{0}' is missing __file__.".format(
+                    module_name,
+                )
+            )
+        spec.origin = module_file
         if module.is_package:
-            spec.submodule_search_locations = [module.__file__]
+            spec.submodule_search_locations = [module_file]
         return spec
 
     @classmethod
@@ -1146,9 +1159,16 @@ class SyntheticModule(ModuleType, ISyntheticModule):
         spec = cls.build_registered_spec(module.__name__)
         module.__loader__ = cls._get_import_loader()
         module.__spec__ = spec
+        module_file = module.__file__
+        if module_file is None:
+            raise RuntimeError(
+                "Synthetic module '{0}' is missing __file__ metadata.".format(
+                    module.__name__,
+                )
+            )
         if module.is_package:
             module.__package__ = module.__name__
-            module.__path__ = [module.__file__]
+            module.__path__ = [module_file]
         else:
             module.__package__ = module.parent_name or ""
 

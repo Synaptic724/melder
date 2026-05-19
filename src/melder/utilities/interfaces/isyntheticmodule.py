@@ -15,13 +15,13 @@ class ISyntheticModule(ICleanable, Protocol):
     __name__: str
     _lock: Optional[RLock]
     _cleaned: bool
-    _spell_crystal_id: Optional[str]
-    _source_text: Optional[str]
-    _source_sha256: Optional[str]
-    _binding_signature: Optional[str]
-    _export_names: Optional[List[str]]
-    _internal_dependency_names: Optional[List[str]]
-    _external_dependency_names: Optional[List[str]]
+    _spell_crystal_id: str
+    _source_text: str
+    _source_sha256: str
+    _binding_signature: str
+    _export_names: List[str]
+    _internal_dependency_names: List[str]
+    _external_dependency_names: List[str]
     _physical_file_path: Optional[str]
     _materialized_directory_path: Optional[str]
     _published_in_sys_modules: bool
