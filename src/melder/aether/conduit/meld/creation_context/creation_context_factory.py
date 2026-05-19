@@ -32,7 +32,6 @@ class CreationContextFactory(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
-        "_builder",
         "_dynamic_environment",
         "_creation_gate_controller",
         "_created_spell_index_ids",
@@ -41,7 +40,6 @@ class CreationContextFactory(Cleanable):
     def __init__(
             self,
             *,
-            builder: Optional[CreationContextBuilder] = None,
             dynamic_environment: bool = False,
             creation_gate_controller: CreationGateController,
     ) -> None:
@@ -49,8 +47,6 @@ class CreationContextFactory(Cleanable):
         Initialize one factory.
 
         Args:
-            builder:
-                Optional custom builder. Defaults to `CreationContextBuilder`.
             dynamic_environment:
                 True when the owning conduit runs in dynamic mode. Propagated
                 to build CreationContext instances.
@@ -65,9 +61,6 @@ class CreationContextFactory(Cleanable):
         super().__init__()
         if creation_gate_controller is None:
             raise ValueError("creation_gate_controller cannot be None.")
-        if builder is None:
-            builder = CreationContextBuilder()
-        self._builder: CreationContextBuilder = builder
         self._dynamic_environment: bool = bool(dynamic_environment)
         self._creation_gate_controller: CreationGateController = (
             creation_gate_controller
@@ -76,24 +69,20 @@ class CreationContextFactory(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Deterministically release the factory and its builder reference.
+        Deterministically release the factory.
 
         Contract:
             - Idempotent cleanup.
-            - Best-effort cleanup is forwarded to the owned builder.
-            - Clears builder reference to prevent post-clean usage.
+            - Best-effort cleanup of builder-owned resources is unnecessary
+              because the builder is stateless.
+            - Clears builder-free reference usage to prevent post-clean confusion.
         """
         if self._cleaned:
             return
         self._cleaned = True
 
-        try:
-            self._builder.cleanup()
-        except Exception:
-            pass
         self._created_spell_index_ids.clear()
 
-        del self._builder
         del self._dynamic_environment
         del self._creation_gate_controller
         del self._created_spell_index_ids
@@ -196,7 +185,7 @@ class CreationContextFactory(Cleanable):
             CreationContext: New spell-shaped context ready for runtime use.
         """
         creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
-        return self._builder.build(
+        return CreationContextBuilder.build(
             spell,
             dynamic_environment=self._dynamic_environment,
             creation_gate=creation_gate,
@@ -215,7 +204,7 @@ class CreationContextFactory(Cleanable):
             - Does not use spell lock primitives.
         """
         creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
-        built_creation_context = self._builder.build(
+        built_creation_context = CreationContextBuilder.build(
             spell,
             dynamic_environment=self._dynamic_environment,
             creation_gate=creation_gate,
@@ -257,7 +246,7 @@ class CreationContextFactory(Cleanable):
         switch_state = creation_context_switch.selector()
         if switch_state == 1:
             creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
-            built_creation_context = self._builder.build(
+            built_creation_context = CreationContextBuilder.build(
                 spell,
                 dynamic_environment=self._dynamic_environment,
                 creation_gate=creation_gate,

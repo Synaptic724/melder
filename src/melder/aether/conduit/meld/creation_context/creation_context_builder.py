@@ -26,6 +26,8 @@ class CreationContextBuilder(ICreationContextBuilder):
         - Output context is deterministic for the same spell state.
     """
 
+    __slots__ = ()
+
     @staticmethod
     def build(
             spell: ISpell,
