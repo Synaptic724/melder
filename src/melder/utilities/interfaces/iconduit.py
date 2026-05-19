@@ -12,6 +12,7 @@ from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -77,7 +78,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _register_to_creations(self, spell: 'ISpell', instance: Any) -> None:
+    def _register_to_creations(self, spell: ISpell, instance: Any) -> None:
         """
         Register one user-created object into the conduit-owned creations
         manager.
@@ -523,7 +524,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional['ISpell']:
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[ISpell]:
         """
         Public API
 
@@ -548,7 +549,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def find_contracted_spell(self, spell_id: str) -> Optional['ISpell']:
+    def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
         """
         Internal
 
@@ -563,7 +564,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_index_id(self, spell_index_id: str) -> Optional['ISpell']:
+    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[ISpell]:
         """
         Public API
 
@@ -1361,7 +1362,7 @@ class IConduit(ICleanable, Protocol):
     def add_spell_to_contract(
             self,
             *,
-            spell: Optional['ISpell'] = None,
+            spell: Optional[ISpell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
@@ -1390,6 +1391,9 @@ class IConduit(ICleanable, Protocol):
             conduit_id (str, optional): The str of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level granted for this spell (default is "create").
             aetheric_frame (str): Optional frame override is used to locate the target conduit.
+            reason (Any, optional): Optional reason for the contract.
+            link_dependencies (bool, optional): Whether to link dependencies for the contract.
+            root_spell_id (str, optional): The root spell ID for the contract.
 
         Returns:
             bool | None: True if the contract was created, False otherwise. None if an internal error occurs.
@@ -1424,6 +1428,8 @@ class IConduit(ICleanable, Protocol):
             conduit_id (str, optional): The id of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level is granted for all spells (default is "create").
             aetheric_frame (str): Optional frame override is used to locate the target conduit.
+            reason (Any, optional): Optional reason for the contract.
+            link_dependencies (bool, optional): Whether to link dependencies for the contract.
 
         Returns:
             dict: Dictionary of `spell_id` -> success boolean for each attempted contract.
@@ -1437,7 +1443,7 @@ class IConduit(ICleanable, Protocol):
     def remove_spell_from_contract(
             self,
             *,
-            spell: Optional['ISpell'] = None,
+            spell: Optional[ISpell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
@@ -1518,7 +1524,7 @@ class IConduit(ICleanable, Protocol):
     def add_spell_to_contract_with_dependencies(
             self,
             *,
-            spell: Optional['ISpell'] = None,
+            spell: Optional[ISpell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
@@ -1565,7 +1571,7 @@ class IConduit(ICleanable, Protocol):
     def get_all_spells_in_contracts(
             self,
             validate: bool = True,
-    ) -> Optional[dict[str, list[Tuple[str, 'ISpell']]]]:
+    ) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
         """
         Public API
 
@@ -1587,7 +1593,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, 'ISpell']]:
+    def get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, ISpell]]:
         """
         Public API
 
@@ -1611,7 +1617,7 @@ class IConduit(ICleanable, Protocol):
     def get_spells_in_contract_by_conduit(
             self,
             conduit_id: str,
-    ) -> dict[str, list[tuple[str, 'ISpell']]] | None:
+    ) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Public API
 
@@ -1636,7 +1642,7 @@ class IConduit(ICleanable, Protocol):
     def get_spells_in_contract_by_conduit_name(
             self,
             conduit_name: str,
-    ) -> dict[str, list[tuple[str, 'ISpell']]] | None:
+    ) -> dict[str, list[tuple[str, ISpell]]] | None:
         """
         Public API
 

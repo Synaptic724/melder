@@ -455,6 +455,10 @@ class CreationContext(Cleanable):
 
         creation_gate = self._creation_gate
         index_id = self._creation_gate_index_id
+        if creation_gate is None:
+            raise RuntimeError(
+                f"CreationGate is unavailable for spell index '{index_id}'."
+            )
         if creation_gate.is_closed():
             raise RuntimeError(
                 f"CreationGate is closed for spell index '{index_id}'."
@@ -513,6 +517,10 @@ class CreationContext(Cleanable):
 
         creation_gate = self._creation_gate
         index_id = self._creation_gate_index_id
+        if creation_gate is None:
+            raise RuntimeError(
+                f"CreationGate is unavailable for spell index '{index_id}'."
+            )
         if creation_gate.is_closed():
             raise RuntimeError(
                 f"CreationGate is closed for spell index '{index_id}'."
@@ -589,6 +597,11 @@ class CreationContext(Cleanable):
         spell = self._spell
         override_route_config = self._override_route_config_active
         owner_creations = self._owner_creations
+        if override_route_config is None:
+            raise RuntimeError(
+                "Override route configuration is unavailable for this spell."
+            )
+        spell_id = spell.spell_index.current or spell.spell_id
 
         override_payload = overrides
         root_positional_override: Optional[Sequence[Any]] = None
@@ -605,7 +618,11 @@ class CreationContext(Cleanable):
                     caller_creations_lock_held=caller_creations_lock_held,
                 )
             shape_key = self._override_empty_shape_key
-            executor = self._get_or_compile_override_executor(
+            if shape_key is None:
+                raise RuntimeError(
+                    "Empty override shape key is unavailable for this spell."
+                )
+            empty_payload_executor = self._get_or_compile_override_executor(
                 shape_key=shape_key,
                 override_targets_by_spell_id={},
                 any_overrides_present=False,
@@ -614,7 +631,7 @@ class CreationContext(Cleanable):
                 root_spell_id=override_route_config.root_spell_id,
                 spell_lookup=override_route_config.spell_lookup,
             )
-            return executor(
+            return empty_payload_executor(
                 caller_creations,
                 override_map,
                 root_positional_override,
@@ -648,7 +665,7 @@ class CreationContext(Cleanable):
                     raise
                 except Exception as exc:
                     raise MeldExecutionError(
-                        spell_id=spell.spell_index.current,
+                        spell_id=spell_id,
                         spell_name=spell.spell_name,
                         message=(
                             "Failed to apply overrides."
@@ -661,6 +678,7 @@ class CreationContext(Cleanable):
             root_positional_arity = -1
         else:
             root_positional_arity = len(root_positional_override)
+        executor: Optional[Callable[..., Any]]
         if (
                 socket_shape is self._override_last_socket_shape
                 and root_positional_arity == self._override_last_root_positional_arity
@@ -704,6 +722,8 @@ class CreationContext(Cleanable):
             self._override_last_socket_shape = socket_shape
             self._override_last_root_positional_arity = root_positional_arity
             self._override_last_executor = executor
+        if executor is None:
+            raise RuntimeError("Override executor resolution failed.")
 
         result = executor(
             caller_creations,
@@ -742,7 +762,7 @@ class CreationContext(Cleanable):
             normalized_root_args = tuple(raw_args)
         else:
             raise MeldExecutionError(
-                spell_id=spell.spell_index.current,
+                spell_id=spell.spell_index.current or spell.spell_id,
                 spell_name=spell.spell_name,
                 message="__args__ override must be a list or tuple.",
             )
@@ -940,6 +960,10 @@ class CreationContext(Cleanable):
                 current_bucket = [socket_ref]
                 by_spell_id[node_id] = current_bucket
             else:
+                if current_bucket is None:
+                    raise RuntimeError(
+                        "Override target bucket was not initialized."
+                    )
                 current_bucket.append(socket_ref)
 
         return {
@@ -1017,7 +1041,7 @@ class CreationContext(Cleanable):
                     first_ref_node_id,
                 )
             if first_ref_node_id == second_ref_node_id:
-                pair_by_spell_id = {
+                pair_by_spell_id: Dict[str, Tuple[Any, ...]] = {
                     first_ref_node_id: (
                         first_ref,
                         second_ref,
@@ -1065,6 +1089,10 @@ class CreationContext(Cleanable):
                 current_bucket = [socket_ref]
                 by_spell_id[node_id] = current_bucket
             else:
+                if current_bucket is None:
+                    raise RuntimeError(
+                        "Override target bucket was not initialized."
+                    )
                 current_bucket.append(socket_ref)
             socket_shape.append(shape_row)
 
