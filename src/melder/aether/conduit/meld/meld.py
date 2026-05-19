@@ -1,4 +1,5 @@
 import inspect
+from types import TracebackType
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
 
@@ -200,7 +201,12 @@ class Meld(Cleanable, IMeld):
         """
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Exit the meld lock context.
 
