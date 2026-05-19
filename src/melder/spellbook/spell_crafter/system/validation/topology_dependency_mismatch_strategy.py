@@ -1,4 +1,7 @@
 from typing import Dict, List, Mapping, Optional, Set
+
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
@@ -13,7 +16,7 @@ from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
+@mypyc_attr(native_class=True)
 class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
     """
     Guard that Phase 3 local topology sockets agree with index-level edges.

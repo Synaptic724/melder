@@ -1,12 +1,15 @@
 import threading
 from typing import Any, Optional, Tuple
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellSymbolicDependency(Cleanable):
     """
     Phase 2 representation of a **single constructor socket** for a spell.
@@ -21,9 +24,9 @@ class SpellSymbolicDependency(Cleanable):
 
     Identity
     --------
-    ``spell_id`` here is the **versioned identity** of the owning spell:
+    "spell_id" here is the **versioned identity** of the owning spell:
 
-        ``spell.spell_index.current``
+        "spell.spell_index.current"
 
     Fields
     ------
@@ -37,14 +40,14 @@ class SpellSymbolicDependency(Cleanable):
         0-based positional index of the parameter in the signature.
 
     di_shape:
-        High-level DI shape from :class:`ParameterDIShape`.
+        High-level DI shape from: class:`ParameterDIShape`.
 
     is_optional:
         True if the parameter is logically optional from a DI perspective
         (e.g., Optional/T|None, or has a default).
 
     target_annotation:
-        For SINGLE/COLLECTION shapes, the annotation (or element annotation)
+        For SINGLE/COLLECTION shapes, the annotation (or element annotation) is
         used as the DI key in later phases (class, Protocol, string, etc.).
         For PLAIN shapes, this records the raw annotation (often a builtin
         type or None) for diagnostics and override targeting.
@@ -54,12 +57,12 @@ class SpellSymbolicDependency(Cleanable):
         requirement (e.g., ``list[IMyHandler]``).
 
     spellmap_default:
-        For SPELLMAP_DEFAULT shape, the original :class:`SpellMap` default
-        instance attached to the parameter.
+        For SPELLMAP_DEFAULT shape, the original: class:`SpellMap` default
+         instance is attached to the parameter.
 
     contract_key:
         For SPELL_CONTRACT and MUTATION_CONTRACT shapes, the canonical
-        ``(frame_key, binding_key)`` derived from the contract object.
+        "(frame_key, binding_key)" derived from the contract object.
 
     contract_late_binding:
         For MUTATION_CONTRACT shapes, whether the contract declares
@@ -113,7 +116,7 @@ class SpellSymbolicDependency(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
 
-        # Stored as _spell_id for backwards compatibility; semantically this is
+        # Stored as _spell_id for backwards compatibility; semantically, this is
         # the *version id* (SpellIndex.current).
         self._spell_id: str = spell_version_id
         self._param_name: str = param_name
@@ -207,7 +210,7 @@ class SpellSymbolicDependency(Cleanable):
         """
         Effective DI target annotation (or element annotation for collections).
 
-        May be:
+        Maybe:
             * A concrete class
             * A Protocol/interface type
             * A string (to be resolved later)
@@ -237,7 +240,7 @@ class SpellSymbolicDependency(Cleanable):
     @property
     def contract_key(self) -> Optional[Tuple[str, str]]:
         """
-        Canonical ``(frame_key, binding_key)`` for contract sockets.
+        Canonical "(frame_key, binding_key)" for contract sockets.
 
         For SPELL_CONTRACT and MUTATION_CONTRACT shapes, this is derived from
         the contract descriptor. For all other shapes, this is None.

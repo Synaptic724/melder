@@ -1,5 +1,7 @@
 from typing import Dict, List, Mapping, Optional, Set, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -17,7 +19,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
+@mypyc_attr(native_class=True)
 class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
     """
     Guard that contract-only edges do not introduce cycles outside the normal DAG.

@@ -1,4 +1,7 @@
 from typing import Dict, List, Mapping, Optional, Set
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -14,7 +17,7 @@ from melder.spellbook.spell_crafter.system.validation.strategy_base import (
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
+@mypyc_attr(native_class=True)
 class CycleDetectionStrategy(SpellSystemValidationStrategy):
     """
     Guard that the frame-level dependency graph remains acyclic.
@@ -23,12 +26,12 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
     It works at the `SpellSystemIndex` level rather than the per-root blueprint
     level and asks a simple question: can the system dependency graph still be
     topologically ordered at all? If not, later rooted validation and planning
-    surfaces cannot be trusted, because execution order itself is undefined.
+    surfaces cannot be trusted because the execution order itself is undefined.
 
     Contract:
         - Does not mutate the index or its nodes.
         - Emits at most one coarse `cycle_detected` error for the frame.
-        - Honors cancellation during traversal.
+        - Honours cancellation during traversal.
     """
     __slots__: list[str] = []
 
@@ -73,7 +76,7 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
         Raises:
             ValueError: If index is None.
             Exception: Propagates any exception raised by cancel_event.throw_if_set()
-                when cancellation is signaled.
+                when cancellation is signalled.
 
         Threading:
             Stateless; callers must synchronize shared inputs (e.g., diagnostics).

@@ -5,6 +5,9 @@ import threading
 import typing
 import types
 from typing import Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
@@ -23,7 +26,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellRequirementsFinder(Cleanable):
     """
     Build the Phase 1 requirement artifact for one bound :class:`Spell`.

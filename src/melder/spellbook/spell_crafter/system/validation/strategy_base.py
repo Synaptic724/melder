@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Mapping, Optional, List, Set
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
-    RootResolutionBlueprint,
-)
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.interfaces.ispell import ISpell
@@ -12,7 +11,7 @@ from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
+@mypyc_attr(native_class=True)
 class SpellSystemValidationStrategy(ABC):
     """
     Contract for one Phase 6 system-validation strategy.

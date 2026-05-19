@@ -1,4 +1,7 @@
 from typing import Dict, List, Mapping, Optional, Set, Tuple
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -16,7 +19,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
+@mypyc_attr(native_class=True)
 class SocketRefSanityStrategy(SpellSystemValidationStrategy):
     """
     Guard that blueprint socket references and `DagIndex` stay perfectly aligned.

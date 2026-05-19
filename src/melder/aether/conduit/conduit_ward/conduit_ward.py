@@ -1,7 +1,8 @@
 import inspect
 import threading
 from contextlib import contextmanager
-from typing import List, Optional, Any, Tuple, Dict, Iterable, Generator
+from types import TracebackType
+from typing import List, Optional, Any, Tuple, Dict, Iterable, Generator, Type
 # Melder Imports
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
@@ -11,6 +12,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitward import IConduitWard
+from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
@@ -279,7 +281,12 @@ class ConduitWard(Cleanable, IConduitWard):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Release the ward lock acquired by `__enter__`.
 
@@ -811,7 +818,12 @@ class ConduitWard(Cleanable, IConduitWard):
             )
             raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
         peer_id = target_conduit._conduit_ward._id
-        contract_id = self._initiated_index.get(peer_id) or self._received_index.get(peer_id)
+        contract_id = (
+            self._initiated_index.get(peer_id)
+            or self._received_index.get(peer_id)
+        )
+        if contract_id is None:
+            return None
         contract = self._contracts.get(contract_id)
         return contract
 
@@ -831,7 +843,12 @@ class ConduitWard(Cleanable, IConduitWard):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        check_id = self._initiated_index.get(conduit_id) or self._received_index.get(conduit_id)
+        check_id = (
+            self._initiated_index.get(conduit_id)
+            or self._received_index.get(conduit_id)
+        )
+        if check_id is None:
+            return None
         contract = self._contracts.get(check_id)
         return contract
 
@@ -949,6 +966,7 @@ class ConduitWard(Cleanable, IConduitWard):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
+        root_conduit: Optional[IConduit]
         if self._conduit_type == ConduitState.normal:
             root_conduit = self._conduit
         else:
@@ -959,9 +977,8 @@ class ConduitWard(Cleanable, IConduitWard):
             raise RuntimeError("Root conduit must be a normal conduit.")
         with self._lock:
             self._lesser_conduits[lesser_conduit._id] = lesser_conduit
-            lesser_conduit._parent_conduit = self._conduit
             try:
-                child_ward = lesser_conduit._conduit_ward
+                child_ward: Optional[IConduitWard] = lesser_conduit._conduit_ward
             except Exception:
                 child_ward = None
             if child_ward is not None:
@@ -1211,7 +1228,8 @@ class ConduitWard(Cleanable, IConduitWard):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 raise TypeError(f"Expected ISpell instance, got {type(spell).__name__}")
-            spell_id = spell.spell_id
+            resolved_spell_id = spell.spell_id
+            spell_id = resolved_spell_id
             if spell_id is None:
                 self._logger.error(
                     "check_spell_id_and_spell: spell has no spell_id",
@@ -1222,7 +1240,7 @@ class ConduitWard(Cleanable, IConduitWard):
                 raise RuntimeError("Could not determine spell_id from spell.")
 
         if isinstance(spell, ISpell):
-            inspected_id = spell.spell_id
+            inspected_id: Optional[str] = spell.spell_id
             if inspected_id is None:
                 self._logger.error(
                     "check_spell_id_and_spell: spell has no spell_id",
@@ -1246,7 +1264,8 @@ class ConduitWard(Cleanable, IConduitWard):
 
     def _check_conduit_id_and_conduit(self,
                                       conduit: Optional[IConduit] = None,
-                                      conduit_id: Optional[str] = None, aetheric_frame = "default") -> Tuple[str, IConduit]:
+                                      conduit_id: Optional[str] = None,
+                                      aetheric_frame: str = "default") -> Tuple[str, IConduit]:
         """
         Internal
 
@@ -1398,7 +1417,7 @@ class ConduitWard(Cleanable, IConduitWard):
             sources={root_spell_id} if root_spell_id is not None else None,
         )
 
-    def _snapshot_detail(self, detail: Detail) -> Dict[str, Any]:
+    def _snapshot_detail(self, detail: IDetail) -> Dict[str, Any]:
         """
         Internal
 
@@ -1482,7 +1501,9 @@ class ConduitWard(Cleanable, IConduitWard):
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
-            raise RuntimeError(f"Spell '{spell.__name__}' does not have create permissions, cannot contract with create permissions.")
+            raise RuntimeError(
+                f"Spell '{spell.spell_name}' does not have create permissions, cannot contract with create permissions."
+            )
         if permissions == Permissions.read and spell_permissions not in (Permissions.read, Permissions.create):
             self._logger.error(
                 "check_spell_if_eligible: read requested but spell not read/create",
@@ -1490,7 +1511,9 @@ class ConduitWard(Cleanable, IConduitWard):
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
-            raise RuntimeError(f"Spell '{spell.__name__}' does not have read permissions, cannot contract with read permissions.")
+            raise RuntimeError(
+                f"Spell '{spell.spell_name}' does not have read permissions, cannot contract with read permissions."
+            )
         if spell_permissions == Permissions.block and conduit._conduit_ward._policy != Policies.whitelist_all:
             self._logger.error(
                 "check_spell_if_eligible: spell blocked and not whitelist_all",
@@ -1506,7 +1529,9 @@ class ConduitWard(Cleanable, IConduitWard):
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
-            raise RuntimeError(f"Spell '{spell.__name__}' is not owned by this conduit, cannot contract it.")
+            raise RuntimeError(
+                f"Spell '{spell.spell_name}' is not owned by this conduit, cannot contract it."
+            )
 
     def _add_spell_to_contract(
             self,
@@ -1554,14 +1579,13 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         self.check_cleaned()
 
-        source_root_id = spell_id if root_spell_id is None else root_spell_id
-
         # Normalize permissions into the enum
         permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
 
         # Resolve spell + spell_id and conduit + conduit_id via your existing helpers
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+        source_root_id = spell_id if root_spell_id is None else root_spell_id
 
         contract = self._find_contract_by_id(conduit_id)
         if contract is None:
@@ -1673,15 +1697,15 @@ class ConduitWard(Cleanable, IConduitWard):
                 )
                 raise
             try:
-                contract_key = None
+                invalidate_contract_key: Optional[tuple[str, str]] = None
                 spellbook = self._conduit._spellbook
                 if spellbook is not None:
-                    contract_key = spellbook._make_spell_key(
+                    invalidate_contract_key = spellbook._make_spell_key(
                         spell.spellframe,
                         spell.spell_name,
                         spell.binding_name,
                     )
-                self._invalidate_contract_consumers(contract_key)
+                self._invalidate_contract_consumers(invalidate_contract_key)
             except Exception:
                 pass
 
@@ -1962,7 +1986,8 @@ class ConduitWard(Cleanable, IConduitWard):
                                     detail.cleanup()
                                     removed_any = True
                 if self._is_contract_empty(contract):
-                    contracts_to_sever.append(peer_conduit)
+                    if peer_conduit is not None:
+                        contracts_to_sever.append(peer_conduit)
                 if removed_any:
                     success_contract_ids.append(contract._id)
             except Exception as e:
@@ -2422,7 +2447,7 @@ class ConduitWard(Cleanable, IConduitWard):
 
     def _remove_spells_from_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[IConduit] = None,
                                      conduit_id: Optional[str] = None, root_spell_id: str | None = None,
-                                     aetheric_frame = "default") -> dict[str, list[str] | dict[str, str]]:
+                                     aetheric_frame: str = "default") -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
 
@@ -2478,7 +2503,7 @@ class ConduitWard(Cleanable, IConduitWard):
             "failed": failed_spell_ids,
         }
 
-    def _remove_all_spells_from_contract(self, *, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None, aetheric_frame = "default") -> bool | None:
+    def _remove_all_spells_from_contract(self, *, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame: str = "default") -> bool | None:
         """
         Internal
 
@@ -2617,6 +2642,13 @@ class ConduitWard(Cleanable, IConduitWard):
                             continue
 
                         # Expose the CURRENT version id, not the historical one.
+                        if spell is None:
+                            if validate:
+                                raise RuntimeError(
+                                    f"Failed to resolve contracted spell for index {spell_index}."
+                                )
+                            continue
+
                         current_id = spell.spell_id
                         spells.append((current_id, spell))
 
@@ -2857,10 +2889,24 @@ class ConduitWard(Cleanable, IConduitWard):
         if not self._dynamic:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
 
+        resolved_spell: Optional[ISpell]
+        if isinstance(spell, ISpell):
+            resolved_spell = spell
+        elif isinstance(spell, ISpellIndex):
+            resolved_spell = self._conduit.get_spell_by_index_id(spell.id)
+        else:
+            resolved_spell = self._conduit.get_spell_by_id(
+                spell,
+                self._conduit._aetheric_frame,
+            )
+
+        if resolved_spell is None:
+            raise RuntimeError("Could not resolve spell for ownership transfer.")
+
         transfer = TransferOfOwnership(
             source_conduit=self._conduit,
             target_conduit=target_conduit,
-            spell=spell,
+            spell=resolved_spell,
             move_creations=move_creations,
             include_dependencies=include_dependencies,
             force_unshare=force_unshare,

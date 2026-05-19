@@ -1,12 +1,15 @@
 import threading
 from typing import List, Optional
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellSymbolicGraph(Cleanable):
     """
     Phase 2 **per-spell symbolic graph**.
@@ -17,16 +20,16 @@ class SpellSymbolicGraph(Cleanable):
 
     Identity
     --------
-    ``spell_id`` is again the spell's **version ID**:
+    "spell_id" is again the spell's **version ID**:
 
-        ``spell.spell_index.current``
+        "spell.spell_index.current"
 
     The graph is always scoped per spell version; if a spell mutates and a new
     version is created, a new graph should be built.
 
     Contents
     --------
-    * ``dependencies`` – list of :class:`SpellSymbolicDependency` objects,
+    * "dependencies" – list of: class:`SpellSymbolicDependency` objects,
       one per constructor socket represented in the symbolic graph.
 
     What it does *not* contain
@@ -78,7 +81,7 @@ class SpellSymbolicGraph(Cleanable):
         """
         Deterministically tear down this symbolic graph and all its edges.
 
-        This cascades cleanup into all :class:`SpellSymbolicDependency`
+        This cascades cleanup into all: class:`SpellSymbolicDependency`
         instances and clears internal references.
         """
         if self._cleaned:

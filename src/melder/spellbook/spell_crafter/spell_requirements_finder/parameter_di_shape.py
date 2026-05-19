@@ -1,6 +1,9 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+from mypy_extensions import mypyc_attr
+
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+@mypyc_attr(native_class=True)
 class ParameterDIShape(Enum):
     """
     High-level classification of how a single parameter is expected to be
@@ -13,7 +16,7 @@ class ParameterDIShape(Enum):
     ------
 
     IGNORE
-        Parameter is not part of DI at all (e.g. ``self``, ``cls``, ``*args``,
+        Parameter is not part of DI at all (e.g. "self", "cls", "*args",
         ``**kwargs``). Resolution never tries to satisfy it.
 
     PLAIN
@@ -23,23 +26,23 @@ class ParameterDIShape(Enum):
     SINGLE_BY_ANNOTATION
         DI by a **single type annotation** (class, Protocol, interface-like
         type). Phase 2 will decide whether this is a concrete class vs
-        spellframe, and how to map it to a spell_id.
+         spellframe and how to map it to a spell_id.
 
     COLLECTION_BY_ANNOTATION
-        DI by **collection of implementations**, e.g. ``list[IMyHandler]``.
+        DI by **collection of implementations**, e.g. "list[IMyHandler]".
         The element annotation indicates the frame/type whose implementations
         should be gathered.
 
     SPELLMAP_DEFAULT
-        Parameter default is a :class:`SpellMap`. This is a fully explicit DI
+        Parameter default is a: class:`SpellMap`. This is a fully explicit DI
         descriptor and has priority over plain annotations.
 
     SPELL_CONTRACT
-        Parameter default is a :class:`SpellContract`. This indicates that
+        Parameter default is a: class:`SpellContract`. This indicates that
         the parameter expects a single resolved spell matching the contract.
 
     MUTATION_CONTRACT
-        Parameter default is a :class:`MutationContract`. This indicates that
+        Parameter default is a: class:`MutationContract`. This indicates that
         the parameter expects a mutation lineage matching the contract.
 
     """

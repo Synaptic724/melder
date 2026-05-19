@@ -1,8 +1,10 @@
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, runtime_checkable
+from types import TracebackType
+from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type, runtime_checkable
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import (
     ContractTypes,
 )
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -103,7 +105,12 @@ class IConduitWard(ICleanable, Protocol):
         """
         ...
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Exit the conduit-ward coordination context.
 
@@ -554,6 +561,9 @@ class IConduitWard(ICleanable, Protocol):
             spell: 'ISpell',
             permissions: 'Permissions',
             contract_type: 'ContractTypes',
+            *,
+            reason: DetailReason = DetailReason.other,
+            root_spell_id: Optional[str] = None,
     ) -> 'IDetail':
         """
         Internal
@@ -565,6 +575,8 @@ class IConduitWard(ICleanable, Protocol):
             permissions (Permissions): The permissions applied to this lineage.
             contract_type (ContractTypes): Role of this Detail from the
                 perspective of the ward that will own it.
+            reason (DetailReason): Why this detail exists.
+            root_spell_id (Optional[str]): Optional root-lineage source tag.
 
         Returns:
             IDetail: A new detail instance.
@@ -604,7 +616,7 @@ class IConduitWard(ICleanable, Protocol):
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
-            reason: Any = None,
+            reason: DetailReason = DetailReason.manual,
             root_spell_id: str | None = None,
             link_dependencies: bool = False,
     ) -> bool | None:
@@ -644,7 +656,7 @@ class IConduitWard(ICleanable, Protocol):
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
-            reason: Any = None,
+            reason: DetailReason = DetailReason.manual,
             link_dependencies: bool = False,
     ) -> dict[str, list[str] | dict[str, str]]:
         """
@@ -674,6 +686,7 @@ class IConduitWard(ICleanable, Protocol):
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
+            root_spell_id: str | None = None,
             aetheric_frame: str = "default",
     ) -> bool | None:
         """
@@ -686,6 +699,8 @@ class IConduitWard(ICleanable, Protocol):
             spell_id (str, optional): The unique ID of the spell to remove.
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
+            root_spell_id (str, optional): Optional root-lineage source tag for
+                source-aware removal.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
@@ -705,6 +720,7 @@ class IConduitWard(ICleanable, Protocol):
             spell_ids: Optional[list[str]] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
+            root_spell_id: str | None = None,
             aetheric_frame: str = "default",
     ) -> dict[str, list[str] | dict[str, str]]:
         """
@@ -716,6 +732,8 @@ class IConduitWard(ICleanable, Protocol):
             spell_ids (list[str], optional): List of spell IDs to remove.
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
+            root_spell_id (str, optional): Optional root-lineage source tag for
+                source-aware removal.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
@@ -731,6 +749,7 @@ class IConduitWard(ICleanable, Protocol):
             *,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
+            root_spell_id: str | None = None,
             aetheric_frame: str = "default",
     ) -> bool | None:
         """
@@ -741,6 +760,8 @@ class IConduitWard(ICleanable, Protocol):
         Args:
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
+            root_spell_id (str, optional): Optional root-lineage source tag for
+                source-aware contract teardown.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:

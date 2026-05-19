@@ -304,7 +304,7 @@ def test_link_lesser_conduit(ward):
     ward._link_lesser_conduit(child)
     
     assert "child-1" in ward._lesser_conduits
-    assert child._parent_conduit == ward._conduit
+    assert child._conduit_ward._parent_conduit == ward._conduit
     assert child._conduit_ward.root_conduit == ward._conduit
 
 
@@ -415,7 +415,7 @@ def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
 
     parent_ward._link_lesser_conduit(child)
 
-    assert child._parent_conduit == parent
+    assert child._conduit_ward._parent_conduit == parent
     assert "child-3" in parent_ward._lesser_conduits
     assert child._conduit_ward.root_conduit == root
 
@@ -461,7 +461,7 @@ def test_check_spell_eligible_success(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.create
-    spell.__name__ = "TestSpell"
+    spell.spell_name = "TestSpell"
     
     # Should not raise
     ward._check_spell_if_eligible(spell, ward._conduit, Permissions.create)
@@ -473,7 +473,7 @@ def test_check_spell_eligible_not_owner(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = "other-owner"
     spell.permissions = Permissions.create
-    spell.__name__ = "ForeignSpell"
+    spell.spell_name = "ForeignSpell"
     
     with pytest.raises(RuntimeError, match="not owned"):
         ward._check_spell_if_eligible(spell, ward._conduit, Permissions.create)
@@ -485,7 +485,7 @@ def test_check_spell_eligible_permission_mismatch(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.read # Only read allowed
-    spell.__name__ = "ReadOnlySpell"
+    spell.spell_name = "ReadOnlySpell"
     
     with pytest.raises(RuntimeError, match="does not have create permissions"):
         ward._check_spell_if_eligible(spell, ward._conduit, Permissions.create)
@@ -612,7 +612,7 @@ def test_add_spell_to_contract_flow(ward):
     spell.spellframe = "frame"
     spell.spell_name = "TestSpell"
     spell.binding_name = "default"
-    spell.__name__ = "TestSpell"
+    spell.spell_name = "TestSpell"
     
     # Mock retrieval
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
@@ -1363,7 +1363,7 @@ def test_check_spell_eligible_rejects_block_all_policy(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.read
-    spell.__name__ = "ReadSpell"
+    spell.spell_name = "ReadSpell"
 
     with pytest.raises(RuntimeError, match="block_all"):
         ward._check_spell_if_eligible(spell, ward._conduit, Permissions.read)
@@ -1376,7 +1376,7 @@ def test_check_spell_eligible_rejects_block_permissions_without_whitelist(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.block
-    spell.__name__ = "BlockedSpell"
+    spell.spell_name = "BlockedSpell"
 
     with pytest.raises(RuntimeError, match="block permissions"):
         ward._check_spell_if_eligible(spell, ward._conduit, Permissions.block)
@@ -1389,7 +1389,7 @@ def test_check_spell_eligible_allows_block_permissions_with_whitelist(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.block
-    spell.__name__ = "BlockedSpell"
+    spell.spell_name = "BlockedSpell"
 
     ward._check_spell_if_eligible(spell, ward._conduit, Permissions.block)
 
@@ -1401,7 +1401,7 @@ def test_check_spell_eligible_rejects_read_permission_mismatch(ward):
     spell = MagicMock(spec=ISpell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.block
-    spell.__name__ = "BlockedSpell"
+    spell.spell_name = "BlockedSpell"
 
     with pytest.raises(RuntimeError, match="does not have read permissions"):
         ward._check_spell_if_eligible(spell, ward._conduit, Permissions.read)
@@ -1866,7 +1866,7 @@ def test_transfer_spell_ownership_calls_transfer_flow(ward):
     mock_transfer.assert_called_once_with(
         source_conduit=ward._conduit,
         target_conduit=target_conduit,
-        spell="spell-1",
+        spell=ward._conduit.get_spell_by_id.return_value,
         move_creations=True,
         include_dependencies=True,
         force_unshare=False,

@@ -1,12 +1,15 @@
 import inspect
 from typing import Any, List
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import SpellBindingProfile, \
     ClassBindingProfile, SpellBindingKind, CallableBindingProfile, CallableParameterBindingSummary, \
     InstanceBindingProfile, OtherBindingProfile
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class BindingProfileStrategy:
     """
     Strategy for producing **binding profiles** from raw user objects.

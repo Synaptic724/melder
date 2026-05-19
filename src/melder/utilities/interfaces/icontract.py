@@ -62,11 +62,15 @@ class IContract(ICleanable, Protocol):
         """
         ...
 
-    def _add(self, ward: IConduitWard, contract_detail: IDetail) -> None:
+    def _add(self, ward: IConduitWard, contract_detail: IDetail) -> bool:
         """
         Internal
 
         Add one spell-level permission detail to the contract for the given ward.
+
+        Returns:
+            bool: True when a new detail was inserted, False when an existing
+            compatible detail absorbed the new source tag.
         """
         ...
 
