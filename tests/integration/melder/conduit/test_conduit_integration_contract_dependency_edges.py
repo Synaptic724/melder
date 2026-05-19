@@ -161,8 +161,9 @@ def test_conduit_refresh_cluster_shares_noop_when_no_clusters() -> None:
     spellbook = Spellbook(configuration=configuration)
     conduit = spellbook.conjure(automatic=False, name="owner")
     try:
-        assert conduit.list_clusters() == []
-        conduit.refresh_cluster_shares()
-        assert conduit.list_clusters() == []
+        cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
+        assert cloud.get_clusters_for_conduit(conduit._id) == []
+        cloud.refresh_cluster_shares_for_conduit(conduit)
+        assert cloud.get_clusters_for_conduit(conduit._id) == []
     finally:
         conduit.cleanup()

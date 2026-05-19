@@ -4,9 +4,7 @@ from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType, TracebackType
 from typing import Optional, Any, Tuple, Callable, Iterable, Dict, Generator
-
 from mypy_extensions import mypyc_attr
-
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -28,7 +26,6 @@ from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.inexus import INexus
-
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
 from melder.utilities.synchronization.creation_gate import CreationGate
@@ -941,34 +938,6 @@ class Conduit(Cleanable, IConduit):
 
 
     #region Conduit Configuration
-    def register_conduit_cloud(self, conduit: IConduit) -> None:
-        """
-        Public API
-
-        Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit in order
-        to name it afterward and register it. You can only register it once.
-
-        Args:
-            conduit (IConduit): The conduit instance to register.
-
-        Raises:
-            RuntimeError: If dynamic environment is not enabled.
-            RuntimeError: If the conduit is a lesser conduit.
-            RuntimeError: If the Conduit name is not set.
-        """
-        self.check_cleaned()
-        if self.__dynamic_environment__ == False:
-            self._logger.error("register_conduit_cloud in non-dynamic env", "register_conduit_cloud")
-            raise RuntimeError("Dynamic environment is not enabled. Cannot register in the conduit cloud.")
-        if self._conduit_state == ConduitState.lesser:
-            self._logger.error("register_conduit_cloud called on lesser conduit", "register_conduit_cloud")
-            raise RuntimeError("Lesser conduits cannot register in the conduit cloud.")
-        if self._name is None:
-            self._logger.error("register_conduit_cloud called without conduit name", "register_conduit_cloud")
-            raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
-        self._conduit_cloud._register_conduit(conduit)
-        self._publish_frame_record_to_nexus()
-
     def register_conduit_hooks(
             self,
             hooks: dict[str, Any],
@@ -997,33 +966,6 @@ class Conduit(Cleanable, IConduit):
         if local_conduit_hooks is None:
             raise RuntimeError("Local conduit hooks were not initialized.")
         self._merge_conduit_hooks(local_conduit_hooks, hooks)
-
-    def unregister_conduit_cloud(self, conduit: IConduit) -> None:
-        """
-        Public API
-
-        Unregisters a conduit from the dynamic mode registry (ConduitCloud).
-
-        Args:
-            conduit (IConduit): The conduit instance to unregister.
-
-        Raises:
-            RuntimeError: If dynamic environment is not enabled.
-            RuntimeError: If the conduit is a lesser conduit.
-            RuntimeError: If the Conduit name is not set.
-        """
-        self.check_cleaned()
-        if self.__dynamic_environment__ is False:
-            self._logger.error("unregister_conduit_cloud in non-dynamic env", "unregister_conduit_cloud")
-            raise RuntimeError("Dynamic environment is not enabled. Cannot unregister from the conduit cloud.")
-        if self._conduit_state == ConduitState.lesser:
-            self._logger.error("unregister_conduit_cloud called on lesser conduit", "unregister_conduit_cloud")
-            raise RuntimeError("Lesser conduits cannot unregister from the conduit cloud.")
-        if self._name is None:
-            self._logger.error("unregister_conduit_cloud called without conduit name", "unregister_conduit_cloud")
-            raise RuntimeError("Conduit name is not set. Please set a name before unregistering from the conduit cloud.")
-        self._conduit_cloud._unregister_conduit(conduit)
-        self._publish_frame_record_to_nexus()
 
     def _apply_configuration_flags(self) -> None:
         """
@@ -2366,62 +2308,6 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Spellbook Management API
     #region Cluster API
-    def create_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Create a new conduit cluster in this conduit’s aetheric frame.
-        """
-        self.check_cleaned()
-        self._conduit_cloud.create_cluster(cluster_name)
-        self._publish_frame_record_to_nexus()
-
-    def delete_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Delete an existing conduit cluster in this conduit’s aetheric frame.
-        """
-        self.check_cleaned()
-        self._conduit_cloud.delete_cluster(cluster_name)
-        self._publish_frame_record_to_nexus()
-
-    def join_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Join an existing conduit cluster. Auto-sharing of eligible roots occurs on join.
-        """
-        self.check_cleaned()
-        self._conduit_cloud.add_conduit_to_cluster(self, cluster_name)
-
-    def leave_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Leave a conduit cluster. Auto-teardown of shared roots occurs on leave.
-        """
-        self.check_cleaned()
-        self._conduit_cloud.remove_conduit_from_cluster(self, cluster_name)
-
-    def list_clusters(self) -> list[str]:
-        """
-        Public API
-
-        List cluster names this conduit belongs to in its aetheric frame.
-        """
-        self.check_cleaned()
-        return self._conduit_cloud.get_clusters_for_conduit(self._id)
-
-    def refresh_cluster_shares(self) -> None:
-        """
-        Public API
-
-        Refresh sharing of auto-shareable roots for this conduit across all clusters it belongs to.
-        """
-        self.check_cleaned()
-        self._conduit_cloud.refresh_cluster_shares_for_conduit(self)
-
     def transfer_spell_ownership(
             self,
             *,
@@ -2856,100 +2742,6 @@ class Conduit(Cleanable, IConduit):
 
 
     #endregion Meld
-    #region Conduit Cloud
-    def get_conduit_cloud(self) -> IConduitCloud:
-        """
-        Public API
-
-        Return the injected frame-owned ConduitCloud for this conduit's frame.
-
-        This object is designed to be used in dynamic mode only and serves as
-        the current frame's named-conduit access surface.
-
-        Returns:
-            IConduitCloud: The frame-local conduit and cluster service.
-
-        Raises:
-            RuntimeError: If the Conduit is a lesser conduit.
-            RuntimeError: If dynamic environment is not enabled.
-        """
-        self.check_cleaned()
-        if self._conduit_state == ConduitState.lesser:
-            self._logger.error("get_conduit_cloud on lesser conduit", "get_conduit_cloud")
-            raise RuntimeError("Lesser conduits cannot access the conduit cloud.")
-        if not self.__dynamic_environment__:
-            self._logger.error("get_conduit_cloud in non-dynamic env", "get_conduit_cloud")
-            raise RuntimeError("Dynamic environment is not enabled. Cannot access conduit cloud.")
-        return self._conduit_cloud
-
-    #endregion Conduit Cloud
-    #region Aether API
-    def get_conduit_by_id(self, conduit_id: str, aetheric_frame:str = "default") -> Optional[IConduit]:
-        """
-        Public API
-
-        Retrieve a root conduit by id through the current frame's ConduitCloud.
-
-        Args:
-            conduit_id (str): The unique identifier of the conduit.
-            aetheric_frame (str):
-                Frame hint kept for compatibility. Only "default" or this
-                conduit's own frame name are supported by the injected
-                ConduitCloud path.
-
-        Returns:
-            Optional[IConduit]: The conduit instance if found, otherwise None.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
-            TypeError: If the `aetheric_frame` is not a string.
-            ValueError: If a different frame name is requested.
-        """
-        self.check_cleaned()
-
-        if not isinstance(aetheric_frame, str):
-            self._logger.error("aetheric_frame must be str", "get_conduit_by_id")
-            raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
-        if aetheric_frame == "default":
-            aetheric_frame = self._aetheric_frame
-        if aetheric_frame != self._aetheric_frame:
-            raise ValueError("ConduitCloud only manages the current conduit frame.")
-        with self._lock:
-            return self._conduit_cloud.get_conduit_by_id(conduit_id)
-
-    def get_conduit_by_name(self, name: str, aetheric_frame:str = "default") -> Optional[IConduit]:
-        """
-        Public API
-
-        Retrieve a root conduit by name through the current frame's ConduitCloud.
-
-        Args:
-            name (str): The name of the conduit.
-            aetheric_frame (str):
-                Frame hint kept for compatibility. Only "default" or this
-                conduit's own frame name are supported by the injected
-                ConduitCloud path.
-
-        Returns:
-            Optional[IConduit]: The conduit instance if found, otherwise None.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
-            TypeError: If the `aetheric_frame` is not a string.
-            ValueError: If a different frame name is requested.
-        """
-        self.check_cleaned()
-        if not isinstance(aetheric_frame, str):
-            self._logger.error("aetheric_frame must be str", "get_conduit_by_name")
-            raise TypeError(f"Expected aetheric_frame to be a string, got {type(aetheric_frame).__name__}")
-        if aetheric_frame == "default":
-            aetheric_frame = self._aetheric_frame
-        if aetheric_frame != self._aetheric_frame:
-            raise ValueError("ConduitCloud only manages the current conduit frame.")
-        with self._lock:
-            return self._conduit_cloud.get_conduit_by_name(name)
-        
-    #endregion Aether API
     #region Conduit Ward API
     def link(self, target_conduit: IConduit) -> bool:
         """
@@ -3510,6 +3302,9 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str, optional): The str of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level granted for this spell (default is "create").
             aetheric_frame (str): Optional frame override used to locate the target conduit.
+            reason (DetailReason): The reason for the contract (default is DetailReason.manual).
+            link_dependencies (bool): Whether to link dependencies (default is False).
+            root_spell_id (str, optional): The root spell id for this contract (default is None).
 
         Returns:
             bool | None: True if the contract was created, False otherwise. None if an internal error occurs.
@@ -3574,6 +3369,8 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str, optional): The id of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level granted for all spells (default is "create").
             aetheric_frame (str): Optional frame override used to locate the target conduit.
+            reason (DetailReason): The reason for the contract (default is DetailReason.manual).
+            link_dependencies (bool): Whether to link dependencies (default is False).
 
         Returns:
             Dict: Dictionary of `spell_id` -> success boolean for each attempted contract.

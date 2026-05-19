@@ -1305,7 +1305,10 @@ class ConduitWard(Cleanable, IConduitWard):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 raise TypeError(f"Expected conduit_id as str, got {type(conduit_id).__name__}")
-            conduit = self._conduit.get_conduit_by_id(conduit_id, aetheric_frame)
+            conduit = self._conduit._spellbook._aether.get_conduit_by_id(
+                conduit_id,
+                aetheric_frame,
+            )
             if conduit is None:
                 self._logger.error(
                     f"check_conduit_id_and_conduit: resolve by id failed ({conduit_id})",

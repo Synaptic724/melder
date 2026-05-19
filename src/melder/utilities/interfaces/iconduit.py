@@ -251,23 +251,6 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Conduit Configuration
     # ------------------------------------------------------------------
-    def register_conduit_cloud(self, conduit: 'IConduit') -> None:
-        """
-        Public API
-
-        Registers a conduit in the dynamic mode registry. You can use this method if you forgot to name your conduit
-        to name it afterward and register it. You can only register it once.
-
-        Args:
-            conduit (IConduit): The conduit instance to register.
-
-        Raises:
-            RuntimeError: If dynamic environment is not enabled.
-            RuntimeError: If the conduit is a lesser conduit.
-            RuntimeError: If the Conduit name is not set.
-        """
-        ...
-
     def _apply_configuration_flags(self) -> None:
         """
         Internal
@@ -400,76 +383,6 @@ class IConduit(ICleanable, Protocol):
             None.
         """
         ...
-
-
-
-    def create_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Create one conduit cluster rooted at this conduit.
-
-        Args:
-            cluster_name (str): Stable cluster name to create.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def delete_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Delete one conduit cluster rooted at this conduit.
-
-        Args:
-            cluster_name (str): Stable cluster name to delete.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def join_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Join this conduit to one existing conduit cluster.
-
-        Args:
-            cluster_name (str): Stable cluster name to join.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def leave_cluster(self, cluster_name: str) -> None:
-        """
-        Public API
-
-        Leave this conduit's membership in one conduit cluster.
-
-        Args:
-            cluster_name (str): Stable cluster name to leave.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def list_clusters(self) -> list[str]:
-        """
-        Public API
-
-        Return the cluster names currently associated with this conduit.
-
-        Returns:
-            list[str]: Current conduit-cluster names.
-        """
-        ...
-
     # ------------------------------------------------------------------
     # Spellbook Management API
     # ------------------------------------------------------------------
@@ -1052,75 +965,6 @@ class IConduit(ICleanable, Protocol):
         Returns:
             Any:
                 Existing live runtime object for the resolved spell.
-        """
-        ...
-
-    # ------------------------------------------------------------------
-    # Conduit Cloud
-    # ------------------------------------------------------------------
-    def get_conduit_cloud(self) -> Any:
-        """
-        Public API
-
-        Returns the global Conduit Cloud, a registry of all normal conduits in the current Aetheric Frame.
-
-        This object is designed to be used in dynamic mode only and serves as an Abstract Factory/Service Locator.
-
-        Returns:
-            Any: The conduit cloud instance.
-
-        Raises:
-            RuntimeError: If the Conduit is a lesser conduit.
-            RuntimeError: If a dynamic environment is not enabled.
-        """
-        ...
-
-    # ------------------------------------------------------------------
-    # Aether API
-    # ------------------------------------------------------------------
-    def get_conduit_by_id(self, conduit_id: str, aetheric_frame: str = "default") -> Optional['IConduit']:
-        """
-        Public API
-
-        Retrieve a root conduit by id through the current frame's ConduitCloud.
-
-        Args:
-            conduit_id (str): The unique identifier of the conduit.
-            aetheric_frame (str):
-                Frame hint kept for compatibility. Only "default" or this
-                conduit's own frame name are supported by the current
-                ConduitCloud-backed implementation.
-
-        Returns:
-            Optional[IConduit]: The conduit instance if found, otherwise None.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
-            TypeError: If the `aetheric_frame` is not a string.
-            ValueError: If a different frame name is requested.
-        """
-        ...
-
-    def get_conduit_by_name(self, name: str, aetheric_frame: str = "default") -> Optional['IConduit']:
-        """
-        Public API
-
-        Retrieve a root conduit by name through the current frame's ConduitCloud.
-
-        Args:
-            name (str): The name of the conduit.
-            aetheric_frame (str):
-                Frame hint kept for compatibility. Only "default" or this
-                conduit's own frame name are supported by the current
-                ConduitCloud-backed implementation.
-
-        Returns:
-            Optional[IConduit]: The conduit instance if found, otherwise None.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned.
-            TypeError: If the `aetheric_frame` is not a string.
-            ValueError: If a different frame name is requested.
         """
         ...
 

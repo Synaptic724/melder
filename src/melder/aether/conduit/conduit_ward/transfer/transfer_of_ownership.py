@@ -440,7 +440,9 @@ class TransferOfOwnership(Cleanable):
         Raises:
             RuntimeError: If the source conduit does not expose a valid cloud.
         """
-        conduit_cloud: IConduitCloud = self.source_conduit.get_conduit_cloud()
+        conduit_cloud: IConduitCloud = self._aether.get_conduit_cloud(
+            self.source_conduit._aetheric_frame
+        )
         if conduit_cloud is None:
             raise RuntimeError("Source conduit did not return a valid ConduitCloud.")
         return conduit_cloud

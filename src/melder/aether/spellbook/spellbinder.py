@@ -1,8 +1,6 @@
 import threading
 from typing import Any, Optional, Callable
-
 from mypy_extensions import mypyc_attr
-
 # Melder Imports
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispellbook import ISpellbook

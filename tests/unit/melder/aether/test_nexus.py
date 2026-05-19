@@ -2126,6 +2126,9 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
         type(space.command_system),
         "_aether",
         SimpleNamespace(
+            get_conduit_cloud=lambda frame_name: SimpleNamespace(
+                get_clusters_for_conduit=lambda conduit_id: ["alpha"],
+            ),
             _get_existing_frame=lambda frame_name: SimpleNamespace(
                 _conduit_cloud=conduit_cloud,
             ),
@@ -4554,9 +4557,9 @@ def test_capability_rift_can_attach_to_automatic_target_frame_when_rift_enabled(
     assert isinstance(rift.space, CapabilityRiftSpace)
 
 
-def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -> None:
+def test_capability_room_broad_access_no_longer_exposes_removed_conduit_cloud_method() -> None:
     """
-    Verify capability can fetch real objects but lower runtime still rejects automatic-only dynamic operations.
+    Verify bound conduit objects no longer expose the removed cloud method.
 
     Returns:
         None.
@@ -4608,7 +4611,7 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
         space.workstation.bind_object("root", capability_conduit, weak_ref=False)
         space.workstation.set_target("root", store="objects")
 
-        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+        with pytest.raises(AttributeError, match="get_conduit_cloud"):
             space.command_system.execute_target_method("get_conduit_cloud")
     finally:
         conduit.cleanup()
@@ -4661,7 +4664,9 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
         _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             _get_existing_frame=lambda frame_name: SimpleNamespace(
-                _conduit_cloud=conduit.get_conduit_cloud(),
+                _conduit_cloud=conduit._spellbook._aether.get_conduit_cloud(
+                    conduit._aetheric_frame
+                ),
             ),
         )
         conduit_cloud = space.command_system.get_conduit_cloud(frame_name="ops")
@@ -4776,6 +4781,9 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
         _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+            get_conduit_cloud=lambda frame_name: spellbook._aether.get_conduit_cloud(
+                conduit._aetheric_frame
+            ),
         )
         space.command_system.create_cluster(
             conduit.id,

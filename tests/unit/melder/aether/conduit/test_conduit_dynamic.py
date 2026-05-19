@@ -151,60 +151,16 @@ def test_set_new_policy_delegates_for_dynamic(conduit_dynamic_normal: Conduit) -
     )
 
 
-def test_get_conduit_cloud_raises_for_lesser(conduit_lesser: Conduit) -> None:
-    """
-    Verify get_conduit_cloud rejects lesser conduits.
-
-    Contract:
-        - Lesser conduits cannot access the conduit cloud.
-
-    Args:
-        conduit_lesser (Conduit): Lesser conduit instance.
-
-    Raises:
-        AssertionError: If the call does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot access"):
-        conduit_lesser.get_conduit_cloud()
-
-
-def test_get_conduit_cloud_raises_when_not_dynamic(conduit_normal: Conduit) -> None:
-    """
-    Verify get_conduit_cloud rejects non-dynamic environments.
-
-    Contract:
-        - Dynamic environment is required for conduit cloud access.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit with dynamic disabled.
-
-    Raises:
-        AssertionError: If the call does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-        conduit_normal.get_conduit_cloud()
-
-
-def test_get_conduit_cloud_delegates_for_dynamic(
+def test_conduit_no_longer_exposes_get_conduit_cloud_surface(
+    conduit_lesser: Conduit,
+    conduit_normal: Conduit,
     conduit_dynamic_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
 ) -> None:
     """
-    Verify get_conduit_cloud returns the injected ConduitCloud in dynamic mode.
-
-    Contract:
-        - The injected ConduitCloud is returned unchanged.
-
-    Args:
-        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
+    Verify the public conduit cloud accessor is removed from the conduit surface.
     """
-    result = conduit_dynamic_normal.get_conduit_cloud()
-
-    assert result is conduit_cloud_stub
+    for conduit in (conduit_lesser, conduit_normal, conduit_dynamic_normal):
+        assert not hasattr(conduit, "get_conduit_cloud")
 
 
 def test_transfer_spell_ownership_raises_when_not_dynamic(
@@ -633,312 +589,29 @@ def test_create_lesser_conduit_raises_when_root_conduit_not_normal(
         conduit_dynamic_lesser.create_lesser_conduit()
 
 
-def test_register_conduit_cloud_raises_when_not_dynamic(conduit_normal: Conduit) -> None:
-    """
-    Verify register_conduit_cloud is blocked in non-dynamic environments.
-
-    Contract:
-        - Dynamic mode is required for cloud registration.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit with dynamic disabled.
-
-    Raises:
-        AssertionError: If registration does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-        conduit_normal.register_conduit_cloud(conduit_normal)
-
-
-def test_register_conduit_cloud_raises_for_lesser(conduit_dynamic_lesser: Conduit) -> None:
-    """
-    Verify register_conduit_cloud rejects lesser conduits.
-
-    Contract:
-        - Lesser conduits cannot register in the conduit cloud.
-
-    Args:
-        conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
-
-    Raises:
-        AssertionError: If registration does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot register"):
-        conduit_dynamic_lesser.register_conduit_cloud(conduit_dynamic_lesser)
-
-
-def test_register_conduit_cloud_raises_when_name_missing(
+def test_conduit_no_longer_exposes_cloud_or_cluster_surface(
+    conduit_normal: Conduit,
+    conduit_lesser: Conduit,
     conduit_dynamic_normal: Conduit,
+    conduit_dynamic_lesser: Conduit,
 ) -> None:
-    """
-    Verify register_conduit_cloud rejects unnamed conduits.
-
-    Contract:
-        - A conduit must have a name before registration.
-
-    Args:
-        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-
-    Raises:
-        AssertionError: If registration does not raise for missing name.
-    """
-    with pytest.raises(RuntimeError, match="name is not set"):
-        conduit_dynamic_normal.register_conduit_cloud(conduit_dynamic_normal)
-
-
-def test_register_conduit_cloud_delegates_to_cloud(
-    conduit_dynamic_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify register_conduit_cloud delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the registration call with the conduit.
-
-    Args:
-        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_dynamic_normal.name = "alpha"
-    conduit_dynamic_normal._nexus_publish_enabled = True
-    conduit_dynamic_normal._nexus = MagicMock()
-
-    conduit_dynamic_normal.register_conduit_cloud(conduit_dynamic_normal)
-
-    conduit_cloud_stub._register_conduit.assert_called_once_with(conduit_dynamic_normal)
-    conduit_dynamic_normal._nexus._publish_frame_record.assert_called_once_with(
-        conduit_dynamic_normal._spellbook
+    """Conduit should no longer expose public cloud or cluster helper methods."""
+    removed_methods = (
+        "get_conduit_cloud",
+        "register_conduit_cloud",
+        "unregister_conduit_cloud",
+        "create_cluster",
+        "delete_cluster",
+        "join_cluster",
+        "leave_cluster",
+        "list_clusters",
+        "refresh_cluster_shares",
     )
-
-
-def test_unregister_conduit_cloud_raises_when_not_dynamic(conduit_normal: Conduit) -> None:
-    """
-    Verify unregister_conduit_cloud is blocked in non-dynamic environments.
-
-    Contract:
-        - Dynamic mode is required for cloud unregistration.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit with dynamic disabled.
-
-    Raises:
-        AssertionError: If unregistration does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-        conduit_normal.unregister_conduit_cloud(conduit_normal)
-
-
-def test_unregister_conduit_cloud_raises_for_lesser(conduit_dynamic_lesser: Conduit) -> None:
-    """
-    Verify unregister_conduit_cloud rejects lesser conduits.
-
-    Contract:
-        - Lesser conduits cannot unregister from the conduit cloud.
-
-    Args:
-        conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
-
-    Raises:
-        AssertionError: If unregistration does not raise.
-    """
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot unregister"):
-        conduit_dynamic_lesser.unregister_conduit_cloud(conduit_dynamic_lesser)
-
-
-def test_unregister_conduit_cloud_raises_when_name_missing(
-    conduit_dynamic_normal: Conduit,
-) -> None:
-    """
-    Verify unregister_conduit_cloud rejects unnamed conduits.
-
-    Contract:
-        - A conduit must have a name before unregistration.
-
-    Args:
-        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-
-    Raises:
-        AssertionError: If unregistration does not raise for missing name.
-    """
-    with pytest.raises(RuntimeError, match="name is not set"):
-        conduit_dynamic_normal.unregister_conduit_cloud(conduit_dynamic_normal)
-
-
-def test_unregister_conduit_cloud_delegates_to_cloud(
-    conduit_dynamic_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify unregister_conduit_cloud delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the unregistration call with the conduit.
-
-    Args:
-        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_dynamic_normal.name = "alpha"
-    conduit_dynamic_normal._nexus_publish_enabled = True
-    conduit_dynamic_normal._nexus = MagicMock()
-
-    conduit_dynamic_normal.unregister_conduit_cloud(conduit_dynamic_normal)
-
-    conduit_cloud_stub._unregister_conduit.assert_called_once_with(conduit_dynamic_normal)
-    conduit_dynamic_normal._nexus._publish_frame_record.assert_called_once_with(
-        conduit_dynamic_normal._spellbook
-    )
-
-
-def test_create_cluster_delegates_to_cloud(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify create_cluster delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the create call with the cluster name.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_normal._nexus_publish_enabled = True
-    conduit_normal._nexus = MagicMock()
-
-    conduit_normal.create_cluster("cluster-1")
-
-    conduit_cloud_stub.create_cluster.assert_called_once_with("cluster-1")
-    conduit_normal._nexus._publish_frame_record.assert_called_once_with(
-        conduit_normal._spellbook
-    )
-
-
-def test_delete_cluster_delegates_to_cloud(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify delete_cluster delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the remove call with the cluster name.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_normal._nexus_publish_enabled = True
-    conduit_normal._nexus = MagicMock()
-
-    conduit_normal.delete_cluster("cluster-1")
-
-    conduit_cloud_stub.delete_cluster.assert_called_once_with("cluster-1")
-    conduit_normal._nexus._publish_frame_record.assert_called_once_with(
-        conduit_normal._spellbook
-    )
-
-
-def test_join_cluster_delegates_to_cloud(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify join_cluster delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the add call with the conduit and cluster name.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_normal.join_cluster("cluster-1")
-
-    conduit_cloud_stub.add_conduit_to_cluster.assert_called_once_with(conduit_normal, "cluster-1")
-
-
-def test_leave_cluster_delegates_to_cloud(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify leave_cluster delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the remove call with the conduit and cluster name.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_normal.leave_cluster("cluster-1")
-
-    conduit_cloud_stub.remove_conduit_from_cluster.assert_called_once_with(conduit_normal, "cluster-1")
-
-
-def test_list_clusters_returns_cloud_list(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify list_clusters returns the ConduitCloud cluster list.
-
-    Contract:
-        - ConduitCloud results are passed through unchanged.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If the list is not returned.
-    """
-    conduit_cloud_stub.get_clusters_for_conduit.return_value = ["alpha", "beta"]
-
-    result = conduit_normal.list_clusters()
-
-    conduit_cloud_stub.get_clusters_for_conduit.assert_called_once_with(conduit_normal._id)
-    assert result == ["alpha", "beta"]
-
-
-def test_refresh_cluster_shares_delegates_to_cloud(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify refresh_cluster_shares delegates to the injected ConduitCloud.
-
-    Contract:
-        - ConduitCloud receives the refresh call with the conduit instance.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If delegation fails.
-    """
-    conduit_normal.refresh_cluster_shares()
-
-    conduit_cloud_stub.refresh_cluster_shares_for_conduit.assert_called_once_with(conduit_normal)
+    for conduit in (
+        conduit_normal,
+        conduit_lesser,
+        conduit_dynamic_normal,
+        conduit_dynamic_lesser,
+    ):
+        for method_name in removed_methods:
+            assert not hasattr(conduit, method_name)

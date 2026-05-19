@@ -1,8 +1,5 @@
 from typing import Dict, Mapping, Tuple
-
 from mypy_extensions import mypyc_attr
-from mypyc.codegen.emitfunc import native_function_type
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
@@ -50,8 +47,8 @@ class ResolutionStyleMatrix:
     Canonical resolution-style support matrix for Melder.
 
     Purpose:
-        Provide one owner-maintained artifact for resolution-style support so
-        architecture/docs/tests do not infer behavior from scattered code paths.
+        Provide one owner-maintained artifact for resolution-style support, so
+        architecture/docs/tests do not infer behaviour from scattered code paths.
 
     Ownership:
         Runtime maintainers for `spellbook/bind` and `spellbook/spell_types`.

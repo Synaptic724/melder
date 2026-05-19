@@ -1007,93 +1007,9 @@ def test_disable_meld_closes_creation_gate(conduit_normal: Conduit) -> None:
     conduit_normal._creation_gate.close.assert_called_once_with()
 
 
-def test_get_conduit_by_id_rejects_non_string_frame(
+def test_conduit_no_longer_exposes_cloud_lookup_helpers(
     conduit_normal: Conduit,
 ) -> None:
-    """
-    Verify get_conduit_by_id enforces aetheric_frame type.
-
-    Contract:
-        - Non-string aetheric_frame raises TypeError.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-
-    Raises:
-        AssertionError: If non-string frame does not raise.
-    """
-    with pytest.raises(TypeError, match="aetheric_frame"):
-        conduit_normal.get_conduit_by_id("peer", aetheric_frame=123)
-
-
-def test_get_conduit_by_id_defaults_frame(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify get_conduit_by_id maps "default" to the conduit frame.
-
-    Contract:
-        - ConduitCloud receives the current-frame id lookup.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If frame mapping is incorrect.
-    """
-    conduit_normal._aetheric_frame = "frame-1"
-    sentinel = MagicMock()
-    conduit_cloud_stub.get_conduit_by_id.return_value = sentinel
-
-    result = conduit_normal.get_conduit_by_id("peer", aetheric_frame="default")
-
-    conduit_cloud_stub.get_conduit_by_id.assert_called_once_with("peer")
-    assert result is sentinel
-
-
-def test_get_conduit_by_name_rejects_non_string_frame(
-    conduit_normal: Conduit,
-) -> None:
-    """
-    Verify get_conduit_by_name enforces aetheric_frame type.
-
-    Contract:
-        - Non-string aetheric_frame raises TypeError.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-
-    Raises:
-        AssertionError: If non-string frame does not raise.
-    """
-    with pytest.raises(TypeError, match="aetheric_frame"):
-        conduit_normal.get_conduit_by_name("peer", aetheric_frame=123)
-
-
-def test_get_conduit_by_name_defaults_frame(
-    conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify get_conduit_by_name maps "default" to the conduit frame.
-
-    Contract:
-        - ConduitCloud receives the current-frame name lookup.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for delegation.
-
-    Raises:
-        AssertionError: If frame mapping is incorrect.
-    """
-    conduit_normal._aetheric_frame = "frame-1"
-    sentinel = MagicMock()
-    conduit_cloud_stub.get_conduit_by_name.return_value = sentinel
-
-    result = conduit_normal.get_conduit_by_name("peer", aetheric_frame="default")
-
-    conduit_cloud_stub.get_conduit_by_name.assert_called_once_with("peer")
-    assert result is sentinel
+    """Conduit should no longer expose cloud-backed lookup helper methods."""
+    assert not hasattr(conduit_normal, "get_conduit_by_id")
+    assert not hasattr(conduit_normal, "get_conduit_by_name")

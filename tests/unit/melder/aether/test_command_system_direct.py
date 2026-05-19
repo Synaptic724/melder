@@ -175,7 +175,8 @@ def test_command_system_delete_cluster_and_target_getter_guardrails(
     target = SimpleNamespace(status="ready", not_callable="value")
     command_system, viewer, _ = _make_command_system(target=target)
     deleted_cluster_names = []
-    conduit = SimpleNamespace(
+    conduit = SimpleNamespace()
+    conduit_cloud = SimpleNamespace(
         delete_cluster=lambda cluster_name: deleted_cluster_names.append(cluster_name)
     )
     viewer.compiled_access_surface.enabled_conduit_ids = ("ops-conduit",)
@@ -183,6 +184,13 @@ def test_command_system_delete_cluster_and_target_getter_guardrails(
         type(command_system),
         "_get_conduit_by_id_locked",
         lambda self, conduit_id, *, frame_name=None: conduit,
+    )
+    monkeypatch.setattr(
+        type(command_system),
+        "_aether",
+        SimpleNamespace(
+            get_conduit_cloud=lambda frame_name: conduit_cloud,
+        ),
     )
 
     command_system.delete_cluster("ops-conduit", "ops-cluster")
@@ -407,7 +415,8 @@ def test_command_system_emits_one_memory_for_top_level_public_calls(
     received_memories = []
     memory_system.register_memory_callback(lambda memory: received_memories.append(memory))
     command_system, viewer, _ = _make_command_system(memory_system=memory_system)
-    conduit = SimpleNamespace(create_cluster=lambda cluster_name: None)
+    conduit = SimpleNamespace()
+    conduit_cloud = SimpleNamespace(create_cluster=lambda cluster_name: None)
 
     viewer.descriptor.conduit_records_by_id["ops-conduit"] = _make_conduit_record()
     viewer.compiled_access_surface.enabled_conduit_ids = ("ops-conduit",)
@@ -416,6 +425,7 @@ def test_command_system_emits_one_memory_for_top_level_public_calls(
         "_aether",
         SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+            get_conduit_cloud=lambda frame_name: conduit_cloud,
         ),
     )
 

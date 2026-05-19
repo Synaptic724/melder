@@ -462,8 +462,9 @@ def test_conduit_public_api_get_conduit_by_id_name_and_spell_id() -> None:
     conduit_a = spellbook_a.conjure(name="root-a")
     conduit_b = spellbook_b.conjure(name="root-b")
     try:
-        assert conduit_a.get_conduit_by_id(conduit_b.id) is conduit_b
-        assert conduit_a.get_conduit_by_name("root-b") is conduit_b
+        cloud = conduit_a._spellbook._aether.get_conduit_cloud(conduit_a._aetheric_frame)
+        assert cloud.get_conduit_by_id(conduit_b.id) is conduit_b
+        assert cloud.get_conduit_by_name("root-b") is conduit_b
         assert conduit_a.get_conduit_by_spell_id(spell_id_b) is conduit_b
         assert conduit_b.get_conduit_by_spell_id(spell_id_a) is conduit_a
     finally:

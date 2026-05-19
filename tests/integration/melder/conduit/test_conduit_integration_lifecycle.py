@@ -145,19 +145,19 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
     try:
         owner_id = owner.id
         owner_name = owner.name
-        cloud = observer.get_conduit_cloud()
+        cloud = observer._spellbook._aether.get_conduit_cloud(observer._aetheric_frame)
 
-        assert observer.get_conduit_by_id(owner_id) is owner
-        assert observer.get_conduit_by_name(owner_name) is owner
+        assert cloud.get_conduit_by_id(owner_id) is owner
+        assert cloud.get_conduit_by_name(owner_name) is owner
         assert observer.get_conduit_by_spell_id(spell_id) is owner
         assert cloud.get_conduit(owner_name) is owner
 
         owner.cleanup()
 
         with pytest.raises(ValueError, match="not found"):
-            observer.get_conduit_by_id(owner_id)
+            cloud.get_conduit_by_id(owner_id)
         with pytest.raises(ValueError, match="not found"):
-            observer.get_conduit_by_name(owner_name)
+            cloud.get_conduit_by_name(owner_name)
         with pytest.raises(ValueError, match="Spell version"):
             observer.get_conduit_by_spell_id(spell_id)
         with pytest.raises(ValueError, match="not found"):
@@ -345,7 +345,8 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
                 permissions="create",
             )
         assert isinstance(lesser.meld(spell=config_id), BasicConfig)
-        assert root.get_conduit_by_name("upgraded") is lesser
+        cloud = root._spellbook._aether.get_conduit_cloud(root._aetheric_frame)
+        assert cloud.get_conduit_by_name("upgraded") is lesser
     finally:
         root.cleanup()
 

@@ -439,11 +439,12 @@ class CapabilityCommandSystem(CommandSystem, ICapabilityCommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self._get_conduit_by_id_locked(
+            self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            conduit.create_cluster(cluster_name)
+            conduit_cloud = self._aether.get_conduit_cloud(resolved_frame_name)
+            conduit_cloud.create_cluster(cluster_name)
 
     def delete_cluster(
             self,
@@ -473,11 +474,12 @@ class CapabilityCommandSystem(CommandSystem, ICapabilityCommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self._get_conduit_by_id_locked(
+            self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            conduit.delete_cluster(cluster_name)
+            conduit_cloud = self._aether.get_conduit_cloud(resolved_frame_name)
+            conduit_cloud.delete_cluster(cluster_name)
 
     def join_cluster(
             self,
@@ -511,7 +513,8 @@ class CapabilityCommandSystem(CommandSystem, ICapabilityCommandSystem):
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            conduit.join_cluster(cluster_name)
+            conduit_cloud = self._aether.get_conduit_cloud(resolved_frame_name)
+            conduit_cloud.add_conduit_to_cluster(conduit, cluster_name)
 
     def leave_cluster(
             self,
@@ -545,7 +548,8 @@ class CapabilityCommandSystem(CommandSystem, ICapabilityCommandSystem):
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            conduit.leave_cluster(cluster_name)
+            conduit_cloud = self._aether.get_conduit_cloud(resolved_frame_name)
+            conduit_cloud.remove_conduit_from_cluster(conduit, cluster_name)
 
     def list_clusters(
             self,
@@ -572,11 +576,12 @@ class CapabilityCommandSystem(CommandSystem, ICapabilityCommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self._get_conduit_by_id_locked(
+            self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            return tuple(conduit.list_clusters())
+            conduit_cloud = self._aether.get_conduit_cloud(resolved_frame_name)
+            return tuple(conduit_cloud.get_clusters_for_conduit(conduit_id))
 
     def link(
             self,

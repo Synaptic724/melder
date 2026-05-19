@@ -381,11 +381,12 @@ class CodegenCommandSystem(CommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self._get_conduit_by_id_locked(
+            self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            return tuple(conduit.list_clusters())
+            conduit_cloud = self._aether.get_conduit_cloud(resolved_frame_name)
+            return tuple(conduit_cloud.get_clusters_for_conduit(conduit_id))
 
     def get_links(
             self,

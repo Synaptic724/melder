@@ -206,10 +206,11 @@ def test_conduit_get_conduit_by_id_name_missing_raises() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
+        cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
         with pytest.raises(ValueError, match="not found"):
-            conduit.get_conduit_by_id("missing-id")
+            cloud.get_conduit_by_id("missing-id")
         with pytest.raises(ValueError, match="not found"):
-            conduit.get_conduit_by_name("missing-name")
+            cloud.get_conduit_by_name("missing-name")
     finally:
         conduit.cleanup()
 
@@ -234,8 +235,9 @@ def test_conduit_refresh_cluster_shares_noop_without_membership() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        assert conduit.list_clusters() == []
-        conduit.refresh_cluster_shares()
-        assert conduit.list_clusters() == []
+        cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
+        assert cloud.get_clusters_for_conduit(conduit._id) == []
+        cloud.refresh_cluster_shares_for_conduit(conduit)
+        assert cloud.get_clusters_for_conduit(conduit._id) == []
     finally:
         conduit.cleanup()

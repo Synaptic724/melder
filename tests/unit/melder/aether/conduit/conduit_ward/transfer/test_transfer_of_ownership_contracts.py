@@ -405,6 +405,7 @@ class FakeFrame:
         self._spell_registry: Dict[str, set[SpellIndex]] = {}
         self._conduit_clusters: Dict[str, FakeCluster] = {}
         self._conduits: Dict[str, Any] = {}
+        self._conduit_cloud = FakeConduitCloud(self)
 
 
 class FakeConduitCloud:
@@ -469,6 +470,10 @@ class FakeAether:
         self._incident_manager = incident_manager
         self.add_calls: List[Dict[str, Any]] = []
         self.remove_calls: List[Dict[str, Any]] = []
+
+    def get_conduit_cloud(self, frame_name: str):
+        """Return the frame-local cloud service for the requested frame."""
+        return self._default_frame._conduit_cloud
 
     def _get_change_control_manager(self, frame_name: str) -> FakeChangeControlManager:
         """

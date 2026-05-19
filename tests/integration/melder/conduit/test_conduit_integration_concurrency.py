@@ -603,11 +603,12 @@ def test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_insta
     try:
         for borrower in borrowers:
             owner.link(borrower)
-        owner.create_cluster("cluster-hard")
-        owner.join_cluster("cluster-hard")
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud.create_cluster("cluster-hard")
+        cloud.add_conduit_to_cluster(owner, "cluster-hard")
         for borrower in borrowers:
-            borrower.join_cluster("cluster-hard")
-        owner.refresh_cluster_shares()
+            cloud.add_conduit_to_cluster(borrower, "cluster-hard")
+        cloud.refresh_cluster_shares_for_conduit(owner)
 
         barrier = Barrier(4)
         lock = Lock()
@@ -950,14 +951,16 @@ def test_conduit_cluster_concurrent_meld_two_clusters_isolated() -> None:
         cluster_a_owner.link(cluster_a_peer)
         cluster_b_owner.link(cluster_b_peer)
 
-        cluster_a_owner.create_cluster("cluster-a")
-        cluster_a_owner.join_cluster("cluster-a")
-        cluster_a_peer.join_cluster("cluster-a")
-        cluster_b_owner.create_cluster("cluster-b")
-        cluster_b_owner.join_cluster("cluster-b")
-        cluster_b_peer.join_cluster("cluster-b")
-        cluster_a_owner.refresh_cluster_shares()
-        cluster_b_owner.refresh_cluster_shares()
+        cloud_a = cluster_a_owner._spellbook._aether.get_conduit_cloud(cluster_a_owner._aetheric_frame)
+        cloud_b = cluster_b_owner._spellbook._aether.get_conduit_cloud(cluster_b_owner._aetheric_frame)
+        cloud_a.create_cluster("cluster-a")
+        cloud_a.add_conduit_to_cluster(cluster_a_owner, "cluster-a")
+        cloud_a.add_conduit_to_cluster(cluster_a_peer, "cluster-a")
+        cloud_b.create_cluster("cluster-b")
+        cloud_b.add_conduit_to_cluster(cluster_b_owner, "cluster-b")
+        cloud_b.add_conduit_to_cluster(cluster_b_peer, "cluster-b")
+        cloud_a.refresh_cluster_shares_for_conduit(cluster_a_owner)
+        cloud_b.refresh_cluster_shares_for_conduit(cluster_b_owner)
 
         tasks = [
             ("cluster-a-owner", cluster_a_owner, spell_id_a, _assert_basic_service),

@@ -126,17 +126,18 @@ def test_conduit_cluster_auto_link_dependencies_toggle() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        owner.create_cluster("cluster-a")
-        cluster = owner.get_conduit_cloud()._get_cluster("cluster-a")
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud.create_cluster("cluster-a")
+        cluster = cloud._get_cluster("cluster-a")
         cluster.set_auto_link_dependencies(False)
-        owner.join_cluster("cluster-a")
-        borrower.join_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
 
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))
         assert inbound_ids == {depth3_ids[Depth3Root]}
 
         cluster.set_auto_link_dependencies(True)
-        owner.refresh_cluster_shares()
+        cloud.refresh_cluster_shares_for_conduit(owner)
 
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))
         assert inbound_ids == set(depth3_ids.values())
@@ -169,9 +170,10 @@ def test_conduit_cluster_refresh_shares_after_new_bind() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        owner.create_cluster("cluster-a")
-        owner.join_cluster("cluster-a")
-        borrower.join_cluster("cluster-a")
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
 
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))
         assert inbound_ids == {service_id}
@@ -182,7 +184,7 @@ def test_conduit_cluster_refresh_shares_after_new_bind() -> None:
                 existence=Existence.unique_per_conduit_cluster,
                 permissions="create",
             )
-        owner.refresh_cluster_shares()
+        cloud.refresh_cluster_shares_for_conduit(owner)
 
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))
         assert inbound_ids == {service_id, config_id}
@@ -215,9 +217,10 @@ def test_conduit_cluster_leave_preserves_manual_contracts() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        owner.create_cluster("cluster-a")
-        owner.join_cluster("cluster-a")
-        borrower.join_cluster("cluster-a")
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
 
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -226,7 +229,7 @@ def test_conduit_cluster_leave_preserves_manual_contracts() -> None:
                 permissions="create",
             ) is True
 
-        borrower.leave_cluster("cluster-a")
+        cloud.remove_conduit_from_cluster(borrower, "cluster-a")
 
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))
         assert inbound_ids == {service_id}

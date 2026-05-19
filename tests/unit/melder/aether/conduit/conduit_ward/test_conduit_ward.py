@@ -46,6 +46,7 @@ def _make_conduit_with_ward(
     conduit._conduit_state = conduit_state
     conduit._aetheric_frame = aetheric_frame
     conduit._spellbook = MagicMock()
+    conduit._spellbook._aether = MagicMock()
     ward = ConduitWard(conduit, dynamic, conduit_state, Policies.default)
     conduit._conduit_ward = ward
     return conduit, ward
@@ -58,6 +59,8 @@ def mock_conduit():
     c._logger = MagicMock()
     c._conduit_state = ConduitState.normal
     c._aetheric_frame = "default"
+    c._spellbook = MagicMock()
+    c._spellbook._aether = MagicMock()
     # Circular ref often needed
     return c
 
@@ -617,7 +620,9 @@ def test_add_spell_to_contract_flow(ward):
     # Mock retrieval
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
-    ward._conduit.get_conduit_by_id = MagicMock(return_value=target_conduit)
+    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(
+        return_value=target_conduit
+    )
     
     # Act
     ward._add_spell_to_contract(
@@ -640,7 +645,9 @@ def test_add_spell_no_contract_raises(ward):
     # Mock retrieval
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
-    ward._conduit.get_conduit_by_id = MagicMock(return_value=target_conduit)
+    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(
+        return_value=target_conduit
+    )
     spell = MagicMock(spec=ISpell)
     spell.spell_id = "sha-1"
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
@@ -1021,7 +1028,7 @@ def test_check_conduit_id_and_conduit_raises_when_unresolved(ward):
     """
     Verify _check_conduit_id_and_conduit errors when conduit_id cannot be resolved.
     """
-    ward._conduit.get_conduit_by_id = MagicMock(return_value=None)
+    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=None)
 
     with pytest.raises(RuntimeError, match="Could not resolve conduit"):
         ward._check_conduit_id_and_conduit(conduit_id="missing")
@@ -1032,7 +1039,7 @@ def test_check_conduit_id_and_conduit_raises_on_id_mismatch(ward):
     """
     target = MagicMock(spec=IConduit)
     target._id = "other"
-    ward._conduit.get_conduit_by_id = MagicMock(return_value=target)
+    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=target)
 
     with pytest.raises(RuntimeError, match="does not match conduit internal ID"):
         ward._check_conduit_id_and_conduit(conduit_id="conduit-2")
@@ -1043,7 +1050,7 @@ def test_check_conduit_id_and_conduit_success(ward):
     """
     target = MagicMock(spec=IConduit)
     target._id = "conduit-2"
-    ward._conduit.get_conduit_by_id = MagicMock(return_value=target)
+    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=target)
 
     resolved_id, resolved_conduit = ward._check_conduit_id_and_conduit(conduit_id="conduit-2")
 
@@ -2035,11 +2042,13 @@ def test_check_conduit_id_and_conduit_passes_aetheric_frame(ward):
     """
     target = MagicMock(spec=IConduit)
     target._id = "conduit-2"
-    ward._conduit.get_conduit_by_id = MagicMock(return_value=target)
+    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=target)
 
     ward._check_conduit_id_and_conduit(conduit_id="conduit-2", aetheric_frame="frame-1")
 
-    assert ward._conduit.get_conduit_by_id.call_args == (("conduit-2", "frame-1"),)
+    assert ward._conduit._spellbook._aether.get_conduit_by_id.call_args == (
+        ("conduit-2", "frame-1"),
+    )
 
 # ----------------------------------------------------------------------
 # 28. Contract Description

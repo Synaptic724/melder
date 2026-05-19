@@ -118,13 +118,7 @@ def test_aether_frame_isolation_for_conduit_and_spell_lookup() -> None:
         ) is conduit_b
 
         with pytest.raises(ValueError, match="not found"):
-            conduit_a.get_conduit_by_name("root-b")
-
-        with pytest.raises(ValueError, match="current conduit frame"):
-            conduit_a.get_conduit_by_name(
-                "root-b",
-                aetheric_frame="frame-b",
-            )
+            Aether().get_conduit_cloud("frame-a").get_conduit_by_name("root-b")
 
         assert Aether().get_conduit_by_name("root-b", "frame-b") is conduit_b
     finally:
@@ -166,8 +160,8 @@ def test_aether_conduit_cloud_isolated_by_frame() -> None:
     conduit_a = book_a.conjure(automatic=False, name="root-a")
     conduit_b = book_b.conjure(automatic=False, name="root-b")
     try:
-        cloud_a = conduit_a.get_conduit_cloud()
-        cloud_b = conduit_b.get_conduit_cloud()
+        cloud_a = Aether().get_conduit_cloud("frame-a")
+        cloud_b = Aether().get_conduit_cloud("frame-b")
 
         assert cloud_a.get_conduit("root-a") is conduit_a
         assert cloud_b.get_conduit("root-b") is conduit_b

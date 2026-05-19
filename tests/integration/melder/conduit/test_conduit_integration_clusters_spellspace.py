@@ -77,21 +77,22 @@ def test_conduit_cluster_join_leave_list_and_delete() -> None:
     owner = owner_book.conjure(automatic=False, name="owner")
     peer = peer_book.conjure(automatic=False, name="peer")
     try:
-        owner.create_cluster("cluster-a")
-        owner.join_cluster("cluster-a")
-        peer.join_cluster("cluster-a")
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(peer, "cluster-a")
 
-        assert set(owner.list_clusters()) == {"cluster-a"}
-        assert set(peer.list_clusters()) == {"cluster-a"}
+        assert set(cloud.get_clusters_for_conduit(owner._id)) == {"cluster-a"}
+        assert set(cloud.get_clusters_for_conduit(peer._id)) == {"cluster-a"}
 
-        owner.refresh_cluster_shares()
+        cloud.refresh_cluster_shares_for_conduit(owner)
 
-        peer.leave_cluster("cluster-a")
-        assert peer.list_clusters() == []
+        cloud.remove_conduit_from_cluster(peer, "cluster-a")
+        assert cloud.get_clusters_for_conduit(peer._id) == []
 
-        owner.leave_cluster("cluster-a")
-        owner.delete_cluster("cluster-a")
-        assert owner.list_clusters() == []
+        cloud.remove_conduit_from_cluster(owner, "cluster-a")
+        cloud.delete_cluster("cluster-a")
+        assert cloud.get_clusters_for_conduit(owner._id) == []
     finally:
         peer.cleanup()
         owner.cleanup()
@@ -122,33 +123,33 @@ def test_conduit_conduit_cloud_register_unregister() -> None:
     conduit = spellbook.conjure(automatic=False, name="owner")
     lesser = conduit.create_lesser_conduit()
     try:
-        cloud = conduit.get_conduit_cloud()
+        cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
         assert cloud.get_conduit("owner") is conduit
         assert cloud._registry["owner"] is conduit
 
-        conduit.unregister_conduit_cloud(conduit)
+        cloud._unregister_conduit(conduit)
         assert "owner" not in cloud._registry
         assert cloud.get_conduit("owner") is conduit
 
-        conduit.register_conduit_cloud(conduit)
+        cloud._register_conduit(conduit)
         assert cloud.get_conduit("owner") is conduit
 
-        with pytest.raises(RuntimeError, match="Lesser conduits cannot register"):
-            lesser.register_conduit_cloud(lesser)
+        with pytest.raises(ValueError, match="cannot be None"):
+            cloud._register_conduit(lesser)
     finally:
         conduit.cleanup()
 
 
-def test_conduit_get_conduit_cloud_rejects_automatic() -> None:
+def test_aether_get_conduit_cloud_returns_frame_service_in_automatic() -> None:
     """
     Purpose:
-        Validate get_conduit_cloud rejects automatic environments.
+        Validate Aether still exposes the frame-local cloud in automatic mode.
     Contract:
-        - Automatic conduits raise when accessing the conduit cloud.
+        - Automatic frames still own a ConduitCloud service.
     Returns:
         None.
     Raises:
-        AssertionError: If conduit cloud is accessible in automatic mode.
+        AssertionError: If the frame-local cloud is unavailable.
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -161,7 +162,7 @@ def test_conduit_get_conduit_cloud_rejects_automatic() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-            conduit.get_conduit_cloud()
+        cloud = spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
+        assert cloud.get_conduit("root") is conduit
     finally:
         conduit.cleanup()

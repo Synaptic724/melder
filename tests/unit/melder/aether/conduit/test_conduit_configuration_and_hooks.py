@@ -334,7 +334,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
     try:
         conduit._apply_configuration_flags()
         assert conduit.__dynamic_environment__ is True
-        assert conduit.get_conduit_cloud() is conduit._conduit_cloud
+        assert conduit._conduit_cloud is not None
     finally:
         conduit.cleanup()
 

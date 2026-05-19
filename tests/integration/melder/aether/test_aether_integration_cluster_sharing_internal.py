@@ -108,7 +108,7 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
         cluster = cloud._get_cluster("cluster-a")
         assert shareable_spell.spell_index not in cluster.get_shared_spells().get(conduit.id, set())
 
-        conduit.refresh_cluster_shares()
+        cloud.refresh_cluster_shares_for_conduit(conduit)
 
         cluster = cloud._get_cluster("cluster-a")
         shared = cluster.get_shared_spells()
@@ -157,7 +157,7 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
         non_shareable_spell = next(
             spell for idx, spell in spellbook._spells.items() if idx.current == non_shareable_id
         )
-        conduit.refresh_cluster_shares()
+        cloud.refresh_cluster_shares_for_conduit(conduit)
 
         cluster = cloud._get_cluster("cluster-a")
         assert cluster.get_shared_spells() == {}
