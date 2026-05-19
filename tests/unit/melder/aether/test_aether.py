@@ -669,6 +669,23 @@ def test_get_existing_frame_returns_frame_with_cloud(aether_with_mocks):
     assert frame._conduit_cloud is cloud
 
 
+def test_get_conduit_cloud_returns_frame_owned_cloud(aether_with_mocks) -> None:
+    """get_conduit_cloud should return the cloud owned by the requested frame."""
+    a = aether_with_mocks
+    cloud = MagicMock(spec=IConduitCloud)
+    a._default_frame._conduit_cloud = cloud
+
+    assert a.get_conduit_cloud() is cloud
+
+
+def test_get_conduit_cloud_missing_frame_raises(aether_with_mocks) -> None:
+    """get_conduit_cloud should fail clearly for a missing custom frame."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.get_conduit_cloud("missing_frame")
+
+
 def test_get_existing_frame_missing_frame_raises(aether_with_mocks):
     """_get_existing_frame should fail clearly for missing custom frames."""
     a = aether_with_mocks
@@ -1321,7 +1338,7 @@ def test_refresh_cluster_shares_for_conduit(aether_with_mocks):
 
 
 def test_removed_cluster_helpers_are_not_exposed_on_aether(aether_with_mocks):
-    """Aether no longer exposes cluster lifecycle helpers after the owner move."""
+    """Aether no longer exposes the old cluster lifecycle helpers after the owner move."""
     a = aether_with_mocks
     helper_names = (
         "_register_conduit_cloud",
@@ -1337,8 +1354,6 @@ def test_removed_cluster_helpers_are_not_exposed_on_aether(aether_with_mocks):
         "_refresh_cluster_shares_for_conduit",
         "_on_conduit_joined_cluster",
         "_on_conduit_left_cluster",
-        "_get_conduit_cloud",
-        "get_conduit_cloud",
     )
 
     for helper_name in helper_names:

@@ -19,6 +19,7 @@ from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -1098,6 +1099,32 @@ class Aether(Cleanable, IAether):
         """
         self.check_cleaned()
         return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
+
+    def get_conduit_cloud(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> IConduitCloud:
+        """
+        Return the frame-local conduit and cluster service for one frame.
+
+        Purpose:
+            Expose the frame-owned `ConduitCloud` through Aether so callers can
+            start from the top-level runtime host and move into the frame-local
+            conduit and cluster service surface explicitly.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            IConduitCloud: The frame-local conduit cloud for the requested frame.
+
+        Raises:
+            ValueError: If the requested frame does not exist.
+        """
+        self.check_cleaned()
+        frame = self._get_existing_frame(aetheric_frame_name)
+        return frame._conduit_cloud
 
     def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """

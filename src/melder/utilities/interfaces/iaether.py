@@ -17,6 +17,7 @@ from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -344,6 +345,22 @@ class IAether(ICleanable, Protocol):
     ) -> "IConduit":
         """
         Return one registered root conduit by id.
+        """
+        ...
+
+    def get_conduit_cloud(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> IConduitCloud:
+        """
+        Return the frame-local conduit and cluster service for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            IConduitCloud: The frame-local conduit cloud.
         """
         ...
 
