@@ -13,6 +13,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.icreations import ICreations
+from melder.utilities.interfaces.icreation import ICreation
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -24,7 +25,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.existence.existence import Existence
 
@@ -509,7 +509,7 @@ class Meld(Cleanable, IMeld):
 
         if existence is Existence.unique_per_conduit:
             creation = caller_creations._creations.get(spell_id)
-            if not isinstance(creation, Creation):
+            if not isinstance(creation, ICreation):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
@@ -542,7 +542,7 @@ class Meld(Cleanable, IMeld):
                     "Spell '{0}' is not live.".format(spell_id)
                 )
             creation = owner_creations._creations.get(spell_id)
-            if not isinstance(creation, Creation):
+            if not isinstance(creation, ICreation):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )

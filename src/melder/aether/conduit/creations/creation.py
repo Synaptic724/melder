@@ -8,8 +8,11 @@ from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.interfaces.icreation import ICreation
+
+
 @mypyc_attr(native_class=True)
-class Creation(Cleanable):
+class Creation(Cleanable, ICreation):
     """
     Wrapper for one live runtime object tracked by `Creations`.
 
