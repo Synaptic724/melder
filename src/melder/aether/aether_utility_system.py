@@ -1,9 +1,7 @@
 import logging
 import threading
 from typing import Any, Callable, Dict, Iterable, Optional, Union
-
 from mypy_extensions import mypyc_attr
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
@@ -35,7 +33,7 @@ class AetherUtilitySystem(Cleanable):
 
     Lifecycle:
         Created eagerly by `Aether` at boot. Cleanup clears the registered
-        resolver and resets singleton state for tests.
+        resolver and resets the singleton state for tests.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -215,7 +213,7 @@ class AetherUtilitySystem(Cleanable):
 
         Returns:
             bool:
-                True when a stdlib fallback logger is currently configured.
+                True when an stdlib fallback logger is currently configured.
         """
         self.check_cleaned()
         return self._default_logger is not None
@@ -225,7 +223,7 @@ class AetherUtilitySystem(Cleanable):
         Internal
 
         Register one process-wide default stdlib logger for message-only
-        fallback behavior when no channel resolver is available.
+        fallback behaviour when no channel resolver is available.
 
         Contract:
             - Replaces any previously registered fallback logger.

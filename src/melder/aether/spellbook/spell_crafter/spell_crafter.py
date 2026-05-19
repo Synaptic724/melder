@@ -143,8 +143,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
     """
     Per-spell orchestration surface for the SpellCrafter pipeline.
 
-    This class is the spell-local owner for the artifacts that turn one bound
-    :class:`Spell` from "registered metadata" into "validated, plan-bearing
+    This class is the spell-local owner for the artifacts that turn one bound: class: 'Spell` from "registered metadata" into "validated, plan-bearing
     runtime input." It starts with the structural phases that inspect the
     callable surface and build the local dependency picture, then retains the
     later conduit-scoped artifacts that resolution and meld-time gates depend
@@ -152,11 +151,11 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
     Conceptual ownership is split like this:
 
-        * :class:`Spellbook` owns long-lived registries, frame integration, and
+        *: class:`Spellbook` owns long-lived registries, frame integration, and
           the multi-spell phase orchestration.
-        * :class:`Spell` owns durable identity and the final concrete build
+        *: class: 'Spell` owns durable identity and the final concrete build
           details pushed back into the spell.
-        * :class:`SpellCrafter` owns the transient and semi-transient artifacts
+        *: class:`SpellCrafter` owns the transient and semi-transient artifacts
           produced while compiling one spell through Phases 1-11.
 
     Phase coverage:
@@ -176,18 +175,18 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         - One crafter instance is attached to one spell version at a time.
         - Artifacts are cached so later phases and meld-time revalidation can
           reuse them without rebuilding from scratch on every access.
-        - :meth:`cleanup` releases crafter-owned artifacts only; it does not
-          dispose the owning :class:`Spell`, its :class:`Spellbook`, or the
+        -: meth: 'cleanup` releases crafter-owned artifacts only; it does not
+           dispose of the owning: class:`Spell`, its: class:`Spellbook`, or the
           frame-level control-plane services they reference.
 
     Identity:
         All phase artifacts produced by this crafter are keyed by the spell's
-        versioned identity ``spell.spell_index.current``. That version id is
+        versioned identity "spell.spell_index.current". That version id is
         written into artifacts such as:
 
-        * :class:`SpellRequirements.spell_id`
-        * :class:`SpellSymbolicGraph.spell_id`
-        * :class:`SpellSymbolicDependency.spell_id`
+        *: class:`SpellRequirements.spell_id`
+        *: class:`SpellSymbolicGraph.spell_id`
+        *: class:`SpellSymbolicDependency.spell_id`
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -233,7 +232,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             resolution_profile: Optional[Any] = None,
     ) -> None:
         """
-        Create a new SpellCrafter for one bound :class:`Spell`.
+        Create a new SpellCrafter for one bound: class: 'Spell`.
 
         Args:
             spell:
@@ -304,10 +303,10 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Args:
             spellbook:
-                Owning spellbook whose frame name is required.
+                Owning a spellbook whose frame name is required.
 
         Returns:
-            str: Concrete owning frame name.
+            str: Concrete-owning frame name.
 
         Raises:
             RuntimeError:
@@ -329,7 +328,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Args:
             spell:
-                Owning spell whose spell-system-state surface is required.
+                Owning a spell whose spell-system-state surface is required.
 
         Returns:
             Optional[ISpellSystemStates]: Attached registry when available.
@@ -468,7 +467,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         """
         Deterministically release all crafter-owned phase artifacts.
 
-        Behavior:
+        Behaviour:
             * Cleans and clears structural artifacts from Phases 1-4.
             * Cleans and clears later blueprint/plan/index artifacts from
               Phases 5-11 when present.
@@ -582,7 +581,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
     @property
     def spell(self) -> ISpell:
         """
-        The owning :class:`Spell` for this crafter.
+        The owning: class: 'Spell` for this crafter.
 
         Returns:
             ISpell: The live spell instance supplied at construction time.
@@ -600,7 +599,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         """
         Phase 1 artifact for this spell, if it has been computed.
 
-        This is the same object returned by :meth:`run_phase_requirements`.
+        This is the same object returned by: meth:`run_phase_requirements`.
         When the crafter was initialized from a prebuilt resolution profile,
         this property may be populated before Phase 1 is run locally.
         """
@@ -621,8 +620,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         Phase 3 artifact for this spell, if it has been computed.
 
         The resolution frame is a **summary view** over the concrete
-        dependency DAG that is pushed into the owning :class:`Spell` via
-        :meth:`Spell._add_build_details`. It records the spell id and the
+        dependency DAG that is pushed into the owning: class: 'Spell` via: meth:`Spell._add_build_details`. It records the spell id and the
         topological order of all nodes participating in that DAG.
         """
         self.check_cleaned()
@@ -633,9 +631,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         """
         Phase 4 validation result artifact, if any.
 
-        Once Phase 4 is wired, this will typically be a
-        :class:`SpellValidationResult` produced by the
-        :class:`SpellValidationSystem`. For now the type is kept as ``Any``
+        Once Phase 4 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
         to avoid constraining callers.
         """
         self.check_cleaned()
@@ -808,7 +804,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
     def get_phase5_spell_ids(self) -> Set[str]:
         """
-        Return the spell ids currently covered by local Phase 5 system-index state.
+        Return the spell ids currently covered by the local Phase 5 system-index state.
 
         Returns:
             Set[str]: Spell ids visible through the local Phase 5 index.
@@ -838,9 +834,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         """
         Phase 6 validation result artifact, if any.
 
-        Once Phase 6 is wired, this will typically be a
-        :class:`SpellValidationResult` produced by the
-        :class:`SpellValidationSystem`. For now the type is kept as ``Any``
+        Once Phase 6 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
         to avoid constraining callers.
         """
         self.check_cleaned()
@@ -869,7 +863,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
     # ------------------------------------------------------------------
     def reset_phase_artifacts(self) -> None:
         """
-        Release transient validation/build artifacts without disposing the
+        Release transient validation/build artifacts without disposing of the
         crafter.
 
         Contract:
@@ -899,7 +893,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         set under the crafter lock.
 
         Contract:
-            - Best-effort cleans owned artifact objects before nulling them.
+            - Best-effort cleans owned artifact objects before pulling them.
             - Leaves Phase 5 and later plan/codegen artifacts untouched.
             - Refreshes the phase2_5 codegen snapshot after the structural
               layers are cleared.
@@ -1044,7 +1038,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             root_blueprint: Optional[IRootResolutionBlueprint],
     ) -> Optional[Tuple[Any, ...]]:
         """
-        Build deterministic phase10 input signature for patch-map reuse.
+        Build a deterministic phase10 input signature for patch-map reuse.
 
         Purpose:
             Detect whether phase10 patch-map inputs changed so warm runs can
@@ -1219,7 +1213,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             spell_lookup: Optional[Dict[str, ISpell]],
     ) -> Optional[str]:
         """
-        Build deterministic phase8 input signature for occurrence-plan reuse.
+        Build a deterministic phase8 input signature for occurrence-plan reuse.
 
         Purpose:
             Detect semantic drift in phase8 inputs so warm runs can safely skip
@@ -1348,16 +1342,16 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             occurrence_plan: Optional[IOccurrencePlan],
     ) -> Optional[str]:
         """
-        Build deterministic phase9 input signature for injection-plan reuse.
+        Build a deterministic phase9 input signature for injection-plan reuse.
 
         Purpose:
-            Detect phase9 semantic drift using phase8 signature state so warm
+            Detect phase9 semantic drift using the phase8 signature state so warm
             runs can safely skip redundant injection-plan rebuilds with minimal
             additional signature overhead.
         Contract:
             - Returns None when occurrence-plan inputs are unavailable.
             - Reuses phase8 occurrence-plan input signature when present.
-            - Falls back to rebuild (None) when phase8 signature is unavailable.
+            - Falls back to rebuild (None) when the phase8 signature is unavailable.
         Args:
             occurrence_plan:
                 Phase8 occurrence plan used to build phase9 injection plan.
@@ -1400,7 +1394,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Purpose:
             Avoid expensive mega-`repr(...)` materialization on large nested
-            IR payloads while preserving deterministic signature behavior.
+            IR payloads while preserving deterministic signature behaviour.
         Contract:
             - Uses typed fastpaths for common scalar values.
             - Uses direct `pickle` fallback for container and unsupported values.
@@ -1450,7 +1444,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             Produce stable fingerprints for phase-exported IR slices so Phase 12
             compilation can skip unchanged payloads.
         Contract:
-            - Signature is deterministic for equal ordered inputs.
+            - Signature is deterministic for equal-ordered inputs.
             - Does not depend on process-randomized object identity.
         Args:
             *parts:
@@ -2465,7 +2459,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         steps = plan.steps
         include_override_metadata = (
-            plan.plan_variant != ExecutionPlanVariant.NO_OVERRIDES_FAST
+                plan.plan_variant != ExecutionPlanVariant.NO_OVERRIDES_FAST
         )
         steps_rows = tuple(
             self._build_phase11_step_ir_row(
@@ -2475,7 +2469,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             for step in steps
         )
         # Hash the full tuple payload as one signature part to avoid per-row
-        # serializer churn while preserving deterministic invalidation behavior.
+        # serializer churn while preserving deterministic invalidation behaviour.
         steps_rows_signature = self._hash_codegen_signature(steps_rows)
         step_spell_ids = tuple(
             step.spell.spell_index.current
@@ -2511,7 +2505,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Purpose:
             Capture only the step fields that influence phase12 no-overrides
-            compiled source/namespace behavior without constructing full IR
+            compiled source/namespace behaviour without constructing full IR
             payload dict rows.
         Contract:
             - Returns a tuple-only row with deterministic ordering.
@@ -2560,11 +2554,11 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             spell: ISpell,
     ) -> Tuple[Any, ...]:
         """
-        Build deterministic spell metadata row for Phase 11 no-overrides inputs.
+        Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
 
         Purpose:
             Capture spell fields consumed by `ExecutionPlanBuilder.build` so
-            phase11 can detect when no-overrides rebuild is required.
+            phase11 can detect when a no-overrides rebuild is required.
         Contract:
             - Includes existence/register/disposal and optimistic-object identity.
             - Uses primitive/tuple values only for deterministic hashing.
@@ -2677,7 +2671,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             spell_lookup: Dict[str, ISpell],
     ) -> Optional[str]:
         """
-        Build deterministic no-overrides input signature for Phase 11 reuse.
+        Build a deterministic no-overrides input signature for Phase 11 reuse.
 
         Purpose:
             Detect semantic drift in plan-builder inputs so repeated warm runs
@@ -3017,10 +3011,10 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         Mark phase8_11 codegen export as stale.
 
         Purpose:
-            Record that one or more Phase8-11 artifacts changed and a new IR
+            Record that one or more Phase8-11 artifacts are changed and a new IR
             export is required before consumers read phase8_11 payloads.
         Contract:
-            - Idempotent; repeated calls keep dirty state true.
+            - Idempotent; repeated calls keep the dirty state true.
             - Does not mutate codegen payloads directly.
         Returns:
             None.
@@ -3084,8 +3078,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             compile cache checks do not require building no-overrides IR payload
             dict rows.
         Contract:
-            - Stores `None` executor/signature when plan is missing or empty.
-            - Reuses existing executor when plan-derived signature is unchanged.
+            - Stores `None` executor/signature when the plan is missing or empty.
+            - Reuses existing executor when the plan-derived signature is unchanged.
             - Raises when compilation fails for a non-empty plan.
         Args:
             plan:
@@ -3135,8 +3129,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             trigger lazy capture or when payload-only compile paths are used.
         Contract:
             - Stores `None` executor/signature when payload is missing.
-            - Reuses existing executor when payload signature is unchanged.
-            - Raises on malformed payload shape for non-empty plans.
+            - Reuses existing executor when the payload signature is unchanged.
+            - Rises on malformed payload shape for non-empty plans.
         Args:
             no_overrides_payload:
                 Phase11 no-overrides payload dictionary or `None`.
@@ -3215,7 +3209,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             plans are cleared.
         Contract:
             - No-op when IR is not initialized.
-            - Always clears compiled no-overrides executor cache.
+            - Always clears the compiled no-overrides executor cache.
             - Resets pending phase8_11 dirty state.
         Returns:
             None.
@@ -3248,7 +3242,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         - It does *not* recompute anything itself.
         - It simply forwards the concrete dependency_ids that were pushed back
-          into the owning Spell via ``_add_build_details(...)``.
+          into the owning Spell via "_add_build_details(...)".
         """
         # If this crafter has been cleaned, bail early; the manager may already
         # be torn down as part of frame cleanup.
@@ -3262,7 +3256,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         self._get_required_spell_system_states().update_dependencies(
             self._spell.spell_index,
             dependency_ids or [],
-        )
+            )
 
     def _throw_if_cancelled(self, cancel_event: Optional[CancellationEvent]) -> None:
         """
@@ -3279,9 +3273,9 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             Provide a single internal iterator that Phase 3 can use for
             resolution without relying on any scanner wrapper.
         Contract:
-            - Yields ``(spell_index, spell)`` in the insertion order of
-              ``_spell_id_pool``.
-            - Uses the Spellbook's live ``_spell_id_pool`` directly; no copies
+            - Yields "(spell_index, spell)" in the insertion order of
+              "_spell_id_pool".
+            - Uses the Spellbook's live "_spell_id_pool" directly; no copies
               or snapshots are created.
         Returns:
             Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
@@ -3337,17 +3331,17 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             require_class_spell: bool,
     ) -> bool:
         """
-        Return True if ``spell_obj`` is a candidate for the given annotation.
+        Return True if "spell_obj" is a candidate for the given annotation.
 
         Matching rules (Phase 3 view):
 
           * Optional/Union annotations should be normalized before matching.
           * If the annotation is a string, match by spell name or frame name.
-          * Then try concrete-class match: ``spell_obj.spell is annotation``.
-          * Then try frame match: ``spell_obj.spellframe is/== annotation``.
-          * If ``binding_name`` is not None, require an exact match.
+          * Then try a concrete-class match: "spell_obj.spell is annotation".
+          * Then try a frame match: "spell_obj.spellframe is/== annotation".
+          * If "binding_name" is not None, require an exact match.
 
-        If ``require_class_spell`` is True, method / lambda style spells are
+        If "require_class_spell" is True, method / lambda style spells are
         excluded. This enforces the rule that *single* DI by plain type-hint
         only ever targets class/creation spells; method/lambda spells must be
         obtained explicitly via SpellMap or root-level meld.
@@ -3497,7 +3491,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         MUTATION_CONTRACT:
             MutationContract socket - can be rewired at meld-time.
 
-        For now we classify based solely on `dep.di_shape`. If we later
+        For now, we classify based solely on `dep.di_shape`. If we later
         introduce additional DI shapes, this is the central mapping point.
         """
         di_shape = dep.di_shape
@@ -3539,8 +3533,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             return spellmap_key
 
         if dep.di_shape in (
-            ParameterDIShape.SINGLE_BY_ANNOTATION,
-            ParameterDIShape.COLLECTION_BY_ANNOTATION,
+                ParameterDIShape.SINGLE_BY_ANNOTATION,
+                ParameterDIShape.COLLECTION_BY_ANNOTATION,
         ):
             if dep.target_annotation is None:
                 return None
@@ -3626,12 +3620,12 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 1 - Analyse the Spell constructor and capture DI requirements.
+        Phase 1 - Analyze the Spell constructor and capture DI requirements.
 
         Responsibilities:
             * Inspect the bound Spell's constructor and classify every parameter
-              into a :class:`ParameterDIShape` (normal DI, SpellMap, contracts, etc.).
-            * Build a :class:`SpellRequirements` object that records per-parameter
+              into a: class:`ParameterDIShape` (normal DI, SpellMap, contracts, etc.).
+            * Build a: class:`SpellRequirements` object that records per-parameter
               metadata (name, position, shape, optionality, annotations).
             * Store the requirements on this SpellCrafter (``_requirements``) for
               later phases to consume.
@@ -3643,7 +3637,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
               running phases in order.
             * Does **not** mutate the Spell, SpellSystemStates, or any DAG
               structures. It only updates this SpellCrafter's internal state.
-            * Does not return a value; consumers read ``self._requirements``.
+            * Does not return a value; consumers read "self._requirements".
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -3669,9 +3663,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         Phase 2 - Build the symbolic dependency graph for this Spell.
 
         Responsibilities:
-            * Consume Phase 1 requirements and construct a
-              :class:`SpellSymbolicGraph` describing all constructor sockets.
-            * Create one :class:`SpellSymbolicDependency` per constructor
+            * Consume Phase 1 requirements and construct a: class:`SpellSymbolicGraph` describing all constructor sockets.
+            * Create one: class:`SpellSymbolicDependency` per constructor
               parameter that should be represented as a socket, including:
                   - plain (caller-supplied) parameters,
                   - normal DI sockets (single, collection, SpellMap),
@@ -3687,7 +3680,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             * Does **not** build any concrete DAG or talk to SpellSystemStates.
             * Does **not** mutate the Spell. It only updates this
               SpellCrafter's internal state.
-            * Does not return a value; consumers read ``self._symbolic_graph``.
+            * Does not return a value; consumers read "self._symbolic_graph".
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
@@ -3744,7 +3737,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             elif di_shape is ParameterDIShape.SPELL_CONTRACT:
                 # Contract socket.
                 #
-                # For now we reuse the raw annotation as the "target" so that
+                # For now, we reuse the raw annotation as the "target" so that
                 # later phases (5-7) can infer what this contract is over,
                 # without committing to any specific resolution semantics yet.
                 target_annotation = param.annotation
@@ -3756,7 +3749,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             elif di_shape is ParameterDIShape.MUTATION_CONTRACT:
                 # Mutation socket.
                 #
-                # Same approach as SPELL_CONTRACT: we record the socket +
+                # The same approach as SPELL_CONTRACT: we record the socket +
                 # annotation so that later contract/mutation logic (early vs
                 # late binding, _mutation_overrides, etc.) has visibility.
                 target_annotation = param.annotation
@@ -3803,28 +3796,27 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         """
         Internal helper for Phase 3.
 
-        Construct a :class:`SpellLocalTopology` describing this Spell's
+        Construct a: class:`SpellLocalTopology` describing this Spell's
         constructor sockets, based on:
 
-            * the symbolic dependencies from :class:`SpellSymbolicGraph`, and
+            * the symbolic dependencies from: class:`SpellSymbolicGraph`, and
             * the concrete dependency spell ids resolved during Phase 3.
 
-        For each :class:`SpellSymbolicDependency`:
-            * Determine ``socket_kind`` from its :class:`ParameterDIShape`.
-            * Copy ``is_collection`` and ``is_optional`` flags from the
+        For each: class:`SpellSymbolicDependency`:
+            * Determine "socket_kind" from its: class:`ParameterDIShape`.
+            * Copy "is_collection" and "is_optional" flags from the
               symbolic graph.
-            * Look up any concrete targets via ``socket_targets`` using
-                ``(param_name, position)``. Normal DI sockets may have one or
+            * Look up any concrete targets via "socket_targets" using
+                "(param_name, position)". Normal DI sockets may have one or
                 many targets; contract, mutation, and plain sockets will
                 typically have none at this phase.
             * Preserve contract metadata for SpellContract / MutationContract
               sockets (canonical key, late-binding flag).
-            * Create a :class:`SpellSocketDescriptor` for that parameter.
+            * Create a: class:`SpellSocketDescriptor` for that parameter.
 
-        The resulting :class:`SpellLocalTopology` is a per-spell, constructor-
+        The resulting: class:`SpellLocalTopology` is a per-spell, constructor-
         local view of sockets that later phases (blueprint assembly, override
-        targeting, change-control) will consume. It is registered into
-        :class:`SpellSystemStates` by Phase 3; this method does not talk to
+        targeting, change-control) will consume. It is registered into: class:`SpellSystemStates` by Phase 3; this method does not talk to
         SpellSystemStates directly.
         """
         self.check_cleaned()
@@ -3850,16 +3842,16 @@ class SpellCrafter(Cleanable, ISpellCrafter):
                 dependency_key = self._dependency_key_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
-                  spell_id=spell_id,
-                  param_name=dep.param_name,
-                  position=dep.position,
-                  socket_kind=socket_kind,
-                  is_collection=dep.is_collection,
-                  is_optional=dep.is_optional,
-                  target_spell_ids=target_spell_ids,
-                  dependency_key=dependency_key,
-                  contract_key=dep.contract_key,
-                  contract_late_binding=dep.contract_late_binding,
+                spell_id=spell_id,
+                param_name=dep.param_name,
+                position=dep.position,
+                socket_kind=socket_kind,
+                is_collection=dep.is_collection,
+                is_optional=dep.is_optional,
+                target_spell_ids=target_spell_ids,
+                dependency_key=dependency_key,
+                contract_key=dep.contract_key,
+                contract_late_binding=dep.contract_late_binding,
             )
             descriptors.append(descriptor)
 
@@ -3890,23 +3882,23 @@ class SpellCrafter(Cleanable, ISpellCrafter):
                   - resolve normal DI shapes via direct Spellbook map iteration,
                   - add DAG nodes for resolved dependency spells,
                   - add edges from each dependency node to the root node,
-                    tagging edges with ``param_name`` and ``socket_kind``.
-            * Track, per constructor socket ``(param_name, position)``, the
+                    tagging edges with "param_name" and "socket_kind".
+            * Track, per constructor socket "(param_name, position)", the
               concrete dependency spell ids resolved in this phase.
-            * Build a :class:`SpellLocalTopology` from the symbolic graph plus
+            * Build a: class:`SpellLocalTopology` from the symbolic graph plus
               the per-socket targets.
-            * Call into :class:`SpellSystemStates` to:
+            * Call into: class:`SpellSystemStates`:
                   - record direct dependency spell ids, and
                   - register the local topology for this Spell.
 
         Important:
             * This helper does **not** mutate the Spell object. All artifacts
-              (DAG, topology, dependency ids) remain in this SpellCrafter and
+              (DAG, topology, dependency ids) remain in these SpellCrafter and
               SpellSystemStates.
-            * If ``return_dependencies`` is True, returns a tuple of
-              ``(dag, dependency_spell_ids)``; otherwise returns only the DAG.
+            * If "return_dependencies" is True, it returns a tuple of
+              "(dag, dependency_spell_ids)"; otherwise it returns only the DAG.
             * SpellContract and MutationContract sockets take part in the
-              symbolic graph and topology, but do not produce DAG edges or
+              symbolic graph and topology but do not produce DAG edges or
               concrete targets at this stage.
         """
         self.check_cleaned()
@@ -3949,7 +3941,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             else:
                 # SpellContract / MutationContract / PLAIN and any future shapes
                 # are currently metadata-only at the DAG level. They still
-                # participate in local topology below.
+                # participate in the local topology below.
                 resolved = {}
 
             if not resolved:
@@ -4012,17 +4004,17 @@ class SpellCrafter(Cleanable, ISpellCrafter):
                   - direct edges represent first-hop constructor dependencies.
             * Track, per constructor parameter, which dependency spell ids were
               bound during resolution.
-            * Build a :class:`SpellLocalTopology` snapshot that describes all
+            * Build a: class:`SpellLocalTopology` snapshot that describes all
               sockets (normal, SpellContract, MutationContract) and their
               concrete targets where applicable.
             * Register both:
                   - direct dependency spell ids, and
                   - the local topology
-              into :class:`SpellSystemStates`.
+              into: class:`SpellSystemStates`.
 
         Socket semantics:
             * Normal DI shapes (single, collection, SpellMap) produce DAG nodes,
-              DAG edges, and concrete ``target_spell_ids`` entries in topology.
+              DAG edges, and concrete "target_spell_ids" entries in topology.
             * SpellContract and MutationContract sockets are **metadata-only** at
               this phase:
                   - they appear in the symbolic graph and topology,
@@ -4037,11 +4029,9 @@ class SpellCrafter(Cleanable, ISpellCrafter):
               instead of auto-running earlier phases.
             * Assumes the bound Spell is attached to a Spellbook; direct
               Spellbook map iteration is used for resolution.
-            * Stores the local DAG and direct dependency list on the Spell via
-              :meth:`Spell._add_build_details`, and keeps a
-              :class:`SpellResolutionFrame` internally on this SpellCrafter.
+            * Stores the local DAG and direct dependency list on the Spell via: meth:`Spell._add_build_details`, and keeps a: class:`SpellResolutionFrame` internally on this SpellCrafter.
             * Does not return a value; callers rely on:
-                  - ``self._resolution_frame`` for ordering, and
+                  - "self._resolution_frame" for ordering, and
                   - SpellSystemStates for dependencies and topology.
         """
         self.check_cleaned()
@@ -4099,14 +4089,14 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Responsibilities:
             * Assume Phases 1-3 have completed for this Spell.
-            * Delegate to :class:`SpellValidationSystem` to validate this spell
+            * Delegate to: class:`SpellValidationSystem` to validate this spell
               using:
                   - Phase 1 requirements,
                   - Phase 2 symbolic graph,
                   - Phase 3 resolution frame.
-            * Cache the resulting :class:`SpellValidationResult` and expose it
-              via :attr:`validation_result`, :attr:`validated`,
-              and :attr:`is_broken`.
+            * Cache the resulting: class:`SpellValidationResult 'and expose it
+              via: attr:`validation_result`, :attr:`validated`,
+              and: attr:`is_broken`.
             * Update global structural validity (SpellSystemState) when available,
               including gating spells with missing SpellContract providers.
 
@@ -4116,8 +4106,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             * Does **not** mutate the Spell or build any DAGs. It only records
               validation outcome and diagnostics on this SpellCrafter.
             * If the SpellSystemState is no longer valid (unknown/gated/invalid),
-              the validation is re-run even if this phase previously completed.
-            * Returns ``None``; callers rely on the stored validation result and
+              the validation is re-run even if this phase is previously completed.
+            * Returns "None"; callers rely on the stored validation result and
               flags instead of a direct return value.
         """
         self.check_cleaned()
@@ -4211,7 +4201,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             - A root-only blueprint map for system validation (Phase 6).
             - Per-spell blueprints attached to constructed spells so Phase 8-10
               and Phase 11 compilation can proceed for any meldable spell.
-            - The change-control component-of map is rebuilt from **owned** roots
+            - The change-control component of the map is rebuilt from **owned** roots
               only, so contracted roots are not revalidated by this conduit.
 
         Args:
@@ -4504,7 +4494,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Purpose:
             Build Phase 5 artifacts for only the target spell and its
-            transitive dependency closure so meld-triggered revalidation
+            transitive dependency closure, so meld-triggered revalidation
             does not recompile unrelated spells.
         Contract:
             - Uses the same builders and invariants as frame-wide Phase 5.
@@ -4587,7 +4577,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             snapshot:
                 Frame-wide SpellSystemAdjacencySnapshot to filter.
             visible_spell_ids:
-                Version ids visible to this Spellbook. This collection is treated
+                Version ids are visible to this Spellbook. This collection is treated
                 as a live view and is not copied.
         Returns:
             SpellSystemAdjacencySnapshot:
@@ -4695,9 +4685,9 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             spell_lookup=spell_lookup,
         )
         can_reuse_phase8_signature_fast_key = (
-            phase8_occurrence_plan_fast_key is not None
-            and self._phase8_occurrence_plan_fast_key == phase8_occurrence_plan_fast_key
-            and self._phase8_occurrence_plan_input_signature is not None
+                phase8_occurrence_plan_fast_key is not None
+                and self._phase8_occurrence_plan_fast_key == phase8_occurrence_plan_fast_key
+                and self._phase8_occurrence_plan_input_signature is not None
         )
         if can_reuse_phase8_signature_fast_key:
             occurrence_plan_input_signature = self._phase8_occurrence_plan_input_signature
@@ -4773,7 +4763,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             ValueError:
                 If conduit_id is empty.
             RuntimeError:
-                If Phase 8 artifacts are missing for this spell or if the
+                If Phase 8 artifacts are missing for this spell, or if the
                 root blueprint is missing for this spell.
             OperationCancelledError:
                 If cancel_event signals cancellation.
@@ -4988,9 +4978,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             - Replaces existing ExecutionPlan references for this spell.
             - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
               spell lookup map without rebuilding it per phase.
-            - Reuses cached no-overrides plan when deterministic Phase11
-              no-overrides input signature is unchanged.
-            - Reuses the full cached phase11 variant set when signature is
+            - Reuses cached no-overrides plan when the deterministic Phase11 no-overrides input signature is unchanged.
+            - Reuses the full cached phase11 variant set when the signature is
               unchanged and cached sibling variants are available.
             - Falls back to the legacy no-overrides rebuild path when signature
               inputs are missing.
@@ -5013,11 +5002,11 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             id(spell_lookup),
         )
         can_reuse_no_overrides_fast_key = (
-            self._phase8_occurrence_plan_input_signature is not None
-            and (
-                injection_plan is None
-                or self._phase9_injection_plan_input_signature is not None
-            )
+                self._phase8_occurrence_plan_input_signature is not None
+                and (
+                        injection_plan is None
+                        or self._phase9_injection_plan_input_signature is not None
+                )
         )
         no_overrides_input_signature: Optional[str]
         if (
@@ -5039,8 +5028,8 @@ class SpellCrafter(Cleanable, ISpellCrafter):
                 self._phase11_no_overrides_fast_key = None
         previous_no_overrides_signature = self._phase11_no_overrides_input_signature
         no_overrides_signature_unchanged = (
-            no_overrides_input_signature is not None
-            and previous_no_overrides_signature == no_overrides_input_signature
+                no_overrides_input_signature is not None
+                and previous_no_overrides_signature == no_overrides_input_signature
         )
         if (
                 no_overrides_signature_unchanged
@@ -5153,21 +5142,21 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         Attempt to derive a non-fast Phase 11 variant from an existing base plan.
 
         Purpose:
-            Reuse shared step/index structure from the no-overrides plan to avoid
+            Reuse the shared step / index structure from the no-overrides plan to avoid
             repeated full `ExecutionPlanBuilder.build()` passes for sibling
             variants.
         Contract:
             - Returns a fresh `ExecutionPlan` with copied list/dict containers so
               cleanup remains isolated per variant.
             - Returns `None` when the base plan does not expose the required
-              structure (for example in test stubs), allowing a safe fallback to
+              structure (for example, in test stubs), allowing a safe fallback to
               the legacy full-build path.
             - Derived variants do not carry fast-path arrays/transient plans.
         Args:
             base_plan:
                 Source plan expected to expose execution-plan structural fields.
             plan_variant:
-                Target variant label for the derived plan.
+                Target the variant label for the derived plan.
         Returns:
             Optional[ExecutionPlan]:
                 Derived plan when compatible, otherwise `None`.
@@ -5322,7 +5311,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         Purpose:
             Validate only the locally scoped Phase 5 graph produced by
-            ``run_phase_root_blueprints_local``.
+            "run_phase_root_blueprints_local".
         Contract:
             - Uses the same strategy set as frame-wide Phase 6.
             - Records per-conduit validity only for scoped spell/root ids.
@@ -5458,14 +5447,14 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             - Never mutates SpellSystemStates or spell objects.
         Args:
             scoped_spell_ids:
-                Spell ids participating in local validation scope.
+                Spell ids participating in the local validation scope.
             spell_lookup:
                 Visible spell_id -> spell map for the current Spellbook.
             root_ids:
                 Root ids for the local validation scope.
         Returns:
             List[SystemDiagnostic]:
-                Visibility-gap diagnostics; empty when scope is fully visible.
+                Visibility-gap diagnostics; empty when the scope is fully visible.
         """
         self.check_cleaned()
         ordered_root_ids = sorted(root_ids)
@@ -5576,7 +5565,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         Phase 7 - Change-control wiring.
 
         Behaviour (conduit-scoped, idempotent):
-        - Ensure ChangeControlManager is present for the frame.
+        - Ensure the ChangeControlManager is present for the frame.
         - Ensure the component-of index is (re)built from the Phase-5 root blueprints.
         - Ensure the revalidator hook is registered.
         """
@@ -5629,7 +5618,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             """
             Revalidate dirty roots for the conduit-wide Phase 7 hook.
 
-            This closure is registered on the conduit's change-control slot so
+            This closure is registered on the conduit's change-control slot, so
             later dirty-root events can drive a full spell-level recompilation
             through the current Spellbook/runtime view.
             """
@@ -5677,7 +5666,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             Revalidate dirty roots for the local Phase 7 change-control hook.
 
             This local variant mirrors the frame-wide revalidation contract but
-            is installed from the local wiring path so scoped revalidation can
+            is installed from the local wiring path, so scoped revalidation can
             still hand dirty roots back into the full spell-phase pipeline for
             this conduit.
             """
@@ -5708,9 +5697,9 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Convenience helper to run **structural phases only** (1-4) in sequence.
+        Convenience helper to run **structural phases only** (1-4) in a sequence.
 
-        This is typically invoked via :meth:`Spell.run_structural_phases` and
+        This is typically invoked via: meth:`Spell.run_structural_phases` and
         is used for global, conduit-agnostic structural validation.
 
         Execution order:
@@ -5720,8 +5709,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             4. Validation (Phase 4)
 
         Returns:
-            None. The crafter retains all intermediate artifacts until
-            :meth:`cleanup` is called. The owning Spell only needs to hold the
+            None. The crafter retains all intermediate artifacts until: meth: 'cleanup` is called. The owning Spell only needs to hold the
             final DAG and dependency spell_ids once Phase 3 is fully implemented.
         Notes:
             Phase artifacts are cleaned after Phase 7; structural data remains in
@@ -5740,7 +5728,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         """
         Convenience helper to run all phases in sequence for this spell.
 
-        This is typically invoked via :meth:`Spell.run_all_phases` (a facade)
+        This is typically invoked via: meth:`Spell.run_all_phases` (a facade)
         and is intended for batch compilation / `meld()` cycles.
 
         Execution order:
@@ -5767,8 +5755,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
                 Optional cancellation signal shared across the scheduler.
 
         Returns:
-            None. The crafter retains all intermediate artifacts until
-            :meth:`cleanup` is called. The owning Spell only needs to hold the
+            None. The crafter retains all intermediate artifacts until: meth: 'cleanup` is called. The owning Spell only needs to hold the
             final DAG and dependency spell_ids once Phase 3 is fully implemented.
         """
         if not conduit_id:

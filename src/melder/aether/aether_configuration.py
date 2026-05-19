@@ -35,7 +35,7 @@ class AetherConfiguration(Cleanable, IAetherConfiguration):
 
     def __init__(self) -> None:
         """
-        Initialize one empty Aether configuration with default logger policy.
+        Initialize one empty Aether configuration with the default logger policy.
 
         Returns:
             None.
@@ -88,7 +88,7 @@ class AetherConfiguration(Cleanable, IAetherConfiguration):
         Return whether the configuration is frozen.
 
         Returns:
-            bool: True when mutation is closed.
+            bool: True when the mutation is closed.
         """
         self.check_cleaned()
         return self._frozen
