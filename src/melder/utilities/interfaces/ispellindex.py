@@ -1,3 +1,4 @@
+from types import TracebackType
 from typing import Any, Dict, Optional, Protocol, Set, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -150,7 +151,12 @@ class ISpellIndex(ICleanable, Protocol):
         """
         ...
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Context manager exit.
 

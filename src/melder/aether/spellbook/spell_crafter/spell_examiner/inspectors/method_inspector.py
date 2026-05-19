@@ -36,7 +36,7 @@ class MethodInspector(Cleanable):
     utility = InspectorUtility
     max_repr = 120
     __slots__ = Cleanable.__slots__ +  ["fn", "_max_repr", "data"]
-    def __init__(self, fn: Callable, *, max_repr: int = 120):
+    def __init__(self, fn: Callable[..., Any], *, max_repr: int = 120):
         """
         Initializes the MethodInspector.
 
@@ -51,7 +51,7 @@ class MethodInspector(Cleanable):
         if not callable(fn):
             raise TypeError("MethodInspector expects a callable.")
 
-        self.fn: Callable = fn
+        self.fn: Callable[..., Any] = fn
         self._max_repr: int = max_repr
         self.data: Dict[str, Any] = {}
 
@@ -70,7 +70,7 @@ class MethodInspector(Cleanable):
         del self._max_repr
         del self.data
 
-    def _resolve_target(self) -> Callable:
+    def _resolve_target(self) -> Callable[..., Any]:
         """
         Return the preferred callable for inspection.
 
@@ -84,7 +84,10 @@ class MethodInspector(Cleanable):
         """
         f = self.fn
         try:
-            return self.utility.unwrap_callable(f)
+            resolved: Callable[..., Any] = self.utility.unwrap_callable(f)
+            if callable(resolved):
+                return resolved
+            return f
         except Exception:
             # If unwrapping fails for any reason, fall back to the provided callable
             return f

@@ -17,9 +17,9 @@ class IBind(ICleanable, Protocol):
             existence : Existence,
             *,
             aetheric_frame: str,
-            spell=None,
-            spellframe=None,
-            binding_name=None,
+            spell: object | None = None,
+            spellframe: object | None = None,
+            binding_name: str | None = None,
             profile: str = "general",
     ) -> Union[ISpell, Any]:
         """
