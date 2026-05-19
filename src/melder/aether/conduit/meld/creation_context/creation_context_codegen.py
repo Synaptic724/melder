@@ -69,7 +69,7 @@ def compile_creation_context_instance_no_overrides_executor(
 
     Contract:
         - Output callable signature: `(caller_creations) -> Any`.
-        - Caller must ensure override payload is absent for this lane.
+        - Caller must ensure the override payload is absent for this lane.
     """
     use_fast_transient = bool(
         resolve_route_key == "many"
@@ -111,7 +111,7 @@ def compile_creation_context_hooks_overrides_only_executor(
     Build one spell-bound hooks-lane overrides-only CreationContext executor.
 
     Purpose:
-        Provide the hooks override lane with no local `overrides is None`
+        Provide the hooks override lane with no local `overrides are None`
         branch. Meld chooses this door only when an override payload exists.
 
     Contract:
@@ -216,7 +216,7 @@ def _select_overrides_only_hooks_template(
         resolve_route_key: str,
 ) -> Callable[..., Any]:
     """
-    Return the hooks-aware overrides-only template factory for one resolve
+    Return the hook-aware overrides-only template factory for one resolve
     route.
 
     This is the hook-lane companion to `_select_overrides_only_template`,
@@ -260,7 +260,7 @@ def _select_no_overrides_only_hooks_template(
         use_fast_transient: bool,
 ) -> Callable[..., Any]:
     """
-    Return the hooks-aware no-overrides template factory for one route/fast
+    Return the hook-aware no-overrides template factory for one route/fast
     combination.
 
     This is the hook-lane counterpart to
@@ -399,7 +399,7 @@ def _build_creation_context_template_source_name(
     """
     Build the synthetic compile filename for one emitted template shape.
 
-    The source name is deterministic so tracebacks, debugging output, and
+    The source name is deterministic, so tracebacks, debugging output, and
     compile caches remain readable and stable across repeated runs for the same
     route/template combination.
     """
@@ -424,7 +424,7 @@ def _build_creation_context_template_source(
     Assemble the emitted Python source for one template-factory/executor pair.
 
     All higher-level source builders eventually funnel through this helper. It
-    creates the outer template factory plus the inner runtime callable body that
+    creates the outer template factory plus the inner runtime-callable body that
     will later be compiled and resolved by name.
     """
     lines = [f"def {template_callable_name}("]

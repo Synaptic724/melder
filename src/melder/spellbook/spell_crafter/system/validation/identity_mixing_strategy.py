@@ -2,9 +2,6 @@ from typing import Dict, List, Mapping, Optional, Set
 
 from mypy_extensions import mypyc_attr
 
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
-    RootResolutionBlueprint,
-)
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
@@ -13,6 +10,7 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -34,7 +32,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
             self,
             *,
             index: SpellSystemIndex,
-            blueprints: Dict[str, RootResolutionBlueprint],
+            blueprints: Dict[str, IRootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,

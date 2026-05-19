@@ -3,9 +3,6 @@ from typing import Dict, List, Mapping, Optional, Set
 from mypy_extensions import mypyc_attr
 
 # Melder imports
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
-    RootResolutionBlueprint,
-)
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
@@ -14,6 +11,7 @@ from melder.spellbook.spell_crafter.system.system_diagnostic import (
 from melder.spellbook.spell_crafter.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -70,7 +68,7 @@ class RootScaleLimitStrategy(SpellSystemValidationStrategy):
             self,
             *,
             index: SpellSystemIndex,
-            blueprints: Dict[str, RootResolutionBlueprint],
+            blueprints: Dict[str, IRootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: ISpellSystemStates,
@@ -188,14 +186,14 @@ class RootScaleLimitStrategy(SpellSystemValidationStrategy):
 
             depth_map: Dict[str, int] = {}
             for node_id in ordered_node_ids:
-                node = dag.get_node(node_id)
-                if node is None:
+                current_node = dag.get_node(node_id)
+                if current_node is None:
                     continue
-                if not node.dependencies:
+                if not current_node.dependencies:
                     depth_map[node_id] = 0
                     continue
                 max_parent_depth = 0
-                for parent in node.dependencies:
+                for parent in current_node.dependencies:
                     parent_depth = depth_map.get(parent.id, 0)
                     if parent_depth > max_parent_depth:
                         max_parent_depth = parent_depth
