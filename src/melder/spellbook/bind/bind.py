@@ -2,6 +2,9 @@ import inspect
 import threading
 import hashlib
 from typing import Any, Optional, Union, Protocol
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
@@ -28,6 +31,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
 
 
 #region Bind
+@mypyc_attr(native_class=True)
 class Bind(Cleanable, IBind):
     """
     Spellbook registration gateway for classes, callables, and concrete objects.

@@ -1,10 +1,13 @@
 from typing import Any, Optional, List
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import SpellRequirements
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellSymbolicNode(Cleanable):
     """
     Placeholder representation of a symbolic node in a spell's dependency graph.

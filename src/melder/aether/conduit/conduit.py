@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from types import ModuleType
 from typing import Optional, Type, Any, Tuple, Callable, Iterable, Dict, Union, Generator
 
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -41,6 +43,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region Conduit
+@mypyc_attr(native_class=True)
 class Conduit(Cleanable, IConduit):
     """
     A `Conduit` is the runtime scope, execution boundary, and contract-aware access

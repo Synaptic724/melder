@@ -2,6 +2,8 @@ import inspect
 from threading import RLock
 from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
 
+from mypy_extensions import mypyc_attr
+
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -25,7 +27,7 @@ from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.existence.existence import Existence
 
-
+@mypyc_attr(native_class=True)
 class Meld(Cleanable, IMeld):
     """
     ## 🪄 Meld: Spell Activation and Dependency Resolution

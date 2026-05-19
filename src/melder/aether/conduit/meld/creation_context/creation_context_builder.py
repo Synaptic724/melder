@@ -1,5 +1,7 @@
 from typing import Optional, Any, Callable
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
     OverrideRouteConfig,
@@ -9,18 +11,18 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 
-
+@mypyc_attr(native_class=True)
 class CreationContextBuilder(Cleanable):
     """
     Build spell-shaped `CreationContext` instances.
 
     Purpose:
         Encapsulate the build-time policy for creation contexts so Meld can
-        request a context without embedding shape logic in front-door flow.
+        request a context without embedding shape logic in the front-door flow.
 
     Contract:
         - Builder only consumes spell-static data.
-        - No caller-conduit transients are accepted by this builder.
+        - This builder accepts no caller-conduit transients.
         - Output context is deterministic for the same spell state.
     """
 
@@ -42,7 +44,7 @@ class CreationContextBuilder(Cleanable):
 
         Contract:
             - Idempotent cleanup.
-            - No child resources are owned by this builder.
+            - This builder owns no child resources.
         """
         if self._cleaned:
             return
@@ -163,7 +165,7 @@ class CreationContextBuilder(Cleanable):
 
         This helper inspects spell-static execution-plan data to determine
         whether the spell has a specialized transient path for plain no-override
-        calls. Existing-creation spells are always excluded, because they do not
+        calls. Existing-creation spells are always excluded because they do not
         participate in transient construction.
         """
         if spell.is_existing_creation:
@@ -222,7 +224,7 @@ class CreationContextBuilder(Cleanable):
             spell: ISpell,
     ) -> Optional[OverrideRouteConfig]:
         """
-        Build mutation-lane route config only when mutation overlay is active.
+        Build mutation-lane route config only when the mutation overlay is active.
 
         Contract:
             - Default spell contexts (no mutation overlay) omit mutation route

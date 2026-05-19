@@ -1,5 +1,8 @@
 import threading
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional, Sequence
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
@@ -7,14 +10,14 @@ from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
 )
 from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class RootResolutionBlueprint(Cleanable):
     """
     Phase 5 rooted deep-DAG artifact for one spell.
 
     This blueprint is the handoff object between structural spell compilation
     and the later system/planning phases. It does not discover dependencies or
-    validate policy by itself; instead it packages the rooted DAG, stable
+    validate policy by itself; instead, it packages the rooted DAG, stable
     execution order, and socket-targeting metadata that later components use
     for system validation, change-control/component-of wiring, and Phase 8-10
     planning/override targeting.
@@ -23,7 +26,7 @@ class RootResolutionBlueprint(Cleanable):
         - `root_spell_id` is the versioned identity of the root spell at
           blueprint-build time.
         - `root_lineage_id` is optional lineage metadata for DevOps/change-
-          control use; graph semantics remain version-id based.
+          control use; graph semantics remain version-id-based.
         - The blueprint owns its DAG, socket reference collection, and
           targeting index.
         - Consumers should treat exposed list/index data as read-only, even
@@ -153,7 +156,7 @@ class RootResolutionBlueprint(Cleanable):
         Return the optional lineage id for the root spell.
 
         This value is metadata for DevOps/change-control consumers; execution
-        and targeting still key off `root_spell_id`.
+        and targeting are still key off `root_spell_id`.
         """
         self.check_cleaned()
         return self._root_lineage_id

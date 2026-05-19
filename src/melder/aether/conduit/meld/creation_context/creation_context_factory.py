@@ -1,5 +1,7 @@
 from typing import Optional, Set
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
@@ -11,7 +13,7 @@ from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
 
-
+@mypyc_attr(native_class=True)
 class CreationContextFactory(Cleanable):
     """
     Produce spell-shaped `CreationContext` instances.
@@ -22,10 +24,10 @@ class CreationContextFactory(Cleanable):
 
     Contract:
         - Factory does not own shared caches outside spell ownership.
-        - Spell owns context lifecycle through `spell._creation_context`.
+        - Spell owns the context lifecycle through `spell._creation_context`.
         - Get-or-build path is lock-free and race-tolerant.
         - Factory delegates all shape rules to `CreationContextBuilder`.
-        - In dynamic mode, factory resolves/creates one spell-index gate
+        - In dynamic mode, the factory resolves /creates one spell-index gate
           and injects it into built contexts for runtime execution admission.
     """
 
@@ -51,7 +53,7 @@ class CreationContextFactory(Cleanable):
                 Optional custom builder. Defaults to `CreationContextBuilder`.
             dynamic_environment:
                 True when the owning conduit runs in dynamic mode. Propagated
-                to built CreationContext instances.
+                to build CreationContext instances.
             creation_gate_controller:
                 Frame-owned CreationGateController used for spell-index gate
                 registration and ticket governance during dynamic runtime.
@@ -120,7 +122,7 @@ class CreationContextFactory(Cleanable):
         Return the stable spell-index id used for gate-controller operations.
 
         The factory keys creation-gate registration by SpellIndex identity
-        rather than by current spell version so all contexts for the same
+        rather than by the current spell version, so all contexts for the same
         spell-index slot share one admission gate.
 
         Args:
@@ -206,7 +208,7 @@ class CreationContextFactory(Cleanable):
         Build one CreationContext and bind it onto the target spell.
 
         Contract:
-            - Always builds a fresh context from current spell state.
+            - Always builds a fresh context from the current spell state.
             - Replaces any existing spell-owned context reference.
             - Best-effort cleans replaced context.
             - Opens the spell-owned CounterSwitch latch after publish.
@@ -274,10 +276,10 @@ class CreationContextFactory(Cleanable):
     @staticmethod
     def _set_creation_context_switch_open(spell: ISpell) -> None:
         """
-        Force a spell-owned CounterSwitch into open latch state (`2`).
+        Force a spell-owned CounterSwitch into an open latch state (`2`).
 
         Purpose:
-            Normalize switch state after successful context publication so
+            Normalize switch state after a successful context publication so
             readers can take the hot path without waiting.
 
         Contract:

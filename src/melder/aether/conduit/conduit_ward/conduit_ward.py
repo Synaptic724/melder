@@ -3,6 +3,9 @@ import threading
 from contextlib import contextmanager
 from types import TracebackType
 from typing import List, Optional, Any, Tuple, Dict, Iterable, Generator, Type
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
@@ -31,6 +34,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 # TODO: Please ensure that locking dynamics properly ensure state management between contracts and to use SafeGuard where we need to in order to ensure we grab all the locks to properly manage state
 
 #region ConduitWard
+@mypyc_attr(native_class=True)
 class ConduitWard(Cleanable, IConduitWard):
     """
     Control-plane for a single Conduit: contracts, index, and policy.

@@ -9,6 +9,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.utilities.interfaces.ichangecontrolorchestrator import IChangeControlOrchestrator
 from melder.utilities.interfaces.ichangecontroltransactionmanager import IChangeControlTransactionManager
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
@@ -395,10 +396,10 @@ class IChangeControlManager(ICleanable, Protocol):
     def set_revalidator(
             self,
             conduit_id: str,
-            fn: Optional[Callable[[set[str], Optional["CancellationEvent"]], Optional[set[str]]]],
+            fn: Callable[[set[str], Optional["CancellationEvent"]], Optional[set[str]]],
     ) -> None:
         """
-        Register or clear the conduit-scoped dirty-root revalidator.
+        Register the conduit-scoped dirty-root revalidator.
         """
         ...
 
@@ -411,7 +412,7 @@ class IChangeControlManager(ICleanable, Protocol):
     def rebuild_component_of(
             self,
             conduit_id: str,
-            root_blueprints: Dict[str, object],
+            root_blueprints: Dict[str, IRootResolutionBlueprint],
     ) -> None:
         """
         Replace the conduit-scoped component-of map from the supplied owned
@@ -422,7 +423,7 @@ class IChangeControlManager(ICleanable, Protocol):
     def upsert_component_of(
             self,
             conduit_id: str,
-            root_blueprints: Dict[str, object],
+            root_blueprints: Dict[str, IRootResolutionBlueprint],
     ) -> None:
         """
         Merge or replace the conduit-scoped component-of map from the supplied

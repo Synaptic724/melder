@@ -1,5 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Iterable, Callable, Sequence, Tuple, Optional
+
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
@@ -8,7 +11,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
-
+@mypyc_attr(native_class=True)
 class PathRegistry(Cleanable):
     """
     Internal
@@ -221,7 +224,7 @@ class PathRegistry(Cleanable):
         cloned._formatted_path_by_id = dict(self._formatted_path_by_id)
         return cloned
 
-
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True, slots=True)
 class SocketRef:
     """
@@ -262,7 +265,7 @@ class SocketRef:
         """Return the precomputed stable hash for this socket reference."""
         return self._hash
 
-
+@mypyc_attr(native_class=True)
 class DagIndex(Cleanable):
     """
     Internal

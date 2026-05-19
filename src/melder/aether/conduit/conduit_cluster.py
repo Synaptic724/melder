@@ -1,5 +1,8 @@
 import threading
 from typing import Dict, Set, Optional, List
+
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconduit import IConduit
@@ -12,7 +15,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class ConduitCluster(Cleanable, IConduitCluster):
     """
     Cluster-local registry for conduit membership and shared-root policy.
@@ -33,7 +36,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
             Mapping from owner conduit id to the shareable root `SpellIndex`
             values contributed by that owner.
         auto_link_dependencies:
-            When True, dependency closure is auto-contracted with each shared
+            When True, a dependency closure is auto-contracted with each shared
             root. When False, only the root spell is linked.
     """
     __melder_internal__ = _mrg.sentinel
@@ -318,7 +321,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
         self.check_cleaned()
         owner_id = owner._id
         self.add_shared_spell(owner_id, spell.spell_index)
-        # Decide dependency behavior (explicit override beats cluster default)
+        # Decide dependency behaviour (explicit override beats cluster default)
         link_deps = self.auto_link_dependencies if link_dependencies is None else bool(link_dependencies)
 
         with self._lock:
@@ -538,7 +541,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
     # ------------------------------------------------------------------
     def set_auto_link_dependencies(self, enabled: bool) -> None:
         """
-        Configure whether dependency closure is auto-contracted when sharing roots.
+        Configure whether a dependency closure is auto-contracted when sharing roots.
 
         Args:
             enabled: True to include deps, False for roots only.

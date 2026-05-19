@@ -1,17 +1,19 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Tuple
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
 class TargetSpecKind(Enum):
     """
     Internal
 
     Represents the three supported targeting modes for overrides:
 
-    * PATH      -> explicit param path: "a>b>c".
-    * UNIQUE    -> unique-by-name wildcard: "*repo".
+    * PATH -> explicit param path: "a>b>c".
+    * UNIQUE -> unique-by-name wildcard: "*repo".
     * BROADCAST -> broadcast-by-name wildcard: "**logger".
     """
     __melder_internal__ = _mrg.sentinel
@@ -19,7 +21,7 @@ class TargetSpecKind(Enum):
     UNIQUE = auto()
     BROADCAST = auto()
 
-
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True, slots=True)
 class TargetSpec:
     """
@@ -29,7 +31,7 @@ class TargetSpec:
 
     Attributes:
         kind:
-            The targeting mode (:class:`TargetSpecKind`).
+            The targeting mode (: class:`TargetSpecKind`).
 
         path:
             The param path segments for PATH specs (e.g. ("orchestrator", "repo")).
@@ -37,7 +39,7 @@ class TargetSpec:
 
         param_name:
             The parameter name used for UNIQUE / BROADCAST specs (e.g. ``"logger"``).
-            ``None`` for PATH specs.
+            "None" for PATH specs.
     """
     __melder_internal__ = _mrg.sentinel
     kind: TargetSpecKind
@@ -47,18 +49,18 @@ class TargetSpec:
     @staticmethod
     def parse(raw: str) -> "TargetSpec":
         """
-        Parse a raw override key into a :class:`TargetSpec`.
+        Parse a raw override key into a: class:`TargetSpec`.
 
         Supported forms:
 
         * PATH:
-            ``"timeout"``, ``"orchestrator>order_service>repo"``
+            ""timeout"", ""orchestrator>order_service>repo""
 
         * UNIQUE:
-            ``"*repo"``, ``"*logger"``
+            ""*repo"", ""*logger""
 
         * BROADCAST:
-            ``"**repo"``, ``"**logger"``
+            ""**repo"", ""**logger""
         """
         if raw is None:
             raise ValueError("Override key must not be None.")

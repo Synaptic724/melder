@@ -1,5 +1,8 @@
 import threading
 from typing import Dict, List, Optional, Any, Iterable
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.dev_ops.incident_manager.incident import Incident
 from melder.aether.dev_ops.incident_manager.incident_severity import (
@@ -12,7 +15,7 @@ from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 
-
+@mypyc_attr(native_class=True)
 class IncidentManager(Cleanable, IIncidentManager):
     """
     Frame-local registry of `Incident` records.

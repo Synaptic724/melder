@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Dict, List, Optional, Sequence
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -15,7 +17,7 @@ from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpe
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 
-
+@mypyc_attr(native_class=True)
 class _Specificity(IntEnum):
     """
     Internal
@@ -35,7 +37,7 @@ class _Specificity(IntEnum):
     UNIQUE = 2
     BROADCAST = 1
 
-
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True, slots=True)
 class MutationEdgePatch:
     """
@@ -72,7 +74,7 @@ class MutationEdgePatch:
     old_parent_id: Optional[str]
     new_parent_id: Optional[str]
 
-
+@mypyc_attr(native_class=True)
 class OverridePatchMap(Cleanable):
     """
     Internal
@@ -535,7 +537,7 @@ class OverridePatchMap(Cleanable):
         shape_rows.sort()
         return tuple(shape_rows)
 
-
+@mypyc_attr(native_class=True)
 class MutationPatchMap(Cleanable):
     """
     Internal
@@ -879,7 +881,7 @@ def apply_phase10_override_payload(
         override_payload=override_payload,
     )
 
-
+@mypyc_attr(native_class=True)
 class PatchMapBuilder(object):
     """
     Internal

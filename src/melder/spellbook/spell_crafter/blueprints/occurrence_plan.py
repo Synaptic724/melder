@@ -4,6 +4,8 @@ import heapq
 import inspect
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.system_state import SystemState
@@ -23,7 +25,7 @@ from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
 
-
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True, slots=True)
 class OccurrencePlanSelection:
     """
@@ -99,7 +101,7 @@ def select_occurrence_plan(
         contract_overrides_by_spell_id=plan.contract_overrides_by_spell_id,
     )
 
-
+@mypyc_attr(native_class=True)
 class OccurrencePlan(Cleanable, IOccurrencePlan):
     """
     Phase 8 occurrence-expansion artifact for one root blueprint.
@@ -1156,6 +1158,8 @@ class OccurrencePlanBuilder(object):
             MeldExecutionError: If the contract is ambiguous or inconsistent.
         """
         consumer_spell_id = consumer_spell.spell_index.current
+        if consumer_spell_id is None:
+            consumer_spell_id = consumer_spell.spell_id
         consumer_spell_name = consumer_spell.spell_name
         contract_key = contract.canonical_key
 
@@ -1211,6 +1215,8 @@ class OccurrencePlanBuilder(object):
             Missing contract keys yield an empty list.
         """
         spellbook = self._root_spell._spellbook
+        if spellbook is None:
+            raise RuntimeError("Root spell has no owning spellbook.")
         contracted_lookup = spellbook._lookup_contracted_spells
         contracted_maps = spellbook._contracted_spells
 
@@ -1228,7 +1234,9 @@ class OccurrencePlanBuilder(object):
                 continue
             contracted_candidates.append(spell_obj)
 
-        contracted_candidates.sort(key=lambda spell: spell.spell_index.current)
+        contracted_candidates.sort(
+            key=lambda spell: spell.spell_index.current or spell.spell_id
+        )
         return contracted_candidates
 
     def _allow_missing_contract_providers(self) -> bool:
@@ -1240,7 +1248,12 @@ class OccurrencePlanBuilder(object):
             - Automatic mode remains strict and requires providers to resolve.
         """
         spellbook = self._root_spell._spellbook
-        system_state = spellbook._aetheric_frame_configuration.system_state
+        if spellbook is None:
+            raise RuntimeError("Root spell has no owning spellbook.")
+        frame_configuration = spellbook._aetheric_frame_configuration
+        if frame_configuration is None:
+            raise RuntimeError("Root spellbook has no frame configuration.")
+        system_state = frame_configuration.system_state
         state_enum = EnumHelpers.convert_enum_and_check(system_state, SystemState)
         return state_enum is SystemState.dynamic
 
@@ -1324,13 +1337,13 @@ class OccurrencePlanBuilder(object):
         """
         if not isinstance(raw_key, str) or not raw_key.strip():
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message="Invalid mutation_override key: {0!r}.".format(raw_key),
             )
         if not isinstance(target_id, str) or not target_id.strip():
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "Invalid mutation_override target for key {0!r}: "
@@ -1355,7 +1368,7 @@ class OccurrencePlanBuilder(object):
             return TargetSpec.parse(raw_key)
         except Exception as exc:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message="Invalid mutation_override key: {0!r}.".format(raw_key),
                 inner=exc,
@@ -1430,7 +1443,7 @@ class OccurrencePlanBuilder(object):
         """
         if not spec.path:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "Path override key {0!r} did not contain any segments."
@@ -1441,7 +1454,7 @@ class OccurrencePlanBuilder(object):
         if not matches:
             path_str = ">".join(spec.path)
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "No mutation sockets found for override path "
@@ -1473,7 +1486,7 @@ class OccurrencePlanBuilder(object):
         """
         if not spec.param_name:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "Unique override key {0!r} is missing a parameter name."
@@ -1484,7 +1497,7 @@ class OccurrencePlanBuilder(object):
         count = len(matches)
         if count == 0:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "No mutation sockets found for unique override "
@@ -1493,7 +1506,7 @@ class OccurrencePlanBuilder(object):
             )
         if count > 1:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "Unique override matched multiple mutation sockets "
@@ -1525,7 +1538,7 @@ class OccurrencePlanBuilder(object):
         """
         if not spec.param_name:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "Broadcast override key {0!r} is missing a parameter name."
@@ -1535,7 +1548,7 @@ class OccurrencePlanBuilder(object):
         matches = self._filter_mutation_contract_sockets(candidates)
         if not matches:
             raise MeldExecutionError(
-                spell_id=self._root_spell.spell_index.current,
+                spell_id=self._root_spell.spell_index.current or self._root_spell.spell_id,
                 spell_name=self._root_spell.spell_name,
                 message=(
                     "No mutation sockets found for broadcast override "
@@ -1746,6 +1759,10 @@ class OccurrencePlanBuilder(object):
             this occurrence. In automatic mode, missing providers raise.
         """
         spell = self._resolve_occurrence_spell(occurrence)
+        if spell is None:
+            raise RuntimeError(
+                "Occurrence spell could not be resolved from the spell lookup."
+            )
         _, path_id = occurrence
         complete = True
         allow_missing = self._allow_missing_contract_providers()
@@ -1763,10 +1780,11 @@ class OccurrencePlanBuilder(object):
 
             child_path_id = self._path_registry.extend_path(path_id, param_name)
             child_occurrence = (target_spell_id, child_path_id)
+            consumer_spell_id = spell.spell_index.current or spell.spell_id
 
             normalized = self._normalize_contract_override_payload(
                 payload=contract.spell_override,
-                consumer_spell_id=spell.spell_index.current,
+                consumer_spell_id=consumer_spell_id,
                 consumer_spell_name=spell.spell_name,
                 param_name=param_name,
             )

@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Callable, Optional, Sequence
 
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.existence.existence import Existence
@@ -44,7 +46,7 @@ def _normalize_hooks(
             raise TypeError(f"{hook_name} must contain only callables.")
     return tuple(hooks)
 
-
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True, slots=True)
 class ScanBindMetadata:
     """
@@ -195,7 +197,7 @@ def scan_bind(
 
     return decorator
 
-
+@mypyc_attr(native_class=True)
 class Scan:
     """
     Public API

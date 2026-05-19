@@ -1,6 +1,8 @@
 from threading import RLock
 from typing import Dict, Optional, Set, List
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
@@ -8,7 +10,7 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
-
+@mypyc_attr(native_class=True)
 class _ConduitRiskState:
     """
     Per-conduit bucket of risk-tracking state.
@@ -44,7 +46,7 @@ class _ConduitRiskState:
         self.risky_structural: Set[str] = set()
         self.risky_resolution: Set[str] = set()
 
-
+@mypyc_attr(native_class=True)
 class RiskManager(Cleanable):
     """
     DevOps risk tracking for meld validation gating.

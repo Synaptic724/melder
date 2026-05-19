@@ -1,6 +1,8 @@
 from operator import itemgetter
 from typing import Optional, Dict, Any, Callable, Tuple, Sequence
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
     compile_creation_context_hooks_overrides_only_executor,
@@ -22,7 +24,7 @@ from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 
-
+@mypyc_attr(native_class=True)
 class OverrideRouteConfig(Cleanable):
     """
     Immutable spell-static override lane configuration.
@@ -107,7 +109,7 @@ class OverrideRouteConfig(Cleanable):
         del self.empty_shape_key
         del self.baseline_executor
 
-
+@mypyc_attr(native_class=True)
 class CreationContext(Cleanable):
     """
     Spell-bound runtime executor context used by Meld hot paths.

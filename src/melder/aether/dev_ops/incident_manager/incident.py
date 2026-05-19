@@ -1,5 +1,8 @@
 from threading import RLock
 from typing import Dict, List, Optional, Any, Iterable
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.dev_ops.incident_manager.incident_severity import (
     IncidentSeverity,
@@ -10,7 +13,7 @@ from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 
-
+@mypyc_attr(native_class=True)
 class Incident(Cleanable):
     """
     Mutable incident record with controlled status transitions.

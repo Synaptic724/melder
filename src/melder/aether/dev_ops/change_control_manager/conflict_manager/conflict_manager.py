@@ -2,13 +2,15 @@ import hashlib
 from threading import RLock
 from typing import Iterable, List, Set, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
 )
 
-
+@mypyc_attr(native_class=True)
 class ChangeControlConflictManager(Cleanable):
     """
     Conflict detector for scope overlap between change-control requests.

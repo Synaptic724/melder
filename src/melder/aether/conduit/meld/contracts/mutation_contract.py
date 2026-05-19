@@ -1,5 +1,8 @@
 import threading
 from typing import Any, Optional, Union, Tuple
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -8,7 +11,7 @@ from melder.__melder_registration_guard__ import (
 )
 from melder.utilities.interfaces.ispell import ISpell
 
-
+@mypyc_attr(native_class=True)
 class MutationContract(Cleanable):
     """
     Declarative mutation socket for mutation-research and AI-native experiments.

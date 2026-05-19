@@ -1,6 +1,8 @@
 import threading
 from typing import Dict, List, Optional, Tuple
 import ulid
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.utilities.interfaces.iconduit import IConduit
@@ -9,7 +11,7 @@ from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-
+@mypyc_attr(native_class=True)
 class ConduitCloud(Cleanable, IConduitCloud):
     """
     Frame-scoped conduit and cluster service facade.

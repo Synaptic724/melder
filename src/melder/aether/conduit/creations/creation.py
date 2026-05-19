@@ -1,10 +1,13 @@
 import threading
 import ulid
 from typing import Any
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class Creation(Cleanable):
     """
     Wrapper for one live runtime object tracked by `Creations`.
@@ -21,16 +24,13 @@ class Creation(Cleanable):
     - The actual disposal decision belongs to `Creations`.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = (
+    __slots__ = Cleanable.__slots__ + [
         "_id",
         "_value",
-        "_cleaned",
         "_has_disposal_methods",
         "_disposal_methods",
         "_lock",
-    )
-
-    _cleaned: bool
+    ]
 
     def __init__(
             self,

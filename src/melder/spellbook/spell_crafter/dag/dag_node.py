@@ -1,9 +1,11 @@
-from threading import RLock
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Set
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class DagNode(Cleanable):
     """
     Internal
@@ -59,7 +61,7 @@ class DagNode(Cleanable):
         # ------------------------------------------------------------------ #
 
         # For this node as a *parent*: param_name -> set of child nodes
-        # Example: root._children_by_param["repo"] -> {RepoNode}
+        # Example: root._children_by_param[ "repo"] -> {RepoNode}
         self._children_by_param: Dict[str, Set["DagNode"]] = {}
 
         # For this node as a *child*: parent node -> param_name
@@ -171,7 +173,7 @@ class DagNode(Cleanable):
                 Node that must be processed before this node.
             param_name:
                 Optional name of the parameter on *this node* that points
-                to ``dependency``. When provided, param-level metadata is
+                to "dependency". When provided, param-level metadata is
                 updated so override systems can target this socket later.
         """
         self.check_cleaned()
@@ -202,7 +204,7 @@ class DagNode(Cleanable):
         Registers a callable to be executed when this node is processed.
 
         This is primarily for testing / demonstration and is not required
-        for Melder's spell resolution. It is kept to minimize behavioral
+        for Melder's spell resolution. It is kept to minimize behavioural
         changes from prior DAG usage.
         """
         self.check_cleaned()

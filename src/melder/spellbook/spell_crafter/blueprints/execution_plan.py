@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
@@ -13,7 +15,7 @@ InstanceKey = Tuple[str, Optional[int]]
 FastPlanData = Tuple[Any, ...]
 FastTransientPlan = Tuple[Any, ...]
 
-
+@mypyc_attr(native_class=True)
 class ExecutionPlanVariant:
     """
     Internal
@@ -30,7 +32,7 @@ class ExecutionPlanVariant:
     OVERRIDES = "overrides"
     OVERRIDES_WITH_MUTATIONS = "overrides_with_mutations"
 
-
+@mypyc_attr(native_class=True)
 class ExecutionPlanTargetKind:
     """
     Internal
@@ -47,7 +49,7 @@ class ExecutionPlanTargetKind:
     OWNER = 2
     SPELLSPACE = 3
 
-
+@mypyc_attr(native_class=True)
 class ExecutionPlanCallMode:
     """
     Internal
@@ -71,7 +73,7 @@ class ExecutionPlanCallMode:
     CALL8 = 8
     CALLN = 9
 
-
+@mypyc_attr(native_class=True)
 class ExecutionPlanStep:
     """
     Internal

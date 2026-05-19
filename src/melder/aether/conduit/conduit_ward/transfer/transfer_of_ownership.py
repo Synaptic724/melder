@@ -2,6 +2,9 @@ import threading
 import ulid
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Set
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -20,7 +23,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
-
+@mypyc_attr(native_class=True)
 class TransferOfOwnership(Cleanable):
     """
     Control-plane helper that migrates a spell lineage between conduit owners.

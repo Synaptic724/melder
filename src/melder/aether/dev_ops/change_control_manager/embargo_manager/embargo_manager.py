@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from threading import RLock
 from typing import Any, Dict, Iterable, List, Set, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -12,7 +14,7 @@ from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation i
     ChangeControlStagedMutation,
 )
 
-
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True)
 class ChangeControlEmbargoRecord:
     """
@@ -36,7 +38,7 @@ class ChangeControlEmbargoRecord:
     owner_request_id: str
     created_at: float
 
-
+@mypyc_attr(native_class=True)
 class ChangeControlEmbargoManager(Cleanable):
     """
     Scope-key embargo registry for transaction-driven gating.

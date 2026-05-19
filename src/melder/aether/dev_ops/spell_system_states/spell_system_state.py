@@ -1,5 +1,8 @@
 import threading
 from typing import Callable, Iterable, List, Optional, Set
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -26,7 +29,7 @@ def _get_risk_manager_callback(
         return None
     return callback
 
-
+@mypyc_attr(native_class=True)
 class SpellSystemState(Cleanable):
     """
     System-level state for a single spell lineage: topology, validity, and flags.

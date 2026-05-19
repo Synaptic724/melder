@@ -2,13 +2,15 @@ import logging
 import threading
 from typing import Any, Callable, Optional
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 
-
+@mypyc_attr(native_class=True)
 class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
     """
     One-shot builder for Aether root configuration assembly.

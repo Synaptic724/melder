@@ -1,12 +1,13 @@
 from threading import RLock
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
 )
 from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
     ChangeControlEmbargoManager,
-    ChangeControlEmbargoRecord,
 )
 from melder.aether.dev_ops.change_control_manager.orchestrator.orchestrator import (
     ChangeControlOrchestrator,
@@ -32,7 +33,7 @@ from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class ChangeControlManager(Cleanable, IChangeControlManager):
     """
     Change-control registry for an Aetheric Frame.

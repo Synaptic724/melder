@@ -1,6 +1,8 @@
 import threading
 from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
@@ -33,7 +35,7 @@ def _get_resolution_risk_manager_callback(
         return None
     return callback
 
-
+@mypyc_attr(native_class=True)
 class ConduitResolutionState(Cleanable, IConduitResolutionState):
     """
     Per-conduit resolution validity container.

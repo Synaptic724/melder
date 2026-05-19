@@ -1,6 +1,8 @@
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from enum import IntEnum
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
@@ -22,7 +24,7 @@ class _Specificity(IntEnum):
     UNIQUE = 2
     BROADCAST = 1
 
-
+@mypyc_attr(native_class=True)
 class SpellOverrider(Cleanable):
     """
     Runtime helper that turns a raw spell_override dict into a socket-aware

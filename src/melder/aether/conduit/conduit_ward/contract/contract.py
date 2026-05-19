@@ -1,5 +1,8 @@
 from typing import Optional, Any, Dict
 from threading import RLock
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -12,7 +15,7 @@ from melder.utilities.interfaces.icontract import IContract
 from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class Contract(Cleanable, IContract):
     """
     Bidirectional contract between two conduit wards.

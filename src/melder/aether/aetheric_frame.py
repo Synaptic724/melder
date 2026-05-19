@@ -3,6 +3,8 @@ from types import TracebackType
 from typing import Optional, Set, Dict, Type
 
 import ulid
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iaether import IAether
@@ -17,7 +19,7 @@ from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellS
 from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
 from melder.spellbook.configuration.system_state import SystemState
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class AethericFrame(Cleanable, IAethericFrame):
     """
     Manage one isolated runtime frame within `Aether`.

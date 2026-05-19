@@ -1,5 +1,8 @@
 import threading
 from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
@@ -8,7 +11,6 @@ from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.spellbook.spell_crafter.topology.spell_local_topology import (
@@ -41,7 +43,7 @@ def _get_structural_risk_manager_callback(
     if not callable(callback):
         return None
     return callback
-
+@mypyc_attr(native_class=True)
 class SpellSystemStates(Cleanable, ISpellSystemStates):
     """
     Per-frame registry for all SpellSystemState instances.

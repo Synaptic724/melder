@@ -1,9 +1,6 @@
 from enum import Enum, auto
-
-from mypy_extensions import mypyc_attr
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class ParameterDIShape(Enum):
     """
     High-level classification of how a single parameter is expected to be

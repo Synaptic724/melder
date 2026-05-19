@@ -1,5 +1,8 @@
 import threading
 from typing import Optional
+
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
@@ -11,7 +14,7 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 )
 from melder.utilities.helpers.id_builder import IDBuilder
 
-
+@mypyc_attr(native_class=True)
 class SpellSpace(Cleanable, ISpellSpace):
     """
     Scope handle for `Existence.unique_per_spell_space`.
