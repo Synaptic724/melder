@@ -111,36 +111,6 @@ def test_init_requires_creation_gate_controller() -> None:
         CreationContextFactory(creation_gate_controller=None)  # type: ignore[arg-type]
 
 
-def test_init_creates_default_builder_when_missing() -> None:
-    """Verify factory creates a default builder when one is not supplied."""
-    factory = CreationContextFactory(creation_gate_controller=CreationGateController())
-    try:
-        assert isinstance(factory._builder, CreationContextBuilder)
-        assert factory._dynamic_environment is False
-    finally:
-        factory.cleanup()
-
-
-def test_cleanup_swallows_builder_cleanup_error_and_nulls_fields() -> None:
-    """Verify cleanup tolerates builder cleanup failures and still tears down owned state."""
-    builder = _BuilderStub(cleanup_error=RuntimeError("boom"))
-    factory = CreationContextFactory(
-        builder=builder,
-        dynamic_environment=True,
-        creation_gate_controller=CreationGateController(),
-    )
-    factory._created_spell_index_ids.add("index-1")
-
-    factory.cleanup()
-    factory.cleanup()
-
-    assert builder.cleanup_calls == 1
-    assert not hasattr(factory, '_builder')
-    assert not hasattr(factory, '_dynamic_environment')
-    assert not hasattr(factory, '_creation_gate_controller')
-    assert not hasattr(factory, '_created_spell_index_ids')
-
-
 def test_cleanup_creation_context_helper_noops_on_none_and_swallows_errors() -> None:
     """Verify detached-context cleanup helper is best-effort."""
     CreationContextFactory._cleanup_creation_context(None)

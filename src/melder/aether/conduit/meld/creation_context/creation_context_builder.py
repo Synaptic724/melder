@@ -7,12 +7,12 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     OverrideRouteConfig,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.icreationcontextbuilder import ICreationContextBuilder
 from melder.utilities.synchronization.creation_gate import CreationGate
 
 @mypyc_attr(native_class=True)
-class CreationContextBuilder(Cleanable):
+class CreationContextBuilder(ICreationContextBuilder):
     """
     Build spell-shaped `CreationContext` instances.
 
@@ -26,32 +26,8 @@ class CreationContextBuilder(Cleanable):
         - Output context is deterministic for the same spell state.
     """
 
-    __slots__: list[str] = []
-
-    def __init__(self) -> None:
-        """
-        Initialize one stateless builder.
-
-        Contract:
-            - Builder owns no runtime caches.
-            - Cleanup only marks the builder as unusable.
-        """
-        super().__init__()
-
-    def cleanup(self) -> None:
-        """
-        Mark this builder as cleaned.
-
-        Contract:
-            - Idempotent cleanup.
-            - This builder owns no child resources.
-        """
-        if self._cleaned:
-            return
-        self._cleaned = True
-
+    @staticmethod
     def build(
-            self,
             spell: ISpell,
             *,
             dynamic_environment: bool = False,
@@ -86,24 +62,28 @@ class CreationContextBuilder(Cleanable):
                 "Cannot build CreationContext before spell crafter artifacts "
                 "exist. Run conjure phases first."
             )
-        resolve_route_key = self._resolve_route_key(spell)
+        resolve_route_key = CreationContextBuilder._resolve_route_key(spell)
         fast_transient_no_overrides_enabled = (
-            self._resolve_fast_transient_no_overrides_enabled(spell)
+            CreationContextBuilder._resolve_fast_transient_no_overrides_enabled(spell)
         )
         fast_transient_no_overrides_enabled = (
-            self._coerce_fast_transient_route_eligibility(
+            CreationContextBuilder._coerce_fast_transient_route_eligibility(
                 resolve_route_key=resolve_route_key,
                 fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             )
         )
-        no_overrides_executor = self._resolve_no_overrides_executor(spell)
-        override_patch_map_phase10 = self._resolve_override_patch_map_phase10(spell)
-        override_route_config_no_mutation = self._build_override_route_config(
+        no_overrides_executor = (
+            CreationContextBuilder._resolve_no_overrides_executor(spell)
+        )
+        override_patch_map_phase10 = (
+            CreationContextBuilder._resolve_override_patch_map_phase10(spell)
+        )
+        override_route_config_no_mutation = CreationContextBuilder._build_override_route_config(
             spell=spell,
             execution_ir_key="overrides",
         )
         override_route_config_mutation = (
-            self._build_mutation_override_route_config(spell=spell)
+            CreationContextBuilder._build_mutation_override_route_config(spell=spell)
         )
 
         return CreationContext(

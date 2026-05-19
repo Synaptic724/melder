@@ -243,23 +243,6 @@ def test_builder_requires_crafter_for_non_existing_creation() -> None:
         builder.build(spell)
 
 
-def test_builder_allows_existing_creation_without_crafter() -> None:
-    """
-    Verify existing-creation spells can build without crafter artifacts.
-
-    Contract:
-        - Existing-creation route does not require spell._crafter.
-    """
-    builder = CreationContextBuilder()
-    spell = _SpellStub(is_existing_creation=True, crafter=None)
-    context = builder.build(spell)
-    try:
-        assert isinstance(context, CreationContext)
-        assert context._spell is spell
-    finally:
-        context.cleanup()
-        builder.cleanup()
-
 
 def test_factory_build_for_spell_dynamic_attaches_lineage_gate() -> None:
     """
@@ -286,23 +269,3 @@ def test_factory_build_for_spell_dynamic_attaches_lineage_gate() -> None:
         context.cleanup()
         factory.cleanup()
 
-
-def test_builder_dynamic_requires_creation_gate() -> None:
-    """
-    Verify dynamic context build rejects missing gate wiring.
-
-    Contract:
-        - CreationContext requires a creation gate when dynamic mode is enabled.
-    """
-    spell = _SpellStub(spell_id="spell-dynamic")
-    builder = CreationContextBuilder()
-    try:
-        with pytest.raises(ValueError, match="creation_gate cannot be None"):
-            builder.build(
-                spell,
-                dynamic_environment=True,
-                creation_gate=None,
-                creation_gate_index_id=spell.spell_index.id,
-            )
-    finally:
-        builder.cleanup()

@@ -56,15 +56,6 @@ def _make_spell(
         _spellbook=spellbook,
     )
 
-
-def test_cleanup_is_idempotent_and_marks_builder_cleaned() -> None:
-    """Verify builder cleanup is idempotent and only flips cleaned state."""
-    builder = CreationContextBuilder()
-    builder.cleanup()
-    builder.cleanup()
-    assert builder.cleaned is True
-
-
 def test_build_requires_crafter_for_non_existing_spells() -> None:
     """Verify build rejects non-existing spells without crafter artifacts."""
     builder = CreationContextBuilder()
