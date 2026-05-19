@@ -21,10 +21,10 @@ class ICreations(ICleanable, Protocol):
     # -----------------
     _lock: RLock
     _creations: 'Dict[str, object]'
-    _conduit: 'IConduit'
+    _owner_conduit_id: str
     _id: str
 
-    def _attempt_cleanup(self, item: object) -> Optional[Exception]:
+    def _attempt_cleanup(self, creation: object) -> Optional[Exception]:
         """
         Internal
 
@@ -162,6 +162,25 @@ class ICreations(ICleanable, Protocol):
 
         Returns:
             Optional[Creation]: Stored creation wrapper or None.
+        """
+        ...
+
+    @property
+    def owner_conduit_id(self) -> str:
+        """
+        Return the owning conduit id for this creations manager.
+
+        Returns:
+            str: Stable owner conduit id.
+        """
+        ...
+
+    def get_active_spellspace(self) -> Any:
+        """
+        Return the currently active spellspace for this creations owner.
+
+        Returns:
+            Any: Active spellspace object or None.
         """
         ...
 

@@ -272,7 +272,7 @@ def test_create_spellspace_returns_owned_space_without_activation(
     """
     space = conduit_lesser.create_spellspace()
     assert isinstance(space, SpellSpace)
-    assert space.owner_conduit is conduit_lesser
+    assert space.owner_conduit_id == conduit_lesser._id
     assert conduit_lesser.get_active_spellspace() is None
 
 

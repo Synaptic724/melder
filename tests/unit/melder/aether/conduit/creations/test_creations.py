@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextvars import ContextVar
 from typing import Optional
 
 import pytest
@@ -62,18 +63,23 @@ def lesser_conduit() -> FakeConduit:
 
 
 def _mk_creations(*, conduit: FakeConduit) -> Creations:
-    return Creations(conduit=conduit)
+    return Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar(
+            "spellspace_stack_{0}".format(conduit._id),
+            default=[],
+        ),
+    )
 
 
-def test_init_requires_conduit_state() -> None:
-    conduit = FakeConduit(conduit_id="c", state=None)
-    with pytest.raises(RuntimeError, match="Conduit state is not initialized"):
-        _mk_creations(conduit=conduit)
+def test_init_requires_conduit_id() -> None:
+    with pytest.raises(ValueError, match="conduit_id must not be empty"):
+        Creations(conduit_id="", spellspace_stack=ContextVar("spellspace_stack_c", default=[]))
 
 
-def test_init_allows_lesser_state(lesser_conduit: FakeConduit) -> None:
+def test_init_exposes_owner_conduit_id(lesser_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=lesser_conduit)
-    assert creations._conduit_state == ConduitState.lesser
+    assert creations.owner_conduit_id == lesser_conduit._id
 
 
 def test_add_creation_records_disposal_metadata(normal_conduit: FakeConduit) -> None:

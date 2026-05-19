@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextvars import ContextVar
 from importlib import import_module
 
 import pytest
@@ -37,7 +38,10 @@ def test_unified_creations_accepts_lesser_conduit_state() -> None:
         Creations initializes and stores entries when state is lesser.
     """
     conduit = _ConduitStub(conduit_id="lesser-1", conduit_state=ConduitState.lesser)
-    creations = Creations(conduit)
+    creations = Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar("spellspace_stack_lesser_1", default=[]),
+    )
     try:
         creations.add_creation("spell-1", object())
         creations.add_many_creations("spell-2", object())
@@ -55,7 +59,10 @@ def test_unified_creations_exposes_no_lesser_transfer_api() -> None:
         Creations does not expose `transfer_data_and_clear`.
     """
     conduit = _ConduitStub(conduit_id="lesser-1", conduit_state=ConduitState.lesser)
-    creations = Creations(conduit)
+    creations = Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar("spellspace_stack_lesser_2", default=[]),
+    )
     try:
         assert not hasattr(creations, "transfer_data_and_clear")
     finally:

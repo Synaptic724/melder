@@ -79,7 +79,7 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
         assert active_space is not None
         assert active_space.cleaned is True
         with pytest.raises(RuntimeError, match="already been cleaned"):
-            _ = active_space.owner_conduit
+            _ = active_space.owner_conduit_id
         assert conduit.get_active_spellspace() is None
     finally:
         conduit.cleanup()
@@ -108,7 +108,7 @@ def test_conduit_spellspace_cleanup_idempotent_and_blocks_use() -> None:
         space.cleanup()
         assert space.cleaned is True
         with pytest.raises(RuntimeError, match="already been cleaned"):
-            _ = space.owner_conduit
+            _ = space.owner_conduit_id
         with pytest.raises(RuntimeError, match="already been cleaned"):
             space.reset()
         with pytest.raises(RuntimeError, match="already been cleaned"):
@@ -167,7 +167,7 @@ def test_conduit_cleanup_cleans_orphaned_spellspaces() -> None:
     conduit.cleanup()
     assert space.cleaned is True
     with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.owner_conduit
+        _ = space.owner_conduit_id
 
 
 def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
@@ -192,4 +192,4 @@ def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
 
     assert space.cleaned is True
     with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.owner_conduit
+        _ = space.owner_conduit_id

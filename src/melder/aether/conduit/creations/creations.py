@@ -1,12 +1,10 @@
 from collections import deque
+from contextvars import ContextVar
 from threading import RLock
 from typing import List, Optional, Dict, Any
-
 from mypy_extensions import mypyc_attr
-
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.icreations import ICreations
 from melder.aether.conduit.creations.creation import Creation
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -36,7 +34,22 @@ class Creations(Cleanable, ICreations):
       finishes
     """
     __melder_internal__ = _mrg.sentinel
-    def __init__(self, conduit: IConduit):
+    __slots__ = Cleanable.__slots__ + [
+        "_owner_conduit_id",
+        "_id",
+        "_lock",
+        "_disposal_stack",
+        "_spellspace_disposal_stacks",
+        "_creations",
+        "_spellspace_stack",
+    ]
+
+    def __init__(
+            self,
+            *,
+            conduit_id: str,
+            spellspace_stack: ContextVar[list[Any]],
+    ) -> None:
         """
         Purpose:
             Initialize the conduit creations registry.
@@ -46,23 +59,27 @@ class Creations(Cleanable, ICreations):
             - Owns one global disposal stack and per-spellspace disposal stacks.
 
         Args:
-            conduit:
-                Conduit that owns this Creations manager.
+            conduit_id:
+                Stable id of the conduit that owns this Creations manager.
+            spellspace_stack:
+                Context-local stack used to identify the currently active
+                spellspace for this creations owner.
 
         Returns:
             None.
 
         Raises:
-            RuntimeError:
-                If conduit state is missing.
+            ValueError:
+                If `conduit_id` is empty or `spellspace_stack` is missing.
         """
         super().__init__()
-        self._conduit: IConduit = conduit
-        self._id: str = conduit._id
-
-        if conduit._conduit_state is None:
-            raise RuntimeError("Conduit state is not initialized.")
-        self._conduit_state = conduit._conduit_state
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if spellspace_stack is None:
+            raise ValueError("spellspace_stack must not be None.")
+        self._owner_conduit_id: str = conduit_id
+        self._id: str = conduit_id
+        self._spellspace_stack: ContextVar[list[Any]] = spellspace_stack
 
         self._lock = RLock()
         self._disposal_stack: deque = deque()
@@ -117,7 +134,8 @@ class Creations(Cleanable, ICreations):
 
             del self._creations
             del self._spellspace_disposal_stacks
-            del self._conduit
+            del self._spellspace_stack
+            del self._owner_conduit_id
             del self._disposal_stack
 
             if errors:
@@ -548,6 +566,24 @@ class Creations(Cleanable, ICreations):
         if not isinstance(bucket, dict):
             return None
         return bucket.get(spell_id)
+
+    @property
+    def owner_conduit_id(self) -> str:
+        """
+        Return the stable owner conduit id for this creations manager.
+        """
+        self.check_cleaned()
+        return self._owner_conduit_id
+
+    def get_active_spellspace(self) -> Any:
+        """
+        Return the current active spellspace for this creations owner, if any.
+        """
+        self.check_cleaned()
+        stack = self._spellspace_stack.get()
+        if not stack:
+            return None
+        return stack[-1]
 
     def register_spellspace_creation(
             self,

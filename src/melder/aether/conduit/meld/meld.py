@@ -516,7 +516,7 @@ class Meld(Cleanable, IMeld):
             return creation.value
 
         if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations._conduit.get_active_spellspace()
+            spellspace = caller_creations.get_active_spellspace()
             if spellspace is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -858,7 +858,7 @@ class Meld(Cleanable, IMeld):
             }
 
         if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations._conduit.get_active_spellspace()
+            spellspace = caller_creations.get_active_spellspace()
             if spellspace is None:
                 return {
                     "is_live": False,

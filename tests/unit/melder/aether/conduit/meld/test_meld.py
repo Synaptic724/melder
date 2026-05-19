@@ -1,4 +1,5 @@
 """Contract tests for Meld resolution, gating, and activation flow."""
+from contextvars import ContextVar
 from threading import RLock
 from types import SimpleNamespace
 from typing import Any, Callable, Iterable, Dict
@@ -536,16 +537,16 @@ class _SpellSpaceStub:
     Minimal spellspace stub with id and owner conduit.
     """
 
-    def __init__(self, *, spellspace_id: str, owner_conduit: _ConduitStub) -> None:
+    def __init__(self, *, spellspace_id: str, owner_conduit_id: str) -> None:
         """
         Initialize a stub spellspace with identity and ownership.
 
         Args:
             spellspace_id: Spellspace identifier.
-            owner_conduit: Conduit that owns the spellspace.
+            owner_conduit_id: Conduit id that owns the spellspace.
         """
         self.id = spellspace_id
-        self.owner_conduit = owner_conduit
+        self.owner_conduit_id = owner_conduit_id
 
 
 class _ContextStub:
@@ -690,8 +691,7 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
         Meld: Meld instance ready for testing.
     """
     effective_creations = creations or MagicMock()
-    conduit = getattr(effective_creations, "_conduit", None)
-    conduit_id = getattr(conduit, "_id", "conduit-1")
+    conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
     return Meld(
         creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
@@ -720,7 +720,13 @@ def _make_creations(
         conduit_state=ConduitState.normal,
         active_spellspace=active_spellspace,
     )
-    return Creations(conduit), conduit
+    return Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar(
+            "spellspace_stack_{0}".format(conduit._id),
+            default=[],
+        ),
+    ), conduit
 
 
 def test_cleanup_clears_references() -> None:
@@ -2249,9 +2255,18 @@ def test_meld_existing_spell_uses_active_spellspace_bucket() -> None:
         conduit_id="conduit-1",
         conduit_state=ConduitState.normal,
     )
-    spellspace = _SpellSpaceStub(spellspace_id="space-1", owner_conduit=conduit)
+    spellspace = _SpellSpaceStub(
+        spellspace_id="space-1",
+        owner_conduit_id=conduit._id,
+    )
     conduit._active_spellspace = spellspace
-    creations = Creations(conduit)
+    creations = Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar(
+            "spellspace_stack_{0}".format(conduit._id),
+            default=[spellspace],
+        ),
+    )
     live_instance = object()
     creations.register_spellspace_creation("space-1", "spell-1", live_instance)
     spell = _SpellStub(
@@ -2323,9 +2338,18 @@ def test_has_live_creation_uses_active_spellspace_bucket() -> None:
         conduit_id="conduit-1",
         conduit_state=ConduitState.normal,
     )
-    spellspace = _SpellSpaceStub(spellspace_id="space-1", owner_conduit=conduit)
+    spellspace = _SpellSpaceStub(
+        spellspace_id="space-1",
+        owner_conduit_id=conduit._id,
+    )
     conduit._active_spellspace = spellspace
-    creations = Creations(conduit)
+    creations = Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar(
+            "spellspace_stack_probe_{0}".format(conduit._id),
+            default=[spellspace],
+        ),
+    )
     creations.register_spellspace_creation("space-1", "spell-1", object())
     spell = _SpellStub(
         spell_id="spell-1",

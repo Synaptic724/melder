@@ -1,4 +1,5 @@
 """Additional contract tests for Meld resolution and registration helpers."""
+from contextvars import ContextVar
 from threading import RLock
 from types import SimpleNamespace
 from typing import Any, Callable
@@ -189,8 +190,7 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
         Meld: The constructed Meld instance.
     """
     effective_creations = creations or MagicMock()
-    conduit = getattr(effective_creations, "_conduit", None)
-    conduit_id = getattr(conduit, "_id", "conduit-1")
+    conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
     return Meld(
         creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
@@ -207,7 +207,10 @@ def _make_creations() -> Creations:
         Creations: Initialized creations manager.
     """
     conduit = _ConduitStub("conduit-1", ConduitState.normal)
-    return Creations(conduit)
+    return Creations(
+        conduit_id=conduit._id,
+        spellspace_stack=ContextVar("spellspace_stack_conduit_1", default=[]),
+    )
 
 
 def _make_lesser_creations(parent: Creations | None = None) -> Any:
@@ -554,9 +557,11 @@ def test_register_spellspace_creation_registers_instance() -> None:
         - Creations.register_spellspace_creation stores and returns the instance.
     """
     creations = _make_creations()
-    conduit = creations._conduit
-    spellspace = SimpleNamespace(id="space-1", owner_conduit=conduit)
-    conduit._active_spellspace = spellspace
+    spellspace = SimpleNamespace(
+        id="space-1",
+        owner_conduit_id=creations.owner_conduit_id,
+    )
+    creations._spellspace_stack.set([spellspace])
     spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
     instance = object()
 

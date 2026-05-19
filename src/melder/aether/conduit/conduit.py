@@ -209,6 +209,10 @@ class Conduit(Cleanable, IConduit):
             self._root_conduit_id: str = root_conduit_id
         else:
             self._root_conduit_id = self._id
+        self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
+            f"_spellspace_stack_{self._id}", default=[]
+        )
+        self._spellspace_registry: set[ISpellSpace] = set()
         self._creations: Creations = self._creations_configuration(configuration)
         self._creation_gate_controller: CreationGateController = (
             self._dev_ops_manager.creation_gate_controller
@@ -236,10 +240,6 @@ class Conduit(Cleanable, IConduit):
             dynamic_environment=self.__dynamic_environment__,
             meld_hooks=self._meld_hooks,
         )
-        self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
-            f"_spellspace_stack_{self._id}", default=[]
-        )
-        self._spellspace_registry: set[ISpellSpace] = set()
         self._configure_conduit_state()
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -578,7 +578,12 @@ class Conduit(Cleanable, IConduit):
         Returns:
             SpellSpace: A new SpellSpace owned by this Conduit.
         """
-        space = SpellSpace(self)
+        space = SpellSpace(
+            owner_conduit_id=self._id,
+            meld=self._meld,
+            creations=self._creations,
+            spellspace_registry=self._spellspace_registry,
+        )
         self._register_spellspace(space)
         return space
 
@@ -1079,7 +1084,10 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit state is unknown.
         """
         if self._conduit_state in (ConduitState.lesser, ConduitState.normal):
-            return Creations(conduit=self)
+            return Creations(
+                conduit_id=self._id,
+                spellspace_stack=self._spellspace_stack,
+            )
         self._logger.error("Unknown Conduit state", "_creations_configuration")
         raise RuntimeError("Conduit state is unknown")
 
@@ -1347,9 +1355,10 @@ class Conduit(Cleanable, IConduit):
                 self._root_conduit_id = self._id
                 self._name = name
 
-                # Step 2: Keep the current creations object and sync state.
-                self._creations._conduit = self
-                self._creations._conduit_state = self._conduit_state
+                # Step 2: Keep the current creations object.
+                # The creations owner id already matches this conduit id, so
+                # lesser -> normal upgrade does not need to rebind ownership
+                # metadata on the creations manager itself.
 
                 # Step 2.1: Ensure Meld uses the same creations manager.
                 if self._meld is not None:

@@ -131,7 +131,15 @@ class _Creations:
         self._lock = threading.RLock()
         self._creations: dict[str, _CreationRecord] = {}
         self._spellspace: dict[tuple[str, str], _CreationRecord] = {}
-        self._conduit = SimpleNamespace(get_active_spellspace=lambda: None)
+        self._owner_conduit_id = "conduit-1"
+        self._active_spellspace = None
+
+    @property
+    def owner_conduit_id(self) -> str:
+        return self._owner_conduit_id
+
+    def get_active_spellspace(self) -> Any:
+        return self._active_spellspace
 
     def add_creation(
             self,
@@ -843,13 +851,11 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     Spellspace-scoped targeted overrides reject reuse of existing spellspace instances.
     """
     creations = _Creations()
-    active_conduit = SimpleNamespace()
     active_spellspace = SimpleNamespace(
         id="space-1",
-        owner_conduit=active_conduit,
+        owner_conduit_id=creations.owner_conduit_id,
     )
-    active_conduit.get_active_spellspace = lambda: active_spellspace
-    creations._conduit = active_conduit
+    creations._active_spellspace = active_spellspace
     creations._spellspace[(active_spellspace.id, "dep")] = _CreationRecord("existing-dep")
 
     root_spell = _make_spell("root")

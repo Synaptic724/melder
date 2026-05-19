@@ -59,19 +59,9 @@ class _CreationRecord:
 class _Spellspace:
     """Active spellspace stub used by spellspace-creation tests."""
 
-    def __init__(self, spellspace_id: str, owner_conduit: Any) -> None:
+    def __init__(self, spellspace_id: str, owner_conduit_id: str) -> None:
         self.id = spellspace_id
-        self.owner_conduit = owner_conduit
-
-
-class _Conduit:
-    """Conduit stub exposing active spellspace lookup for creations."""
-
-    def __init__(self) -> None:
-        self._active_spellspace = None
-
-    def get_active_spellspace(self) -> Any:
-        return self._active_spellspace
+        self.owner_conduit_id = owner_conduit_id
 
 
 class _Creations:
@@ -82,7 +72,15 @@ class _Creations:
         self._creations: dict[str, _CreationRecord] = {}
         self._many: list[tuple[str, Any]] = []
         self._spellspace: dict[tuple[str, str], _CreationRecord] = {}
-        self._conduit = _Conduit()
+        self._owner_conduit_id = "conduit-1"
+        self._active_spellspace = None
+
+    @property
+    def owner_conduit_id(self) -> str:
+        return self._owner_conduit_id
+
+    def get_active_spellspace(self) -> Any:
+        return self._active_spellspace
 
     def add_creation(
             self,
@@ -573,7 +571,7 @@ def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_
         - Second execution reuses existing spellspace creation.
     """
     creations = _Creations()
-    creations._conduit._active_spellspace = _Spellspace("space-1", creations._conduit)
+    creations._active_spellspace = _Spellspace("space-1", creations.owner_conduit_id)
     call_counter = {"value": 0}
 
     def _build_root() -> str:
@@ -827,7 +825,7 @@ def test_compile_phase12_no_overrides_executor_existence_matrix(
     """
     creations = _Creations()
     if activate_spellspace:
-        creations._conduit._active_spellspace = _Spellspace("space-1", creations._conduit)
+        creations._active_spellspace = _Spellspace("space-1", creations.owner_conduit_id)
     call_counter = {"value": 0}
 
     def _build_root() -> str:

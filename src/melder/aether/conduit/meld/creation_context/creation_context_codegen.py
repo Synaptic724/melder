@@ -565,7 +565,7 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "spellspace":
         return [
-            "spellspace = caller_creations._conduit.get_active_spellspace()",
+            "spellspace = caller_creations.get_active_spellspace()",
             "if spellspace is None:",
             "    raise _SpellSpaceScopeError(_spellspace_required_message)",
             "spellspace_id = spellspace.id",
@@ -755,7 +755,7 @@ def _build_with_overrides_lines(
     if resolve_route_key == "spellspace":
         if not overrides_maybe_none:
             return [
-                "spellspace = caller_creations._conduit.get_active_spellspace()",
+                "spellspace = caller_creations.get_active_spellspace()",
                 "if spellspace is None:",
                 "    raise _SpellSpaceScopeError(_spellspace_required_message)",
                 "creation = caller_creations.get_spellspace_creation(spellspace.id, _spell_id)",
@@ -783,7 +783,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "spellspace = caller_creations._conduit.get_active_spellspace()",
+            "spellspace = caller_creations.get_active_spellspace()",
             "if spellspace is None:",
             "    raise _SpellSpaceScopeError(_spellspace_required_message)",
             "creation = caller_creations.get_spellspace_creation(spellspace.id, _spell_id)",

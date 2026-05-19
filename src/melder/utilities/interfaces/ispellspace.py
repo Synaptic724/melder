@@ -1,6 +1,5 @@
 from typing import Any, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduit import IConduit
 
 @runtime_checkable
 class ISpellSpace(ICleanable, Protocol):
@@ -9,7 +8,7 @@ class ISpellSpace(ICleanable, Protocol):
 
     Purpose:
         Define the public contract for a SpellSpace-like object that
-        manages a spellspace scope owned by a Conduit.
+        manages a spellspace scope owned by one conduit id.
     Contract:
         - Provides a stable id and monotonic version counter.
         - Enforces active-scope checks for meld calls.
@@ -18,11 +17,11 @@ class ISpellSpace(ICleanable, Protocol):
         - No internal locking is required by the contract; callers should
           synchronize via the owning Conduit if used concurrently.
     Lifecycle:
-        - cleanup() is idempotent and releases owner references.
+        - cleanup() is idempotent and releases collaborator references.
     """
 
     _id: str
-    _owner_conduit: Optional["IConduit"]
+    _owner_conduit_id: str
     _version: int
 
     @property
@@ -36,12 +35,12 @@ class ISpellSpace(ICleanable, Protocol):
         ...
 
     @property
-    def owner_conduit(self) -> Optional["IConduit"]:
+    def owner_conduit_id(self) -> str:
         """
-        Owning Conduit for this spellspace.
+        Owning conduit id for this spellspace.
 
         Returns:
-            Optional[IConduit]: The owner conduit, or None after cleanup.
+            str: Stable owner conduit id.
         """
         ...
 
@@ -68,11 +67,11 @@ class ISpellSpace(ICleanable, Protocol):
             spell_override: Optional[dict | list | tuple] = None,
     ) -> Any:
         """
-        Delegate meld to the owner Conduit while enforcing active scope.
+        Delegate meld to the injected Meld runtime while enforcing active scope.
 
         Contract:
             - Raises SpellSpaceScopeError if this spellspace is not active.
-            - Propagates errors from the owning Conduit meld pipeline.
+        - Propagates errors from the injected Meld pipeline.
 
         Args:
             spell_name: Optional human-readable spell name.
@@ -82,7 +81,7 @@ class ISpellSpace(ICleanable, Protocol):
             spell_override: Optional override payload for meld metadata.
 
         Returns:
-            Any: The resolved instance from the owner Conduit.
+            Any: The resolved instance from the injected Meld runtime.
         """
         ...
 
@@ -91,7 +90,7 @@ class ISpellSpace(ICleanable, Protocol):
         Clear spellspace-bound instances and increment version.
 
         Contract:
-            - Clears spellspace-specific creations in the owner.
+            - Clears spellspace-specific creations in the injected creations manager.
             - Increments the version counter on success.
 
         Raises:

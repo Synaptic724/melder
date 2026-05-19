@@ -863,7 +863,7 @@ def _append_step_register_source(
         lines.extend([
             (
                 f"{indent}spellspace_{step_index} = "
-                f"creations_{step_index}._conduit.get_active_spellspace()"
+                f"creations_{step_index}.get_active_spellspace()"
             ),
             f"{indent}if spellspace_{step_index} is None:",
             f"{indent}    raise SpellSpaceScopeError(",
@@ -877,8 +877,8 @@ def _append_step_register_source(
             ),
             f"{indent}    )",
             (
-                f"{indent}if spellspace_{step_index}.owner_conduit is not "
-                f"creations_{step_index}._conduit:"
+                f"{indent}if spellspace_{step_index}.owner_conduit_id != "
+                f"creations_{step_index}.owner_conduit_id:"
             ),
             f"{indent}    raise SpellSpaceScopeError(",
             (
@@ -1224,13 +1224,13 @@ def _get_existing_creation(
         return creation.value
 
     if existence is Existence.unique_per_spell_space:
-        spellspace = creations._conduit.get_active_spellspace()
+        spellspace = creations.get_active_spellspace()
         if spellspace is None:
             raise SpellSpaceScopeError(
                 "Existence.unique_per_spell_space requires an active SpellSpace. "
                 "Use 'with conduit.enter_spellspace()' when melding."
             )
-        if spellspace.owner_conduit is not creations._conduit:
+        if spellspace.owner_conduit_id != creations.owner_conduit_id:
             raise SpellSpaceScopeError(
                 "Active SpellSpace belongs to a different conduit."
             )
@@ -1313,13 +1313,13 @@ def _register_spell_instance_prebound(
         return
 
     if existence is Existence.unique_per_spell_space:
-        spellspace = creations._conduit.get_active_spellspace()
+        spellspace = creations.get_active_spellspace()
         if spellspace is None:
             raise SpellSpaceScopeError(
                 "Existence.unique_per_spell_space requires an active SpellSpace. "
                 "Use 'with conduit.enter_spellspace()' when melding."
             )
-        if spellspace.owner_conduit is not creations._conduit:
+        if spellspace.owner_conduit_id != creations.owner_conduit_id:
             raise SpellSpaceScopeError(
                 "Active SpellSpace belongs to a different conduit."
             )
