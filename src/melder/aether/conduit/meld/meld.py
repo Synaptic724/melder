@@ -1010,6 +1010,7 @@ class Meld(Cleanable, IMeld):
         if aether is None:
             return None
 
+        manager: Optional[IChangeControlManager] = None
         try:
             manager = aether._get_change_control_manager(frame_name)
         except Exception:

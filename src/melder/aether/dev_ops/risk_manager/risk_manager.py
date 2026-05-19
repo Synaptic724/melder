@@ -436,7 +436,11 @@ class RiskManager(Cleanable):
         if spell._cleaned:
             return SpellValidity.unknown
 
-        return resolution_state.get_spell_validity(spell.spell_index.current)
+        spell_id = spell.spell_index.current
+        if spell_id is None:
+            return SpellValidity.unknown
+
+        return resolution_state.get_spell_validity(spell_id)
 
 
     def _update_structural_risk(
