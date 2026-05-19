@@ -1,5 +1,6 @@
 import threading
 import ulid
+from types import TracebackType
 from typing import Any, Optional, Dict, Tuple
 
 from mypy_extensions import mypyc_attr
@@ -379,7 +380,12 @@ class SpellIndex(Cleanable, ISpellIndex):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Release the internal lock acquired by `__enter__`.
         """

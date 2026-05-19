@@ -1,5 +1,6 @@
 import threading
 import ulid
+from types import TracebackType
 from typing import Any
 
 from mypy_extensions import mypyc_attr
@@ -136,7 +137,12 @@ class Creation(Cleanable):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Exit the wrapper lock context.
 
