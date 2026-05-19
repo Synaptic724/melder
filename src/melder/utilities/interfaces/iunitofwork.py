@@ -1,4 +1,5 @@
 from typing import Any, Callable, Optional, Protocol, Self, runtime_checkable
+from types import TracebackType
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -96,7 +97,12 @@ class IUnitOfWork(ICleanable, Protocol):
         """
         ...
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
         """
         Exit the critical section entered via :meth:`__enter__`.
 
