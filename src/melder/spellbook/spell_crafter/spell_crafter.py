@@ -6,6 +6,9 @@ import pickle
 import typing
 import types
 from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, Mapping, Sequence, get_args, get_origin, Generator
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import DirectedAcyclicWorkGraph
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
@@ -133,6 +136,7 @@ from melder.spellbook.spell_crafter.system.validation.root_viability_strategy im
 from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import SocketRefSanityStrategy
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+@mypyc_attr(native_class=True)
 class SpellCrafter(Cleanable):
     """
     Per-spell orchestration surface for the SpellCrafter pipeline.

@@ -1,28 +1,31 @@
 from typing import Dict, Iterable, Mapping, Optional
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.existence.existence import Existence
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellSystemNode(Cleanable):
     """
     Internal
 
     Version-id keyed system view of a single spell for Phases 5–7.
 
-    This does *not* replace SpellSystemStates (which is lineage/DevOps centric).
+    This does *not* replace SpellSystemStates (which are lineage/ DevOps-centric).
     Instead, it gives Phase 5+ a small, version-centric node type to hang
     structural metadata on:
 
-        * spell_id     – version id (SpellIndex.current).
-        * lineage_id   – lineage ULID (SpellIndex.id).
+        * spell_id – version id (SpellIndex.current).
+        * lineage_id – lineage ULID (SpellIndex.id).
         * dependencies – direct dependency spell_ids (version ids).
-        * existence    – lifecycle / policy hint (optional).
-        * spell_type   – logical spell role (optional).
-        * conduit_id   – owning conduit (optional).
-        * ward_id      – owning ward (optional).
-        * is_root      – whether this spell is considered a root for the frame.
+        * existence – lifecycle / policy hint (optional).
+        * spell_type – logical spell role (optional).
+        * conduit_id – owning conduit (optional).
+        * ward_id – owning ward (optional).
+        * is_root – whether this spell is considered a root for the frame.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

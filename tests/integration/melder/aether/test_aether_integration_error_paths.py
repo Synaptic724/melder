@@ -128,19 +128,17 @@ def test_aether_conduit_lookup_missing_frame_raises() -> None:
 def test_aether_conduit_cloud_register_unregister_missing_frame_raises() -> None:
     """
     Purpose:
-        Validate conduit cloud operations reject missing frames.
+        Validate the removed conduit-cloud helper surface stays absent.
     Contract:
-        - Register/unregister calls raise ValueError for missing frames.
+        - Aether does not expose the old register/unregister cloud helpers.
     Returns:
         None.
     Raises:
-        AssertionError: If missing-frame operations do not raise.
+        AssertionError: If the removed helper surface is still present.
     """
     aether = Aether()
-    with pytest.raises(ValueError, match="does not exist"):
-        aether._register_conduit_cloud(conduit=object(), aetheric_frame_name="missing-frame")
-    with pytest.raises(ValueError, match="does not exist"):
-        aether._unregister_conduit_cloud(conduit=object(), aetheric_frame_name="missing-frame")
+    assert not hasattr(aether, "_register_conduit_cloud")
+    assert not hasattr(aether, "_unregister_conduit_cloud")
 
 
 def test_aether_get_all_spell_versions_missing_frame_raises() -> None:

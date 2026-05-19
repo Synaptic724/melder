@@ -4,6 +4,8 @@ import inspect
 import typing
 from typing import Any
 
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -17,7 +19,7 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
     SpellValidationStrategy,
 )
 
-
+@mypyc_attr(native_class=True)
 class ParameterPolicyStrategy(SpellValidationStrategy):
     """
     Enforce parameter policies around DI usage.

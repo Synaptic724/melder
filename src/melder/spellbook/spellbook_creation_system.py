@@ -374,7 +374,8 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             IConduitCloud: Frame-owned ConduitCloud for the target frame.
         """
-        return spellbook._aether._get_conduit_cloud(spellbook._aetheric_frame)
+        frame = spellbook._aether._get_existing_frame(spellbook._aetheric_frame)
+        return frame._conduit_cloud
 
     @staticmethod
     def _activate_conjured_conduit(

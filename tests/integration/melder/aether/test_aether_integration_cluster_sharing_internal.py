@@ -84,8 +84,9 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
     """
     aether = Aether()
     frame_name = "frame-share-new"
-    aether._ensure_frame(frame_name)
-    aether._create_cluster("cluster-a", frame_name)
+    frame = aether._ensure_frame(frame_name)
+    cloud = frame._conduit_cloud
+    cloud.create_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,
@@ -98,7 +99,7 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
     )
     conduit = spellbook.conjure(name="owner")
     try:
-        aether._add_conduit_to_cluster(conduit, "cluster-a", frame_name)
+        cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
         with spellbook.binding_transaction():
             shareable_id = spellbook.bind(
@@ -109,12 +110,12 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
         shareable_spell = next(
             spell for idx, spell in spellbook._spells.items() if idx.current == shareable_id
         )
-        cluster = aether._get_cluster("cluster-a", frame_name)
+        cluster = cloud._get_cluster("cluster-a")
         assert shareable_spell.spell_index not in cluster.get_shared_spells().get(conduit.id, set())
 
-        aether._share_new_spell_to_clusters(conduit, shareable_spell, frame_name)
+        conduit.refresh_cluster_shares()
 
-        cluster = aether._get_cluster("cluster-a", frame_name)
+        cluster = cloud._get_cluster("cluster-a")
         shared = cluster.get_shared_spells()
         assert shareable_spell.spell_index in shared.get(conduit.id, set())
     finally:
@@ -135,8 +136,9 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
     """
     aether = Aether()
     frame_name = "frame-share-ignore"
-    aether._ensure_frame(frame_name)
-    aether._create_cluster("cluster-a", frame_name)
+    frame = aether._ensure_frame(frame_name)
+    cloud = frame._conduit_cloud
+    cloud.create_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,
@@ -149,7 +151,7 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
     )
     conduit = spellbook.conjure(name="owner")
     try:
-        aether._add_conduit_to_cluster(conduit, "cluster-a", frame_name)
+        cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
         with spellbook.binding_transaction():
             non_shareable_id = spellbook.bind(
@@ -160,9 +162,9 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
         non_shareable_spell = next(
             spell for idx, spell in spellbook._spells.items() if idx.current == non_shareable_id
         )
-        aether._share_new_spell_to_clusters(conduit, non_shareable_spell, frame_name)
+        conduit.refresh_cluster_shares()
 
-        cluster = aether._get_cluster("cluster-a", frame_name)
+        cluster = cloud._get_cluster("cluster-a")
         assert cluster.get_shared_spells() == {}
     finally:
         conduit.cleanup()
@@ -182,8 +184,9 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
     """
     aether = Aether()
     frame_name = "frame-refresh-shares"
-    aether._ensure_frame(frame_name)
-    aether._create_cluster("cluster-a", frame_name)
+    frame = aether._ensure_frame(frame_name)
+    cloud = frame._conduit_cloud
+    cloud.create_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,
@@ -196,7 +199,7 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
     )
     conduit = spellbook.conjure(name="owner")
     try:
-        aether._add_conduit_to_cluster(conduit, "cluster-a", frame_name)
+        cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
         with spellbook.binding_transaction():
             config_id = spellbook.bind(
@@ -215,10 +218,10 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
         logger_index = next(
             idx for idx in spellbook._spells.keys() if idx.current == logger_id
         )
-        cluster = aether._get_cluster("cluster-a", frame_name)
+        cluster = cloud._get_cluster("cluster-a")
         assert cluster.get_shared_spells().get(conduit.id, set()) == set()
 
-        aether._refresh_cluster_shares_for_conduit(conduit, frame_name)
+        cloud.refresh_cluster_shares_for_conduit(conduit)
 
         shared = cluster.get_shared_spells().get(conduit.id, set())
         assert config_index in shared

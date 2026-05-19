@@ -4,8 +4,9 @@ from concurrent.futures import FIRST_EXCEPTION, Future, wait
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from queue import SimpleQueue, Empty as QueueEmpty
 
+from mypy_extensions import mypyc_attr
+
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -21,6 +22,8 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.unit_of_work import UnitOfWork
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+
+@mypyc_attr(native_class=True)
 class PhaseScheduler(Cleanable):
     """
     Coordinated, multi-phase scheduler for Spellbook resolution.

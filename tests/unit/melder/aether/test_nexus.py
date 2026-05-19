@@ -2131,7 +2131,9 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
         type(space.command_system),
         "_aether",
         SimpleNamespace(
-            get_conduit_cloud=lambda frame_name: conduit_cloud,
+            _get_existing_frame=lambda frame_name: SimpleNamespace(
+                _conduit_cloud=conduit_cloud,
+            ),
             get_conduit_by_name=lambda conduit_name, frame_name: owner_conduit,
         ),
     )
@@ -4663,7 +4665,9 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
         )
         _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
-            get_conduit_cloud=lambda frame_name: conduit.get_conduit_cloud(),
+            _get_existing_frame=lambda frame_name: SimpleNamespace(
+                _conduit_cloud=conduit.get_conduit_cloud(),
+            ),
         )
         conduit_cloud = space.command_system.get_conduit_cloud(frame_name="ops")
 

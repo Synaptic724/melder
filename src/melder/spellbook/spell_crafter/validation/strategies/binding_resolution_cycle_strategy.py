@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Set, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
@@ -21,7 +23,7 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-
+@mypyc_attr(native_class=True)
 class BindingResolutionCycleStrategy(SpellValidationStrategy):
     """
     Detect binding-key cycles implied by spell requirements.

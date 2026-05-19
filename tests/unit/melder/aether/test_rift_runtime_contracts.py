@@ -315,7 +315,9 @@ def test_capability_rift_spaces_expose_conduit_discovery_through_command_system(
     conduit_cloud = object()
     conduit_object = object()
     command._aether = SimpleNamespace(
-        get_conduit_cloud=lambda frame_name: conduit_cloud,
+        _get_existing_frame=lambda frame_name: SimpleNamespace(
+            _conduit_cloud=conduit_cloud,
+        ),
         get_conduit_by_id=lambda conduit_id, frame_name: conduit_object,
         get_conduit_by_name=lambda name, frame_name: conduit_object,
     )

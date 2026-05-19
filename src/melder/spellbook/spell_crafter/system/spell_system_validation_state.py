@@ -1,10 +1,13 @@
 from typing import List, Mapping, Optional
+
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.general_base.cleanable import Cleanable
 
-
+@mypyc_attr(native_class=True)
 class SpellSystemValidationState(Cleanable):
     """
     Frame-level system validation verdict.

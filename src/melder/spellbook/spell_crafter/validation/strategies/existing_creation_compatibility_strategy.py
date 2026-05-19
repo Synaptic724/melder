@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     InstanceBindingProfile,
@@ -17,7 +19,7 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 
-
+@mypyc_attr(native_class=True)
 class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
     """
     Validate existing-creation spells are wired with valid instances and policies.

@@ -85,8 +85,9 @@ def test_aether_cluster_membership_tracks_conduits() -> None:
     """
     aether = Aether()
     frame_name = "frame-membership"
-    aether._ensure_frame(frame_name)
-    aether._create_cluster("cluster-a", frame_name)
+    frame = aether._ensure_frame(frame_name)
+    cloud = frame._conduit_cloud
+    cloud.create_cluster("cluster-a")
 
     book_a = Spellbook(
         aetheric_frame=frame_name,
@@ -109,22 +110,22 @@ def test_aether_cluster_membership_tracks_conduits() -> None:
     conduit_a = book_a.conjure(name="root-a")
     conduit_b = book_b.conjure(name="root-b")
     try:
-        aether._add_conduit_to_cluster(conduit_a, "cluster-a", frame_name)
-        aether._add_conduit_to_cluster(conduit_b, "cluster-a", frame_name)
+        cloud.add_conduit_to_cluster(conduit_a, "cluster-a")
+        cloud.add_conduit_to_cluster(conduit_b, "cluster-a")
 
-        members = set(aether._get_conduits_in_cluster("cluster-a", frame_name))
+        members = set(cloud._get_cluster("cluster-a").get_members())
         assert members == {conduit_a.id, conduit_b.id}
 
-        clusters_a = set(aether._get_clusters_for_conduit(conduit_a.id, frame_name))
-        clusters_b = set(aether._get_clusters_for_conduit(conduit_b.id, frame_name))
+        clusters_a = set(cloud.get_clusters_for_conduit(conduit_a.id))
+        clusters_b = set(cloud.get_clusters_for_conduit(conduit_b.id))
         assert clusters_a == {"cluster-a"}
         assert clusters_b == {"cluster-a"}
 
-        aether._remove_conduit_from_cluster(conduit_b, "cluster-a", frame_name)
-        members = set(aether._get_conduits_in_cluster("cluster-a", frame_name))
+        cloud.remove_conduit_from_cluster(conduit_b, "cluster-a")
+        members = set(cloud._get_cluster("cluster-a").get_members())
         assert members == {conduit_a.id}
 
-        clusters_b = set(aether._get_clusters_for_conduit(conduit_b.id, frame_name))
+        clusters_b = set(cloud.get_clusters_for_conduit(conduit_b.id))
         assert clusters_b == set()
     finally:
         conduit_b.cleanup()
@@ -146,14 +147,14 @@ def test_aether_cluster_lookup_missing_cluster_raises() -> None:
     """
     aether = Aether()
     frame_name = "frame-missing-cluster"
-    aether._ensure_frame(frame_name)
+    frame = aether._ensure_frame(frame_name)
+    cloud = frame._conduit_cloud
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduits_in_cluster("missing", frame_name)
+        cloud._get_cluster("missing")
     with pytest.raises(ValueError, match="does not exist"):
-        aether._remove_conduit_from_cluster(
+        cloud.remove_conduit_from_cluster(
             conduit=object(),
             cluster_name="missing",
-            aetheric_frame_name=frame_name,
         )
 
 
@@ -170,6 +171,6 @@ def test_aether_get_clusters_for_conduit_empty_when_none() -> None:
     """
     aether = Aether()
     frame_name = "frame-empty-clusters"
-    aether._ensure_frame(frame_name)
-    clusters = aether._get_clusters_for_conduit("missing-id", frame_name)
+    frame = aether._ensure_frame(frame_name)
+    clusters = frame._conduit_cloud.get_clusters_for_conduit("missing-id")
     assert clusters == []

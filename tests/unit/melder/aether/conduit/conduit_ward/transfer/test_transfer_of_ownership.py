@@ -424,6 +424,15 @@ class FakeCluster:
             for owner_id, indices in self.shared_spells.items()
         }
 
+    def get_members(self) -> Tuple[str, ...]:
+        """
+        Return the current cluster-member ids.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of current member ids.
+        """
+        return tuple(self.members)
+
 
 class FakeFrame:
     """

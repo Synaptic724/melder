@@ -3,18 +3,16 @@ from threading import RLock
 from types import TracebackType
 from typing import Optional, Any, Dict, List, Set, Tuple
 import ulid
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.spellbook.existence.existence import Existence
-from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcluster import IConduitCluster
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
@@ -31,6 +29,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.mutation_research.mutation_research import MutationResearch
 
+@mypyc_attr(native_class=True)
 class Aether(Cleanable, IAether):
     """
     The global singleton root that owns all `AethericFrame` instances.
@@ -854,128 +853,37 @@ class Aether(Cleanable, IAether):
     # endregion Configuration
     # region Conduit Management
 
-    def _register_conduit_cloud(
+    def _get_existing_frame(
             self,
-            conduit: IConduit,
             aetheric_frame_name: str = "default",
-    ) -> None:
+    ) -> IAethericFrame:
         """
-        Register a conduit with the `ConduitCloud` for one frame.
-
-        Contract:
-            - Resolves the frame-specific cloud first.
-            - Delegates uniqueness and lifecycle rules to the cloud itself.
-
-        Args:
-            conduit:
-                Conduit instance to register.
-            aetheric_frame_name:
-                Name of the target frame.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        self.check_cleaned()
-
-        if aetheric_frame_name != "default":
-            try:
-                conduit_cloud = self._aetheric_frames[aetheric_frame_name]._conduit_cloud
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_register_conduit_cloud", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            conduit_cloud = frame._conduit_cloud
-
-        conduit_cloud._register_conduit(conduit)
-
-    def _unregister_conduit_cloud(
-            self,
-            conduit: IConduit,
-            aetheric_frame_name: str = "default",
-    ) -> None:
-        """
-        Unregister a conduit from the `ConduitCloud` for one frame.
-
-        Contract:
-            - Resolves the frame-specific cloud first.
-            - Delegates missing-name and missing-entry behavior to the cloud.
-
-        Args:
-            conduit:
-                Conduit instance to unregister.
-            aetheric_frame_name:
-                Name of the target frame.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        self.check_cleaned()
-
-        if aetheric_frame_name != "default":
-            try:
-                conduit_cloud = self._aetheric_frames[aetheric_frame_name]._conduit_cloud
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_unregister_conduit_cloud", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            conduit_cloud = frame._conduit_cloud
-
-        conduit_cloud._unregister_conduit(conduit)
-    def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
-        """
-        Return the `ConduitCloud` owned by one frame.
-
-        Contract:
-            - Returns the live frame-owned cloud object, not a copy.
+        Return one existing frame without creating new custom frames.
 
         Args:
             aetheric_frame_name:
                 Name of the target frame.
 
         Returns:
-            IConduitCloud:
-                The conduit-cloud instance for that frame.
+            IAethericFrame: Existing frame handle.
 
         Raises:
-            ValueError: If the specified frame does not exist.
+            ValueError: If the specified custom frame does not exist.
         """
         self.check_cleaned()
         if aetheric_frame_name != "default":
             try:
-                cloud = self._aetheric_frames[aetheric_frame_name]._conduit_cloud
+                return self._aetheric_frames[aetheric_frame_name]
             except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_cloud", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            cloud = frame._conduit_cloud
-
-        return cloud
-
-    def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
-        """
-        Return the frame-local conduit cloud for one frame.
-
-        Args:
-            aetheric_frame_name:
-                Name of the target frame.
-
-        Returns:
-            IConduitCloud: The live conduit cloud owned by that frame.
-
-        Raises:
-            ValueError: If the specified frame does not exist.
-        """
-        self.check_cleaned()
-        return self._get_conduit_cloud(aetheric_frame_name)
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_existing_frame",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
+                )
+        return self._ensure_default_frame()
 
     def list_conduit_ids(
             self,
@@ -1344,200 +1252,6 @@ class Aether(Cleanable, IAether):
             if mapped_id == conduit_id:
                 frame._conduit_ids_by_name.pop(conduit_name, None)
 
-
-    def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> None:
-        """
-        Creates a new conduit cluster within a frame. (Internal use)
-
-        Args:
-            cluster_name (str): The name for the new cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the cluster name is taken.
-        """
-        self.check_cleaned()
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        conduit_cloud.create_cluster(cluster_name)
-
-    def _remove_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> None:
-        """
-        Removes an existing conduit cluster within a frame. (Internal use)
-
-        Args:
-            cluster_name (str): The name of the cluster to remove.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame does not exist or the cluster is missing.
-        """
-        self.check_cleaned()
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        try:
-            conduit_cloud.delete_cluster(cluster_name)
-        except ValueError:
-            raise
-        except Exception:
-            self._logger.error(f"Cluster cleanup failed for '{cluster_name}'", "_remove_cluster", exc_info=True)
-
-
-    def _get_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> IConduitCluster:
-        """
-        Internal helper to fetch a ConduitCluster by name and frame.
-        """
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        return conduit_cloud._get_cluster(cluster_name)
-
-    # ------------------------------------------------------------------
-    # Cluster sharing hooks and helpers
-    # ------------------------------------------------------------------
-    def _on_conduit_joined_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
-        """
-        Internal hook: auto-share eligible spells when a conduit joins a cluster.
-
-        Args:
-            conduit: The conduit being added to the cluster.
-            cluster_name: Name of the cluster.
-            aetheric_frame_name: Frame name for lookup.
-
-        Returns:
-            None
-        """
-        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        cluster.handle_join(conduit, conduit_cloud)
-
-    def _on_conduit_left_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
-        """
-        Internal hook: teardown auto-shared spells when a conduit leaves a cluster.
-
-        Args:
-            conduit: The conduit being removed from the cluster.
-            cluster_name: Name of the cluster.
-            aetheric_frame_name: Frame name for lookup.
-
-        Returns:
-            None
-        """
-        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        cluster.handle_leave(conduit, conduit_cloud)
-
-    def _add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
-        """
-        Adds a conduit's id to a cluster. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit to add.
-            cluster_name (str): The name of the cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame or cluster does not exist.
-        """
-        self.check_cleaned()
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        try:
-            conduit_cloud.add_conduit_to_cluster(conduit, cluster_name)
-        except Exception as e:
-            self._logger.error(f"_add_conduit_to_cluster: cluster join hook failed: {e}", "_add_conduit_to_cluster", exc_info=True)
-
-    def _remove_conduit_from_cluster(self, conduit: IConduit, cluster_name: str, aetheric_frame_name: str = "default") -> None:
-        """
-        Removes a conduit's id from a cluster. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit to remove.
-            cluster_name (str): The name of the cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Raises:
-            ValueError: If the frame or cluster does not exist.
-        """
-        self.check_cleaned()
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        try:
-            conduit_cloud.remove_conduit_from_cluster(conduit, cluster_name)
-        except ValueError:
-            raise
-        except Exception as e:
-            conduit_id = getattr(conduit, "_id", "<unknown>")
-            self._logger.error(f"Error removing conduit '{conduit_id}' from cluster '{cluster_name}': {e}", "_remove_conduit_from_cluster", exc_info=True)
-            raise
-
-    def _get_conduits_in_cluster(self, cluster_name: str, aetheric_frame_name: str = "default") -> List[str]:
-        """
-        Gets a list of all conduit ids in a specific cluster.
-
-        Args:
-            cluster_name (str): The name of the cluster.
-            aetheric_frame_name (str): The name of the frame.
-
-        Returns:
-            ConcurrentList[str]: A list of conduit ids.
-
-        Raises:
-            ValueError: If the frame or cluster does not exist.
-        """
-        self.check_cleaned()
-        cluster = self._get_cluster(cluster_name, aetheric_frame_name)
-        return list(cluster.get_members())
-
-    def _get_clusters_for_conduit(self, conduit_id: str, aetheric_frame_name: str = "default") -> List[str]:
-        """
-        Return cluster names that contain the given conduit_id.
-
-        Args:
-            conduit_id: Target conduit identifier.
-            aetheric_frame_name: Frame name.
-
-        Returns:
-            List[str]: Cluster names containing the conduit.
-        """
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        return conduit_cloud.get_clusters_for_conduit(conduit_id)
-
-    def _share_new_spell_to_clusters(self, conduit: IConduit, spell: Any, aetheric_frame_name: str = "default") -> None:
-        """
-        Share a newly bound shareable spell from a conduit to its clusters.
-
-        Args:
-            conduit: Owner conduit.
-            spell: Newly bound spell.
-            aetheric_frame_name: Frame name for lookup.
-        """
-        if spell.existence != Existence.unique_per_conduit_cluster:
-            return
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        conduit_id = conduit._id
-        cluster_names = conduit_cloud.get_clusters_for_conduit(conduit_id)
-        if not cluster_names:
-            return
-        for cname in cluster_names:
-            cluster = conduit_cloud._get_cluster(cname)
-            cluster.add_shared_spell(conduit_id, spell.spell_index)
-            for peer_id in cluster.get_members():
-                if peer_id == conduit_id:
-                    continue
-                try:
-                    peer = conduit_cloud.get_conduit_by_id(peer_id)
-                except ValueError:
-                    continue
-                cluster.share_to_borrower(conduit, peer)
-
-    def _refresh_cluster_shares_for_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default") -> None:
-        """
-        Refresh sharing for an existing conduit across all clusters it belongs to.
-
-        Args:
-            conduit: Target conduit.
-            aetheric_frame_name: Frame name.
-
-        Returns:
-            None
-        """
-        conduit_cloud = self._get_conduit_cloud(aetheric_frame_name)
-        conduit_cloud.refresh_cluster_shares_for_conduit(conduit)
 
     def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
         """

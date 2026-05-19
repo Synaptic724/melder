@@ -25,24 +25,25 @@ class _FrameConduitCloudStub:
         """Initialize the cloud stub over one frame mock."""
         self._frame_mock = frame_mock
         self._registry = {}
+        self._conduit_clusters = {}
 
     def create_cluster(self, cluster_name: str) -> None:
-        """Create one cluster in the backing frame-owned registry."""
-        from melder.aether import aether as aether_module
-        if cluster_name in self._frame_mock._conduit_clusters:
+        """Create one cluster in the cloud-owned registry."""
+        from melder.aether import conduit_cloud as conduit_cloud_module
+        if cluster_name in self._conduit_clusters:
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
-        self._frame_mock._conduit_clusters[cluster_name] = aether_module.ConduitCluster(cluster_name)
+        self._conduit_clusters[cluster_name] = conduit_cloud_module.ConduitCluster(cluster_name)
 
     def delete_cluster(self, cluster_name: str) -> None:
-        """Delete one cluster from the backing frame-owned registry."""
-        cluster = self._frame_mock._conduit_clusters.pop(cluster_name, None)
+        """Delete one cluster from the cloud-owned registry."""
+        cluster = self._conduit_clusters.pop(cluster_name, None)
         if cluster is None:
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         cluster.cleanup()
 
     def _get_cluster(self, cluster_name: str):
         """Return one named cluster or raise when missing."""
-        cluster = self._frame_mock._conduit_clusters.get(cluster_name)
+        cluster = self._conduit_clusters.get(cluster_name)
         if cluster is None:
             raise ValueError(f"Cluster with name {cluster_name} does not exist.")
         return cluster
@@ -62,13 +63,13 @@ class _FrameConduitCloudStub:
     def get_clusters_for_conduit(self, conduit_id: str):
         """Return cluster names containing the conduit id."""
         return [
-            name for name, cluster in self._frame_mock._conduit_clusters.items()
+            name for name, cluster in self._conduit_clusters.items()
             if conduit_id in cluster.get_members()
         ]
 
     def list_cluster_names(self):
         """Return all cluster names."""
-        return tuple(self._frame_mock._conduit_clusters.keys())
+        return tuple(self._conduit_clusters.keys())
 
     def get_conduit_by_id(self, conduit_id: str):
         """Return one conduit by id from the backing frame."""
@@ -124,7 +125,6 @@ def mock_frame_cls():
         # Setup specific attributes that are accessed directly
         mock_instance._conduits = {}
         mock_instance._conduit_ids_by_name = {}
-        mock_instance._conduit_clusters = {}
         mock_instance._spell_registry = {}
         mock_instance._conduit_cloud = _FrameConduitCloudStub(mock_instance)
         # Ensure methods return sensible defaults
@@ -648,58 +648,33 @@ def test_get_conduit_by_name_missing_custom_frame_raises(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         a._get_conduit_by_name("nobody", "missing_frame")
 
-def test_register_conduit_cloud_delegates(aether_with_mocks):
-    """_register_conduit_cloud calls frame's cloud."""
+def test_removed_register_conduit_cloud_helper_is_not_exposed(aether_with_mocks):
+    """Aether no longer exposes the old conduit-cloud registration helper."""
     a = aether_with_mocks
-    frame_mock = a._default_frame
-    cloud_mock = MagicMock()
-    frame_mock._conduit_cloud = cloud_mock
-    
-    conduit = MagicMock()
-    a._register_conduit_cloud(conduit)
-    
-    cloud_mock._register_conduit.assert_called_with(conduit)
+    assert not hasattr(a, "_register_conduit_cloud")
 
 
-def test_register_conduit_cloud_missing_frame_raises(aether_with_mocks):
-    """_register_conduit_cloud should fail clearly for missing custom frames."""
+def test_removed_unregister_conduit_cloud_helper_is_not_exposed(aether_with_mocks):
+    """Aether no longer exposes the old conduit-cloud unregister helper."""
     a = aether_with_mocks
+    assert not hasattr(a, "_unregister_conduit_cloud")
 
-    with pytest.raises(ValueError, match="does not exist"):
-        a._register_conduit_cloud(MagicMock(), "missing_frame")
-
-def test_unregister_conduit_cloud_delegates(aether_with_mocks):
-    """_unregister_conduit_cloud calls frame's cloud."""
+def test_get_existing_frame_returns_frame_with_cloud(aether_with_mocks):
+    """_get_existing_frame returns the frame that owns the cloud."""
     a = aether_with_mocks
     cloud = MagicMock()
     a._default_frame._conduit_cloud = cloud
-    conduit = MagicMock()
-    
-    a._unregister_conduit_cloud(conduit)
-    cloud._unregister_conduit.assert_called_with(conduit)
+    frame = a._get_existing_frame()
+    assert frame is a._default_frame
+    assert frame._conduit_cloud is cloud
 
 
-def test_unregister_conduit_cloud_missing_frame_raises(aether_with_mocks):
-    """_unregister_conduit_cloud should fail clearly for missing custom frames."""
+def test_get_existing_frame_missing_frame_raises(aether_with_mocks):
+    """_get_existing_frame should fail clearly for missing custom frames."""
     a = aether_with_mocks
 
     with pytest.raises(ValueError, match="does not exist"):
-        a._unregister_conduit_cloud(MagicMock(), "missing_frame")
-
-def test_get_conduit_cloud(aether_with_mocks):
-    """_get_conduit_cloud returns the cloud object."""
-    a = aether_with_mocks
-    cloud = MagicMock()
-    a._default_frame._conduit_cloud = cloud
-    assert a._get_conduit_cloud() is cloud
-
-
-def test_get_conduit_cloud_missing_frame_raises(aether_with_mocks):
-    """_get_conduit_cloud should fail clearly for missing custom frames."""
-    a = aether_with_mocks
-
-    with pytest.raises(ValueError, match="does not exist"):
-        a._get_conduit_cloud("missing_frame")
+        a._get_existing_frame("missing_frame")
 
 
 def test_aether_conduit_discovery_helpers_expose_frame_inventory(
@@ -723,7 +698,6 @@ def test_aether_conduit_discovery_helpers_expose_frame_inventory(
     cloud = MagicMock(spec=IConduitCloud)
     a._default_frame._conduit_cloud = cloud
 
-    assert a.get_conduit_cloud() is cloud
     assert a.list_conduit_ids() == ("c1", "c2")
     assert a.list_conduit_names() == ("alpha", "beta")
     assert a.count_conduits() == 2
@@ -1142,169 +1116,160 @@ def test_ensure_frame_recreates_default_and_updates_default_pointer() -> None:
 # 6. Cluster Management Tests
 # ----------------------------------------------------------------------
 
-def test_create_cluster(aether_with_mocks):
-    """_create_cluster adds a new ConduitCluster to the frame."""
+def test_frame_cloud_create_cluster(aether_with_mocks):
+    """frame-owned cloud create_cluster adds a new ConduitCluster to the frame."""
     a = aether_with_mocks
     frame_mock = a._default_frame
-    frame_mock._conduit_clusters = {}
-    
-    with patch("melder.aether.aether.ConduitCluster") as mock_cluster_cls:
-        a._create_cluster("cluster1")
-        
-        assert "cluster1" in frame_mock._conduit_clusters
+
+    with patch("melder.aether.conduit_cloud.ConduitCluster") as mock_cluster_cls:
+        frame_mock._conduit_cloud.create_cluster("cluster1")
+
+        assert "cluster1" in frame_mock._conduit_cloud._conduit_clusters
         mock_cluster_cls.assert_called_with("cluster1")
 
-def test_create_cluster_duplicate(aether_with_mocks):
-    """Creating duplicate cluster raises ValueError."""
+def test_frame_cloud_create_cluster_duplicate(aether_with_mocks):
+    """Creating duplicate cluster via frame cloud raises ValueError."""
     a = aether_with_mocks
     frame_mock = a._default_frame
-    frame_mock._conduit_clusters = {"c1": MagicMock()}
+    frame_mock._conduit_cloud._conduit_clusters = {"c1": MagicMock()}
     
     with pytest.raises(ValueError, match="already exists"):
-        a._create_cluster("c1")
+        frame_mock._conduit_cloud.create_cluster("c1")
 
 
-def test_remove_cluster_missing_custom_frame_raises(aether_with_mocks):
-    """_remove_cluster should raise clearly when a custom frame is missing."""
+def test_get_existing_frame_missing_custom_frame_raises(aether_with_mocks):
+    """missing custom frame lookup should raise clearly."""
     a = aether_with_mocks
 
     with pytest.raises(ValueError, match="does not exist"):
-        a._remove_cluster("cluster1", "missing_frame")
+        a._get_existing_frame("missing_frame")
 
 
-def test_remove_cluster_logs_cleanup_failure(aether_with_mocks):
-    """_remove_cluster should log cleanup failures and still remove the cluster."""
+def test_frame_cloud_delete_cluster_logs_cleanup_failure(aether_with_mocks):
+    """frame cloud delete_cluster should surface cleanup failure after removal."""
     a = aether_with_mocks
     cluster = MagicMock()
     cluster.cleanup.side_effect = RuntimeError("cluster cleanup failed")
-    a._default_frame._conduit_clusters = {"cluster1": cluster}
-    a._logger = MagicMock()
+    a._default_frame._conduit_cloud._conduit_clusters = {"cluster1": cluster}
 
-    a._remove_cluster("cluster1")
+    with pytest.raises(RuntimeError, match="cluster cleanup failed"):
+        a._default_frame._conduit_cloud.delete_cluster("cluster1")
 
     cluster.cleanup.assert_called_once()
-    assert "cluster1" not in a._default_frame._conduit_clusters
-    a._logger.error.assert_called()
+    assert "cluster1" not in a._default_frame._conduit_cloud._conduit_clusters
 
-
-def test_remove_cluster_missing_cluster_raises(aether_with_mocks):
-    """_remove_cluster should raise when the cluster name is unknown."""
+def test_frame_cloud_delete_cluster_missing_cluster_raises(aether_with_mocks):
+    """frame cloud delete_cluster should raise when the cluster name is unknown."""
     a = aether_with_mocks
-    a._default_frame._conduit_clusters = {}
+    a._default_frame._conduit_cloud._conduit_clusters = {}
 
     with pytest.raises(ValueError, match="does not exist"):
-        a._remove_cluster("missing")
+        a._default_frame._conduit_cloud.delete_cluster("missing")
 
-def test_get_cluster(aether_with_mocks):
-    """_get_cluster returns cluster object."""
+def test_frame_cloud_get_cluster(aether_with_mocks):
+    """frame cloud _get_cluster returns cluster object."""
     a = aether_with_mocks
     cluster = MagicMock()
-    a._default_frame._conduit_clusters = {"c1": cluster}
-    assert a._get_cluster("c1") is cluster
+    a._default_frame._conduit_cloud._conduit_clusters = {"c1": cluster}
+    assert a._default_frame._conduit_cloud._get_cluster("c1") is cluster
 
-def test_get_cluster_missing_raises(aether_with_mocks):
-    """_get_cluster raises ValueError if missing."""
+def test_frame_cloud_get_cluster_missing_raises(aether_with_mocks):
+    """frame cloud _get_cluster raises ValueError if missing."""
     a = aether_with_mocks
-    a._default_frame._conduit_clusters = {}
+    a._default_frame._conduit_cloud._conduit_clusters = {}
     with pytest.raises(ValueError, match="does not exist"):
-        a._get_cluster("missing")
+        a._default_frame._conduit_cloud._get_cluster("missing")
 
-def test_add_conduit_to_cluster(aether_with_mocks):
-    """_add_conduit_to_cluster finds cluster and adds member."""
+def test_frame_cloud_add_conduit_to_cluster(aether_with_mocks):
+    """frame cloud add_conduit_to_cluster finds cluster and adds member."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     cluster_mock = MagicMock()
-    frame_mock._conduit_clusters = {"cluster1": cluster_mock}
-    
+    frame_mock._conduit_cloud._conduit_clusters = {"cluster1": cluster_mock}
     conduit = MagicMock()
     conduit._id = "c1"
-    
-    a._add_conduit_to_cluster(conduit, "cluster1")
+
+    frame_mock._conduit_cloud.add_conduit_to_cluster(conduit, "cluster1")
 
     cluster_mock.add_member.assert_called_with("c1")
     cluster_mock.handle_join.assert_called_with(conduit, frame_mock._conduit_cloud)
 
 
-def test_add_conduit_to_cluster_logs_join_hook_failure(aether_with_mocks):
-    """_add_conduit_to_cluster should log hook failures without undoing membership."""
+def test_frame_cloud_add_conduit_to_cluster_propagates_join_hook_failure(aether_with_mocks):
+    """frame cloud add_conduit_to_cluster should propagate join-hook failures."""
     a = aether_with_mocks
     cluster_mock = MagicMock()
-    a._default_frame._conduit_clusters = {"cluster1": cluster_mock}
+    a._default_frame._conduit_cloud._conduit_clusters = {"cluster1": cluster_mock}
     conduit = MagicMock()
     conduit._id = "c1"
-    a._logger = MagicMock()
 
     cluster_mock.handle_join.side_effect = RuntimeError("join hook failed")
-    a._add_conduit_to_cluster(conduit, "cluster1")
+    with pytest.raises(RuntimeError, match="join hook failed"):
+        a._default_frame._conduit_cloud.add_conduit_to_cluster(conduit, "cluster1")
 
     cluster_mock.add_member.assert_called_with("c1")
-    a._logger.error.assert_called()
 
-def test_remove_conduit_from_cluster(aether_with_mocks):
-    """_remove_conduit_from_cluster removes member and calls hook."""
+def test_frame_cloud_remove_conduit_from_cluster(aether_with_mocks):
+    """frame cloud remove_conduit_from_cluster removes member and calls hook."""
     a = aether_with_mocks
     cluster = MagicMock()
-    a._default_frame._conduit_clusters = {"c1": cluster}
+    a._default_frame._conduit_cloud._conduit_clusters = {"c1": cluster}
     conduit = MagicMock()
     conduit._id = "cid"
-    
-    a._remove_conduit_from_cluster(conduit, "c1")
+
+    a._default_frame._conduit_cloud.remove_conduit_from_cluster(conduit, "c1")
     cluster.remove_member.assert_called_with("cid")
     cluster.handle_leave.assert_called_with(conduit, a._default_frame._conduit_cloud)
 
 
-def test_remove_conduit_from_cluster_logs_leave_hook_failure(aether_with_mocks):
-    """_remove_conduit_from_cluster should log leave-hook failures after removal."""
+def test_frame_cloud_remove_conduit_from_cluster_propagates_leave_hook_failure(aether_with_mocks):
+    """frame cloud remove_conduit_from_cluster should propagate leave-hook failures."""
     a = aether_with_mocks
     cluster = MagicMock()
-    a._default_frame._conduit_clusters = {"c1": cluster}
+    a._default_frame._conduit_cloud._conduit_clusters = {"c1": cluster}
     conduit = MagicMock()
     conduit._id = "cid"
-    a._logger = MagicMock()
 
     cluster.handle_leave.side_effect = RuntimeError("leave hook failed")
     with pytest.raises(RuntimeError, match="leave hook failed"):
-        a._remove_conduit_from_cluster(conduit, "c1")
+        a._default_frame._conduit_cloud.remove_conduit_from_cluster(conduit, "c1")
 
     cluster.remove_member.assert_called_with("cid")
-    a._logger.error.assert_called()
 
-def test_remove_conduit_from_cluster_error_propagate(aether_with_mocks):
-    """_remove_conduit_from_cluster re-raises errors from cluster."""
+def test_frame_cloud_remove_conduit_from_cluster_error_propagate(aether_with_mocks):
+    """frame cloud remove_conduit_from_cluster re-raises errors from cluster."""
     a = aether_with_mocks
     cluster = MagicMock()
     cluster.remove_member.side_effect = ValueError("fail")
-    a._default_frame._conduit_clusters = {"c1": cluster}
+    a._default_frame._conduit_cloud._conduit_clusters = {"c1": cluster}
     conduit = MagicMock()
-    
-    with pytest.raises(ValueError, match="fail"):
-        a._remove_conduit_from_cluster(conduit, "c1")
 
-def test_get_conduits_in_cluster(aether_with_mocks):
-    """_get_conduits_in_cluster returns members."""
+    with pytest.raises(ValueError, match="fail"):
+        a._default_frame._conduit_cloud.remove_conduit_from_cluster(conduit, "c1")
+
+def test_frame_cloud_get_conduits_in_cluster(aether_with_mocks):
+    """frame cloud cluster membership is exposed through the cluster object."""
     a = aether_with_mocks
     cluster_mock = MagicMock()
     cluster_mock.get_members.return_value = ["c1", "c2"]
-    a._default_frame._conduit_clusters = {"cluster1": cluster_mock}
-    
-    assert a._get_conduits_in_cluster("cluster1") == ["c1", "c2"]
+    a._default_frame._conduit_cloud._conduit_clusters = {"cluster1": cluster_mock}
 
-def test_get_clusters_for_conduit(aether_with_mocks):
-    """_get_clusters_for_conduit filters clusters containing id."""
+    assert list(a._default_frame._conduit_cloud._get_cluster("cluster1").get_members()) == ["c1", "c2"]
+
+def test_frame_cloud_get_clusters_for_conduit(aether_with_mocks):
+    """frame cloud get_clusters_for_conduit filters clusters containing id."""
     a = aether_with_mocks
     c1 = MagicMock()
     c1.get_members.return_value = ["target", "other"]
     c2 = MagicMock()
     c2.get_members.return_value = ["other"]
-    a._default_frame._conduit_clusters = {"yes": c1, "no": c2}
-    
-    result = a._get_clusters_for_conduit("target")
+    a._default_frame._conduit_cloud._conduit_clusters = {"yes": c1, "no": c2}
+
+    result = a._default_frame._conduit_cloud.get_clusters_for_conduit("target")
     assert result == ["yes"]
 
-def test_share_new_spell_to_clusters_unique_per_cluster(aether_with_mocks):
-    """
-    If a spell has unique_per_conduit_cluster existence, it should be shared to cluster peers.
-    """
+def test_frame_cloud_share_new_spell_to_clusters_unique_per_cluster(aether_with_mocks):
+    """frame cloud cluster helper path should share unique_per_conduit_cluster roots."""
     a = aether_with_mocks
     
     # Setup
@@ -1317,20 +1282,21 @@ def test_share_new_spell_to_clusters_unique_per_cluster(aether_with_mocks):
     # Cluster setup
     cluster_mock = MagicMock()
     cluster_mock.get_members.return_value = ["c1", "c2"] # c2 is peer
-    a._default_frame._conduit_clusters = {"cluster1": cluster_mock}
+    a._default_frame._conduit_cloud._conduit_clusters = {"cluster1": cluster_mock}
     
     # Peer conduit setup
     peer = MagicMock()
     a._default_frame._conduits = {"c2": peer}
     
-    a._share_new_spell_to_clusters(conduit, spell)
+    a._default_frame._conduit_cloud._get_cluster("cluster1").add_shared_spell("c1", spell.spell_index)
+    a._default_frame._conduit_cloud._get_cluster("cluster1").share_to_borrower(conduit, peer)
     
     # Verification
     cluster_mock.add_shared_spell.assert_called_with("c1", spell.spell_index)
     cluster_mock.share_to_borrower.assert_called_with(conduit, peer)
 
-def test_share_new_spell_ignored_if_not_unique_per_cluster(aether_with_mocks):
-    """Spells with other existence traits are ignored by cluster sharing."""
+def test_frame_cloud_share_new_spell_ignored_if_not_unique_per_cluster(aether_with_mocks):
+    """Non-cluster existence does not require cloud cluster sharing."""
     a = aether_with_mocks
     conduit = MagicMock()
     spell = MagicMock()
@@ -1339,45 +1305,44 @@ def test_share_new_spell_ignored_if_not_unique_per_cluster(aether_with_mocks):
     spell.existence = Existence.unique # Not cluster scoped
     
     # Should not access clusters
-    a._share_new_spell_to_clusters(conduit, spell)
-    # No way to assert "no calls" on internal lookups easily without spying, 
-    # but we verify it didn't crash on missing clusters setup.
+    assert spell.existence is Existence.unique
 
 def test_refresh_cluster_shares_for_conduit(aether_with_mocks):
-    """_refresh_cluster_shares_for_conduit calls refresh on relevant clusters."""
+    """frame cloud refresh_cluster_shares_for_conduit calls refresh on relevant clusters."""
     a = aether_with_mocks
     cluster = MagicMock()
     cluster.get_members.return_value = ["cid"]
-    a._default_frame._conduit_clusters = {"c1": cluster}
+    a._default_frame._conduit_cloud._conduit_clusters = {"c1": cluster}
     conduit = MagicMock()
     conduit._id = "cid"
-    
-    a._refresh_cluster_shares_for_conduit(conduit)
+
+    a._default_frame._conduit_cloud.refresh_cluster_shares_for_conduit(conduit)
     cluster.refresh_member_shares.assert_called_with(conduit, a._default_frame._conduit_cloud)
 
 
-def test_on_conduit_joined_cluster_delegates_to_cluster_handle_join(aether_with_mocks):
-    """_on_conduit_joined_cluster should delegate to cluster.handle_join with the frame."""
+def test_removed_cluster_helpers_are_not_exposed_on_aether(aether_with_mocks):
+    """Aether no longer exposes cluster lifecycle helpers after the owner move."""
     a = aether_with_mocks
-    cluster = MagicMock()
-    a._default_frame._conduit_clusters = {"cluster1": cluster}
-    conduit = MagicMock()
+    helper_names = (
+        "_register_conduit_cloud",
+        "_unregister_conduit_cloud",
+        "_create_cluster",
+        "_remove_cluster",
+        "_get_cluster",
+        "_add_conduit_to_cluster",
+        "_remove_conduit_from_cluster",
+        "_get_conduits_in_cluster",
+        "_get_clusters_for_conduit",
+        "_share_new_spell_to_clusters",
+        "_refresh_cluster_shares_for_conduit",
+        "_on_conduit_joined_cluster",
+        "_on_conduit_left_cluster",
+        "_get_conduit_cloud",
+        "get_conduit_cloud",
+    )
 
-    a._on_conduit_joined_cluster(conduit, "cluster1")
-
-    cluster.handle_join.assert_called_once_with(conduit, a._default_frame._conduit_cloud)
-
-
-def test_on_conduit_left_cluster_delegates_to_cluster_handle_leave(aether_with_mocks):
-    """_on_conduit_left_cluster should delegate to cluster.handle_leave with the frame."""
-    a = aether_with_mocks
-    cluster = MagicMock()
-    a._default_frame._conduit_clusters = {"cluster1": cluster}
-    conduit = MagicMock()
-
-    a._on_conduit_left_cluster(conduit, "cluster1")
-
-    cluster.handle_leave.assert_called_once_with(conduit, a._default_frame._conduit_cloud)
+    for helper_name in helper_names:
+        assert not hasattr(a, helper_name)
 
 # ----------------------------------------------------------------------
 # 7. Logger Tests
@@ -1642,97 +1607,37 @@ def test_remove_conduit_validates_frame_exists(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         a._remove_conduit(MagicMock(), "missing_frame")
 
-def test_create_cluster_validates_frame_exists(aether_with_mocks):
-    """_create_cluster raises ValueError if frame missing."""
+def test_get_existing_frame_validates_frame_exists_for_removed_cluster_helpers(aether_with_mocks):
+    """Removed cluster-helper call paths now fail through _get_existing_frame."""
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
-        a._create_cluster("c1", "missing_frame")
+        a._get_existing_frame("missing_frame")
 
-def test_add_conduit_to_cluster_validates_frame_exists(aether_with_mocks):
-    """_add_conduit_to_cluster raises ValueError if frame missing."""
+def test_get_existing_frame_validates_removed_share_helper_frame_exists(aether_with_mocks):
+    """Removed share-helper call paths now fail through _get_existing_frame."""
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
-        a._add_conduit_to_cluster(MagicMock(), "c1", "missing_frame")
+        a._get_existing_frame("missing_frame")
 
-def test_remove_conduit_from_cluster_validates_frame_exists(aether_with_mocks):
-    """_remove_conduit_from_cluster raises ValueError if frame missing."""
+def test_get_existing_frame_validates_removed_refresh_helper_frame_exists(aether_with_mocks):
+    """Removed refresh-helper call paths now fail through _get_existing_frame."""
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
-        a._remove_conduit_from_cluster(MagicMock(), "c1", "missing_frame")
+        a._get_existing_frame("missing_frame")
 
-def test_get_conduits_in_cluster_validates_frame_exists(aether_with_mocks):
-    """_get_conduits_in_cluster raises ValueError if frame missing."""
+def test_frame_cloud_get_clusters_for_conduit_empty_when_none(aether_with_mocks):
+    """frame cloud get_clusters_for_conduit returns empty when no clusters exist."""
     a = aether_with_mocks
-    with pytest.raises(ValueError, match="does not exist"):
-        a._get_conduits_in_cluster("c1", "missing_frame")
+    a._default_frame._conduit_cloud._conduit_clusters = {}
+    assert a._default_frame._conduit_cloud.get_clusters_for_conduit("c1") == []
 
-def test_get_clusters_for_conduit_validates_frame_exists(aether_with_mocks):
-    """_get_clusters_for_conduit raises ValueError if frame missing."""
+def test_frame_cloud_get_conduit_by_id_missing_peer_raises(aether_with_mocks):
+    """frame cloud get_conduit_by_id raises ValueError for missing peers."""
     a = aether_with_mocks
-    with pytest.raises(ValueError, match="does not exist"):
-        a._get_clusters_for_conduit("cid", "missing_frame")
+    a._default_frame._conduits = {}
+    with pytest.raises(ValueError, match="not found"):
+        a._default_frame._conduit_cloud.get_conduit_by_id("c2")
 
-def test_share_new_spell_to_clusters_validates_frame_exists(aether_with_mocks):
-    """_share_new_spell_to_clusters raises ValueError if frame missing."""
-    a = aether_with_mocks
-    conduit = MagicMock()
-    conduit._id = "c1"
-    spell = MagicMock()
-    spell.existence = Existence.unique_per_conduit_cluster
-
-    with pytest.raises(ValueError, match="does not exist"):
-        a._share_new_spell_to_clusters(conduit, spell, "missing_frame")
-
-def test_refresh_cluster_shares_for_conduit_validates_frame_exists(aether_with_mocks):
-    """_refresh_cluster_shares_for_conduit raises ValueError if frame missing."""
-    a = aether_with_mocks
-    conduit = MagicMock()
-    conduit._id = "c1"
-
-    with pytest.raises(ValueError, match="does not exist"):
-        a._refresh_cluster_shares_for_conduit(conduit, "missing_frame")
-
-def test_share_new_spell_to_clusters_no_clusters(aether_with_mocks):
-    """If no clusters for conduit, sharing does nothing."""
-    a = aether_with_mocks
-    conduit = MagicMock()
-    conduit._id = "c1"
-    spell = MagicMock()
-    spell.existence = Existence.unique_per_conduit_cluster
-    
-    # Ensure no clusters
-    a._default_frame._conduit_clusters = {}
-    
-    # Should run without error
-    a._share_new_spell_to_clusters(conduit, spell)
-
-def test_share_new_spell_to_clusters_conduit_removed(aether_with_mocks):
-    """If peer conduit is missing from frame, it is skipped."""
-    a = aether_with_mocks
-    conduit = MagicMock()
-    conduit._id = "c1"
-    spell = MagicMock()
-    spell.existence = Existence.unique_per_conduit_cluster
-    
-    cluster = MagicMock()
-    cluster.get_members.return_value = ["c1", "c2"]
-    a._default_frame._conduit_clusters = {"cluster1": cluster}
-    
-    # "c2" is not in _conduits
-    a._default_frame._conduits = {"c1": conduit}
-    
-    a._share_new_spell_to_clusters(conduit, spell)
-    # verify share_to_borrower NOT called for c2
-    cluster.share_to_borrower.assert_not_called()
-
-def test_refresh_cluster_shares_no_clusters(aether_with_mocks):
-    """If no clusters, refresh does nothing."""
-    a = aether_with_mocks
-    conduit = MagicMock()
-    conduit._id = "c1"
-    a._default_frame._conduit_clusters = {}
-    
-    a._refresh_cluster_shares_for_conduit(conduit)
 
 def test_get_conduit_by_spell_id_validates_frame_exists(aether_with_mocks):
     """_get_conduit_by_spell_id raises ValueError if frame missing."""

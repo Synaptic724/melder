@@ -205,7 +205,7 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
-    def _get_or_build_creation_context(self) -> ISpellCreationContextSurface:
+    def _get_or_build_creation_context(self) -> Any:
         """
         Internal
 

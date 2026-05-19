@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.system_state import SystemState
@@ -17,7 +19,7 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
-
+@mypyc_attr(native_class=True)
 class ContractProviderPresenceStrategy(SpellValidationStrategy):
     """
     Validate that contract sockets have a resolvable provider in the Spellbook.

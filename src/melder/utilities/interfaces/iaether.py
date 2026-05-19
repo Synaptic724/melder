@@ -275,12 +275,6 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> "IConduitCloud":
-        """
-        Return the conduit cloud for one frame.
-        """
-        ...
-
     def list_conduit_ids(
             self,
             aetheric_frame_name: str = "default",
@@ -365,36 +359,6 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _get_cluster(
-            self,
-            cluster_name: str,
-            aetheric_frame_name: str = "default",
-    ) -> IConduitCluster:
-        """
-        Return the named conduit cluster for one frame.
-        """
-        ...
-
-    def _get_conduits_in_cluster(
-            self,
-            cluster_name: str,
-            aetheric_frame_name: str = "default",
-    ) -> List[str]:
-        """
-        Return the conduit ids currently present in one named cluster.
-        """
-        ...
-
-    def _get_clusters_for_conduit(
-            self,
-            conduit_id: str,
-            aetheric_frame_name: str = "default",
-    ) -> List[str]:
-        """
-        Return cluster names that currently contain the supplied conduit id.
-        """
-        ...
-
     def _remove_single_spell_index(
             self,
             conduit_id: str,
@@ -441,5 +405,14 @@ class IAether(ICleanable, Protocol):
 
         Returns:
             None.
+        """
+        ...
+
+    def _get_existing_frame(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> IAethericFrame:
+        """
+        Return one existing frame without creating new custom frames.
         """
         ...

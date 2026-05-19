@@ -1,10 +1,13 @@
 from typing import Dict, List
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 
-
+@mypyc_attr(native_class=True)
 class CircularDependencyStrategy(SpellValidationStrategy):
     """
     Detect circular dependency chains in the spell dependency graph.

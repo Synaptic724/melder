@@ -31,6 +31,18 @@ def mock_dependencies():
     with patch("melder.aether.aetheric_frame.ConduitCloud") as mock_cloud, \
          patch("melder.aether.aetheric_frame.SpellSystemStates") as mock_sss, \
          patch("melder.aether.aetheric_frame.DevOpsManager") as mock_dom:
+        cloud_instance = mock_cloud.return_value
+        cloud_instance._conduit_clusters = {}
+
+        def _cleanup_cloud() -> None:
+            for cluster in list(cloud_instance._conduit_clusters.values()):
+                try:
+                    cluster.cleanup()
+                except Exception:
+                    pass
+            cloud_instance._conduit_clusters.clear()
+
+        cloud_instance.cleanup.side_effect = _cleanup_cloud
         yield {
             "cloud": mock_cloud,
             "sss": mock_sss,
@@ -54,7 +66,7 @@ def test_init_success(mock_dependencies):
     - Name is set.
     - ID is generated.
     - Lock is created.
-    - All sub-managers (cloud, mr, sss, dom) are instantiated using mocks.
+    - All sub-managers (cloud, sss, dom) are instantiated using mocks.
     - Registries start empty.
     """
     f = AethericFrame(Aether(), "my_frame")
@@ -66,7 +78,7 @@ def test_init_success(mock_dependencies):
     assert f._conduits == {}
     assert f._spell_registry == {}
     assert f._version_registry == {}
-    assert f._conduit_clusters == {}
+    assert f._conduit_cloud._conduit_clusters == {}
     
     # Verify sub-components were created
     assert f._conduit_cloud is mock_dependencies["cloud"].return_value
@@ -142,14 +154,13 @@ def test_cleanup_clears_registries(frame):
     frame._conduits["c1"] = MagicMock()
     frame._spell_registry["c1"] = set()
     frame._version_registry["c1"] = set()
-    frame._conduit_clusters["cl1"] = MagicMock()
+    frame._conduit_cloud._conduit_clusters["cl1"] = MagicMock()
     
     frame.cleanup()
     
     assert not hasattr(frame, '_conduits')
     assert not hasattr(frame, '_spell_registry')
     assert not hasattr(frame, '_version_registry')
-    assert not hasattr(frame, '_conduit_clusters')
     assert frame._cleaned is True
 
 def test_cleanup_calls_subcomponent_cleanup(frame):
@@ -158,7 +169,8 @@ def test_cleanup_calls_subcomponent_cleanup(frame):
 
     Contract:
     - `cleanup()` is called on all owned managers (cloud, sss, dom).
-    - `cleanup()` is called on all owned conduits and clusters.
+    - `cleanup()` is called on all owned conduits.
+    - Cluster cleanup is delegated through the owned ConduitCloud.
     """
     # Sub-components are mocks from fixture
     cloud = frame._conduit_cloud
@@ -167,7 +179,7 @@ def test_cleanup_calls_subcomponent_cleanup(frame):
     conduit = MagicMock()
     frame._conduits["c1"] = conduit
     cluster = MagicMock()
-    frame._conduit_clusters["cl1"] = cluster
+    frame._conduit_cloud._conduit_clusters["cl1"] = cluster
     
     frame.cleanup()
     
@@ -253,12 +265,11 @@ def test_cleanup_tolerant_of_cluster_cleanup_errors(frame):
     """cleanup should tolerate cluster cleanup failures and still complete."""
     bad_cluster = MagicMock()
     bad_cluster.cleanup.side_effect = RuntimeError("cluster boom")
-    frame._conduit_clusters["cl1"] = bad_cluster
+    frame._conduit_cloud._conduit_clusters["cl1"] = bad_cluster
 
     frame.cleanup()
 
     assert frame._cleaned is True
-    assert not hasattr(frame, '_conduit_clusters')
 
 # ----------------------------------------------------------------------
 # 4. Property Accessor Tests

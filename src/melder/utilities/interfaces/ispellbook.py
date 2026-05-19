@@ -667,6 +667,37 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def _make_spell_key(
+            self,
+            spellframe: Any,
+            spell_name: str,
+            binding_name: Optional[str],
+    ) -> tuple[str, str]:
+        """
+        Internal
+
+        Build the normalized `(frame_key, binding_key)` lookup tuple for one
+        spell identity.
+        """
+        ...
+
+    def _assert_lookup_key_available(
+            self,
+            *,
+            lookup_key: tuple[str, str],
+            spell_index: ISpellIndex,
+            context: str,
+            check_local: bool = True,
+            check_contracted: bool = True,
+    ) -> None:
+        """
+        Internal
+
+        Raise if the provided lookup key is already mapped to a different
+        lineage in the selected local or contracted maps.
+        """
+        ...
+
     def _check_all_spells(self) -> None:
         """
         Internal

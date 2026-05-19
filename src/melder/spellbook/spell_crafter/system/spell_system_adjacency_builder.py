@@ -1,18 +1,21 @@
 from typing import Dict, Iterable, Optional, Set
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
 from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellSystemAdjacencyBuilder:
     """
-    Builder for :class:`SpellSystemAdjacencySnapshot`.
+    Builder for: class:`SpellSystemAdjacencySnapshot`.
 
-    This is a thin adapter over :class:`ISpellSystemStates` and is
+    This is a thin adapter over: class:`ISpellSystemStates` and is
     intentionally dumb:
 
-        * It trusts that SpellSystemStates contains correct per-spell
+        * It trusts that SpellSystemStates contain correct per-spell
           direct_dependencies at the **version-id** level.
         * It does **not** perform validation or cycle detection.
         * It does **not** understand sockets or contracts.
@@ -32,7 +35,7 @@ class SpellSystemAdjacencyBuilder:
         Args
         ----
         spell_system_states:
-            The SpellSystemStates instance owned by the Spellbook /
+            The SpellSystemStates instance is owned by the Spellbook /
             Aether DevOps layer. This must already have had dependencies
             populated by the Phase 3 local frame builder via
             SpellSystemStates.update_dependencies.

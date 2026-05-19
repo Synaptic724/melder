@@ -84,8 +84,8 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
     aether = Aether()
     frame_name = "frame-cleanup"
     frame = aether._ensure_frame(frame_name)
-    aether._create_cluster("cluster-a", frame_name)
-    cluster = aether._get_cluster("cluster-a", frame_name)
+    frame._conduit_cloud.create_cluster("cluster-a")
+    cluster = frame._conduit_cloud._get_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,

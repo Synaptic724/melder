@@ -18,7 +18,6 @@ def conduit_cloud():
         "test_frame",
         {},
         {},
-        {},
     )
     yield cloud
     cloud.cleanup()

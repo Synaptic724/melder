@@ -1,4 +1,7 @@
 from typing import Optional, List
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
@@ -19,7 +22,7 @@ from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellValidationContext(Cleanable):
     """
     Per-spell context passed to each validation strategy.

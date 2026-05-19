@@ -1,10 +1,13 @@
 from typing import Collection, Dict, Iterable, Optional, Set
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-
+@mypyc_attr(native_class=True)
 class SpellSystemAdjacencySnapshot(Cleanable):
     """
     Frame-wide structural view of SpellSystemStates.

@@ -1,6 +1,8 @@
 from collections import deque
 from typing import Collection, Deque, Dict, List, Optional, Sequence, Set, Tuple
 
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -15,7 +17,7 @@ from melder.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellSystemRootBlueprintBuilder:
     """
     Phase-5 structural builder.

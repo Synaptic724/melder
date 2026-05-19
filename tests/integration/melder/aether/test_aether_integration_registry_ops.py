@@ -93,10 +93,6 @@ def test_bottom_up_default_frame_cleanup_blocks_default_access() -> None:
 
     with pytest.raises(RuntimeError, match="Default AethericFrame"):
         aether._ensure_default_frame()
-    with pytest.raises(RuntimeError, match="Default AethericFrame"):
-        aether._get_conduit_cloud("default")
-
-
 def test_aether_devops_accessors_missing_frame_raise() -> None:
     """
     Purpose:
@@ -148,11 +144,11 @@ def test_aether_conduit_cloud_unregister_removes_entry() -> None:
     conduit = spellbook.conjure(automatic=False, name="root")
     aether = Aether()
     try:
-        cloud = aether._get_conduit_cloud(frame_name)
+        cloud = aether._ensure_frame(frame_name)._conduit_cloud
         assert cloud.get_conduit("root") is conduit
         assert cloud._registry["root"] is conduit
 
-        aether._unregister_conduit_cloud(conduit, frame_name)
+        cloud._unregister_conduit(conduit)
         assert "root" not in cloud._registry
         assert cloud.get_conduit("root") is conduit
     finally:

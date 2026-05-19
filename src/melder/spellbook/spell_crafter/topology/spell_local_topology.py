@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 from typing import Sequence, Tuple, Dict, List, Optional
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+@mypyc_attr(native_class=True)
 @dataclass(frozen=True, slots=True)
 class SpellSocketDescriptor:
     """

@@ -6,13 +6,15 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args, get_origin
 
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
-
+@mypyc_attr(native_class=True)
 class ProtocolCrafter(Cleanable):
     """
     Purpose:

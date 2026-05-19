@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Literal, Optional, Type
 
+from mypy_extensions import mypyc_attr
+
+
+@mypyc_attr(native_class=True)
 class Cleanable(ABC):
     """
     Abstract base class for objects that own explicit cleanup lifecycle.

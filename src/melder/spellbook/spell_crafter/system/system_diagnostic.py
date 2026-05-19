@@ -1,16 +1,19 @@
 from enum import Enum, auto
 from typing import Any, Dict, Optional
+
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
-
+@mypyc_attr(native_class=True)
 class SystemDiagnosticSeverity(Enum):
     """Severity bucket for system-level validation diagnostics."""
     __melder_internal__ = _mrg.sentinel
     ERROR = auto()
     WARNING = auto()
 
-
+@mypyc_attr(native_class=True)
 class SystemDiagnostic(Cleanable):
     """
     Structured diagnostic produced by system-level validation strategies.

@@ -1,5 +1,10 @@
 from enum import Enum, auto
+
+from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+@mypyc_attr(native_class=True)
 class SpellType(Enum):
     """
     Canonical runtime binding-family classification for bound spells.

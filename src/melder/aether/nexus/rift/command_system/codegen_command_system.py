@@ -165,7 +165,8 @@ class CodegenCommandSystem(CommandSystem):
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             self._assert_raw_runtime_object_access_allowed("get_conduit_cloud")
             self._assert_frame_command_enabled(resolved_frame_name)
-            return self._aether.get_conduit_cloud(resolved_frame_name)
+            frame = self._aether._get_existing_frame(resolved_frame_name)
+            return frame._conduit_cloud
 
     def get_conduit_by_id(
             self,

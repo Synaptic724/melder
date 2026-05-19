@@ -1,11 +1,11 @@
 import threading
 import time
 from collections import deque
-from typing import Deque, Optional
 
+from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 
-
+@mypyc_attr(native_class=True)
 class CreationGate(Cleanable):
     """
     Generic gate primitive for coordinating creation and cleanup operations.

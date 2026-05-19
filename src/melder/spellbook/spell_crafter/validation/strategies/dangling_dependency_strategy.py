@@ -1,10 +1,12 @@
 from typing import List
 
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 
-
+@mypyc_attr(native_class=True)
 class DanglingDependenciesStrategy(SpellValidationStrategy):
     """
     Verify that all dependency spell_ids attached to a spell actually exist.

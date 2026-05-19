@@ -969,7 +969,7 @@ class Meld(Cleanable, IMeld):
 
     def _get_cached_change_control_manager(
             self,
-            spellbook: Optional[ISpellbookSpellSurface],
+            spellbook: Optional[ISpellbook],
     ) -> Optional[IChangeControlManager]:
         """
         Return a cached change-control manager for the spellbook frame.

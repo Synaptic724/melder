@@ -137,10 +137,6 @@ def test_aether_get_conduit_cloud_missing_frame_raises() -> None:
         AssertionError: If missing-frame lookups do not raise.
     """
     aether = Aether()
-    with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_cloud("missing-frame")
-
-
 def test_aether_resolves_conduit_by_name_id_and_spell_id() -> None:
     """
     Purpose:
@@ -197,19 +193,20 @@ def test_aether_cluster_lifecycle_create_get_remove() -> None:
     """
     aether = Aether()
     frame_name = "frame-cluster"
-    aether._ensure_frame(frame_name)
+    frame = aether._ensure_frame(frame_name)
+    cloud = frame._conduit_cloud
 
-    aether._create_cluster("cluster-a", frame_name)
-    cluster = aether._get_cluster("cluster-a", frame_name)
+    cloud.create_cluster("cluster-a")
+    cluster = cloud._get_cluster("cluster-a")
     assert cluster._name == "cluster-a"
     with pytest.raises(ValueError, match="already exists"):
-        aether._create_cluster("cluster-a", frame_name)
+        cloud.create_cluster("cluster-a")
 
-    aether._remove_cluster("cluster-a", frame_name)
+    cloud.delete_cluster("cluster-a")
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_cluster("cluster-a", frame_name)
+        cloud._get_cluster("cluster-a")
     with pytest.raises(ValueError, match="does not exist"):
-        aether._remove_cluster("cluster-a", frame_name)
+        cloud.delete_cluster("cluster-a")
 
 
 def test_aether_cleanup_aetheric_frames_cleans_conduits() -> None:

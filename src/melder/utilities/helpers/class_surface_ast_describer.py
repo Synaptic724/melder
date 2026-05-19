@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
+from mypy_extensions import mypyc_attr
 
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
@@ -53,7 +54,7 @@ class ClassSurfaceDescription(TypedDict):
     methods: List[ClassMemberDescription]
     properties: List[ClassMemberDescription]
 
-
+@mypyc_attr(native_class=True)
 class ClassSurfaceAstDescriber:
     """
     Purpose:

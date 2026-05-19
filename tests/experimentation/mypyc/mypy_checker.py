@@ -423,19 +423,8 @@ class MypycReporter:
                     separate=False,
                 )
 
-        except SystemExit:
-            self._print_report()
-            raise
-
-        except BaseException:
-            self._print_report()
-            raise
-
         finally:
-            output = self._collect_output()
-
-            if output:
-                self._print_report()
+            self._print_report()
 
 
 build = MypycBuild(

@@ -20,6 +20,7 @@ from typing import (
 )
 
 import ulid
+from mypy_extensions import mypyc_attr
 
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
@@ -65,7 +66,7 @@ def _is_string_key_dict(
             return False
     return True
 
-
+@mypyc_attr(native_class=True)
 class _WeakDictKeysView(Collection[_K]):
     """
     Dynamic keys view over the live-key surface of a WeakConcurrentDict.
@@ -118,7 +119,7 @@ class _WeakDictKeysView(Collection[_K]):
         """Return a debug-oriented representation of the current keys view."""
         return f"{self.__class__.__name__}({list(self)!r})"
 
-
+@mypyc_attr(native_class=True)
 class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
     """
     Dynamic items view over the live `(key, value)` pairs in a WeakConcurrentDict.
@@ -178,7 +179,7 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
         """Return a debug-oriented representation of the current items view."""
         return f"{self.__class__.__name__}({list(self)!r})"
 
-
+@mypyc_attr(native_class=True)
 class _WeakDictValuesView(Collection[_V]):
     """
     Dynamic values view over the live values stored in a WeakConcurrentDict.
@@ -212,7 +213,7 @@ class _WeakDictValuesView(Collection[_V]):
         """Return a debug-oriented representation of the current values view."""
         return f"{self.__class__.__name__}({list(self)!r})"
 
-
+@mypyc_attr(native_class=True)
 class WeakConcurrentDict(Generic[_K, _V], Cleanable):
     """
     WeakConcurrentDict

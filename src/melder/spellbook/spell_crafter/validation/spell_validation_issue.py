@@ -1,8 +1,11 @@
 from typing import Optional, Dict, Any
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class SpellValidationIssue(Cleanable):
     """
     Single validation issue (error or warning) produced by a strategy.
@@ -10,13 +13,13 @@ class SpellValidationIssue(Cleanable):
     Purpose:
         Represent one validation finding with optional attribution and context.
     Contract:
-        - ``severity`` must be ``"error"`` or ``"warning"``.
-        - ``code`` and ``message`` must be non-empty strings.
-        - ``source`` is optional and used for strategy attribution.
+        - "severity" must be ""error"" or ""warning"".
+        - "code" and "message" must be non-empty strings.
+        - "source" is optional and used for strategy attribution.
     Attributes
     ----------
     severity:
-        Either ``"error"`` or ``"warning"``.
+        Either ""error"" or ""warning"".
     code:
         Machine-readable identifier for the issue (e.g. "DANGLING_DEPENDENCY").
     message:

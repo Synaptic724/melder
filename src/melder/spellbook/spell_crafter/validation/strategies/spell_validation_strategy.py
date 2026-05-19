@@ -1,18 +1,20 @@
+from mypy_extensions import mypyc_attr
+
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
-
+@mypyc_attr(native_class=True)
 class SpellValidationStrategy(Cleanable):
     """
     Base class for all spell validation strategies.
 
     Strategies are small, composable units of logic that inspect a single
-    spell (plus its environment) and append :class:`SpellValidationIssue`
+    spell (plus its environment) and append: class:`SpellValidationIssue`
     instances to the shared context.
 
     Contract
     --------
-    * Implement :meth:`validate` and **never** mutate the spell or spellbook.
+    * Implement: meth: 'validate` and **never** mutate the spell or spellbook.
     * Prefer appending issues instead of raising; raising is reserved for
       truly unrecoverable situations.
     """
@@ -68,8 +70,7 @@ class SpellValidationStrategy(Cleanable):
         """
         Execute this validation strategy against a single spell.
 
-        Implementations should inspect the context and append
-        :class:`SpellValidationIssue` instances to ``context.issues``.
+        Implementations should inspect the context and append: class:`SpellValidationIssue` instances to "context.issues".
         """
         raise NotImplementedError("SpellValidationStrategy.validate must be overridden.")
 

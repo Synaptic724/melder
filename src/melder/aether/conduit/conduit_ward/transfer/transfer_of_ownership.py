@@ -557,10 +557,8 @@ class TransferOfOwnership(Cleanable):
             cluster_name = borrower.get("cluster")
             if not cluster_name:
                 continue
-            cluster_members = self._aether._get_conduits_in_cluster(
-                cluster_name,
-                self._frame_name,
-            )
+            cluster = self.source_conduit._conduit_cloud._get_cluster(cluster_name)
+            cluster_members = list(cluster.get_members())
             if cluster_members:
                 conduit_ids.update([cid for cid in cluster_members if cid])
 
@@ -1081,12 +1079,11 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         shares: List[Dict[str, Any]] = []
         try:
-            cluster_names = self._aether._get_clusters_for_conduit(
-                self.source_conduit._id,
-                self._frame_name,
+            cluster_names = self.source_conduit._conduit_cloud.get_clusters_for_conduit(
+                self.source_conduit._id
             )
             for cname in cluster_names:
-                cluster = self._aether._get_cluster(cname, self._frame_name)
+                cluster = self.source_conduit._conduit_cloud._get_cluster(cname)
                 for owner_id, indices in cluster.get_shared_spells().items():
                     if owner_id != self.source_conduit._id:
                         continue
@@ -1119,7 +1116,7 @@ class TransferOfOwnership(Cleanable):
                 if not cname or not owner_id:
                     continue
                 try:
-                    cluster = self._aether._get_cluster(cname, self._frame_name)
+                    cluster = self.source_conduit._conduit_cloud._get_cluster(cname)
                 except Exception:
                     continue
                 shared_spells = cluster.get_shared_spells()

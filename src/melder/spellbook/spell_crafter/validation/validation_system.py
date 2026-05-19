@@ -1,5 +1,8 @@
 from threading import RLock
 from typing import Any, Dict, List, Optional
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
@@ -55,7 +58,7 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-
+@mypyc_attr(native_class=True)
 class SpellValidationSystem(Cleanable, ISpellValidationSystem):
     """
     Central registry + runner for spell validation strategies.

@@ -4,6 +4,8 @@ import inspect
 import typing
 from typing import Any, Tuple, get_args, get_origin
 
+from mypy_extensions import mypyc_attr
+
 from melder.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
 )
@@ -14,7 +16,7 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
     SpellValidationStrategy,
 )
 
-
+@mypyc_attr(native_class=True)
 class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     """
     Validate DI annotation shapes for unsupported collection forms.

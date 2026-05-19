@@ -4,13 +4,14 @@ from typing import Optional, List, Any, Mapping, Callable, Sequence, Dict, Set, 
 import threading
 import time
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.aether import Aether
 # Melder Imports
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
-from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.bind.scan import Scan
 from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.spellbook.configuration.system_state import SystemState
@@ -43,6 +44,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.nexus import Nexus
 
 #region Spellbook
+@mypyc_attr(native_class=True)
 class Spellbook(Cleanable, ISpellbook):
     """
     Public API

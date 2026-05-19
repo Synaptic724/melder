@@ -2,6 +2,8 @@ import ulid
 import weakref
 from typing import Generic, TypeVar, Optional, Callable, List, Any, Literal, overload
 
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
 from melder.utilities.general_base.cleanable import Cleanable
@@ -9,7 +11,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 _T = TypeVar("_T")
 _OnCollect = Callable[["WeakRefNode[_T]"], None]
 
-
+@mypyc_attr(native_class=True)
 class WeakRefNode(Cleanable, Generic[_T]):
     """
     WeakRefNode

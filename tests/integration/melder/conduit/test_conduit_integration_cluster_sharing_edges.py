@@ -133,7 +133,7 @@ def test_conduit_cluster_auto_link_dependencies_toggle() -> None:
     try:
         assert owner.link(borrower) is True
         owner.create_cluster("cluster-a")
-        cluster = Conduit._aether._get_cluster("cluster-a", owner._aetheric_frame)
+        cluster = owner.get_conduit_cloud()._get_cluster("cluster-a")
         cluster.set_auto_link_dependencies(False)
         owner.join_cluster("cluster-a")
         borrower.join_cluster("cluster-a")
