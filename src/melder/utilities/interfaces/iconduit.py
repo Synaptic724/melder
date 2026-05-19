@@ -13,7 +13,6 @@ from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -379,7 +378,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_active_spellspace(self) -> Optional[ISpellSpace]:
+    def get_active_spellspace(self) -> Optional["ISpellSpace"]:
         """
         Return the currently active spellspace for this conduit, if any.
 
@@ -388,7 +387,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _unregister_spellspace(self, space: ISpellSpace) -> None:
+    def _unregister_spellspace(self, space: "ISpellSpace") -> None:
         """
         Internal
 
@@ -401,6 +400,8 @@ class IConduit(ICleanable, Protocol):
             None.
         """
         ...
+
+
 
     def create_cluster(self, cluster_name: str) -> None:
         """
@@ -1744,3 +1745,6 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Mutation Research
     # ------------------------------------------------------------------
+
+
+from melder.utilities.interfaces.ispellspace import ISpellSpace

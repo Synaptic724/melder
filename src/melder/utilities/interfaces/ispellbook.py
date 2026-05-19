@@ -15,7 +15,6 @@ from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationS
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispell import ISpell
-#from melder.utilities.interfaces.iaether import IAether
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):
@@ -51,7 +50,7 @@ class ISpellbook(ICleanable, Protocol):
     _bind: Optional[Any]
     _id: str
     _lock: threading.RLock
-    _aether: Any
+    _aether: "IAether"
     _aetheric_frame: Optional[str]
     _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'

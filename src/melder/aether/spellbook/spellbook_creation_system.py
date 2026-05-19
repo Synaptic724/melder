@@ -204,7 +204,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _prepare_spellbook_for_conjure(
             *,
-            spellbook: Any,
+            spellbook: ISpellbook,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> None:
         """
@@ -262,7 +262,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _resolve_conjure_policy(
             *,
-            spellbook: Any,
+            spellbook: ISpellbook,
             policy: Optional[str],
             automatic: bool,
     ) -> Policies:
@@ -288,7 +288,11 @@ class SpellbookCreationSystem(Cleanable):
             policy=resolved_policy,
             automatic=automatic,
         )
-        return EnumHelpers.convert_enum_and_check(resolved_policy, Policies)
+        policy_enum: Policies = EnumHelpers.convert_enum_and_check(
+            resolved_policy,
+            Policies,
+        )
+        return policy_enum
 
     @staticmethod
     def _build_conduit(
@@ -614,7 +618,7 @@ class SpellbookCreationSystem(Cleanable):
             return full_ahead_of_time_compilation
 
     @staticmethod
-    def get_conjure_hook_map(spellbook: Any) -> Optional[Mapping[str, List[Callable]]]:
+    def get_conjure_hook_map(spellbook: ISpellbook) -> Optional[Mapping[str, List[Callable]]]:
         """
         Purpose:
             Fetch registered conduit lifecycle hooks for the Spellbook id.
@@ -629,8 +633,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             None.
         """
+        configuration = spellbook._configuration
+        if configuration is None:
+            return None
+
         try:
-            hook_map = spellbook._configuration.get_hooks(spellbook._id)
+            hook_map = configuration.get_hooks(spellbook._id)
         except AttributeError:
             return None
         except Exception as exc:
