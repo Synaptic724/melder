@@ -18,6 +18,7 @@ from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProf
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -148,9 +149,10 @@ class Spell(Cleanable, ISpell):
             Optional pre-instantiated object to attach to the spell (EXISTING_CREATION* types).
             For factory-like spells (class/method/lambda), this is usually None.
 
-        spellbook (Optional[ISpellbook]):
-            Back-reference to the owning Spellbook. Primarily used for internal coordination
-            (conduit ownership, graph wiring, diagnostics). May be None in some contexts.
+        spellbook (ISpellbook):
+            Back-reference to the owning Spellbook. This is a required live-owner
+            contract used for internal coordination, graph wiring, diagnostics,
+            and spell-system-state attachment.
 
         *args / **kwargs:
             Arbitrary tags and metadata for internal use or future extensions.

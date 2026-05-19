@@ -6,7 +6,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
 )
@@ -20,6 +19,7 @@ from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.resolution_
     ResolutionProfileStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.ispell import ISpell
 
 
 GeneralProfileT = TypeVar("GeneralProfileT", bound="SpellGeneralProfile")
@@ -33,7 +33,7 @@ class SpellGeneralProfile(Cleanable):
     Contract:
         - Phase 1 builds the binding profile from a raw candidate object.
         - Phase 2 completes the same profile object with resolution data after
-          a real `Spell` exists.
+          a real spell runtime surface exists.
         - Binding and resolution remain separate internal detail artifacts and
           are exposed through this profile for downstream consumers.
         - Cleanup cascades to the nested binding and resolution profiles.
@@ -88,7 +88,7 @@ class SpellGeneralProfile(Cleanable):
 
         Args:
             target:
-                Raw candidate object or a fully formed `Spell`.
+                Raw candidate object or a fully formed spell runtime surface.
             show_dunders:
                 Whether dunder members should be included in binding reflection.
             max_repr:
@@ -97,27 +97,28 @@ class SpellGeneralProfile(Cleanable):
         Contract:
             - Always builds the binding profile first from the raw candidate
               surface.
-            - When `target` is already a `Spell`, completes the same profile
+            - When `target` is already an `ISpell`, completes the same profile
               object with resolution data before returning it.
 
         Returns:
             GeneralProfileT:
-                New profile object. If `target` is a `Spell`, the returned
+                New profile object. If `target` is an `ISpell`, the returned
                 profile is already fully completed.
         """
-        binding_target = target.spell if isinstance(target, Spell) else target
+        binding_target = target.spell if isinstance(target, ISpell) else target
         binding_profile = BindingProfileStrategy(
             show_dunders=show_dunders,
             max_repr=max_repr,
         ).build_profile(binding_target)
         profile = cls(binding_profile=binding_profile)
-        if isinstance(target, Spell):
+        if isinstance(target, ISpell):
             profile.complete_with_spell(target)
         return profile
 
-    def complete_with_spell(self, spell: Spell) -> None:
+    def complete_with_spell(self, spell: ISpell) -> None:
         """
-        Complete phase 2 of the profile lifecycle using a real `Spell`.
+        Complete phase 2 of the profile lifecycle using one spell runtime
+        surface.
 
         Args:
             spell:
