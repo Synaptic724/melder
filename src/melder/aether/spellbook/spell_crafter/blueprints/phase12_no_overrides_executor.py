@@ -461,13 +461,15 @@ def _resolve_root_instance_key(
     if root_spell_id is None:
         return None
     for plan_step in steps:
-        instance_key = plan_step.instance_key
+        # Concrete typing for mypy: callers only rely on 2-tuple instance keys.
+        instance_key: Tuple[str, Optional[int]] = plan_step.instance_key
         if instance_key[0] == root_spell_id and instance_key[1] is None:
             return instance_key
     for plan_step in steps:
-        instance_key = plan_step.instance_key
-        if instance_key[0] == root_spell_id:
-            return instance_key
+        # Concrete typing for mypy: fallback branch expects a tuple instance key.
+        fallback_instance_key: Tuple[str, Optional[int]] = plan_step.instance_key
+        if fallback_instance_key[0] == root_spell_id:
+            return fallback_instance_key
     return None
 
 
@@ -513,7 +515,8 @@ def _compile_emitted_no_overrides_executor(
         raise RuntimeError(compile_failure_message) from exc
     executor = local_namespace.get("_phase12_executor")
     if callable(executor):
-        return executor
+        compiled_executor: Callable[..., Any] = executor
+        return compiled_executor
     raise RuntimeError(
         "Phase 12 no-overrides executor source did not define a callable _phase12_executor."
     )
