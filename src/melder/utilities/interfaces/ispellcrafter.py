@@ -24,14 +24,14 @@ class ISpellCrafter(ICleanable, Protocol):
     """
     Per-spell orchestration surface for the SpellCrafter pipeline.
 
-    This protocol mirrors the public API of :class:`SpellCrafter` for all
+    This protocol mirrors the public API of: class:`SpellCrafter` for all
     spell-local resolution, validation, and plan-compilation artifacts.
     """
 
     @property
     def spell(self) -> ISpell:
         """
-        The owning :class:`Spell` for this crafter.
+        The owning: class: 'Spell` for this crafter.
 
         Returns:
             ISpell: The live spell instance supplied at construction time.
@@ -48,7 +48,7 @@ class ISpellCrafter(ICleanable, Protocol):
         """
         Phase 1 artifact for this spell, if it has been computed.
 
-        This is the same object returned by :meth:`run_phase_requirements`.
+        This is the same object returned by: meth:`run_phase_requirements`.
         When the crafter was initialized from a prebuilt resolution profile,
         this property may be populated before Phase 1 is run locally.
         """
@@ -67,8 +67,7 @@ class ISpellCrafter(ICleanable, Protocol):
         Phase 3 artifact for this spell, if it has been computed.
 
         The resolution frame is a **summary view** over the concrete
-        dependency DAG that is pushed into the owning :class:`Spell` via
-        :meth:`Spell._add_build_details`. It records the spell id and the
+        dependency DAG that is pushed into the owning: class: 'Spell` via: meth:`Spell._add_build_details`. It records the spell id and the
         topological order of all nodes participating in that DAG.
         """
         ...
@@ -78,9 +77,7 @@ class ISpellCrafter(ICleanable, Protocol):
         """
         Phase 4 validation result artifact, if any.
 
-        Once Phase 4 is wired, this will typically be a
-        :class:`SpellValidationResult` produced by the
-        :class:`SpellValidationSystem`. For now the type is kept as ``Any``
+        Once Phase 4 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
         to avoid constraining callers.
         """
         ...
@@ -237,7 +234,7 @@ class ISpellCrafter(ICleanable, Protocol):
 
     def get_phase5_spell_ids(self) -> Set[str]:
         """
-        Return the spell ids currently covered by local Phase 5 system-index state.
+        Return the spell ids currently covered by the local Phase 5 system-index state.
 
         Returns:
             Set[str]: Spell ids visible through the local Phase 5 index.
@@ -258,9 +255,7 @@ class ISpellCrafter(ICleanable, Protocol):
         """
         Phase 6 validation result artifact, if any.
 
-        Once Phase 6 is wired, this will typically be a
-        :class:`SpellValidationResult` produced by the
-        :class:`SpellValidationSystem`. For now the type is kept as ``Any``
+        Once Phase 6 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
         to avoid constraining callers.
         """
         ...
@@ -285,7 +280,7 @@ class ISpellCrafter(ICleanable, Protocol):
         """
         Deterministically release all crafter-owned phase artifacts.
 
-        Behavior:
+        Behaviour:
             * Cleans and clears structural artifacts from Phases 1-4.
             * Cleans and clears later blueprint/plan/index artifacts from
               Phases 5-11 when present.
@@ -298,7 +293,7 @@ class ISpellCrafter(ICleanable, Protocol):
 
     def reset_phase_artifacts(self) -> None:
         """
-        Release transient validation/build artifacts without disposing the
+        Release transient validation/build artifacts without disposing of the
         crafter.
 
         Contract:
@@ -355,12 +350,12 @@ class ISpellCrafter(ICleanable, Protocol):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 1 - Analyse the Spell constructor and capture DI requirements.
+        Phase 1 - Analyze the Spell constructor and capture DI requirements.
 
         Responsibilities:
             * Inspect the bound Spell's constructor and classify every parameter
-              into a :class:`ParameterDIShape` (normal DI, SpellMap, contracts, etc.).
-            * Build a :class:`SpellRequirements` object that records per-parameter
+              into a: class:`ParameterDIShape` (normal DI, SpellMap, contracts, etc.).
+            * Build a: class:`SpellRequirements` object that records per-parameter
               metadata (name, position, shape, optionality, annotations).
             * Store the requirements on this SpellCrafter (``_requirements``) for
               later phases to consume.
@@ -372,7 +367,7 @@ class ISpellCrafter(ICleanable, Protocol):
               running phases in order.
             * Does **not** mutate the Spell, SpellSystemStates, or any DAG
               structures. It only updates this SpellCrafter's internal state.
-            * Does not return a value; consumers read ``self._requirements``.
+            * Does not return a value; consumers read "self._requirements".
         """
         ...
 
@@ -384,9 +379,8 @@ class ISpellCrafter(ICleanable, Protocol):
         Phase 2 - Build the symbolic dependency graph for this Spell.
 
         Responsibilities:
-            * Consume Phase 1 requirements and construct a
-              :class:`SpellSymbolicGraph` describing all constructor sockets.
-            * Create one :class:`SpellSymbolicDependency` per constructor
+            * Consume Phase 1 requirements and construct a: class:`SpellSymbolicGraph` describing all constructor sockets.
+            * Create one: class:`SpellSymbolicDependency` per constructor
               parameter that should be represented as a socket, including:
                   - plain (caller-supplied) parameters,
                   - normal DI sockets (single, collection, SpellMap),
@@ -402,7 +396,7 @@ class ISpellCrafter(ICleanable, Protocol):
             * Does **not** build any concrete DAG or talk to SpellSystemStates.
             * Does **not** mutate the Spell. It only updates this
               SpellCrafter's internal state.
-            * Does not return a value; consumers read ``self._symbolic_graph``.
+            * Does not return a value; consumers read "self._symbolic_graph".
         """
         ...
 
@@ -422,17 +416,17 @@ class ISpellCrafter(ICleanable, Protocol):
                   - direct edges represent first-hop constructor dependencies.
             * Track, per constructor parameter, which dependency spell ids were
               bound during resolution.
-            * Build a :class:`SpellLocalTopology` snapshot that describes all
+            * Build a: class:`SpellLocalTopology` snapshot that describes all
               sockets (normal, SpellContract, MutationContract) and their
               concrete targets where applicable.
             * Register both:
                   - direct dependency spell ids, and
                   - the local topology
-              into :class:`SpellSystemStates`.
+              into: class:`SpellSystemStates`.
 
         Socket semantics:
             * Normal DI shapes (single, collection, SpellMap) produce DAG nodes,
-              DAG edges, and concrete ``target_spell_ids`` entries in topology.
+              DAG edges, and concrete "target_spell_ids" entries in topology.
             * SpellContract and MutationContract sockets are **metadata-only** at
               this phase:
                   - they appear in the symbolic graph and topology,
@@ -447,11 +441,9 @@ class ISpellCrafter(ICleanable, Protocol):
               instead of auto-running earlier phases.
             * Assumes the bound Spell is attached to a Spellbook; direct
               Spellbook map iteration is used for resolution.
-            * Stores the local DAG and direct dependency list on the Spell via
-              :meth:`Spell._add_build_details`, and keeps a
-              :class:`SpellResolutionFrame` internally on this SpellCrafter.
+            * Stores the local DAG and direct dependency list on the Spell via: meth:`Spell._add_build_details`, and keeps a: class:`SpellResolutionFrame` internally on this SpellCrafter.
             * Does not return a value; callers rely on:
-                  - ``self._resolution_frame`` for ordering, and
+                  - "self._resolution_frame" for ordering, and
                   - SpellSystemStates for dependencies and topology.
         """
         ...
@@ -465,14 +457,13 @@ class ISpellCrafter(ICleanable, Protocol):
 
         Responsibilities:
             * Assume Phases 1-3 have completed for this Spell.
-            * Delegate to :class:`SpellValidationSystem` to validate this spell
+            * Delegate to: class:`SpellValidationSystem` to validate this spell
               using:
                   - Phase 1 requirements,
                   - Phase 2 symbolic graph,
                   - Phase 3 resolution frame.
-            * Cache the resulting :class:`SpellValidationResult` and expose it
-              via :attr:`validation_result`, :attr:`validated`, and
-              :attr:`is_broken`.
+            * Cache the resulting: class:`SpellValidationResult 'and expose it
+              via: attr:`validation_result`, :attr:`validated`, and: attr:`is_broken`.
             * Update global structural validity (SpellSystemState) when available,
               including gating spells with missing SpellContract providers.
 
@@ -482,8 +473,8 @@ class ISpellCrafter(ICleanable, Protocol):
             * Does **not** mutate the Spell or build any DAGs. It only records
               validation outcome and diagnostics on this SpellCrafter.
             * If the SpellSystemState is no longer valid (unknown/gated/invalid),
-              the validation is re-run even if this phase previously completed.
-            * Returns ``None``; callers rely on the stored validation result and
+              the validation is re-run even if this phase is previously completed.
+            * Returns "None"; callers rely on the stored validation result and
               flags instead of a direct return value.
         """
         ...
@@ -496,8 +487,7 @@ class ISpellCrafter(ICleanable, Protocol):
         """
         Phase 5 entrypoint.
 
-        Builds deep DAG blueprints (RootResolutionBlueprints) and a frame-level
-        :class:`SpellSystemIndex`. This step uses only *existing* Phase 1-4 artifacts;
+        Builds deep DAG blueprints (RootResolutionBlueprints) and a frame-level: class:`SpellSystemIndex`. This step uses only *existing* Phase 1-4 artifacts;
         no new discovery occurs. The resulting DAGs and index are scoped to
         spells visible to the current Spellbook (local + contracted).
 
@@ -505,7 +495,7 @@ class ISpellCrafter(ICleanable, Protocol):
             - A root-only blueprint map for system validation (Phase 6).
             - Per-spell blueprints attached to constructed spells so Phase 8-10
               and Phase 11 compilation can proceed for any meldable spell.
-            - The change-control component-of map is rebuilt from **owned** roots
+            - The change-control component of the map is rebuilt from **owned** roots
               only, so contracted roots are not revalidated by this conduit.
 
         Args:
@@ -529,7 +519,7 @@ class ISpellCrafter(ICleanable, Protocol):
 
         Purpose:
             Build Phase 5 artifacts for only the target spell and its
-            transitive dependency closure so meld-triggered revalidation
+            transitive dependency closure, so meld-triggered revalidation
             does not recompile unrelated spells.
         """
         ...
@@ -597,7 +587,7 @@ class ISpellCrafter(ICleanable, Protocol):
             ValueError:
                 If conduit_id is empty.
             RuntimeError:
-                If Phase 8 artifacts are missing for this spell or if the
+                If Phase 8 artifacts are missing for this spell, or if the
                 root blueprint is missing for this spell.
             OperationCancelledError:
                 If cancel_event signals cancellation.
@@ -678,9 +668,8 @@ class ISpellCrafter(ICleanable, Protocol):
             - Replaces existing ExecutionPlan references for this spell.
             - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
               spell lookup map without rebuilding it per phase.
-            - Reuses cached no-overrides plan when deterministic Phase11
-              no-overrides input signature is unchanged.
-            - Reuses the full cached phase11 variant set when signature is
+            - Reuses cached no-overrides plan when the deterministic Phase11 no-overrides input signature is unchanged.
+            - Reuses the full cached phase11 variant set when the signature is
               unchanged and cached sibling variants are available.
             - Falls back to the legacy no-overrides rebuild path when signature
               inputs are missing.
@@ -697,7 +686,7 @@ class ISpellCrafter(ICleanable, Protocol):
 
         Runs system-level validation strategies over Phase-5 artifacts and
         Phase-4 outcomes. Records per-conduit resolution validity via
-        ``SpellSystemStates`` and caches the frame-level validation state on
+        "SpellSystemStates" and caches the frame-level validation state on
         every SpellCrafter in the Spellbook.
 
         Note:
@@ -718,7 +707,7 @@ class ISpellCrafter(ICleanable, Protocol):
 
         Purpose:
             Validate only the locally scoped Phase 5 graph produced by
-            ``run_phase_root_blueprints_local``.
+            "run_phase_root_blueprints_local".
         Contract:
             - Uses the same strategy set as frame-wide Phase 6.
             - Records per-conduit validity only for scoped spell/root ids.
@@ -742,7 +731,7 @@ class ISpellCrafter(ICleanable, Protocol):
         Phase 7 - Change-control wiring.
 
         Behaviour (conduit-scoped, idempotent):
-        - Ensure ChangeControlManager is present for the frame.
+        - Ensure the ChangeControlManager is present for the frame.
         - Ensure the component-of index is (re)built from the Phase-5 root blueprints.
         - Ensure the revalidator hook is registered.
         """
@@ -777,9 +766,9 @@ class ISpellCrafter(ICleanable, Protocol):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Convenience helper to run **structural phases only** (1-4) in sequence.
+        Convenience helper to run **structural phases only** (1-4) in a sequence.
 
-        This is typically invoked via :meth:`Spell.run_structural_phases` and
+        This is typically invoked via: meth:`Spell.run_structural_phases` and
         is used for global, conduit-agnostic structural validation.
 
         Execution order:
@@ -789,8 +778,7 @@ class ISpellCrafter(ICleanable, Protocol):
             4. Validation (Phase 4)
 
         Returns:
-            None. The crafter retains all intermediate artifacts until
-            :meth:`cleanup` is called. The owning Spell only needs to hold the
+            None. The crafter retains all intermediate artifacts until: meth: 'cleanup` is called. The owning Spell only needs to hold the
             final DAG and dependency spell_ids once Phase 3 is fully implemented.
         Notes:
             Phase artifacts are cleaned after Phase 7; structural data remains in
@@ -806,7 +794,7 @@ class ISpellCrafter(ICleanable, Protocol):
         """
         Convenience helper to run all phases in sequence for this spell.
 
-        This is typically invoked via :meth:`Spell.run_all_phases` (a facade)
+        This is typically invoked via: meth:`Spell.run_all_phases` (a facade)
         and is intended for batch compilation / `meld()` cycles.
 
         Execution order:
@@ -833,8 +821,7 @@ class ISpellCrafter(ICleanable, Protocol):
                 Optional cancellation signal shared across the scheduler.
 
         Returns:
-            None. The crafter retains all intermediate artifacts until
-            :meth:`cleanup` is called. The owning Spell only needs to hold the
+            None. The crafter retains all intermediate artifacts until: meth: 'cleanup` is called. The owning Spell only needs to hold the
             final DAG and dependency spell_ids once Phase 3 is fully implemented.
         """
         ...
