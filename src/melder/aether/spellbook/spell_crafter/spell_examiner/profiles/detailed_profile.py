@@ -1,5 +1,6 @@
 import inspect
 from typing import Any, Dict, List, Optional
+from types import MappingProxyType
 
 from mypy_extensions import mypyc_attr
 
@@ -24,6 +25,10 @@ from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.me
 )
 from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
+    SpellResolutionProfile,
+)
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+    SpellBindingProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
@@ -62,8 +67,8 @@ class SpellDetailedProfile(SpellGeneralProfile):
     def __init__(
             self,
             *,
-            binding_profile,
-            resolution_profile=None,
+            binding_profile: SpellBindingProfile,
+            resolution_profile: Optional[SpellResolutionProfile] = None,
             show_dunders: bool = True,
             max_repr: int = 120,
             class_profile: Optional[ClassProfile] = None,

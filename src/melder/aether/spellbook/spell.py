@@ -1,6 +1,7 @@
 from typing import Optional, List, Any, Callable, Sequence, Set, Tuple
 import ulid
 from threading import RLock
+from types import TracebackType
 
 from mypy_extensions import mypyc_attr
 
@@ -716,7 +717,12 @@ class Spell(Cleanable, ISpell):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Release the spell's internal lock after a context-manager block.
 

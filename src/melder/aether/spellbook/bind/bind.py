@@ -152,7 +152,7 @@ class Bind(Cleanable, IBind):
         self.check_cleaned()
         if spell is None:
             # Decorator usage
-            def decorator(obj) -> ISpell:
+            def decorator(obj: Any) -> ISpell:
                 """
                 Bind the target object with the specified policy and lifecycle settings.
                 """
