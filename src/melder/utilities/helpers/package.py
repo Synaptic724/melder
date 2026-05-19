@@ -306,7 +306,7 @@ class Package(Cleanable, Generic[P, R]):
         """
         return self._is_async
 
-    def __getattribute__(self, name: str):
+    def __getattribute__(self, name: str) -> object:
         """
         Override doc lookup to always proxy the wrapped callable's docstring.
 
