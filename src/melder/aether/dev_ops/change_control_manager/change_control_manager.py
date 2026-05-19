@@ -24,11 +24,9 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
-    RootResolutionBlueprint,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -1148,7 +1146,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     def rebuild_component_of(
             self,
             conduit_id: str,
-            root_blueprints: Dict[str, RootResolutionBlueprint],
+            root_blueprints: Dict[str, IRootResolutionBlueprint],
     ) -> None:
         """
         Rebuild the component-of index for a conduit from root blueprints.
@@ -1203,7 +1201,7 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     def upsert_component_of(
             self,
             conduit_id: str,
-            root_blueprints: Dict[str, RootResolutionBlueprint],
+            root_blueprints: Dict[str, IRootResolutionBlueprint],
     ) -> None:
         """
         Upsert component-of mappings for specific roots without full rebuild.

@@ -34,7 +34,8 @@ class MethodInspector(Cleanable):
     """
     __melder_internal__ = _mrg.sentinel
     utility = InspectorUtility
-    __slots__ = Cleanable.__slots__ +  ["fn", "max_repr", "data"]
+    max_repr = 120
+    __slots__ = Cleanable.__slots__ +  ["fn", "_max_repr", "data"]
     def __init__(self, fn: Callable, *, max_repr: int = 120):
         """
         Initializes the MethodInspector.
@@ -51,7 +52,7 @@ class MethodInspector(Cleanable):
             raise TypeError("MethodInspector expects a callable.")
 
         self.fn: Callable = fn
-        self.max_repr: int = max_repr
+        self._max_repr: int = max_repr
         self.data: Dict[str, Any] = {}
 
     def cleanup(self) -> None:
@@ -66,7 +67,7 @@ class MethodInspector(Cleanable):
         self._cleaned = True
         self.data.clear()
         del self.fn
-        del self.max_repr
+        del self._max_repr
         del self.data
 
     def _resolve_target(self) -> Callable:
@@ -97,6 +98,7 @@ class MethodInspector(Cleanable):
             decoration fields in a stable order.
           - Returns a dictionary that is safe to serialize.
         """
+        self.check_cleaned()
         f = self.fn
         f_eff = self._resolve_target()  # prefer original for primary view
 
@@ -127,7 +129,7 @@ class MethodInspector(Cleanable):
                 "module": getattr(f_eff, "__module__", None),
                 "id": id(f_eff),
                 "type": type(f_eff).__name__,
-                "repr": self.utility.safe_repr(f_eff, self.max_repr),
+                "repr": self.utility.safe_repr(f_eff, self._max_repr),
                 "builtin_mod": bool(module and inspect.isbuiltin(module)),
                 "extension_mod": self.utility.is_extension_module(module),
                 "docstring_raw": getattr(f_eff, "__doc__", None),
@@ -178,8 +180,8 @@ class MethodInspector(Cleanable):
                 {
                     "name": p.name,
                     "kind": p.kind.name,
-                    "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self.max_repr),
-                    "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation, self.max_repr),
+                    "default": None if p.default is Parameter.empty else self.utility.safe_repr(p.default, self._max_repr),
+                    "annotation": None if p.annotation is Parameter.empty else self.utility.safe_repr(p.annotation, self._max_repr),
                 }
                 for p in sig.parameters.values()
             ]
@@ -247,7 +249,7 @@ class MethodInspector(Cleanable):
             closure = getattr(f_eff, "__closure__", None)
             if closure:
                 self.data["closure"] = [
-                    self.utility.safe_repr(c.cell_contents, self.max_repr) for c in closure
+                    self.utility.safe_repr(c.cell_contents, self._max_repr) for c in closure
                 ]
         except Exception:
             self.data["closure"] = "<error>"
@@ -264,7 +266,7 @@ class MethodInspector(Cleanable):
         """
         try:
             self.data["decorated"] = (f_eff is not f_wrapped)
-            self.data["wrapped_repr"] = None if (f_eff is f_wrapped) else self.utility.safe_repr(f_wrapped, self.max_repr)
+            self.data["wrapped_repr"] = None if (f_eff is f_wrapped) else self.utility.safe_repr(f_wrapped, self._max_repr)
         except Exception:
             self.data["decorated"] = "<error>"
 
