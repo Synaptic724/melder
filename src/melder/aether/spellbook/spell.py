@@ -366,7 +366,7 @@ class Spell(Cleanable, ISpell):
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
-        self._creation_context_factory: Optional[CreationContextFactory] = None
+        self._creation_context_factory: Optional["ICreationContextFactory"] = None
         # Spell-owned selector latch for one-leader CreationContext publication.
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
         # Runtime mode carried from owning conduit for context factory wiring.

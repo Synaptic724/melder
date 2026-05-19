@@ -8,13 +8,16 @@ from melder.aether.conduit.meld.creation_context.creation_context_builder import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.icreationcontextfactory import (
+    ICreationContextFactory,
+)
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
 
 @mypyc_attr(native_class=True)
-class CreationContextFactory(Cleanable):
+class CreationContextFactory(Cleanable, ICreationContextFactory):
     """
     Produce spell-shaped `CreationContext` instances.
 

@@ -110,7 +110,7 @@ class ISpell(ICleanable, Protocol):
     # Note: These are populated by the resolution pipeline via SpellCrafter
     _crafter: Optional["ISpellCrafter"]
     _creation_context: Any
-    _creation_context_factory: Optional[Any]
+    _creation_context_factory: Optional["ICreationContextFactory"]
     _creation_context_switch: CounterSwitch
     _dynamic_environment: bool
     resolution_required: bool
