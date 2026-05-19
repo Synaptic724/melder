@@ -45,7 +45,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         "_version",
     ]
 
-    def __init__(self, owner_conduit) -> None:
+    def __init__(self, owner_conduit: IConduit) -> None:
         """
         Create one spellspace scope owned by a conduit.
 

@@ -1,5 +1,6 @@
 from typing import Optional, Any, Dict
 from threading import RLock
+from types import TracebackType
 
 from mypy_extensions import mypyc_attr
 
@@ -90,7 +91,7 @@ class Contract(Cleanable, IContract):
 
 
     #region Context Manager
-    def __enter__(self):
+    def __enter__(self) -> "Contract":
         """
         Acquire the contract lock and return this contract.
 
@@ -101,7 +102,12 @@ class Contract(Cleanable, IContract):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Release the contract lock acquired by `__enter__`.
         """

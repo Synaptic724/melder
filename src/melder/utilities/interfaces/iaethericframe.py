@@ -1,4 +1,5 @@
 from typing import Dict, Optional, Protocol, Set, runtime_checkable
+from types import TracebackType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
@@ -66,7 +67,12 @@ class IAethericFrame(ICleanable, Protocol):
         """
         ...
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Exit the frame lock context and release the frame lock.
         """
