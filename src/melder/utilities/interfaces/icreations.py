@@ -21,6 +21,7 @@ class ICreations(ICleanable, Protocol):
     # -----------------
     _lock: RLock
     _creations: 'Dict[str, object]'
+    _conduit: 'IConduit'
     _id: str
 
     def _attempt_cleanup(self, item: object) -> Optional[Exception]:

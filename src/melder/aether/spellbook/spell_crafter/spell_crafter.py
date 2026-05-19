@@ -1427,9 +1427,11 @@ class SpellCrafter(Cleanable):
         if part_type is float:
             return b"F" + repr(part).encode("ascii")
         if part_type is str:
-            return b"S" + part.encode("utf-8")
+            part_str: str = part
+            return b"S" + part_str.encode("utf-8")
         if part_type is bytes:
-            return b"Y" + part
+            part_bytes: bytes = part
+            return b"Y" + part_bytes
         if part_type is bytearray:
             return b"Y" + bytes(part)
         try:

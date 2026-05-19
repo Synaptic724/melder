@@ -360,7 +360,10 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             IDevOpsManager: Frame-owned DevOpsManager for the target frame.
         """
-        return spellbook._aether._get_devops_manager(spellbook._aetheric_frame)
+        manager: IDevOpsManager = spellbook._aether._get_devops_manager(
+            spellbook._aetheric_frame
+        )
+        return manager
 
     @staticmethod
     def _resolve_frame_conduit_cloud(
@@ -382,7 +385,8 @@ class SpellbookCreationSystem(Cleanable):
             IConduitCloud: Frame-owned ConduitCloud for the target frame.
         """
         frame = spellbook._aether._get_existing_frame(spellbook._aetheric_frame)
-        return frame._conduit_cloud
+        conduit_cloud: IConduitCloud = frame._conduit_cloud
+        return conduit_cloud
 
     @staticmethod
     def _activate_conjured_conduit(
