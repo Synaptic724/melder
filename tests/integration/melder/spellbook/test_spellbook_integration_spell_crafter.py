@@ -6,9 +6,9 @@ from melder.aether.conduit.meld.contracts.mutation_contract import MutationContr
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicConfig, BasicService

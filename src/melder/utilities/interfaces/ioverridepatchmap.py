@@ -1,5 +1,5 @@
 from typing import Dict, List, Mapping, Protocol, runtime_checkable
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.aether.spellbook.spell_crafter.dag.dag_index import SocketRef
 from melder.utilities.interfaces.icleanable import ICleanable
 
 

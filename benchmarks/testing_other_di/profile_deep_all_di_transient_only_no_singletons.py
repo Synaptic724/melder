@@ -18,7 +18,7 @@ import io
 import logging
 import pstats
 import time
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Type
+from typing import Any, Callable, Dict, Sequence, Tuple, Type
 
 from tests.mocks.spellbook.deep_layers import (
     Depth7Root,
@@ -29,8 +29,8 @@ from tests.mocks.spellbook.deep_layers import (
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.logger.safe_logger import SafeLogger
 

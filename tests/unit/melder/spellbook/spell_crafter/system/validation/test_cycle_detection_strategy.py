@@ -1,16 +1,16 @@
 import pytest
 
-from melder.spellbook.spell_crafter.system.spell_system_index import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_index import (
     SpellSystemIndex,
 )
-from melder.spellbook.spell_crafter.system.spell_system_node import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import (
     SpellSystemNode,
 )
-from melder.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.cycle_detection_strategy import (
     CycleDetectionStrategy,
 )
 

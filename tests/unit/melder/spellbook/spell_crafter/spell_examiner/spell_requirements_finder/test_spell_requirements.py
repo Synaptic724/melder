@@ -3,17 +3,17 @@ import threading
 
 import pytest
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 def _param(name: str, shape: ParameterDIShape, has_default: bool = False):

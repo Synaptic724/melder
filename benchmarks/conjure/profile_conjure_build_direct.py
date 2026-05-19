@@ -24,8 +24,8 @@ from tests.mocks.spellbook.deep_layers import get_depth_9_classes
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.logger.safe_logger import SafeLogger
 
@@ -105,7 +105,7 @@ def _reset_aether_singleton() -> None:
 def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) -> Callable[[], None]:
     if not skip_validation:
         return lambda: None
-    from melder.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
+    from melder.aether.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
         DuplicateSpellNameStrategy,
     )
 
@@ -125,7 +125,7 @@ def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) ->
 def _patch_melder_skip_contract_signature_scan(skip_scan: bool) -> Callable[[], None]:
     if not skip_scan:
         return lambda: None
-    from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+    from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
 
     original = OccurrencePlanBuilder._iter_spell_contract_defaults
 

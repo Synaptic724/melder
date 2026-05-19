@@ -10,8 +10,8 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.spellbook.configuration.configuration import Configuration
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 # ======================================================================================

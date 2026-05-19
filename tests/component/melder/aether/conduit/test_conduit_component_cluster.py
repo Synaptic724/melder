@@ -12,8 +12,8 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 

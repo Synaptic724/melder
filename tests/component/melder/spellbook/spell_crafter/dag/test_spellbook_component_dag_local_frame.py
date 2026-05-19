@@ -2,11 +2,11 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.core_classes import NamedService

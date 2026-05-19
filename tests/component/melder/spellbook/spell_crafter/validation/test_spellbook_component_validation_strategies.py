@@ -4,42 +4,42 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
-from melder.spellbook.spell_crafter.validation.strategies.annotation_shape_guard_strategy import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
+from melder.aether.spellbook.spell_crafter.validation.strategies.annotation_shape_guard_strategy import (
     AnnotationShapeGuardStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.callable_profile_hygiene_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.callable_profile_hygiene_strategy import (
     CallableProfileHygieneStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.circular_dependency_strategy import (
     CircularDependencyStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.dangling_dependency_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.dangling_dependency_strategy import (
     DanglingDependenciesStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
     DuplicateSpellNameStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.existing_creation_compatibility_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.existing_creation_compatibility_strategy import (
     ExistingCreationCompatibilityStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.parameter_policy_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.parameter_policy_strategy import (
     ParameterPolicyStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.required_holes_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.required_holes_strategy import (
     RequiredHolesStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.resolution_frame_presence_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.resolution_frame_presence_strategy import (
     ResolutionFramePresenceStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.self_validation_strategy import (
     SelfDependencyStrategy,
 )
-from melder.spellbook.spell_crafter.validation.strategies.spellmap_shape_validation_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.spellmap_shape_validation_strategy import (
     SpellMapShapeValidationStrategy,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService

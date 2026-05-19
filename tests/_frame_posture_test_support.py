@@ -3,8 +3,8 @@ import weakref
 
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 _TEST_FRAME_POSTURES: "weakref.WeakKeyDictionary[SpellbookConfiguration, AethericFrameConfiguration]" = (

@@ -1,21 +1,20 @@
 import pytest
 
-from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
-from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import (
     SpellSystemAdjacencySnapshot,
 )
-from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
 

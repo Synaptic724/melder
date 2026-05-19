@@ -3,17 +3,17 @@ from typing import Dict, Optional
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
+from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
 
 
 class _StubSpellIndex:

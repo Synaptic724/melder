@@ -1,4 +1,3 @@
-import threading
 from types import SimpleNamespace
 
 import pytest
@@ -11,8 +10,8 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.spellbook.spellbook import Spellbook
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
 from tests.unit.melder.aether.test_frame_viewer_projection import _build_viewer
 
 

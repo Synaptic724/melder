@@ -2,69 +2,69 @@ from __future__ import annotations
 
 import pytest
 
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import (
     BrokenSpellInDagStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.cycle_detection_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.cycle_detection_strategy import (
     CycleDetectionStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
     GraphConsistencyStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.dependency_type_sanity_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.dependency_type_sanity_strategy import (
     DependencyTypeSanityStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.index_coverage_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.index_coverage_strategy import (
     IndexCoverageStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.index_dependency_sanity_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.index_dependency_sanity_strategy import (
     IndexDependencySanityStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.lineage_alignment_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.lineage_alignment_strategy import (
     LineageAlignmentStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.lineage_version_conflict_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.lineage_version_conflict_strategy import (
     LineageVersionConflictStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.missing_phase4_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.missing_phase4_strategy import (
     MissingPhase4Strategy,
 )
-from melder.spellbook.spell_crafter.system.validation.ownership_consistency_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.ownership_consistency_strategy import (
     OwnershipConsistencyStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.root_coverage_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.root_coverage_strategy import (
     RootCoverageStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.root_lineage_conflict_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.root_lineage_conflict_strategy import (
     RootLineageConflictStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.root_reachability_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.root_reachability_strategy import (
     RootReachabilityStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.root_scale_limit_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.root_scale_limit_strategy import (
     RootScaleLimitStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
     SocketRefSanityStrategy,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.custom_exceptions.operation_cancelled_error import (
     OperationCancelledError,
 )

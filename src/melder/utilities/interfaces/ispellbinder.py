@@ -1,6 +1,6 @@
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
 
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 
 
 @runtime_checkable

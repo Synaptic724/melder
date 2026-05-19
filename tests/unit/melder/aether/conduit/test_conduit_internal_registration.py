@@ -3,11 +3,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.creations.creations import Creations
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 
 def test_add_root_conduit_delegates(

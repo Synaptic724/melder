@@ -5,7 +5,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconfiguration import IConfiguration

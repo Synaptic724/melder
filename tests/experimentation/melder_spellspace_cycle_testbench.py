@@ -23,11 +23,6 @@ from typing import Any, Callable
 from tests._frame_posture_test_support import (
     apply_automatic_defaults_for_spellbook_configuration,
     apply_dynamic_defaults_for_spellbook_configuration,
-    build_aetheric_frame_configuration_for_spellbook_configuration,
-    set_frame_ai_native_for_spellbook_configuration,
-    set_frame_rift_enabled_for_spellbook_configuration,
-    set_frame_system_state_for_spellbook_configuration,
-    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
 )
 def _ensure_src_on_path() -> None:
     """
@@ -43,9 +38,9 @@ _ensure_src_on_path()
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.deep_layers import Depth3Root, get_depth_3_classes
 
 

@@ -5,12 +5,12 @@ import pytest
 
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
     SpellBindingKind,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
 

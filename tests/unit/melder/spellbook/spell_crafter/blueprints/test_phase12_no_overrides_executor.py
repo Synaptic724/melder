@@ -4,12 +4,12 @@ from typing import Any
 
 import pytest
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanCallMode,
     ExecutionPlanTargetKind,
 )
-import melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor as phase12_module
+import melder.aether.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor as phase12_module
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 

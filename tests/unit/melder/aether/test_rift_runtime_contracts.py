@@ -1,6 +1,4 @@
-import logging
 from types import SimpleNamespace
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,8 +17,7 @@ from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.init_helpers import InitHelpers
 
 @pytest.fixture(autouse=True)

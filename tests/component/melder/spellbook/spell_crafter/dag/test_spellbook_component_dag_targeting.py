@@ -1,16 +1,16 @@
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.dag.target_spec import TargetSpec
-from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.dag.target_spec import TargetSpec
+from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
-from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
-from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )

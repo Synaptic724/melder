@@ -2,11 +2,11 @@ from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
-from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
 

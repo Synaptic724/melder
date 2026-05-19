@@ -1,19 +1,19 @@
 import pytest
 
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell import Spell
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.spell_examiner import (
     SpellExaminer,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 class _StubSpellbook:

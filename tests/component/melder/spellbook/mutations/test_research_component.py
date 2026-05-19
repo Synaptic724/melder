@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.mutation_research.mutation_research import MutationResearch
 
 

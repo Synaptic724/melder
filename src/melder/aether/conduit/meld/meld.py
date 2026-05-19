@@ -25,7 +25,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 )
 from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 
 @mypyc_attr(native_class=True)
 class Meld(Cleanable, IMeld):

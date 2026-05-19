@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any, Dict, Optional
 
 import pytest
 
-from melder.spellbook.spell_crafter.blueprints.injection_plan import (
+from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
     InjectionPlan,
     InjectionPlanBuilder,
     InjectionSpec,

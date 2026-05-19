@@ -21,8 +21,6 @@ import inspect
 import os
 import sys
 import threading
-from typing import Optional
-
 
 if "src" not in sys.path:
     sys.path.insert(0, "src")
@@ -31,11 +29,11 @@ if "src" not in sys.path:
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 EXPERIMENT_TIMEOUT_SECONDS = 10.0

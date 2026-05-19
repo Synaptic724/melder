@@ -8,7 +8,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController

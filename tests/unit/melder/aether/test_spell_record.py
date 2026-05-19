@@ -3,7 +3,7 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def _build_payload() -> SpellDescriptorPayload:

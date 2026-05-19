@@ -1,9 +1,6 @@
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
-    ParameterDIShape,
-)
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispellparameterrequirement import (
     ISpellParameterRequirement,

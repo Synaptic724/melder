@@ -8,7 +8,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 

@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
@@ -9,7 +9,7 @@ from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 class EventSystemDouble:

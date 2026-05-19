@@ -19,14 +19,11 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 @pytest.fixture(autouse=True)

@@ -3,7 +3,6 @@ import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
@@ -36,7 +35,7 @@ from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers

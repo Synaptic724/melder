@@ -2,25 +2,19 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
     SpellBindingKind,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
 
 
 from tests._frame_posture_test_support import (
-    apply_automatic_defaults_for_spellbook_configuration,
-    apply_dynamic_defaults_for_spellbook_configuration,
-    build_aetheric_frame_configuration_for_spellbook_configuration,
-    set_frame_ai_native_for_spellbook_configuration,
     set_frame_rift_enabled_for_spellbook_configuration,
-    set_frame_system_state_for_spellbook_configuration,
-    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_component_spell_examiner() -> None:

@@ -2,8 +2,8 @@ import pytest
 
 from typing import Sequence
 
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
 
 
 def _path_id(registry: PathRegistry, path: Sequence[str]) -> int:

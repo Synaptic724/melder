@@ -9,7 +9,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import Creatio
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def _make_crafter(

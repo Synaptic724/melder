@@ -6,21 +6,21 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.bind.bind import Bind
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
     ClassBindingProfile,
     InstanceBindingProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 
 

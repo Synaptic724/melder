@@ -5,14 +5,14 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.conduit.meld.overrides.spell_overrider import SpellOverrider
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
 
 
 def _make_socket_ref(

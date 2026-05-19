@@ -1,13 +1,13 @@
 import pytest
 from typing import List, Optional
 
-from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
 )
-from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
-from melder.spellbook.spell_crafter.validation.strategies.self_validation_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.self_validation_strategy import (
     SelfDependencyStrategy,
 )
 

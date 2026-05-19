@@ -3,8 +3,8 @@ Lambda scan_bind mock module for integration tests.
 
 Defines a scan_bind-decorated lambda with explicit binding name.
 """
-from melder.spellbook.bind.scan import scan_bind
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.scan import scan_bind
+from melder.aether.spellbook.existence.existence import Existence
 
 LAMBDA_CALLS: list[str] = []
 

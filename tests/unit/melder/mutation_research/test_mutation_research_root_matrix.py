@@ -9,7 +9,7 @@ from melder.mutation_research.mutation_configuration_builder import (
 from melder.mutation_research.mutation_conduit import MutationConduit
 from melder.mutation_research.mutation_frame import MutationFrame
 from melder.mutation_research.mutation_research import MutationResearch
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 
 @pytest.fixture(autouse=True)

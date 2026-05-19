@@ -1,6 +1,6 @@
 import pytest
 
-from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
 )
 from melder.utilities.general_base.cleanable import Cleanable

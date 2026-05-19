@@ -21,8 +21,8 @@ from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def test_descriptor_replaces_owned_frame_overview() -> None:

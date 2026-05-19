@@ -1,12 +1,11 @@
 from types import SimpleNamespace
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies import (
-    resolution_profile_strategy as resolution_module,
-)
+from melder.aether.spellbook.spell_crafter.spell_examiner.strategies import \
+    resolution_profile_strategy as resolution_module
 
 
 def test_resolution_profile_strategy_builds_profile(monkeypatch) -> None:

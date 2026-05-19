@@ -1,7 +1,6 @@
 import gc
 import hashlib
 import logging
-import threading
 import weakref
 from types import SimpleNamespace
 from typing import Callable
@@ -81,21 +80,17 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from tests._nexus_viewer_matrix_support import ViewerProjectionRiftDouble
 
 
 from tests._frame_posture_test_support import (
     apply_automatic_defaults_for_spellbook_configuration,
     apply_dynamic_defaults_for_spellbook_configuration,
-    build_aetheric_frame_configuration_for_spellbook_configuration,
-    set_frame_ai_native_for_spellbook_configuration,
     set_frame_rift_enabled_for_spellbook_configuration,
-    set_frame_system_state_for_spellbook_configuration,
-    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)
 def fresh_nexus() -> None:

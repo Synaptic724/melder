@@ -8,13 +8,11 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 from tests._frame_posture_test_support import (
-    apply_automatic_defaults_for_spellbook_configuration,
-    apply_dynamic_defaults_for_spellbook_configuration,
     build_aetheric_frame_configuration_for_spellbook_configuration,
     set_frame_ai_native_for_spellbook_configuration,
     set_frame_rift_enabled_for_spellbook_configuration,

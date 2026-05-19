@@ -1,11 +1,11 @@
 from typing import Tuple
 
-from melder.spellbook.spell_crafter.blueprints.patch_maps import (
+from melder.aether.spellbook.spell_crafter.blueprints.patch_maps import (
     OverridePatchMap,
     _Specificity,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import SocketRef
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.dag.dag_index import SocketRef
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
 
 
 def _build_single_unique_override_patch_map() -> Tuple[OverridePatchMap, SocketRef]:

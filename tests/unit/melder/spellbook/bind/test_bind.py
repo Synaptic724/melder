@@ -3,12 +3,12 @@ import inspect
 from typing import Protocol
 import pytest
 
-from melder.spellbook.bind.bind import Bind
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_types.spell_types import SpellType
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
     SpellBindingKind,
     ClassBindingProfile,
@@ -17,7 +17,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     OtherBindingProfile,
     CallableParameterBindingSummary,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
 

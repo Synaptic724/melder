@@ -18,10 +18,10 @@ from melder.aether.nexus.rift.frame_viewer.view_frame import (
 from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
     ClassProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable

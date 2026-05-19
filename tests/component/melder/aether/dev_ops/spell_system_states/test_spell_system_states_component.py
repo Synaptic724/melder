@@ -5,9 +5,9 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
     SpellStateChangeReason,
 )
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )

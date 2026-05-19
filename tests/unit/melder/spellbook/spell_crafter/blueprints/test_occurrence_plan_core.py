@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any, Dict, List, Tuple
 
 import pytest
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
     OccurrencePlanSelection,

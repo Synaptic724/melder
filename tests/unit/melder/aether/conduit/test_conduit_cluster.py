@@ -21,8 +21,8 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
 
 
 class _SpellStub:

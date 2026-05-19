@@ -1,7 +1,7 @@
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 def test_frame_descriptor_payload_exposes_stable_public_fields() -> None:

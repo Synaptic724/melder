@@ -1,6 +1,6 @@
 import pytest
 
-from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
+from melder.aether.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
     ResolutionFrame,
 )
 

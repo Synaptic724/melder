@@ -1,7 +1,6 @@
-import threading
 import pytest
 
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 
 class _SpellStub:

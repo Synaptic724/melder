@@ -2,10 +2,10 @@ import threading
 
 import pytest
 
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
+from melder.aether.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
     ResolutionFrame,
 )
 

@@ -1,18 +1,17 @@
 from typing import Dict, List, Optional, Tuple
-from types import SimpleNamespace
 
 import pytest
 
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
 )
-from melder.spellbook.spell_crafter.validation.strategies.contract_provider_presence_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.contract_provider_presence_strategy import (
     ContractProviderPresenceStrategy,
 )
 

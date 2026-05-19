@@ -27,8 +27,8 @@ from tests.mocks.spellbook.deep_layers import get_depth_9_classes
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.logger.safe_logger import SafeLogger
 
@@ -139,7 +139,7 @@ def _cleanup_melder(state: _MelderState) -> None:
 def _patch_melder_signature_follow_wrapped(disable_follow_wrapped: bool) -> Callable[[], None]:
     if not disable_follow_wrapped:
         return lambda: None
-    from melder.spellbook.spell_crafter.blueprints import occurrence_plan as occurrence_plan_module
+    from melder.aether.spellbook.spell_crafter.blueprints import occurrence_plan as occurrence_plan_module
 
     original = occurrence_plan_module.inspect.signature
     occurrence_plan_module.inspect.signature = functools.partial(
@@ -156,7 +156,7 @@ def _patch_melder_signature_follow_wrapped(disable_follow_wrapped: bool) -> Call
 def _patch_melder_skip_phase4_validation(skip_validation: bool) -> Callable[[], None]:
     if not skip_validation:
         return lambda: None
-    from melder.spellbook.spellbook import Spellbook as _Spellbook
+    from melder.aether.spellbook.spellbook import Spellbook as _Spellbook
 
     original = _Spellbook._phase_validation_factory
 
@@ -174,7 +174,7 @@ def _patch_melder_skip_phase4_validation(skip_validation: bool) -> Callable[[], 
 def _patch_melder_skip_phases_8_11(skip_phases: bool) -> Callable[[], None]:
     if not skip_phases:
         return lambda: None
-    from melder.spellbook.spellbook import Spellbook as _Spellbook
+    from melder.aether.spellbook.spellbook import Spellbook as _Spellbook
 
     original_occurrence = _Spellbook._phase_occurrence_plan_factory
     original_injection = _Spellbook._phase_injection_plan_factory
@@ -201,7 +201,7 @@ def _patch_melder_skip_phases_8_11(skip_phases: bool) -> Callable[[], None]:
 def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) -> Callable[[], None]:
     if not skip_validation:
         return lambda: None
-    from melder.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
+    from melder.aether.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
         DuplicateSpellNameStrategy,
     )
 
@@ -221,7 +221,7 @@ def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) ->
 def _patch_melder_skip_contract_signature_scan(skip_scan: bool) -> Callable[[], None]:
     if not skip_scan:
         return lambda: None
-    from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+    from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
 
     original = OccurrencePlanBuilder._iter_spell_contract_defaults
 

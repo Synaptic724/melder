@@ -18,7 +18,7 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
 )
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 @pytest.fixture(autouse=True)

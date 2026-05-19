@@ -8,7 +8,7 @@ import types
 import pytest
 
 import melder.mutation_research.mutation_research as mutation_research_module
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.mutation_research.mutation_research import MutationResearch
 
 MODULE_PATH = "melder.mutation_research.mutation_research"

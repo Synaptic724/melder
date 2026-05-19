@@ -1,8 +1,8 @@
 import pytest
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.resolution_style_matrix import ResolutionStyleMatrix
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.resolution_style_matrix import ResolutionStyleMatrix
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 def test_resolution_style_matrix_validate_has_no_errors() -> None:

@@ -14,7 +14,7 @@ from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.integration.melder.aether.rift.static_rift_json_testbench_support import (
     StaticRiftJsonBench,
 )

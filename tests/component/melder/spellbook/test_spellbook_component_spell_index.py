@@ -1,6 +1,6 @@
 import pytest
 
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 
 def test_component_spell_index_tracks_versions_and_hash_stability() -> None:

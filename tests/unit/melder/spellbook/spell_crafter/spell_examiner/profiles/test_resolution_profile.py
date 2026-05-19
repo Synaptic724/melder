@@ -1,7 +1,5 @@
-import pytest
-
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
     SpellResolutionProfile,
     SpellSymbolicEdge,

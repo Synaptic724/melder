@@ -1,6 +1,6 @@
 import pytest
 from threading import RLock
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
@@ -13,7 +13,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 )
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 CONDUIT_ID = "conduit-1"

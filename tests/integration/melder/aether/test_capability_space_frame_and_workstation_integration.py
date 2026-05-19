@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import pytest
 
@@ -12,9 +12,9 @@ from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.capability_rift_space import (
     CapabilityRiftSpace,
 )
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 

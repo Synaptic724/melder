@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 
 import pytest
 
@@ -10,19 +10,14 @@ from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 from tests._frame_posture_test_support import (
     apply_automatic_defaults_for_spellbook_configuration,
-    apply_dynamic_defaults_for_spellbook_configuration,
-    build_aetheric_frame_configuration_for_spellbook_configuration,
-    set_frame_ai_native_for_spellbook_configuration,
     set_frame_rift_enabled_for_spellbook_configuration,
-    set_frame_system_state_for_spellbook_configuration,
-    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
 )
 class BasicService:
     """

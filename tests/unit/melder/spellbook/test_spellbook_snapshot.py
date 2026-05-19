@@ -1,5 +1,5 @@
-from melder.spellbook.spellbook import Spellbook
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def test_spellbook_snapshot_state_returns_detached_maps() -> None:

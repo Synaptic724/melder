@@ -10,8 +10,7 @@ from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types i
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.icontract import IContract
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 # Fixtures
 @pytest.fixture

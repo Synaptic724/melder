@@ -1,22 +1,20 @@
 import types
-import gc
 import threading
 from types import MappingProxyType
 from typing import MutableMapping, Optional, cast
 
 import pytest
 
-import melder.spellbook.spellbook as spellbook_module
+import melder.aether.spellbook.spellbook as spellbook_module
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
-from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -4723,7 +4721,7 @@ def test_run_resolution_phases_cleans_scheduler_on_success(monkeypatch):
     schedulers: list[DummyPhaseScheduler] = []
     sb._logger = DummySafeLogger()
     # Patch constructor to return our scheduler so we can check cleaned flag.
-    import melder.spellbook.spellbook as spellbook_module
+    import melder.aether.spellbook.spellbook as spellbook_module
     def _make_scheduler(*args, **kwargs):
         sched = DummyPhaseScheduler(*args, **kwargs)
         sched.cleaned = False
@@ -4858,7 +4856,7 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
             self._name = name or "cname"
             self._creations = {}
 
-    import melder.spellbook.spellbook_creation_system as creation_system_module
+    import melder.aether.spellbook.spellbook_creation_system as creation_system_module
     monkeypatch.setattr(creation_system_module, "Conduit", StubConduit)
     # Stub binder to avoid building a real conduit; return the stub directly.
     sb._bind.build_conduit = lambda *a, **k: StubConduit(None, None, None, None, None, None, None)

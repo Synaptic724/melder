@@ -2,13 +2,12 @@ import json
 from typing import Any, Dict, List, Optional
 
 from melder.aether.aether import Aether
-from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 class CodegenRiftJsonBench:

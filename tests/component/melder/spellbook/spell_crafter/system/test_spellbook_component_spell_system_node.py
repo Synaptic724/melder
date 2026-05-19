@@ -3,26 +3,26 @@ from __future__ import annotations
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.spellbook.spell_crafter.system.spell_system_validation_system import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
-from melder.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
     GraphConsistencyStrategy,
 )
-from melder.spellbook.spell_crafter.system.validation.root_viability_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 def _register_index(states, spell_id: str) -> SpellIndex:

@@ -9,9 +9,8 @@ import pytest
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.meld.meld import Meld
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
-from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 try:

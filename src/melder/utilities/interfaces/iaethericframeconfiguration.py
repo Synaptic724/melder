@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, Protocol, Union, runtime_checkable
 
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.interfaces.icleanable import ICleanable
 
 

@@ -2,7 +2,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 def _build_payload() -> FrameDescriptorPayload:

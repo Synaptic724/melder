@@ -4,10 +4,10 @@ import typing
 
 import pytest
 
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.validation.strategies.parameter_policy_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.parameter_policy_strategy import (
     ParameterPolicyStrategy,
 )
 

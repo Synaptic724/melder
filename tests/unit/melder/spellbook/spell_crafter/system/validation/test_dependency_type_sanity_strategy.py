@@ -1,15 +1,15 @@
 import pytest
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
-from melder.spellbook.spell_crafter.system.validation.dependency_type_sanity_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.dependency_type_sanity_strategy import (
     DependencyTypeSanityStrategy,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 def _make_index_with_dependency(

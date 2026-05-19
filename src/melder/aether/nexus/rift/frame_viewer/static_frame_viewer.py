@@ -6,7 +6,7 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 

@@ -69,8 +69,8 @@ def _build_melder_conduit(graph: object) -> Tuple[Any, str, str, Callable[[], No
     """
     from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
-    from melder.spellbook.existence.existence import Existence
-    from melder.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.existence.existence import Existence
+    from melder.aether.spellbook.spellbook import Spellbook
 
     Aether._reset_singleton_for_tests()
     aether = Aether()
@@ -303,7 +303,7 @@ def _expected_route(meld: Any, spell: Any) -> str:
     Returns:
         str: Expected route label.
     """
-    from melder.spellbook.existence.existence import Existence
+    from melder.aether.spellbook.existence.existence import Existence
 
     if meld._should_use_fast_transient_shortcut(spell):
         return "FAST_TRANSIENT"

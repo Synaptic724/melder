@@ -1,20 +1,20 @@
 ﻿import inspect
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
     ClassProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
     MethodProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingKind,
     SpellBindingProfile,
 )
-from melder.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
     SpellResolutionProfile,
     SpellSymbolicEdge,
@@ -23,16 +23,16 @@ from melder.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellValidationIssue,
     SpellValidationResult,
 )
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
-from melder.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 def _make_requirement(name: str = "dep") -> SpellParameterRequirement:

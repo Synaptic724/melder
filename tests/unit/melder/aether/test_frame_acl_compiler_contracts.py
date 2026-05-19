@@ -39,8 +39,8 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def _build_frame_descriptor() -> FrameDescriptor:

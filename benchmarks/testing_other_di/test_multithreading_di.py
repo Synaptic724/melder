@@ -15,8 +15,6 @@ import pytest
 from tests.mocks.spellbook.deep_layers import (
     Depth3Root,
     Depth7Root,
-    Depth9LeafA,
-    Depth9LeafB,
     Depth9Root,
     get_depth_3_classes,
     get_depth_7_classes,
@@ -446,8 +444,8 @@ def _build_runtime_melder() -> _RuntimeOps:
     # Local import so competitor-only runs don't pay import cost up front.
     from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
-    from melder.spellbook.existence.existence import Existence
-    from melder.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.existence.existence import Existence
+    from melder.aether.spellbook.spellbook import Spellbook
 
     # Reset Aether singleton for isolation (same contract you used in integration tests).
     Aether._reset_singleton_for_tests()

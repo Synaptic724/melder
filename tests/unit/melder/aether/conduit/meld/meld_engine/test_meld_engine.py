@@ -8,39 +8,34 @@ import pytest
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.spellbook.spell_crafter.blueprints.execution_plan import (
+from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
     ExecutionPlanCallMode,
-    ExecutionPlanStep,
-    ExecutionPlanTargetKind,
     ExecutionPlanVariant,
 )
-from melder.spellbook.spell_crafter.blueprints.injection_plan import (
+from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
     InjectionPlanBuilder,
 )
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
+from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
 )
-from melder.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.dag.resolution_frame.resolution_frame import (
     ResolutionFrame,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
-from melder.utilities.custom_exceptions.operation_cancelled_error import (
-    OperationCancelledError,
-)
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEventSignal,

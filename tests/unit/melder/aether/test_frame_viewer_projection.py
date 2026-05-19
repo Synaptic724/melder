@@ -39,15 +39,14 @@ from melder.aether.nexus.rift.frame_viewer.view_spell import (
 from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
     ClassProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
     MethodProfile,
 )
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
 from tests._nexus_viewer_matrix_support import (
     ViewerProjectionRiftDouble,
     build_multi_frame_viewer,

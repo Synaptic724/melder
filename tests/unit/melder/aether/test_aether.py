@@ -13,9 +13,9 @@ from melder.aether.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 class _FrameConduitCloudStub:

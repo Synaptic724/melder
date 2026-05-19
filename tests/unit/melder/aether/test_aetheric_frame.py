@@ -1,9 +1,9 @@
 import threading
 import pytest
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 # ----------------------------------------------------------------------
 # Fixtures

@@ -1,12 +1,9 @@
 import gc
-import types
 
 import pytest
 
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbinder import SpellBinder
-from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
-
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbinder import SpellBinder
 
 _strong_spellbooks = []
 

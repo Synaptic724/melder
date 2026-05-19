@@ -7,40 +7,31 @@ from threading import RLock
 
 import pytest
 
-import melder.spellbook.spell_crafter.spell_crafter as spell_crafter_module
+import melder.aether.spellbook.spell_crafter.spell_crafter as spell_crafter_module
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
+from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
-from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
-from tests._frame_posture_test_support import (
-    apply_automatic_defaults_for_spellbook_configuration,
-    apply_dynamic_defaults_for_spellbook_configuration,
-    build_aetheric_frame_configuration_for_spellbook_configuration,
-    set_frame_ai_native_for_spellbook_configuration,
-    set_frame_rift_enabled_for_spellbook_configuration,
-    set_frame_system_state_for_spellbook_configuration,
-    set_shared_framewide_spellbook_configuration_for_spellbook_configuration,
-)
 class _CleanableStub(Cleanable):
     """
     Purpose:

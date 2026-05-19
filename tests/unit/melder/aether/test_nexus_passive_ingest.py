@@ -12,8 +12,8 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 
 

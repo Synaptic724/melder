@@ -3,7 +3,7 @@ from typing import Optional
 import pytest
 
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from tests._nexus_viewer_matrix_support import build_multi_frame_viewer
 
 

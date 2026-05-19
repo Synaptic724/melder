@@ -1,8 +1,8 @@
 import pytest
 
-from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
 def test_ctor_rejects_missing_ids():

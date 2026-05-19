@@ -7,11 +7,11 @@ from typing import Any, Iterable
 import pytest
 
 from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
-from melder.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+from melder.aether.spellbook.spell_crafter.dag.dag_index import PathRegistry, SocketRef
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.utilities.synchronization.creation_gate import CreationGate
 
 

@@ -4,8 +4,8 @@ import pytest
 
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def _make_spell(

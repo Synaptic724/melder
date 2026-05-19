@@ -5,8 +5,8 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 def _reset_runtime_singletons() -> None:

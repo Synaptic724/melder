@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
-from melder.spellbook.spell_crafter.validation.spell_validation_result import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
     SpellValidationResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable

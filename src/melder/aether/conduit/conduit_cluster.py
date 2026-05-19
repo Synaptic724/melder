@@ -3,7 +3,7 @@ from typing import Dict, Set, Optional, List
 
 from mypy_extensions import mypyc_attr
 
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster

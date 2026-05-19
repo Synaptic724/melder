@@ -3,8 +3,8 @@ Duplicate scan_bind mock module for integration tests.
 
 Defines two decorated classes with identical binding keys to trigger collisions.
 """
-from melder.spellbook.bind.scan import scan_bind
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.scan import scan_bind
+from melder.aether.spellbook.existence.existence import Existence
 
 
 @scan_bind(

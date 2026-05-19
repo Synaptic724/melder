@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from typing import List, Optional, Union, get_args, get_origin
 
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
 )
 

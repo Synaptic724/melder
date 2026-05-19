@@ -1,11 +1,11 @@
 import pytest
 
-from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
-from melder.spellbook.spell_crafter.system.validation.index_dependency_sanity_strategy import (
+from melder.aether.spellbook.spell_crafter.system.validation.index_dependency_sanity_strategy import (
     IndexDependencySanityStrategy,
 )
 

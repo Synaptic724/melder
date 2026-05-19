@@ -7,8 +7,8 @@ preservation via functools.wraps vs bare wrappers.
 from functools import wraps
 from typing import Any
 
-from melder.spellbook.bind.scan import scan_bind
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.scan import scan_bind
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def _simple_wrap(func: Any) -> Any:

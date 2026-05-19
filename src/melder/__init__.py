@@ -23,13 +23,13 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.nexus.nexus import Nexus
-from melder.spellbook.configuration.spellbook_configuration import (
+from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbinder import SpellBinder
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbinder import SpellBinder
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.aether import Aether

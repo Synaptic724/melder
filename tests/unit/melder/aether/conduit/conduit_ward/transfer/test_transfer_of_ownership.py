@@ -14,7 +14,7 @@ from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSev
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )

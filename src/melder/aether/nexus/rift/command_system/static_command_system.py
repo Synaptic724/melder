@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 from melder.utilities.interfaces.istaticcommandsystem import IStaticCommandSystem
 

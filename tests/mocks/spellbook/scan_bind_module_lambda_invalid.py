@@ -4,8 +4,8 @@ Invalid lambda scan_bind mock module for integration tests.
 Defines a scan_bind-decorated lambda without a binding name to trigger
 binding validation errors.
 """
-from melder.spellbook.bind.scan import scan_bind
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.bind.scan import scan_bind
+from melder.aether.spellbook.existence.existence import Existence
 
 invalid_lambda = scan_bind(
     existence=Existence.unique,

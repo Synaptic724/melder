@@ -2,9 +2,9 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 

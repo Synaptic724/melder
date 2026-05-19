@@ -26,8 +26,8 @@ from melder.aether.nexus.rift.projection.command_projection import CommandProjec
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
 
 
 class ViewerProjectionRiftDouble:

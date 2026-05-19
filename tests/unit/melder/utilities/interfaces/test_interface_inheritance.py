@@ -19,11 +19,11 @@ from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.spellbook.bind.bind import Bind
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.spell import Spell
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration

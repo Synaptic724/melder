@@ -11,7 +11,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 

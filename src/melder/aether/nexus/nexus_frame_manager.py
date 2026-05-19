@@ -1,8 +1,7 @@
 import threading
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
@@ -10,13 +9,11 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus_frame_builder import NexusFrameBuilder
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
@@ -946,8 +943,7 @@ class NexusFrameManager(Cleanable, INexusFrameManager):
         Returns:
             IConduit: Newly created root conduit.
         """
-        from melder.aether.conduit.conduit import Conduit
-        from melder.spellbook.spellbook import Spellbook
+        from melder.aether.spellbook.spellbook import Spellbook
 
         runtime_aether = self._nexus._aether
         Spellbook._aether = runtime_aether

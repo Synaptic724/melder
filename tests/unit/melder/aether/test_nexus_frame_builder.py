@@ -2,7 +2,7 @@ import pytest
 
 from melder.aether.nexus.nexus_frame_builder import NexusFrameBuilder
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
-from melder.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 class _RecordingFrameManager:

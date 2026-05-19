@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 from melder import Aether, Conduit
 from melder.aether.conduit.creations.creations import Creations
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 

@@ -2,13 +2,13 @@ from typing import Iterable, List, Optional
 
 import pytest
 
-from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
 )
-from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
-from melder.spellbook.spell_crafter.validation.strategies.required_holes_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.required_holes_strategy import (
     RequiredHolesStrategy,
 )
 

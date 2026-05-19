@@ -5,13 +5,13 @@ import pytest
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
-from melder.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.spellbook.spell_crafter.validation.spell_validation_context import (
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import (
     SpellValidationContext,
 )
-from melder.spellbook.spell_crafter.validation.strategies.binding_resolution_cycle_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.binding_resolution_cycle_strategy import (
     BindingResolutionCycleStrategy,
 )
 

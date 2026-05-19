@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -7,9 +7,9 @@ from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
-from melder.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 

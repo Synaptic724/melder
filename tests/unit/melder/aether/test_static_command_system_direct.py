@@ -5,7 +5,7 @@ import pytest
 from melder.aether.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 
 
 def _make_spell_record(

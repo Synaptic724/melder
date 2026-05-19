@@ -1,9 +1,9 @@
 import pytest
 
-from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.spellbook.spell_crafter.system.validation.contract_graph_cycle_strategy import (
+from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_crafter.system.validation.contract_graph_cycle_strategy import (
     ContractGraphCycleStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils

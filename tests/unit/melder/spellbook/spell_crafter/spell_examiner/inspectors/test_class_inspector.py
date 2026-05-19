@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import (
     ClassInspector,
 )
 

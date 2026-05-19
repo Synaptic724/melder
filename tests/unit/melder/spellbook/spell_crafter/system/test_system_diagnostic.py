@@ -1,6 +1,6 @@
 import pytest
 
-from melder.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )

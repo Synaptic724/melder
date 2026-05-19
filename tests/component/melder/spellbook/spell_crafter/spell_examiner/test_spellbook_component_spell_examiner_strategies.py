@@ -2,23 +2,23 @@
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
     ClassBindingProfile,
     InstanceBindingProfile,
     SpellBindingKind,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import (
     ResolutionProfileStrategy,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
 

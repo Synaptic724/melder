@@ -3,7 +3,7 @@ Protocol contract for Nexus-published spell records.
 """
 
 from typing import Any, Optional, Protocol, Tuple, runtime_checkable
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispelldescriptorpayload import ISpellDescriptorPayload

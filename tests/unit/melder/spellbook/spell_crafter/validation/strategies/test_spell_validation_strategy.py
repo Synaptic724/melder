@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
+from melder.aether.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
 

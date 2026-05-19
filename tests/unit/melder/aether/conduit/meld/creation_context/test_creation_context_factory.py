@@ -5,14 +5,13 @@ from typing import Any, Optional
 
 import pytest
 
-from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
-from melder.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,

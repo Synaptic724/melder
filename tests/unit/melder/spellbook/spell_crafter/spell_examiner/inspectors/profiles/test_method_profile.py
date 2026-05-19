@@ -1,6 +1,4 @@
-import pytest
-
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
     MethodProfile,
 )
 

@@ -10,7 +10,7 @@ from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook import Spellbook
 from tests.integration.melder.aether.rift.capability_rift_json_testbench_support import (
     CapabilityRiftJsonBench,
 )

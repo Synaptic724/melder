@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import contextlib
-import contextvars
 import gc
 import inspect
 import time
@@ -70,8 +68,8 @@ def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
 
 
 @pytest.fixture(autouse=True)

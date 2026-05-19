@@ -6,11 +6,11 @@ from melder.aether.dev_ops.change_control_manager.change_control_manager import 
     ChangeControlManager,
     ChangeTransactionType,
 )
-from melder.spellbook.bind.spell_index import SpellIndex
-from melder.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
-from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
 from melder.utilities.custom_exceptions.operation_cancelled_error import (
