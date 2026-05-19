@@ -1,10 +1,8 @@
 import threading
 from types import TracebackType
 from typing import Optional, Set, Dict, Type
-
 import ulid
 from mypy_extensions import mypyc_attr
-
 # Melder Imports
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iaether import IAether

@@ -12,23 +12,23 @@ class CounterSwitch(Cleanable):
 
     Purpose:
         Provide one fast coordination primitive where deque cardinality is the
-        state and leader election is performed only by ``selector()``.
+        state and leader election is performed only by "selector()".
 
     State model:
-        - ``0``: idle
-        - ``1``: pending (leader claimed)
-        - ``>=2``: open/ready
+        - "0": idle
+        - "1": pending (leader claimed)
+        - ">=2": open/ready
 
     Selector model:
-        - ``selector()`` returns immediately for ``>=2``.
-        - For ``0``, one caller claims leader by appending one ticket.
+        - "selector()" returns immediately for ">=2".
+        - For "0", one caller claims leader by appending one ticket.
           This is the only place a lock is used.
-        - For ``1``, followers wait on the event until signalled.
+        - For "1", followers wait on the event until signalled.
 
     Advance model:
-        - ``advance(delta)`` mutates raw counter tickets.
+        - "advance(delta)" mutates raw counter-tickets.
         - Positive deltas append; negative deltas pop.
-        - Event is cleared only for state ``1`` and set for all other states.
+        - Event is cleared only for state "1" and set for all other states.
 
     Design intent:
         - Minimal API surface for hot paths.
@@ -45,7 +45,7 @@ class CounterSwitch(Cleanable):
 
         Args:
             state:
-                Initial ticket count. Default ``2`` starts open.
+                Initial ticket count. Default "2" starts open.
         """
         super().__init__()
         self._lock: threading.Lock = threading.Lock()
@@ -85,7 +85,7 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Return current raw ticket count.
+        Return the current raw ticket count.
         """
         return len(self._tickets)
 
@@ -104,6 +104,7 @@ class CounterSwitch(Cleanable):
 
         Return the raw deque-backed state value.
         """
+        self.check_cleaned()
         return len(self._tickets)
 
     def advance(self, delta: int) -> int:
@@ -120,6 +121,7 @@ class CounterSwitch(Cleanable):
             int:
                 Resulting state after the signed ticket mutation.
         """
+        self.check_cleaned()
         if delta == 0:
             return len(self._tickets)
         if delta > 0:
@@ -138,7 +140,7 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Enter selector and return current state.
+        Enter a selector and return the current state.
 
         Args:
             timeout_seconds:
@@ -150,9 +152,10 @@ class CounterSwitch(Cleanable):
 
         Raises:
             TimeoutError:
-                If a follower waits at pending state and the event is not
+                If a follower waits at pending state, and the event is not
                 signalled before `timeout_seconds` expires.
         """
+        self.check_cleaned()
         count = len(self._tickets)
         if count >= 2:
             return count

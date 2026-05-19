@@ -225,5 +225,5 @@ def test_counter_switch_post_cleanup_usage_breaks_fast() -> None:
     """
     switch = CounterSwitch()
     switch.cleanup()
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         _ = switch.selector()
