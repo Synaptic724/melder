@@ -28,7 +28,7 @@ class ISpellIndex(ICleanable, Protocol):
     # Core backing fields (shape only; concrete type lives in impl)
     # ------------------------------------------------------------------
     _id: str
-    _current_id: Optional[str]
+    _current_id: str
     _lock: Any
     _cleaned: bool
     _versions: Optional[Set[str]]
@@ -41,14 +41,13 @@ class ISpellIndex(ICleanable, Protocol):
     # Core API
     # ------------------------------------------------------------------
     @property
-    def current(self) -> Optional[str]:
+    def current(self) -> str:
         """
         Gets the currently active version ID (e.g., SHA256) this index points to.
 
         Returns:
-            Optional[str]:
-                The current version ID, or ``None`` if the index has
-                been cleaned.
+            str:
+                The current version ID for this index.
         """
         ...
 
