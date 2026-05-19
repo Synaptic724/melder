@@ -32,7 +32,7 @@ class IFrameViewer(ICleanable, Protocol):
         """
         ...
 
-    _rift: "IRift"
+    _rift: Any
 
     @property
     def _lock(self) -> threading.RLock:

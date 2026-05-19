@@ -2,6 +2,7 @@ import threading
 from typing import Dict, List, Optional, Tuple
 import ulid
 from mypy_extensions import mypyc_attr
+from types import TracebackType
 
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
@@ -116,7 +117,12 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Release the registry lock acquired by `__enter__`.
         """

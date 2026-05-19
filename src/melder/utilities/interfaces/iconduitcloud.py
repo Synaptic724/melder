@@ -161,7 +161,7 @@ class IConduitCloud(ICleanable, Protocol):
         """
         ...
 
-    def get_cluster(self, cluster_name: str) -> IConduitCluster:
+    def get_cluster(self, cluster_name: str) -> "IConduitCluster":
         """
         Return one frame-local cluster by name.
         """
@@ -178,3 +178,6 @@ class IConduitCloud(ICleanable, Protocol):
         Return the current frame-local cluster names.
         """
         ...
+
+
+from melder.utilities.interfaces.iconduitcluster import IConduitCluster

@@ -2,7 +2,6 @@ import threading
 from typing import Any, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
@@ -18,6 +17,13 @@ from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaethericframeconfiguration import (
+    IAethericFrameConfiguration,
+)
+from melder.utilities.interfaces.iconduitward import IConduitWard
+from melder.utilities.interfaces.ispelldescriptorpayload import (
+    ISpellDescriptorPayload,
+)
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -138,7 +144,7 @@ class FrameDescriptorManager(Cleanable):
     def _refresh_frame_posture_cache(
             self,
             frame_name: str,
-    ) -> Optional[AethericFrameConfiguration]:
+    ) -> Optional[IAethericFrameConfiguration]:
         """
         Refresh cached frame posture from Aether for one frame.
 
@@ -157,7 +163,7 @@ class FrameDescriptorManager(Cleanable):
                 Stable frame name whose posture cache should be refreshed.
 
         Returns:
-            Optional[AethericFrameConfiguration]:
+            Optional[IAethericFrameConfiguration]:
                 Bound frame posture when available, otherwise None.
         """
         self.check_cleaned()
@@ -183,7 +189,7 @@ class FrameDescriptorManager(Cleanable):
     def _get_publishable_frame_posture(
             self,
             frame_name: str,
-    ) -> Optional[AethericFrameConfiguration]:
+    ) -> Optional[IAethericFrameConfiguration]:
         """
         Return a frame posture only when passive Nexus publication is allowed.
 
@@ -202,7 +208,7 @@ class FrameDescriptorManager(Cleanable):
                 Stable frame name whose passive-publication posture is needed.
 
         Returns:
-            Optional[AethericFrameConfiguration]:
+            Optional[IAethericFrameConfiguration]:
                 Publishable frame posture or None when publication should
                 short-circuit.
         """
@@ -385,13 +391,16 @@ class FrameDescriptorManager(Cleanable):
         Returns:
             Optional[str]: Parent conduit id when present; otherwise None.
         """
-        conduit_ward = conduit._conduit_ward
+        conduit_ward: Optional[IConduitWard] = conduit._conduit_ward
         if conduit_ward is None:
             return None
         parent_conduit = conduit_ward._parent_conduit
         if parent_conduit is None:
             return None
-        return parent_conduit._id
+        parent_conduit_id = parent_conduit._id
+        if not isinstance(parent_conduit_id, str):
+            return None
+        return parent_conduit_id
 
     @classmethod
     def _compute_lineage_depth(cls, conduit: Any) -> int:
@@ -490,7 +499,7 @@ class FrameDescriptorManager(Cleanable):
             descriptor = self._get_or_create_frame_descriptor(frame_name)
 
             profile = spell.profile
-            payload: Optional[SpellDescriptorPayload] = None
+            payload: Optional[ISpellDescriptorPayload] = None
             if isinstance(profile, ISpellGeneralProfile):
                 payload = profile.to_descriptor_payload()
             if payload is None:
@@ -704,7 +713,7 @@ class FrameDescriptorManager(Cleanable):
     @classmethod
     def _validate_published_spell_payload(
             cls,
-            payload: SpellDescriptorPayload,
+            payload: ISpellDescriptorPayload,
     ) -> None:
         """
         Validate one published spell payload contract before descriptor ingest.
