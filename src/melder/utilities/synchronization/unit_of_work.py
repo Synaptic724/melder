@@ -1,6 +1,7 @@
 import threading
 from concurrent.futures import Future
-from typing import Any, Optional, Dict, Callable, Tuple
+from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from types import TracebackType
 # Melder imports
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -106,9 +107,9 @@ class UnitOfWork(Cleanable, Future):
         if not callable(func):
             raise TypeError("func must be callable.")
 
-        self._func: Optional[Callable[..., Any]] = func
-        self._args: Optional[Tuple[Any, ...]] = args if args is not None else ()
-        self._kwargs: Optional[Dict[str, Any]] = kwargs if kwargs is not None else {}
+        self._func: Callable[..., Any] = func
+        self._args: Tuple[Any, ...] = args if args is not None else ()
+        self._kwargs: Dict[str, Any] = kwargs if kwargs is not None else {}
         self._cancel_event: Optional[CancellationEvent] = cancel_event
         self._label: Optional[str] = label
         self._metadata: Any = metadata
@@ -186,7 +187,12 @@ class UnitOfWork(Cleanable, Future):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Literal[False]:
         """
         Exit the critical section entered via :meth:`__enter__`.
 
@@ -194,6 +200,7 @@ class UnitOfWork(Cleanable, Future):
         are not suppressed.
         """
         self._lock.release()
+        return False
 
     # ------------------------------------------------------------------
     # Properties
