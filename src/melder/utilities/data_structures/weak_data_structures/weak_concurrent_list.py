@@ -1,6 +1,7 @@
 import threading
 import ulid
-from typing import Any, Callable, Optional, List, TypeVar, Generic
+from types import TracebackType
+from typing import Any, Callable, Optional, List, TypeVar, Generic, cast
 from collections.abc import Iterable, Iterator
 from functools import reduce as _reduce
 
@@ -354,7 +355,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         with self._lock:
             if isinstance(index, int):
                 try:
-                    node = self._make_node(value)
+                    node = self._make_node(cast(_T, value))
                     self._list[index] = node
                 except IndexError:
                     raise IndexError("WeakConcurrentList index out of range")
@@ -868,7 +869,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     # Context managers (same pattern as ConcurrentList)
     # -------------------------------------------------------------------------
 
-    def __enter__(self):
+    def __enter__(self) -> "WeakConcurrentList[_T]":
         """
         Enter the synchronization context and acquire the internal lock.
 
@@ -882,7 +883,12 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Exit the synchronization context and release the internal lock.
         """

@@ -1,5 +1,6 @@
 import threading
 from copy import deepcopy
+from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -1014,7 +1015,12 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+    ) -> None:
         """
         Exit the runtime context for this set.
 

@@ -2,6 +2,7 @@ import functools
 import threading
 from collections.abc import Mapping as MappingABC
 from copy import deepcopy
+from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -152,7 +153,7 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
             current = self._parent[key]  # may raise
         except Exception:
             return False
-        return current == val
+        return bool(current == val)
 
     # Set-like operations
     def _as_set(self) -> set[Tuple[_K, _V]]:
@@ -1501,7 +1502,12 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+    ) -> None:
         """
         Exit the runtime context for this dict.
 

@@ -322,11 +322,6 @@ class Package(Cleanable, Generic[P, R]):
         return async_func
 
     @property
-    def __doc__(self) -> str:
-        """Return the wrapped callable's docstring."""
-        return getattr(self._func, '__doc__')
-
-    @property
     def is_async(self) -> bool:
         """
         Check if the underlying function is async (coroutine). This is for info only.
@@ -352,11 +347,11 @@ class Package(Cleanable, Generic[P, R]):
 
         # This correctly calls the underlying function of `other` to bypass
         # its stored arguments, creating a true pipeline.
-        def composed_callable(*a, **kw) -> R:
+        def composed_callable(*a: P.args, **kw: P.kwargs) -> B:
             """
             Compose two packages into a left-to-right pipeline.
             """
-            result_of_first = self(*a, **kw)
+            result_of_first: A = self(*a, **kw)
             return other._func(result_of_first)
 
         return Package(composed_callable)
