@@ -536,6 +536,18 @@ class FakeAether:
             return self._default_frame
         return self._aetheric_frames[frame_name]
 
+    def _get_existing_frame(self, frame_name: str = "default") -> FakeFrame:
+        """
+        Return one existing frame without creating new frame state.
+
+        Args:
+            frame_name: Frame name to resolve.
+
+        Returns:
+            FakeFrame: Existing frame for the requested name.
+        """
+        return self._get_frame(frame_name)
+
     def _add_spells_to_aether(self, conduit_id: str, indices: set[SpellIndex], frame_name: str) -> None:
         """
         Add spell indices to the registry for a conduit.
