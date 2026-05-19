@@ -238,11 +238,14 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             value = self._properties[key]
 
             # Normalize to tuple
-            if not isinstance(expected_type, tuple):
-                expected_type = (expected_type,)
+            expected_types: tuple[Type[Any], ...]
+            if isinstance(expected_type, tuple):
+                expected_types = expected_type
+            else:
+                expected_types = (expected_type,)
 
-            if not isinstance(value, expected_type):
-                expected_names = ", ".join(t.__name__ for t in expected_type)
+            if not isinstance(value, expected_types):
+                expected_names = ", ".join(t.__name__ for t in expected_types)
                 raise ValueError(
                     f"Invalid type for property '{key}': "
                     f"expected {expected_names}, got {type(value).__name__}."
