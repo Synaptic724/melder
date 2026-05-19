@@ -1,10 +1,10 @@
 import pickle
 import threading
 
-from melder.utilities.general_base.isync import ISync
+from melder.utilities.general_base.sync import ISync, Sync
 
 
-class DummySync(ISync):
+class DummySync(Sync):
     __slots__ = ("_value", "_lock")
 
     def __init__(self, value):
@@ -29,9 +29,10 @@ class DummySync(ISync):
 
 
 def test_is_sync_marker_and_unwrap_other():
+    assert ISync is Sync
     a = DummySync(1)
     b = DummySync(2)
-    assert ISync._is_sync(a) is True
+    assert Sync._is_sync(a) is True
     assert a._unwrap_other(b) == 2
     assert a._unwrap_other(5) == 5
 
@@ -46,7 +47,7 @@ def test_perform_binary_op_with_sync_and_primitive():
 def test_acquire_two_orders_by_id():
     a = DummySync(1)
     b = DummySync(2)
-    first, second = ISync._acquire_two(a, b)
+    first, second = Sync._acquire_two(a, b)
     assert {id(first), id(second)} == {id(a), id(b)}
 
 
@@ -77,7 +78,7 @@ def test_eq_with_sync_and_plain():
     a = DummySync(3)
     b = DummySync(3)
     c = DummySync(4)
-    # ISync doesn't override __eq__; just verify unwrap comparisons
+    # Sync doesn't override __eq__; just verify unwrap comparisons
     assert a._unwrap_other(b) == 3
     assert a._unwrap_other(c) == 4
     assert a._unwrap_other(3) == 3

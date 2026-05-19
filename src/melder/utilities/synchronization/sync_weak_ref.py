@@ -8,7 +8,7 @@ from mypy_extensions import mypyc_attr
 # Command Ops imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.general_base.isync import ISync
+from melder.utilities.general_base.sync import Sync
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -16,7 +16,7 @@ R = TypeVar("R")
 _OnCollect = Callable[["SyncWeakRef[T]"], None]
 
 @mypyc_attr(native_class=True)
-class SyncWeakRef(Cleanable, ISync, Generic[T]):
+class SyncWeakRef(Cleanable, Sync, Generic[T]):
     """
     SyncWeakRef(target)
     ===================
@@ -211,7 +211,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
           `get()`.
         - Otherwise returns the raw value unchanged.
         """
-        if ISync._is_sync(other):
+        if Sync._is_sync(other):
             other_value: object = other.get()
             return other_value
         return other
@@ -449,13 +449,13 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
         """
         Equality comparison is based on the underlying referent (if alive).
 
-        - If `other` is ISync-compatible, compare `self.try_get()` to `other.try_get()`.
+        - If `other` is Sync-compatible, compare `self.try_get()` to `other.try_get()`.
         - Otherwise, compare `self.try_get()` directly to `other`.
 
         Returns:
             bool: Equality result derived from the currently resolved referent.
         """
-        if ISync._is_sync(other):
+        if Sync._is_sync(other):
             other_value: object = other.get()
             return bool(self.try_get() == other_value)
         other_value = other
