@@ -117,6 +117,71 @@ class SafeLogger(Cleanable, ISafeLogger):
 
     # ---- Internal unified emitter -------------------------------------------------
 
+    def _emit_channel(
+            self,
+            logger: Any,
+            *,
+            level: int,
+            msg: str,
+            method_name: str,
+            exc_info: Union[None, bool, BaseException] = None,
+            mask: bool = False,
+            owner: object = None,
+            owner_id: Optional[str] = None,
+            owner_display: Optional[str] = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Emit one log record through the channel-style logger surface.
+
+        Contract:
+        - Preserves the existing `_is_channel`-driven behavior so channel-like
+          test doubles continue to work even when they do not implement the
+          full public `IChannelLogger` protocol.
+        - Keeps `_manual_stack` and `_method_name` on the channel path only.
+        - Uses the masking API when `mask=True`.
+        """
+        if mask:
+            logger.mask_log(
+                level,
+                msg,
+                owner=owner,
+                owner_id=owner_id,
+                owner_display=owner_display,
+                groups=groups,
+                system_groups=system_groups,
+                properties=properties,
+                exc_info=exc_info,
+                _manual_stack=True,
+                _method_name=method_name,
+            )
+            return
+
+        if level == logging.DEBUG:
+            logger.debug(msg, _manual_stack=True, _method_name=method_name)
+            return
+        if level == logging.INFO:
+            logger.info(msg, _manual_stack=True, _method_name=method_name)
+            return
+        if level == logging.WARNING:
+            logger.warning(msg, _manual_stack=True, _method_name=method_name)
+            return
+        if level == logging.ERROR:
+            logger.error(
+                msg,
+                exc_info=exc_info if exc_info is not None else False,
+                _manual_stack=True,
+                _method_name=method_name,
+            )
+            return
+        if level >= logging.CRITICAL:
+            logger.critical(msg, _manual_stack=True, _method_name=method_name)
+            return
+
+        logger._log(level, msg, _manual_stack=True, _method_name=method_name)
+
     def _emit(
             self,
             level: int,
@@ -149,48 +214,20 @@ class SafeLogger(Cleanable, ISafeLogger):
             return
 
         if self._is_channel or isinstance(logger, IChannelLogger):
-            # Channel path
-            if mask:
-                # Use the real masking API; enforce your manual stack metadata.
-                logger.mask_log(
-                    level,
-                    msg,
-                    owner=owner,
-                    owner_id=owner_id,
-                    owner_display=owner_display,
-                    groups=groups,
-                    system_groups=system_groups,
-                    properties=properties,
-                    exc_info=exc_info,
-                    _manual_stack=True,
-                    _method_name=method_name,
-                )
-                return
-
-            # Non-masked channel path mirrors your existing behavior.
-            if level == logging.DEBUG:
-                logger.debug(msg, _manual_stack=True, _method_name=method_name)
-                return
-            if level == logging.INFO:
-                logger.info(msg, _manual_stack=True, _method_name=method_name)
-                return
-            if level == logging.WARNING:
-                logger.warning(msg, _manual_stack=True, _method_name=method_name)
-                return
-            if level == logging.ERROR:
-                logger.error(
-                    msg,
-                    exc_info=exc_info if exc_info is not None else False,
-                    _manual_stack=True,
-                    _method_name=method_name,
-                )
-                return
-            if level >= logging.CRITICAL:
-                logger.critical(msg, _manual_stack=True, _method_name=method_name)
-                return
-
-            # Fallback for uncommon numeric levels
-            logger._log(level, msg, _manual_stack=True, _method_name=method_name)
+            self._emit_channel(
+                logger,
+                level=level,
+                msg=msg,
+                method_name=method_name,
+                exc_info=exc_info,
+                mask=mask,
+                owner=owner,
+                owner_id=owner_id,
+                owner_display=owner_display,
+                groups=groups,
+                system_groups=system_groups,
+                properties=properties,
+            )
             return
 
         # Std logger path (masking is intentionally ignored)

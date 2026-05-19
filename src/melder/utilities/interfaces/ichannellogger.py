@@ -1,5 +1,5 @@
-import traceback
 from logging import LogRecord
+from types import TracebackType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -376,7 +376,14 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def _resolve_caller(self, tmpl_logger, *, stacklevel: int, manual_stack: bool, kwargs: dict) -> tuple[str, int, str, object]:
+    def _resolve_caller(
+            self,
+            tmpl_logger: Any,
+            *,
+            stacklevel: int,
+            manual_stack: bool,
+            kwargs: Dict[str, Any],
+    ) -> tuple[str, int, str, object]:
         """
         Compute caller metadata for `LogRecord` creation.
 
@@ -387,7 +394,10 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def _normalize_exc_info(self, exc_info) -> Optional[tuple[type, BaseException, Optional[traceback]]]:
+    def _normalize_exc_info(
+            self,
+            exc_info: Any,
+    ) -> Optional[tuple[type[BaseException], BaseException, Optional[TracebackType]]]:
         """
         Normalize exc_info to either a (type, value, tb) tuple or None.
 
@@ -404,35 +414,50 @@ class IChannelLogger(ICleanable, Protocol):
 
     def _build_record(
             self,
-            tmpl_logger,
+            tmpl_logger: Any,
             *,
             level: int,
             msg: str,
-            args: tuple,
-            exc_info,
+            args: tuple[Any, ...],
+            exc_info: Optional[
+                tuple[type[BaseException], BaseException, Optional[TracebackType]]
+            ],
             fn: str,
             lno: int,
             func: str,
-            sinfo,
+            sinfo: object,
     ) -> LogRecord:
         """
         Build one `LogRecord` with resolved caller metadata.
         """
         ...
 
-    def _apply_identity_and_tags(self, record, *, mask: bool, kwargs: dict) -> LogRecord:
+    def _apply_identity_and_tags(
+            self,
+            record: LogRecord,
+            *,
+            mask: bool,
+            kwargs: Dict[str, Any],
+    ) -> LogRecord:
         """
         Apply identity masking plus group/property tags to a `LogRecord`.
         """
         ...
 
-    def _emit_record(self, record) -> None:
+    def _emit_record(self, record: LogRecord) -> None:
         """
         Fan out one prepared record to backing loggers and channel subscribers.
         """
         ...
 
-    def _log(self, level: int, msg: str, *args, mask: bool = False, **kwargs) -> None:
+    def _log(
+            self,
+            level: int,
+            msg: str,
+            *args: Any,
+            mask: bool = False,
+            **kwargs: Any,
+    ) -> None:
         """
         Internal logging method that creates and dispatches a LogRecord to all
         configured loggers if enabled and above the min level.
@@ -454,7 +479,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def info(self, msg: str, *args, **kwargs) -> None:
+    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` INFO ` level.
 
@@ -468,7 +493,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def warning(self, msg: str, *args, **kwargs) -> None:
+    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` WARNING ` level.
 
@@ -484,7 +509,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     warn: Callable[..., None] = warning  # alias
 
-    def error(self, msg: str, *args, **kwargs) -> None:
+    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` ERROR ` level.
 
@@ -498,7 +523,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def debug(self, msg: str, *args, **kwargs) -> None:
+    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` DEBUG ` level.
 
@@ -512,7 +537,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def exception(self, msg: str, *args, **kwargs) -> None:
+    def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Convenience helper to log an exception with `ERROR` level, including traceback.
 
@@ -527,7 +552,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         ...
 
-    def critical(self, msg: str, *args, **kwargs) -> None:
+    def critical(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` CRITICAL ` level.
         """

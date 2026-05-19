@@ -27,6 +27,7 @@ from melder.nexus.acl.validator.profiles.codegen.precision_strategy import (
     validate_profile_configuration as validate_precision_codegen_profile_configuration,
 )
 from melder.nexus.acl.validator.profiles.codegen.safe_strategy import (
+    _SAFE_CODEGEN_FORBIDDEN_OVERRIDES,
     validate_profile_configuration as validate_safe_codegen_profile_configuration,
 )
 from melder.nexus.acl.validator.profiles.command.precision_strategy import (
@@ -39,6 +40,7 @@ from melder.nexus.acl.validator.profiles.view.precision_strategy import (
     validate_profile_configuration as validate_precision_view_profile_configuration,
 )
 from melder.nexus.acl.validator.profiles.view.safe_strategy import (
+    _SAFE_VIEW_FORBIDDEN_OVERRIDES,
     validate_profile_configuration as validate_safe_view_profile_configuration,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -98,6 +100,12 @@ class FrameACLValidator(Cleanable):
     _SUPPORTED_SPELL_PAYLOAD_VERSIONS: Set[str] = {
         "0.0.1",
     }
+    _SAFE_VIEW_FORBIDDEN_OVERRIDES: Dict[str, Set[str]] = (
+        _SAFE_VIEW_FORBIDDEN_OVERRIDES
+    )
+    _SAFE_CODEGEN_FORBIDDEN_OVERRIDES: Dict[str, Set[str]] = (
+        _SAFE_CODEGEN_FORBIDDEN_OVERRIDES
+    )
     _VIEW_ALLOWED_OPERATIONS_BY_RULESET: Dict[str, Set[str]] = {
         "frame": {"visible", "show_payload"},
         "conduit": {
