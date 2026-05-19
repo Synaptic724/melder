@@ -188,9 +188,10 @@ class PathRegistry(Cleanable):
             if segment is None:
                 raise RuntimeError("PathRegistry encountered an empty segment.")
             segments.append(segment)
-            current_id = self._parent_ids[current_id]
-            if current_id is None:
+            parent_id = self._parent_ids[current_id]
+            if parent_id is None:
                 raise RuntimeError("PathRegistry encountered an empty parent id.")
+            current_id = parent_id
         segments.reverse()
         return tuple(segments)
 
