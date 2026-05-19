@@ -41,6 +41,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
 from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
+from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
@@ -95,7 +96,7 @@ class FrameViewer(Cleanable, IFrameViewer):
     def __init__(
             self,
             *,
-            rift: Any,
+            rift: IRift,
             action_hook_scope_factory: Optional[Callable[..., Any]] = None,
     ) -> None:
         """
@@ -110,7 +111,7 @@ class FrameViewer(Cleanable, IFrameViewer):
             raise TypeError("rift cannot be None.")
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
-        self._rift: Any = rift
+        self._rift: IRift = rift
         self._action_hook_scope_factory: Optional[Callable[..., Any]] = (
             action_hook_scope_factory
         )
@@ -147,15 +148,15 @@ class FrameViewer(Cleanable, IFrameViewer):
         self.check_cleaned()
         return self._id
 
-    def list_frame_names(self) -> List[str]:
+    def list_frame_names(self) -> Tuple[str, ...]:
         """
         Return the currently linked frame names in deterministic order.
 
         Returns:
-            List[str]: Sorted linked frame names.
+            Tuple[str, ...]: Sorted linked frame names.
         """
         self.check_cleaned()
-        return self.get_view_multiframe().list_frame_names()
+        return tuple(self.get_view_multiframe().list_frame_names())
 
     def list_linked_frame_names(self) -> List[str]:
         """
@@ -1349,7 +1350,6 @@ class FrameViewer(Cleanable, IFrameViewer):
 
     def get_view_frame(
             self,
-            *,
             frame_name: Optional[str] = None,
     ) -> ViewFrame:
         """

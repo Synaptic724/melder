@@ -297,10 +297,13 @@ class FrameACLContainer(Cleanable):
         Returns:
             FrameACLViewConfiguration: Current view configuration.
         """
-        return self._get_required_family_chain(
+        configuration = self._get_required_family_chain(
             "view",
             contract_name,
         ).get_current_configuration()
+        if not isinstance(configuration, FrameACLViewConfiguration):
+            raise RuntimeError("View chain returned a non-view configuration.")
+        return configuration
 
     def get_current_command_configuration(
             self,
@@ -312,10 +315,13 @@ class FrameACLContainer(Cleanable):
         Returns:
             FrameACLCommandConfiguration: Current command configuration.
         """
-        return self._get_required_family_chain(
+        configuration = self._get_required_family_chain(
             "command",
             contract_name,
         ).get_current_configuration()
+        if not isinstance(configuration, FrameACLCommandConfiguration):
+            raise RuntimeError("Command chain returned a non-command configuration.")
+        return configuration
 
     def get_current_codegen_configuration(
             self,
@@ -327,10 +333,13 @@ class FrameACLContainer(Cleanable):
         Returns:
             FrameACLCodegenConfiguration: Current codegen configuration.
         """
-        return self._get_required_family_chain(
+        configuration = self._get_required_family_chain(
             "codegen",
             contract_name,
         ).get_current_configuration()
+        if not isinstance(configuration, FrameACLCodegenConfiguration):
+            raise RuntimeError("Codegen chain returned a non-codegen configuration.")
+        return configuration
 
     def get_named_configuration(
             self,
@@ -468,13 +477,16 @@ class FrameACLContainer(Cleanable):
         Returns:
             FrameACLViewConfiguration: New unlocked view configuration draft.
         """
-        return self._get_required_family_chain(
+        configuration = self._get_required_family_chain(
             "view",
             contract_name,
         ).create_new_from_acl_configuration(
             configuration_id,
             reason=reason,
         )
+        if not isinstance(configuration, FrameACLViewConfiguration):
+            raise RuntimeError("View chain returned a non-view configuration.")
+        return configuration
 
     def create_new_from_command_configuration(
             self,
@@ -489,13 +501,16 @@ class FrameACLContainer(Cleanable):
         Returns:
             FrameACLCommandConfiguration: New unlocked command configuration draft.
         """
-        return self._get_required_family_chain(
+        configuration = self._get_required_family_chain(
             "command",
             contract_name,
         ).create_new_from_acl_configuration(
             configuration_id,
             reason=reason,
         )
+        if not isinstance(configuration, FrameACLCommandConfiguration):
+            raise RuntimeError("Command chain returned a non-command configuration.")
+        return configuration
 
     def create_new_from_codegen_configuration(
             self,
@@ -510,13 +525,16 @@ class FrameACLContainer(Cleanable):
         Returns:
             FrameACLCodegenConfiguration: New unlocked codegen configuration draft.
         """
-        return self._get_required_family_chain(
+        configuration = self._get_required_family_chain(
             "codegen",
             contract_name,
         ).create_new_from_acl_configuration(
             configuration_id,
             reason=reason,
         )
+        if not isinstance(configuration, FrameACLCodegenConfiguration):
+            raise RuntimeError("Codegen chain returned a non-codegen configuration.")
+        return configuration
 
     def insert_head_view_configuration(
             self,
@@ -542,6 +560,8 @@ class FrameACLContainer(Cleanable):
             select_as_current=select_as_current,
         )
         self._notify_acl_changed()
+        if not isinstance(inserted, FrameACLViewConfiguration):
+            raise RuntimeError("View chain returned a non-view configuration.")
         return inserted
 
     def insert_head_command_configuration(
@@ -568,6 +588,8 @@ class FrameACLContainer(Cleanable):
             select_as_current=select_as_current,
         )
         self._notify_acl_changed()
+        if not isinstance(inserted, FrameACLCommandConfiguration):
+            raise RuntimeError("Command chain returned a non-command configuration.")
         return inserted
 
     def insert_head_codegen_configuration(
@@ -594,6 +616,8 @@ class FrameACLContainer(Cleanable):
             select_as_current=select_as_current,
         )
         self._notify_acl_changed()
+        if not isinstance(inserted, FrameACLCodegenConfiguration):
+            raise RuntimeError("Codegen chain returned a non-codegen configuration.")
         return inserted
 
     def select_current_view_configuration(
@@ -613,6 +637,8 @@ class FrameACLContainer(Cleanable):
             contract_name,
         ).select_current_configuration(configuration_id)
         self._notify_acl_changed()
+        if not isinstance(selected, FrameACLViewConfiguration):
+            raise RuntimeError("View chain returned a non-view configuration.")
         return selected
 
     def select_current_command_configuration(
@@ -632,6 +658,8 @@ class FrameACLContainer(Cleanable):
             contract_name,
         ).select_current_configuration(configuration_id)
         self._notify_acl_changed()
+        if not isinstance(selected, FrameACLCommandConfiguration):
+            raise RuntimeError("Command chain returned a non-command configuration.")
         return selected
 
     def select_current_codegen_configuration(
@@ -651,6 +679,8 @@ class FrameACLContainer(Cleanable):
             contract_name,
         ).select_current_configuration(configuration_id)
         self._notify_acl_changed()
+        if not isinstance(selected, FrameACLCodegenConfiguration):
+            raise RuntimeError("Codegen chain returned a non-codegen configuration.")
         return selected
 
     def rollback_view_configuration(
@@ -670,6 +700,8 @@ class FrameACLContainer(Cleanable):
             contract_name,
         ).rollback_to_configuration(configuration_id)
         self._notify_acl_changed()
+        if not isinstance(rolled_back, FrameACLViewConfiguration):
+            raise RuntimeError("View chain returned a non-view configuration.")
         return rolled_back
 
     def rollback_command_configuration(
@@ -689,6 +721,8 @@ class FrameACLContainer(Cleanable):
             contract_name,
         ).rollback_to_configuration(configuration_id)
         self._notify_acl_changed()
+        if not isinstance(rolled_back, FrameACLCommandConfiguration):
+            raise RuntimeError("Command chain returned a non-command configuration.")
         return rolled_back
 
     def rollback_codegen_configuration(
@@ -708,6 +742,8 @@ class FrameACLContainer(Cleanable):
             contract_name,
         ).rollback_to_configuration(configuration_id)
         self._notify_acl_changed()
+        if not isinstance(rolled_back, FrameACLCodegenConfiguration):
+            raise RuntimeError("Codegen chain returned a non-codegen configuration.")
         return rolled_back
 
     def list_view_configurations(

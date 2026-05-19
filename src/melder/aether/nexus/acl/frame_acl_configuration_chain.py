@@ -1,9 +1,24 @@
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+    IFrameACLCodegenConfiguration,
+)
+from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+    IFrameACLCommandConfiguration,
+)
+from melder.utilities.interfaces.iframeaclviewconfiguration import (
+    IFrameACLViewConfiguration,
+)
+
+ACLFamilyConfiguration = Union[
+    IFrameACLViewConfiguration,
+    IFrameACLCommandConfiguration,
+    IFrameACLCodegenConfiguration,
+]
 
 
 class FrameACLConfigurationChain(Cleanable):
@@ -44,7 +59,7 @@ class FrameACLConfigurationChain(Cleanable):
             *,
             family_name: str,
             contract_name: str,
-            default_configuration: Any,
+            default_configuration: ACLFamilyConfiguration,
             history_limit: int = 30,
     ) -> None:
         """
@@ -79,7 +94,7 @@ class FrameACLConfigurationChain(Cleanable):
         self._family_name: str = family_name
         self._contract_name: str = contract_name
         self._history_limit: int = history_limit
-        self._configurations_by_id: Dict[str, Any] = {}
+        self._configurations_by_id: Dict[str, ACLFamilyConfiguration] = {}
 
         default_configuration_id = default_configuration.configuration_id
         self._configurations_by_id[default_configuration_id] = default_configuration
@@ -183,7 +198,7 @@ class FrameACLConfigurationChain(Cleanable):
         with self._lock:
             return configuration_id in self._configurations_by_id
 
-    def get_head_configuration(self) -> Any:
+    def get_head_configuration(self) -> ACLFamilyConfiguration:
         """
         Return the current head configuration node.
 
@@ -194,7 +209,7 @@ class FrameACLConfigurationChain(Cleanable):
         with self._lock:
             return self._configurations_by_id[self._head_configuration_id]
 
-    def get_current_configuration(self) -> Any:
+    def get_current_configuration(self) -> ACLFamilyConfiguration:
         """
         Return the currently selected configuration node.
 
@@ -205,7 +220,7 @@ class FrameACLConfigurationChain(Cleanable):
         with self._lock:
             return self._configurations_by_id[self._current_configuration_id]
 
-    def get_configuration(self, configuration_id: str) -> Any:
+    def get_configuration(self, configuration_id: str) -> ACLFamilyConfiguration:
         """
         Return one specific configuration node or raise.
 
@@ -226,7 +241,7 @@ class FrameACLConfigurationChain(Cleanable):
     def list_configurations(
             self,
             limit: Optional[int] = None,
-    ) -> List[Any]:
+    ) -> List[ACLFamilyConfiguration]:
         """
         Return the owned config nodes from newest to oldest.
 
@@ -241,7 +256,7 @@ class FrameACLConfigurationChain(Cleanable):
         if limit is not None and (not isinstance(limit, int) or limit < 1):
             raise ValueError("limit must be an integer >= 1 when provided.")
         with self._lock:
-            ordered_configurations: List[Any] = []
+            ordered_configurations: List[ACLFamilyConfiguration] = []
             next_configuration_id: Optional[str] = self._head_configuration_id
             while next_configuration_id is not None:
                 configuration = self._configurations_by_id[next_configuration_id]
@@ -284,10 +299,10 @@ class FrameACLConfigurationChain(Cleanable):
 
     def insert_head_configuration(
             self,
-            configuration: Any,
+            configuration: ACLFamilyConfiguration,
             *,
             select_as_current: bool,
-    ) -> Any:
+    ) -> ACLFamilyConfiguration:
         """
         Insert a locked configuration node at the head of the chain.
 
@@ -323,7 +338,7 @@ class FrameACLConfigurationChain(Cleanable):
             self.trim_tail()
             return configuration
 
-    def select_current_configuration(self, configuration_id: str) -> Any:
+    def select_current_configuration(self, configuration_id: str) -> ACLFamilyConfiguration:
         """
         Select one existing configuration as current.
 
@@ -340,7 +355,7 @@ class FrameACLConfigurationChain(Cleanable):
             self._current_configuration_id = configuration_id
             return configuration
 
-    def rollback_to_configuration(self, configuration_id: str) -> Any:
+    def rollback_to_configuration(self, configuration_id: str) -> ACLFamilyConfiguration:
         """
         Roll current selection back to one historical configuration.
 
@@ -359,7 +374,7 @@ class FrameACLConfigurationChain(Cleanable):
             configuration_id: str,
             *,
             reason: str,
-    ) -> Any:
+    ) -> ACLFamilyConfiguration:
         """
         Create a new draft config copied from an existing config in the chain.
 

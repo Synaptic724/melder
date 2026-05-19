@@ -1,5 +1,6 @@
 from typing import Dict, Optional, Protocol, Tuple, runtime_checkable, Sequence
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
@@ -178,6 +179,23 @@ class IRift(ICleanable, Protocol):
         Raises:
             ValueError:
                 If the frame has no installed codegen projection in this Rift.
+        """
+        ...
+
+    def _get_required_view_projection(self, frame_name: str) -> ViewProjection:
+        """
+        Return the required view projection for one frame.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            ViewProjection: Installed view projection for the frame.
+
+        Raises:
+            ValueError:
+                If the frame has no installed view projection in this Rift.
         """
         ...
 

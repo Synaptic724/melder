@@ -4,6 +4,7 @@ import threading
 
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -32,7 +33,7 @@ class IFrameViewer(ICleanable, Protocol):
         """
         ...
 
-    _rift: "IRift"
+    _rift: IRift
 
     @property
     def _lock(self) -> threading.RLock:
