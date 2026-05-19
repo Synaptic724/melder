@@ -1,4 +1,15 @@
-from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence, Set, Tuple, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Set,
+    Tuple,
+    runtime_checkable,
+)
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
@@ -6,9 +17,6 @@ from melder.aether.dev_ops.spell_system_states.spell_system_state import (
     SpellSystemState,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
-    SpellRequirements,
-)
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
@@ -26,7 +34,6 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
-
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
@@ -97,11 +104,11 @@ class ISpell(ICleanable, Protocol):
     dependencies: List[str]
 
     # Spellbook
-    _spellbook: Any
+    _spellbook: "ISpellbook"
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline via SpellCrafter
-    _crafter: Optional[Any] # 'SpellCrafter'
+    _crafter: Optional["ISpellCrafter"]
     _creation_context: Any
     _creation_context_factory: Optional[Any]
     _creation_context_switch: CounterSwitch

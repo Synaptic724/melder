@@ -42,6 +42,7 @@ from melder.utilities.interfaces.imutationpatchmap import IMutationPatchMap
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.ioverridepatchmap import IOverridePatchMap
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
+from melder.utilities.interfaces.ispellcrafter import ISpellCrafter
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
@@ -138,7 +139,7 @@ from melder.aether.spellbook.spell_crafter.system.validation.socket_ref_sanity_s
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @mypyc_attr(native_class=True)
-class SpellCrafter(Cleanable):
+class SpellCrafter(Cleanable, ISpellCrafter):
     """
     Per-spell orchestration surface for the SpellCrafter pipeline.
 

@@ -10,11 +10,11 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
-from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellcrafter import ISpellCrafter
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.ispellbook import ISpellbook
@@ -362,7 +362,7 @@ class Spell(Cleanable, ISpell):
 
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase artifacts and is disposable.
-        self._crafter: Optional[SpellCrafter] = None
+        self._crafter: Optional[ISpellCrafter] = None
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
@@ -758,7 +758,7 @@ class Spell(Cleanable, ISpell):
         )
 
     #region Internal helpers
-    def _ensure_crafter(self) -> "SpellCrafter":
+    def _ensure_crafter(self) -> "ISpellCrafter":
         """
         Lazily create and attach the spell-owned `SpellCrafter`.
 
@@ -770,7 +770,7 @@ class Spell(Cleanable, ISpell):
               the attached reflective profile exposes one.
 
         Returns:
-            SpellCrafter:
+            ISpellCrafter:
                 The spell-owned crafter responsible for compiler and resolution phases.
 
         """
