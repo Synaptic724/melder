@@ -420,8 +420,9 @@ class SpellRequirementsFinder(Cleanable):
         else:
             annotation_target = call_target
 
+        raw_annotations: dict[str, Any] | None
         try:
-            raw_annotations = annotation_target.__annotations__
+            raw_annotations = dict(annotation_target.__annotations__)
         except AttributeError:
             raw_annotations = None
 

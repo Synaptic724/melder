@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from typing import Optional
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -31,7 +30,7 @@ class ConduitState(Enum):
         return self.name.lower()
 
     @staticmethod
-    def resolve(value: str | Enum | None) -> Optional["ConduitState"]:
+    def resolve(value: str | Enum | None) -> "ConduitState":
         """
         Normalize external conduit-state input into a `ConduitState` value.
 
@@ -41,8 +40,8 @@ class ConduitState(Enum):
                 enum member, or `None`.
 
         Returns:
-            Optional[ConduitState]:
-                Resolved conduit state or `None` when the caller passed `None`.
+            ConduitState:
+                Resolved conduit state.
 
         Raises:
             ValueError:
@@ -50,7 +49,7 @@ class ConduitState(Enum):
                 state.
         """
         if value is None:
-            return None
+            raise ValueError("value cannot be None")
 
         resolved_state: ConduitState = EnumHelpers.convert_enum_and_check(
             value=value,
