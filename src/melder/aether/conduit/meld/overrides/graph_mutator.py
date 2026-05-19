@@ -100,7 +100,7 @@ class GraphMutator(Cleanable):
         if not isinstance(mutation_override, dict):
             raise RuntimeError("mutation_override must be a dict of override_key -> spell_id.")
 
-        def _filter_mutation(socket_ref):
+        def _filter_mutation(socket_ref: SocketRef) -> bool:
             return socket_ref.socket_kind is SocketKind.MUTATION_CONTRACT
 
         # Validate override payload types up front.
