@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from typing import Any, Iterator, List, Optional, Protocol, Tuple, runtime_checkable
 import threading
 
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 from melder.utilities.interfaces.icleanable import ICleanable

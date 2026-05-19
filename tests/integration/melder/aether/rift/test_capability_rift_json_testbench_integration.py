@@ -6,8 +6,8 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.command_system.command_system import (
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.spellbook.spellbook import Spellbook

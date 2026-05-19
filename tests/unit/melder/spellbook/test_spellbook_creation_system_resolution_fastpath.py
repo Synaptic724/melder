@@ -799,7 +799,7 @@ def test_run_post_conjure_structural_phases_handles_empty_and_failure_cleanup(
             cleanup_calls["count"] += 1
 
     monkeypatch.setattr(
-        "melder.spellbook.spellbook_creation_system.CancellationEventSignal",
+        "melder.aether.spellbook.spellbook_creation_system.CancellationEventSignal",
         _Signal,
     )
 
@@ -843,7 +843,7 @@ def test_run_post_conjure_structural_phases_logs_broken_spell_cleanup_fallbacks(
             raise RuntimeError("cleanup boom")
 
     monkeypatch.setattr(
-        "melder.spellbook.spellbook_creation_system.CancellationEventSignal",
+        "melder.aether.spellbook.spellbook_creation_system.CancellationEventSignal",
         _Signal,
     )
     monkeypatch.setattr(

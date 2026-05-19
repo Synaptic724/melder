@@ -2,31 +2,31 @@ import ast
 
 import pytest
 
-from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
+from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validator import (
+from melder.nexus.rift.codegen_system.validation.codegen_validator import (
     CodegenValidator,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy import (
     CodegenAstStructureStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy import (
     CodegenAttributeAccessStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy import (
     CodegenBuiltinPolicyStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy import (
     CodegenImportPolicyStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy import (
     CodegenNameResolutionStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy import (
     CodegenRecursiveControlStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy import (
+from melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy import (
     CodegenReflectionPolicyStrategy,
 )
 from tests._codegen_system_support import build_namespace_configuration

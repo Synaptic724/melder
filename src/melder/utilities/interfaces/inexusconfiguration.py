@@ -1,7 +1,7 @@
 from typing import Optional, Protocol, Sequence, Union, runtime_checkable
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.configuration.rift_validation_mode import (
+from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
 from melder.utilities.interfaces.icleanable import ICleanable

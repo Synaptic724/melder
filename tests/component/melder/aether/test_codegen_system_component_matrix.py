@@ -1,6 +1,6 @@
 import pytest
 
-from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from tests._codegen_system_support import (
     CodegenSpaceDouble,
     DetachedRiftProjectionOwner,

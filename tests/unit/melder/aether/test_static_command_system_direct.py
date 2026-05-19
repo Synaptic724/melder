@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from melder.aether.nexus.rift.command_system.static_command_system import (
+from melder.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence

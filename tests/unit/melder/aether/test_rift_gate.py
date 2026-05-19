@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
-from melder.aether.nexus.rift.rift_gate_controller.rift_gate_controller import (
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
 

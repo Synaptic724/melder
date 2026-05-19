@@ -6,17 +6,17 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.rift import Rift
-from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.init_helpers import InitHelpers
 

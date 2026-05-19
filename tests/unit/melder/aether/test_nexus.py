@@ -11,71 +11,71 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.rift.rift import Rift
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+from melder.nexus.rift.rift import Rift
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
-from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
+from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.aether.nexus.rift.projection.command_projection import CommandProjection
-from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
-from melder.aether.nexus.rift.projection.view_projection import ViewProjection
-from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
-from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
+from melder.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.nexus.rift.projection.command_projection import CommandProjection
+from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+from melder.nexus.rift.projection.view_projection import ViewProjection
+from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
-from melder.aether.nexus.rift.codegen_system.execution.codegen_compiler import (
+from melder.nexus.rift.codegen_system.execution.codegen_compiler import (
     CodegenCompiler,
 )
-from melder.aether.nexus.rift.codegen_system.execution.codegen_executor import (
+from melder.nexus.rift.codegen_system.execution.codegen_executor import (
     CodegenExecutor,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_builder import (
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder import (
     CodegenNamespaceBuilder,
 )
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_reporter import (
+from melder.nexus.rift.codegen_system.validation.codegen_validation_reporter import (
     CodegenValidationReporter,
 )
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validator import (
+from melder.nexus.rift.codegen_system.validation.codegen_validator import (
     CodegenValidator,
 )
-from melder.aether.nexus.rift.command_system.capability_command_system import (
+from melder.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
 )
-from melder.aether.nexus.rift.command_system.command_system import (
+from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.aether.nexus.rift.command_system.codegen_command_system import (
+from melder.nexus.rift.command_system.codegen_command_system import (
     CodegenCommandSystem,
 )
-from melder.aether.nexus.rift.command_system.static_command_system import (
+from melder.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
-from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
-from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
+from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
+from melder.nexus.rift.rift_space.rift_space import RiftSpace
+from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions

@@ -1,4 +1,4 @@
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
 
 
 def test_nexus_frame_mode_members_are_stable() -> None:

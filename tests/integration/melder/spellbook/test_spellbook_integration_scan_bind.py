@@ -5,7 +5,7 @@ import importlib
 import pytest
 
 from melder.aether.aether import Aether
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook import scan_bind_module_bad_metadata

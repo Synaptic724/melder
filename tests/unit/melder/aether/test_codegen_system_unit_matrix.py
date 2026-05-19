@@ -1,23 +1,19 @@
 import pytest
 
-from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
-from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
+from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
-from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
     CodegenExecutionResult,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
-    CodegenNamespace,
-)
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
 from tests._codegen_system_support import (
     CodegenSpaceDouble,
     DetachedRiftProjectionOwner,
     build_codegen_projection,
-    build_namespace_configuration,
 )
 
 

@@ -3,7 +3,7 @@ from typing import Any, Optional, Type, TypeVar
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.spellbook.spell import Spell

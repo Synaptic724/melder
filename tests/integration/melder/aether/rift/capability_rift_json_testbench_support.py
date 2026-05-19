@@ -3,13 +3,13 @@ from typing import Any, Dict, List
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.rift import Rift
-from melder.aether.nexus.rift.rift_space.capability_rift_space import (
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_space.capability_rift_space import (
     CapabilityRiftSpace,
 )
-from melder.aether.nexus.rift.command_system.command_system import (
+from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration

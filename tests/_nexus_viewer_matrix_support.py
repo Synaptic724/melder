@@ -3,29 +3,29 @@ from typing import Dict, Optional, Sequence, Tuple
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+from melder.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.aether.nexus.rift.projection.command_projection import CommandProjection
-from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
-from melder.aether.nexus.rift.projection.view_projection import ViewProjection
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.nexus.rift.projection.command_projection import CommandProjection
+from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+from melder.nexus.rift.projection.view_projection import ViewProjection
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 

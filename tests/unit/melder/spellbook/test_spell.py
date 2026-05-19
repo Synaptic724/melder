@@ -1261,7 +1261,7 @@ def test_ensure_crafter_lazy_creation_uses_imported_class(monkeypatch):
             created["resolution_profile"] = resolution_profile
 
     dummy_module = types.SimpleNamespace(SpellCrafter=DummySpellCrafter)
-    module_name = "melder.spellbook.spell_crafter.spell_crafter"
+    module_name = "melder.aether.spellbook.spell_crafter.spell_crafter"
     original = sys.modules.get(module_name)
     sys.modules[module_name] = dummy_module
     try:

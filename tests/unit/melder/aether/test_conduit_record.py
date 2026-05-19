@@ -1,9 +1,9 @@
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 
 
 def _build_payload() -> ConduitDescriptorPayload:

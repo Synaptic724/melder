@@ -22,7 +22,7 @@ from melder.aether.aether_configuration_builder import AetherConfigurationBuilde
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )

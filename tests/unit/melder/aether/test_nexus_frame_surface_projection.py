@@ -6,21 +6,21 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
 from melder.aether.spellbook.configuration.system_state import SystemState

@@ -4,11 +4,11 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.nexus import Nexus
 
 
 @pytest.fixture(autouse=True)

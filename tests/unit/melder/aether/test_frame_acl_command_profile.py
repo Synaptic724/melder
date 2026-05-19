@@ -2,13 +2,13 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
+from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
     FrameACLRule,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
     FrameACLRuleSet,
 )
 

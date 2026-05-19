@@ -1,6 +1,6 @@
 import pytest
 
-from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
+from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 from melder.aether.spellbook.configuration.system_state import SystemState
 
 

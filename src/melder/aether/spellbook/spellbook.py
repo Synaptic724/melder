@@ -41,7 +41,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 
 #region Spellbook
 @mypyc_attr(native_class=True)

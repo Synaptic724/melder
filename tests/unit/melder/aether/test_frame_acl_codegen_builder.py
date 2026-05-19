@@ -1,10 +1,9 @@
 import pytest
 
-from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.builder.frame_acl_codegen_builder import (
+from melder.nexus.acl.builder.frame_acl_codegen_builder import (
     FrameACLCodegenBuilder,
 )
-from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.nexus.acl.frame_acl_container import FrameACLContainer
 
 
 def _build_container() -> FrameACLContainer:

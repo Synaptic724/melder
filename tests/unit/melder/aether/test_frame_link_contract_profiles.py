@@ -2,7 +2,7 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.rift.frame_link.frame_link_contract import (
+from melder.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
 )
 

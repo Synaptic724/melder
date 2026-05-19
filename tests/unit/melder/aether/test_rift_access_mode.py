@@ -1,4 +1,4 @@
-from melder.aether.nexus.configuration.rift_access_mode import RiftAccessMode
+from melder.nexus.configuration.rift_access_mode import RiftAccessMode
 
 
 def test_rift_access_mode_members_are_stable() -> None:

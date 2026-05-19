@@ -5,19 +5,19 @@ import threading
 from typing import Optional, Tuple
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions

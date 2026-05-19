@@ -1,14 +1,13 @@
-import threading
 from types import SimpleNamespace
 
 import pytest
 
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.nexus.rift.rift_space.rift_space import RiftSpace
+from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
 def _make_detached_rift_projection_owner() -> object:

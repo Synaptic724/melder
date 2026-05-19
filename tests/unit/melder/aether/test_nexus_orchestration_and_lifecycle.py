@@ -7,22 +7,22 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import (
+from melder.nexus.acl.configurations.profiles.frame_acl_profile import (
     FrameACLProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
+from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.nexus import Nexus
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.spellbook.configuration.system_state import SystemState
 
 
@@ -214,7 +214,7 @@ def test_nexus_create_rift_unregisters_gate_and_does_not_consume_configuration_w
             self.cleaned = True
 
     monkeypatch.setattr(
-        "melder.aether.nexus.rift.rift.Rift",
+        "melder.nexus.rift.rift.Rift",
         _FakeRift,
     )
     monkeypatch.setattr(
@@ -250,7 +250,7 @@ def test_nexus_create_rift_cleans_gate_when_constructor_raises(
             raise RuntimeError("rift_init_failure")
 
     monkeypatch.setattr(
-        "melder.aether.nexus.rift.rift.Rift",
+        "melder.nexus.rift.rift.Rift",
         _FailingRift,
     )
 

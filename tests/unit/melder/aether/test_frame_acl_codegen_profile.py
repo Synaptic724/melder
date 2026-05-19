@@ -2,11 +2,11 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 def _build_ruleset(name: str) -> FrameACLRuleSet:

@@ -5,9 +5,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
 from melder.aether.spellbook.spellbook import Spellbook

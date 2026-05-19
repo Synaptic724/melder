@@ -1,6 +1,6 @@
-from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, Type, Union, runtime_checkable
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.configuration.rift_validation_mode import (
+from typing import Any, Mapping, Optional, Protocol, Tuple, Type, Union, runtime_checkable
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
 from melder.utilities.interfaces.icleanable import ICleanable

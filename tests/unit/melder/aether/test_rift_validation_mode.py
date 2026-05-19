@@ -1,4 +1,4 @@
-from melder.aether.nexus.configuration.rift_validation_mode import (
+from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
 

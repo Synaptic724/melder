@@ -1,7 +1,7 @@
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
 def _make_detached_rift_projection_owner() -> object:

@@ -950,8 +950,8 @@ def patch_phase_scheduler(monkeypatch):
     Returns:
         None.
     """
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", DummyPhaseScheduler)
-    monkeypatch.setattr("melder.spellbook.spellbook_creation_system.PhaseScheduler", DummyPhaseScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", DummyPhaseScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook_creation_system.PhaseScheduler", DummyPhaseScheduler)
     yield
 
 
@@ -989,7 +989,7 @@ def patch_spell_validation_system(monkeypatch):
     Returns:
         None.
     """
-    monkeypatch.setattr("melder.spellbook.spellbook.SpellValidationSystem", DummySpellValidationSystem)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.SpellValidationSystem", DummySpellValidationSystem)
     yield
 
 
@@ -1031,8 +1031,8 @@ def patch_init_helpers(monkeypatch):
         """
         return DummySafeLogger(DummyLogger())
 
-    monkeypatch.setattr("melder.spellbook.spellbook.InitHelpers.resolve_safe_logger", resolve_safe_logger)
-    monkeypatch.setattr("melder.spellbook.spellbook.InitHelpers.resolve_channel_logger", resolve_channel_logger)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.InitHelpers.resolve_safe_logger", resolve_safe_logger)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.InitHelpers.resolve_channel_logger", resolve_channel_logger)
     yield
 
 
@@ -1066,7 +1066,7 @@ def patch_initialize_configuration(monkeypatch):
         self._configuration_locked = False
         self._logger = DummySafeLogger()
 
-    monkeypatch.setattr("melder.spellbook.spellbook.Spellbook._initialize_configuration", _stub_init_config)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.Spellbook._initialize_configuration", _stub_init_config)
     yield
 
 
@@ -1156,7 +1156,7 @@ def test_initialize_logging_from_provider(monkeypatch):
         seen["called"] = True
         return DummySafeLogger(DummyLogger())
 
-    monkeypatch.setattr("melder.spellbook.spellbook.InitHelpers.resolve_channel_logger", resolve_channel_logger)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.InitHelpers.resolve_channel_logger", resolve_channel_logger)
     cfg = DummyConfig()
     sb = Spellbook(configuration=cfg)
     assert isinstance(sb._logger, DummySafeLogger)
@@ -2675,7 +2675,7 @@ def test_run_resolution_phases_cleans_scheduler_on_exception(monkeypatch):
             """
             raise RuntimeError("boom")
 
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", BoomScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", BoomScheduler)
     with pytest.raises(RuntimeError):
         _run_resolution_phases(sb, "cid")
 
@@ -2970,7 +2970,7 @@ def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
             """
             raise RuntimeError("fail")
 
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", CleanupBoomScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", CleanupBoomScheduler)
     sb._logger = DummySafeLogger()
     results = _run_resolution_phases(sb, "cid")
     assert "requirements" in results
@@ -3593,7 +3593,7 @@ def test_initialize_logging_fallback_on_provider_failure(monkeypatch):
         AssertionError: If fallback logger is not set.
     """
     monkeypatch.setattr(
-        "melder.spellbook.spellbook.InitHelpers.resolve_channel_logger",
+        "melder.aether.spellbook.spellbook.InitHelpers.resolve_channel_logger",
         lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
     )
 
@@ -3715,7 +3715,7 @@ def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
     sb = Spellbook()
     sb._spells = {DummySpellIndex(): DummySpell()}
     sb._logger = DummySafeLogger()
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", lambda *a, **k: sched)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", lambda *a, **k: sched)
     with pytest.raises(RuntimeError):
         _run_resolution_phases(sb, "cid")
     assert sched.cleaned is True
@@ -4306,7 +4306,7 @@ def test_update_owned_spell_id_replaces_nexus_record_when_publish_enabled(monkey
         AssertionError: If Nexus remove/publish calls are not made as expected.
     """
     from melder.aether.aether import Aether
-    from melder.aether.nexus.nexus import Nexus
+    from melder.nexus.nexus import Nexus
 
     Aether._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
@@ -4357,7 +4357,7 @@ def test_unregister_owned_spell_id_removes_nexus_record_when_publish_enabled(mon
         AssertionError: If the Nexus remove call is missing.
     """
     from melder.aether.aether import Aether
-    from melder.aether.nexus.nexus import Nexus
+    from melder.nexus.nexus import Nexus
 
     Aether._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
@@ -4925,7 +4925,7 @@ def test_run_resolution_phases_propagates_phase_exception(monkeypatch):
     sb = Spellbook()
     sb._spells = {DummySpellIndex(): BadSpell()}
     sb._logger = DummySafeLogger()
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", ExecScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", ExecScheduler)
     with pytest.raises(RuntimeError):
         _run_resolution_phases(sb, "cid")
 
@@ -5010,8 +5010,8 @@ def test_conjure_sets_conduit_and_marks_conjured(monkeypatch):
             """
             pass
 
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", NoopScheduler)
-    monkeypatch.setattr("melder.spellbook.spellbook_creation_system.Conduit", StubConduit)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", NoopScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook_creation_system.Conduit", StubConduit)
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
     sb.conjure(name="root")
@@ -5088,8 +5088,8 @@ def test_conjure_twice_raises(monkeypatch):
             """
             pass
 
-    monkeypatch.setattr("melder.spellbook.spellbook.PhaseScheduler", NoopScheduler)
-    monkeypatch.setattr("melder.spellbook.spellbook_creation_system.Conduit", StubConduit)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", NoopScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook_creation_system.Conduit", StubConduit)
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
     sb.conjure(name="root")

@@ -2,10 +2,10 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.frame_acl_manager import FrameACLManager
+from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.nexus.frame_acl_manager import FrameACLManager
 from tests._nexus_viewer_matrix_support import build_descriptor
 
 

@@ -5,7 +5,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.crystallizer.spell_crystal import SpellCrystal
 

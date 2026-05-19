@@ -3,10 +3,10 @@ from typing import Any, Dict, List
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.rift import Rift
-from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook

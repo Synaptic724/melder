@@ -2,13 +2,13 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
+from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
     FrameACLSetCompatibilityValidator,
 )
-from melder.aether.nexus.acl.validator.frame_acl_validator import FrameACLValidator
+from melder.nexus.acl.validator.frame_acl_validator import FrameACLValidator
 
 
 def test_frame_acl_container_builds_family_defaults() -> None:

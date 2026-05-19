@@ -1,6 +1,6 @@
 import pytest
 
-from melder.aether.nexus.rift.rift_space.event_system.rift_event_system import (
+from melder.nexus.rift.rift_space.event_system.rift_event_system import (
     RiftEventSystem,
 )
 

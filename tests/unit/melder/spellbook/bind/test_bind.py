@@ -82,14 +82,14 @@ class ProtoWithFoo:
 
 @pytest.fixture(autouse=True)
 def patch_spell(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.Spell", StubSpell)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.Spell", StubSpell)
     yield
 
 
 @pytest.fixture(autouse=True)
 def patch_assert_allowed(monkeypatch):
     # _mrg.assert_allowed is defined via __getattr__ on a registration guard; we bypass via patching the module attribute directly.
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", types.SimpleNamespace(assert_allowed=lambda *a, **k: None), raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", types.SimpleNamespace(assert_allowed=lambda *a, **k: None), raising=False)
     yield
 
 
@@ -158,7 +158,7 @@ def other_profile(type_name="T"):
 
 def test_bind_decorator_returns_original(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     decorator = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
 
@@ -171,7 +171,7 @@ def test_bind_decorator_returns_original(monkeypatch):
 
 def test_bind_direct_returns_spell_stub(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert isinstance(spell, StubSpell)
@@ -181,7 +181,7 @@ def test_bind_direct_returns_spell_stub(monkeypatch):
 
 def test_bind_rejects_module(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=inspect)
@@ -189,7 +189,7 @@ def test_bind_rejects_module(monkeypatch):
 
 def test_bind_rejects_protocol_as_spell(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     class P(ProtoExample):
         pass
@@ -303,7 +303,7 @@ def test_structural_protocol_check_fails_when_missing():
 
 def test_bind_with_protocol_frame_validates_structure(monkeypatch):
     profile = class_profile(method_names=["foo"])
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=ProtoWithFoo)
     assert isinstance(spell, StubSpell)
@@ -313,7 +313,7 @@ def test_bind_with_protocol_frame_missing_member_raises(monkeypatch):
     class NoFoo:
         pass
     profile = class_profile(method_names=[])
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=NoFoo, spellframe=ProtoWithFoo)
@@ -321,7 +321,7 @@ def test_bind_with_protocol_frame_missing_member_raises(monkeypatch):
 
 def test_callable_under_protocol_frame_allows(monkeypatch):
     profile = callable_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, spellframe=ProtoWithFoo)
     assert isinstance(spell, StubSpell)
@@ -376,7 +376,7 @@ def test_bind_cleanup_idempotent():
 
 def test_bind_usage_after_cleanup_is_inert(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     b.cleanup()
     with pytest.raises(RuntimeError):
@@ -391,7 +391,7 @@ def test_spell_examiner_failure_propagates(monkeypatch):
             raise RuntimeError("boom")
         def cleanup(self):
             return None
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", BoomExaminer)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", BoomExaminer)
     b = Bind(StubSpellbook())
     with pytest.raises(RuntimeError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -399,12 +399,12 @@ def test_spell_examiner_failure_propagates(monkeypatch):
 
 def test_existing_object_flag_only_for_instances(monkeypatch):
     inst = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=inst)
     assert spell.kwargs["existing_object"] is inst
 
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b2 = Bind(StubSpellbook())
     spell2 = b2.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert spell2.kwargs["existing_object"] is None
@@ -414,7 +414,7 @@ def test_spell_name_resolution_without_dunder_name(monkeypatch):
     class Nameless:
         pass
     obj = Nameless()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj)
     assert spell.kwargs["spell_name"] == type(obj).__name__
@@ -528,7 +528,7 @@ def test_protocol_callable_member_with_none_impl():
 # Spell construction wiring -------------------------------------------
 
 def test_existing_object_flag_not_set_for_callable(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x)
     assert spell.kwargs["existing_object"] is None
@@ -536,7 +536,7 @@ def test_existing_object_flag_not_set_for_callable(monkeypatch):
 
 
 def test_spell_id_stable_for_same_class(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(name="A")))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(name="A")))
     b = Bind(StubSpellbook())
     s1 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     s2 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -546,17 +546,17 @@ def test_spell_id_stable_for_same_class(monkeypatch):
 def test_spell_id_differs_for_different_classes(monkeypatch):
     class Other:
         def foo(self): return "ok"
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(name="A")))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(name="A")))
     b = Bind(StubSpellbook())
     s1 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(name="B")))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(name="B")))
     b2 = Bind(StubSpellbook())
     s2 = b2.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=Other)
     assert s1.kwargs["spell_id"] != s2.kwargs["spell_id"]
 
 
 def test_module_bind_error_message(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError) as excinfo:
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=inspect)
@@ -564,7 +564,7 @@ def test_module_bind_error_message(monkeypatch):
 
 
 def test_protocol_bind_error_message(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=[])))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=[])))
     b = Bind(StubSpellbook())
     class P(ProtoExample):
         def foo(self): ...
@@ -592,9 +592,9 @@ def test_registration_guard_rejection(monkeypatch):
         def assert_allowed(self, obj, context=None):
             raise RuntimeError("blocked")
     # Swap in rejecting guard for this test only
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", RejectingGuard(), raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", RejectingGuard(), raising=False)
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     with pytest.raises(RuntimeError, match="blocked"):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -651,7 +651,7 @@ def test_sha256_fallback_profile_has_hash_length():
 # Binding names / spellframe permutations ------------------------------
 
 def test_callable_binding_with_name_preserved(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, binding_name="named")
     assert spell.kwargs["binding_name"] == "named"
@@ -659,7 +659,7 @@ def test_callable_binding_with_name_preserved(monkeypatch):
 
 def test_instance_binding_allows_binding_name(monkeypatch):
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, binding_name="inst")
     assert spell.kwargs["binding_name"] == "inst"
@@ -714,7 +714,7 @@ def test_protocol_with_callable_and_attr_mix():
 def test_examiner_called_each_bind(monkeypatch):
     prof = class_profile()
     exam = StubExaminer(prof)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: exam)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: exam)
     b = Bind(StubSpellbook())
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -724,7 +724,7 @@ def test_examiner_called_each_bind(monkeypatch):
 # Spell index current id propagation -----------------------------------
 
 def test_spell_index_current_matches_spell_id(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert spell.kwargs["spell_index"].current == spell.kwargs["spell_id"]
@@ -733,7 +733,7 @@ def test_spell_index_current_matches_spell_id(monkeypatch):
 # Decorator with multiple objects --------------------------------------
 
 def test_decorator_multiple_targets(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     decorator = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
     class A: pass
@@ -747,28 +747,28 @@ def test_decorator_multiple_targets(monkeypatch):
 # Additional coverage batch -------------------------------------------
 
 def test_binding_name_empty_string_treated_as_value(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, binding_name="")
     assert spell.kwargs["binding_name"] == ""
 
 @pytest.mark.parametrize("existence", [Existence.unique_per_conduit, Existence.unique_per_conduit_cluster, Existence.unique_per_conduit_lineage, Existence.unique_per_spell_space, Existence.many])
 def test_class_binding_allows_various_existence(monkeypatch, existence):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, existence, aetheric_frame="f", spell=RealClassImplementingProto)
     assert spell.kwargs["existence"] == existence
 
 
 def test_callable_binding_rejects_non_unique(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(ValueError):
         b.bind(Permissions.read, Existence.many, aetheric_frame="f", spell=lambda x: x, binding_name="n")
 
 
 def test_lambda_name_error_message(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(lambda_function=True, name="lambda")))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(lambda_function=True, name="lambda")))
     b = Bind(StubSpellbook())
     with pytest.raises(ValueError) as excinfo:
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x)
@@ -781,7 +781,7 @@ def test_spell_name_from_qualname(monkeypatch):
         inner.__qualname__ = "outer.inner"
         return inner
     func = outer()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(name=func.__qualname__)))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(name=func.__qualname__)))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=func, binding_name="n")
     assert spell.kwargs["spell_name"] == func.__name__
@@ -789,14 +789,14 @@ def test_spell_name_from_qualname(monkeypatch):
 
 def test_existing_object_other_profile_sets_existing(monkeypatch):
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj)
     assert spell.kwargs["existing_object"] is obj
 
 
 def test_spellframe_string_skips_protocol_checks(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=[])))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=[])))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe="frame-string")
     assert spell.kwargs["spellframe"] == "frame-string"
@@ -833,7 +833,7 @@ def test_bind_with_protocol_and_classmethod_ok(monkeypatch):
     class Impl:
         @classmethod
         def build(cls): return cls()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=["build"])))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=["build"])))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=Impl, spellframe=P)
     assert isinstance(spell, StubSpell)
@@ -843,7 +843,7 @@ def test_bind_rejects_protocol_as_spellframe_for_non_class(monkeypatch):
     class P:
         __is_protocol__ = True
         def foo(self): ...
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, spellframe=P)
     assert isinstance(spell, StubSpell)  # allowed for callables
@@ -882,7 +882,7 @@ def test_sha256_instance_repr_changes_hash():
 
 def test_hash_stability_across_reuse(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     s1 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     s2 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -908,7 +908,7 @@ class StubSpellBinder:
 
 def test_bind_outputs_spell_index_current_as_first_id(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert spell.kwargs["spell_index"].current in spell.kwargs["spell_index"].get_all_versions()
@@ -916,7 +916,7 @@ def test_bind_outputs_spell_index_current_as_first_id(monkeypatch):
 
 def test_bind_twice_same_class_same_fingerprint(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     s1 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     s2 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -947,7 +947,7 @@ def test_examiner_error_releases_lock(monkeypatch):
             raise RuntimeError("boom")
         def cleanup(self):
             return None
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", BoomExaminer)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", BoomExaminer)
     b = Bind(StubSpellbook())
     with pytest.raises(RuntimeError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -957,7 +957,7 @@ def test_examiner_error_releases_lock(monkeypatch):
 
 def test_nested_lock_with_examiner(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     with b._lock:
         spell = b._bind_logic(RealClassImplementingProto, None, None, Existence.unique, Permissions.read, "f")
@@ -982,7 +982,7 @@ def test_spelltype_matrix(profile_factory, name, frame, expected):
 # Spellframe edge cases -------------------------------------------------
 
 def test_spellframe_empty_string(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe="")
     assert spell.kwargs["spellframe"] == ""
@@ -1002,7 +1002,7 @@ def test_examiner_instantiated_once_per_bind_instance(monkeypatch):
             )
         def cleanup(self):
             return None
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", CountingExaminer)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", CountingExaminer)
     b = Bind(StubSpellbook())
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -1012,7 +1012,7 @@ def test_examiner_instantiated_once_per_bind_instance(monkeypatch):
 # Cleanup with decorator already created --------------------------------
 
 def test_decorator_after_cleanup_raises(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
     b.cleanup()
@@ -1045,7 +1045,7 @@ def test_examiner_returning_none_raises(monkeypatch):
             return None
         def cleanup(self):
             return None
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", NoneExaminer)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", NoneExaminer)
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError, match="SpellGeneralProfile"):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -1057,7 +1057,7 @@ def test_examiner_returning_wrong_type_raises(monkeypatch):
             return "not-a-profile"
         def cleanup(self):
             return None
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", BadExaminer)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", BadExaminer)
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError, match="SpellGeneralProfile"):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -1070,7 +1070,7 @@ def test_instance_profile_under_protocol_spellframe(monkeypatch):
         __is_protocol__ = True
         def foo(self): ...
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=P)
     assert isinstance(spell, StubSpell)
@@ -1125,9 +1125,9 @@ def test_registration_guard_receives_context(monkeypatch):
     class Guard:
         def assert_allowed(self, obj, context=None):
             ctx["context"] = context
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", Guard(), raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert ctx["context"] == "bind"
@@ -1137,7 +1137,7 @@ def test_registration_guard_receives_context(monkeypatch):
 
 def test_parallel_style_lock_usage(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     # simulate two sequential acquisitions
     b._lock.acquire()
@@ -1206,8 +1206,8 @@ def test_registration_guard_does_not_leak(monkeypatch):
         def assert_allowed(self, obj, context=None):
             self.calls += 1
     g = Guard()
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", g, raising=False)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", g, raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert g.calls == 1
@@ -1216,7 +1216,7 @@ def test_registration_guard_does_not_leak(monkeypatch):
 # Permissions / aetheric_frame plumbing --------------------------------
 
 def test_permissions_and_frame_propagated(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.create, Existence.unique_per_conduit, aetheric_frame="frame-x", spell=RealClassImplementingProto)
     assert spell.kwargs["permissions"] == Permissions.create
@@ -1224,7 +1224,7 @@ def test_permissions_and_frame_propagated(monkeypatch):
 
 
 def test_decorator_preserves_permissions_and_frame(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.block, Existence.unique, aetheric_frame="af")
     @dec
@@ -1237,7 +1237,7 @@ def test_decorator_preserves_permissions_and_frame(monkeypatch):
 # Decorator robustness --------------------------------------------------
 
 def test_decorator_used_multiple_times_same_class(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
     class C: pass
@@ -1247,7 +1247,7 @@ def test_decorator_used_multiple_times_same_class(monkeypatch):
 
 
 def test_decorator_lambda_with_name(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(lambda_function=True, name="lam")))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(lambda_function=True, name="lam")))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", binding_name="lam")
     lam_spell = dec(lambda x: x)
@@ -1255,7 +1255,7 @@ def test_decorator_lambda_with_name(monkeypatch):
 
 
 def test_decorator_after_cleanup_for_callable(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
     b.cleanup()
@@ -1267,7 +1267,7 @@ def test_decorator_after_cleanup_for_callable(monkeypatch):
 
 def test_other_profile_with_binding_name(monkeypatch):
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, binding_name="n")
     assert spell.kwargs["existing_object"] is obj
@@ -1276,7 +1276,7 @@ def test_other_profile_with_binding_name(monkeypatch):
 
 def test_other_profile_with_frame(monkeypatch):
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe="frame")
     assert spell.kwargs["spell_type"] == SpellType.EXISTING_CREATION_WITH_SPELLFRAME
@@ -1285,7 +1285,7 @@ def test_other_profile_with_frame(monkeypatch):
 # Spellframe semantics edge --------------------------------------------
 
 def test_nonclass_noncallable_spellframe(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=123)
     assert spell.kwargs["spellframe"] == 123
@@ -1327,14 +1327,14 @@ def test_callable_param_default_repr_changes_hash():
 
 def test_callable_varargs_only_spell_type(monkeypatch):
     prof = callable_profile(parameters=[CallableParameterBindingSummary("args", "varargs", None, None)], signature="(*args)")
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda *a: a, binding_name="v")
     assert spell.kwargs["spell_type"] == SpellType.METHOD_WITH_BINDING_NAME
 
 
 def test_callable_frame_and_empty_binding_name(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, binding_name="", spellframe="frame")
     assert spell.kwargs["binding_name"] == ""
@@ -1343,7 +1343,7 @@ def test_callable_frame_and_empty_binding_name(monkeypatch):
 
 def test_instance_with_binding_name_spellframe(monkeypatch):
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, binding_name="n", spellframe="frame")
     assert spell.kwargs["spell_type"] == SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME
@@ -1357,7 +1357,7 @@ def test_unknown_profile_with_frame(monkeypatch):
 
 
 def test_module_error_message_contains_module(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError) as excinfo:
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=inspect)
@@ -1369,7 +1369,7 @@ def test_protocol_error_missing_members_sorted(monkeypatch):
         __is_protocol__ = True
         def b(self): ...
         def a(self): ...
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=[])))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile(method_names=[])))
     bnd = Bind(StubSpellbook())
     with pytest.raises(TypeError) as excinfo:
         bnd.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=P)
@@ -1381,7 +1381,7 @@ def test_protocol_error_missing_members_sorted(monkeypatch):
 
 def test_lambda_requires_name_even_with_frame(monkeypatch):
     prof = callable_profile(lambda_function=True, name="lam")
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     with pytest.raises(ValueError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, spellframe="frame")
@@ -1389,7 +1389,7 @@ def test_lambda_requires_name_even_with_frame(monkeypatch):
 
 def test_lambda_with_name_and_frame_spelltype(monkeypatch):
     prof = callable_profile(lambda_function=True, name="lam")
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, binding_name="lam", spellframe="frame")
     assert spell.kwargs["spell_type"] == SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME
@@ -1397,7 +1397,7 @@ def test_lambda_with_name_and_frame_spelltype(monkeypatch):
 
 def test_callable_with_binding_name_and_frame_spelltype(monkeypatch):
     prof = callable_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, binding_name="n", spellframe="frame")
     assert spell.kwargs["spell_type"] == SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME
@@ -1405,7 +1405,7 @@ def test_callable_with_binding_name_and_frame_spelltype(monkeypatch):
 
 def test_other_profile_with_binding_name_and_frame(monkeypatch):
     obj = object()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(other_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, binding_name="n", spellframe="frame")
     assert spell.kwargs["spell_type"] == SpellType.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME
@@ -1413,7 +1413,7 @@ def test_other_profile_with_binding_name_and_frame(monkeypatch):
 
 def test_callable_binding_name_none_allowed(monkeypatch):
     prof = callable_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x)
     assert spell.kwargs["binding_name"] is None
@@ -1421,7 +1421,7 @@ def test_callable_binding_name_none_allowed(monkeypatch):
 
 def test_class_with_frame_spelltype(monkeypatch):
     prof = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe="frame")
     assert spell.kwargs["spell_type"] == SpellType.SPELL_WITH_SPELLFRAME
@@ -1429,7 +1429,7 @@ def test_class_with_frame_spelltype(monkeypatch):
 
 def test_spell_id_length(monkeypatch):
     prof = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert len(spell.kwargs["spell_id"]) == 64
@@ -1437,7 +1437,7 @@ def test_spell_id_length(monkeypatch):
 
 def test_spell_index_versions_initial_size(monkeypatch):
     prof = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert spell.kwargs["spell_index"].get_all_versions() == {spell.kwargs["spell_index"].current}
@@ -1445,7 +1445,7 @@ def test_spell_index_versions_initial_size(monkeypatch):
 
 def test_bind_after_cleanup_lock_is_none(monkeypatch):
     prof = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     b.cleanup()
     with pytest.raises(RuntimeError):
@@ -1457,8 +1457,8 @@ def test_registration_guard_context_on_decorator(monkeypatch):
     class Guard:
         def assert_allowed(self, obj, context=None):
             ctx["ctx"] = context
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", Guard(), raising=False)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
     class Foo: pass
@@ -1467,7 +1467,7 @@ def test_registration_guard_context_on_decorator(monkeypatch):
 
 
 def test_module_error_mentions_module_name(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(TypeError) as excinfo:
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=inspect)
@@ -1534,7 +1534,7 @@ def test_callable_qualname_vs_name_changes_hash():
 
 @pytest.mark.parametrize("perm", [Permissions.read, Permissions.create, Permissions.block])
 def test_permissions_passthrough(monkeypatch, perm):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(perm, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert spell.kwargs["permissions"] == perm
@@ -1549,21 +1549,21 @@ class CallableObject:
 
 def test_callable_object_spell_name(monkeypatch):
     obj = CallableObject()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(name="CallableObject.__call__")))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile(name="CallableObject.__call__")))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, binding_name="co")
     assert spell.kwargs["spell_name"] == obj.__class__.__name__
 
 
 def test_binding_name_empty_for_class_spelltype(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, binding_name="")
     assert spell.kwargs["spell_type"] == SpellType.SPELL
 
 
 def test_callable_binding_name_empty_spelltype(monkeypatch):
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, binding_name="")
     assert spell.kwargs["spell_type"] == SpellType.METHOD
@@ -1576,7 +1576,7 @@ def test_callable_under_protocol_missing_members_allowed(monkeypatch):
         __is_protocol__ = True
         def foo(self): ...
     prof = callable_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, spellframe=P)
     assert isinstance(spell, StubSpell)
@@ -1613,8 +1613,8 @@ def test_registration_guard_exception_bubbles(monkeypatch):
     class Guard:
         def assert_allowed(self, obj, context=None):
             raise ValueError("blocked")
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", Guard(), raising=False)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(ValueError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -1624,8 +1624,8 @@ def test_registration_guard_error_leaves_lock_usable(monkeypatch):
     class Guard:
         def assert_allowed(self, obj, context=None):
             raise RuntimeError("blocked")
-    monkeypatch.setattr("melder.spellbook.bind.bind._mrg", Guard(), raising=False)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(RuntimeError):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -1685,13 +1685,13 @@ def test_exist_check_true_for_valid():
 
 def test_decorator_returns_spell_stub(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     created = []
     class CountingSpell(StubSpell):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             created.append(self)
-    monkeypatch.setattr("melder.spellbook.bind.bind.Spell", CountingSpell)
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.Spell", CountingSpell)
     b = Bind(StubSpellbook())
     decorator = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
     class Foo:
@@ -1703,7 +1703,7 @@ def test_decorator_returns_spell_stub(monkeypatch):
 
 def test_reentrant_lock_allows_nested_bind(monkeypatch):
     profile = class_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     b._lock.acquire()
     try:
@@ -1715,7 +1715,7 @@ def test_reentrant_lock_allows_nested_bind(monkeypatch):
 
 def test_string_spellframe_allowed(monkeypatch):
     profile = callable_profile()
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, spellframe="frame-id")
     assert spell.kwargs["spellframe"] == "frame-id"

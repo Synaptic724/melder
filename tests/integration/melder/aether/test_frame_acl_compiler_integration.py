@@ -5,9 +5,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
+from melder.nexus.nexus import Nexus
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook

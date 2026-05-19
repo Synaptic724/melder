@@ -3,18 +3,18 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
+from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+from melder.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import (
+from melder.nexus.acl.configurations.profiles.frame_acl_profile import (
     FrameACLProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
+from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 

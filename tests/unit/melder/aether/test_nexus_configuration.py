@@ -2,12 +2,12 @@ import threading
 
 import pytest
 
-from melder.aether.nexus.configuration.nexus_configuration import (
+from melder.nexus.configuration.nexus_configuration import (
     NexusConfiguration,
 )
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.configuration.rift_validation_mode import (
+from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
 

@@ -3,9 +3,9 @@ from typing import Optional
 
 import pytest
 
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
-from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
-from melder.aether.nexus.nexus_frame_manager import NexusFrameManager
+from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
+from melder.nexus.nexus_frame_manager import NexusFrameManager
 from melder.aether.spellbook.configuration.system_state import SystemState
 
 
@@ -931,7 +931,7 @@ def test_nexus_frame_manager_bootstrap_root_conduit_binds_and_refreshes_overview
             )
 
     monkeypatch.setattr(
-        "melder.spellbook.spellbook.Spellbook",
+        "melder.aether.spellbook.spellbook.Spellbook",
         _FakeSpellbook,
     )
 

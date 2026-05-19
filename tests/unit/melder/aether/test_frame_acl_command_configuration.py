@@ -1,10 +1,10 @@
 import pytest
 
-from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
+from melder.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 def test_frame_acl_command_configuration_create_default_sets_baseline() -> None:

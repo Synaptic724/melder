@@ -1,7 +1,7 @@
 import logging
 from threading import RLock
 from types import TracebackType
-from typing import Optional, Any, Dict, List, Set, Tuple
+from typing import Optional, Any, Dict, Set, Tuple
 import ulid
 from mypy_extensions import mypyc_attr
 
@@ -9,7 +9,7 @@ from mypy_extensions import mypyc_attr
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit

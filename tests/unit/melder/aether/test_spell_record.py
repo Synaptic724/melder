@@ -1,8 +1,8 @@
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.spellbook.existence.existence import Existence
 
 

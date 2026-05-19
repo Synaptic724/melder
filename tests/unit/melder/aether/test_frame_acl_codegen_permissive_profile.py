@@ -1,7 +1,7 @@
-from melder.aether.nexus.acl.configurations.profiles.codegen.permissive_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.permissive_profile import (
     PermissiveCodegenProfileStrategy,
 )
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
 

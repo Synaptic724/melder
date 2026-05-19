@@ -1,4 +1,4 @@
-from melder.aether.nexus.configuration.rift_creation_mode import RiftCreationMode
+from melder.nexus.configuration.rift_creation_mode import RiftCreationMode
 
 
 def test_rift_creation_mode_members_are_stable() -> None:

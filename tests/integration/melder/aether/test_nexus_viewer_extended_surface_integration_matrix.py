@@ -3,9 +3,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+from melder.nexus.nexus import Nexus
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration

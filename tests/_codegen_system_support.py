@@ -4,9 +4,9 @@ from typing import Dict, Tuple
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
-from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
 from melder.aether.spellbook.spellbook import Spellbook

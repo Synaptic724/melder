@@ -3,11 +3,11 @@ from typing import Optional
 
 import pytest
 
-from melder.aether.nexus.acl.frame_acl_configuration_chain import (
+from melder.nexus.acl.frame_acl_configuration_chain import (
     FrameACLConfigurationChain,
 )
-from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
+from melder.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 

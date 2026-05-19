@@ -1,4 +1,4 @@
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
 
 
 def test_rift_space_type_members_are_stable() -> None:

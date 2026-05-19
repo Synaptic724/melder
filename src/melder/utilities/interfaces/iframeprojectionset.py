@@ -1,7 +1,7 @@
 from typing import Dict, Protocol, runtime_checkable
-from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.aether.nexus.rift.projection.command_projection import CommandProjection
-from melder.aether.nexus.rift.projection.view_projection import ViewProjection
+from melder.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.nexus.rift.projection.command_projection import CommandProjection
+from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 
 

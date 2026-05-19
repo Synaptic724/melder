@@ -1,6 +1,6 @@
 import threading
 
-from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
+from melder.nexus.rift.frame_link.frame_link import FrameLink
 
 
 def test_frame_link_defaults_display_name_to_source_id() -> None:

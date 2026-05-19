@@ -2,55 +2,52 @@ import builtins
 
 import pytest
 
-from melder.aether.nexus.rift.codegen_system.execution.codegen_compiler import (
+from melder.nexus.rift.codegen_system.execution.codegen_compiler import (
     CodegenCompiler,
 )
-from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
     CodegenExecutionResult,
 )
-from melder.aether.nexus.rift.codegen_system.execution.codegen_executor import (
+from melder.nexus.rift.codegen_system.execution.codegen_executor import (
     CodegenExecutor,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_control_surface import (
+from melder.nexus.rift.codegen_system.namespace.codegen_control_surface import (
     CodegenControlSurface,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_builder import (
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder import (
     CodegenNamespaceBuilder,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy import (
+from melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy import (
     CodegenBuiltinsStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy import (
+from melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy import (
     CodegenCommandStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy import (
+from melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy import (
     CodegenControlStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy import (
+from melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy import (
     CodegenRoomObjectsStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy import (
+from melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy import (
     CodegenTargetStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy import (
+from melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy import (
     CodegenWorkstationStrategy,
 )
-from melder.aether.nexus.rift.codegen_system.observability.codegen_event_publisher import (
+from melder.nexus.rift.codegen_system.observability.codegen_event_publisher import (
     CodegenEventPublisher,
 )
-from melder.aether.nexus.rift.codegen_system.observability.codegen_monitor import (
+from melder.nexus.rift.codegen_system.observability.codegen_monitor import (
     CodegenMonitor,
 )
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_reporter import (
-    CodegenValidationReporter,
-)
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
 from tests._codegen_system_support import (

@@ -1,4 +1,4 @@
-﻿from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_types.spell_types import SpellType

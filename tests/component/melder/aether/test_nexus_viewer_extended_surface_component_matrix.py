@@ -1,16 +1,16 @@
 import pytest
 
-from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
+from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
-from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
-from melder.aether.nexus.frame_acl_manager import FrameACLManager
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.frame_acl_manager import FrameACLManager
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from tests._nexus_viewer_matrix_support import (
     build_descriptor,
     build_projection_backed_viewer_from_state,

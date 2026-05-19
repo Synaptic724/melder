@@ -2,26 +2,26 @@ from types import SimpleNamespace
 
 import pytest
 
-from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
 )
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
     FrameACLRule,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
     FrameACLRuleSet,
 )
-from melder.aether.nexus.acl.validator.frame_acl_validator import FrameACLValidator
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+from melder.nexus.acl.validator.frame_acl_validator import FrameACLValidator
+from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.spellbook.configuration.system_state import SystemState
 
 

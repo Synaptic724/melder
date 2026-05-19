@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Protocol, Tuple, runtime_checkable, Sequence
-from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.aether.nexus.rift.projection.view_projection import ViewProjection
+from melder.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract

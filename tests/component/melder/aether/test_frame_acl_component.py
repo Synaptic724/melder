@@ -1,6 +1,6 @@
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 
 
 def test_component_acl_container_is_provisioned_once_per_descriptor_creation_flow() -> None:

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.aether import Aether
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState

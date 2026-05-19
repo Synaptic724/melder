@@ -1,7 +1,7 @@
-from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.safe_profile import (
     SafeCodegenProfileStrategy,
 )
-from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
 

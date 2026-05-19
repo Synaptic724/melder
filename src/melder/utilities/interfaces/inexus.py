@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit

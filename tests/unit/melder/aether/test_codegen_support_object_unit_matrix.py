@@ -1,18 +1,18 @@
 import pytest
 
-from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
+from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
-from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
     CodegenExecutionResult,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
 )
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
-from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
 

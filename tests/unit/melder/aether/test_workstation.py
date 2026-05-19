@@ -1,9 +1,8 @@
-import threading
 from types import SimpleNamespace
 
 import pytest
 
-from melder.aether.nexus.rift.rift_space.workstation import Workstation
+from melder.nexus.rift.rift_space.workstation import Workstation
 
 
 def test_workstation_rejects_empty_owner_and_exposes_ids() -> None:

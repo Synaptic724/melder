@@ -9,7 +9,7 @@ from melder.aether.aether_configuration_builder import AetherConfigurationBuilde
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.nexus.nexus import Nexus
+from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
