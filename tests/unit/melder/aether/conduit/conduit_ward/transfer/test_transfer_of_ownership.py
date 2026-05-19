@@ -465,6 +465,10 @@ class FakeConduitCloud:
         """Return one named cluster from the backing frame."""
         return self._frame._conduit_clusters[cluster_name]
 
+    def get_cluster(self, cluster_name: str) -> FakeCluster:
+        """Return one named cluster from the backing frame."""
+        return self._get_cluster(cluster_name)
+
     def get_clusters_for_conduit(self, conduit_id: str) -> List[str]:
         """Return cluster names containing one conduit id."""
         return [
@@ -925,6 +929,15 @@ class FakeConduit:
             frame_name,
         )
         self._lock = threading.RLock()
+
+    def get_conduit_cloud(self) -> FakeConduitCloud:
+        """
+        Return the frame-local cloud service for this fake conduit.
+
+        Returns:
+            FakeConduitCloud: Backing cloud service for the conduit frame.
+        """
+        return self._conduit_cloud
 
     def get_spell_by_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
         """

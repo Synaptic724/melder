@@ -1,7 +1,7 @@
 import threading
 import ulid
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, cast
 
 from mypy_extensions import mypyc_attr
 
@@ -13,6 +13,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -390,12 +391,12 @@ class TransferOfOwnership(Cleanable):
                     seen_contracts.add(contract_id)
                     break
         # Clusters: scan cluster registries
-        conduit_cloud = self.source_conduit._conduit_cloud
+        conduit_cloud = self._get_source_conduit_cloud()
         cluster_names = conduit_cloud.get_clusters_for_conduit(
             self.source_conduit._id
         )
         for cname in cluster_names:
-            cluster = conduit_cloud._get_cluster(cname)
+            cluster = conduit_cloud.get_cluster(cname)
             for owner_id, indices in cluster.get_shared_spells().items():
                 for idx in indices:
                     if idx.has_version(spell_id) or idx.current == spell_id:
@@ -428,6 +429,21 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         return {"existence": spell_obj.existence}
+
+    def _get_source_conduit_cloud(self) -> IConduitCloud:
+        """
+        Return the source conduit's frame-local cloud service.
+
+        Returns:
+            IConduitCloud: The source conduit's cloud service.
+
+        Raises:
+            RuntimeError: If the source conduit does not expose a valid cloud.
+        """
+        conduit_cloud: IConduitCloud = self.source_conduit.get_conduit_cloud()
+        if conduit_cloud is None:
+            raise RuntimeError("Source conduit did not return a valid ConduitCloud.")
+        return conduit_cloud
 
     def _deps_resolvable_on_target(self, deps: List[str]) -> bool:
         """
@@ -466,11 +482,12 @@ class TransferOfOwnership(Cleanable):
             spell_index: Lineage whose spell-system state should be marked dirty.
         """
         self.check_cleaned()
-        spellbook = spell_index._owner_spellbook
-        if spellbook is None:
+        owner_spellbook = spell_index._owner_spellbook
+        if owner_spellbook is None:
             raise RuntimeError(
                 "Cannot use a SpellIndex without an attached owner Spellbook."
             )
+        spellbook = cast(ISpellbook, owner_spellbook)
         spell_states = spellbook._spell_system_states
         if spell_states is None:
             raise RuntimeError("Owner Spellbook has no SpellSystemStates.")
@@ -560,7 +577,7 @@ class TransferOfOwnership(Cleanable):
             cluster_name = borrower.get("cluster")
             if not cluster_name:
                 continue
-            cluster = self.source_conduit._conduit_cloud._get_cluster(cluster_name)
+            cluster = self._get_source_conduit_cloud().get_cluster(cluster_name)
             cluster_members = list(cluster.get_members())
             if cluster_members:
                 conduit_ids.update([cid for cid in cluster_members if cid])
@@ -930,16 +947,9 @@ class TransferOfOwnership(Cleanable):
         try:
             if conduit is None or not conduit._id:
                 return False
-            frame_name = getattr(conduit, "_aetheric_frame", self._frame_name)
-            if frame_name == "default":
-                frame = self._aether._default_frame
-            else:
-                frame = self._aether._aetheric_frames.get(frame_name)
-            if frame is None:
-                return False
-            spell_registry = getattr(frame, "_spell_registry", None)
-            if spell_registry is None:
-                return False
+            frame_name = conduit._aetheric_frame or self._frame_name
+            frame = self._aether._get_existing_frame(frame_name)
+            spell_registry = frame._spell_registry
             conduit_registry = spell_registry.get(conduit._id)
             if conduit_registry is None:
                 return False
@@ -1082,11 +1092,12 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         shares: List[Dict[str, Any]] = []
         try:
-            cluster_names = self.source_conduit._conduit_cloud.get_clusters_for_conduit(
+            conduit_cloud = self._get_source_conduit_cloud()
+            cluster_names = conduit_cloud.get_clusters_for_conduit(
                 self.source_conduit._id
             )
             for cname in cluster_names:
-                cluster = self.source_conduit._conduit_cloud._get_cluster(cname)
+                cluster = conduit_cloud.get_cluster(cname)
                 for owner_id, indices in cluster.get_shared_spells().items():
                     if owner_id != self.source_conduit._id:
                         continue
@@ -1113,13 +1124,14 @@ class TransferOfOwnership(Cleanable):
         """
         self.check_cleaned()
         try:
+            conduit_cloud = self._get_source_conduit_cloud()
             for entry in snapshot or []:
                 cname = str(entry.get("cluster"))
                 owner_id = entry.get("owner_id")
                 if not cname or not owner_id:
                     continue
                 try:
-                    cluster = self.source_conduit._conduit_cloud._get_cluster(cname)
+                    cluster = conduit_cloud.get_cluster(cname)
                 except Exception:
                     continue
                 shared_spells = cluster.get_shared_spells()

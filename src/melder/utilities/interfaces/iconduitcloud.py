@@ -161,6 +161,12 @@ class IConduitCloud(ICleanable, Protocol):
         """
         ...
 
+    def get_cluster(self, cluster_name: str) -> IConduitCluster:
+        """
+        Return one frame-local cluster by name.
+        """
+        ...
+
     def refresh_cluster_shares_for_conduit(self, conduit: IConduit) -> None:
         """
         Refresh cluster sharing for one conduit across all of its clusters.

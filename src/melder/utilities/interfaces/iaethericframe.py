@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, runtime_checkable
+from typing import Dict, Optional, Protocol, Set, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
@@ -36,6 +36,7 @@ class IAethericFrame(ICleanable, Protocol):
     _id: str
     _conduits: Dict[str, IConduit]
     _conduit_cloud: IConduitCloud
+    _spell_registry: Dict[str, Set[ISpellIndex]]
     name: str
 
     @property

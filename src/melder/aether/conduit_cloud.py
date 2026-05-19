@@ -514,6 +514,21 @@ class ConduitCloud(Cleanable, IConduitCloud):
             cluster = self._get_cluster(cluster_name)
             cluster.refresh_member_shares(conduit, self)
 
+    def get_cluster(self, cluster_name: str) -> IConduitCluster:
+        """
+        Return one frame-local cluster by name.
+
+        Args:
+            cluster_name (str): Target cluster name.
+
+        Returns:
+            IConduitCluster: Matching cluster.
+
+        Raises:
+            ValueError: If the cluster does not exist.
+        """
+        return self._get_cluster(cluster_name)
+
     def list_cluster_names(self) -> Tuple[str, ...]:
         """
         Return the current frame-local cluster names.

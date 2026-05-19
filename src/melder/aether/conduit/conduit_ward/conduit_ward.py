@@ -1014,7 +1014,7 @@ class ConduitWard(Cleanable, IConduitWard):
         for conduit in self._lesser_conduits.values():
             if conduit._id == conduit_id:
                 return conduit
-            ward = conduit._conduit_ward
+            ward: Optional[IConduitWard] = conduit._conduit_ward
             if ward is not None:
                 result = ward._get_lesser_conduit(conduit_id)
                 if result is not None:
@@ -1765,7 +1765,11 @@ class ConduitWard(Cleanable, IConduitWard):
         perms = spell.permissions
         if perms is None:
             raise RuntimeError("Spell permissions are undefined.")
-        return EnumHelpers.convert_enum_and_check(perms, Permissions)
+        permissions_enum: Permissions = EnumHelpers.convert_enum_and_check(
+            perms,
+            Permissions,
+        )
+        return permissions_enum
 
     def _get_spell_contract_keys(self, spell: ISpell) -> set[tuple[str, str]]:
         """
@@ -2258,7 +2262,7 @@ class ConduitWard(Cleanable, IConduitWard):
 
 
     def _add_spells_to_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None,
-                                permissions: str = "create", aetheric_frame = "default",
+                                permissions: str = "create", aetheric_frame: str = "default",
                                 reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict[str, list[str] | dict[str, str]]:
         """
         Internal
@@ -2320,7 +2324,7 @@ class ConduitWard(Cleanable, IConduitWard):
         }
 
     def _remove_spell_from_contract(self, *, spell: Optional[ISpell] = None, spell_id: Optional[str] = None, conduit: Optional[IConduit] = None,
-                                    conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame = "default") -> bool | None:
+                                    conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame: str = "default") -> bool | None:
         """
         Internal
 
