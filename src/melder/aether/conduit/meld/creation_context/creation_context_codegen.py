@@ -195,7 +195,7 @@ def compile_creation_context_hooks_no_overrides_executor(
 def _select_overrides_only_template(
         *,
         resolve_route_key: str,
-) -> Callable[..., Any]:
+) -> Callable[..., Callable[..., Any]]:
     """
     Return the no-hooks overrides-only template factory for one resolve route.
 
@@ -214,7 +214,7 @@ def _select_overrides_only_template(
 def _select_overrides_only_hooks_template(
         *,
         resolve_route_key: str,
-) -> Callable[..., Any]:
+) -> Callable[..., Callable[..., Any]]:
     """
     Return the hook-aware overrides-only template factory for one resolve
     route.
@@ -235,7 +235,7 @@ def _select_no_overrides_only_template(
         *,
         resolve_route_key: str,
         use_fast_transient: bool,
-) -> Callable[..., Any]:
+) -> Callable[..., Callable[..., Any]]:
     """
     Return the no-hooks no-overrides template factory for one route/fast-path
     combination.
@@ -258,7 +258,7 @@ def _select_no_overrides_only_hooks_template(
         *,
         resolve_route_key: str,
         use_fast_transient: bool,
-) -> Callable[..., Any]:
+) -> Callable[..., Callable[..., Any]]:
     """
     Return the hook-aware no-overrides template factory for one route/fast
     combination.
@@ -364,7 +364,7 @@ def _compile_creation_context_template_source(
         expected_callable_name: str,
         compile_error_message: str,
         missing_callable_message: str,
-) -> Callable[..., Any]:
+) -> Callable[..., Callable[..., Any]]:
     """
     Compile emitted template source and resolve one expected callable export.
 
@@ -374,7 +374,7 @@ def _compile_creation_context_template_source(
         - Raises RuntimeError with caller-provided messages for compile or export
           contract failures.
     """
-    local_namespace: dict[str, Any] = {}
+    local_namespace: dict[str, Callable[..., Callable[..., Any]]] = {}
     try:
         exec(
             compile(source, source_name, "exec"),
@@ -384,7 +384,7 @@ def _compile_creation_context_template_source(
     except Exception as exc:
         raise RuntimeError(compile_error_message) from exc
     template = local_namespace.get(expected_callable_name)
-    if callable(template):
+    if template is not None:
         return template
     raise RuntimeError(missing_callable_message)
 
@@ -1123,7 +1123,10 @@ _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY = (
 )
 
 
-_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE = {
+_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
+    str,
+    Callable[..., Callable[..., Any]],
+] = {
     "existing_creation": _TEMPLATE_EXISTING_INSTANCE_OVERRIDES_ONLY,
     "many": _TEMPLATE_MANY_INSTANCE_OVERRIDES_ONLY,
     "unique_per_conduit": _TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_OVERRIDES_ONLY,
@@ -1131,7 +1134,10 @@ _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE = {
     "shared": _TEMPLATE_SHARED_INSTANCE_OVERRIDES_ONLY,
 }
 
-_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE = {
+_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
+    str,
+    Callable[..., Callable[..., Any]],
+] = {
     "existing_creation": _TEMPLATE_EXISTING_OVERRIDES_ONLY,
     "many": _TEMPLATE_MANY_OVERRIDES_ONLY,
     "unique_per_conduit": _TEMPLATE_UNIQUE_PER_CONDUIT_OVERRIDES_ONLY,
@@ -1139,7 +1145,10 @@ _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE = {
     "shared": _TEMPLATE_SHARED_OVERRIDES_ONLY,
 }
 
-_NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST = {
+_NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
+    tuple[str, bool],
+    Callable[..., Callable[..., Any]],
+] = {
     ("existing_creation", False): _TEMPLATE_EXISTING_INSTANCE_NO_OVERRIDES_ONLY,
     ("existing_creation", True): _TEMPLATE_EXISTING_INSTANCE_NO_OVERRIDES_ONLY,
     ("many", False): _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY,
@@ -1152,7 +1161,10 @@ _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST = {
     ("shared", True): _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY,
 }
 
-_NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST = {
+_NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
+    tuple[str, bool],
+    Callable[..., Callable[..., Any]],
+] = {
     ("existing_creation", False): _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY,
     ("existing_creation", True): _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY,
     ("many", False): _TEMPLATE_MANY_NO_OVERRIDES_ONLY,

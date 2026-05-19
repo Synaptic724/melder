@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Set, runtime_checkable
+from typing import Mapping, Optional, Protocol, Set, runtime_checkable, Dict
 import threading
 
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -19,7 +19,7 @@ class IRiskManager(ICleanable, Protocol):
     """
 
     _lock: threading.RLock
-    _conduit_states: Dict[str, object]
+    _conduit_states: Mapping[str, object]
     _lineage_conduits: Dict[str, Set[str]]
 
     def register_conduit(self, conduit_id: str, spellbook: ISpellbook) -> None:
