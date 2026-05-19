@@ -2,7 +2,7 @@ import threading
 import time
 from contextvars import ContextVar
 from contextlib import contextmanager
-from types import ModuleType
+from types import ModuleType, TracebackType
 from typing import Optional, Any, Tuple, Callable, Iterable, Dict, Generator
 
 from mypy_extensions import mypyc_attr
@@ -832,7 +832,12 @@ class Conduit(Cleanable, IConduit):
         self._lock.acquire()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
         """
         Public API
 
@@ -2341,7 +2346,9 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError(
                 "Dynamic environment is not enabled. Cannot access MutationResearch."
             )
-        mutation_research = self._spellbook._aether.mutation_research
+        mutation_research: IMutationResearch | None = (
+            self._spellbook._aether.mutation_research
+        )
         if mutation_research is None:
             raise RuntimeError("MutationResearch is unavailable.")
         return mutation_research

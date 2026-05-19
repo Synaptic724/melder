@@ -9,6 +9,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
@@ -54,6 +55,7 @@ class ISpellbook(ICleanable, Protocol):
     _aetheric_frame: Optional[str]
     _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'
+    _logger: ISafeLogger
     _spell_id_pool: Dict[str, ISpell]
     _spellbook_validation_required: bool
     _nexus: Any
@@ -1131,6 +1133,30 @@ class ISpellbook(ICleanable, Protocol):
 
         Returns:
             bool: ``True`` if locked, ``False`` otherwise.
+        """
+        ...
+
+    def _validate_and_freeze_configuration(self) -> None:
+        """
+        Internal
+
+        Validate and freeze the spellbook configuration if it is present.
+        """
+        ...
+
+    def _bind_aetheric_frame_configuration_to_aether(self) -> None:
+        """
+        Internal
+
+        Bind this spellbook's aetheric frame configuration into Aether.
+        """
+        ...
+
+    def _bind_configuration_to_aether(self) -> None:
+        """
+        Internal
+
+        Bind the spellbook configuration into Aether.
         """
         ...
 

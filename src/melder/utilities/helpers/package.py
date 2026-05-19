@@ -306,6 +306,11 @@ class Package(Cleanable, Generic[P, R]):
         """
         return self._is_async
 
+    @property
+    def __doc__(self) -> str:
+        """Return the wrapped callable's docstring."""
+        return getattr(self._func, '__doc__')
+
     def get_coroutine(self) -> Callable[..., Awaitable[object]]:
         """
         Returns the underlying coroutine function if the Package is async.
