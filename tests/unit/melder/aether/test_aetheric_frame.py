@@ -28,9 +28,9 @@ def mock_dependencies():
     Patches all external dependencies instantiated in AethericFrame.__init__.
     Returns a dict of the mock classes.
     """
-    with patch("melder.aether.aetheric_frame.ConduitCloud") as mock_cloud, \
-         patch("melder.aether.aetheric_frame.SpellSystemStates") as mock_sss, \
-         patch("melder.aether.aetheric_frame.DevOpsManager") as mock_dom:
+    with patch("melder.aether.aetheric_frame.aetheric_frame.ConduitCloud") as mock_cloud, \
+         patch("melder.aether.aetheric_frame.aetheric_frame.SpellSystemStates") as mock_sss, \
+         patch("melder.aether.aetheric_frame.aetheric_frame.DevOpsManager") as mock_dom:
         cloud_instance = mock_cloud.return_value
         cloud_instance._conduit_clusters = {}
 

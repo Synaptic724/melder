@@ -15,8 +15,8 @@ def mock_dependencies():
     Patches external dependencies: IncidentManager and ChangeControlManager.
     Returns a dictionary of the mock classes.
     """
-    with patch("melder.aether.dev_ops.dev_ops_manager.IncidentManager") as mock_im_cls, \
-         patch("melder.aether.dev_ops.dev_ops_manager.ChangeControlManager") as mock_ccm_cls:
+    with patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.IncidentManager") as mock_im_cls, \
+         patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.ChangeControlManager") as mock_ccm_cls:
         
         # Setup clean return values
         mock_im = mock_im_cls.return_value
@@ -480,14 +480,14 @@ def test_cleanup_uses_lock(manager):
 
 def test_init_fails_if_incident_manager_fails(mock_sss):
     """Verify init fails if sub-manager construction fails."""
-    with patch("melder.aether.dev_ops.dev_ops_manager.IncidentManager", side_effect=ValueError("Init fail")):
+    with patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.IncidentManager", side_effect=ValueError("Init fail")):
         with pytest.raises(ValueError, match="Init fail"):
             DevOpsManager(mock_sss)
 
 def test_init_fails_if_ccm_fails(mock_sss):
     """Verify init fails if CCM construction fails."""
-    with patch("melder.aether.dev_ops.dev_ops_manager.IncidentManager"), \
-         patch("melder.aether.dev_ops.dev_ops_manager.ChangeControlManager", side_effect=ValueError("CCM fail")):
+    with patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.IncidentManager"), \
+         patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.ChangeControlManager", side_effect=ValueError("CCM fail")):
         with pytest.raises(ValueError, match="CCM fail"):
             DevOpsManager(mock_sss)
 

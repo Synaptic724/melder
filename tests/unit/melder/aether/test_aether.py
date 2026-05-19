@@ -1121,7 +1121,7 @@ def test_frame_cloud_create_cluster(aether_with_mocks):
     a = aether_with_mocks
     frame_mock = a._default_frame
 
-    with patch("melder.aether.conduit_cloud.ConduitCluster") as mock_cluster_cls:
+    with patch("melder.aether.aetheric_frame.conduit_cloud.ConduitCluster") as mock_cluster_cls:
         frame_mock._conduit_cloud.create_cluster("cluster1")
 
         assert "cluster1" in frame_mock._conduit_cloud._conduit_clusters
