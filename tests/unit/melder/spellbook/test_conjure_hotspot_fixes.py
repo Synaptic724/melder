@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
 from types import SimpleNamespace
 
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
     InjectionPlanBuilder,

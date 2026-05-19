@@ -1,9 +1,9 @@
 import pytest
 
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )

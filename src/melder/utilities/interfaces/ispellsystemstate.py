@@ -1,9 +1,9 @@
 from typing import Iterable, Optional, Protocol, Set, runtime_checkable
-from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.interfaces.icleanable import ICleanable
 
 

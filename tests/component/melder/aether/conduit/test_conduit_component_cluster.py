@@ -9,7 +9,7 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.aether.spellbook.existence.existence import Existence

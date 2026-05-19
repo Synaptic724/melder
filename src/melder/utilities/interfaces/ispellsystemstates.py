@@ -1,8 +1,8 @@
 from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, runtime_checkable
 import threading
-from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
 from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import SpellLocalTopology
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState

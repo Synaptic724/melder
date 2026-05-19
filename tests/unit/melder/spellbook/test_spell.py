@@ -1,4 +1,4 @@
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
 from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
@@ -240,7 +240,7 @@ import types
 import pytest
 
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
 from melder.aether.spellbook.bind.spell_index import SpellIndex

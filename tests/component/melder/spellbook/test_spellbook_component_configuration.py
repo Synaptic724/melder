@@ -1,7 +1,7 @@
 import pytest
 
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.configuration.system_state import SystemState

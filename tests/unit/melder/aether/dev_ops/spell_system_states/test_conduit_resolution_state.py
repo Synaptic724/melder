@@ -2,13 +2,13 @@ import threading
 
 import pytest
 
-from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
 )
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,

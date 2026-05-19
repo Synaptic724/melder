@@ -1,7 +1,7 @@
 from typing import Mapping, Optional, Protocol, Set, runtime_checkable, Dict
 import threading
 
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook

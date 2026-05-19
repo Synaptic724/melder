@@ -10,9 +10,9 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
 from melder.aether.spellbook.existence.existence import Existence

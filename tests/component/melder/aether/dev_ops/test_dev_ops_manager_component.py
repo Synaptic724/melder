@@ -1,7 +1,7 @@
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame import AethericFrame
-from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,

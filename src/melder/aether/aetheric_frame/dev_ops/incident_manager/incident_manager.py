@@ -4,11 +4,11 @@ from typing import Dict, List, Optional, Any, Iterable
 from mypy_extensions import mypyc_attr
 
 # Melder imports
-from melder.aether.dev_ops.incident_manager.incident import Incident
-from melder.aether.dev_ops.incident_manager.incident_severity import (
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import (
     IncidentSeverity,
 )
-from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.__melder_registration_guard__ import (

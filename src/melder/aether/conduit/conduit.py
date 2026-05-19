@@ -37,7 +37,7 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

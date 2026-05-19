@@ -1,7 +1,7 @@
 import pytest
 import threading
 from unittest.mock import MagicMock
-from melder.aether.conduit_cloud import ConduitCloud
+from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.utilities.interfaces.iconduit import IConduit
 
 # ----------------------------------------------------------------------

@@ -18,7 +18,7 @@ from unittest.mock import MagicMock
 
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.aether.spellbook.bind.spell_index import SpellIndex

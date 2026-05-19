@@ -19,7 +19,7 @@ from melder.__melder_registration_guard__ import MelderRegistrationGuard
 from melder.__version__ import __version__ as base_version
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.nexus.nexus import Nexus

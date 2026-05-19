@@ -1,7 +1,7 @@
 import pytest
 from typing import Dict, Optional
 
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence

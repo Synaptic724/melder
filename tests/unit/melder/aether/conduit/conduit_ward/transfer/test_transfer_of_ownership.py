@@ -10,10 +10,10 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import TransferOfOwnership
-from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
-from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,

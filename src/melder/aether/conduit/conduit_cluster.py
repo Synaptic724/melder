@@ -11,7 +11,7 @@ from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg

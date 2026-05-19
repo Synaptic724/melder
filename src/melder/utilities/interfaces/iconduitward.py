@@ -7,7 +7,7 @@ from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types i
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.utilities.interfaces.icleanable import ICleanable

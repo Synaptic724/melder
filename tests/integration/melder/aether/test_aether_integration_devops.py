@@ -4,8 +4,8 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
-from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,

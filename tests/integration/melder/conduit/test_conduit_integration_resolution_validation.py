@@ -6,10 +6,10 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
 )
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook

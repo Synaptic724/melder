@@ -1,7 +1,7 @@
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame import AethericFrame
-from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
-from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 

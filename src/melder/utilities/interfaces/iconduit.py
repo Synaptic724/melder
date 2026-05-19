@@ -2,7 +2,7 @@ from typing import Any, ContextManager, Dict, Iterable, Optional, Protocol, Tupl
 import threading
 from types import ModuleType, TracebackType
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.aether.spellbook.existence.existence import Existence

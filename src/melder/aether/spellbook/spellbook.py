@@ -8,7 +8,7 @@ from mypy_extensions import mypyc_attr
 
 from melder.aether.aether import Aether
 # Melder Imports
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )

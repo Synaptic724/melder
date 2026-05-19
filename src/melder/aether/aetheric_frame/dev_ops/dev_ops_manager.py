@@ -4,9 +4,9 @@ from typing import Optional
 from mypy_extensions import mypyc_attr
 
 # Melder Imports
-from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
-from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
-from melder.aether.dev_ops.risk_manager.risk_manager import RiskManager
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
+from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates

@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import MagicMock, call
-from melder.aether.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSystemState
-from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (

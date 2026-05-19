@@ -1,7 +1,7 @@
 import pytest
 import threading
 from unittest.mock import MagicMock, patch
-from melder.aether.dev_ops.dev_ops_manager import DevOpsManager
+from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 

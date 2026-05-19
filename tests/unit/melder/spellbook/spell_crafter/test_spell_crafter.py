@@ -8,7 +8,7 @@ from threading import RLock
 import pytest
 
 import melder.aether.spellbook.spell_crafter.spell_crafter as spell_crafter_module
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract

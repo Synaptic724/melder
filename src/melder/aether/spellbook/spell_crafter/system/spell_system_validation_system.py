@@ -3,10 +3,10 @@ from typing import Dict, Iterable, List, Mapping, Optional, Set, Sequence
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
     SpellSystemValidationState,

@@ -1,14 +1,14 @@
 import pytest
 from threading import RLock
 from unittest.mock import MagicMock
-from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
-from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
 )
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
 from melder.utilities.interfaces.ispellindex import ISpellIndex

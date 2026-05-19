@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence

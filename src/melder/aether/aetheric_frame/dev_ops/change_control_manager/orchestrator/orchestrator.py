@@ -5,20 +5,20 @@ from mypy_extensions import mypyc_attr
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
     ChangeControlTransactionRequest,
 )
-from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
 )
-from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
-from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
 )
-from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
     ChangeControlEmbargoManager,
 )
 

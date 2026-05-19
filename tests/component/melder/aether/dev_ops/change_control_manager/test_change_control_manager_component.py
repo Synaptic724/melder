@@ -1,8 +1,8 @@
 import pytest
 
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame import AethericFrame
-from melder.aether.dev_ops.change_control_manager.change_control_manager import (
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import (
     ChangeControlManager,
     ChangeTransactionType,
 )

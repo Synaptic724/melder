@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
 from threading import RLock
-from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import ChangeControlStagedMutation
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import ChangeControlStagedMutation
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
     ChangeControlTransactionRequest,
 )

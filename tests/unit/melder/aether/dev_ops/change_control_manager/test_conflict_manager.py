@@ -1,13 +1,10 @@
 import pytest
 from threading import Event, RLock, Thread
 
-from melder.aether.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
 )
-from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
-    ChangeControlTransactionManager,
-)
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )

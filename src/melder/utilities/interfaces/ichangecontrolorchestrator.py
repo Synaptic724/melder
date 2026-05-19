@@ -1,5 +1,5 @@
 from typing import Optional, Protocol, runtime_checkable
-from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
 )
 

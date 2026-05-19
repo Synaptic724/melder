@@ -23,8 +23,8 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.aether.aetheric_frame import AethericFrame
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.mutation_research.mutation_research import MutationResearch

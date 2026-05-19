@@ -10,10 +10,10 @@ from typing import (
     Tuple,
     runtime_checkable,
 )
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.dev_ops.spell_system_states.spell_system_state import (
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
     SpellSystemState,
 )
 from melder.aether.spellbook.existence.existence import Existence

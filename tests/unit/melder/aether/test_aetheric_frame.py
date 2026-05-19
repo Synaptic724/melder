@@ -2,7 +2,7 @@ import threading
 import pytest
 from unittest.mock import MagicMock, patch
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 # ----------------------------------------------------------------------

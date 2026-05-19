@@ -1,4 +1,4 @@
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from tests.integration.melder.live_sim.bootstrap import (
     create_live_sim_dynamic_borrower,
     create_live_sim_dynamic_configuration,

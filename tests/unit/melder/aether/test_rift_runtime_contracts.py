@@ -5,7 +5,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.frame_descriptor.frame_descriptor_payload import (

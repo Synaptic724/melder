@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch, ANY
 from melder.aether.aether import Aether
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
-from melder.aether.aetheric_frame import AethericFrame
-from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
@@ -29,7 +29,7 @@ class _FrameConduitCloudStub:
 
     def create_cluster(self, cluster_name: str) -> None:
         """Create one cluster in the cloud-owned registry."""
-        from melder.aether import conduit_cloud as conduit_cloud_module
+        from melder.aether.aetheric_frame import conduit_cloud as conduit_cloud_module
         if cluster_name in self._conduit_clusters:
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
         self._conduit_clusters[cluster_name] = conduit_cloud_module.ConduitCluster(cluster_name)

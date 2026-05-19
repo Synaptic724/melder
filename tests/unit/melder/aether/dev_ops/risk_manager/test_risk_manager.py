@@ -1,8 +1,8 @@
 import threading
 from typing import Optional
 
-from melder.aether.dev_ops.risk_manager.risk_manager import RiskManager
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 
 
 class _ResolutionStateStub:

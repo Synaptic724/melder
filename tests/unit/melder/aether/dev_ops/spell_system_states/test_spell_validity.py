@@ -1,4 +1,4 @@
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 
 
 def test_spell_validity_exposes_the_full_expected_member_set() -> None:

@@ -20,10 +20,10 @@ from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
-from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
 @mypyc_attr(native_class=True)
 class TransferOfOwnership(Cleanable):
     """

@@ -2,13 +2,13 @@ from threading import Event, RLock, Thread
 
 import pytest
 
-from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
     ChangeControlEmbargoManager,
 )
-from melder.aether.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
-from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 
