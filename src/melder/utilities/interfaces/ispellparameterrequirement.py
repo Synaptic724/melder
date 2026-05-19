@@ -39,6 +39,18 @@ class ISpellParameterRequirement(ICleanable, Protocol):
         ...
 
     @property
+    def is_var_positional(self) -> bool:
+        ...
+
+    @property
+    def is_var_keyword(self) -> bool:
+        ...
+
+    @property
+    def is_keyword_only(self) -> bool:
+        ...
+
+    @property
     def di_shape(self) -> ParameterDIShape:
         ...
 

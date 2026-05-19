@@ -294,6 +294,16 @@ def build_kwargs_from_injection_spec(
         if param_source.kind != "dependency":
             continue
         dependency_keys = param_source.dependency_keys
+        if dependency_keys is None:
+            raise MeldExecutionError(
+                spell_id=spell_id,
+                spell_name=spell_id,
+                node_id=spell_id,
+                message=(
+                    "Dependency param source is missing dependency_keys while "
+                    f"building injection kwargs for {param_name!r}."
+                ),
+            )
         if param_name in override_values:
             kwargs[param_name] = override_values[param_name]
             continue
@@ -624,9 +634,14 @@ class InjectionPlanBuilder(object):
                 continue
 
             for instance_key in instance_keys:
-                occurrence = (spell_id, instance_key[1])
-                dependencies = plan.occurrence_graph[occurrence]
-                contract_payload = plan.contract_overrides_by_occurrence.get(occurrence)
+                occurrence_path = instance_key[1]
+                if occurrence_path is None:
+                    raise RuntimeError(
+                        "Non-shared instance key is missing its occurrence path."
+                    )
+                instance_occurrence: OccurrenceKey = (spell_id, occurrence_path)
+                dependencies = plan.occurrence_graph[instance_occurrence]
+                contract_payload = plan.contract_overrides_by_occurrence.get(instance_occurrence)
                 normalized_contract_payload = self._clone_contract_payload(contract_payload)
                 instance_param_sources: Dict[str, ParamSource] = {}
                 allow_list_aggregation = False

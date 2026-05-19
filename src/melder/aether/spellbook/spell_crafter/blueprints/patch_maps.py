@@ -466,10 +466,11 @@ class OverridePatchMap(Cleanable):
                 f"Specificity missing for override key '{raw_key}'."
             )
 
+        resolved_matches = matches or []
         resolved = (
-            tuple(matches),
+            tuple(resolved_matches),
             level,
-            self._build_socket_shape_from_matches(matches=tuple(matches)),
+            self._build_socket_shape_from_matches(matches=tuple(resolved_matches)),
         )
         self._resolved_targets_by_raw_key[raw_key] = resolved
         return resolved
@@ -710,7 +711,8 @@ class MutationPatchMap(Cleanable):
             else:
                 raise RuntimeError(f"Unsupported TargetSpecKind: {spec.kind!r}")
 
-            for patch in matches:
+            resolved_matches = matches or []
+            for patch in resolved_matches:
                 patches.append(
                     MutationEdgePatch(
                         child_spell_id=patch.child_spell_id,
@@ -762,14 +764,14 @@ def apply_mutation_patch_map(
     new_dag = DirectedAcyclicWorkGraph()
     for node_id in source.dag.nodes.keys():
         new_dag.add_node(node_id)
-    for parent_key, parent_node in source.dag.nodes.items():
-        for child_node in parent_node.dependents:
-            child_key = child_node.id
-            param_name = child_node.incoming_params.get(parent_node)
-            socket_kind = source.dag._socket_kinds.get((parent_node, child_node))
-            new_dag.add_dependency(
-                parent_key=parent_key,
-                child_key=child_key,
+        for parent_key, parent_node in source.dag.nodes.items():
+            for child_node in parent_node.dependents:
+                child_key = child_node.id
+                param_name = child_node.incoming_params.get(parent_node)
+                socket_kind = source.dag._socket_kinds.get((parent_node, child_node))
+                new_dag.add_dependency(
+                    parent_key=parent_key,
+                    child_key=child_key,
                 param_name=param_name,
                 socket_kind=socket_kind,
             )
@@ -778,22 +780,22 @@ def apply_mutation_patch_map(
         child_id = patch.child_spell_id
         param_name = patch.param_name
         target_id = patch.new_parent_id
-        child_node = new_dag.get_node(child_id)
-        if child_node is None:
+        resolved_child_node = new_dag.get_node(child_id)
+        if resolved_child_node is None:
             continue
 
         to_remove = []
-        for parent in list(child_node.dependencies):
-            incoming_param = child_node.incoming_params.get(parent)
+        for parent in list(resolved_child_node.dependencies):
+            incoming_param = resolved_child_node.incoming_params.get(parent)
             if incoming_param == param_name:
                 to_remove.append((parent.id, child_id, incoming_param))
         for parent_id, c_id, pname in to_remove:
             try:
-                parent_node = new_dag.get_node(parent_id)
-                if parent_node is not None:
-                    child_node.dependencies.discard(parent_node)
-                    parent_node.dependents.discard(child_node)
-                    new_dag._socket_kinds.pop((parent_node, child_node), None)
+                resolved_parent_node = new_dag.get_node(parent_id)
+                if resolved_parent_node is not None:
+                    resolved_child_node.dependencies.discard(resolved_parent_node)
+                    resolved_parent_node.dependents.discard(resolved_child_node)
+                    new_dag._socket_kinds.pop((resolved_parent_node, resolved_child_node), None)
             except Exception:
                 pass
 
@@ -1113,7 +1115,7 @@ def _spec_key(spec: TargetSpec) -> str:
 
 def _build_mutation_patches(
         *,
-        blueprint: RootResolutionBlueprint,
+        blueprint: IRootResolutionBlueprint,
         socket_ref: SocketRef,
 ) -> List[MutationEdgePatch]:
     """
@@ -1161,7 +1163,7 @@ def _build_mutation_patches(
 
 def _build_mutation_patches_for_group(
         *,
-        blueprint: RootResolutionBlueprint,
+        blueprint: IRootResolutionBlueprint,
         socket_refs: List[SocketRef],
 ) -> List[MutationEdgePatch]:
     """

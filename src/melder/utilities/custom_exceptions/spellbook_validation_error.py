@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 from melder.utilities.interfaces.ispell import ISpell
 
 from mypy_extensions import mypyc_attr
@@ -55,7 +57,7 @@ class SpellbookValidationError(RuntimeError):
             super().__init__(msg)
             return
 
-        spell_contexts = []
+        spell_contexts: list[tuple[ISpell, str, str, Any]] = []
         summary_parts = []
         for spell in broken_spells:
             try:
@@ -76,14 +78,7 @@ class SpellbookValidationError(RuntimeError):
             summary_parts.append(
                 f"{spell_name} (id={spell_id}, frame={spell_frame!r})"
             )
-            spell_contexts.append(
-                {
-                    "spell": spell,
-                    "spell_name": spell_name,
-                    "spell_id": spell_id,
-                    "spell_frame": spell_frame,
-                }
-            )
+            spell_contexts.append((spell, spell_name, spell_id, spell_frame))
 
         summary = "; ".join(summary_parts)
         lines = [
@@ -93,11 +88,10 @@ class SpellbookValidationError(RuntimeError):
             "Phase 4 issues:",
         ]
 
-        for context in spell_contexts:
-            spell = context["spell"]
+        for spell, spell_name, spell_id, spell_frame in spell_contexts:
             header = (
-                f"- Spell {context['spell_name']!r} "
-                f"(id={context['spell_id']}, frame={context['spell_frame']!r}):"
+                f"- Spell {spell_name!r} "
+                f"(id={spell_id}, frame={spell_frame!r}):"
             )
             lines.append(header)
 
@@ -161,8 +155,7 @@ class SpellbookValidationError(RuntimeError):
         lines.append("Phase 6 diagnostics:")
         phase6_diagnostics = []
         seen_diag_ids = set()
-        for context in spell_contexts:
-            spell = context["spell"]
+        for spell, _, _, _ in spell_contexts:
             phase6_state = None
             try:
                 phase6_state = spell.validation_result_phase6
@@ -213,30 +206,33 @@ class SpellbookValidationError(RuntimeError):
                     message = diag.message
                 except Exception:
                     message = repr(diag)
+                diag_source: Optional[str] = None
                 try:
-                    source = diag.source
+                    diag_source = diag.source
                 except Exception:
-                    source = None
+                    diag_source = None
+                diag_spell_id: Optional[str] = None
                 try:
-                    spell_id = diag.spell_id
+                    diag_spell_id = diag.spell_id
                 except Exception:
-                    spell_id = None
+                    diag_spell_id = None
+                diag_root_id: Optional[str] = None
                 try:
-                    root_id = diag.root_id
+                    diag_root_id = diag.root_id
                 except Exception:
-                    root_id = None
+                    diag_root_id = None
                 try:
                     details = diag.details
                 except Exception:
                     details = None
 
                 meta_parts = []
-                if source:
-                    meta_parts.append(f"source={source}")
-                if spell_id:
-                    meta_parts.append(f"spell_id={spell_id}")
-                if root_id:
-                    meta_parts.append(f"root_id={root_id}")
+                if diag_source:
+                    meta_parts.append(f"source={diag_source}")
+                if diag_spell_id:
+                    meta_parts.append(f"spell_id={diag_spell_id}")
+                if diag_root_id:
+                    meta_parts.append(f"root_id={diag_root_id}")
                 meta = f" ({', '.join(meta_parts)})" if meta_parts else ""
 
                 lines.append(f"  - [{severity}] {code}{meta}: {message}")

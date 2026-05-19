@@ -413,7 +413,7 @@ def _normalize_transient_schema(
             "Phase 12 no-overrides transient schema 'root_step_index' must be an int."
         )
 
-    normalized = {
+    normalized: Dict[str, Any] = {
         "step_count": step_count,
         "root_step_index": root_step_index,
     }

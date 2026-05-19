@@ -140,22 +140,22 @@ class GraphMutator(Cleanable):
                 # child is socket_ref.node_id
                 child_id = socket_ref.node_id
                 # Remove existing incoming edges matching this param_name
-                child_node = new_dag.get_node(child_id)
-                if child_node is None:
+                resolved_child_node = new_dag.get_node(child_id)
+                if resolved_child_node is None:
                     continue
                 to_remove = []
-                for parent in list(child_node.dependencies):
-                    param_name = child_node.incoming_params.get(parent)
+                for parent in list(resolved_child_node.dependencies):
+                    param_name = resolved_child_node.incoming_params.get(parent)
                     if param_name == socket_ref.param_name:
                         to_remove.append((parent.id, child_id, param_name))
                 for parent_id, c_id, pname in to_remove:
                     # Rebuild edges without the old one
                     try:
-                        parent_node = new_dag.get_node(parent_id)
-                        if parent_node is not None:
-                            child_node.dependencies.discard(parent_node)
-                            parent_node.dependents.discard(child_node)
-                            new_dag._socket_kinds.pop((parent_node, child_node), None)
+                        resolved_parent_node = new_dag.get_node(parent_id)
+                        if resolved_parent_node is not None:
+                            resolved_child_node.dependencies.discard(resolved_parent_node)
+                            resolved_parent_node.dependents.discard(resolved_child_node)
+                            new_dag._socket_kinds.pop((resolved_parent_node, resolved_child_node), None)
                     except Exception:
                         pass
                 # Add new edge to target_id
