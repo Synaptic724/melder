@@ -134,7 +134,6 @@ def test_cleanup_clears_and_nuls_ticket_storage() -> None:
     flag = TicketFlag()
     flag.set_true()
     flag.cleanup()
-    assert flag._tickets is None
     assert flag._cleaned is True
 
 

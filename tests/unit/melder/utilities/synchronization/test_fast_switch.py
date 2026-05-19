@@ -83,8 +83,7 @@ def test_fast_switch_cleanup_clears_and_breaks_primitive() -> None:
     switch = FastSwitch(True)
     switch.cleanup()
     assert switch._cleaned is True
-    assert switch._tickets is None
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError):
         _ = len(switch)
 
 

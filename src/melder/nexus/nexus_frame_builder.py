@@ -78,7 +78,7 @@ class NexusFrameBuilder(Cleanable):
             raise ValueError("frame_name cannot be empty.")
         self._manager: INexusFrameManager = manager
         self._frame_name: str = frame_name
-        self._system_state: Optional[SystemState] = SystemState.dynamic
+        self._system_state: SystemState = SystemState.dynamic
         self._ai_native_enabled: Optional[bool] = True
         self._rift_enabled: Optional[bool] = True
         self._immutable: bool = False
@@ -120,9 +120,9 @@ class NexusFrameBuilder(Cleanable):
             NexusFrameBuilder: This builder for fluent chaining.
         """
         self.check_cleaned()
-        self._system_state = SystemState.dynamic
-        self._ai_native_enabled = True
-        self._rift_enabled = True
+        self._system_state: SystemState = SystemState.dynamic
+        self._ai_native_enabled: bool = True
+        self._rift_enabled: bool = True
         return self
 
     def immutable(self, immutable: bool = True) -> "NexusFrameBuilder":

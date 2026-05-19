@@ -171,7 +171,7 @@ class NexusFrameConfiguration(Cleanable, INexusFrameConfiguration):
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
             root_conduit_name: str = "root",
-    ) -> "NexusFrameConfiguration":
+    ) -> INexusFrameConfiguration:
         """
         Create one dynamic authored frame configuration.
 

@@ -16,11 +16,9 @@ class IAetherConfigurationBuilder(ICleanable, Protocol):
 
     Contract:
         - Owns exactly one mutable Aether configuration until build/finalize/
-          activate transfers that ownership.
+          builder completion transfers that ownership.
         - Builder mutators return the same builder for fluent chaining.
-        - `build()` transfers the mutable configuration without freezing it.
-        - `finalize()` transfers the frozen configuration.
-        - `activate()` transfers the activated configuration.
+        - `build()` finalizes and transfers the frozen configuration.
     """
 
     def cleanup(self) -> None:
@@ -91,27 +89,9 @@ class IAetherConfigurationBuilder(ICleanable, Protocol):
 
     def build(self) -> IAetherConfiguration:
         """
-        Transfer the wrapped mutable configuration to the caller.
+        Finalize and transfer the wrapped frozen configuration to the caller.
 
         Returns:
             IAetherConfiguration: Wrapped configuration instance.
-        """
-        ...
-
-    def finalize(self) -> IAetherConfiguration:
-        """
-        Finalize and transfer the wrapped configuration to the caller.
-
-        Returns:
-            IAetherConfiguration: Frozen configuration instance.
-        """
-        ...
-
-    def activate(self) -> IAetherConfiguration:
-        """
-        Activate and transfer the wrapped configuration to the caller.
-
-        Returns:
-            IAetherConfiguration: Activated configuration instance.
         """
         ...

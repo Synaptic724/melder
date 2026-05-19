@@ -107,6 +107,7 @@ class FastSwitch(Cleanable):
         Notes:
             This method intentionally does not perform a cleaned-state guard.
         """
+        self.check_cleaned()
         return len(self._tickets)
 
     @property
@@ -123,6 +124,7 @@ class FastSwitch(Cleanable):
         Notes:
             This property inherits the no-guard behaviour of `__bool__()`.
         """
+        self.check_cleaned()
         return bool(self)
 
     @value.setter
@@ -158,6 +160,7 @@ class FastSwitch(Cleanable):
         Returns:
             None.
         """
+        self.check_cleaned()
         self._tickets.append(None)
 
     def set_false(self) -> None:
@@ -173,6 +176,7 @@ class FastSwitch(Cleanable):
         Returns:
             None.
         """
+        self.check_cleaned()
         self._tickets.pop()
 
     def clear_tickets(self) -> None:
@@ -188,4 +192,5 @@ class FastSwitch(Cleanable):
             This is a force-clear operation; unlike `set_false()`, it does not
             remove tickets one at a time.
         """
+        self.check_cleaned()
         self._tickets.clear()

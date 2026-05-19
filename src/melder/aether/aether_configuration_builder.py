@@ -10,6 +10,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 
+
 @mypyc_attr(native_class=True)
 class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
     """
@@ -25,6 +26,7 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
         "_id",
         "_lock",
         "_configuration",
+        "_finalized",
     ]
 
     def __init__(self) -> None:
@@ -37,7 +39,8 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._configuration: AetherConfiguration | None = AetherConfiguration()
+        self._configuration: AetherConfiguration = AetherConfiguration()
+        self._finalized: bool = False
 
     def cleanup(self) -> None:
         """
@@ -52,7 +55,7 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             if self._cleaned:
                 return
             self._cleaned = True
-            if self._configuration is not None:
+            if not self._finalized:
                 self._configuration.cleanup()
             del self._configuration
             del self._id
@@ -107,49 +110,18 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             AetherConfigurationBuilder: This builder.
         """
         self.check_cleaned()
-        if self._configuration is not None:
-            self._configuration.with_default_logger(logger)
-        else:
-            raise RuntimeError("AetherConfigurationBuilder no longer owns a configuration.")
+        self._configuration.with_default_logger(logger)
         return self
 
     def build(self) -> AetherConfiguration:
         """
-        Transfer the wrapped mutable configuration to the caller.
+        Finalize and transfer ownership of the wrapped configuration.
 
         Returns:
-            AetherConfiguration: Wrapped configuration instance.
+            AetherConfiguration: Finalized configuration instance.
         """
         self.check_cleaned()
-        return self._handoff_configuration()
-
-    def finalize(self) -> AetherConfiguration:
-        """
-        Finalize and transfer the wrapped configuration to the caller.
-
-        Returns:
-            AetherConfiguration: Frozen configuration instance.
-        """
-        self.check_cleaned()
-        if self._configuration is not None:
-            self._configuration.finalize()
-        else:
-            raise RuntimeError("AetherConfigurationBuilder no longer owns a configuration.")
-
-        return self._handoff_configuration()
-
-    def activate(self) -> AetherConfiguration:
-        """
-        Activate and transfer the wrapped configuration to the caller.
-
-        Returns:
-            AetherConfiguration: Activated configuration instance.
-        """
-        self.check_cleaned()
-        if self._configuration is not None:
-            self._configuration.activate()
-        else:
-            raise RuntimeError("AetherConfigurationBuilder no longer owns a configuration.")
+        self._finalize_configuration()
         return self._handoff_configuration()
 
     def _handoff_configuration(self) -> AetherConfiguration:
@@ -160,11 +132,17 @@ class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
             AetherConfiguration: The configuration previously owned by this builder.
         """
         with self._lock:
-            if self._configuration is None:
+            if self._finalized:
                 raise RuntimeError(
                     "AetherConfigurationBuilder no longer owns a configuration."
                 )
             configuration = self._configuration
-            self._configuration = None
+            self._finalized = True
             self.cleanup()
         return configuration
+
+    def _finalize_configuration(self) -> None:
+        """
+        Run the configuration finalization lifecycle before ownership transfer.
+        """
+        self._configuration.finalize()
