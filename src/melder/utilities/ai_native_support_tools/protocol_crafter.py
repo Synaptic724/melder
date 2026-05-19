@@ -808,6 +808,8 @@ class ProtocolCrafter(Cleanable):
         annotation_name = getattr(annotation, "__name__", None)
         if annotation_name is None:
             return "Any"
+        if not isinstance(annotation_name, str):
+            return "Any"
         if module_name == "builtins":
             return annotation_name
         if annotation_name in self._TYPING_FAMILY_NAMES:

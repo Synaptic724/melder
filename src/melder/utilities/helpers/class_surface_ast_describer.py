@@ -563,6 +563,13 @@ class ClassSurfaceAstDescriber:
                     type(target_object).__name__
                 )
             )
+        if not isinstance(access_level, str):
+            raise ValueError(
+                "AST helper access '{0}' is invalid for class '{1}'.".format(
+                    access_level,
+                    type(target_object).__name__,
+                )
+            )
         if access_level not in {"public", "private"}:
             raise ValueError(
                 "AST helper access '{0}' is invalid for class '{1}'.".format(
