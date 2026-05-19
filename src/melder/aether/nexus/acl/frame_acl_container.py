@@ -15,7 +15,10 @@ from melder.aether.nexus.acl.configurations.frame_acl_command_configuration impo
     FrameACLCommandConfiguration,
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
+from melder.aether.nexus.acl.frame_acl_configuration_chain import (
+    ACLFamilyConfiguration,
+    FrameACLConfigurationChain,
+)
 from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
@@ -758,10 +761,16 @@ class FrameACLContainer(Cleanable):
         Returns:
             List[FrameACLViewConfiguration]: View configuration revisions.
         """
-        return self._get_required_family_chain(
+        raw_configurations = self._get_required_family_chain(
             "view",
             contract_name,
         ).list_configurations(limit=limit)
+        configurations: List[FrameACLViewConfiguration] = []
+        for configuration in raw_configurations:
+            if not isinstance(configuration, FrameACLViewConfiguration):
+                raise RuntimeError("View chain returned a non-view configuration.")
+            configurations.append(configuration)
+        return configurations
 
     def list_command_configurations(
             self,
@@ -775,10 +784,16 @@ class FrameACLContainer(Cleanable):
         Returns:
             List[FrameACLCommandConfiguration]: Command configuration revisions.
         """
-        return self._get_required_family_chain(
+        raw_configurations = self._get_required_family_chain(
             "command",
             contract_name,
         ).list_configurations(limit=limit)
+        configurations: List[FrameACLCommandConfiguration] = []
+        for configuration in raw_configurations:
+            if not isinstance(configuration, FrameACLCommandConfiguration):
+                raise RuntimeError("Command chain returned a non-command configuration.")
+            configurations.append(configuration)
+        return configurations
 
     def list_codegen_configurations(
             self,
@@ -792,10 +807,16 @@ class FrameACLContainer(Cleanable):
         Returns:
             List[FrameACLCodegenConfiguration]: Codegen configuration revisions.
         """
-        return self._get_required_family_chain(
+        raw_configurations = self._get_required_family_chain(
             "codegen",
             contract_name,
         ).list_configurations(limit=limit)
+        configurations: List[FrameACLCodegenConfiguration] = []
+        for configuration in raw_configurations:
+            if not isinstance(configuration, FrameACLCodegenConfiguration):
+                raise RuntimeError("Codegen chain returned a non-codegen configuration.")
+            configurations.append(configuration)
+        return configurations
 
     def build_selected_configuration(
             self,
@@ -952,10 +973,10 @@ class FrameACLContainer(Cleanable):
     def _register_family_configuration(
             self,
             family_name: str,
-            configuration: object,
+            configuration: ACLFamilyConfiguration,
             *,
             contract_name: str,
-    ) -> object:
+    ) -> ACLFamilyConfiguration:
         """
         Register one new named chain seeded from a locked family configuration.
 

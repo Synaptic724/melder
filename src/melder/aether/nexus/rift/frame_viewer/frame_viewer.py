@@ -148,15 +148,15 @@ class FrameViewer(Cleanable, IFrameViewer):
         self.check_cleaned()
         return self._id
 
-    def list_frame_names(self) -> Tuple[str, ...]:
+    def list_frame_names(self) -> List[str]:
         """
         Return the currently linked frame names in deterministic order.
 
         Returns:
-            Tuple[str, ...]: Sorted linked frame names.
+            List[str]: Sorted linked frame names.
         """
         self.check_cleaned()
-        return tuple(self.get_view_multiframe().list_frame_names())
+        return self.get_view_multiframe().list_frame_names()
 
     def list_linked_frame_names(self) -> List[str]:
         """

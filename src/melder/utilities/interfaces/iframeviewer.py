@@ -1,10 +1,9 @@
 from contextlib import contextmanager
-from typing import Any, Iterator, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, Iterator, List, Optional, Protocol, Tuple, runtime_checkable
 import threading
 
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
-from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -15,7 +14,7 @@ class IFrameViewer(ICleanable, Protocol):
     Interface for the public Rift-backed frame viewer host.
     """
 
-    def list_frame_names(self) -> Tuple[str, ...]:
+    def list_frame_names(self) -> List[str]:
         """
         Return the hosted frame names currently visible through this viewer.
         """
@@ -33,7 +32,7 @@ class IFrameViewer(ICleanable, Protocol):
         """
         ...
 
-    _rift: IRift
+    _rift: "IRift"
 
     @property
     def _lock(self) -> threading.RLock:
