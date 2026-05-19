@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Optional
+from typing import Deque
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -16,15 +16,15 @@ class FastSwitch(Cleanable):
 
     State model:
         - Truth value is derived from ticket count.
-        - ``True`` means at least one active ticket exists.
-        - ``False`` means ticket count is zero.
-        - ``set_true`` appends one ticket.
-        - ``set_false`` pops one ticket.
+        - "True" means at least one active ticket exists.
+        - "False" means ticket count is zero.
+        - "set_true" appends one ticket.
+        - "set_false" pops one ticket.
 
     Design intent:
         - This primitive is intentionally non-defensive.
-        - It does not call ``check_cleaned()``.
-        - It does not guard underflow in ``set_false``.
+        - It does not call "check_cleaned()".
+        - It does not guard underflow in "set_false".
         - It is a "shoot your foot" primitive intended for controlled,
           performance-critical call sites.
 
@@ -40,7 +40,7 @@ class FastSwitch(Cleanable):
         """
         Public API
 
-        Initialize the switch with optional truthy state.
+        Initialize the switch with an optional truthy state.
 
         Args:
             value:
@@ -51,7 +51,7 @@ class FastSwitch(Cleanable):
             None.
         """
         super().__init__()
-        self._tickets: Optional[Deque[None]] = deque()
+        self._tickets: Deque[None] = deque()
         if value:
             self._tickets.append(None)
 
@@ -68,7 +68,7 @@ class FastSwitch(Cleanable):
         Contract:
             - Clears all tickets.
             - Marks this primitive cleaned.
-            - Nulls internal ticket storage.
+            - Resets internal ticket storage to an empty deque.
             - No cleanup guard or idempotence check is applied; repeated cleanup
               is therefore unsupported by contract.
 
@@ -77,7 +77,7 @@ class FastSwitch(Cleanable):
         """
         self._tickets.clear()
         self._cleaned = True
-        self._tickets = None
+        del self._tickets
 
     def __bool__(self) -> bool:
         """
@@ -114,14 +114,14 @@ class FastSwitch(Cleanable):
         """
         Public API
 
-        Boolean view over current ticket count.
+        Boolean view over the current ticket count.
 
         Returns:
             bool:
                 True when at least one ticket exists.
 
         Notes:
-            This property inherits the no-guard behavior of `__bool__()`.
+            This property inherits the no-guard behaviour of `__bool__()`.
         """
         return bool(self)
 
@@ -130,11 +130,11 @@ class FastSwitch(Cleanable):
         """
         Public API
 
-        Set switch state via ticket operations.
+        Set the switch state via ticket operations.
 
         Contract:
-            - ``True`` appends one ticket.
-            - ``False`` pops one ticket.
+            - "True" appends one ticket.
+            - "False" pops one ticket.
             - Underflow is not guarded.
 
         Args:
@@ -153,7 +153,7 @@ class FastSwitch(Cleanable):
         """
         Public API
 
-        Append one ticket to make/keep switch truthy.
+        Append one ticket to make/keep the switch truthy.
 
         Returns:
             None.
@@ -164,7 +164,7 @@ class FastSwitch(Cleanable):
         """
         Public API
 
-        Pop one ticket to move switch toward falsey state.
+        Pop one ticket to move the switch toward falsey state.
 
         Contract:
             - No underflow guard.

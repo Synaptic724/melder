@@ -1,4 +1,5 @@
 from collections import deque
+from types import TracebackType
 from typing import Deque, Literal, Optional
 
 from mypy_extensions import mypyc_attr
@@ -78,7 +79,7 @@ class TicketFlag(Cleanable):
             return
         self._tickets.clear()
         self._cleaned = True
-        self._tickets = None
+        del self._tickets
 
     def __bool__(self) -> bool:
         """
@@ -265,7 +266,12 @@ class TicketFlag(Cleanable):
         self.set_true()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> bool | Literal[False]:
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> Literal[False]:
         """
         Public API
 
