@@ -306,10 +306,25 @@ class Package(Cleanable, Generic[P, R]):
         """
         return self._is_async
 
-    @property
-    def __doc__(self) -> str:
-        """Return the wrapped callable's docstring."""
-        return getattr(self._func, '__doc__')
+    def __getattribute__(self, name: str):
+        """
+        Override doc lookup to always proxy the wrapped callable's docstring.
+
+        Args:
+            name:
+                Requested attribute name.
+
+        Returns:
+            object: Resolved attribute value.
+        """
+        if name == "__doc__":
+            try:
+                func = object.__getattribute__(self, "_func")
+                doc = getattr(func, "__doc__", "")
+                return "" if doc is None else doc
+            except Exception:
+                return ""
+        return super().__getattribute__(name)
 
     def get_coroutine(self) -> Callable[..., Awaitable[object]]:
         """
