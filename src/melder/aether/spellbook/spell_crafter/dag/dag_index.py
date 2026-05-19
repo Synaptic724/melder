@@ -426,7 +426,7 @@ class DagIndex(Cleanable):
                 seen[socket] = None
                 yield socket
 
-
+@mypyc_attr(native_class=True)
 class DagTargetingEngine(Cleanable):
     """
     Internal
@@ -575,7 +575,7 @@ class DagTargetingEngine(Cleanable):
             )
         return matches
 
-
+@mypyc_attr(native_class=True)
 class DagIndexBuilder:
     """
     Internal

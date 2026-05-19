@@ -2796,7 +2796,7 @@ and logging.
             *,
             spell: Any,
             existence: Union[str, Existence],
-            permissions: str = "create",
+            permissions: str | Permissions = "create",
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",

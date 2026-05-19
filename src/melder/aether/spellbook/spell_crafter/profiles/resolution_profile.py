@@ -57,7 +57,7 @@ class SpellSymbolicNode(Cleanable):
         del self.node_id
         del self.kind
         del self.metadata
-
+@mypyc_attr(native_class=True)
 
 class SpellSymbolicEdge(Cleanable):
     """

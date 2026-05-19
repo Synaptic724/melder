@@ -397,7 +397,7 @@ class OccurrencePlan(Cleanable, IOccurrencePlan):
         self.check_cleaned()
         return self._path_registry
 
-
+@mypyc_attr(native_class=True)
 class OccurrencePlanBuilder(object):
     """
     Internal

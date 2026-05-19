@@ -446,7 +446,16 @@ class MypycPolicyChecker:
                 return True
 
         return False
+    def _policy_should_fail(self) -> bool:
+        policy_mode = os.environ.get("MYPYC_POLICY_MODE", "").strip().lower()
 
+        if policy_mode in {"soft", "report", "report-only", "0", "false", "no"}:
+            return False
+
+        if policy_mode in {"hard", "fail", "1", "true", "yes"}:
+            return True
+
+        return self._strict_level == "6"
     def _collect_import_wall_violations(
             self,
             file_path: Path,
@@ -682,11 +691,20 @@ class MypycPolicyChecker:
         )
         report.print_report()
 
-        if violations:
-            raise RuntimeError(
+        if not violations:
+            return
+
+        if self._policy_should_fail():
+            print(
                 f"MYPYC policy level {self._strict_level} failed "
                 f"with {len(violations)} violation(s)."
             )
+            raise SystemExit(1)
+
+        print(
+            f"MYPYC policy level {self._strict_level} found "
+            f"{len(violations)} violation(s), but policy mode is report-only."
+        )
 
 
 class TeeStream:

@@ -370,7 +370,7 @@ class ExecutionPlanStep:
         """Return disposal-method names carried into runtime registration."""
         return self._disposal_method_names
 
-
+@mypyc_attr(native_class=True)
 class ExecutionPlan(Cleanable):
     """
     Internal
@@ -1033,7 +1033,7 @@ class ExecutionPlan(Cleanable):
         """
         return bool(self._fast_has_existing_creations)
 
-
+@mypyc_attr(native_class=True)
 class ExecutionPlanBuilder:
     """
     Internal
