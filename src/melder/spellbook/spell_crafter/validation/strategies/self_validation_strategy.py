@@ -56,6 +56,8 @@ class SelfDependencyStrategy(SpellValidationStrategy):
             return
 
         root_id = spell.spell_index.current
+        if root_id is None:
+            return
         if root_id in deps:
             context.issues.append(
                 SpellValidationIssue(
@@ -68,4 +70,3 @@ class SelfDependencyStrategy(SpellValidationStrategy):
                     details={"spell_id": root_id},
                 )
             )
-

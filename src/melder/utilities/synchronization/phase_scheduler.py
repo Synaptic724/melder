@@ -1,5 +1,4 @@
 import threading
-import time
 from concurrent.futures import FIRST_EXCEPTION, Future, wait
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from queue import SimpleQueue, Empty as QueueEmpty

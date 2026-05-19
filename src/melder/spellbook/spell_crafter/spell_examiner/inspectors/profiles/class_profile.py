@@ -1,9 +1,12 @@
 from typing import Any, Dict, List, Optional
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import MethodProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+@mypyc_attr(native_class=True)
 class ClassProfile(Cleanable):
     """
     Structured, IDE-friendly representation of ClassInspector output.

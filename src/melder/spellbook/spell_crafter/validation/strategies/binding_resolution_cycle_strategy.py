@@ -21,6 +21,7 @@ from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strat
     SpellValidationStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
@@ -208,24 +209,20 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
         return None
 
-    def _spell_key(self, spell: object) -> Tuple[str, str]:
+    def _spell_key(self, spell: ISpell) -> Tuple[str, str]:
         """
         Resolve the canonical binding key for a spell-like object.
 
         Purpose:
-            Support test doubles that do not implement the full ISpell surface.
+            Resolve one live spell into its canonical binding key.
         Contract:
-            - Returns the spell's canonical key when available.
-            - Falls back to frame/name/binding parts when the key is missing.
+            - Uses normalized frame/name/binding parts from the spell surface.
         """
-        try:
-            return spell.key
-        except AttributeError:
-            return SpellInputUtils.make_spell_key_from_parts(
-                spellframe=spell.spellframe,
-                spell_name=spell.spell_name,
-                binding_name=spell.binding_name,
-            )
+        return SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spell.spellframe,
+            spell_name=spell.spell_name,
+            binding_name=spell.binding_name,
+        )
 
     def _detect_cycles(
         self,

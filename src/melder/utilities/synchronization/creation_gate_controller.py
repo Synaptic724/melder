@@ -1,10 +1,12 @@
 import threading
 from typing import Dict, Optional
 
+from mypy_extensions import mypyc_attr
+
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.creation_gate import CreationGate
 
-
+@mypyc_attr(native_class=True)
 class CreationGateController(Cleanable):
     """
     Central registry and control plane for CreationGate instances.

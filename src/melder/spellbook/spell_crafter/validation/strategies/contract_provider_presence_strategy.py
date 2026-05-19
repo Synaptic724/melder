@@ -80,10 +80,12 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
 
         system_state: Optional[SystemState] = None
         if spellbook is not None:
-            try:
-                system_state = spellbook._aetheric_frame_configuration.system_state
-            except Exception:
-                system_state = None
+            frame_configuration = spellbook._aetheric_frame_configuration
+            if frame_configuration is not None:
+                try:
+                    system_state = frame_configuration.system_state
+                except Exception:
+                    system_state = None
 
         provider_map: Dict[Tuple[str, str], List[str]] = {}
         if spellbook is not None:
@@ -96,9 +98,15 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                         spell_name=provider_spell.spell_name,
                         binding_name=provider_spell.binding_name,
                     )
-                    provider_map.setdefault(key, []).append(index.current)
+                    provider_spell_id = index.current
+                    if provider_spell_id is None:
+                        provider_spell_id = provider_spell.spell_id
+                    provider_map.setdefault(key, []).append(provider_spell_id)
 
         automatic_mode = system_state is SystemState.automatic
+        current_spell_id = spell.spell_index.current
+        if current_spell_id is None:
+            current_spell_id = spell.spell_id
 
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:
@@ -121,7 +129,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             "on hold."
                         ),
                         details={
-                            "spell_id": spell.spell_index.current,
+                            "spell_id": current_spell_id,
                             "parameter_name": param.name,
                         },
                     )
@@ -139,7 +147,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             "Contracts require dynamic mode to resolve."
                         ),
                         details={
-                            "spell_id": spell.spell_index.current,
+                            "spell_id": current_spell_id,
                             "parameter_name": param.name,
                             "system_state": str(system_state),
                         },

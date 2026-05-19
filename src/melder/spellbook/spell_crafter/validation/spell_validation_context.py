@@ -105,7 +105,7 @@ class SpellValidationContext(Cleanable):
         if issues is None:
             raise ValueError("issues list cannot be None.")
 
-        self.spell: Optional['ISpell'] = spell
+        self.spell: 'ISpell' = spell
         self.spellbook: Optional['ISpellbook'] = spellbook
         self.requirements: Optional['SpellRequirements'] = requirements
         self.symbolic_graph: Optional['SpellSymbolicGraph'] = symbolic_graph

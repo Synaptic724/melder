@@ -1,12 +1,18 @@
 import inspect
 from inspect import Parameter
 from typing import Any, Dict, Callable
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.general_base.cleanable import Cleanable
+
 
 #region MethodInspector
-class MethodInspector:
+@mypyc_attr(native_class=True)
+class MethodInspector(Cleanable):
     """
     Inspect a callable object and emit a structured, tool-ready record.
 
@@ -28,6 +34,7 @@ class MethodInspector:
     """
     __melder_internal__ = _mrg.sentinel
     utility = InspectorUtility
+    __slots__ = Cleanable.__slots__ +  ["fn", "max_repr", "data"]
     def __init__(self, fn: Callable, *, max_repr: int = 120):
         """
         Initializes the MethodInspector.
@@ -39,12 +46,28 @@ class MethodInspector:
         Raises:
             TypeError: If the provided 'fn' is not callable.
         """
+        super().__init__()
         if not callable(fn):
             raise TypeError("MethodInspector expects a callable.")
 
-        self.fn = fn
-        self.max_repr = max_repr
+        self.fn: Callable = fn
+        self.max_repr: int = max_repr
         self.data: Dict[str, Any] = {}
+
+    def cleanup(self) -> None:
+        """
+        Perform cleanup operations for the MethodInspector.
+
+        Contract:
+            Cleans up any resources or state held by the inspector.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self.data.clear()
+        del self.fn
+        del self.max_repr
+        del self.data
 
     def _resolve_target(self) -> Callable:
         """

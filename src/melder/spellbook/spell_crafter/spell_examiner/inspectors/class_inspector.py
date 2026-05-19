@@ -1,12 +1,19 @@
 import inspect
 from inspect import Parameter
 from typing import Any, Dict, Type
+
+from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.general_base.cleanable import Cleanable
+
 
 #region ClassInspector
-class ClassInspector:
+
+@mypyc_attr(native_class=True)
+class ClassInspector(Cleanable):
     """
     Inspect a class object and emit a structured, tool-ready inventory.
 
@@ -30,7 +37,7 @@ class ClassInspector:
         TypeError: If cls is not a class object.
     """
     __melder_internal__ = _mrg.sentinel
-    __slots__ = ("cls", "dunders", "max_repr", "data")
+    __slots__ = Cleanable.__slots__ + ["cls", "dunders", "max_repr", "data"]
     utility = InspectorUtility
     def __init__(
             self,
@@ -53,12 +60,33 @@ class ClassInspector:
         """
         if not inspect.isclass(cls):
             raise TypeError("ClassInspector expects a class object.")
-        self.cls = cls
-        self.dunders = show_dunders
+        super().__init__()
+        self.cls: Type = cls
+        self.dunders: bool = show_dunders
         # Removed self.include_gc assignment
-        self.max_repr = max_repr
+        self.max_repr: int = max_repr
         # Dictionary to store all collected inspection data
         self.data: Dict[str, Any] = {}
+
+    def cleanup(self) -> None:
+        """
+        Perform cleanup operations for the ClassInspector.
+
+        Contract:
+            Cleans up any resources or state held by the inspector.
+
+        Returns:
+            None
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+        self.data.clear()
+        del self.cls
+        del self.dunders
+        del self.max_repr
+        del self.data
 
     # public
     def inspect(self) -> Dict[str, Any]:

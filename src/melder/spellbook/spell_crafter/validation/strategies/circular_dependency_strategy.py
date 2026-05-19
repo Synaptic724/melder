@@ -74,6 +74,8 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             adjacency[spell_id] = list(deps) if deps else []
 
         root_id = context.spell.spell_index.current
+        if root_id is None:
+            root_id = context.spell.spell_id
 
         visited: set[str] = set()
         stack: set[str] = set()
