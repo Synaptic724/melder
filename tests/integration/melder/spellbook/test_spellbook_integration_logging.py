@@ -73,6 +73,7 @@ def test_spellbook_uses_registered_channel_logger_provider() -> None:
         aether.create_configuration_builder()
         .with_channel_logger_activation_enabled(True)
         .with_channel_logger_resolver(resolver)
+        .build()
         .activate()
     )
     aether.activate(aether_configuration)

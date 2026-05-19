@@ -143,9 +143,14 @@ class PhaseScheduler(Cleanable):
         """
         # Worker count
         try:
-            return configuration.get_property(
+            worker_count = configuration.get_property(
                 "phase_scheduler_workers_per_spellbook"
             )
+            if not isinstance(worker_count, int) or isinstance(worker_count, bool):
+                raise TypeError(
+                    "phase_scheduler_workers_per_spellbook must be an int."
+                )
+            return worker_count
         except Exception:
             raise ValueError(
                 "Failed to read phase_scheduler_workers_per_spellbook from configuration."
@@ -162,9 +167,14 @@ class PhaseScheduler(Cleanable):
             ValueError: If the configuration property cannot be read.
         """
         try:
-            return configuration.get_property(
+            timeout_ms = configuration.get_property(
                 "phase_scheduler_barrier_timeout_milliseconds"
             )
+            if not isinstance(timeout_ms, int) or isinstance(timeout_ms, bool):
+                raise TypeError(
+                    "phase_scheduler_barrier_timeout_milliseconds must be an int."
+                )
+            return timeout_ms
         except Exception:
             raise ValueError(
                 "Failed to read phase_scheduler_barrier_timeout_milliseconds from configuration."

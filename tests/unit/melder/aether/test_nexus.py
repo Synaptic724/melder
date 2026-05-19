@@ -163,7 +163,7 @@ def _activate_aether_channel_logger_policy(
         configuration_builder.with_channel_logger_resolver(resolver)
     if default_logger is not None:
         configuration_builder.with_default_logger(default_logger)
-    configuration = configuration_builder.activate()
+    configuration = configuration_builder.build().activate()
     aether.activate(configuration)
     if refresh_hosted_nexus_logger:
         aether._nexus._initialize_logging(None)

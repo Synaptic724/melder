@@ -1406,6 +1406,7 @@ def test_enable_logging_uses_automatic_channel_path_when_enabled() -> None:
         .with_channel_logger_resolver(
             lambda **_: logging.getLogger("aether-auto")
         )
+        .build()
         .activate()
     )
     a.activate(configuration)
@@ -1433,6 +1434,7 @@ def test_enable_logging_requires_channel_logger_activation_enabled() -> None:
     configuration = (
         a.create_configuration_builder()
         .with_defaults()
+        .build()
         .activate()
     )
     a.activate(configuration)
@@ -1449,6 +1451,7 @@ def test_enable_logging_requires_registered_automatic_provider() -> None:
     configuration = (
         a.create_configuration_builder()
         .with_channel_logger_activation_enabled(True)
+        .build()
         .activate()
     )
     a.activate(configuration)
@@ -1498,6 +1501,7 @@ def test_aether_configuration_builder_hands_off_activated_configuration() -> Non
         builder
         .with_defaults()
         .with_channel_logger_activation_enabled(True)
+        .build()
         .activate()
     )
 

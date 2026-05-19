@@ -69,6 +69,7 @@ def test_component_spellbook_automatic_logger_stays_null_when_activation_is_disa
     configuration = (
         aether.create_configuration_builder()
         .with_defaults()
+        .build()
         .activate()
     )
     aether.activate(configuration)
@@ -101,6 +102,7 @@ def test_component_spellbook_automatic_logger_uses_configured_default_logger_whe
         aether.create_configuration_builder()
         .with_channel_logger_activation_enabled(True)
         .with_default_logger(default_logger)
+        .build()
         .activate()
     )
     aether.activate(configuration)
