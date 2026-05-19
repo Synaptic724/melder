@@ -103,7 +103,7 @@ class SpellSymbolicEdge(Cleanable):
         del self.to_node
         del self.via_parameter
 
-
+@mypyc_attr(native_class=True)
 class SpellSymbolicGraph(Cleanable):
     """
     Phase 2 artifact: local, symbolic dependency graph for a single spell.
@@ -167,7 +167,7 @@ class SpellSymbolicGraph(Cleanable):
         del self.edges
         del self.spell_id
 
-
+@mypyc_attr(native_class=True)
 class SpellResolutionFrame(Cleanable):
     """
     Phase 3 artifact: concrete, executable resolution DAG for a spell.
@@ -211,7 +211,7 @@ class SpellResolutionFrame(Cleanable):
         del self.ordered_node_ids
         del self.spell_id
 
-
+@mypyc_attr(native_class=True)
 class SpellValidationIssue(Cleanable):
     """
     One validation warning or error associated with a spell's resolution state.
@@ -255,7 +255,7 @@ class SpellValidationIssue(Cleanable):
         del self.code
         del self.message
 
-
+@mypyc_attr(native_class=True)
 class SpellValidationResult(Cleanable):
     """
     Phase 4 artifact: readiness / health summary for a spell's resolution
@@ -317,7 +317,7 @@ class SpellValidationResult(Cleanable):
         del self.errors
         del self.warnings
 
-
+@mypyc_attr(native_class=True)
 class SpellResolutionProfile(Cleanable):
     """
     Canonical, in-memory representation of **how to resolve** a single Spell.

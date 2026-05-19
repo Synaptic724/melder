@@ -4,7 +4,9 @@ from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.aether.aether_utility_system import AetherUtilitySystem
 
+from mypy_extensions import mypyc_attr
 
+@mypyc_attr(native_class=True)
 class InitHelpers:
     """
     Centralized startup-time helper wrappers for logger resolution.

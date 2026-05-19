@@ -1,6 +1,8 @@
 import threading
 from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
 
+from mypy_extensions import mypyc_attr
+
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -30,6 +32,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+@mypyc_attr(native_class=True)
 class SpellbookCreationSystem(Cleanable):
     """
     Internal conjure orchestration system for Spellbook.

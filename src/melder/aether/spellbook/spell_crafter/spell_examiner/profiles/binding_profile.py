@@ -65,7 +65,7 @@ class SpellBindingProfile(Cleanable):
         del self.original_object
 
 
-
+@mypyc_attr(native_class=True)
 class ClassBindingProfile(SpellBindingProfile):
     """
     Binding-time view of a class candidate.
@@ -186,7 +186,7 @@ class ClassBindingProfile(SpellBindingProfile):
         del self.method_names
         super().cleanup()
 
-
+@mypyc_attr(native_class=True)
 class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
@@ -222,7 +222,7 @@ class CallableParameterBindingSummary:
         self.default_repr: Optional[str] = default_repr
         self.annotation_repr: Optional[str] = annotation_repr
 
-
+@mypyc_attr(native_class=True)
 class CallableBindingProfile(SpellBindingProfile):
     """
     Binding-time view of a function, method, or lambda spell candidate.
@@ -344,7 +344,7 @@ class CallableBindingProfile(SpellBindingProfile):
 
         super().cleanup()
 
-
+@mypyc_attr(native_class=True)
 class InstanceBindingProfile(SpellBindingProfile):
     """
     Binding-time view of an existing object instance bound as an EXISTING_CREATION spell.
@@ -404,7 +404,7 @@ class InstanceBindingProfile(SpellBindingProfile):
 
         super().cleanup()
 
-
+@mypyc_attr(native_class=True)
 class OtherBindingProfile(SpellBindingProfile):
     """
     Fallback binding profile for anything that does not fit normal shapes.

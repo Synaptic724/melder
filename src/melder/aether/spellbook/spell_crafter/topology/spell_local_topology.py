@@ -78,7 +78,7 @@ class SpellSocketDescriptor:
     contract_key: Optional[Tuple[str, str]] = None
     contract_late_binding: Optional[bool] = None
 
-
+@mypyc_attr(native_class=True)
 class SpellLocalTopology(Cleanable):
     """
     Local topology view for a single spell's constructor.

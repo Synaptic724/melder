@@ -3,9 +3,10 @@ import inspect
 from functools import lru_cache
 from typing import Any, Optional, Tuple, Union, TypeVar, Type
 
+from mypy_extensions import mypyc_attr
 
 T = TypeVar("T", bound=Enum)
-
+@mypyc_attr(native_class=True)
 class EnumHelpers:
     """
     Small helper surface for enum normalization and validation.
@@ -47,7 +48,7 @@ class EnumHelpers:
         raise ValueError(
             f"Expected a string or {enum.__name__} member, got {type(value).__name__}."
         )
-
+@mypyc_attr(native_class=True)
 class SpellInputUtils:
     """
     SpellInputUtils

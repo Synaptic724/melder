@@ -3,6 +3,7 @@ import threading
 from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union
 from contextlib import contextmanager
 import ulid
+from mypy_extensions import mypyc_attr
 
 # Command Ops imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -14,7 +15,7 @@ R = TypeVar("R")
 
 _OnCollect = Callable[["SyncWeakRef[T]"], None]
 
-
+@mypyc_attr(native_class=True)
 class SyncWeakRef(Cleanable, ISync, Generic[T]):
     """
     SyncWeakRef(target)

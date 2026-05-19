@@ -1,9 +1,10 @@
 from collections import deque
 from typing import Deque, Literal, Optional
 
+from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 
-
+@mypyc_attr(native_class=True)
 class TicketFlag(Cleanable):
     """
     Deque-backed boolean-style flag using ticket cardinality.

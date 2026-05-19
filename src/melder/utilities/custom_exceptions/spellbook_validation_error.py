@@ -1,6 +1,8 @@
 from melder.utilities.interfaces.ispell import ISpell
 
+from mypy_extensions import mypyc_attr
 
+@mypyc_attr(native_class=True)
 class SpellbookValidationError(RuntimeError):
     """
     Raised when the Spellbook resolution pipeline (requirements -> symbolic

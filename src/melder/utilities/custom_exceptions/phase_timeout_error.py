@@ -1,6 +1,8 @@
 from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
 
+from mypy_extensions import mypyc_attr
 
+@mypyc_attr(native_class=True)
 class PhaseTimeoutError(PhaseSchedulerError):
     """
     Raised when one scheduled phase exceeds its configured barrier timeout.

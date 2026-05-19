@@ -1,8 +1,11 @@
 from typing import List
+
+from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
 
-
+@mypyc_attr(native_class=True)
 class PhaseExecutionError(PhaseSchedulerError):
     """
     Raised when one or more units of work in a phase fail.
