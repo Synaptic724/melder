@@ -52,4 +52,8 @@ class ConduitState(Enum):
         if value is None:
             return None
 
-        return EnumHelpers.convert_enum_and_check(value=value, enum=ConduitState)
+        resolved_state: ConduitState = EnumHelpers.convert_enum_and_check(
+            value=value,
+            enum=ConduitState,
+        )
+        return resolved_state
