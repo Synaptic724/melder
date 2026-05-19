@@ -1,6 +1,6 @@
 from typing import Any, ContextManager, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 import threading
-from types import ModuleType
+from types import ModuleType, TracebackType
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
@@ -35,7 +35,7 @@ class IConduit(ICleanable, Protocol):
     __dynamic_environment__: bool
     _aetheric_frame: str
     _spellbook: ISpellbook
-    _nexus: 'INexus'
+    _nexus: Any
     _root_conduit_id: str
 
     _configuration: 'IConfiguration'
@@ -154,7 +154,12 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
         """
         Public API
 
@@ -647,13 +652,13 @@ class IConduit(ICleanable, Protocol):
     def bind(
             self,
             *,
-            spell,
+            spell: Any,
             existence: str | Existence,
             permissions: str = "create",
-            spellframe: Any=None,
-            binding_name:Optional[str] =None,
+            spellframe: Any = None,
+            binding_name: Optional[str] = None,
             profile: str = "general",
-            **kwargs,
+            **kwargs: Any,
     ) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
@@ -1367,7 +1372,7 @@ class IConduit(ICleanable, Protocol):
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
-            aetheric_frame="default",
+            aetheric_frame: str = "default",
             reason: Any = None,
             root_spell_id: str | None = None,
             link_dependencies: bool = False,
@@ -1410,7 +1415,7 @@ class IConduit(ICleanable, Protocol):
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
-            aetheric_frame="default",
+            aetheric_frame: str = "default",
             reason: Any = None,
             link_dependencies: bool = False,
     ) -> dict:
@@ -1448,7 +1453,7 @@ class IConduit(ICleanable, Protocol):
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
             root_spell_id: str | None = None,
-            aetheric_frame="default",
+            aetheric_frame: str = "default",
     ) -> bool | None:
         """
         Public API
@@ -1482,7 +1487,7 @@ class IConduit(ICleanable, Protocol):
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
             root_spell_id: str | None = None,
-            aetheric_frame="default",
+            aetheric_frame: str = "default",
     ) -> dict:
         """
         Public API
@@ -1544,7 +1549,7 @@ class IConduit(ICleanable, Protocol):
             *,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
-            aetheric_frame="default",
+            aetheric_frame: str = "default",
     ) -> bool | None:
         """
         Public API

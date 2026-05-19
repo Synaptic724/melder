@@ -36,6 +36,7 @@ from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_d
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
+from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
 from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
 from melder.utilities.interfaces.imutationpatchmap import IMutationPatchMap
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
@@ -257,7 +258,7 @@ class SpellCrafter(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
         self._spell: ISpell = spell
-        spellbook = self._get_required_spellbook_from_spell(spell)
+        spellbook = spell._spellbook
         self._spell_validator: ISpellValidationSystem = spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = (
             self._get_required_spell_system_states_from_spell(spell)
@@ -294,35 +295,6 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, IRootResolutionBlueprint]] = None
         self._is_broken: bool = False
-
-    def _get_required_spellbook(self) -> ISpellbook:
-        """
-        Return the owning spellbook for this crafter or raise.
-
-        Returns:
-            ISpellbook: Borrowed owning spellbook runtime surface.
-        """
-        spellbook = self._spell._spellbook
-        if spellbook is None:
-            raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
-        return spellbook
-
-    @staticmethod
-    def _get_required_spellbook_from_spell(spell: ISpell) -> ISpellbook:
-        """
-        Return the owning spellbook attached to one spell or raise.
-
-        Args:
-            spell:
-                Owning spell whose spellbook is required.
-
-        Returns:
-            ISpellbook: Attached owning spellbook runtime surface.
-        """
-        spellbook = spell._spellbook
-        if spellbook is None:
-            raise RuntimeError("SpellCrafter requires a live owning Spellbook.")
-        return spellbook
 
     @staticmethod
     def _get_required_spellbook_frame_name(spellbook: ISpellbook) -> str:
@@ -1190,7 +1162,7 @@ class SpellCrafter(Cleanable):
                 return None
 
         try:
-            spellbook = self._get_required_spellbook()
+            spellbook = self._spell._spellbook
             contracted_lookup = spellbook._lookup_contracted_spells
             contracted_maps = spellbook._contracted_spells
             frame_configuration = spellbook._aetheric_frame_configuration
@@ -1320,7 +1292,7 @@ class SpellCrafter(Cleanable):
                 return None
 
         try:
-            spellbook = self._get_required_spellbook()
+            spellbook = self._spell._spellbook
             contracted_lookup = spellbook._lookup_contracted_spells
             contracted_maps = spellbook._contracted_spells
             frame_configuration = spellbook._aetheric_frame_configuration
@@ -1442,7 +1414,8 @@ class SpellCrafter(Cleanable):
         part_type = type(part)
         if part_type is dict or part_type is tuple or part_type is list or part_type is set or part_type is frozenset:
             try:
-                return pickle.dumps(part, protocol=5)
+                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
+                return encoded_part_from_collection
             except (pickle.PickleError, TypeError, AttributeError):
                 return repr(part).encode("utf-8")
         if part is None:
@@ -1460,7 +1433,8 @@ class SpellCrafter(Cleanable):
         if part_type is bytearray:
             return b"Y" + bytes(part)
         try:
-            return pickle.dumps(part, protocol=5)
+            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
+            return encoded_part_from_object
         except (pickle.PickleError, TypeError, AttributeError):
             return repr(part).encode("utf-8")
 
@@ -2137,7 +2111,7 @@ class SpellCrafter(Cleanable):
 
     def _build_injection_instance_rows(
             self,
-            instance_injections: Dict[Tuple[str, Optional[int]], Any],
+            instance_injections: Mapping[Tuple[str, Optional[int]], IInjectionSpec],
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
         Build deterministic schema rows for Phase9 injection specifications.
@@ -2186,8 +2160,11 @@ class SpellCrafter(Cleanable):
                     dependency_keys: Tuple[Tuple[str, Optional[int]], ...] = ()
                     raw_dependency_keys = param_source.dependency_keys
                     if raw_dependency_keys:
-                        dependency_key_list = [
-                            tuple(dependency_key)
+                        dependency_key_list: List[Tuple[str, Optional[int]]] = [
+                            (
+                                str(dependency_key[0]),
+                                dependency_key[1],
+                            )
                             for dependency_key in raw_dependency_keys
                         ]
                         if len(dependency_key_list) > 1:
@@ -3198,7 +3175,7 @@ class SpellCrafter(Cleanable):
 
         compiled_executor = compile_phase12_no_overrides_executor(
             codegen_ir=no_overrides_payload,
-            spell_lookup=self._get_required_spellbook()._spell_id_pool,
+            spell_lookup=self._spell._spellbook._spell_id_pool,
         )
         if no_overrides_payload.get("step_count", 0) > 0 and compiled_executor is None:
             raise RuntimeError(
@@ -3306,7 +3283,7 @@ class SpellCrafter(Cleanable):
         Returns:
             Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
         """
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         for spell_instance in spellbook._spell_id_pool.values():
             yield spell_instance.spell_index, spell_instance
 
@@ -3555,7 +3532,8 @@ class SpellCrafter(Cleanable):
             spellmap = dep.spellmap_default
             if spellmap is None:
                 return None
-            return spellmap.canonical_key
+            spellmap_key: Tuple[str, str] = spellmap.canonical_key
+            return spellmap_key
 
         if dep.di_shape in (
             ParameterDIShape.SINGLE_BY_ANNOTATION,
@@ -3563,10 +3541,11 @@ class SpellCrafter(Cleanable):
         ):
             if dep.target_annotation is None:
                 return None
-            return SpellInputUtils.normalize_spell_key(
+            normalized_key: Tuple[str, str] = SpellInputUtils.normalize_spell_key(
                 spellframe=dep.target_annotation,
                 binding_name=None,
             )
+            return normalized_key
 
         return None
 
@@ -4250,7 +4229,7 @@ class SpellCrafter(Cleanable):
 
         # --- 2. Filter to spellbook-visible spells -------------------------
         # Use the live spell_id_pool (no copies) for version-id -> Spell lookup.
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         visible_spell_ids = spellbook._spell_id_pool.keys()
 
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
@@ -4544,7 +4523,7 @@ class SpellCrafter(Cleanable):
         spell_system_states = self._get_required_spell_system_states()
         snapshot = adjacency_builder.build(spell_system_states)
 
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         spell_lookup = spellbook._spell_id_pool
         visible_spell_ids = spell_lookup.keys()
         visible_snapshot = self._filter_snapshot_to_visible_spells(
@@ -4663,7 +4642,7 @@ class SpellCrafter(Cleanable):
                 Filtered mapping containing only owned roots.
         """
         self.check_cleaned()
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         owned_spell_ids = spellbook._spells_by_id.keys()
         return {
             root_id: blueprint
@@ -4707,7 +4686,7 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
         root_blueprint = self._get_required_root_blueprint_phase5()
-        spell_lookup = self._get_required_spellbook()._spell_id_pool
+        spell_lookup = self._spell._spellbook._spell_id_pool
         phase8_occurrence_plan_fast_key = self._build_phase8_occurrence_plan_fast_key(
             root_blueprint=root_blueprint,
             spell_lookup=spell_lookup,
@@ -5019,7 +4998,7 @@ class SpellCrafter(Cleanable):
 
         occurrence_plan = self._get_required_occurrence_plan_phase8()
         injection_plan = self._injection_plan_phase9
-        spell_lookup = self._get_required_spellbook()._spell_id_pool
+        spell_lookup = self._spell._spellbook._spell_id_pool
 
         # Fast key avoids rebuilding the deep phase11 no-overrides signature
         # when phase8/phase9 inputs and plan references are unchanged.
@@ -5276,7 +5255,7 @@ class SpellCrafter(Cleanable):
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
 
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         spell_lookup: Dict[str, ISpell] = spellbook._spell_id_pool
         for spell_id, spell_instance in spell_lookup.items():
             crafter = self._get_required_crafter_from_spell(spell_instance)
@@ -5354,7 +5333,7 @@ class SpellCrafter(Cleanable):
             None.
         """
         self.check_cleaned()
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         spell_lookup_pool = spellbook._spell_id_pool
         index = self._spell_system_index_phase5
         blueprints = self._entire_dag_blueprint_phase5
@@ -5630,7 +5609,7 @@ class SpellCrafter(Cleanable):
         """
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
         """
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         frame_name = self._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(
@@ -5677,7 +5656,7 @@ class SpellCrafter(Cleanable):
             - Uses component-of upsert semantics to preserve unrelated roots.
             - Registers the same revalidator contract as frame-wide wiring.
         """
-        spellbook = self._get_required_spellbook()
+        spellbook = self._spell._spellbook
         frame_name = self._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
         owned_root_blueprints = self._filter_root_blueprints_to_owned(

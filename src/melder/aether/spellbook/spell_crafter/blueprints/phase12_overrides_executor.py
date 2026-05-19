@@ -377,11 +377,16 @@ def _compile_phase12_overrides_executor_core(
             raise RuntimeError("Phase 12 override executor requires a root instance key.")
         root_spell_id = resolved_root_spell_id
     else:
-        root_instance_key = execution_plan.root_instance_key
+        resolved_execution_plan = execution_plan
+        if resolved_execution_plan is None:
+            raise ValueError(
+                "execution_plan must not be None when plan_rows are absent."
+            )
+        root_instance_key = resolved_execution_plan.root_instance_key
         if root_instance_key is None:
             raise RuntimeError("Phase 12 override executor requires a root instance key.")
-        steps = tuple(execution_plan.steps)
-        root_spell_id = execution_plan.root_spell_id
+        steps = tuple(resolved_execution_plan.steps)
+        root_spell_id = resolved_execution_plan.root_spell_id
 
     step_override_targets = _build_step_override_targets(
         steps=steps,
@@ -402,6 +407,10 @@ def _compile_phase12_overrides_executor_core(
             step_count=len(steps),
         )
     if code_object is None:
+        if source_to_compile is None:
+            raise RuntimeError(
+                "Phase 12 override executor requires source text when no code object is supplied."
+            )
         code_object = compile_phase12_overrides_executor_code_object(
             source=source_to_compile,
         )
@@ -679,8 +688,13 @@ def _build_shape_source_step_metadata(
                 for param_name, value in row["contract_payload_items"]
             )
         if has_step_target_counts:
+            step_target_counts = override_target_counts_by_step
+            if step_target_counts is None:
+                raise RuntimeError(
+                    "Phase 12 overrides step schema requires step target counts."
+                )
             static_override_target_count = int(
-                override_target_counts_by_step[row_index]
+                step_target_counts[row_index]
             )
         else:
             static_override_target_count = (
@@ -2570,13 +2584,13 @@ def _resolve_root_instance_key(
     if root_spell_id is None:
         return None
     for plan_step in steps:
-        instance_key = plan_step.instance_key
+        instance_key: Tuple[str, Optional[int]] = plan_step.instance_key
         if instance_key[0] == root_spell_id and instance_key[1] is None:
             return instance_key
     for plan_step in steps:
-        instance_key = plan_step.instance_key
-        if instance_key[0] == root_spell_id:
-            return instance_key
+        fallback_instance_key: Tuple[str, Optional[int]] = plan_step.instance_key
+        if fallback_instance_key[0] == root_spell_id:
+            return fallback_instance_key
     return None
 
 
@@ -2610,6 +2624,7 @@ def _build_step_override_targets(
     path_metadata_cache = prefilter_path_metadata_cache
     if path_metadata_cache is None:
         path_metadata_cache = {}
+    resolved_path_registry = path_registry
 
     def _resolve_socket_path_metadata(socket_ref: Any) -> Tuple[Any, Any]:
         """
@@ -2622,9 +2637,13 @@ def _build_step_override_targets(
         metadata = path_metadata_cache.get(socket_ref)
         if metadata is not None:
             return metadata
+        if resolved_path_registry is None:
+            raise RuntimeError(
+                "path_registry must not be None when resolving override socket metadata."
+            )
         metadata = (
-            path_registry.parent_id(socket_ref.param_path_id),
-            path_registry.depth(socket_ref.param_path_id),
+            resolved_path_registry.parent_id(socket_ref.param_path_id),
+            resolved_path_registry.depth(socket_ref.param_path_id),
         )
         path_metadata_cache[socket_ref] = metadata
         return metadata

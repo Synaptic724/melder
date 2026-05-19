@@ -96,12 +96,12 @@ class ISpell(ICleanable, Protocol):
     dependencies: List[str]
 
     # Spellbook
-    _spellbook: Optional['ISpellbook']
+    _spellbook: Any
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline via SpellCrafter
     _crafter: Optional[Any] # 'SpellCrafter'
-    _creation_context: Optional['ICreationContext']
+    _creation_context: Any
     _creation_context_factory: Optional[Any]
     _creation_context_switch: CounterSwitch
     _dynamic_environment: bool
@@ -446,7 +446,7 @@ class ISpell(ICleanable, Protocol):
     # Resolution Phase Artifacts (read-only view)
     # ------------------------------------------------------------------
     @property
-    def requirements(self) -> Optional['SpellRequirements']:
+    def requirements(self) -> Optional['ISpellRequirements']:
         """
         Return the Phase 1 requirements artifact for this spell, if present.
 

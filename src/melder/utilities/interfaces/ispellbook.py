@@ -4,6 +4,7 @@ import threading
 from types import ModuleType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeTransactionType
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeControlTransactionRequest
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -50,13 +51,13 @@ class ISpellbook(ICleanable, Protocol):
     _bind: Optional[Any]
     _id: str
     _lock: threading.RLock
-    _aether: 'IAether'
+    _aether: Any
     _aetheric_frame: Optional[str]
     _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'
     _spell_id_pool: Dict[str, ISpell]
     _spellbook_validation_required: bool
-    _nexus: 'INexus'
+    _nexus: Any
     _active_change_request: Optional[ChangeControlTransactionRequest]
 
     # Spell Validator
@@ -127,7 +128,7 @@ class ISpellbook(ICleanable, Protocol):
             *,
             spell: Any,
             existence: Union[str, Existence],
-            permissions: str = "create",
+            permissions: Union[str, Permissions] = "create",
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
@@ -454,7 +455,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional['IConduit']:
+    ) -> Optional[Any]:
         """
         Return the conduit that owns the supplied spell id in Aether.
         """

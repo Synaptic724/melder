@@ -247,9 +247,9 @@ class Spell(Cleanable, ISpell):
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
+            spellbook: ISpellbook,
             profile: Optional[Any] = None,
             existing_object: Optional[object] = None,
-            spellbook: Optional[ISpellbook] = None,
             *args: Any,
             **kwargs: Any,
     ):
@@ -269,7 +269,7 @@ class Spell(Cleanable, ISpell):
             aetheric_frame (str): Aether frame identifier this spell belongs to.
             profile (Optional[Any]): Binding/introspection profile attached by the examiner.
             existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
-            spellbook (Optional[ISpellbook]): Back-reference to the owning spellbook for coordination.
+            spellbook (ISpellbook): Back-reference to the owning spellbook for coordination.
             *args: Optional positional metadata tags.
             **kwargs: Optional keyword metadata map attached to this spell.
 
@@ -328,10 +328,10 @@ class Spell(Cleanable, ISpell):
         self.permissions: Permissions = permissions
 
         # Spellbook
-        self._spellbook: Optional[ISpellbook] = spellbook
+        self._spellbook: ISpellbook = spellbook
 
         # Spell Metadata
-        self.tags = args if args else []
+        self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: dict = {}
         self.disposal_method_names: List[str] = []
@@ -686,6 +686,8 @@ class Spell(Cleanable, ISpell):
         if creation_context_switch.state >= 2:
             return self._creation_context
         creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+            raise RuntimeError("Spell has no configured CreationContextFactory.")
         return creation_context_factory.get_or_build_for_spell(self)
 
 
@@ -872,7 +874,7 @@ class Spell(Cleanable, ISpell):
         return self._owner_conduit_id, self._owner_conduit_name
 
     @property
-    def requirements(self) -> Optional["SpellRequirements"]:
+    def requirements(self) -> Optional[ISpellRequirements]:
         """
         Phase 1 artifact for this spell, if it has been computed.
 
@@ -880,7 +882,10 @@ class Spell(Cleanable, ISpell):
         """
         if self._crafter is None:
             return None
-        return self._crafter.requirements
+        requirements = self._crafter.requirements
+        if requirements is None:
+            return None
+        return requirements
 
     @property
     def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:

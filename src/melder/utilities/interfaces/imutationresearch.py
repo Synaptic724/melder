@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Protocol, Sequence, runtime_checkable
 
 from melder.utilities.interfaces.imutationconduit import IMutationConduit
 from melder.utilities.interfaces.icleanable import ICleanable
+from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.imutationframe import IMutationFrame
 from melder.utilities.interfaces.imutationresearchconfiguration import (
     IMutationResearchConfiguration,
@@ -9,6 +10,7 @@ from melder.utilities.interfaces.imutationresearchconfiguration import (
 from melder.utilities.interfaces.imutationresearchconfigurationbuilder import (
     IMutationResearchConfigurationBuilder,
 )
+from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 
 @runtime_checkable
@@ -58,7 +60,7 @@ class IMutationResearch(ICleanable, Protocol):
     def deactivate(self) -> None:
         ...
 
-    def create_mutation_conduit(self, conduit) -> "IMutationConduit":
+    def create_mutation_conduit(self, conduit: IConduit) -> "IMutationConduit":
         ...
 
     def create_mutation_frame(
@@ -69,7 +71,7 @@ class IMutationResearch(ICleanable, Protocol):
 
     def create_session(
             self,
-            target_index,
+            target_index: ISpellIndex,
             *,
             name: Optional[str] = None,
             level: Optional[int] = None,
@@ -77,7 +79,7 @@ class IMutationResearch(ICleanable, Protocol):
     ) -> object:
         ...
 
-    def get_session_for_index(self, target_index) -> Optional[object]:
+    def get_session_for_index(self, target_index: ISpellIndex) -> Optional[object]:
         ...
 
     def get_session_by_index_id(self, index_id: str) -> Optional[object]:
@@ -86,26 +88,26 @@ class IMutationResearch(ICleanable, Protocol):
     def list_sessions(self) -> Sequence[object]:
         ...
 
-    def remove_session_for_index(self, target_index) -> None:
+    def remove_session_for_index(self, target_index: ISpellIndex) -> None:
         ...
 
     def begin_spell_mutation(
             self,
-            target_index,
+            target_index: ISpellIndex,
             *,
             research_name: Optional[str] = None,
             message: Optional[str] = None,
             tags: Optional[List[str]] = None,
-    ) -> None:
+    ) -> object:
         ...
 
     def begin_creation_mutation(
             self,
-            target_index,
+            target_index: ISpellIndex,
             creation_id: str,
             *,
             research_name: Optional[str] = None,
             message: Optional[str] = None,
             tags: Optional[List[str]] = None,
-    ) -> None:
+    ) -> object:
         ...
