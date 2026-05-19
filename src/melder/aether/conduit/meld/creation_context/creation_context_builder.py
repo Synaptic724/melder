@@ -24,7 +24,7 @@ class CreationContextBuilder(Cleanable):
         - Output context is deterministic for the same spell state.
     """
 
-    __slots__ = []
+    __slots__: list[str] = []
 
     def __init__(self) -> None:
         """
@@ -170,6 +170,8 @@ class CreationContextBuilder(Cleanable):
             return False
 
         crafter = spell._crafter
+        if crafter is None:
+            return False
         dispatch_route = spell.execution_plan_dispatch_route
         if dispatch_route and dispatch_route.startswith("FAST_TRANSIENT"):
             return True
@@ -193,6 +195,8 @@ class CreationContextBuilder(Cleanable):
         if spell.is_existing_creation:
             return None
         crafter = spell._crafter
+        if crafter is None:
+            return None
         return crafter.phase12_no_overrides_executor
 
     @staticmethod
@@ -208,6 +212,8 @@ class CreationContextBuilder(Cleanable):
         if spell.is_existing_creation:
             return None
         crafter = spell._crafter
+        if crafter is None:
+            return None
         return crafter.override_patch_map_phase10
 
     @staticmethod
@@ -248,6 +254,8 @@ class CreationContextBuilder(Cleanable):
             return None
 
         crafter = spell._crafter
+        if crafter is None:
+            return None
         codegen_ir = crafter.codegen_ir
         if codegen_ir is None:
             return None
@@ -271,6 +279,8 @@ class CreationContextBuilder(Cleanable):
             path_registry = root_blueprint_phase5.path_registry
 
         spellbook = spell._spellbook
+        if spellbook is None:
+            return None
         spell_lookup = spellbook._spell_id_pool
 
         plan_rows = override_execution_ir_payload.get("steps_rows")

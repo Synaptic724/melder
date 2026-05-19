@@ -246,7 +246,12 @@ class CreationContextFactory(Cleanable):
         """
         creation_context_switch = spell._creation_context_switch
         if creation_context_switch.state >= 2:
-            return spell._creation_context
+            creation_context = spell._creation_context
+            if creation_context is None:
+                raise RuntimeError(
+                    "Spell creation context switch is open but no context is published."
+                )
+            return creation_context
         switch_state = creation_context_switch.selector()
         if switch_state == 1:
             creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
@@ -259,7 +264,12 @@ class CreationContextFactory(Cleanable):
             spell._creation_context = built_creation_context
             creation_context_switch.advance(1)
             return built_creation_context
-        return spell._creation_context
+        creation_context = spell._creation_context
+        if creation_context is None:
+            raise RuntimeError(
+                "Spell creation context was not published by the selected builder."
+            )
+        return creation_context
 
     @staticmethod
     def _set_creation_context_switch_open(spell: ISpell) -> None:
