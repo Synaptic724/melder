@@ -31,7 +31,7 @@ class ConduitState(Enum):
         return self.name.lower()
 
     @staticmethod
-    def resolve(value: str | Enum | None) -> Optional['ConduitState']:
+    def resolve(value: str | Enum | None) -> Optional["ConduitState"]:
         """
         Normalize external conduit-state input into a `ConduitState` value.
 
@@ -49,4 +49,7 @@ class ConduitState(Enum):
                 If the string or enum value does not map to a valid conduit
                 state.
         """
+        if value is None:
+            return None
+
         return EnumHelpers.convert_enum_and_check(value=value, enum=ConduitState)
