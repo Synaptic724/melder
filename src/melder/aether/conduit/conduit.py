@@ -15,7 +15,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
@@ -1740,55 +1739,6 @@ class Conduit(Cleanable, IConduit):
         self.check_cleaned()
         with self._lock:
             return self._spellbook.inspect_spell(spell, aetheric_frame)
-
-    def create_binder(
-            self,
-            *,
-            default_existence: Existence = Existence.unique,
-            default_permissions: str = "create",
-    ) -> ISpellBinder:
-        """
-        Public API
-
-        Creates an `ISpellBinder` surface backed by `SpellBinder` and providing
-        an Autofac-style
-        fluent syntax on top of `Conduit.bind(...)`.
-
-        This does *not* introduce a new registration path; it simply
-        forwards everything into the existing binding pipeline so all
-        reflection, `SpellIndex` construction, `SpellType` classification,
-        and validation flows remain exactly the same.
-
-        Example:
-            binder = spellbook.create_binder()
-
-            binder.bind(MyService) \\
-                  .as_unique() \\
-                  .under_spellframe(IMyServiceProtocol) \\
-                  .named("primary") \\
-                  .with_permissions("create") \\
-                  .finalize()
-
-            # Reuse the same binder for another spell:
-            binder.bind(OtherService, existence=Existence.many).finalize()
-
-        Args:
-            default_existence (Existence):
-                Default lifecycle scope for fluent registrations started via
-                this binder.
-
-            default_permissions (str):
-                Default permissions for fluent registrations (e.g. "create").
-
-        Returns:
-            ISpellBinder:
-                A reusable fluent registration helper bound to this Spellbook.
-        """
-        self.check_cleaned()
-        return self._spellbook.create_binder(
-            default_existence=default_existence,
-            default_permissions=default_permissions,
-        )
 
     def begin_transaction(
             self,

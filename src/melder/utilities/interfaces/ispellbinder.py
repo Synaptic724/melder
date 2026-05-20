@@ -6,8 +6,8 @@ from melder.aether.spellbook.existence.existence import Existence
 @runtime_checkable
 class ISpellBinder(Protocol):
     """
-    Interface for the public fluent registration surface returned by
-    `Spellbook.create_binder(...)` and `Conduit.create_binder(...)`.
+    Interface for the public fluent registration surface exposed by direct
+    `SpellBinder(...)` construction.
 
     This interface models the collaborator-facing fluent API rather than the
     concrete `SpellBinder` storage layout. Callers use it to stage one pending

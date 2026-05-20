@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder import SpellBinder
 import pytest
 
 from melder.aether.aether import Aether
@@ -280,7 +281,7 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
                 existence=Existence.unique,
                 permissions="create",
             )
-            logger_id = conduit.create_binder().bind(BasicLogger).as_unique().finalize()
+            logger_id = SpellBinder(conduit._spellbook, ).bind(BasicLogger).as_unique().finalize()
 
         config_spell = conduit.get_spell_by_id(config_id)
         logger_spell = conduit.get_spell_by_id(logger_id)
@@ -470,3 +471,4 @@ def test_conduit_public_api_get_conduit_by_id_name_and_spell_id() -> None:
     finally:
         conduit_b.cleanup()
         conduit_a.cleanup()
+

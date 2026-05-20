@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder import SpellBinder
 import pytest
 
 from melder.aether.aether import Aether
@@ -57,7 +58,7 @@ def test_conduit_binder_finalize_requires_bind() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        binder = conduit.create_binder()
+        binder = SpellBinder(conduit._spellbook, )
         with pytest.raises(RuntimeError, match="no active spell"):
             binder.finalize()
     finally:
@@ -88,7 +89,7 @@ def test_conduit_binder_reuse_and_named_binding() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        binder = conduit.create_binder()
+        binder = SpellBinder(conduit._spellbook, )
         with spellbook.binding_transaction():
             config_id = binder.bind(BasicConfig).named("primary").finalize()
             logger_id = binder.bind(BasicLogger).as_unique().finalize()
@@ -123,7 +124,7 @@ def test_conduit_binder_cleanup_blocks_usage() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        binder = conduit.create_binder()
+        binder = SpellBinder(conduit._spellbook, )
         binder.cleanup()
         with pytest.raises(RuntimeError, match="cleaned"):
             binder.bind(BasicConfig)
@@ -154,7 +155,7 @@ def test_conduit_binder_defaults_apply_permissions_and_existence() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        binder = conduit.create_binder(
+        binder = SpellBinder(conduit._spellbook, 
             default_existence=Existence.many,
             default_permissions="read",
         )
@@ -193,7 +194,7 @@ def test_conduit_binder_named_spellframe_resolution_and_lookup() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        binder = conduit.create_binder()
+        binder = SpellBinder(conduit._spellbook, )
         with conduit.binding_transaction():
             spell_id = (
                 binder.bind(BasicService)
@@ -277,7 +278,7 @@ def test_conduit_binder_hooks_execute_in_order() -> None:
     try:
         with spellbook.binding_transaction():
             spell_id = (
-                conduit.create_binder()
+                SpellBinder(conduit._spellbook, )
                 .bind(BasicService)
                 .as_unique()
                 .with_pre_hook(pre_hook)
@@ -292,3 +293,4 @@ def test_conduit_binder_hooks_execute_in_order() -> None:
         assert events == ["pre", "activation", "post", "pre", "post"]
     finally:
         conduit.cleanup()
+

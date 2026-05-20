@@ -368,51 +368,6 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def create_binder(
-            self,
-            *,
-            default_existence: Existence = Existence.unique,
-            default_permissions: str = "create",
-    ) -> ISpellBinder:
-        """
-        Public API
-
-        Creates an `ISpellBinder` surface backed by `SpellBinder` and providing
-        an Autofac-style
-        fluent syntax on top of `Spellbook.bind(...)`.
-
-        This does *not* introduce a new registration path; it simply
-        forwards everything into the existing binding pipeline so all
-        reflection, `SpellIndex` construction, `SpellType` classification,
-        and validation flows remain exactly the same.
-
-        Example:
-            binder = spellbook.create_binder()
-
-            binder.bind(MyService) \\
-                  .as_unique() \\
-                  .under_spellframe(IMyServiceProtocol) \\
-                  .named("primary") \\
-                  .with_permissions("create") \\
-                  .finalize()
-
-            # Reuse the same binder for another spell:
-            binder.bind(OtherService, existence=Existence.many).finalize()
-
-        Args:
-            default_existence (Existence):
-                Default lifecycle scope for fluent registrations started via
-                this binder.
-
-            default_permissions (str):
-                Default permissions for fluent registrations (e.g. "create").
-
-        Returns:
-            ISpellBinder:
-                A reusable fluent registration helper bound to this Spellbook.
-        """
-        ...
-
     def create_new_preset_spellbook(self) -> "ISpellbook":
         """
         Create one new Spellbook instance reusing this Spellbook's current frame/configuration preset.

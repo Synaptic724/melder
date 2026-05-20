@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder import SpellBinder
 import pytest
 
 from melder.aether.aether import Aether
@@ -55,7 +56,7 @@ def test_spellbook_fluent_bind_inline_arguments_resolve() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(
         BasicService,
         existence=Existence.unique,
@@ -91,7 +92,7 @@ def test_spellbook_fluent_with_permissions_sets_permissions() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(BasicService).with_permissions("read").finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -142,7 +143,7 @@ def test_spellbook_fluent_with_kwargs_overrides_hooks() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = (
         binder.bind(BasicService, pre_hooks=[first_hook])
         .with_kwargs(pre_hooks=[second_hook])
@@ -233,7 +234,7 @@ def test_spellbook_fluent_multiple_hook_lists_preserve_order() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = (
         binder.bind(BasicService)
         .as_unique()
@@ -278,7 +279,7 @@ def test_spellbook_fluent_as_many_creates_new_instances() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(BasicService).as_many().finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -306,7 +307,7 @@ def test_spellbook_fluent_as_unique_per_conduit_reuses_per_conduit() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(BasicService).as_unique_per_conduit().finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -339,7 +340,7 @@ def test_spellbook_fluent_as_unique_per_conduit_lineage_shares_lineage() -> None
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(BasicService).as_unique_per_conduit_lineage().finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -369,7 +370,7 @@ def test_spellbook_fluent_as_unique_per_spell_space_scopes_instances() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(BasicService).as_unique_per_spell_space().finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -405,7 +406,7 @@ def test_spellbook_fluent_as_unique_per_conduit_cluster_shares_across_cluster() 
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     owner_book = Spellbook(configuration=configuration)
-    binder = owner_book.create_binder()
+    binder = SpellBinder(owner_book, )
     spell_id = binder.bind(BasicService).as_unique_per_conduit_cluster().finalize()
 
     borrower_book = Spellbook(configuration=configuration)
@@ -442,7 +443,7 @@ def test_spellbook_fluent_with_existence_overrides_default() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder(default_existence=Existence.many, default_permissions="create")
+    binder = SpellBinder(spellbook, default_existence=Existence.many, default_permissions="create")
     spell_id = binder.bind(BasicConfig).with_existence(Existence.unique).finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -452,3 +453,4 @@ def test_spellbook_fluent_with_existence_overrides_default() -> None:
         assert first is second
     finally:
         conduit.cleanup()
+

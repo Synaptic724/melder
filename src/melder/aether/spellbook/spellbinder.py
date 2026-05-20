@@ -26,7 +26,7 @@ class SpellBinder(Cleanable, ISpellBinder):
     - `bind(...)` resets any unfinished state before targeting a new spell.
     - `finalize()` delegates the assembled payload to `Spellbook.bind(...)` and
       then resets the binder for reuse.
-    - Uses a weak reference to the target Spellbook so the binder does not own
+    - Uses a weak reference to the target Spellbook, so the binder does not own
       Spellbook lifetime.
     - Becomes permanently unusable after `cleanup()` completes.
 
@@ -71,7 +71,7 @@ class SpellBinder(Cleanable, ISpellBinder):
             spellbook (ISpellbook):
                 The target Spellbook. The binder holds a weak reference to this
                 book to prevent reference cycles. If the Spellbook is collected or
-                cleaned, future binder calls will raise through the cleaned/live
+                cleaned, future binder calls will rise through the cleaned/live
                 Spellbook guard.
             default_existence (Existence):
                 The default lifecycle scope to use if one is not explicitly
@@ -115,7 +115,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         Deterministically cleans up the SpellBinder.
 
         Releases the weak reference to the Spellbook and clears all internal
-        state. After cleanup, this instance cannot be used; subsequent API calls
+        states. After cleanup, this instance cannot be used; subsequent API calls
         will fail via `check_cleaned()` / live Spellbook resolution. The method
         is idempotent.
         """
@@ -259,7 +259,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         Contract:
         - Clears any previous unfinished registration state before targeting the
           provided spell.
-        - Reinitializes existence, permissions, and profile to the defaults captured
+        - Reinitialize existence, permissions, and profile to the defaults captured
           at binder construction time.
         - Applies any immediate overrides supplied in the call itself.
         - Merges passthrough `kwargs` into the payload later sent to
@@ -327,7 +327,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         convenience methods below (e.g., a custom extension).
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -339,7 +339,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         """
         Configures the spell as a **Global Singleton** (Unique per Aetheric Frame).
 
-        **Behavior:**
+        **Behaviour:**
         - Only one instance is created for the entire Aetheric Frame.
         - Shared by ALL conduits in that frame.
 
@@ -349,7 +349,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         - Centralized logging or telemetry services.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -361,7 +361,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         """
         Configures the spell as **Transient** (Many Instances).
 
-        **Behavior:**
+        **Behaviour:**
         - A new instance is created **every time** it is requested.
         - No caching occurs.
 
@@ -371,7 +371,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         - Objects that are cheap to create and should not be shared.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -383,7 +383,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         """
         Configures the spell as **Scoped to Conduit**.
 
-        **Behavior:**
+        **Behaviour:**
         - Each Conduit gets its own unique instance.
         - Within a single Conduit, the instance is reused (singleton-per-conduit).
 
@@ -393,7 +393,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         - Is isolating "sub-applications" from one another.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -405,16 +405,16 @@ class SpellBinder(Cleanable, ISpellBinder):
         """
         Configures the spell as **Scoped to Cluster**.
 
-        **Behavior:**
+        **Behaviour:**
         - Conduits in the same named cluster share a single instance.
         - Conduits in different clusters get different instances.
 
         **Use Case:**
         - Sharing resources across a specific subsystem (e.g., "AuthCluster").
-        - Grouping related services that need shared state but shouldn't leak globally.
+        - Grouping related services that need a shared state but shouldn't leak globally.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -426,7 +426,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         """
         Configures the spell as **Scoped to Lineage** (Hierarchical).
 
-        **Behavior:**
+        **Behaviour:**
         - An instance is shared down a specific parent -> child -> grandchild chain.
         - Useful for recursive structures or inheritance-based contexts.
 
@@ -435,7 +435,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         - Sharing configuration overrides down a specific branch of the graph.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -447,13 +447,13 @@ class SpellBinder(Cleanable, ISpellBinder):
         """
         Configures the spell as **Scoped to SpellSpace** (Session/Request).
 
-        **Behavior:**
+        **Behaviour:**
         - The instance lives only as long as the manually managed `SpellSpace`.
         - When the space is closed/reset, the instance is discarded.
 
         **Use Case:**
         - Per-request handling (e.g., HTTP Request context).
-        - Batch processing jobs where state must be cleared between batches.
+        - Batch processing jobs where the state must be cleared between batches.
         - "Unit of Work" patterns where objects must live for a transaction duration.
 
         Raises:
@@ -553,7 +553,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         Later calls override existing keys in the passthrough payload.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -577,7 +577,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         `Spellbook.bind(...)` when the registration is finalized.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -594,7 +594,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         `Spellbook.bind(...)`.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -617,7 +617,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         `Spellbook.bind(...)`.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -634,7 +634,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         `Spellbook.bind(...)`.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -656,7 +656,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         `Spellbook.bind(...)`.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -673,7 +673,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         `Spellbook.bind(...)`.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
         """
         self.check_cleaned()
         with self._lock:
@@ -717,7 +717,7 @@ class SpellBinder(Cleanable, ISpellBinder):
         with self._lock:
             self._require_spell_selected()
 
-            # Access the weakref safely; raises if Spellbook is collected.
+            # Access the weakener safely; raises if Spellbook is collected.
             spellbook = self._require_spellbook()
 
             spell_id: str = spellbook.bind(

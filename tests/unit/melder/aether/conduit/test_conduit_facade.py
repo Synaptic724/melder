@@ -29,67 +29,22 @@ def _make_spell(
     return spell
 
 
-def test_create_binder_forwards_defaults(
+def test_conduit_no_longer_exposes_create_binder_surface(
     conduit_lesser: Conduit,
-    spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify create_binder forwards default arguments to Spellbook.
-
-    Contract:
-        - Default existence and permissions are passed through.
-        - The Spellbook return value is returned to the caller.
-
-    Args:
-        conduit_lesser (Conduit): Lesser conduit instance.
-        spellbook_stub (MagicMock): Spellbook stub bound to the conduit.
-
-    Raises:
-        AssertionError: If forwarding or return behavior is incorrect.
+    Verify the binder factory surface is removed from Conduit.
     """
-    sentinel = object()
-    spellbook_stub.create_binder.return_value = sentinel
-
-    result = conduit_lesser.create_binder()
-
-    spellbook_stub.create_binder.assert_called_once_with(
-        default_existence=Existence.unique,
-        default_permissions="create",
-    )
-    assert result is sentinel
+    assert not hasattr(conduit_lesser, "create_binder")
 
 
-def test_create_binder_forwards_custom_args(
+def test_conduit_no_longer_exposes_create_binder_surface_with_defaults(
     conduit_lesser: Conduit,
-    spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify create_binder forwards custom arguments to Spellbook.
-
-    Contract:
-        - Provided defaults override the standard defaults.
-        - Return value is passed through unchanged.
-
-    Args:
-        conduit_lesser (Conduit): Lesser conduit instance.
-        spellbook_stub (MagicMock): Spellbook stub bound to the conduit.
-
-    Raises:
-        AssertionError: If forwarding or return behavior is incorrect.
+    Verify the removed binder factory stays absent regardless of defaults.
     """
-    sentinel = object()
-    spellbook_stub.create_binder.return_value = sentinel
-
-    result = conduit_lesser.create_binder(
-        default_existence=Existence.many,
-        default_permissions="read",
-    )
-
-    spellbook_stub.create_binder.assert_called_once_with(
-        default_existence=Existence.many,
-        default_permissions="read",
-    )
-    assert result is sentinel
+    assert not hasattr(conduit_lesser, "create_binder")
 
 
 def test_bind_raises_for_lesser_conduit(

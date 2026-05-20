@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder import SpellBinder
 import pytest
 
 from melder.aether.aether import Aether
@@ -94,7 +95,7 @@ def test_spellbook_cleanup_is_idempotent_and_blocks_new_binder() -> None:
         Validate cleanup is idempotent and blocks new binders.
     Contract:
         - cleanup can be called multiple times safely.
-        - create_binder raises after cleanup.
+        - binder use raises after cleanup.
     Returns:
         None.
     Raises:
@@ -104,5 +105,10 @@ def test_spellbook_cleanup_is_idempotent_and_blocks_new_binder() -> None:
     spellbook.cleanup()
     spellbook.cleanup()
 
+    binder = SpellBinder(spellbook)
+
+    binder.bind(BasicService)
+
     with pytest.raises(RuntimeError, match="already been cleaned"):
-        spellbook.create_binder()
+        binder.finalize()
+

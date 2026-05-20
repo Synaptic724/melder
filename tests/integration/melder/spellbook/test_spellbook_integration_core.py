@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from threading import Barrier, Lock, Thread
+from melder import SpellBinder
 import pytest
 
 from melder.aether.aether import Aether
@@ -739,7 +740,7 @@ def test_spellbook_integration_fluent_binding_resolves_by_spellframe_and_name() 
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     binder.bind(BasicService).under_spellframe(IService).named("primary").with_permissions("create")
     spell_id = binder.finalize()
 
@@ -774,7 +775,7 @@ def test_spellbook_integration_fluent_binding_case_insensitive_keys() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     binder.bind(BasicService).under_spellframe(IService).named("Primary").with_permissions("create")
     spell_id = binder.finalize()
 
@@ -848,7 +849,7 @@ def test_spellbook_integration_fluent_binding_hooks_execute() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     binder.bind(BasicService).as_unique().with_pre_hook(pre_hook).with_post_hook(post_hook)
     binder.with_activation_hook(activation_hook)
     spell_id = binder.finalize()
@@ -931,7 +932,7 @@ def test_spellbook_integration_fluent_binding_hooks_execute_from_kwargs() -> Non
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     binder.bind(
         BasicService,
         pre_hooks=[pre_one, pre_two],
@@ -968,7 +969,7 @@ def test_spellbook_integration_fluent_binding_reuse_registers_multiple_spells() 
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     service_id = binder.bind(BasicService).as_unique().finalize()
     config_id = binder.bind(BasicConfig).as_unique().finalize()
 
@@ -995,7 +996,7 @@ def test_spellbook_integration_fluent_defaults_apply_for_many() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder(default_existence=Existence.many, default_permissions="create")
+    binder = SpellBinder(spellbook, default_existence=Existence.many, default_permissions="create")
     spell_id = binder.bind(BasicService).finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -1022,7 +1023,7 @@ def test_spellbook_integration_fluent_defaults_permissions_apply() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder(default_existence=Existence.unique, default_permissions="read")
+    binder = SpellBinder(spellbook, default_existence=Existence.unique, default_permissions="read")
     binder.bind(BasicService)
     spell_id = binder.finalize()
 
@@ -1053,7 +1054,7 @@ def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() 
     conduit = spellbook.conjure(name="root")
     try:
         existing = BasicConfig(label="binder-existing")
-        binder = spellbook.create_binder()
+        binder = SpellBinder(spellbook, )
         with spellbook.binding_transaction():
             spell_id = binder.bind(existing).as_unique().finalize()
         assert conduit.meld(spell=spell_id) is existing
@@ -1105,7 +1106,7 @@ def test_spellbook_integration_create_binder_fluent_bind_and_meld() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = binder.bind(BasicService).as_unique().finalize()
 
     conduit = spellbook.conjure(name="root")
@@ -1421,7 +1422,7 @@ def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     owner_book = Spellbook(configuration=configuration)
-    binder = owner_book.create_binder()
+    binder = SpellBinder(owner_book, )
     binder.bind(BasicService).under_spellframe(IService).named("primary").as_unique()
     spell_id = binder.finalize()
 
@@ -1449,3 +1450,4 @@ def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -
     finally:
         borrower.cleanup()
         owner.cleanup()
+

@@ -16,14 +16,12 @@ from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
-from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellbook import ISpellbook
@@ -2096,56 +2094,6 @@ and logging.
 
     #endregion Contract API
     #region Binding API
-
-    def create_binder(
-            self,
-            *,
-            default_existence: Existence = Existence.unique,
-            default_permissions: str = "create",
-    ) -> ISpellBinder:
-        """
-        Public API
-
-        Creates an `ISpellBinder` surface backed by `SpellBinder` and providing
-        an Autofac-style
-        fluent syntax on top of `Spellbook.bind(...)`.
-
-        This does *not* introduce a new registration path; it simply
-        forwards everything into the existing binding pipeline so all
-        reflection, `SpellIndex` construction, `SpellType` classification,
-        and validation flows remain exactly the same. contentReference[officiate:1]{index=1}
-
-        Example:
-            binder = spellbook.create_binder()
-
-            binder.bind(MyService) \\
-                  .as_unique() \\
-                  .under_spellframe(IMyServiceProtocol) \\
-                  .named("primary") \\
-                  .with_permissions("create") \\
-                  .finalize()
-
-            # Reuse the same binder for another spell:
-            binder.bind(OtherService, existence=Existence.many).finalize()
-
-        Args:
-            default_existence (Existence):
-                Default lifecycle scope for fluent registrations started via
-                this binder.
-
-            default_permissions (str):
-                Default permissions for fluent registrations (e.g. "create").
-
-        Returns:
-            ISpellBinder:
-                A reusable fluent registration helper bound to this Spellbook.
-        """
-        self.check_cleaned()
-        return SpellBinder(
-            spellbook=self,
-            default_existence=default_existence,
-            default_permissions=default_permissions,
-        )
 
     def _normalize_change_transaction_type(
             self,

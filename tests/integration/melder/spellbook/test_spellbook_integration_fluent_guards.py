@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder import SpellBinder
 import pytest
 
 from melder.aether.aether import Aether
@@ -43,7 +44,7 @@ def test_spellbinder_finalize_requires_active_bind() -> None:
         AssertionError: If finalize succeeds without a bind.
     """
     spellbook = Spellbook()
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
 
     with pytest.raises(RuntimeError, match="no active spell"):
         binder.finalize()
@@ -61,7 +62,7 @@ def test_spellbinder_rejects_calls_after_cleanup() -> None:
         AssertionError: If bind succeeds after cleanup.
     """
     spellbook = Spellbook()
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     binder.cleanup()
 
     with pytest.raises(RuntimeError, match="cleaned"):
@@ -122,7 +123,7 @@ def test_spellbinder_singular_hooks_execute() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    binder = spellbook.create_binder()
+    binder = SpellBinder(spellbook, )
     spell_id = (
         binder.bind(BasicService)
         .as_unique()
@@ -140,3 +141,4 @@ def test_spellbinder_singular_hooks_execute() -> None:
         assert events == ["pre", "activation", "post", "pre", "post"]
     finally:
         conduit.cleanup()
+
