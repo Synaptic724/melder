@@ -144,7 +144,7 @@ def _wrap_phase_counter(
         counters[counter_key] += 1
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(SpellCrafter, method_name, _wrapped)
+    monkeypatch.setattr(SpellCompilerSystem, method_name, _wrapped)
 
 
 def test_component_conduit_validate_resolution_reports_missing_dependencies() -> None:

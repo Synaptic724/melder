@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -112,8 +113,8 @@ def test_component_symbolic_graph_cleans_after_spell_cleanup() -> None:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
 
         graph = spell.symbolic_graph
         assert graph is not None
@@ -123,7 +124,8 @@ def test_component_symbolic_graph_cleans_after_spell_cleanup() -> None:
 
         spell.cleanup()
 
-        assert spell.symbolic_graph is None
+        with pytest.raises(AttributeError):
+            _ = spell.symbolic_graph
         with pytest.raises(RuntimeError):
             _ = graph.dependencies
         with pytest.raises(RuntimeError):
@@ -181,19 +183,17 @@ def test_component_symbolic_graph_detaches_when_crafter_cleans() -> None:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
 
         graph = spell.symbolic_graph
         assert graph is not None
 
-        crafter = spell._crafter
-        assert crafter is not None
-        crafter.cleanup()
+        compiler_test_helpers.cleanup_phase_artifacts(spell)
 
-        with pytest.raises(RuntimeError):
-            _ = spell.symbolic_graph
+        assert spell.symbolic_graph is None
         with pytest.raises(RuntimeError):
             _ = graph.dependencies
     finally:
         spellbook.cleanup()
+

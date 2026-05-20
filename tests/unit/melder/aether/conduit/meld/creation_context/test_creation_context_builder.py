@@ -9,6 +9,9 @@ from melder.aether.conduit.meld.creation_context.creation_context import Creatio
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
 from melder.aether.spellbook.existence.existence import Existence
 
 
@@ -20,15 +23,15 @@ def _make_crafter(
         codegen_ir: Optional[Any] = None,
         root_blueprint_phase5: Optional[Any] = None,
 ) -> Any:
-    """Build a minimal crafter stub for CreationContextBuilder tests."""
+    """Build a minimal compiler-artifact stub for CreationContextBuilder tests."""
     return SimpleNamespace(
-        execution_plan_phase11_no_overrides=SimpleNamespace(
+        _execution_plan_phase11_no_overrides=SimpleNamespace(
             fast_transient_plan=fast_transient_plan,
         ),
-        phase12_no_overrides_executor=phase12_no_overrides_executor,
-        override_patch_map_phase10=override_patch_map_phase10,
-        codegen_ir=codegen_ir,
-        root_blueprint_phase5=root_blueprint_phase5,
+        _phase12_no_overrides_executor=phase12_no_overrides_executor,
+        _override_patch_map_phase10=override_patch_map_phase10,
+        _codegen_ir=codegen_ir,
+        _root_blueprint_phase5=root_blueprint_phase5,
     )
 
 
@@ -49,7 +52,7 @@ def _make_spell(
     return SimpleNamespace(
         spell_id="s1",
         is_existing_creation=is_existing_creation,
-        _crafter=crafter,
+        _compiler_artifact=_make_crafter() if crafter is _DEFAULT_CRAFTER else crafter,
         existence=existence,
         execution_plan_dispatch_route=execution_plan_dispatch_route,
         has_mutation_override=has_mutation_override,

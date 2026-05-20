@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -135,9 +136,9 @@ def test_component_local_frame_dag_records_param_metadata_for_dependencies() -> 
 
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         dag = spell.dependency_graph
         assert isinstance(dag, DirectedAcyclicWorkGraph)
@@ -218,9 +219,9 @@ def test_component_local_frame_dag_supports_collection_dependencies() -> None:
 
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         dag = spell.dependency_graph
         assert isinstance(dag, DirectedAcyclicWorkGraph)
@@ -243,3 +244,4 @@ def test_component_local_frame_dag_supports_collection_dependencies() -> None:
         assert root_node in named_node.children_by_param["services"]
     finally:
         spellbook.cleanup()
+

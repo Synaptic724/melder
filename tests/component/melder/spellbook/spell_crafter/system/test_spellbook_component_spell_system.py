@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -133,9 +134,9 @@ def _build_system_validation_artifacts(
     consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
     assert consumer_spell is not None
 
-    consumer_spell.run_phase_requirements()
-    consumer_spell.run_phase_symbolic_graph()
-    consumer_spell.run_phase_local_frame()
+    compiler_test_helpers.run_phase_requirements(consumer_spell)
+    compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+    compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
     states = spellbook._spell_system_states
     assert states is not None
@@ -213,9 +214,9 @@ def test_component_spell_system_builds_snapshot_from_states() -> None:
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         states = spellbook._spell_system_states
         assert states is not None
@@ -281,9 +282,9 @@ def test_component_spell_system_builds_root_blueprint_from_snapshot() -> None:
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         states = spellbook._spell_system_states
         assert states is not None
@@ -479,3 +480,4 @@ def test_component_spell_system_validation_reports_orphan_socket_ref() -> None:
         assert conduit_state.get_spell_validity(dependency_id) is SpellValidity.invalid
     finally:
         spellbook.cleanup()
+

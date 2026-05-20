@@ -2,17 +2,11 @@ from typing import Any, Dict, Optional
 
 from mypy_extensions import mypyc_attr
 
+from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
+    ExecutionPlan,
+)
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_1 import (
     CompilerPhase1,
-)
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_10 import (
-    CompilerPhase10,
-)
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
-    CompilerPhase11,
-)
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
-    CompilerPhase12,
 )
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_2 import (
     CompilerPhase2,
@@ -38,11 +32,17 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_8 import (
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_9 import (
     CompilerPhase9,
 )
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_10 import (
+    CompilerPhase10,
+)
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
+    CompilerPhase11,
+)
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
+    CompilerPhase12,
+)
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
-)
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlan,
 )
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook

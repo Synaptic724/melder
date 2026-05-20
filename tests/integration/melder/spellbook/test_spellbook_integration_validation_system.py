@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -748,10 +749,10 @@ def test_spell_validation_phase4_marks_leaf_as_validated() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        compiler_test_helpers.run_phase_validation(spell)
 
         result = spell.validation_result_phase4
         assert result is not None
@@ -811,10 +812,10 @@ def test_spell_validation_phase4_warns_on_required_hole_not_broken() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        compiler_test_helpers.run_phase_validation(spell)
 
         result = spell.validation_result_phase4
         assert result is not None
@@ -1228,12 +1229,12 @@ def test_spell_validation_phase4_marks_broken_on_dangling_dependency() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         spell.dependencies = ["missing-id"]
-        spell.run_phase_validation()
+        compiler_test_helpers.run_phase_validation(spell)
 
         result = spell.validation_result_phase4
         assert result is not None
@@ -1290,12 +1291,12 @@ def test_spell_validation_phase4_warns_on_missing_dependency_graph_not_broken() 
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         spell.dependency_graph = None
-        spell.run_phase_validation()
+        compiler_test_helpers.run_phase_validation(spell)
 
         result = spell.validation_result_phase4
         assert result is not None
@@ -1418,12 +1419,12 @@ def test_spell_validation_phase6_marks_valid_and_updates_conduit_state() -> None
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        spell.run_phase_validation()
-        spell.run_phase_root_blueprints("cid")
-        spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        compiler_test_helpers.run_phase_validation(spell)
+        compiler_test_helpers.run_phase_root_blueprints(spell, "cid")
+        compiler_test_helpers.run_phase_system_validation(spell, "cid")
 
         result = spell.validation_result_phase6
         assert result is not None
@@ -1482,14 +1483,14 @@ def test_spell_validation_phase6_marks_invalid_broken_spell_in_conduit_state() -
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         spell.dependencies = ["missing-id"]
-        spell.run_phase_validation()
-        spell.run_phase_root_blueprints("cid")
-        spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_validation(spell)
+        compiler_test_helpers.run_phase_root_blueprints(spell, "cid")
+        compiler_test_helpers.run_phase_system_validation(spell, "cid")
 
         result = spell.validation_result_phase6
         assert result is not None
@@ -1558,15 +1559,12 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
         )
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
-        for current_spell in spellbook.spells.values():
-            current_spell._ensure_crafter()
-
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
-        consumer_spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
+        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -1684,17 +1682,17 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
         assert beta_spell is not None
 
         for spell in (alpha_spell, beta_spell):
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            compiler_test_helpers.run_phase_requirements(spell)
+            compiler_test_helpers.run_phase_symbolic_graph(spell)
+            compiler_test_helpers.run_phase_local_frame(spell)
+            compiler_test_helpers.run_phase_validation(spell)
 
-        root_spell.run_phase_requirements()
-        root_spell.run_phase_symbolic_graph()
-        root_spell.run_phase_local_frame()
-        root_spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(root_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(root_spell)
+        compiler_test_helpers.run_phase_local_frame(root_spell)
+        compiler_test_helpers.run_phase_validation(root_spell)
         with pytest.raises(RuntimeError, match="Cycle detected"):
-            root_spell.run_phase_root_blueprints("cid")
+            compiler_test_helpers.run_phase_root_blueprints(root_spell, "cid")
     finally:
         spellbook.cleanup()
 
@@ -1756,20 +1754,19 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         assert service_spell is not None
         assert consumer_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
+        compiler_test_helpers.run_phase_validation(service_spell)
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        blueprints = crafter._entire_dag_blueprint_phase5
+        artifact = consumer_spell._compiler_artifact
+        blueprints = artifact._entire_dag_blueprint_phase5
         assert blueprints is not None
         root_blueprint = blueprints.get(consumer_id)
         assert root_blueprint is not None
@@ -1777,7 +1774,7 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         root_blueprint._dag_index = DagIndex(path_registry=path_registry)
         root_blueprint._dag_index.rebuild([])
 
-        consumer_spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -1845,24 +1842,23 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
         assert service_spell is not None
         assert consumer_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
+        compiler_test_helpers.run_phase_validation(service_spell)
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        system_index = crafter._spell_system_index_phase5
+        artifact = consumer_spell._compiler_artifact
+        system_index = artifact._spell_system_index_phase5
         assert system_index is not None
         system_index.nodes.pop(service_id)
 
-        consumer_spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -1930,26 +1926,25 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
         assert service_spell is not None
         assert consumer_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
+        compiler_test_helpers.run_phase_validation(service_spell)
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        system_index = crafter._spell_system_index_phase5
+        artifact = consumer_spell._compiler_artifact
+        system_index = artifact._spell_system_index_phase5
         assert system_index is not None
         root_node = system_index.get_node(consumer_id)
         assert root_node is not None
         root_node._dependencies.clear()
 
-        consumer_spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -2016,27 +2011,26 @@ def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
         assert service_spell is not None
         assert consumer_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
+        compiler_test_helpers.run_phase_validation(service_spell)
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        blueprints = crafter._entire_dag_blueprint_phase5
+        artifact = consumer_spell._compiler_artifact
+        blueprints = artifact._entire_dag_blueprint_phase5
         assert blueprints is not None
         root_blueprint = blueprints.get(consumer_id)
         assert root_blueprint is not None
         socket = root_blueprint.socket_refs[0]
         root_blueprint.add_socket_ref(socket)
 
-        consumer_spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -2102,20 +2096,19 @@ def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
         assert service_spell is not None
         assert consumer_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
+        compiler_test_helpers.run_phase_validation(service_spell)
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        blueprints = crafter._entire_dag_blueprint_phase5
+        artifact = consumer_spell._compiler_artifact
+        blueprints = artifact._entire_dag_blueprint_phase5
         assert blueprints is not None
         root_blueprint = blueprints.get(consumer_id)
         assert root_blueprint is not None
@@ -2129,7 +2122,7 @@ def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
         )
         root_blueprint.dag_index.add_socket(orphan)
 
-        consumer_spell.run_phase_system_validation("cid")
+        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
 
         result = consumer_spell.validation_result_phase6
         assert result is not None
@@ -2137,3 +2130,5 @@ def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
         assert "dag_index_orphan_socket" in codes
     finally:
         spellbook.cleanup()
+
+

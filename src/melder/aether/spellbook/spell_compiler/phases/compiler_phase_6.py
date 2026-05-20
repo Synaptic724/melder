@@ -2,8 +2,17 @@ from typing import Any, Collection, Dict, List, Optional, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import (
+    SpellValidity,
+)
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
+)
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
+    SpellSystemIndex,
 )
 from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
@@ -81,17 +90,13 @@ from melder.aether.spellbook.spell_compiler.system.validation.topology_dependenc
 from melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy import (
     VisibilityGapStrategy,
 )
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
+from melder.utilities.interfaces.irootresolutionblueprint import (
+    IRootResolutionBlueprint,
+)
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
-    SpellStateChangeReason,
-)
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import (
-    SpellValidity,
-)
 
 
 @mypyc_attr(native_class=True)
@@ -133,7 +138,7 @@ class CompilerPhase6:
     def _get_required_spell_system_index_phase5(
             self,
             artifact: SpellCompilerArtifact,
-    ):
+    ) -> SpellSystemIndex:
         """
             Return the Phase 5 system index or raise.
             

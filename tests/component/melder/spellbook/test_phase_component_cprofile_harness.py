@@ -5,6 +5,7 @@ import time
 from typing import Any, Callable, Dict, List, Tuple
 
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -156,7 +157,7 @@ def _get_crafter(spell: Any) -> Any:
     Returns:
         Any: Active SpellCrafter instance.
     """
-    return spell._ensure_crafter()
+    return spell._compiler_artifact
 
 
 def _get_conduit_resolution_has_errors(spellbook: Spellbook, conduit_id: str) -> bool:
@@ -210,22 +211,22 @@ def _run_group_1_4(spellbook: Spellbook, variant: str) -> Dict[str, Any]:
 
     phase_requirements_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_requirements(cancel_event=None)
+        compiler_test_helpers.run_phase_requirements(spell)
     phase_requirements_ms = _ms(time.perf_counter() - phase_requirements_start)
 
     phase_symbolic_graph_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_symbolic_graph(cancel_event=None)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
     phase_symbolic_graph_ms = _ms(time.perf_counter() - phase_symbolic_graph_start)
 
     phase_local_frame_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_local_frame(cancel_event=None)
+        compiler_test_helpers.run_phase_local_frame(spell)
     phase_local_frame_ms = _ms(time.perf_counter() - phase_local_frame_start)
 
     phase_validation_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_validation(cancel_event=None)
+        compiler_test_helpers.run_phase_validation(spell)
     phase_validation_ms = _ms(time.perf_counter() - phase_validation_start)
 
     group_total_ms = (
@@ -280,15 +281,15 @@ def _run_group_5_7_conduit(
     lead_spell = local_spells[0]
 
     phase_root_blueprints_start = time.perf_counter()
-    lead_spell.run_phase_root_blueprints(conduit_id, cancel_event=None)
+    compiler_test_helpers.run_phase_root_blueprints(lead_spell, conduit_id, cancel_event=None)
     phase_root_blueprints_ms = _ms(time.perf_counter() - phase_root_blueprints_start)
 
     phase_system_validation_start = time.perf_counter()
-    lead_spell.run_phase_system_validation(conduit_id, cancel_event=None)
+    compiler_test_helpers.run_phase_system_validation(lead_spell, conduit_id, cancel_event=None)
     phase_system_validation_ms = _ms(time.perf_counter() - phase_system_validation_start)
 
     phase_change_control_start = time.perf_counter()
-    lead_spell.run_phase_change_control(conduit_id, cancel_event=None)
+    compiler_test_helpers.run_phase_change_control(lead_spell, conduit_id, cancel_event=None)
     phase_change_control_ms = _ms(time.perf_counter() - phase_change_control_start)
 
     group_total_ms = (
@@ -326,19 +327,19 @@ def _run_group_5_7_local(
     target_spell = _get_spell_by_id(spellbook, target_spell_id)
 
     phase_root_blueprints_local_start = time.perf_counter()
-    target_spell.run_phase_root_blueprints_local(conduit_id, cancel_event=None)
+    compiler_test_helpers.run_phase_root_blueprints_local(target_spell, conduit_id, cancel_event=None)
     phase_root_blueprints_local_ms = _ms(
         time.perf_counter() - phase_root_blueprints_local_start
     )
 
     phase_system_validation_local_start = time.perf_counter()
-    target_spell.run_phase_system_validation_local(conduit_id, cancel_event=None)
+    compiler_test_helpers.run_phase_system_validation_local(target_spell, conduit_id, cancel_event=None)
     phase_system_validation_local_ms = _ms(
         time.perf_counter() - phase_system_validation_local_start
     )
 
     phase_change_control_local_start = time.perf_counter()
-    target_spell.run_phase_change_control_local(conduit_id, cancel_event=None)
+    compiler_test_helpers.run_phase_change_control_local(target_spell, conduit_id, cancel_event=None)
     phase_change_control_local_ms = _ms(
         time.perf_counter() - phase_change_control_local_start
     )
@@ -349,13 +350,13 @@ def _run_group_5_7_local(
         + phase_change_control_local_ms
     )
 
-    target_crafter = _get_crafter(target_spell)
+    target_artifact = _get_crafter(target_spell)
     scoped_spell_count = 0
     scoped_root_count = 0
-    if target_crafter.spell_system_index_phase5 is not None:
-        scoped_spell_count = len(target_crafter.spell_system_index_phase5.nodes)
-    if target_crafter._entire_dag_blueprint_phase5 is not None:
-        scoped_root_count = len(target_crafter._entire_dag_blueprint_phase5)
+    if target_artifact._spell_system_index_phase5 is not None:
+        scoped_spell_count = len(target_artifact._spell_system_index_phase5.nodes)
+    if target_artifact._entire_dag_blueprint_phase5 is not None:
+        scoped_root_count = len(target_artifact._entire_dag_blueprint_phase5)
 
     return {
         "target_spell_id": target_spell_id,
@@ -397,26 +398,26 @@ def _run_group_8_11(
         for spell in local_spells:
             _get_crafter(spell).clear_phase5_artifacts()
         lead_spell = local_spells[0]
-        lead_spell.run_phase_root_blueprints(conduit_id, cancel_event=None)
+        compiler_test_helpers.run_phase_root_blueprints(lead_spell, conduit_id, cancel_event=None)
 
     phase_occurrence_plan_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_occurrence_plan(conduit_id, cancel_event=None)
+        compiler_test_helpers.run_phase_occurrence_plan(spell)
     phase_occurrence_plan_ms = _ms(time.perf_counter() - phase_occurrence_plan_start)
 
     phase_injection_plan_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_injection_plan(conduit_id, cancel_event=None)
+        compiler_test_helpers.run_phase_injection_plan(spell)
     phase_injection_plan_ms = _ms(time.perf_counter() - phase_injection_plan_start)
 
     phase_patch_maps_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_patch_maps(conduit_id, cancel_event=None)
+        compiler_test_helpers.run_phase_patch_maps(spell)
     phase_patch_maps_ms = _ms(time.perf_counter() - phase_patch_maps_start)
 
     phase_execution_plan_start = time.perf_counter()
     for spell in local_spells:
-        spell.run_phase_execution_plan(conduit_id, cancel_event=None)
+        compiler_test_helpers.run_phase_execution_plan(spell)
     phase_execution_plan_ms = _ms(time.perf_counter() - phase_execution_plan_start)
 
     metric_spell = _get_spell_by_id(spellbook, metric_spell_id)
@@ -512,3 +513,4 @@ def test_component_phase_component_cprofile_harness_baselines() -> None:
         assert metrics_8_11_cold["group_8_11_total_ms"] > 0
     finally:
         spellbook.cleanup()
+

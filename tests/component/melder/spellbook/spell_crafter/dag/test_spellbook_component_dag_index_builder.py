@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -119,9 +120,9 @@ def test_component_dag_index_builder_builds_from_local_topology() -> None:
         )
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         states = spell._spell_system_states
         assert states is not None
@@ -202,9 +203,9 @@ def test_component_dag_index_builder_preserves_contract_socket_kinds() -> None:
         )
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         states = spell._spell_system_states
         assert states is not None
@@ -278,9 +279,9 @@ def test_component_dag_index_builder_keeps_collection_paths_shallow() -> None:
         )
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         states = spell._spell_system_states
         assert states is not None
@@ -298,3 +299,4 @@ def test_component_dag_index_builder_keeps_collection_paths_shallow() -> None:
         assert path_registry.materialize_path(refs[0].param_path_id) == ("services",)
     finally:
         spellbook.cleanup()
+

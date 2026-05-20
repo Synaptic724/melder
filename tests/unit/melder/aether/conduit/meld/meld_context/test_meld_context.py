@@ -11,6 +11,9 @@ from melder.aether.conduit.meld.creation_context.creation_context_builder import
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -18,25 +21,25 @@ from melder.utilities.synchronization.creation_gate_controller import (
 )
 
 
-class _CrafterStub:
+class _CompilerArtifactStub:
     """
-    Minimal crafter artifact container required by CreationContextBuilder.
+    Minimal compiler-artifact container required by CreationContextBuilder.
     """
 
     def __init__(self) -> None:
         """
         Initialize default no-overrides/overrides codegen artifacts.
         """
-        self.phase12_no_overrides_executor = lambda _context: "built"
-        self.execution_plan_phase11_no_overrides = SimpleNamespace(
+        self._phase12_no_overrides_executor = lambda _context: "built"
+        self._execution_plan_phase11_no_overrides = SimpleNamespace(
             fast_transient_plan=None,
         )
-        self.override_patch_map_phase10 = None
-        self.root_blueprint_phase5 = None
-        self.codegen_ir = None
+        self._override_patch_map_phase10 = None
+        self._root_blueprint_phase5 = None
+        self._codegen_ir = None
 
 
-_DEFAULT_CRAFTER = object()
+_DEFAULT_ARTIFACT = object()
 
 
 class _CachedContextStub:
@@ -78,7 +81,7 @@ class _SpellStub:
             existence: Existence = Existence.unique,
             is_existing_creation: bool = False,
             has_mutation_override: bool = False,
-            crafter: Any = _DEFAULT_CRAFTER,
+            artifact: Any = _DEFAULT_ARTIFACT,
             creation_context: Optional[Any] = None,
     ) -> None:
         """
@@ -98,10 +101,10 @@ class _SpellStub:
 
         self._owner_creations = SimpleNamespace(_creations={}, _lock=RLock())
         self._spellbook = SimpleNamespace(_spell_id_pool={})
-        if crafter is _DEFAULT_CRAFTER:
-            self._crafter = _CrafterStub()
+        if artifact is _DEFAULT_ARTIFACT:
+            self._compiler_artifact = _CompilerArtifactStub()
         else:
-            self._crafter = crafter
+            self._compiler_artifact = artifact
         if creation_context is not None and creation_context.is_cleaned:
             self._creation_context = None
         else:
@@ -229,17 +232,17 @@ def test_builder_resolve_route_key_maps_existence_variants(
     assert CreationContextBuilder._resolve_route_key(spell) == expected
 
 
-def test_builder_requires_crafter_for_non_existing_creation() -> None:
+def test_builder_requires_compiler_artifact_for_non_existing_creation() -> None:
     """
-    Verify builder rejects non-existing-creation spells without crafter artifacts.
+    Verify builder rejects non-existing-creation spells without compiler artifacts.
 
     Contract:
-        - build raises RuntimeError when crafter is missing.
+        - build raises RuntimeError when compiler artifacts are missing.
     """
     builder = CreationContextBuilder()
-    spell = _SpellStub(crafter=None)
+    spell = _SpellStub(artifact=None)
     spell.is_existing_creation = False
-    with pytest.raises(RuntimeError, match="spell crafter artifacts"):
+    with pytest.raises(RuntimeError, match="Cannot build CreationContext"):
         builder.build(spell)
 
 

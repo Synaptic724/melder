@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -128,9 +129,9 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
 
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         topology = spell._spell_system_states.get_local_topology(spell.spell_index)
         assert topology is not None
@@ -208,9 +209,9 @@ def test_component_topology_collection_targets_include_all_spell_ids() -> None:
 
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         topology = spell._spell_system_states.get_local_topology(spell.spell_index)
         assert topology is not None
@@ -223,3 +224,4 @@ def test_component_topology_collection_targets_include_all_spell_ids() -> None:
         assert set(socket.target_spell_ids) == {service_id, named_id}
     finally:
         spellbook.cleanup()
+

@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -141,8 +142,8 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
 
         graph = spell.symbolic_graph
         assert graph is not None
@@ -231,13 +232,13 @@ def test_component_spell_resolution_properties_follow_real_phase_artifacts() -> 
         assert spell.symbolic_graph is None
         assert spell.resolution_frame is None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         assert spell.requirements is not None
 
-        spell.run_phase_symbolic_graph()
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
         assert spell.symbolic_graph is not None
 
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_local_frame(spell)
         assert spell.resolution_frame is not None
         assert set(spell.dependencies) == {service_id}
     finally:
@@ -290,4 +291,5 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
         assert states.consume_dirty_indexes() == [spell.spell_index.id]
     finally:
         spellbook.cleanup()
+
 

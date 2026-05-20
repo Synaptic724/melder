@@ -5,6 +5,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -301,13 +304,17 @@ def _run_all_spellbook_phases_through_blueprints(spellbook: Spellbook) -> None:
         None.
     """
     spells = list(spellbook.spells.values())
-    for spell in spells:
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        spell.run_phase_validation()
-    for spell in spells:
-        spell.run_phase_root_blueprints("cid")
+    compiler_system = SpellCompilerSystem()
+    try:
+        for spell in spells:
+            compiler_system.run_phase_requirements(spell)
+            compiler_system.run_phase_symbolic_graph(spell)
+            compiler_system.run_phase_local_frame(spellbook, spell)
+            compiler_system.run_phase_validation(spellbook, spell)
+        for spell in spells:
+            compiler_system.run_phase_root_blueprints(spellbook, spell, "cid")
+    finally:
+        compiler_system.cleanup()
 
 
 def _make_mutation_host_class() -> type:
@@ -649,9 +656,7 @@ def test_component_meld_root_blueprint_paths_two_node_graph() -> None:
 
     root_spell = _get_spell_by_version_id(spellbook, service_id)
     assert root_spell is not None
-    crafter = root_spell._crafter
-    assert crafter is not None
-    blueprint = crafter.root_blueprint_phase5
+    blueprint = root_spell._compiler_artifact._root_blueprint_phase5
     assert blueprint is not None
     blueprint.ensure_dag_index_built()
 
@@ -706,9 +711,7 @@ def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
 
     root_spell = _get_spell_by_version_id(spellbook, root_id)
     assert root_spell is not None
-    crafter = root_spell._crafter
-    assert crafter is not None
-    blueprint = crafter.root_blueprint_phase5
+    blueprint = root_spell._compiler_artifact._root_blueprint_phase5
     assert blueprint is not None
     blueprint.ensure_dag_index_built()
 

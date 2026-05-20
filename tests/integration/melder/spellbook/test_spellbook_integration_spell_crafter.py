@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -72,75 +73,55 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
     return None
 
 
-def _make_crafter(spell) -> SpellCrafter:
+def _run_structural_phases_via_compiler(spell):
     """
     Purpose:
-        Construct an explicit SpellCrafter for one spell after the Spell seam cut.
+        Run structural phases 1-4 through the current compiler-system surface.
     Contract:
-        - Seeds the crafter with the spell profile's resolution profile when present.
-        - Does not attach the crafter back onto the spell.
+        - Executes phases 1-4 in order for one spell.
+        - Returns the spell-owned compiler artifact for assertions.
     Args:
         spell:
-            Spell under direct SpellCrafter test.
+            Spell under test.
     Returns:
-        SpellCrafter:
-            Fresh direct crafter instance for that spell.
+        SpellCompilerArtifact:
+            Spell-owned compiler artifact after structural phase execution.
     """
-    resolution_profile = getattr(spell.profile, "resolution_profile", None)
-    return SpellCrafter(spell, resolution_profile=resolution_profile)
+    compiler_test_helpers.run_phase_requirements(spell)
+    compiler_test_helpers.run_phase_symbolic_graph(spell)
+    compiler_test_helpers.run_phase_local_frame(spell)
+    compiler_test_helpers.run_phase_validation(spell)
+    return spell._compiler_artifact
 
 
-def _run_structural_phases_via_crafter(spell) -> SpellCrafter:
-    """
-    Purpose:
-        Run direct SpellCrafter structural phases for one spell.
-    Contract:
-        - Executes phases 1-4 in order on one direct crafter instance.
-        - Returns that crafter for assertions.
-    Args:
-        spell:
-            Spell under direct structural-phase test.
-    Returns:
-        SpellCrafter:
-            Crafter that executed phases 1-4.
-    """
-    crafter = _make_crafter(spell)
-    crafter.run_phase_requirements()
-    crafter.run_phase_symbolic_graph()
-    crafter.run_phase_local_frame()
-    crafter.run_phase_validation()
-    return crafter
-
-
-def _run_all_phases_via_crafter(spell, conduit_id: str) -> SpellCrafter:
+def _run_all_phases_via_compiler(spell, conduit_id: str):
     """
     Purpose:
-        Run the direct SpellCrafter full phase flow for one spell.
+        Run phases 1-11 through the current compiler-system surface.
     Contract:
-        - Executes phases 1-11 in order.
-        - Mirrors the old Spell.run_all_phases cleanup tail by clearing the
-          spell-owned creation context and then cleaning phase artifacts on the
-          direct crafter.
+        - Executes structural, foundational, and plan phases in order.
+        - Mirrors the old full-run cleanup tail by clearing structural phase
+          artifacts before returning.
+        - Returns the spell-owned compiler artifact for assertions.
     Args:
         spell:
-            Spell under direct full-phase test.
+            Spell under test.
         conduit_id:
             Conduit identifier used for conduit-scoped phases.
     Returns:
-        SpellCrafter:
-            Crafter that executed the full flow and then cleaned phase artifacts.
+        SpellCompilerArtifact:
+            Spell-owned compiler artifact after the full phase flow.
     """
-    crafter = _run_structural_phases_via_crafter(spell)
-    crafter.run_phase_root_blueprints(conduit_id)
-    crafter.run_phase_system_validation(conduit_id)
-    crafter.run_phase_change_control(conduit_id)
-    crafter.run_phase_occurrence_plan(conduit_id)
-    crafter.run_phase_injection_plan(conduit_id)
-    crafter.run_phase_patch_maps(conduit_id)
-    crafter.run_phase_execution_plan(conduit_id)
-    spell._cleanup_creation_context()
-    crafter.cleanup_phase_artifacts()
-    return crafter
+    artifact = _run_structural_phases_via_compiler(spell)
+    compiler_test_helpers.run_phase_root_blueprints(spell, conduit_id)
+    compiler_test_helpers.run_phase_system_validation(spell, conduit_id)
+    compiler_test_helpers.run_phase_change_control(spell, conduit_id)
+    compiler_test_helpers.run_phase_occurrence_plan(spell)
+    compiler_test_helpers.run_phase_injection_plan(spell)
+    compiler_test_helpers.run_phase_patch_maps(spell)
+    compiler_test_helpers.run_phase_execution_plan(spell)
+    compiler_test_helpers.cleanup_phase_artifacts(spell)
+    return artifact
 
 
 def test_spell_crafter_phase3_requires_phase1_and_phase2() -> None:
@@ -174,7 +155,7 @@ def test_spell_crafter_phase3_requires_phase1_and_phase2() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
         with pytest.raises(RuntimeError):
-            spell.run_phase_local_frame()
+            compiler_test_helpers.run_phase_local_frame(spell)
     finally:
         spellbook.cleanup()
 
@@ -239,13 +220,13 @@ def test_spell_crafter_run_all_phases_builds_dependencies_and_state() -> None:
     try:
         root_spell = conduit.get_spell_by_id(root_id)
         assert root_spell is not None
-        crafter = _run_all_phases_via_crafter(root_spell, "cid")
+        artifact = _run_all_phases_via_compiler(root_spell, "cid")
 
         assert set(root_spell.dependencies) == {leaf_id}
         assert root_spell.dependency_graph is not None
-        assert crafter.requirements is None
-        assert crafter.symbolic_graph is None
-        assert crafter.resolution_frame is None
+        assert artifact._requirements is None
+        assert artifact._symbolic_graph is None
+        assert artifact._resolution_frame is None
 
         state = root_spell.system_state
         assert state is not None
@@ -330,9 +311,9 @@ def test_spell_crafter_collection_di_resolves_multiple_dependencies() -> None:
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert set(consumer_spell.dependencies) == {service_a_id, service_b_id}
         state = consumer_spell.system_state
@@ -392,9 +373,9 @@ def test_spell_crafter_spellmap_default_resolves_dependency() -> None:
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert set(consumer_spell.dependencies) == {config_id}
         topology = consumer_spell._spell_system_states.get_local_topology(
@@ -467,9 +448,9 @@ def test_spell_crafter_contract_shapes_register_topology_without_dependencies() 
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert consumer_spell.dependencies == []
         state = consumer_spell.system_state
@@ -495,13 +476,10 @@ def test_spell_crafter_contract_shapes_register_topology_without_dependencies() 
 def test_spell_crafter_phase2_uses_seeded_profile_requirements() -> None:
     """
     Purpose:
-        Validate Phase 2 can run immediately when requirements were already
-        seeded from the spell-owned profile.
+        Validate Phase 2 still succeeds once Phase 1 requirements are available.
     Contract:
-        - Newly bound spells already carry seeded Phase 1 requirements through
-          their profile-held resolution payload.
-        - `run_phase_symbolic_graph()` succeeds without an explicit prior
-          `run_phase_requirements()` call.
+        - Phase 1 requirements must exist before Phase 2 executes.
+        - `run_phase_symbolic_graph()` succeeds after an explicit Phase 1 run.
     Returns:
         None.
     """
@@ -524,7 +502,8 @@ def test_spell_crafter_phase2_uses_seeded_profile_requirements() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_symbolic_graph()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
         assert spell.requirements is not None
         assert spell.symbolic_graph is not None
     finally:
@@ -561,10 +540,10 @@ def test_spell_crafter_phase4_requires_phase1_to_3() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
         with pytest.raises(RuntimeError):
-            spell.run_phase_validation()
+            compiler_test_helpers.run_phase_validation(spell)
     finally:
         spellbook.cleanup()
 
@@ -599,10 +578,10 @@ def test_spell_crafter_phase5_requires_phase4() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        compiler_test_helpers.run_phase_root_blueprints(spell, "cid")
     finally:
         spellbook.cleanup()
 
@@ -637,15 +616,15 @@ def test_spell_crafter_phase6_requires_phase5() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        spell.run_phase_validation()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        compiler_test_helpers.run_phase_validation(spell)
         with pytest.raises(
             RuntimeError,
-            match="Phase 5 root blueprint map is required",
+            match="Phase 5 system index is required",
         ):
-            spell.run_phase_system_validation("cid")
+            compiler_test_helpers.run_phase_system_validation(spell, "cid")
     finally:
         spellbook.cleanup()
 
@@ -710,9 +689,9 @@ def test_spell_crafter_spellmap_frame_only_resolves_dependency() -> None:
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert set(consumer_spell.dependencies) == {service_id}
         topology = consumer_spell._spell_system_states.get_local_topology(
@@ -825,9 +804,9 @@ def test_spell_crafter_local_topology_records_plain_and_collection_sockets() -> 
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert set(consumer_spell.dependencies) == {
             config_id,
@@ -903,11 +882,11 @@ def test_spell_crafter_validation_sets_flags_and_result() -> None:
     try:
         spell = conduit.get_spell_by_id(spell_id)
         assert spell is not None
-        crafter = _run_structural_phases_via_crafter(spell)
+        artifact = _run_structural_phases_via_compiler(spell)
 
-        assert crafter.validation_result_phase4 is not None
-        assert crafter.validated
-        assert not crafter.is_broken
+        assert artifact._validation_result_phase4 is not None
+        assert artifact._validated_phase4
+        assert not artifact._is_broken
     finally:
         conduit.cleanup()
 
@@ -971,9 +950,9 @@ def test_spell_crafter_run_all_phases_records_phase6_state() -> None:
     try:
         root_spell = conduit.get_spell_by_id(root_id)
         assert root_spell is not None
-        crafter = _run_all_phases_via_crafter(root_spell, "cid")
+        artifact = _run_all_phases_via_compiler(root_spell, "cid")
 
-        assert crafter.validation_result_phase6 is None
+        assert artifact._validation_result_phase6 is None
         conduit_state = spellbook._spell_system_states.get_conduit_resolution_state("cid")
         assert conduit_state is not None
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.valid
@@ -1041,13 +1020,13 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
     try:
         root_spell = conduit.get_spell_by_id(root_id)
         assert root_spell is not None
-        crafter = _run_all_phases_via_crafter(root_spell, "cid")
+        artifact = _run_all_phases_via_compiler(root_spell, "cid")
 
-        assert crafter.requirements is None
-        assert crafter.symbolic_graph is None
-        assert crafter.resolution_frame is None
-        assert crafter.validation_result_phase4 is None
-        assert crafter.validation_result_phase6 is None
+        assert artifact._requirements is None
+        assert artifact._symbolic_graph is None
+        assert artifact._resolution_frame is None
+        assert artifact._validation_result_phase4 is None
+        assert artifact._validation_result_phase6 is None
         assert set(root_spell.dependencies) == {leaf_id}
         assert root_spell.dependency_graph is not None
 
@@ -1058,9 +1037,15 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
         assert not hasattr(root_spell, "spell_index")
         assert not hasattr(root_spell, "dependencies")
         assert not hasattr(root_spell, "dependency_graph")
-        assert root_spell.requirements is None
-        assert root_spell.symbolic_graph is None
-        assert root_spell.resolution_frame is None
+        with pytest.raises(AttributeError):
+            _ = root_spell.requirements
+        with pytest.raises(AttributeError):
+            _ = root_spell.symbolic_graph
+        with pytest.raises(AttributeError):
+            _ = root_spell.resolution_frame
     finally:
         conduit.cleanup()
+
+
+
 

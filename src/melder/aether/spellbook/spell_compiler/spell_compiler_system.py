@@ -922,7 +922,10 @@ class SpellCompilerSystem(Cleanable):
             spell,
             conduit_id,
         )
-        self.run_phase_occurrence_plan(spell)
+        self.run_phase_occurrence_plan(
+            spellbook,
+            spell,
+        )
         self.run_phase_injection_plan(
             spell,
         )

@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -180,7 +181,7 @@ def test_component_annotation_shape_guard_flags_unsupported_collection_shape() -
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
         context, issues = _make_context(
             spell=spell,
@@ -246,7 +247,7 @@ def test_component_annotation_shape_guard_warns_on_list_non_di_element() -> None
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
         context, issues = _make_context(
             spell=spell,
@@ -315,7 +316,7 @@ def test_component_spellmap_shape_validation_flags_missing_target() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
         context, issues = _make_context(
             spell=spell,
@@ -383,7 +384,7 @@ def test_component_spellmap_shape_validation_warns_on_non_normalized_binding_nam
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
         context, issues = _make_context(
             spell=spell,
@@ -486,7 +487,7 @@ def test_component_parameter_policy_strategy_flags_variadic_di_annotations() -> 
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
         context, issues = _make_context(
             spell=spell,
@@ -530,7 +531,7 @@ def test_component_existing_creation_compatibility_flags_missing_instance() -> N
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         spell.user_created_object = None
 
         context, issues = _make_context(
@@ -672,7 +673,7 @@ def test_component_required_holes_strategy_reports_plain_required_parameters() -
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
 
         context, issues = _make_context(
@@ -759,7 +760,7 @@ def test_component_required_holes_strategy_ignores_injected_and_defaulted_parame
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
 
         context, issues = _make_context(
@@ -1084,3 +1085,4 @@ def test_component_duplicate_spell_name_strategy_flags_collision() -> None:
     finally:
         strategy.cleanup()
         spellbook.cleanup()
+

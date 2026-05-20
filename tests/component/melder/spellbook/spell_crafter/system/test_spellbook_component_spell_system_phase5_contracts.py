@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable
 
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -122,11 +123,11 @@ def _run_spell_to_phase5(spell: Any) -> None:
     Returns:
         None.
     """
-    spell.run_phase_requirements()
-    spell.run_phase_symbolic_graph()
-    spell.run_phase_local_frame()
-    spell.run_phase_validation()
-    spell.run_phase_root_blueprints("cid")
+    compiler_test_helpers.run_phase_requirements(spell)
+    compiler_test_helpers.run_phase_symbolic_graph(spell)
+    compiler_test_helpers.run_phase_local_frame(spell)
+    compiler_test_helpers.run_phase_validation(spell)
+    compiler_test_helpers.run_phase_root_blueprints(spell, "cid")
 
 
 def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint() -> None:
@@ -199,9 +200,7 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        index = crafter.spell_system_index_phase5
+        index = consumer_spell._compiler_artifact._spell_system_index_phase5
         assert index is not None
         assert consumer_id in index.nodes
         assert service_id in index.nodes
@@ -211,10 +210,10 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
         assert service_node is not None
         assert consumer_node.dependencies == {service_id}
 
-        blueprints = crafter._entire_dag_blueprint_phase5
+        blueprints = consumer_spell._compiler_artifact._entire_dag_blueprint_phase5
         assert blueprints is not None
         assert set(blueprints) == {consumer_id}
-        blueprint = crafter.root_blueprint_phase5
+        blueprint = consumer_spell._compiler_artifact._root_blueprint_phase5
         assert blueprint is not None
         assert set(blueprint.dag.nodes) == {consumer_id, service_id}
         assert blueprint.ordered_node_ids[-1] == consumer_id
@@ -295,9 +294,7 @@ def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        blueprint = crafter.root_blueprint_phase5
+        blueprint = consumer_spell._compiler_artifact._root_blueprint_phase5
         assert blueprint is not None
         assert set(blueprint.dag.nodes) == {
             consumer_id,
@@ -418,15 +415,13 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        index = crafter.spell_system_index_phase5
+        index = consumer_spell._compiler_artifact._spell_system_index_phase5
         assert index is not None
         assert consumer_id in index.nodes
         assert service_id in index.nodes
         assert remote_id not in index.nodes
 
-        blueprint = crafter.root_blueprint_phase5
+        blueprint = consumer_spell._compiler_artifact._root_blueprint_phase5
         assert blueprint is not None
         assert remote_id not in blueprint.dag.nodes
     finally:
@@ -434,3 +429,4 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
             borrower.cleanup()
         if owner is not None:
             owner.cleanup()
+

@@ -1,9 +1,13 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_5 import (
+    CompilerPhase5,
+)
 from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
     SpellSystemAdjacencySnapshot,
 )
@@ -114,26 +118,22 @@ def test_component_phase5_blueprint_includes_deep_socket_paths() -> None:
         assert repo_spell is not None
         assert root_spell is not None
 
-        logger_spell.run_phase_requirements()
-        logger_spell.run_phase_symbolic_graph()
-        logger_spell.run_phase_local_frame()
-        logger_spell._ensure_crafter()
+        compiler_test_helpers.run_phase_requirements(logger_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(logger_spell)
+        compiler_test_helpers.run_phase_local_frame(logger_spell)
 
-        repo_spell.run_phase_requirements()
-        repo_spell.run_phase_symbolic_graph()
-        repo_spell.run_phase_local_frame()
-        repo_spell._ensure_crafter()
+        compiler_test_helpers.run_phase_requirements(repo_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(repo_spell)
+        compiler_test_helpers.run_phase_local_frame(repo_spell)
 
-        root_spell.run_phase_requirements()
-        root_spell.run_phase_symbolic_graph()
-        root_spell.run_phase_local_frame()
-        root_spell.run_phase_validation()
-        root_spell._ensure_crafter()
-        root_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(root_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(root_spell)
+        compiler_test_helpers.run_phase_local_frame(root_spell)
+        compiler_test_helpers.run_phase_validation(root_spell)
+        compiler_test_helpers.run_phase_root_blueprints(root_spell, "cid")
 
-        crafter = root_spell._crafter
-        assert crafter is not None
-        blueprint = crafter.root_blueprint_phase5
+        artifact = root_spell._compiler_artifact
+        blueprint = artifact._root_blueprint_phase5
         assert blueprint is not None
         assert blueprint.root_spell_id == root_id
         blueprint.ensure_dag_index_built()
@@ -206,21 +206,18 @@ def test_component_phase5_system_index_marks_root_and_dependencies() -> None:
         assert service_spell is not None
         assert root_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell._ensure_crafter()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
 
-        root_spell.run_phase_requirements()
-        root_spell.run_phase_symbolic_graph()
-        root_spell.run_phase_local_frame()
-        root_spell.run_phase_validation()
-        root_spell._ensure_crafter()
-        root_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(root_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(root_spell)
+        compiler_test_helpers.run_phase_local_frame(root_spell)
+        compiler_test_helpers.run_phase_validation(root_spell)
+        compiler_test_helpers.run_phase_root_blueprints(root_spell, "cid")
 
-        crafter = root_spell._crafter
-        assert crafter is not None
-        system_index = crafter.spell_system_index_phase5
+        artifact = root_spell._compiler_artifact
+        system_index = artifact._spell_system_index_phase5
         assert system_index is not None
 
         root_node = system_index.get_node(consumer_id)
@@ -261,19 +258,15 @@ def test_component_phase5_builds_blueprints_for_multiple_roots() -> None:
         assert service_spell is not None
         assert config_spell is not None
 
-        service_spell.run_phase_requirements()
-        service_spell.run_phase_symbolic_graph()
-        service_spell.run_phase_local_frame()
-        service_spell.run_phase_validation()
-        service_spell._ensure_crafter()
-        config_spell.run_phase_requirements()
-        config_spell._ensure_crafter()
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
+        compiler_test_helpers.run_phase_local_frame(service_spell)
+        compiler_test_helpers.run_phase_validation(service_spell)
+        compiler_test_helpers.run_phase_requirements(config_spell)
 
-        service_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_root_blueprints(service_spell, "cid")
 
-        crafter = service_spell._crafter
-        assert crafter is not None
-        blueprints = crafter._entire_dag_blueprint_phase5
+        blueprints = service_spell._compiler_artifact._entire_dag_blueprint_phase5
         assert blueprints is not None
         assert set(blueprints.keys()) == {service_id, config_id}
     finally:
@@ -299,9 +292,7 @@ def test_component_filter_snapshot_to_visible_spells_excludes_hidden() -> None:
         )
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        crafter = spell._crafter
-        assert crafter is not None
+        compiler_test_helpers.run_phase_requirements(spell)
 
         root_id = "root-visible"
         dep_id = "dep-visible"
@@ -344,7 +335,7 @@ def test_component_filter_snapshot_to_visible_spells_excludes_hidden() -> None:
             },
         )
 
-        filtered = crafter._filter_snapshot_to_visible_spells(
+        filtered = CompilerPhase5()._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids={root_id, dep_id},
         )
@@ -358,3 +349,4 @@ def test_component_filter_snapshot_to_visible_spells_excludes_hidden() -> None:
         assert set(filtered.topologies.keys()) == {root_id}
     finally:
         spellbook.cleanup()
+

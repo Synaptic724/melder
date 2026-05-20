@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -113,7 +114,7 @@ def test_component_validation_system_reports_required_holes_and_missing_frame() 
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(spell)
         requirements = spell.requirements
 
         result = system.validate_spell(
@@ -285,7 +286,7 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
         assert root_spell is not None
         assert other_spell is not None
 
-        root_spell.run_phase_requirements()
+        compiler_test_helpers.run_phase_requirements(root_spell)
         requirements = root_spell.requirements
         assert requirements is not None
 
@@ -323,3 +324,4 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
     finally:
         system.cleanup()
         spellbook.cleanup()
+

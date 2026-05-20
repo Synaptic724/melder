@@ -17,6 +17,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
@@ -277,7 +280,7 @@ class _SpellStub:
             spell_system_states = _SpellSystemStatesStub(_ResolutionStateStub())
         self._spell_system_states = spell_system_states
         self._spellbook = spellbook
-        self._crafter = None
+        self._compiler_artifact = SpellCompilerArtifact(spell_id)
         self.execution_plan_dispatch_route = None
         self.is_broken = is_broken
         self.is_existing_creation = is_existing_creation
@@ -962,7 +965,7 @@ def test_meld_builds_context_on_cache_miss() -> None:
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=None)
     spell._creation_context_factory = factory
     spell._hooks_enabled = False
-    spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
+    spell._compiler_artifact._root_blueprint_phase5 = None
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
     assert meld.meld(spell="spell-1") == "built"
@@ -987,7 +990,7 @@ def test_meld_rebuilds_context_when_switch_is_not_open() -> None:
     )
     spell._creation_context_factory = factory
     spell._hooks_enabled = False
-    spell._crafter = SimpleNamespace(root_blueprint_phase5=None)
+    spell._compiler_artifact._root_blueprint_phase5 = None
     spell._creation_context_switch.state = 0
     meld._resolve_spell_by_id = MagicMock(return_value=spell)
 
@@ -1510,8 +1513,8 @@ def test_force_resolution_revalidation_uses_root_validity_for_root_blueprints() 
         spell_id="spell-root",
         spell_system_states=spell_system_states,
     )
-    spell._crafter = SimpleNamespace(
-        root_blueprint_phase5=SimpleNamespace(root_spell_id=spell.spell_index.current)
+    spell._compiler_artifact._root_blueprint_phase5 = SimpleNamespace(
+        root_spell_id=spell.spell_index.current
     )
     meld = _make_meld()
     meld._resolution_conduit_id = "conduit-1"
@@ -1543,8 +1546,8 @@ def test_get_resolution_validity_uses_root_validity_for_root_blueprints() -> Non
         change_reason=SpellStateChangeReason.contract_unvalidated,
     )
     spell = _SpellStub(spell_id="spell-root")
-    spell._crafter = SimpleNamespace(
-        root_blueprint_phase5=SimpleNamespace(root_spell_id=spell.spell_index.current)
+    spell._compiler_artifact._root_blueprint_phase5 = SimpleNamespace(
+        root_spell_id=spell.spell_index.current
     )
     meld = _make_meld()
 

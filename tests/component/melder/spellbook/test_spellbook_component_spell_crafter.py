@@ -263,8 +263,7 @@ def _run_phase_occurrence_plan(spell: object, conduit_id: str) -> None:
     Purpose:
         Run compiler phase 8 through the compiler-system surface for one spell.
     Contract:
-        - Ignores the legacy conduit_id argument because the compiler-system
-          surface now consumes only the spell for this phase.
+        - Uses the spell-owned Spellbook as the live compiler context.
         - Cleans the compiler system before returning.
     Args:
         spell:
@@ -276,7 +275,7 @@ def _run_phase_occurrence_plan(spell: object, conduit_id: str) -> None:
     """
     compiler_system = SpellCompilerSystem()
     try:
-        compiler_system.run_phase_occurrence_plan(spell)
+        compiler_system.run_phase_occurrence_plan(spell._spellbook, spell)
     finally:
         compiler_system.cleanup()
 

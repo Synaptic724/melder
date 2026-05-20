@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -117,18 +118,14 @@ def test_component_phase5_builds_system_index_and_root_blueprint() -> None:
         )
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
-        for current_spell in spellbook.spells.values():
-            current_spell._ensure_crafter()
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        index = crafter.spell_system_index_phase5
+        index = consumer_spell._compiler_artifact._spell_system_index_phase5
         assert index is not None
 
         consumer_node = index.get_node(consumer_id)
@@ -140,7 +137,7 @@ def test_component_phase5_builds_system_index_and_root_blueprint() -> None:
         assert consumer_node.is_root is True
         assert service_node.is_root is False
 
-        blueprint = crafter.root_blueprint_phase5
+        blueprint = consumer_spell._compiler_artifact._root_blueprint_phase5
         assert blueprint is not None
         assert blueprint.root_spell_id == consumer_id
         assert set(blueprint.dag.nodes) == {consumer_id, service_id}
@@ -202,23 +199,17 @@ def test_component_phase5_attaches_blueprints_to_dependencies() -> None:
         service_spell = _get_spell_by_version_id(spellbook, service_id)
         assert consumer_spell is not None
         assert service_spell is not None
-        for current_spell in spellbook.spells.values():
-            current_spell._ensure_crafter()
 
-        service_spell.run_phase_requirements()
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(service_spell)
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        consumer_crafter = consumer_spell._crafter
-        service_crafter = service_spell._crafter
-        assert consumer_crafter is not None
-        assert service_crafter is not None
-        assert consumer_crafter.root_blueprint_phase5 is not None
-        assert service_crafter.root_blueprint_phase5 is not None
-        assert service_crafter.spell_system_index_phase5 is not None
+        assert consumer_spell._compiler_artifact._root_blueprint_phase5 is not None
+        assert service_spell._compiler_artifact._root_blueprint_phase5 is not None
+        assert service_spell._compiler_artifact._spell_system_index_phase5 is not None
     finally:
         spellbook.cleanup()
 
@@ -300,24 +291,21 @@ def test_component_phase5_filters_out_non_visible_spells() -> None:
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
-        for current_spell in spellbook.spells.values():
-            current_spell._ensure_crafter()
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
-        consumer_spell.run_phase_validation()
-        consumer_spell.run_phase_root_blueprints("cid")
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
+        compiler_test_helpers.run_phase_validation(consumer_spell)
+        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
 
-        crafter = consumer_spell._crafter
-        assert crafter is not None
-        index = crafter.spell_system_index_phase5
+        index = consumer_spell._compiler_artifact._spell_system_index_phase5
         assert index is not None
         assert remote_id not in index.nodes
 
-        blueprints = crafter._entire_dag_blueprint_phase5
+        blueprints = consumer_spell._compiler_artifact._entire_dag_blueprint_phase5
         assert blueprints is not None
         assert remote_id not in blueprints
     finally:
         spellbook.cleanup()
         other_book.cleanup()
+

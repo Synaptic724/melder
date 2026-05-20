@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -87,9 +88,9 @@ def test_component_validation_context_cleanup_preserves_issues_and_cleans_artifa
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
 
         requirements = spell.requirements
         symbolic_graph = spell.symbolic_graph
@@ -117,3 +118,4 @@ def test_component_validation_context_cleanup_preserves_issues_and_cleans_artifa
         assert context.cleaned is True
     finally:
         spellbook.cleanup()
+

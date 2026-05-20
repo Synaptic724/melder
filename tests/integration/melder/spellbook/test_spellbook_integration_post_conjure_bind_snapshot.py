@@ -1,4 +1,5 @@
 import pytest
+import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_helpers
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -153,9 +154,9 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert set(consumer_spell.dependencies) == {service_a_id}
         state = consumer_spell.system_state
@@ -182,9 +183,9 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
         assert state is not None
         assert state.direct_dependencies == {service_a_id}
 
-        consumer_spell.run_phase_requirements()
-        consumer_spell.run_phase_symbolic_graph()
-        consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_spell)
 
         assert set(consumer_spell.dependencies) == {service_a_id, service_b_id}
         state = consumer_spell.system_state
@@ -313,13 +314,13 @@ def test_post_conjure_bind_collection_dependencies_isolated_by_spellbook() -> No
         assert consumer_a_spell is not None
         assert consumer_b_spell is not None
 
-        consumer_a_spell.run_phase_requirements()
-        consumer_a_spell.run_phase_symbolic_graph()
-        consumer_a_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_a_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_a_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_a_spell)
 
-        consumer_b_spell.run_phase_requirements()
-        consumer_b_spell.run_phase_symbolic_graph()
-        consumer_b_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(consumer_b_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(consumer_b_spell)
+        compiler_test_helpers.run_phase_local_frame(consumer_b_spell)
 
         spellbook_a._spell_system_states.consume_dirty_indexes()
 
@@ -434,13 +435,13 @@ def test_post_conjure_contract_addition_marks_local_collection_consumers() -> No
         assert owner_consumer_spell is not None
         assert borrower_consumer_spell is not None
 
-        owner_consumer_spell.run_phase_requirements()
-        owner_consumer_spell.run_phase_symbolic_graph()
-        owner_consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(owner_consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(owner_consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(owner_consumer_spell)
 
-        borrower_consumer_spell.run_phase_requirements()
-        borrower_consumer_spell.run_phase_symbolic_graph()
-        borrower_consumer_spell.run_phase_local_frame()
+        compiler_test_helpers.run_phase_requirements(borrower_consumer_spell)
+        compiler_test_helpers.run_phase_symbolic_graph(borrower_consumer_spell)
+        compiler_test_helpers.run_phase_local_frame(borrower_consumer_spell)
 
         borrower_book._spell_system_states.consume_dirty_indexes()
 
@@ -458,4 +459,5 @@ def test_post_conjure_contract_addition_marks_local_collection_consumers() -> No
     finally:
         borrower.cleanup()
         owner.cleanup()
+
 

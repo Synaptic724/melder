@@ -6,6 +6,9 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -86,13 +89,15 @@ def _run_spell_to_phase5(spell: Any) -> None:
     Returns:
         None.
     """
-    spell.run_phase_requirements()
-    spell.run_phase_symbolic_graph()
-    spell.run_phase_local_frame()
-    spell.run_phase_validation()
-    for current_spell in spell._spellbook.spells.values():
-        current_spell._ensure_crafter()
-    spell.run_phase_root_blueprints(CONDUIT_ID)
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_requirements(spell)
+        compiler_system.run_phase_symbolic_graph(spell)
+        compiler_system.run_phase_local_frame(spell._spellbook, spell)
+        compiler_system.run_phase_validation(spell._spellbook, spell)
+        compiler_system.run_phase_root_blueprints(spell._spellbook, spell, CONDUIT_ID)
+    finally:
+        compiler_system.cleanup()
 
 
 def test_component_change_control_wires_component_of_for_local_root() -> None:
@@ -148,7 +153,15 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
-        consumer_spell.run_phase_change_control(CONDUIT_ID)
+        compiler_system = SpellCompilerSystem()
+        try:
+            compiler_system.run_phase_change_control(
+                spellbook,
+                consumer_spell,
+                CONDUIT_ID,
+            )
+        finally:
+            compiler_system.cleanup()
 
         manager = Spellbook._aether._get_change_control_manager(
             spellbook._aetheric_frame
