@@ -280,7 +280,7 @@ def test_component_cluster_refresh_shareable_roots_filters_real_spells() -> None
         permissions="create",
     )
     owner = _ContractingConduitStub(conduit_id="owner-1", spellbook=spellbook)
-    cluster = ConduitCluster("cluster-a")
+    cluster = _make_cluster("cluster-a")
 
     cluster.refresh_shareable_roots(owner)
 
@@ -318,7 +318,7 @@ def test_component_cluster_share_to_borrower_contracts_real_spell() -> None:
         conduit_id="borrower-1",
         spellbook=_make_spellbook(),
     )
-    cluster = ConduitCluster("cluster-a")
+    cluster = _make_cluster("cluster-a")
     spell = _get_spell_by_version_id(spellbook, spell_id)
     assert spell is not None
     cluster.add_shared_spell(owner._id, spell.spell_index)
@@ -362,14 +362,14 @@ def test_component_cluster_remove_and_strip_spell_uses_real_spell() -> None:
         spellbook=_make_spellbook(),
     )
     frame = _FrameStub([owner, borrower], frame_name="frame-1")
-    cluster = ConduitCluster("cluster-a")
+    cluster = _make_cluster("cluster-a")
     cluster.add_member(owner._id)
     cluster.add_member(borrower._id)
     spell = _get_spell_by_version_id(spellbook, spell_id)
     assert spell is not None
     cluster.add_shared_spell(owner._id, spell.spell_index)
 
-    cluster.remove_and_strip_spell(owner, frame, spell)
+    cluster.remove_and_strip_spell(owner, spell)
 
     assert borrower.remove_root_calls == [
         {
@@ -426,10 +426,10 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
         aetheric_frame="frame-peer",
     )
     frame = _FrameStub([owner, peer], frame_name="frame-owner")
-    cluster = ConduitCluster("cluster-a")
+    cluster = _make_cluster("cluster-a")
 
-    cluster.handle_join(owner, frame)
-    cluster.handle_join(peer, frame)
+    cluster.handle_join(owner)
+    cluster.handle_join(peer)
 
     owner_spell = _get_spell_by_version_id(owner_book, owner_spell_id)
     peer_spell = _get_spell_by_version_id(peer_book, peer_spell_id)
@@ -457,5 +457,6 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
             "link_dependencies": True,
         }
     ]
+
 
 

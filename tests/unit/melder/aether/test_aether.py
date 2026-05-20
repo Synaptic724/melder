@@ -26,13 +26,18 @@ class _FrameConduitCloudStub:
         self._frame_mock = frame_mock
         self._registry = {}
         self._conduit_clusters = {}
+        self.frame_name = "default"
 
     def create_cluster(self, cluster_name: str) -> None:
         """Create one cluster in the cloud-owned registry."""
         from melder.aether.aetheric_frame import conduit_cloud as conduit_cloud_module
         if cluster_name in self._conduit_clusters:
             raise ValueError(f"Cluster with name {cluster_name} already exists.")
-        self._conduit_clusters[cluster_name] = conduit_cloud_module.ConduitCluster(cluster_name)
+        self._conduit_clusters[cluster_name] = conduit_cloud_module.ConduitCluster(
+            cluster_name,
+            self._frame_mock._conduits,
+            self.frame_name,
+        )
 
     def delete_cluster(self, cluster_name: str) -> None:
         """Delete one cluster from the cloud-owned registry."""
@@ -52,13 +57,13 @@ class _FrameConduitCloudStub:
         """Add one conduit id to one cluster and run the join hook."""
         cluster = self._get_cluster(cluster_name)
         cluster.add_member(conduit._id)
-        cluster.handle_join(conduit, self)
+        cluster.handle_join(conduit)
 
     def remove_conduit_from_cluster(self, conduit, cluster_name: str) -> None:
         """Remove one conduit id from one cluster and run the leave hook."""
         cluster = self._get_cluster(cluster_name)
         cluster.remove_member(conduit._id)
-        cluster.handle_leave(conduit, self)
+        cluster.handle_leave(conduit)
 
     def get_clusters_for_conduit(self, conduit_id: str):
         """Return cluster names containing the conduit id."""
@@ -83,7 +88,7 @@ class _FrameConduitCloudStub:
         cluster_names = self.get_clusters_for_conduit(conduit._id)
         for cluster_name in cluster_names:
             cluster = self._get_cluster(cluster_name)
-            cluster.refresh_member_shares(conduit, self)
+            cluster.refresh_member_shares(conduit)
 
 # ----------------------------------------------------------------------
 # Fixtures
