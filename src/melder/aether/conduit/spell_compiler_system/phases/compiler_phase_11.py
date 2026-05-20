@@ -657,7 +657,6 @@ class CompilerPhase11:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         # ------------------------------------------------------------------
         # Phase 11 - Execution Assembly Plan
@@ -691,8 +690,6 @@ class CompilerPhase11:
                 Spell compiler artifact containing phase-11 cached artifacts.
             spellbook:
                 Spellbook used to resolve live spell lookup map.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
         Raises:
             RuntimeError:
                 If phase-8 or required phase-9 artifacts are missing.

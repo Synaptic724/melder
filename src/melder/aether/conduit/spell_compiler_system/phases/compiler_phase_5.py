@@ -451,7 +451,7 @@ class CompilerPhase5:
             if root_id in owned_spell_ids
         }
 
-    def run(
+    def run_frame_wide(
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
@@ -610,7 +610,6 @@ class CompilerPhase5:
             - Attach phase-5 artifacts only to scoped spells.
             - Update the invoking artifact phase-2-5 cache and invalidate
               phase 8-11 when needed.
-            - Upsert owned components for this conduit and register a revalidator.
 
         Args:
             spell:
@@ -622,7 +621,7 @@ class CompilerPhase5:
             spell_system_states:
                 Required SpellSystemStates dependency.
             conduit_id:
-                Conduit identifier used by change-control upsert registration.
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation handle.
 
@@ -677,62 +676,3 @@ class CompilerPhase5:
         }
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
         SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
-
-        frame_name = self._get_required_spellbook_frame_name(spellbook)
-        change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
-        owned_root_blueprints = self._filter_root_blueprints_to_owned(
-            spellbook,
-            local_root_blueprints,
-        )
-        change_control_manager.upsert_component_of(
-            conduit_id,
-            {root_id: blueprint for root_id, blueprint in owned_root_blueprints.items()},
-        )
-
-        def _revalidate_dirty_roots(
-                dirty_roots: Set[str],
-                cancel_event: Optional[CancellationEvent],
-        ) -> Set[str]:
-            """
-            Revalidate the supplied dirty roots for this conduit.
-
-            Local phase-5 builds a scoped component view and needs the same dirty
-            root callback shape as frame-wide phase-5.
-
-            Contract:
-                - Resolves each root spell from the live spellbook `_spell_id_pool`.
-                - Reuses the compiler-system front façade for each root.
-                - Re-runs foundational phases via `run_all_phases(...)` using
-                  explicit `spellbook` and `spell` inputs instead of reaching
-                  back through the spell-owned `SpellCrafter`.
-                - Returns only successfully revalidated root ids.
-
-            Returns:
-                Set[str]:
-                    Root ids that successfully revalidated for this conduit.
-            """
-            validated_roots: Set[str] = set()
-            for root_id in dirty_roots:
-                from melder.aether.conduit.spell_compiler_system.spell_compiler_system import SpellCompilerSystem
-
-                spell_instance = spellbook._spell_id_pool[root_id]
-                compiler_system = SpellCompilerSystem()
-                try:
-                    compiler_system.run_all_phases(
-                        spellbook,
-                        spell_instance,
-                        conduit_id=conduit_id,
-                        cancel_event=cancel_event,
-                    )
-                finally:
-                    compiler_system.cleanup()
-
-                validated_roots.add(root_id)
-
-            return validated_roots
-
-        if not change_control_manager.has_revalidator_for_conduit(conduit_id):
-            change_control_manager.set_revalidator(
-                conduit_id,
-                _revalidate_dirty_roots,
-            )

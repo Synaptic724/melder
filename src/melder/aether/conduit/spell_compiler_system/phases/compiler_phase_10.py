@@ -105,7 +105,6 @@ class CompilerPhase10:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         # ------------------------------------------------------------------
         # Phase 10 - Patch Maps
@@ -131,9 +130,6 @@ class CompilerPhase10:
                 Spell currently in phase execution.
             artifact:
                 Spell compiler artifact that owns this phase state.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
         Returns:
             None.
 
@@ -141,13 +137,6 @@ class CompilerPhase10:
             RuntimeError:
                 If Phase 5 artifacts are missing or the root blueprint is
                 missing for this spell.
-
-        Threading:
-            - Not thread-safe; expected to run under spellbook phase scheduling.
-
-        Lifecycle:
-            - Replaces any prior patch map references for this spell.
-            - Prior map objects are cleaned during SpellCrafter teardown.
         """
         artifact.check_cleaned()
         if spell.is_existing_creation:

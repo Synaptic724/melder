@@ -381,7 +381,6 @@ class CompilerPhase8:
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             spell_system_states: Optional[ISpellSystemStates],
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 8 - Occurrence plan compilation.
@@ -404,8 +403,6 @@ class CompilerPhase8:
                 Active spellbook supplying lookup and runtime wiring.
             spell_system_states:
                 Optional system states passed into the builder.
-            cancel_event:
-                Reserved for scheduler-style cancellation (currently unused).
         Returns:
             None.
         """

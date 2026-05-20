@@ -325,7 +325,7 @@ class SpellCompiler:
         Returns:
             None.
         """
-        self._phase_5.run(
+        self._phase_5.run_frame_wide(
             spell,
             artifact,
             spellbook,
@@ -384,7 +384,6 @@ class SpellCompiler:
 
     def run_phase_system_validation(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             spell_system_states: ISpellSystemStates,
@@ -420,8 +419,7 @@ class SpellCompiler:
         Returns:
             None.
         """
-        self._phase_6.run(
-            spell,
+        self._phase_6.run_frame_wide(
             artifact,
             spellbook,
             spell_system_states,
@@ -478,11 +476,9 @@ class SpellCompiler:
 
     def run_phase_change_control(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Run compiler phase 7 (change-control integration).
@@ -511,21 +507,17 @@ class SpellCompiler:
         Returns:
             None.
         """
-        self._phase_7.run(
-            spell,
+        self._phase_7.run_frame_wide(
             artifact,
             spellbook,
             conduit_id,
-            cancel_event=cancel_event,
         )
 
     def run_phase_change_control_local(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Run local-only phase-7 integration.
@@ -555,11 +547,9 @@ class SpellCompiler:
             None.
         """
         self._phase_7.run_local(
-            spell,
             artifact,
             spellbook,
             conduit_id,
-            cancel_event=cancel_event,
         )
 
     def run_phase_occurrence_plan(
@@ -568,7 +558,6 @@ class SpellCompiler:
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             spell_system_states: Optional[ISpellSystemStates],
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Run compiler phase 8 (occurrence plan).
@@ -601,14 +590,12 @@ class SpellCompiler:
             artifact,
             spellbook,
             spell_system_states,
-            cancel_event=cancel_event,
         )
 
     def run_phase_injection_plan(
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
             Phase 9 - Injection plan compilation.
@@ -654,14 +641,12 @@ class SpellCompiler:
         self._phase_9.run(
             spell,
             artifact,
-            cancel_event=cancel_event,
         )
 
     def run_phase_patch_maps(
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
             Phase 10 - Patch map compilation.
@@ -707,7 +692,6 @@ class SpellCompiler:
         self._phase_10.run(
             spell,
             artifact,
-            cancel_event=cancel_event,
         )
 
     def run_phase_execution_plan(
@@ -715,7 +699,6 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Run compiler phase 11 (execution plan).
@@ -751,7 +734,6 @@ class SpellCompiler:
             spell,
             artifact,
             spellbook,
-            cancel_event=cancel_event,
         )
         self._phase_12.compile_no_overrides_executor(
             spellbook,

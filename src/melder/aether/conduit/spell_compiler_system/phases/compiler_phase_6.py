@@ -86,6 +86,12 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import (
+    SpellValidity,
+)
 
 
 @mypyc_attr(native_class=True)
@@ -305,9 +311,8 @@ class CompilerPhase6:
             SocketRefSanityStrategy(),
         ]
 
-    def run(
+    def run_frame_wide(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             spell_system_states: ISpellSystemStates,
@@ -322,8 +327,6 @@ class CompilerPhase6:
         on all compiler artifacts.
 
         Args:
-            spell:
-                Top-level spell used as the current caller context.
             artifact:
                 Conduit-level compiler artifact containing Phase-5 results.
             spellbook:

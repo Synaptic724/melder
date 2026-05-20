@@ -92,7 +92,6 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_requirements(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -107,14 +106,8 @@ class SpellCompilerSystem(Cleanable):
             - Does not return a value; artifacts are stored on the spell-owned
               compiler artifact.
             - Does not execute any later phases.
-            - Accepts `spellbook` explicitly even though Phase 1 does not
-              currently need it, so the compiler-system facade keeps one
-              consistent front-facing shape.
 
         Args:
-            spellbook:
-                Spellbook providing the runtime/compiler context for this
-                request.
             spell:
                 Spell whose Phase 1 artifacts should be produced.
             cancel_event:
@@ -135,7 +128,6 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_symbolic_graph(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -350,8 +342,6 @@ class SpellCompilerSystem(Cleanable):
             self,
             spellbook: ISpellbook,
             spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 8 - Occurrence plan compilation (front-facing compiler-system facade).
@@ -371,10 +361,6 @@ class SpellCompilerSystem(Cleanable):
                 occurrence-plan compilation.
             spell:
                 Spell whose Phase 8 artifacts should be produced.
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
 
         Returns:
             None.
@@ -384,15 +370,11 @@ class SpellCompilerSystem(Cleanable):
             spell._compiler_artifact,
             spellbook,
             spellbook._spell_system_states,
-            cancel_event=cancel_event,
         )
 
     def run_phase_injection_plan(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
             Phase 9 - Injection plan compilation.
@@ -411,42 +393,25 @@ class SpellCompilerSystem(Cleanable):
                 - Does not mutate the occurrence plan.
             
             Args:
-                conduit_id:
-                    Conduit identifier used to scope resolution artifacts.
-                cancel_event:
-                    Optional cancellation signal shared across the scheduler.
+                spell:
+                    Spell whose Phase 9 artifacts should be produced.
             
             Returns:
                 None.
             
             Raises:
-                ValueError:
-                    If conduit_id is empty.
                 RuntimeError:
                     If Phase 8 artifacts are missing for this spell, or if the
                     root blueprint is missing for this spell.
-                OperationCancelledError:
-                    If cancel_event signals cancellation.
-            
-            Threading:
-                - Not thread-safe; expected to run under spellbook phase scheduling.
-            
-            Lifecycle:
-                - Replaces any prior InjectionPlan reference for this spell.
-                - Prior plan objects are cleaned during SpellCrafter teardown.
         """
         self._spell_compiler.run_phase_injection_plan(
             spell,
             spell._compiler_artifact,
-            cancel_event=cancel_event,
         )
 
     def run_phase_patch_maps(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
             Phase 10 - Patch map compilation.
@@ -465,42 +430,26 @@ class SpellCompilerSystem(Cleanable):
                 - Does not mutate the root blueprint.
             
             Args:
-                conduit_id:
-                    Conduit identifier used to scope resolution artifacts.
-                cancel_event:
-                    Optional cancellation signal shared across the scheduler.
+                spell:
+                    Spell whose Phase 10 artifacts should be produced.
             
             Returns:
                 None.
             
             Raises:
-                ValueError:
-                    If conduit_id is empty.
                 RuntimeError:
                     If Phase 5 artifacts are missing or the root blueprint is missing
                     for this spell.
-                OperationCancelledError:
-                    If cancel_event signals cancellation.
-            
-            Threading:
-                - Not thread-safe; expected to run under spellbook phase scheduling.
-            
-            Lifecycle:
-                - Replaces any prior patch map references for this spell.
-                - Prior map objects are cleaned during SpellCrafter teardown.
         """
         self._spell_compiler.run_phase_patch_maps(
             spell,
             spell._compiler_artifact,
-            cancel_event=cancel_event,
         )
 
     def run_phase_execution_plan(
             self,
             spellbook: ISpellbook,
             spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
             Phase 11 - Execution plan compilation.
@@ -526,7 +475,6 @@ class SpellCompilerSystem(Cleanable):
             spell,
             spell._compiler_artifact,
             spellbook,
-            cancel_event=cancel_event,
         )
         spell._cleanup_creation_context()
 
@@ -564,7 +512,6 @@ class SpellCompilerSystem(Cleanable):
             None.
         """
         self._spell_compiler.run_phase_system_validation(
-            spell,
             spell._compiler_artifact,
             spellbook,
             spellbook._spell_system_states,
@@ -618,7 +565,6 @@ class SpellCompilerSystem(Cleanable):
             spellbook: ISpellbook,
             spell: ISpell,
             conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 7 - Change-control wiring (front-facing compiler-system facade).
@@ -645,11 +591,9 @@ class SpellCompilerSystem(Cleanable):
             None.
         """
         self._spell_compiler.run_phase_change_control(
-            spell,
             spell._compiler_artifact,
             spellbook,
             conduit_id,
-            cancel_event=cancel_event,
         )
 
     def run_phase_change_control_local(
@@ -657,7 +601,6 @@ class SpellCompilerSystem(Cleanable):
             spellbook: ISpellbook,
             spell: ISpell,
             conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 7 local - scoped change-control wiring (front-facing compiler-system facade).
@@ -683,16 +626,13 @@ class SpellCompilerSystem(Cleanable):
             None.
         """
         self._spell_compiler.run_phase_change_control_local(
-            spell,
             spell._compiler_artifact,
             spellbook,
             conduit_id,
-            cancel_event=cancel_event,
         )
 
     def get_local_resolution_scoped_spell_ids(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
     ) -> Set[str]:
         """
@@ -721,7 +661,6 @@ class SpellCompilerSystem(Cleanable):
 
     def get_local_resolution_scoped_root_ids(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
     ) -> Tuple[str, ...]:
         """
@@ -732,9 +671,6 @@ class SpellCompilerSystem(Cleanable):
               blueprints are available yet.
 
         Args:
-            spellbook:
-                Spellbook providing the runtime/compiler context for this
-                request.
             spell:
                 Spell whose local Phase 5 root scope is being inspected.
 
@@ -966,30 +902,19 @@ class SpellCompilerSystem(Cleanable):
             spellbook,
             spell,
             conduit_id,
-            cancel_event=cancel_event,
         )
         self.run_phase_occurrence_plan(
             spellbook,
             spell,
-            conduit_id,
-            cancel_event=cancel_event,
         )
         self.run_phase_injection_plan(
-            spellbook,
             spell,
-            conduit_id,
-            cancel_event=cancel_event,
         )
         self.run_phase_patch_maps(
-            spellbook,
             spell,
-            conduit_id,
-            cancel_event=cancel_event,
         )
         self.run_phase_execution_plan(
             spellbook,
             spell,
-            conduit_id,
-            cancel_event=cancel_event,
         )
         spell._compiler_artifact.cleanup_phase_artifacts()

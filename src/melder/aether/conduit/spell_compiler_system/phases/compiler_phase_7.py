@@ -49,13 +49,11 @@ class CompilerPhase7:
             )
         return root_blueprints
 
-    def run(
+    def run_frame_wide(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 7 - Change-control wiring.
@@ -69,7 +67,6 @@ class CompilerPhase7:
         artifact.check_cleaned()
         # Stage 1: install conduit-wide component-of rebuild wiring.
         self._ensure_change_control_ready(
-            spell,
             artifact,
             spellbook,
             conduit_id,
@@ -77,11 +74,9 @@ class CompilerPhase7:
 
     def run_local(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 7 local entrypoint.
@@ -93,23 +88,18 @@ class CompilerPhase7:
             - Preserves mappings for unrelated roots on the conduit.
             - Registers a revalidator when missing.
         Args:
-            spell:
-                The local spell context driving this phase.
             artifact:
                 Local compiler artifact with Phase-5 root blueprints in scope.
             spellbook:
                 Visible spellbook owning this artifact.
             conduit_id:
                 Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal (unused in wiring path).
         Returns:
             None.
         """
         artifact.check_cleaned()
         # Stage 1: install local change-control upsert wiring.
         self._ensure_change_control_ready_local(
-            spell,
             artifact,
             spellbook,
             conduit_id,
@@ -117,7 +107,6 @@ class CompilerPhase7:
 
     def _ensure_change_control_ready(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             conduit_id: str,
@@ -130,8 +119,6 @@ class CompilerPhase7:
             - Rebuilds conduit-scoped component-of mappings for owned root ids.
             - Installs a change-control revalidator if missing.
         Args:
-            spell:
-                Top-level spell used as a context anchor.
             artifact:
                 Conduit-level artifact containing the Phase-5 blueprint map.
             spellbook:
@@ -157,13 +144,13 @@ class CompilerPhase7:
             """
             Revalidate dirty roots for the conduit-wide Phase 7 hook.
 
-            This closure is registered on the conduit’s change-control slot, so
+            This closure is registered on the conduit change-control slot, so
             later dirty-root events can drive a full spell-level recompilation
             through the current Spellbook/runtime view.
 
             Contract:
                 - Resolves each root spell from the live spellbook `_spell_id_pool`.
-                - Reuses the compiler-system front façade for each root.
+                - Reuses the compiler-system front facade for each root.
                 - Re-runs foundational phases via `run_all_phases(...)` using
                   explicit `spellbook` and `spell` inputs instead of reaching
                   back through the spell-owned `SpellCrafter`.
@@ -196,7 +183,6 @@ class CompilerPhase7:
 
     def _ensure_change_control_ready_local(
             self,
-            spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
             conduit_id: str,
@@ -209,8 +195,6 @@ class CompilerPhase7:
             - Uses component-of upsert semantics to preserve unrelated roots.
             - Registers the same revalidator contract as frame-wide wiring.
         Args:
-            spell:
-                The local spell entrypoint context.
             artifact:
                 Local artifact containing the scoped Phase-5 root blueprint map.
             spellbook:
@@ -243,7 +227,7 @@ class CompilerPhase7:
 
             Contract:
                 - Resolves each root spell from the live spellbook `_spell_id_pool`.
-                - Reuses the compiler-system front façade for each root.
+                - Reuses the compiler-system front facade for each root.
                 - Re-runs foundational phases via `run_all_phases(...)` using
                   explicit `spellbook` and `spell` inputs instead of reaching
                   back through the spell-owned `SpellCrafter`.
@@ -273,3 +257,5 @@ class CompilerPhase7:
                 conduit_id,
                 _revalidate_dirty_roots,
             )
+
+

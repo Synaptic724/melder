@@ -103,7 +103,6 @@ class CompilerPhase9:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
         Phase 9 - Injection plan compilation.
@@ -127,22 +126,12 @@ class CompilerPhase9:
             artifact:
                 Phase-8 artifact output holder used for signature and plan
                 caching.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
         Returns:
             None.
 
         Raises:
             RuntimeError:
                 If Phase 8 artifacts are missing for this spell.
-
-        Threading:
-            - Not thread-safe; expected to run under spellbook phase scheduling.
-
-        Lifecycle:
-            - Replaces any prior InjectionPlan reference for this spell.
-            - Prior plan objects are cleaned during SpellCrafter teardown.
         """
         artifact.check_cleaned()
         if spell.is_existing_creation:
