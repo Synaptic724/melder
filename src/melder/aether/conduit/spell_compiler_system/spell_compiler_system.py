@@ -1,20 +1,16 @@
-from typing import Any, Dict, Optional
+from typing import Optional, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.spell_compiler_system.spell_compiler import (
     SpellCompiler,
 )
-from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
 from melder.aether.spellbook.spell_crafter.validation.validation_system import (
     SpellValidationSystem,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
-    ExecutionPlan,
-)
-from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
@@ -31,92 +27,84 @@ class SpellCompilerSystem(Cleanable):
         `SpellCompilerArtifact` state.
 
     Contract:
-        - Owns one borrowed `Spellbook` reference.
         - Owns one instantiated `SpellCompiler`.
         - Owns one instantiated `SpellValidationSystem`.
         - Does not own per-spell compiler artifact state; that remains on the
           spell.
+        - Does not own a Spellbook; callers provide `spellbook` explicitly at
+          call time.
         - Delegates through the compiled `SpellCompiler` surface for phases
           1-12.
     """
 
     __slots__ = Cleanable.__slots__ + [
-        "_spellbook",
         "_spell_compiler",
         "_spell_validator",
     ]
 
-    def __init__(self, spellbook: ISpellbook) -> None:
+    def __init__(self) -> None:
         """
         Initialize one compiler-system foundation object.
 
-        Args:
-            spellbook:
-                Spellbook whose spell/compiler context this system serves.
-
-        Raises:
-            ValueError:
-                If spellbook is None.
+        Contract:
+            - Creates one reusable SpellCompiler instance.
+            - Creates one reusable SpellValidationSystem instance.
+            - Does not capture Spellbook state; spellbook is a call-time input
+              for front-facing phase entrypoints.
         """
         super().__init__()
-        if spellbook is None:
-            raise ValueError("spellbook cannot be None.")
-        self._spellbook: ISpellbook = spellbook
         self._spell_compiler: SpellCompiler = SpellCompiler()
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
 
     def cleanup(self) -> None:
         """
-        Release owned compiler collaborators and the borrowed spellbook reference.
+        Release owned compiler collaborators.
 
         Contract:
             - Idempotent cleanup.
-            - Does not clean the spellbook itself.
         """
         if self._cleaned:
             return
         self._cleaned = True
         del self._spell_validator
         del self._spell_compiler
-        del self._spellbook
-
-    def create_spell_crafter_for_spell(self, spell: ISpell) -> SpellCrafter:
-        """
-        Create one concrete SpellCrafter for the supplied spell.
-
-        Args:
-            spell:
-                Spell whose crafter surface should be materialized.
-
-        Returns:
-            SpellCrafter:
-                Concrete crafter bound to the supplied spell.
-        """
-        return SpellCrafter(spell)
 
     def run_phase_requirements(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 1 (requirements) for a spell.
+        Phase 1 - Requirements extraction (front-facing compiler-system facade).
 
-        Purpose:
-            Delegate to the shared compiler to produce and cache phase-1
-            requirements data on the spell's compiler artifact.
+        Delegates to the compiler system to analyze constructor requirements
+        and capture dependency metadata for this spell.
 
         Contract:
-            - Does not require conduit-scoped state.
-            - Uses the owning spell's `_compiler_artifact` as mutable target.
-            - Honors cooperative cancellation while collecting requirements.
+            - Requires a live Spell (not cleaned).
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute any later phases.
+            - Accepts `spellbook` explicitly even though Phase 1 does not
+              currently need it, so the compiler-system facade keeps one
+              consistent front-facing shape.
+
         Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
             spell:
-                Spell for which phase 1 artifacts are built.
+                Spell whose Phase 1 artifacts should be produced.
             cancel_event:
-                Optional cancellation signal for phase-1 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
+
+        Notes:
+            Phase artifacts are cleaned after Phase 7; spell-level dependency
+            data and system state remain available.
         """
         self._spell_compiler.run_phase_requirements(
             spell,
@@ -126,25 +114,33 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_symbolic_graph(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 2 (symbolic graph) for a spell.
+        Phase 2 - Symbolic graph construction (front-facing compiler-system facade).
 
-        Purpose:
-            Delegate to the shared compiler to construct symbolic graph state from
-            phase-1 requirements and store it on the spell artifact.
+        Delegates to the compiler system to build the symbolic dependency graph
+        for this spell from Phase 1 requirements.
 
         Contract:
-            - Requires the target spell to have an active compiler artifact.
-            - Uses the per-spell artifact as cache/transfer surface.
-            - Supports cancellation.
+            - Requires Phase 1 to be completed successfully.
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+            - Accepts `spellbook` explicitly to keep the compiler-system entry
+              contract uniform even though this phase does not currently need it.
+
         Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
             spell:
-                Spell whose symbolic graph is being built.
+                Spell whose Phase 2 artifacts should be produced.
             cancel_event:
-                Optional cancellation signal for phase-2 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
@@ -156,334 +152,235 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_local_frame(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 3 (local frame / DAG) for a spell.
+        Phase 3 - Local resolution frame / DAG (front-facing compiler-system facade).
 
-        Purpose:
-            Build local frame artifacts from symbolic graph and spell-system state,
-            storing phase-3 outputs in the spell's compiler artifact.
+        Delegates to the compiler system to resolve dependencies against the
+        Spellbook and build the local resolution frame.
 
         Contract:
-            - Uses system-state from the owning spellbook for local visibility.
-            - Delegates to phase-3 implementation in `SpellCompiler`.
-            - Honors cancellation.
+            - Requires Phases 1 and 2 to be completed successfully.
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook whose visible spell pool and system-state surface are
+                used for local-frame resolution.
             spell:
-                Spell under local-frame compilation.
+                Spell whose Phase 3 artifacts should be produced.
             cancel_event:
-                Optional cancellation signal for phase-3 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
         self._spell_compiler.run_phase_local_frame(
             spell,
             spell._compiler_artifact,
-            self._spellbook,
-            self._spellbook._spell_system_states,
+            spellbook,
+            spellbook._spell_system_states,
             cancel_event=cancel_event,
         )
 
     def run_phase_validation(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 4 (validation) for a spell.
+        Phase 4 - Per-spell validation (front-facing compiler-system facade).
 
-        Purpose:
-            Validate spell-level structural output from local frame execution and
-            persist validation artifacts on the spell artifact.
+        Delegates to the compiler system to validate this spell's Phase 1-3
+        artifacts and set validated/broken flags.
 
         Contract:
-            - Uses the system validator owned by this compiler system.
-            - Uses the spellbook's spell-system state view when available.
-            - Supports cancellation.
+            - Requires Phases 1-3 to be completed successfully.
+            - Does not return a value; results are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing frame-level spell-system state for
+                structural validity updates.
             spell:
-                Spell to validate.
+                Spell whose Phase 4 validation should run.
             cancel_event:
-                Optional cancellation signal for phase-4 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
         self._spell_compiler.run_phase_validation(
+            spellbook,
             spell,
             spell._compiler_artifact,
             self._spell_validator,
-            self._spellbook._spell_system_states,
+            spellbook._spell_system_states,
             cancel_event=cancel_event,
         )
 
     def run_phase_root_blueprints(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 5 (root blueprints) for a spell.
+        Phase 5 - Root blueprint construction (front-facing compiler-system facade).
 
-        Purpose:
-            Build root blueprints under the provided conduit and cache them on the
-            spell's compiler artifact.
+        Delegates to the compiler system to build system-level DAG blueprints
+        and a SpellSystemIndex for the current frame.
 
         Contract:
-            - Requires phase 3/4 artifacts for the same spell.
-            - Uses owning spellbook and spell-system-state for scope resolution.
-            - Propagates cancellation to phase-5 internals.
+            - Requires Phase 4 to be completed successfully.
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing visibility, ownership, and frame-level
+                system-state context.
             spell:
-                Spell that owns conduit-scoped blueprints.
+                Spell whose Phase 5 artifacts should be produced.
             conduit_id:
-                Conduit identifier for scope.
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
-                Optional cancellation signal for phase-5 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
         self._spell_compiler.run_phase_root_blueprints(
             spell,
             spell._compiler_artifact,
-            self._spellbook,
-            self._spellbook._spell_system_states,
+            spellbook,
+            spellbook._spell_system_states,
             conduit_id,
             cancel_event=cancel_event,
         )
 
     def run_phase_root_blueprints_local(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run local phase 5 (root blueprints) for a spell.
+        Phase 5 local - target spell closure blueprint construction (front-facing compiler-system facade).
 
-        Purpose:
-            Compile local-only blueprints with the same storage and cancellation
-            behavior as phase 5.
+        Delegates to the compiler system to build local Phase 5 artifacts for
+        the target spell and its dependency closure.
 
         Contract:
-            - Restricts compilation to the local spellbook scope.
-            - Updates the spell's local blueprint artifacts only.
-            - Preserves conduit scope via `conduit_id`.
+            - Requires Phase 4 to be completed successfully.
+            - Scope is limited to this spell plus transitive dependencies.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing visibility, ownership, and frame-level
+                system-state context.
             spell:
-                Spell being locally resolved.
+                Spell whose local Phase 5 artifacts should be produced.
             conduit_id:
-                Conduit identifier for scope.
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
-                Optional cancellation signal for local phase-5 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
         self._spell_compiler.run_phase_root_blueprints_local(
             spell,
             spell._compiler_artifact,
-            self._spellbook,
-            self._spellbook._spell_system_states,
-            conduit_id,
-            cancel_event=cancel_event,
-        )
-
-    def run_phase_system_validation(
-            self,
-            spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Run compiler phase 6 (system validation) for a spell.
-
-        Purpose:
-            Validate system invariants for conduit-specific blueprints and store
-            phase-6 validation outputs on the spell artifact.
-
-        Contract:
-            - Uses spellbook and spell-system-state context.
-            - Requires phase-5 artifacts to be present.
-            - Supports cancellation.
-        Args:
-            spell:
-                Spell to run system validation for.
-            conduit_id:
-                Conduit identifier for validation scope.
-            cancel_event:
-                Optional cancellation signal for phase-6 processing.
-        Returns:
-            None.
-        """
-        self._spell_compiler.run_phase_system_validation(
-            spell,
-            spell._compiler_artifact,
-            self._spellbook,
-            self._spellbook._spell_system_states,
-            conduit_id,
-            cancel_event=cancel_event,
-        )
-
-    def run_phase_system_validation_local(
-            self,
-            spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Run local phase 6 (system validation) for a spell.
-
-        Purpose:
-            Validate system state for locally-scoped roots and cache results in the
-            spell artifact.
-
-        Contract:
-            - Uses local phase-5 artifacts produced on this spell.
-            - Returns validation artifacts in the same artifact format.
-            - Uses provided cancellation signal.
-        Args:
-            spell:
-                Spell owning local validation scope.
-            conduit_id:
-                Conduit identifier for local system validation.
-            cancel_event:
-                Optional cancellation signal for local phase-6 processing.
-        Returns:
-            None.
-        """
-        self._spell_compiler.run_phase_system_validation_local(
-            spell,
-            spell._compiler_artifact,
-            self._spellbook,
-            self._spellbook._spell_system_states,
-            conduit_id,
-            cancel_event=cancel_event,
-        )
-
-    def run_phase_change_control(
-            self,
-            spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Run compiler phase 7 (change-control wiring) for a spell.
-
-        Purpose:
-            Register component-of and revalidation wiring for spell roots under the
-            provided conduit scope.
-
-        Contract:
-            - Depends on completed phase-5 artifacts.
-            - Operates through spellbook-level change-control infrastructure.
-            - Honors optional cancellation signal.
-        Args:
-            spell:
-                Spell being integrated into change-control.
-            conduit_id:
-                Conduit identifier for change-control scope.
-            cancel_event:
-                Optional cancellation signal for phase-7 processing.
-        Returns:
-            None.
-        """
-        self._spell_compiler.run_phase_change_control(
-            spell,
-            spell._compiler_artifact,
-            self._spellbook,
-            conduit_id,
-            cancel_event=cancel_event,
-        )
-
-    def run_phase_change_control_local(
-            self,
-            spell: ISpell,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Run local phase 7 change-control wiring for a spell.
-
-        Purpose:
-            Register local-only component-of mappings and revalidators for local
-            roots.
-
-        Contract:
-            - Mirrors phase-7 behavior over the local scope.
-            - Reuses the same spell artifact storage and cancellation path.
-        Args:
-            spell:
-                Spell with local roots to integrate.
-            conduit_id:
-                Conduit identifier for local change-control scope.
-            cancel_event:
-                Optional cancellation signal for local phase-7 processing.
-        Returns:
-            None.
-        """
-        self._spell_compiler.run_phase_change_control_local(
-            spell,
-            spell._compiler_artifact,
-            self._spellbook,
+            spellbook,
+            spellbook._spell_system_states,
             conduit_id,
             cancel_event=cancel_event,
         )
 
     def run_phase_occurrence_plan(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 8 (occurrence plan) for a spell.
+        Phase 8 - Occurrence plan compilation (front-facing compiler-system facade).
 
-        Purpose:
-            Build occurrence plan artifacts from validated root/system artifacts and
-            persist them on the spell artifact.
+        Delegates to the compiler system to compile the occurrence plan for root
+        spells. Non-root spells are treated as a no-op.
 
         Contract:
-            - Uses spellbook and spell-system state for dynamic planning context.
-            - Requires upstream phase artifacts in the spell artifact.
-            - Supports cancellation.
+            - Requires Phase 5 artifacts to be available.
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing lookup and system-state context for
+                occurrence-plan compilation.
             spell:
-                Spell being planned.
+                Spell whose Phase 8 artifacts should be produced.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
-                Optional cancellation signal for phase-8 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
         self._spell_compiler.run_phase_occurrence_plan(
             spell,
             spell._compiler_artifact,
-            self._spellbook,
-            self._spellbook._spell_system_states,
+            spellbook,
+            spellbook._spell_system_states,
             cancel_event=cancel_event,
         )
 
     def run_phase_injection_plan(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 9 (injection plan) for a spell.
+        Phase 9 - Injection plan compilation (front-facing compiler-system facade).
 
-        Purpose:
-            Transform occurrence artifacts into injector plan state on the spell
-            compiler artifact.
+        Delegates to the compiler system to compile the injection plan for root
+        spells. Non-root spells are treated as a no-op.
 
         Contract:
-            - Requires phase-8 outputs where applicable.
-            - Delegates plan synthesis to the shared compiler.
-            - Supports cancellation.
+            - Requires Phase 8 artifacts to be available.
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
             spell:
-                Spell for which injection plans are built.
+                Spell whose Phase 9 artifacts should be produced.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
-                Optional cancellation signal for phase-9 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
@@ -495,25 +392,34 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_patch_maps(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 10 (patch maps) for a spell.
+        Phase 10 - Patch map compilation (front-facing compiler-system facade).
 
-        Purpose:
-            Produce override/mutation patch maps from injection plans for later
-            execution-plan synthesis.
+        Delegates to the compiler system to compile override and mutation patch
+        maps for root spells. Non-root spells are treated as a no-op.
 
         Contract:
-            - Uses phase-9 injection output.
-            - Stores patch maps on the per-spell artifact.
-            - Supports cancellation.
+            - Requires Phase 9 artifacts to be available.
+            - Does not return a value; artifacts are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
             spell:
-                Spell for which patch maps are built.
+                Spell whose Phase 10 artifacts should be produced.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
-                Optional cancellation signal for phase-10 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
@@ -525,114 +431,417 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_execution_plan(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
+            conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 11 (execution plan) for a spell.
+        Phase 11 - Execution plan compilation (front-facing compiler-system facade).
 
-        Purpose:
-            Compile and cache final execution plans for spell invocation on the
-            spell artifact.
+        Delegates to the compiler system to compile the execution plan for root
+        spells. Non-root spells are treated as a no-op.
 
         Contract:
-            - Requires complete phase-8/9/10 artifact chain.
-            - Uses spellbook context for root and override resolution.
-            - Supports cancellation.
+            - Invalidates the spell-owned CreationContext after execution-plan
+              changes so meld rebuilds a fresh spell-shaped runtime context.
+
         Args:
+            spellbook:
+                Spellbook providing spell lookup and runtime compiler context.
             spell:
-                Spell for which execution plans are generated.
+                Spell whose Phase 11 artifacts should be produced.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
-                Optional cancellation signal for phase-11 processing.
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
         self._spell_compiler.run_phase_execution_plan(
             spell,
             spell._compiler_artifact,
-            self._spellbook,
+            spellbook,
+            cancel_event=cancel_event,
+        )
+        spell._cleanup_creation_context()
+
+    def run_phase_system_validation(
+            self,
+            spellbook: ISpellbook,
+            spell: ISpell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Phase 6 - System-level validation (front-facing compiler-system facade).
+
+        Delegates to the compiler system to validate system-level DAG integrity
+        and update per-conduit resolution validity.
+
+        Contract:
+            - Requires Phase 5 to be completed successfully.
+            - Does not return a value; results are stored on the spell-owned
+              compiler artifact.
+            - Does not execute later phases.
+
+        Args:
+            spellbook:
+                Spellbook providing visibility and frame-level system-state
+                context.
+            spell:
+                Spell whose Phase 6 validation should run.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+        """
+        self._spell_compiler.run_phase_system_validation(
+            spell,
+            spell._compiler_artifact,
+            spellbook,
+            spellbook._spell_system_states,
+            conduit_id,
             cancel_event=cancel_event,
         )
 
-    def compile_phase12_no_overrides_executor(
+    def run_phase_system_validation_local(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Compile the phase-12 no-overrides executor for a spell.
+        Phase 6 local - scoped system validation (front-facing compiler-system facade).
 
-        Purpose:
-            Delegate to the shared compiler to generate and cache a callable
-            executor from artifact-derived execution-plan state.
+        Delegates to the compiler system to validate only the local Phase 5
+        scope for this spell.
 
         Contract:
-            - Requires phase-11 execution-plan artifacts.
-            - Writes compiled no-overrides executor to the spell artifact.
+            - Requires local Phase 5 artifacts.
+            - Updates per-conduit resolution validity for scoped ids only.
+            - Does not execute later phases.
+
         Args:
+            spellbook:
+                Spellbook providing visibility and frame-level system-state
+                context.
             spell:
-                Spell owning the compiled executor.
+                Spell whose local Phase 6 validation should run.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
-        self._spell_compiler.compile_phase12_no_overrides_executor(
+        self._spell_compiler.run_phase_system_validation_local(
             spell,
             spell._compiler_artifact,
+            spellbook,
+            spellbook._spell_system_states,
+            conduit_id,
+            cancel_event=cancel_event,
         )
 
-    def compile_phase12_no_overrides_executor_from_plan(
+    def run_phase_change_control(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
-            execution_plan: ExecutionPlan,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Compile the phase-12 no-overrides executor from a provided plan.
+        Phase 7 - Change-control wiring (front-facing compiler-system facade).
 
-        Purpose:
-            Build and cache a no-overrides executor directly from an execution
-            plan without recomputing the plan through standard phase-11 flow.
+        Delegates to the compiler system to ensure change-control wiring and
+        component-of indexing are prepared for this frame.
 
         Contract:
-            - Uses the supplied `execution_plan` object.
-            - Refreshes executor cache metadata in the spell artifact.
+            - Requires Phase 5 artifacts to be available.
+            - Does not return a value; wiring occurs inside the compiler-owned
+              phase path.
+
         Args:
+            spellbook:
+                Spellbook providing the frame-level change-control surface.
             spell:
-                Spell owning the execution strategy.
-            execution_plan:
-                Concrete execution plan used for executor compilation.
+                Spell whose Phase 7 wiring should run.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
-        self._spell_compiler.compile_phase12_no_overrides_executor_from_plan(
+        self._spell_compiler.run_phase_change_control(
             spell,
             spell._compiler_artifact,
-            execution_plan,
+            spellbook,
+            conduit_id,
+            cancel_event=cancel_event,
         )
 
-    def compile_phase12_no_overrides_executor_from_payload(
+    def run_phase_change_control_local(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
-            no_overrides_payload: Dict[str, Any],
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Compile the phase-12 no-overrides executor from payload data.
+        Phase 7 local - scoped change-control wiring (front-facing compiler-system facade).
 
-        Purpose:
-            Compile executor output from serialized phase-11 payload when an
-            execution plan object is unavailable.
+        Delegates to the compiler system to refresh change-control mappings only
+        for locally revalidated roots.
 
         Contract:
-            - Uses payload fields expected by phase-12 compilation helpers.
-            - Updates executor caching metadata on the spell artifact.
+            - Requires local Phase 5 artifacts.
+            - Preserves component-of mappings for unrelated roots.
+
         Args:
+            spellbook:
+                Spellbook providing the frame-level change-control surface.
             spell:
-                Spell owning the compiled executor.
-            no_overrides_payload:
-                Serialized execution-plan payload.
+                Spell whose local Phase 7 wiring should run.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
         Returns:
             None.
         """
-        self._spell_compiler.compile_phase12_no_overrides_executor_from_payload(
+        self._spell_compiler.run_phase_change_control_local(
             spell,
             spell._compiler_artifact,
-            no_overrides_payload,
+            spellbook,
+            conduit_id,
+            cancel_event=cancel_event,
         )
+
+    def get_local_resolution_scoped_spell_ids(
+            self,
+            spellbook: ISpellbook,
+            spell: ISpell,
+    ) -> Set[str]:
+        """
+        Return the spell ids currently covered by this spell's local Phase 5 scope.
+
+        Contract:
+            - Always includes this spell's current `spell_id`.
+            - Adds any additional spell ids present in the local Phase 5 system
+              index when that artifact exists.
+
+        Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
+            spell:
+                Spell whose local Phase 5 scope is being inspected.
+
+        Returns:
+            Set[str]: Spell ids in the local target-resolution scope.
+        """
+        scoped_spell_ids: Set[str] = {spell.spell_id}
+        system_index = spell._compiler_artifact._spell_system_index_phase5
+        if system_index is not None:
+            scoped_spell_ids.update(system_index.nodes.keys())
+        return scoped_spell_ids
+
+    def get_local_resolution_scoped_root_ids(
+            self,
+            spellbook: ISpellbook,
+            spell: ISpell,
+    ) -> Tuple[str, ...]:
+        """
+        Return the root ids currently covered by this spell's local Phase 5 scope.
+
+        Contract:
+            - Falls back to `(spell.spell_id,)` when no local Phase 5 rooted
+              blueprints are available yet.
+
+        Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
+            spell:
+                Spell whose local Phase 5 root scope is being inspected.
+
+        Returns:
+            Tuple[str, ...]: Root ids in the local target-resolution scope.
+        """
+        root_blueprints = spell._compiler_artifact._entire_dag_blueprint_phase5
+        if root_blueprints is None or len(root_blueprints) == 0:
+            return (spell.spell_id,)
+        return tuple(root_blueprints.keys())
+
+    def run_structural_phases(
+            self,
+            spellbook: ISpellbook,
+            spell: ISpell,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Convenience helper to run structural phases only (1-4) for a spell.
+
+        Phases executed via the compiler system:
+            1. Requirements extraction.
+            2. Symbolic graph construction.
+            3. Local resolution frame / DAG construction.
+            4. Validation.
+
+        Each phase honors the optional `CancellationEvent`. If the event is
+        set, the underlying phase methods raise through the shared cancellation
+        path.
+
+        Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
+            spell:
+                Spell whose structural phases should be run.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+
+        Raises:
+            Exception: Propagates exceptions raised by the underlying phases.
+        """
+        self.run_phase_requirements(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_symbolic_graph(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_local_frame(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_validation(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+
+    def run_all_phases(
+            self,
+            spellbook: ISpellbook,
+            spell: ISpell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """
+        Convenience helper to run all compiler / resolution phases for a spell, in order.
+
+        Phases executed via the compiler system:
+            - Phase 1: Requirements extraction.
+            - Phase 2: Symbolic graph construction.
+            - Phase 3: Local resolution frame / DAG construction.
+            - Phase 4: Validation.
+            - Phase 5: Root blueprint construction.
+            - Phase 6: System validation.
+            - Phase 7: Change-control wiring.
+            - Phase 8: Occurrence plan compilation.
+            - Phase 9: Injection plan compilation.
+            - Phase 10: Patch map compilation.
+            - Phase 11: Execution plan compilation.
+
+        Each phase honors the optional `CancellationEvent`. If the event is
+        set, the underlying phase methods raise through the shared cancellation
+        path.
+
+        Args:
+            spellbook:
+                Spellbook providing the runtime/compiler context for this
+                request.
+            spell:
+                Spell whose full compiler / resolution phase set should run.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+
+        Raises:
+            Exception: Propagates exceptions raised by the underlying phases.
+        """
+        self.run_phase_requirements(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_symbolic_graph(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_local_frame(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_validation(
+            spellbook,
+            spell,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_root_blueprints(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_system_validation(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_change_control(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_occurrence_plan(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_injection_plan(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_patch_maps(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        self.run_phase_execution_plan(
+            spellbook,
+            spell,
+            conduit_id,
+            cancel_event=cancel_event,
+        )
+        spell._compiler_artifact.cleanup_phase_artifacts()

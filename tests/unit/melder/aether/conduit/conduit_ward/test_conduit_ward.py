@@ -867,6 +867,7 @@ def test_link_returns_false_when_target_not_normal(ward):
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.cleaned
     target_conduit._aetheric_frame_name = "default"
+    target_conduit._conduit_ward = None
 
     result = ward._link(target_conduit)
 

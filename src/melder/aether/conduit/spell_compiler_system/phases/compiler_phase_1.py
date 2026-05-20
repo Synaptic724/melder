@@ -61,6 +61,14 @@ class CompilerPhase1:
               state.
             * Does not return a value; consumers read
               `artifact._requirements`.
+
+        Args:
+            spell:
+                Spell whose constructor requirements are being extracted.
+            artifact:
+                Compiler artifact receiving phase-1 output.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)

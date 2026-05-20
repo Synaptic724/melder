@@ -223,6 +223,7 @@ class SpellCompiler:
 
     def run_phase_validation(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spell_validator: ISpellValidationSystem,
@@ -244,6 +245,10 @@ class SpellCompiler:
             - Keeps cancellation cooperative for long-running validations.
 
         Args:
+            spellbook:
+                Spellbook providing the front-door compiler context for this
+                request. Phase 4 itself remains driven by the explicit
+                validator and spell-system-state inputs.
             spell:
                 Spell under validation.
             artifact:
@@ -259,6 +264,7 @@ class SpellCompiler:
             None.
         """
         self._phase_4.run(
+            spellbook,
             spell,
             artifact,
             spell_validator,

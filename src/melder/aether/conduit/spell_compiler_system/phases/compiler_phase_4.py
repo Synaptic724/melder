@@ -21,6 +21,7 @@ from melder.aether.conduit.spell_compiler_system.phases.utility import (
 from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
@@ -47,6 +48,7 @@ class CompilerPhase4:
 
     def run(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spell_validator: ISpellValidationSystem,
@@ -79,6 +81,24 @@ class CompilerPhase4:
               phase is previously completed.
             * Returns `None`; callers rely on the stored validation result and
               flags instead of a direct return value.
+
+        Args:
+            spellbook:
+                Spellbook providing the front-door compiler context for this
+                request. Phase 4 itself still uses the explicit validator and
+                spell-system-state collaborators directly.
+            spell:
+                Spell whose Phase 4 validation should run.
+            artifact:
+                Compiler artifact receiving phase-4 validation state.
+            spell_validator:
+                Validator collaborator used to validate the spell-local phase
+                artifacts.
+            spell_system_states:
+                Optional spell-system-state registry used to publish structural
+                validity changes.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)

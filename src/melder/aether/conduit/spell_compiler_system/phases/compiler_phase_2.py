@@ -74,9 +74,18 @@ class CompilerPhase2:
             * Does not return a value; consumers read
               `artifact._symbolic_graph`.
 
+        Args:
+            spell:
+                Spell whose symbolic graph is being built.
+            artifact:
+                Compiler artifact receiving phase-2 output.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
         Raises:
-            RuntimeError: If requirements are missing or the spell is missing
-                a bound current spell id.
+            RuntimeError:
+                If requirements are missing or the spell is missing a bound
+                current spell id.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)
