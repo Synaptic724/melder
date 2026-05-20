@@ -383,15 +383,21 @@ class SharedCompilerExecutions:
     @staticmethod
     def freeze_phase11_schema_value(value: Any) -> Any:
         """
-        Normalize arbitrary values into deterministic schema-safe forms.
-
-        Purpose:
-            Convert nested payload values into primitive/tuple structures so
-            phase8_11 IR rows can be serialized without leaking live objects.
-        Contract:
-            - Primitive values are returned as-is.
-            - Dict/list/tuple/set values are recursively normalized.
-            - Non-primitive objects are represented by deterministic repr text.
+            Normalize arbitrary values into deterministic schema-safe forms.
+            
+            Purpose:
+                Convert nested payload values into primitive/tuple structures so
+                Phase11 IR rows can be serialized without leaking live objects.
+            Contract:
+                - Primitive values are returned as-is.
+                - Dict/list/tuple/set values are recursively normalized.
+                - Non-primitive objects are represented by deterministic repr text.
+            Args:
+                value:
+                    Raw value captured from plan metadata.
+            Returns:
+                Any:
+                    Deterministic schema-safe value.
         """
         if value is None or isinstance(value, (bool, int, float, str)):
             return value
@@ -427,7 +433,11 @@ class SharedCompilerExecutions:
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
         """
-        Normalize one execution-plan instance key.
+            Return one explicit two-element instance key tuple.
+            
+            Purpose:
+                Preserve the stable `(spell_id, path_id)` key shape instead of
+                widening through generic `tuple(...)` reconstruction.
         """
         return instance_key[0], instance_key[1]
 
@@ -436,7 +446,11 @@ class SharedCompilerExecutions:
             occurrence_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
         """
-        Normalize one occurrence-plan key.
+            Return one explicit two-element occurrence key tuple.
+            
+            Purpose:
+                Preserve the stable `(spell_id, path_id)` key shape instead of
+                widening through generic `tuple(...)` reconstruction.
         """
         return occurrence_key[0], occurrence_key[1]
 
@@ -445,7 +459,19 @@ class SharedCompilerExecutions:
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, int]:
         """
-        Build a deterministic sort key for normalized instance keys.
+            Build a deterministic sort key for instance-key tuples.
+            
+            Purpose:
+                Keep schema-row ordering stable for `(spell_id, path_id)` keys.
+            Contract:
+                - `None` path ids sort before concrete path ids.
+                - Spell id remains the primary sort dimension.
+            Args:
+                instance_key:
+                    Instance key `(spell_id, path_id)`.
+            Returns:
+                Tuple[str, int]:
+                    Comparable sort key.
         """
         path_id = instance_key[1]
         return (
@@ -458,7 +484,19 @@ class SharedCompilerExecutions:
             occurrence_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, int]:
         """
-        Build a deterministic sort key for normalized occurrence keys.
+            Build a deterministic sort key for occurrence-key tuples.
+            
+            Purpose:
+                Keep occurrence schema row ordering stable across equivalent maps.
+            Contract:
+                - `None` path ids sort before concrete path ids.
+                - Spell id remains the primary sort dimension.
+            Args:
+                occurrence_key:
+                    Occurrence key `(spell_id, path_id)`.
+            Returns:
+                Tuple[str, int]:
+                    Comparable sort key.
         """
         path_id = occurrence_key[1]
         return (
@@ -471,7 +509,20 @@ class SharedCompilerExecutions:
             transient_plan: Optional[Tuple[Any, ...]],
     ) -> Optional[Dict[str, Any]]:
         """
-        Convert the Phase11 transient tuple into a schema-only IR payload.
+            Convert the Phase11 transient tuple into a schema-only IR payload.
+            
+            Purpose:
+                Remove callable/object references from transient payload export while
+                preserving all indices needed for no-overrides transient codegen.
+            Contract:
+                - Returns None when no transient plan exists.
+                - Returned payload contains only ints and tuples of ints.
+            Args:
+                transient_plan:
+                    Phase 11 transient tuple payload.
+            Returns:
+                Optional[Dict[str, Any]]:
+                    Schema-only transient payload, or None.
         """
         if transient_plan is None:
             return None
@@ -522,7 +573,22 @@ class SharedCompilerExecutions:
             transient_schema: Optional[Dict[str, Any]],
     ) -> Optional[str]:
         """
-        Build a deterministic signature for a Phase 11 fast transient plan.
+            Build a deterministic signature for a Phase 11 fast transient plan.
+            
+            Purpose:
+                Fingerprint transient plan structure without including call-target
+                object identities, which are process-local and nondeterministic.
+            Contract:
+                - Returns None when no transient plan exists.
+                - Signature includes step counts, call modes, and dependency index
+                  arrays used by no-overrides execution.
+            Args:
+                transient_schema:
+                    Schema-only transient payload exported by
+                    `_build_fast_transient_schema`.
+            Returns:
+                Optional[str]:
+                    Deterministic transient signature, or None.
         """
         if transient_schema is None:
             return None
@@ -576,7 +642,20 @@ class SharedCompilerExecutions:
             ],
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
-        Build deterministic schema rows for the Phase8 occurrence graph.
+            Build deterministic schema rows for the Phase8 occurrence graph.
+            
+            Purpose:
+                Export occurrence graph topology as schema-only tuples so consumers
+                can validate dependency routing without live plan objects.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Sorts occurrences and dependency occurrence lists deterministically.
+            Args:
+                occurrence_graph:
+                    Occurrence graph mapping from Phase8 plan.
+            Returns:
+                Tuple[Tuple[Any, ...], ...]:
+                    Rows `(occurrence_key, dependency_rows)`.
         """
         rows: List[Tuple[Any, ...]] = []
         for occurrence_key in sorted(
@@ -615,7 +694,20 @@ class SharedCompilerExecutions:
             ],
     ) -> Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...]:
         """
-        Build deterministic schema rows for Phase8 instance-key planning.
+            Build deterministic schema rows for Phase8 instance-key planning.
+            
+            Purpose:
+                Export per-spell instance key planning from occurrence plans in a
+                stable schema-only representation.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Spell ids and instance-key lists are deterministically ordered.
+            Args:
+                instance_keys_by_spell_id:
+                    Mapping from spell id to planned instance keys.
+            Returns:
+                Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...]:
+                    Rows `(spell_id, instance_keys)`.
         """
         rows: List[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]]] = []
         for spell_id in sorted(instance_keys_by_spell_id.keys()):
@@ -638,7 +730,20 @@ class SharedCompilerExecutions:
             ],
     ) -> Tuple[Tuple[str, Tuple[str, Optional[int]]], ...]:
         """
-        Build deterministic schema rows for Phase8 canonical occurrences.
+            Build deterministic schema rows for Phase8 canonical occurrences.
+            
+            Purpose:
+                Export the shared-occurrence canonical mapping in schema form for
+                deterministic validation and signature coverage.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Spell-id order is deterministic.
+            Args:
+                canonical_occurrences_by_spell_id:
+                    Mapping from spell id to canonical occurrence key.
+            Returns:
+                Tuple[Tuple[str, Tuple[str, Optional[int]]], ...]:
+                    Rows `(spell_id, canonical_occurrence_key)`.
         """
         rows: List[Tuple[str, Tuple[str, Optional[int]]]] = []
         for spell_id in sorted(canonical_occurrences_by_spell_id.keys()):
@@ -660,7 +765,20 @@ class SharedCompilerExecutions:
             ],
     ) -> Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]:
         """
-        Build deterministic schema rows for occurrence-scoped contract payloads.
+            Build deterministic schema rows for occurrence-scoped contract payloads.
+            
+            Purpose:
+                Export Phase8 contract payload overlays with deterministic value
+                freezing for signature and contract-audit use.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Payload items are key-sorted and recursively frozen.
+            Args:
+                contract_overrides_by_occurrence:
+                    Mapping from occurrence key to payload mapping.
+            Returns:
+                Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]:
+                    Rows `(occurrence_key, payload_items)`.
         """
         rows: List[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]]] = []
         for occurrence_key in sorted(
@@ -699,7 +817,20 @@ class SharedCompilerExecutions:
         ...,
     ]:
         """
-        Build deterministic schema rows for spell-grouped contract payloads.
+            Build deterministic schema rows for spell-grouped contract payloads.
+            
+            Purpose:
+                Export spell-grouped contract payload overlays from Phase8 in a
+                deterministic schema for contract completeness audits.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Spell ids and grouped occurrence rows are deterministically ordered.
+            Args:
+                contract_overrides_by_spell_id:
+                    Mapping from spell id to `(occurrence_key, payload)` entries.
+            Returns:
+                Tuple[Tuple[str, Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]], ...]:
+                    Rows `(spell_id, occurrence_payload_rows)`.
         """
         rows: List[
             Tuple[
@@ -736,7 +867,21 @@ class SharedCompilerExecutions:
             instance_injections: Mapping[Tuple[str, Optional[int]], Any],
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
-        Build deterministic schema rows for Phase9 injection specifications.
+            Build deterministic schema rows for Phase9 injection specifications.
+            
+            Purpose:
+                Export per-instance injection semantics (dependency keys, contract
+                payloads, aggregation flags) as deterministic schema-only rows.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Expects InjectionSpec/ParamSource contract fields to be present.
+                - Fails fast when malformed/cleaned artifacts violate contract.
+            Args:
+                instance_injections:
+                    Mapping from instance key to InjectionSpec-like objects.
+            Returns:
+                Tuple[Tuple[Any, ...], ...]:
+                    Rows `(instance_key, allow_list, uses_positional, contract_items, param_rows)`.
         """
         rows: List[Tuple[Any, ...]] = []
         for instance_key in sorted(
@@ -808,7 +953,22 @@ class SharedCompilerExecutions:
             override_patch_map: Any,
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
-        Build deterministic schema rows for Phase10 override patch-map targets.
+            Build deterministic schema rows for Phase10 override patch-map targets.
+            
+            Purpose:
+                Export concrete socket-target rows grouped by TargetSpec for
+                codegen contract completeness and signature invalidation.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Includes specificity values when available.
+                - Expects OverridePatchMap target/spec specificity contracts.
+                - Fails fast when malformed/cleaned artifacts violate contract.
+            Args:
+                override_patch_map:
+                    OverridePatchMap-like object.
+            Returns:
+                Tuple[Tuple[Any, ...], ...]:
+                    Rows `(spec_key, specificity, socket_rows)`.
         """
         if override_patch_map is None:
             return ()
@@ -850,7 +1010,21 @@ class SharedCompilerExecutions:
             mutation_patch_map: Any,
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
-        Build deterministic schema rows for Phase10 mutation patch-map targets.
+            Build deterministic schema rows for Phase10 mutation patch-map targets.
+            
+            Purpose:
+                Export concrete mutation-edge patch descriptors grouped by TargetSpec
+                for codegen contract completeness and signature invalidation.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Expects MutationPatchMap target contract fields.
+                - Fails fast when malformed/cleaned artifacts violate contract.
+            Args:
+                mutation_patch_map:
+                    MutationPatchMap-like object.
+            Returns:
+                Tuple[Tuple[Any, ...], ...]:
+                    Rows `(spec_key, patch_rows)`.
         """
         if mutation_patch_map is None:
             return ()
@@ -887,7 +1061,20 @@ class SharedCompilerExecutions:
             include_override_metadata: bool = True,
     ) -> Dict[str, Any]:
         """
-        Build one schema-only Phase11 step row for IR export.
+            Build one schema-only Phase11 step row for IR export.
+            
+            Purpose:
+                Capture step semantics without exporting live plan/spell objects.
+            Contract:
+                - Output contains only primitive/tuple values.
+                - Includes all no-overrides and overrides semantics consumed by
+                  compilers and runtime shape-key signatures.
+            Args:
+                step:
+                    ExecutionPlanStep-like object.
+            Returns:
+                Dict[str, Any]:
+                    Normalized step row.
         """
         dependency_resolution_order = tuple(
             (
@@ -948,7 +1135,21 @@ class SharedCompilerExecutions:
             step: Any,
     ) -> Tuple[Any, ...]:
         """
-        Build one deterministic signature row for no-overrides compile caching.
+            Build one deterministic signature row for no-overrides compile caching.
+            
+            Purpose:
+                Capture only the step fields that influence phase12 no-overrides
+                compiled source/namespace behaviour without constructing full IR
+                payload dict rows.
+            Contract:
+                - Returns a tuple-only row with deterministic ordering.
+                - Includes dependency, contract, lock, and registration semantics.
+            Args:
+                step:
+                    ExecutionPlanStep-like object.
+            Returns:
+                Tuple[Any, ...]:
+                    Deterministic row used by no-overrides plan signature hashing.
         """
         dependency_resolution_order = tuple(
             (
@@ -989,7 +1190,20 @@ class SharedCompilerExecutions:
             spell: ISpell,
     ) -> Tuple[Any, ...]:
         """
-        Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
+            Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
+            
+            Purpose:
+                Capture spell fields consumed by `ExecutionPlanBuilder.build` so
+                phase11 can detect when a no-overrides rebuild is required.
+            Contract:
+                - Includes existence/register/disposal and optimistic-object identity.
+                - Uses primitive/tuple values only for deterministic hashing.
+            Args:
+                spell:
+                    Spell referenced by occurrence execution order.
+            Returns:
+                Tuple[Any, ...]:
+                    Deterministic spell metadata row.
         """
         optimistic_object_identity = None
         if spell.user_created_object is not None:
@@ -1028,7 +1242,20 @@ class SharedCompilerExecutions:
             include_override_metadata: bool = True,
     ) -> Tuple[Any, ...]:
         """
-        Build deterministic InjectionSpec row for Phase 11 input signatures.
+            Build deterministic InjectionSpec row for Phase 11 input signatures.
+            
+            Purpose:
+                Normalize injection metadata used by `ExecutionPlanBuilder.build`
+                without allocating Phase 11 steps.
+            Contract:
+                - Includes param source wiring, aggregation flags, and contract payload.
+                - Returns tuple-only deterministic structure.
+            Args:
+                injection_spec:
+                    Phase 9 InjectionSpec-like object.
+            Returns:
+                Tuple[Any, ...]:
+                    Deterministic signature row.
         """
         param_rows: List[Tuple[Any, ...]] = []
         param_sources = injection_spec.param_sources
@@ -1077,7 +1304,21 @@ class SharedCompilerExecutions:
             plan: Optional[ExecutionPlan],
     ) -> Dict[str, Any]:
         """
-        Export one Phase 11 execution-plan variant into IR fields.
+            Export one Phase 11 execution-plan variant into IR fields.
+            
+            Purpose:
+                Normalize plan metadata and signatures so Phase 12 and runtime
+                dispatch can consume a deterministic payload.
+            Contract:
+                - Returns a payload dictionary for any input; empty plan fields are
+                  represented as None/empty tuples.
+                - Exposes schema-only step/transient payloads with no live objects.
+            Args:
+                plan:
+                    Execution plan variant to export.
+            Returns:
+                Dict[str, Any]:
+                    Normalized Phase 11 variant payload.
         """
         if plan is None:
             return {
@@ -1140,7 +1381,17 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Export phases 8-11 artifacts into the artifact-scoped Codegen IR payload.
+            Export phases 8-11 artifacts into the spell-scoped Codegen IR payload.
+            
+            Purpose:
+                Publish normalized execution-planning metadata needed by Phase 12
+                compilation and runtime plan dispatch.
+            Contract:
+                - Safe to call repeatedly; latest phase artifacts overwrite prior IR.
+                - Updates `signatures.phase8_11` on each export.
+                - Keeps override/mutation variants distinct.
+            Returns:
+                None.
         """
         occurrence_execution_order: Tuple[str, ...] = ()
         occurrence_root_instance_key: Optional[Tuple[str, Optional[int]]] = None
@@ -1295,7 +1546,17 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Flush phase8_11 codegen export only when stale.
+            Flush phase8_11 codegen export only when stale.
+            
+            Purpose:
+                Avoid repeated full payload/signature rebuilds while preserving
+                freshness for codegen-ir readers and any compile calls that consume
+                exported phase8-11 payloads.
+            Contract:
+                - No-op when dirty flag is false.
+                - Executes full `_capture_phase8_11_codegen_ir` once per dirty cycle.
+            Returns:
+                None.
         """
         if not artifact._phase8_11_codegen_ir_dirty:
             return
@@ -1306,7 +1567,16 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Clear the phase2_5 segment from Codegen IR.
+            Clear the phase2_5 segment from Codegen IR.
+            
+            Purpose:
+                Keep IR aligned with lifecycle cleanup when structural artifacts are
+                discarded.
+            Contract:
+                - No-op when IR is not initialized.
+                - Preserves phase8_11 payloads and compiled executor artifacts.
+            Returns:
+                None.
         """
         if artifact._codegen_ir is None:
             return
@@ -1320,7 +1590,27 @@ class SharedCompilerExecutions:
             plan_variant: str,
     ) -> Optional[ExecutionPlan]:
         """
-        Attempt to derive a non-fast Phase 11 variant from an existing base plan.
+            Attempt to derive a non-fast Phase 11 variant from an existing base plan.
+            
+            Purpose:
+                Reuse the shared step / index structure from the no-overrides plan to avoid
+                repeated full `ExecutionPlanBuilder.build()` passes for sibling
+                variants.
+            Contract:
+                - Returns a fresh `ExecutionPlan` with copied list/dict containers so
+                  cleanup remains isolated per variant.
+                - Returns `None` when the base plan does not expose the required
+                  structure (for example, in test stubs), allowing a safe fallback to
+                  the legacy full-build path.
+                - Derived variants do not carry fast-path arrays/transient plans.
+            Args:
+                base_plan:
+                    Source plan expected to expose execution-plan structural fields.
+                plan_variant:
+                    Target the variant label for the derived plan.
+            Returns:
+                Optional[ExecutionPlan]:
+                    Derived plan when compatible, otherwise `None`.
         """
         try:
             root_spell_id = base_plan.root_spell_id

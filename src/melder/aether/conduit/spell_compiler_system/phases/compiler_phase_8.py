@@ -80,34 +80,7 @@ class CompilerPhase8:
             Any:
                 Deterministic, immutable, hashable representation.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        self._freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                self._freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        self._freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return SharedCompilerExecutions.freeze_phase11_schema_value(value)
 
     def _build_phase8_occurrence_plan_fast_key(
             self,

@@ -10,6 +10,7 @@ from typing import (
     Tuple,
     runtime_checkable,
 )
+
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
@@ -90,7 +91,7 @@ class ISpell(ICleanable, Protocol):
     # Profile type broadened to Any to support Binding/Resolution/AI profiles
     profile: Optional[Any]
     aetheric_frame: str
-
+    _compiler_artifact: "SpellCompilerArtifact"
     # Execution policy
     timeout: Optional[int]
     retries: int

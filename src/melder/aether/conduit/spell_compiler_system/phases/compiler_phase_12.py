@@ -5,6 +5,9 @@ from mypy_extensions import mypyc_attr
 from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
+from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+    SharedCompilerExecutions,
+)
 from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
 )
@@ -72,6 +75,9 @@ class CompilerPhase12:
             )
             return
 
+        SharedCompilerExecutions.capture_phase8_11_codegen_ir_if_dirty(
+            artifact
+        )
         if artifact._codegen_ir is None:
             self.compile_no_overrides_executor_from_payload(
                 spellbook,

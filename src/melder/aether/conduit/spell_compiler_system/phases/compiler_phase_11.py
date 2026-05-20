@@ -58,66 +58,31 @@ class CompilerPhase11:
         return occurrence_plan
 
     def _freeze_phase11_schema_value(self, value: Any) -> Any:
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        self._freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                self._freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        self._freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return SharedCompilerExecutions.freeze_phase11_schema_value(value)
 
     @staticmethod
     def _normalize_instance_key(
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
-        return instance_key[0], instance_key[1]
+        return SharedCompilerExecutions.normalize_instance_key(instance_key)
 
     @staticmethod
     def _normalize_occurrence_key(
             occurrence_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
-        return occurrence_key[0], occurrence_key[1]
+        return SharedCompilerExecutions.normalize_occurrence_key(occurrence_key)
 
     @staticmethod
     def _instance_key_sort_key(
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, int]:
-        path_id = instance_key[1]
-        return (
-            instance_key[0],
-            -1 if path_id is None else path_id,
-        )
+        return SharedCompilerExecutions.instance_key_sort_key(instance_key)
 
     @staticmethod
     def _occurrence_key_sort_key(
             occurrence_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, int]:
-        path_id = occurrence_key[1]
-        return (
-            occurrence_key[0],
-            -1 if path_id is None else path_id,
-        )
+        return SharedCompilerExecutions.occurrence_key_sort_key(occurrence_key)
 
     def _build_fast_transient_schema(
             self,
@@ -139,49 +104,9 @@ class CompilerPhase11:
             Optional[Dict[str, Any]]:
                 Schema-only transient payload, or None.
         """
-        if transient_plan is None:
-            return None
-        return {
-            "step_count": transient_plan[0],
-            "root_step_index": transient_plan[1],
-            "call_modes": tuple(transient_plan[3]),
-            "dep1": tuple(transient_plan[4]),
-            "dep2a": tuple(transient_plan[5]),
-            "dep2b": tuple(transient_plan[6]),
-            "dep3a": tuple(transient_plan[7]),
-            "dep3b": tuple(transient_plan[8]),
-            "dep3c": tuple(transient_plan[9]),
-            "dep4a": tuple(transient_plan[10]),
-            "dep4b": tuple(transient_plan[11]),
-            "dep4c": tuple(transient_plan[12]),
-            "dep4d": tuple(transient_plan[13]),
-            "dep5a": tuple(transient_plan[14]),
-            "dep5b": tuple(transient_plan[15]),
-            "dep5c": tuple(transient_plan[16]),
-            "dep5d": tuple(transient_plan[17]),
-            "dep5e": tuple(transient_plan[18]),
-            "dep6a": tuple(transient_plan[19]),
-            "dep6b": tuple(transient_plan[20]),
-            "dep6c": tuple(transient_plan[21]),
-            "dep6d": tuple(transient_plan[22]),
-            "dep6e": tuple(transient_plan[23]),
-            "dep6f": tuple(transient_plan[24]),
-            "dep7a": tuple(transient_plan[25]),
-            "dep7b": tuple(transient_plan[26]),
-            "dep7c": tuple(transient_plan[27]),
-            "dep7d": tuple(transient_plan[28]),
-            "dep7e": tuple(transient_plan[29]),
-            "dep7f": tuple(transient_plan[30]),
-            "dep7g": tuple(transient_plan[31]),
-            "dep8a": tuple(transient_plan[32]),
-            "dep8b": tuple(transient_plan[33]),
-            "dep8c": tuple(transient_plan[34]),
-            "dep8d": tuple(transient_plan[35]),
-            "dep8e": tuple(transient_plan[36]),
-            "dep8f": tuple(transient_plan[37]),
-            "dep8g": tuple(transient_plan[38]),
-            "dep8h": tuple(transient_plan[39]),
-        }
+        return SharedCompilerExecutions.build_fast_transient_schema(
+            transient_plan
+        )
 
     def _build_fast_transient_signature(
             self,
@@ -205,48 +130,8 @@ class CompilerPhase11:
             Optional[str]:
                 Deterministic transient signature, or None.
         """
-        if transient_schema is None:
-            return None
-        return SharedCompilerExecutions.hash_codegen_signature(
-            transient_schema["step_count"],
-            transient_schema["root_step_index"],
-            transient_schema["call_modes"],
-            transient_schema["dep1"],
-            transient_schema["dep2a"],
-            transient_schema["dep2b"],
-            transient_schema["dep3a"],
-            transient_schema["dep3b"],
-            transient_schema["dep3c"],
-            transient_schema["dep4a"],
-            transient_schema["dep4b"],
-            transient_schema["dep4c"],
-            transient_schema["dep4d"],
-            transient_schema["dep5a"],
-            transient_schema["dep5b"],
-            transient_schema["dep5c"],
-            transient_schema["dep5d"],
-            transient_schema["dep5e"],
-            transient_schema["dep6a"],
-            transient_schema["dep6b"],
-            transient_schema["dep6c"],
-            transient_schema["dep6d"],
-            transient_schema["dep6e"],
-            transient_schema["dep6f"],
-            transient_schema["dep7a"],
-            transient_schema["dep7b"],
-            transient_schema["dep7c"],
-            transient_schema["dep7d"],
-            transient_schema["dep7e"],
-            transient_schema["dep7f"],
-            transient_schema["dep7g"],
-            transient_schema["dep8a"],
-            transient_schema["dep8b"],
-            transient_schema["dep8c"],
-            transient_schema["dep8d"],
-            transient_schema["dep8e"],
-            transient_schema["dep8f"],
-            transient_schema["dep8g"],
-            transient_schema["dep8h"],
+        return SharedCompilerExecutions.build_fast_transient_signature(
+            transient_schema
         )
 
     def _build_phase12_no_overrides_step_signature_row(
@@ -270,36 +155,8 @@ class CompilerPhase11:
             Tuple[Any, ...]:
                 Deterministic row used by no-overrides plan signature hashing.
         """
-        dependency_resolution_order = tuple(
-            (
-                param_name,
-                tuple(dependency_keys),
-            )
-            for param_name, dependency_keys in step.dependency_resolution_order
-        )
-        contract_payload_items: Tuple[Any, ...] = ()
-        if step.contract_payload:
-            contract_payload_items = tuple(
-                sorted(
-                    (
-                        param_name,
-                        self._freeze_phase11_schema_value(value),
-                    )
-                    for param_name, value in step.contract_payload.items()
-                )
-            )
-        return (
-            tuple(step.instance_key),
-            step.spell.spell_index.current,
-            step.existence.name,
-            step.creations_target_kind,
-            dependency_resolution_order,
-            bool(step.uses_positional_override),
-            self._freeze_phase11_schema_value(step.contract_positional_override),
-            bool(step.has_contract_payload),
-            contract_payload_items,
-            bool(step.use_spell_lock_hint),
-            bool(step.must_register),
+        return SharedCompilerExecutions.build_phase12_no_overrides_step_signature_row(
+            step
         )
 
     def _build_phase11_spell_signature_row(
@@ -322,34 +179,8 @@ class CompilerPhase11:
             Tuple[Any, ...]:
                 Deterministic spell metadata row.
         """
-        optimistic_object_identity = None
-        if spell.user_created_object is not None:
-            optimistic_object_identity = id(spell.user_created_object)
-        is_callable_spell = spell.spell_type in (
-            SpellType.SPELL,
-            SpellType.SPELL_WITH_SPELLFRAME,
-            SpellType.SPELL_WITH_BINDING_NAME,
-            SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
-            SpellType.METHOD,
-            SpellType.METHOD_WITH_BINDING_NAME,
-            SpellType.METHOD_WITH_SPELLFRAME,
-            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
-            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
-        )
-        must_register = True
-        if spell.existence is Existence.many and not spell.has_disposal_methods:
-            must_register = False
-        return (
-            spell.spell_index.current,
-            spell.existence.name,
-            bool(spell.is_existing_creation),
-            bool(is_callable_spell),
-            bool(must_register),
-            bool(spell.has_disposal_methods),
-            tuple(spell.disposal_method_names),
-            optimistic_object_identity,
+        return SharedCompilerExecutions.build_phase11_spell_signature_row(
+            spell
         )
 
     @staticmethod
@@ -376,46 +207,9 @@ class CompilerPhase11:
             Tuple[Any, ...]:
                 Deterministic signature row.
         """
-        param_rows: List[Tuple[Any, ...]] = []
-        param_sources = injection_spec.param_sources
-        for param_name in sorted(param_sources.keys()):
-            param_source = param_sources[param_name]
-            dependency_keys = None
-            if param_source.dependency_keys is not None:
-                dependency_keys = tuple(
-                    tuple(dependency_key)
-                    for dependency_key in param_source.dependency_keys
-                )
-            override_key = None
-            if include_override_metadata:
-                override_key = param_source.override_key
-            param_rows.append(
-                (
-                    param_name,
-                    param_source.kind,
-                    dependency_keys,
-                    override_key,
-                    param_source.contract_key,
-                )
-            )
-
-        contract_payload = injection_spec.contract_payload
-        normalized_contract_payload = None
-        if contract_payload is not None:
-            normalized_contract_payload = dict(contract_payload)
-            if (
-                    "__args__" in normalized_contract_payload
-                    and isinstance(normalized_contract_payload["__args__"], list)
-            ):
-                normalized_contract_payload["__args__"] = tuple(
-                    normalized_contract_payload["__args__"]
-                )
-
-        return (
-            tuple(param_rows),
-            bool(injection_spec.allow_list_aggregation),
-            bool(injection_spec.uses_positional_override),
-            normalized_contract_payload,
+        return SharedCompilerExecutions.build_phase11_injection_spec_signature_row(
+            injection_spec,
+            include_override_metadata=include_override_metadata,
         )
 
     def _build_phase11_no_overrides_input_signature(
@@ -589,13 +383,15 @@ class CompilerPhase11:
                 Deterministic compile cache signature.
         """
         step_signature_rows = tuple(
-            self._build_phase12_no_overrides_step_signature_row(step)
+            SharedCompilerExecutions.build_phase12_no_overrides_step_signature_row(step)
             for step in plan.steps
         )
-        transient_signature = self._build_fast_transient_signature(transient_schema)
+        transient_signature = SharedCompilerExecutions.build_fast_transient_signature(
+            transient_schema
+        )
         root_instance_key = None
         if plan.root_instance_key is not None:
-            root_instance_key = self._normalize_instance_key(
+            root_instance_key = SharedCompilerExecutions.normalize_instance_key(
                 plan.root_instance_key
             )
         return SharedCompilerExecutions.hash_codegen_signature(
@@ -759,7 +555,9 @@ class CompilerPhase11:
             spell.resolution_complete = False
             return
 
-        transient_schema = self._build_fast_transient_schema(plan.fast_transient_plan)
+        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
+            plan.fast_transient_plan
+        )
         plan_signature = self._build_phase12_no_overrides_plan_signature(
             plan=plan,
             transient_schema=transient_schema,
@@ -943,7 +741,7 @@ class CompilerPhase11:
         artifact._execution_plan_phase11_no_overrides = plan_no_overrides
         artifact._execution_plan_phase11_overrides = plan_overrides
         artifact._execution_plan_phase11 = plan_overrides_with_mutations
-        self._mark_phase8_11_codegen_ir_dirty(artifact)
+        artifact._phase8_11_codegen_ir_dirty = True
         self._store_phase11_to_phase12_handoff(
             spell,
             artifact,
