@@ -25,7 +25,6 @@ class SpellCompilerSystem(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_spellbook",
-        "_spellcrafter",
     ]
 
     def __init__(self, spellbook: ISpellbook) -> None:
@@ -42,7 +41,6 @@ class SpellCompilerSystem(Cleanable):
         if spellbook is None:
             raise ValueError("spellbook cannot be None.")
         self._spellbook: ISpellbook = spellbook
-        self._spellcrafter: SpellCrafter = None
 
     def cleanup(self) -> None:
         """
@@ -56,29 +54,3 @@ class SpellCompilerSystem(Cleanable):
             return
         self._cleaned = True
         del self._spellbook
-        del self._spellcrafter
-
-    def create_spell_crafter_for_spell(
-            self,
-            spell: ISpell,
-            *,
-            resolution_profile: Optional[Any] = None,
-    ) -> Any:
-        """
-        Create one `SpellCrafter` for a target spell.
-
-        Purpose:
-            Provide the first explicit compiler-system seam while leaving the
-            existing `SpellCrafter` implementation intact.
-
-        Args:
-            spell: Spell to compile.
-            resolution_profile: Optional prebuilt resolution profile.
-
-        Returns:
-            Any: Newly created concrete `SpellCrafter`.
-        """
-        return SpellCrafter(
-            spell,
-            resolution_profile=resolution_profile,
-        )

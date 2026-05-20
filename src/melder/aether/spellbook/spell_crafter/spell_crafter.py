@@ -418,6 +418,173 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             del self._spell
             del self._spell_validator
 
+
+    def clear_phase5_artifacts(self) -> None:
+        """
+        Deterministically clear Phase 5 state and all dependent later-phase
+        artifacts.
+
+        Contract:
+            - Drops the Phase 5 blueprint reference.
+            - Cleans and nulls compiled occurrence, injection, patch-map, and
+              execution-plan artifacts that depend on that Phase 5 state.
+            - Clears the spell-system index and later-phase cache signatures.
+            - Leaves Phase 1-4 artifacts intact.
+        """
+        self._root_blueprint_phase5 = None
+        self._phase8_occurrence_plan_input_signature = None
+        self._phase8_occurrence_plan_fast_key = None
+        if self._occurrence_plan_phase8 is not None:
+            try:
+                self._occurrence_plan_phase8.cleanup()
+            except Exception:
+                pass
+        self._occurrence_plan_phase8 = None
+        self._phase9_injection_plan_input_signature = None
+        if self._injection_plan_phase9 is not None:
+            try:
+                self._injection_plan_phase9.cleanup()
+            except Exception:
+                pass
+        self._injection_plan_phase9 = None
+        if self._override_patch_map_phase10 is not None:
+            try:
+                self._override_patch_map_phase10.cleanup()
+            except Exception:
+                pass
+        self._override_patch_map_phase10 = None
+        if self._mutation_patch_map_phase10 is not None:
+            try:
+                self._mutation_patch_map_phase10.cleanup()
+            except Exception:
+                pass
+        self._mutation_patch_map_phase10 = None
+        self._phase10_patch_maps_input_signature = None
+        if self._execution_plan_phase11 is not None:
+            try:
+                self._execution_plan_phase11.cleanup()
+            except Exception:
+                pass
+        self._execution_plan_phase11 = None
+        if self._execution_plan_phase11_no_overrides is not None:
+            try:
+                self._execution_plan_phase11_no_overrides.cleanup()
+            except Exception:
+                pass
+        self._execution_plan_phase11_no_overrides = None
+        if self._execution_plan_phase11_overrides is not None:
+            try:
+                self._execution_plan_phase11_overrides.cleanup()
+            except Exception:
+                pass
+        self._execution_plan_phase11_overrides = None
+        self._spell_system_index_phase5 = None
+        self._reset_phase8_11_codegen_ir()
+        self._capture_phase2_5_codegen_ir()
+
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def reset_phase_artifacts(self) -> None:
+        """
+        Release transient validation/build artifacts without disposing of the
+        crafter.
+
+        Contract:
+            - Clears the reusable artifacts owned by Phases 1-4 and Phase 6.
+            - Preserves later rooted/planning artifacts so a spell that already
+              advanced into runtime planning does not lose those caches.
+            - Keeps the crafter alive for future phase runs.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleanup_phase_artifacts_locked()
+
+    def cleanup_phase_artifacts(self) -> None:
+        """
+        Backward-compatible alias for reset_phase_artifacts.
+
+        This keeps the SpellCrafter reusable for future phase runs while
+        releasing the transient structural-validation artifact set.
+        """
+        self.reset_phase_artifacts()
+
+    def _cleanup_phase_artifacts_locked(self) -> None:
+        """
+        Internal helper that clears the reusable structural-validation artifact
+        set under the crafter lock.
+
+        Contract:
+            - Best-effort cleans owned artifact objects before pulling them.
+            - Leaves Phase 5 and later plan/codegen artifacts untouched.
+            - Refreshes the phase2_5 codegen snapshot after the structural
+              layers are cleared.
+        """
+        if self._requirements is not None:
+            try:
+                self._requirements.cleanup()
+            except Exception:
+                pass
+
+        if self._symbolic_graph is not None:
+            try:
+                self._symbolic_graph.cleanup()
+            except Exception:
+                pass
+
+        if self._resolution_frame is not None and isinstance(self._resolution_frame, Cleanable):
+            try:
+                self._resolution_frame.cleanup()
+            except Exception:
+                pass
+
+        if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
+            try:
+                self._validation_result_phase4.cleanup()
+            except Exception:
+                pass
+
+        if self._validation_result_phase6 is not None and isinstance(self._validation_result_phase6, Cleanable):
+            try:
+                self._validation_result_phase6.cleanup()
+            except Exception:
+                pass
+
+        self._resolution_frame = None
+        self._requirements = None
+        self._symbolic_graph = None
+        self._validation_result_phase4 = None
+        self._validation_result_phase6 = None
+        self._capture_phase2_5_codegen_ir()
+
+
+    def _cleanup_execution_plans_phase11(self) -> None:
+        """
+        Deterministically clean all Phase 11 execution plan variants.
+        """
+        if self._execution_plan_phase11 is not None:
+            try:
+                self._execution_plan_phase11.cleanup()
+            except Exception:
+                pass
+        if self._execution_plan_phase11_no_overrides is not None:
+            try:
+                self._execution_plan_phase11_no_overrides.cleanup()
+            except Exception:
+                pass
+        if self._execution_plan_phase11_overrides is not None:
+            try:
+                self._execution_plan_phase11_overrides.cleanup()
+            except Exception:
+                pass
+        self._execution_plan_phase11 = None
+        self._execution_plan_phase11_no_overrides = None
+        self._execution_plan_phase11_overrides = None
+        self._reset_phase8_11_codegen_ir()
+
     @staticmethod
     def _get_required_spellbook_frame_name(spellbook: ISpellbook) -> str:
         """
@@ -865,82 +1032,6 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         self.check_cleaned()
         return self._is_broken
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-    def reset_phase_artifacts(self) -> None:
-        """
-        Release transient validation/build artifacts without disposing of the
-        crafter.
-
-        Contract:
-            - Clears the reusable artifacts owned by Phases 1-4 and Phase 6.
-            - Preserves later rooted/planning artifacts so a spell that already
-              advanced into runtime planning does not lose those caches.
-            - Keeps the crafter alive for future phase runs.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleanup_phase_artifacts_locked()
-
-    def cleanup_phase_artifacts(self) -> None:
-        """
-        Backward-compatible alias for reset_phase_artifacts.
-
-        This keeps the SpellCrafter reusable for future phase runs while
-        releasing the transient structural-validation artifact set.
-        """
-        self.reset_phase_artifacts()
-
-    def _cleanup_phase_artifacts_locked(self) -> None:
-        """
-        Internal helper that clears the reusable structural-validation artifact
-        set under the crafter lock.
-
-        Contract:
-            - Best-effort cleans owned artifact objects before pulling them.
-            - Leaves Phase 5 and later plan/codegen artifacts untouched.
-            - Refreshes the phase2_5 codegen snapshot after the structural
-              layers are cleared.
-        """
-        if self._requirements is not None:
-            try:
-                self._requirements.cleanup()
-            except Exception:
-                pass
-
-        if self._symbolic_graph is not None:
-            try:
-                self._symbolic_graph.cleanup()
-            except Exception:
-                pass
-
-        if self._resolution_frame is not None and isinstance(self._resolution_frame, Cleanable):
-            try:
-                self._resolution_frame.cleanup()
-            except Exception:
-                pass
-
-        if self._validation_result_phase4 is not None and isinstance(self._validation_result_phase4, Cleanable):
-            try:
-                self._validation_result_phase4.cleanup()
-            except Exception:
-                pass
-
-        if self._validation_result_phase6 is not None and isinstance(self._validation_result_phase6, Cleanable):
-            try:
-                self._validation_result_phase6.cleanup()
-            except Exception:
-                pass
-
-        self._resolution_frame = None
-        self._requirements = None
-        self._symbolic_graph = None
-        self._validation_result_phase4 = None
-        self._validation_result_phase6 = None
-        self._capture_phase2_5_codegen_ir()
 
     def set_root_blueprint_phase5(self, blueprint: IRootResolutionBlueprint) -> None:
         """
@@ -977,68 +1068,6 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         self._capture_phase2_5_codegen_ir()
         self._reset_phase8_11_codegen_ir()
 
-    def clear_phase5_artifacts(self) -> None:
-        """
-        Deterministically clear Phase 5 state and all dependent later-phase
-        artifacts.
-
-        Contract:
-            - Drops the Phase 5 blueprint reference.
-            - Cleans and nulls compiled occurrence, injection, patch-map, and
-              execution-plan artifacts that depend on that Phase 5 state.
-            - Clears the spell-system index and later-phase cache signatures.
-            - Leaves Phase 1-4 artifacts intact.
-        """
-        self._root_blueprint_phase5 = None
-        self._phase8_occurrence_plan_input_signature = None
-        self._phase8_occurrence_plan_fast_key = None
-        if self._occurrence_plan_phase8 is not None:
-            try:
-                self._occurrence_plan_phase8.cleanup()
-            except Exception:
-                pass
-        self._occurrence_plan_phase8 = None
-        self._phase9_injection_plan_input_signature = None
-        if self._injection_plan_phase9 is not None:
-            try:
-                self._injection_plan_phase9.cleanup()
-            except Exception:
-                pass
-        self._injection_plan_phase9 = None
-        if self._override_patch_map_phase10 is not None:
-            try:
-                self._override_patch_map_phase10.cleanup()
-            except Exception:
-                pass
-        self._override_patch_map_phase10 = None
-        if self._mutation_patch_map_phase10 is not None:
-            try:
-                self._mutation_patch_map_phase10.cleanup()
-            except Exception:
-                pass
-        self._mutation_patch_map_phase10 = None
-        self._phase10_patch_maps_input_signature = None
-        if self._execution_plan_phase11 is not None:
-            try:
-                self._execution_plan_phase11.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11 = None
-        if self._execution_plan_phase11_no_overrides is not None:
-            try:
-                self._execution_plan_phase11_no_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11_no_overrides = None
-        if self._execution_plan_phase11_overrides is not None:
-            try:
-                self._execution_plan_phase11_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11_overrides = None
-        self._spell_system_index_phase5 = None
-        self._reset_phase8_11_codegen_ir()
-        self._capture_phase2_5_codegen_ir()
 
     def _build_phase10_patch_maps_input_signature(
             self,
@@ -5200,30 +5229,6 @@ class SpellCrafter(Cleanable, ISpellCrafter):
             )
         except (TypeError, ValueError):
             return None
-
-    def _cleanup_execution_plans_phase11(self) -> None:
-        """
-        Deterministically clean all Phase 11 execution plan variants.
-        """
-        if self._execution_plan_phase11 is not None:
-            try:
-                self._execution_plan_phase11.cleanup()
-            except Exception:
-                pass
-        if self._execution_plan_phase11_no_overrides is not None:
-            try:
-                self._execution_plan_phase11_no_overrides.cleanup()
-            except Exception:
-                pass
-        if self._execution_plan_phase11_overrides is not None:
-            try:
-                self._execution_plan_phase11_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11 = None
-        self._execution_plan_phase11_no_overrides = None
-        self._execution_plan_phase11_overrides = None
-        self._reset_phase8_11_codegen_ir()
 
 
     # ------------------------------------------------------------------

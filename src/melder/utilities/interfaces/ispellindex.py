@@ -86,8 +86,8 @@ class ISpellIndex(ICleanable, Protocol):
 
         Returns:
             bool:
-                ``True`` if the version ID is present in the SpellIndex
-                set, ``False`` otherwise.
+                "True" if the version ID is present in the SpellIndex
+                set, "False" otherwise.
         """
         ...
 
@@ -124,8 +124,8 @@ class ISpellIndex(ICleanable, Protocol):
 
         Returns:
             bool:
-                ``True`` if ``other`` is a SpellIndex/ISpellIndex with
-                the same ULID; otherwise ``False``.
+                "True" if "other" is a SpellIndex/ISpellIndex with
+                the same ULID; otherwise "False".
         """
         ...
 
@@ -143,10 +143,10 @@ class ISpellIndex(ICleanable, Protocol):
         """
         Context manager entry.
 
-        Typical behavior in the concrete implementation:
+        Typical behaviour in the concrete implementation:
             * Performs a cleaned check.
             * Acquires the internal lock.
-            * Returns ``self``.
+            * Returns "self".
         """
         ...
 
@@ -159,7 +159,7 @@ class ISpellIndex(ICleanable, Protocol):
         """
         Context manager exit.
 
-        Typical behavior in the concrete implementation:
+        Typical behaviour in the concrete implementation:
             * Releases the internal lock regardless of outcome.
         """
         ...
