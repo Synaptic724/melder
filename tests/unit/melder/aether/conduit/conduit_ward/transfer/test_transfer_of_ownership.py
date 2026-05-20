@@ -4398,13 +4398,12 @@ def test_mark_lineage_disabled_swallows_register_index_error() -> None:
     """
     env = build_environment()
 
-    def failing_register(spell_index: SpellIndex, spell: Any) -> None:
+    def failing_register(spell_index: SpellIndex) -> None:
         """
         Raise an error to simulate registration failure.
 
         Args:
             spell_index: SpellIndex being registered.
-            spell: Spell object for the lineage.
         Raises:
             RuntimeError: Always raised to simulate failure.
         """

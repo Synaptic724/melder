@@ -324,7 +324,9 @@ class SpellSystemState(Cleanable):
             - Ignores None entries in add/remove flag iterables.
         """
         self.check_cleaned()
-        callback = self._risk_manager.on_structural_validity_change
+        callback = None
+        if self._risk_manager is not None:
+            callback = self._risk_manager.on_structural_validity_change
         lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is None:
@@ -558,7 +560,9 @@ class SpellSystemState(Cleanable):
               call actually changes the stored validity.
         """
         self.check_cleaned()
-        callback = _get_risk_manager_callback(self._risk_manager)
+        callback = None
+        if self._risk_manager is not None:
+            callback = self._risk_manager.on_structural_validity_change
         lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is not None:

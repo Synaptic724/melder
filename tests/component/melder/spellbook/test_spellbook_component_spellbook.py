@@ -104,14 +104,13 @@ class _SpellSystemStatesStub:
         Purpose:
             Record a lineage registration from Spellbook.bind.
         Contract:
-            - Appends (spell_index, spell) to registered_lineages.
+            - Appends (spell_index, owner_spell) to registered_lineages.
         Args:
             spell_index: SpellIndex registered for the lineage.
-            spell: Bound Spell instance registered.
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell))
+        self.registered_lineages.append((spell_index, spell_index._owner_spell))
 
     def unregister_index(self, spell_index: object) -> None:
         """

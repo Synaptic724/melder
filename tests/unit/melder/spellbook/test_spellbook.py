@@ -2348,7 +2348,7 @@ def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatc
     risk_calls = []
     register_single_calls = []
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, spell: lineage_calls.append((spell_index, spell))
+        register_index=lambda spell_index: lineage_calls.append((spell_index, new_spell))
     )
     sb._register_spell_with_risk_manager = (
         lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
@@ -2409,7 +2409,7 @@ def test_bind_after_conjure_keeps_resolution_required_false_when_aot_enabled(mon
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, spell: None
+        register_index=lambda spell_index: None
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 

@@ -54,3 +54,15 @@ class SpellCompilerSystem(Cleanable):
             return
         self._cleaned = True
         del self._spellbook
+
+    def create_spell_crafter_for_spell(self, spell: ISpell) -> SpellCrafter:
+        """
+        Create one concrete SpellCrafter for the supplied spell.
+
+        Args:
+            spell: Spell whose crafter surface should be materialized.
+
+        Returns:
+            SpellCrafter: Concrete crafter bound to the supplied spell.
+        """
+        return SpellCrafter(spell)

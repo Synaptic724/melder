@@ -2385,9 +2385,15 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
     index_none = SpellIndex("spell-c")
-    states.register_index(index_a, spell_a)
-    states.register_index(index_b, spell_b)
-    states.register_index(index_none, spell_none)
+    index_a._owner_spellbook = spellbook
+    index_a._owner_spell = spell_a
+    index_b._owner_spellbook = spellbook
+    index_b._owner_spell = spell_b
+    index_none._owner_spellbook = spellbook
+    index_none._owner_spell = spell_none
+    states.register_index(index_a)
+    states.register_index(index_b)
+    states.register_index(index_none)
 
     keys_a = ward._get_spell_contract_keys(spell_a)
     keys_b = ward._get_spell_contract_keys(spell_b)
@@ -2490,8 +2496,12 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
     spellbook._spell_system_states = states
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
-    states.register_index(index_a, spell_a)
-    states.register_index(index_b, spell_b)
+    index_a._owner_spellbook = spellbook
+    index_a._owner_spell = spell_a
+    index_b._owner_spellbook = spellbook
+    index_b._owner_spell = spell_b
+    states.register_index(index_a)
+    states.register_index(index_b)
 
     keys_a = ward._get_spell_contract_keys(spell_a)
     keys_b = ward._get_spell_contract_keys(spell_b)
