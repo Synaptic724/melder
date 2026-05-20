@@ -133,7 +133,6 @@ and logging.
         "_pending_structural_spells",
         "_spell_id_pool",
         "_spell_system_states",
-        "_spell_validator",
         "_spell_versions",
         "_spellbook_validation_required",
         "_spells",
@@ -219,8 +218,6 @@ and logging.
         self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]  = {}
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
 
-        # Spell validator
-        self._spell_validator: ISpellValidationSystem = SpellValidationSystem()
         # Spell States System
         self._spell_system_states: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
         # Validation gate used by Meld to skip safety checks when risk is zero.
@@ -358,13 +355,6 @@ and logging.
         except Exception as e:
             self._logger.error(f"Error cleaning _contracted_versions: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_versions
-
-        try:
-            self._spell_validator.cleanup()
-        except Exception as e:
-            self._logger.error(f"Error cleaning spell validator: {e}", "_cleanup_components", exc_info=True)
-        del self._spell_validator
-
 
     def _cleanup_spells(self) -> None:
         """

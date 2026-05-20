@@ -24,6 +24,7 @@ class SpellCompilerSystem(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_spellbook",
+        "_spell_validator",
     ]
 
     def __init__(self, spellbook: ISpellbook) -> None:

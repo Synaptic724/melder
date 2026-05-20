@@ -24,6 +24,7 @@ from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder
 from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
 from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import SpellSystemRootBlueprintBuilder
+from melder.aether.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
@@ -226,6 +227,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         "_entire_dag_blueprint_phase5",
         "_spell_validator",
         "_spell_system_states",
+
     ]
 
     def __init__(
@@ -261,10 +263,7 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         self._lock: threading.RLock = threading.RLock()
         self._spell: ISpell = spell
-
-        spellbook = spell._spellbook
-
-        self._spell_validator: ISpellValidationSystem = spellbook._spell_validator
+        self._spell_validator: ISpellValidationSystem = SpellValidationSystem()
         self._spell_system_states: Optional[ISpellSystemStates] = (
             self._get_required_spell_system_states_from_spell(spell)
         )

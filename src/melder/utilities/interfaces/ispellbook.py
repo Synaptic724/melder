@@ -61,8 +61,6 @@ class ISpellbook(ICleanable, Protocol):
     _nexus: Any
     _active_change_request: Optional[ChangeControlTransactionRequest]
 
-    # Spell Validator
-    _spell_validator: ISpellValidationSystem
     _spell_system_states: "ISpellSystemStates"
 
     # ------------------------------------------------------------------
