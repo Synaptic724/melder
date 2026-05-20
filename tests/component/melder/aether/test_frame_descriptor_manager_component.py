@@ -95,7 +95,7 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
         _id="conduit-1",
         _root_conduit_id="conduit-1",
         _name="root",
-        _aetheric_frame="ops",
+        _aetheric_frame_name="ops",
         _spellbook=spellbook,
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
@@ -141,3 +141,5 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
         manager.cleanup()
         Aether._reset_singleton_for_tests()
         AetherUtilitySystem._reset_singleton_for_tests()
+
+

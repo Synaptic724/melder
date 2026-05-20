@@ -46,7 +46,7 @@ class _ContractingConduitStub:
     Purpose:
         Provide a minimal conduit stub for component ConduitCluster tests.
     Contract:
-        - Exposes _id, _spellbook, and _aetheric_frame for cluster lookups.
+        - Exposes _id, _spellbook, and _aetheric_frame_name for cluster lookups.
         - Records contract and removal calls for assertions.
     """
 
@@ -72,7 +72,7 @@ class _ContractingConduitStub:
         """
         self._id = conduit_id
         self._spellbook = spellbook
-        self._aetheric_frame = aetheric_frame
+        self._aetheric_frame_name = aetheric_frame
         self.contract_calls: list[dict[str, object]] = []
         self.remove_root_calls: list[dict[str, object]] = []
 
@@ -457,3 +457,5 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
             "link_dependencies": True,
         }
     ]
+
+

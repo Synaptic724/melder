@@ -1,4 +1,4 @@
-﻿import types
+import types
 
 import pytest
 
@@ -129,11 +129,19 @@ def test_publish_frame_record_captures_frame_summary() -> None:
     _bind_frame_posture("ops", rift_enabled=True)
     aether = Aether()
     frame = aether._ensure_frame("ops")
-    conduit_alpha = types.SimpleNamespace(_id="conduit-a", _name="alpha")
-    conduit_beta = types.SimpleNamespace(_id="conduit-b", _name=None)
+    conduit_alpha = types.SimpleNamespace(
+        _id="conduit-a",
+        _name="alpha",
+    )
+    conduit_beta = types.SimpleNamespace(
+        _id="conduit-b",
+        _name=None,
+    )
+    conduit_alpha.__dynamic_environment__ = True
+    conduit_beta.__dynamic_environment__ = False
     frame._conduits["conduit-a"] = conduit_alpha
     frame._conduits["conduit-b"] = conduit_beta
-    frame._conduit_cloud._registry["alpha"] = conduit_alpha
+    frame._conduit_ids_by_name["alpha"] = "conduit-a"
     frame._conduit_cloud._conduit_clusters["cluster-z"] = types.SimpleNamespace()
     frame._conduit_cloud._conduit_clusters["cluster-a"] = types.SimpleNamespace()
 
@@ -179,7 +187,7 @@ def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
         _id="conduit-1",
         _root_conduit_id="conduit-1",
         _name="root",
-        _aetheric_frame="ops",
+        _aetheric_frame_name="ops",
         _spellbook=spellbook,
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
@@ -242,7 +250,7 @@ def test_publish_conduit_record_includes_lesser_conduits_in_passive_ingest() -> 
         _id="conduit-1",
         _root_conduit_id="root-1",
         _name="lesser",
-        _aetheric_frame="ops",
+        _aetheric_frame_name="ops",
         _spellbook=spellbook,
         _conduit_state=ConduitState.lesser,
         _conduit_ward=types.SimpleNamespace(
@@ -274,7 +282,7 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
         _id="conduit-1",
         _root_conduit_id="conduit-1",
         _name="root",
-        _aetheric_frame="ops",
+        _aetheric_frame_name="ops",
         _spellbook=spellbook,
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
@@ -305,4 +313,6 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
     assert descriptor.conduit_records_by_id == {}
     assert descriptor.spell_keys_by_conduit_id == {}
     assert descriptor.spell_keys_by_spellbook_id == {}
+
+
 

@@ -196,7 +196,7 @@ def test_manager_publish_conduit_record_short_circuits_for_none_or_unpublishable
         _id="conduit-1",
         _root_conduit_id="conduit-1",
         _name="root",
-        _aetheric_frame="ops",
+        _aetheric_frame_name="ops",
         _spellbook=spellbook,
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
@@ -224,7 +224,7 @@ def test_manager_publish_conduit_record_accepts_lesser_conduits() -> None:
         _id="conduit-1",
         _root_conduit_id="root-1",
         _name=None,
-        _aetheric_frame="ops",
+        _aetheric_frame_name="ops",
         _spellbook=spellbook,
         _conduit_state=ConduitState.lesser,
         _conduit_ward=types.SimpleNamespace(
@@ -429,3 +429,5 @@ def test_manager_rejects_invalid_published_payload_and_record_contracts() -> Non
             nexus_version="9.9.9",
             label="frame record",
         )
+
+

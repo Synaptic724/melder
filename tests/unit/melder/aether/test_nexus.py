@@ -4665,7 +4665,7 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
         space.command_system._aether = SimpleNamespace(
             _get_existing_frame=lambda frame_name: SimpleNamespace(
                 _conduit_cloud=conduit._spellbook._aether.get_conduit_cloud(
-                    conduit._aetheric_frame
+                    conduit._aetheric_frame_name
                 ),
             ),
         )
@@ -4782,7 +4782,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
             get_conduit_cloud=lambda frame_name: spellbook._aether.get_conduit_cloud(
-                conduit._aetheric_frame
+                conduit._aetheric_frame_name
             ),
         )
         space.command_system.create_cluster(
@@ -5901,7 +5901,7 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     assert "aetheric_frame_system" not in Aether()._aetheric_frames
     shared_conduit = shared_rift.create_nexus_frame()
     assert shared_conduit.name == "root"
-    assert shared_conduit._aetheric_frame == "aetheric_frame_system"
+    assert shared_conduit._aetheric_frame_name == "aetheric_frame_system"
     assert shared_rift.get_nexus_frame() is shared_nexus.get_nexus_frame_for_rift(shared_rift.id)
 
     isolated_nexus = Nexus()
@@ -5917,7 +5917,7 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     assert private_frame_name not in Aether()._aetheric_frames
     private_conduit = isolated_rift.create_nexus_frame()
     assert private_conduit.name == "root"
-    assert private_conduit._aetheric_frame == private_frame_name
+    assert private_conduit._aetheric_frame_name == private_frame_name
 
 
 def test_rift_create_frame_link_rejects_other_private_nexus_frame_in_one_per_workspace_mode(
@@ -5940,10 +5940,10 @@ def test_rift_create_frame_link_rejects_other_private_nexus_frame_in_one_per_wor
     owner_conduit = owner_rift.create_nexus_frame()
     other_conduit = other_rift.create_nexus_frame()
 
-    owner_rift.create_frame_link(owner_conduit._aetheric_frame)
+    owner_rift.create_frame_link(owner_conduit._aetheric_frame_name)
 
     with pytest.raises(ValueError, match="only access its own private Nexus frame"):
-        owner_rift.create_frame_link(other_conduit._aetheric_frame)
+        owner_rift.create_frame_link(other_conduit._aetheric_frame_name)
 
 
 def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
@@ -5990,7 +5990,7 @@ def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
     nexus.enable(configuration)
 
     rift = nexus.create_rift(rift_name="isolated")
-    frame_name = rift.create_nexus_frame()._aetheric_frame
+    frame_name = rift.create_nexus_frame()._aetheric_frame_name
 
     assert frame_name in Aether()._aetheric_frames
 
@@ -6010,7 +6010,7 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_manager_state() -> Non
     """
     nexus = _create_enabled_nexus()
     rift = nexus.create_rift(rift_name="alpha")
-    frame_name = rift.create_nexus_frame()._aetheric_frame
+    frame_name = rift.create_nexus_frame()._aetheric_frame_name
 
     assert nexus.frame_manager.exists(frame_name) is True
 
@@ -6060,7 +6060,7 @@ def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
     with pytest.raises(ValueError, match="private Nexus frame"):
         nexus.get_nexus_frame_for_rift(
             first.id,
-            frame_name=second_conduit._aetheric_frame,
+            frame_name=second_conduit._aetheric_frame_name,
         )
 
 
@@ -6303,6 +6303,8 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
             configuration=configuration,
             rift_name="manual",
         )
+
+
 
 
 

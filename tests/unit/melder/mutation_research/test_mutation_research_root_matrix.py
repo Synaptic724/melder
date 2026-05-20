@@ -111,7 +111,7 @@ def test_unit_create_mutation_conduit_identity_matrix(conduit_label: str) -> Non
     root = MutationResearch(aether=aether)
     conduit = SimpleNamespace(
         _spellbook=SimpleNamespace(_spell_system_states=MagicMock()),
-        _aetheric_frame="default",
+        _aetheric_frame_name="default",
         label=conduit_label,
     )
     try:
@@ -136,7 +136,7 @@ def test_unit_cleanup_guard_matrix(operation_index: int) -> None:
     root = MutationResearch(aether=aether)
     conduit = SimpleNamespace(
         _spellbook=SimpleNamespace(_spell_system_states=MagicMock()),
-        _aetheric_frame="default",
+        _aetheric_frame_name="default",
     )
     mutation_conduit = root.create_mutation_conduit(conduit)
     mutation_frame = root.create_mutation_frame("ops")
@@ -178,3 +178,4 @@ def test_unit_cleanup_guard_matrix(operation_index: int) -> None:
         root.cleanup()
         with pytest.raises(RuntimeError):
             target()
+

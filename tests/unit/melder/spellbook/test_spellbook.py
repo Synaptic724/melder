@@ -4824,13 +4824,13 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 name=None,
                 conduit_state=None,
                 configuration=None,
+                aetheric_frame_name=None,
                 aetheric_frame=None,
                 policy=None,
                 automatic=None,
                 logger=None,
                 conduit_id=None,
                 dev_ops_manager=None,
-                conduit_cloud=None,
         ):
             """
             Purpose:
@@ -4842,18 +4842,20 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 name: Conduit name.
                 conduit_state: Conduit state value.
                 configuration: Configuration instance.
-                aetheric_frame: Aetheric frame name.
+                aetheric_frame_name: Aetheric frame name.
+                aetheric_frame: Live frame object.
                 policy: Conduit policy value.
                 automatic: Automatic mode flag.
                 logger: Logger instance.
                 conduit_id: Optional conduit id override for tests.
                 dev_ops_manager: Optional DevOps manager dependency.
-                conduit_cloud: Optional conduit cloud dependency.
             Returns:
                 None.
             """
             self._id = conduit_id or "cid"
             self._name = name or "cname"
+            self._aetheric_frame_name = aetheric_frame_name
+            self._aetheric_frame = aetheric_frame
             self._creations = {}
 
     import melder.aether.spellbook.spellbook_creation_system as creation_system_module

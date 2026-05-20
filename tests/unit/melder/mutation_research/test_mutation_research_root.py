@@ -84,7 +84,7 @@ def test_mutation_research_root_create_mutation_conduit_returns_placeholder() ->
     root = MutationResearch(aether=aether)
     conduit = SimpleNamespace(
         _spellbook=SimpleNamespace(_spell_system_states=MagicMock()),
-        _aetheric_frame="default",
+        _aetheric_frame_name="default",
     )
 
     mutation_conduit = root.create_mutation_conduit(conduit)
@@ -144,3 +144,4 @@ def test_mutation_frame_cleanup_releases_references() -> None:
     assert placeholder.cleaned is True
     with pytest.raises(RuntimeError):
         _ = placeholder.aetheric_frame_name
+

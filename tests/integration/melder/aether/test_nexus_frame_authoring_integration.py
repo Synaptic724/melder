@@ -89,7 +89,7 @@ def test_integration_rift_create_nexus_frame_matrix(
     descriptor = nexus._get_required_frame_descriptor(expected_frame_name)
 
     assert conduit.name == "root"
-    assert conduit._aetheric_frame == expected_frame_name
+    assert conduit._aetheric_frame_name == expected_frame_name
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True
     assert descriptor.frame_configuration.rift_enabled is True
@@ -137,7 +137,7 @@ def test_integration_rift_get_nexus_frame_matrix(
         return
     if create_kind == "auto":
         created = first.create_nexus_frame()
-        assert first.get_nexus_frame(created._aetheric_frame) is created
+        assert first.get_nexus_frame(created._aetheric_frame_name) is created
         return
     if create_kind == "private":
         created = first.create_nexus_frame()
@@ -254,7 +254,7 @@ def test_integration_nexus_frame_manager_direct_create_matrix(
     descriptor = nexus._get_required_frame_descriptor("ops")
 
     assert conduit.name == root_conduit_name
-    assert conduit._aetheric_frame == "ops"
+    assert conduit._aetheric_frame_name == "ops"
     assert nexus.frame_manager.exists("ops") is True
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True
@@ -270,7 +270,7 @@ def test_integration_nexus_frame_manager_direct_create_allows_single_shared_name
     descriptor = nexus._get_required_frame_descriptor("aetheric_frame_system")
 
     assert conduit.name == "root"
-    assert conduit._aetheric_frame == "aetheric_frame_system"
+    assert conduit._aetheric_frame_name == "aetheric_frame_system"
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
 
 
@@ -318,7 +318,7 @@ def test_integration_nexus_frame_cleanup_matrix(
     else:
         conduit = rift.create_nexus_frame()
 
-    managed_frame_name = conduit._aetheric_frame
+    managed_frame_name = conduit._aetheric_frame_name
     assert nexus.frame_manager.exists(managed_frame_name) is True
 
     if cleanup_kind == "external":
@@ -367,7 +367,7 @@ def test_integration_nexus_frame_rejection_matrix(
         with pytest.raises(ValueError, match=message):
             nexus.get_nexus_frame_for_rift(
                 first.id,
-                frame_name=conduit._aetheric_frame,
+                frame_name=conduit._aetheric_frame_name,
             )
         return
     if action == "immutable_private":
@@ -394,3 +394,5 @@ def test_integration_nexus_frame_rejection_matrix(
                 root_conduit_name="root",
             )
         )
+
+

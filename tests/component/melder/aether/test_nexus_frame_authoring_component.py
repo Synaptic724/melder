@@ -80,7 +80,7 @@ def test_component_nexus_frame_manager_create_dynamic_frame_matrix(
     descriptor = nexus._get_required_frame_descriptor("ops")
 
     assert conduit.name == root_conduit_name
-    assert conduit._aetheric_frame == "ops"
+    assert conduit._aetheric_frame_name == "ops"
     assert nexus.frame_manager.exists("ops") is True
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True
@@ -95,7 +95,7 @@ def test_component_nexus_frame_manager_create_dynamic_frame_allows_single_shared
     conduit = nexus.frame_manager.create_dynamic_frame("aetheric_frame_system")
 
     assert conduit.name == "root"
-    assert conduit._aetheric_frame == "aetheric_frame_system"
+    assert conduit._aetheric_frame_name == "aetheric_frame_system"
     assert nexus.frame_manager.exists("aetheric_frame_system") is True
 
 
@@ -156,7 +156,7 @@ def test_component_rift_create_nexus_frame_matrix(
     )
 
     assert conduit.name == "root"
-    assert conduit._aetheric_frame == expected_frame_name
+    assert conduit._aetheric_frame_name == expected_frame_name
     descriptor = nexus._get_required_frame_descriptor(expected_frame_name)
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True
@@ -283,13 +283,13 @@ def test_component_external_frame_cleanup_clears_manager_state_matrix(
     rift = nexus.create_rift(rift_name="alpha")
     if nexus_frame_mode == "single":
         conduit = rift.create_nexus_frame()
-        managed_frame_name = conduit._aetheric_frame
+        managed_frame_name = conduit._aetheric_frame_name
     elif nexus_frame_mode == "indexed":
         conduit = rift.create_nexus_frame(frame_name=frame_name)
-        managed_frame_name = conduit._aetheric_frame
+        managed_frame_name = conduit._aetheric_frame_name
     else:
         conduit = rift.create_nexus_frame()
-        managed_frame_name = conduit._aetheric_frame
+        managed_frame_name = conduit._aetheric_frame_name
 
     assert nexus.frame_manager.exists(managed_frame_name) is True
 
@@ -358,7 +358,7 @@ def test_component_nexus_remove_rift_cleans_frames_by_topology_matrix(
 
     if nexus_frame_mode == "single":
         shared = first.create_nexus_frame()
-        shared_frame_name = shared._aetheric_frame
+        shared_frame_name = shared._aetheric_frame_name
         assert second.get_nexus_frame() is shared
         nexus.remove_rift(first.id if remove_kind == "first" else second.id)
         assert nexus.frame_manager.exists(shared_frame_name) is True
@@ -369,15 +369,15 @@ def test_component_nexus_remove_rift_cleans_frames_by_topology_matrix(
     if nexus_frame_mode == "indexed":
         frame_name = "ops" if remove_kind == "named" else "finance"
         created = first.create_nexus_frame(frame_name=frame_name)
-        created_frame_name = created._aetheric_frame
+        created_frame_name = created._aetheric_frame_name
         nexus.remove_rift(first.id)
         assert nexus.frame_manager.exists(created_frame_name) is True
         return
 
     first_frame = first.create_nexus_frame()
     second_frame = second.create_nexus_frame()
-    first_frame_name = first_frame._aetheric_frame
-    second_frame_name = second_frame._aetheric_frame
+    first_frame_name = first_frame._aetheric_frame_name
+    second_frame_name = second_frame._aetheric_frame_name
     if remove_kind == "private":
         nexus.remove_rift(first.id)
         assert nexus.frame_manager.exists(first_frame_name) is False
@@ -387,3 +387,5 @@ def test_component_nexus_remove_rift_cleans_frames_by_topology_matrix(
     nexus.remove_rift(second.id)
     assert nexus.frame_manager.exists(second_frame_name) is False
     assert nexus.frame_manager.exists(first_frame_name) is True
+
+
