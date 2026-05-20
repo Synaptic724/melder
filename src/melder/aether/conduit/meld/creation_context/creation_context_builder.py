@@ -68,11 +68,10 @@ class CreationContextBuilder(ICreationContextBuilder):
                 and artifact._execution_plan_phase11_no_overrides is None
                 and artifact._override_patch_map_phase10 is None
                 and artifact._codegen_ir is None
-                and spell._crafter is None
         ):
             raise RuntimeError(
                 "Cannot build CreationContext before spell compiler artifacts "
-                "or spell crafter artifacts exist. Run conjure phases first."
+                "exist. Run conjure phases first."
             )
         resolve_route_key = CreationContextBuilder._resolve_route_key(spell)
         fast_transient_no_overrides_enabled = (
@@ -169,11 +168,6 @@ class CreationContextBuilder(ICreationContextBuilder):
 
         plan = spell._compiler_artifact._execution_plan_phase11_no_overrides
         if plan is None:
-            crafter = spell._crafter
-            if crafter is None:
-                return False
-            plan = crafter.execution_plan_phase11_no_overrides
-        if plan is None:
             return False
         return plan.fast_transient_plan is not None
 
@@ -191,12 +185,7 @@ class CreationContextBuilder(ICreationContextBuilder):
         if spell.is_existing_creation:
             return None
         executor = spell._compiler_artifact._phase12_no_overrides_executor
-        if executor is not None:
-            return executor
-        crafter = spell._crafter
-        if crafter is None:
-            return None
-        return crafter.phase12_no_overrides_executor
+        return executor
 
     @staticmethod
     def _resolve_override_patch_map_phase10(spell: ISpell) -> Optional[Any]:
@@ -211,12 +200,7 @@ class CreationContextBuilder(ICreationContextBuilder):
         if spell.is_existing_creation:
             return None
         override_patch_map = spell._compiler_artifact._override_patch_map_phase10
-        if override_patch_map is not None:
-            return override_patch_map
-        crafter = spell._crafter
-        if crafter is None:
-            return None
-        return crafter.override_patch_map_phase10
+        return override_patch_map
 
     @staticmethod
     def _build_mutation_override_route_config(
@@ -249,7 +233,7 @@ class CreationContextBuilder(ICreationContextBuilder):
         Build one static override route configuration payload.
 
         Contract:
-            - Returns None when the spell has no crafter/codegen payload.
+            - Returns None when the spell has no compiler-artifact/codegen payload.
             - Returns None when the requested execution variant is unavailable.
         """
         if spell.is_existing_creation:
@@ -261,12 +245,6 @@ class CreationContextBuilder(ICreationContextBuilder):
         )
         codegen_ir = artifact._codegen_ir
         root_blueprint_phase5 = artifact._root_blueprint_phase5
-        if codegen_ir is None or root_blueprint_phase5 is None:
-            crafter = spell._crafter
-            if crafter is None:
-                return None
-            codegen_ir = crafter.codegen_ir
-            root_blueprint_phase5 = crafter.root_blueprint_phase5
         if codegen_ir is None:
             return None
 

@@ -1307,12 +1307,9 @@ class Meld(Cleanable, IMeld):
         spell_id = spell.spell_index.current
         if spell_id is None:
             raise RuntimeError("SpellIndex.current is required for resolution revalidation.")
-        use_root = False
-        crafter = spell._crafter
-        if crafter is not None:
-            blueprint = crafter.root_blueprint_phase5
-            if blueprint is not None and blueprint.root_spell_id == spell_id:
-                use_root = True
+        use_root = self._spell_compiler_system.is_current_spell_phase5_root(
+            spell
+        )
 
         if use_root:
             resolution_state.set_root_validity(
@@ -1347,11 +1344,8 @@ class Meld(Cleanable, IMeld):
         spell_id = spell.spell_index.current
         if spell_id is None:
             return SpellValidity.unknown
-        crafter = spell._crafter
-        if crafter is not None:
-            blueprint = crafter.root_blueprint_phase5
-            if blueprint is not None and blueprint.root_spell_id == spell_id:
-                return resolution_state.get_root_validity(spell_id)
+        if self._spell_compiler_system.is_current_spell_phase5_root(spell):
+            return resolution_state.get_root_validity(spell_id)
 
         return resolution_state.get_spell_validity(spell_id)
 

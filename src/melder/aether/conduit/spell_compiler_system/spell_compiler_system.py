@@ -682,6 +682,41 @@ class SpellCompilerSystem(Cleanable):
             return (spell.spell_id,)
         return tuple(root_blueprints.keys())
 
+    def is_current_spell_phase5_root(
+            self,
+            spell: ISpell,
+    ) -> bool:
+        """
+        Return whether the spell's current id is the root id of its Phase 5 blueprint.
+
+        Purpose:
+            Provide one compiler-system-owned semantic check for runtime callers
+            that need to distinguish root validity from spell validity without
+            reading `SpellCrafter` state directly.
+
+        Contract:
+            - Returns False when no current spell id exists.
+            - Returns False when no Phase 5 root blueprint is attached yet.
+            - Returns True only when the attached Phase 5 root blueprint exists
+              and its `root_spell_id` matches the spell's current id.
+
+        Args:
+            spell:
+                Spell whose Phase 5 root identity should be checked.
+
+        Returns:
+            bool:
+                True when the spell is the root blueprint for its current Phase
+                5 artifact state.
+        """
+        spell_id = spell.spell_index.current
+        if spell_id is None:
+            return False
+        blueprint = spell._compiler_artifact._root_blueprint_phase5
+        if blueprint is None:
+            return False
+        return blueprint.root_spell_id == spell_id
+
     def reset_phase_artifacts(
             self,
             spell: ISpell,

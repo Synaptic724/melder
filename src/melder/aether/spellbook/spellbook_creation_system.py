@@ -4,6 +4,9 @@ from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Seq
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -755,26 +758,31 @@ class SpellbookCreationSystem(Cleanable):
             SpellbookValidationError: If any spell validates as broken.
         """
         spellbook.check_cleaned()
-        results = SpellbookCreationSystem._run_scheduler_with_phases(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-            context_name="_run_structural_phases",
-            register_phases=lambda scheduler: SpellbookCreationSystem._register_structural_phases(
+        compiler_system = SpellCompilerSystem()
+        try:
+            results = SpellbookCreationSystem._run_scheduler_with_phases(
                 spellbook=spellbook,
-                scheduler=scheduler,
-            ),
-        )
-        broken_spells = SpellbookCreationSystem._collect_broken_spells(
-            spells=spellbook._spells.values(),
-        )
-        if broken_spells:
-            SpellbookCreationSystem._raise_structural_validation_error(
-                spellbook=spellbook,
-                broken_spells=broken_spells,
+                phase_scheduler_cls=phase_scheduler_cls,
                 context_name="_run_structural_phases",
-                message_prefix="Spellbook structural pipeline completed with broken spells; ",
+                register_phases=lambda scheduler: SpellbookCreationSystem._register_structural_phases(
+                    spellbook=spellbook,
+                    scheduler=scheduler,
+                    compiler_system=compiler_system,
+                ),
             )
-        return results
+            broken_spells = SpellbookCreationSystem._collect_broken_spells(
+                spells=spellbook._spells.values(),
+            )
+            if broken_spells:
+                SpellbookCreationSystem._raise_structural_validation_error(
+                    spellbook=spellbook,
+                    broken_spells=broken_spells,
+                    context_name="_run_structural_phases",
+                    message_prefix="Spellbook structural pipeline completed with broken spells; ",
+                )
+            return results
+        finally:
+            compiler_system.cleanup()
 
     @staticmethod
     def run_post_conjure_structural_phases(spellbook: Any, spells: Sequence[ISpell]) -> None:
@@ -800,9 +808,14 @@ class SpellbookCreationSystem(Cleanable):
 
         cancel_signal = CancellationEventSignal()
         cancel_event = cancel_signal.event
+        compiler_system = SpellCompilerSystem()
         try:
             for spell in spells:
-                spell.run_structural_phases(cancel_event=cancel_event)
+                compiler_system.run_structural_phases(
+                    spellbook,
+                    spell,
+                    cancel_event=cancel_event,
+                )
 
             broken_spells = SpellbookCreationSystem._collect_broken_spells(spells)
             if broken_spells:
@@ -824,6 +837,14 @@ class SpellbookCreationSystem(Cleanable):
             )
             raise
         finally:
+            try:
+                compiler_system.cleanup()
+            except Exception:
+                spellbook._logger.error(
+                    "SpellCompilerSystem.cleanup() raised during post-conjure structural phases",
+                    "_run_post_conjure_structural_phases",
+                    exc_info=True,
+                )
             try:
                 cancel_signal.cleanup()
             except Exception:
@@ -868,18 +889,23 @@ class SpellbookCreationSystem(Cleanable):
             )
         )
         plan_skip_state: List[Optional[bool]] = [None]
-        results = SpellbookCreationSystem._run_scheduler_with_phases(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-            context_name="_run_resolution_phases_for_conduit",
-            register_phases=lambda scheduler: SpellbookCreationSystem._register_conduit_resolution_phases(
+        compiler_system = SpellCompilerSystem()
+        try:
+            results = SpellbookCreationSystem._run_scheduler_with_phases(
                 spellbook=spellbook,
-                scheduler=scheduler,
-                conduit_id=conduit_id,
-                plan_skip_state=plan_skip_state,
-                force_skip_plan_phases=not full_ahead_of_time_compilation,
-            ),
-        )
+                phase_scheduler_cls=phase_scheduler_cls,
+                context_name="_run_resolution_phases_for_conduit",
+                register_phases=lambda scheduler: SpellbookCreationSystem._register_conduit_resolution_phases(
+                    spellbook=spellbook,
+                    scheduler=scheduler,
+                    compiler_system=compiler_system,
+                    conduit_id=conduit_id,
+                    plan_skip_state=plan_skip_state,
+                    force_skip_plan_phases=not full_ahead_of_time_compilation,
+                ),
+            )
+        finally:
+            compiler_system.cleanup()
         if plan_skip_state[0]:
             results.pop("occurrence_plan", None)
             results.pop("injection_plan", None)
@@ -1055,6 +1081,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
             plan_skip_state: List[Optional[bool]],
             force_skip_plan_phases: bool = False,
@@ -1088,19 +1115,19 @@ class SpellbookCreationSystem(Cleanable):
         scheduler.register_phase(
             "root_blueprints",
             lambda: SpellbookCreationSystem.phase_root_blueprints_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
         scheduler.register_phase(
             "system_validation",
             lambda: SpellbookCreationSystem.phase_system_validation_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
         scheduler.register_phase(
             "change_control",
             lambda: SpellbookCreationSystem.phase_change_control_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
 
@@ -1120,25 +1147,25 @@ class SpellbookCreationSystem(Cleanable):
         scheduler.register_phase(
             "occurrence_plan",
             lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_occurrence_plan_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
         scheduler.register_phase(
             "injection_plan",
             lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_injection_plan_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
         scheduler.register_phase(
             "patch_maps",
             lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_patch_maps_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
         scheduler.register_phase(
             "execution_plan",
             lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_execution_plan_factory(
-                spellbook, scheduler, conduit_id
+                spellbook, scheduler, compiler_system, conduit_id
             ),
         )
 
@@ -1238,6 +1265,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
     ) -> None:
         """
         Purpose:
@@ -1252,19 +1280,27 @@ class SpellbookCreationSystem(Cleanable):
         """
         scheduler.register_phase(
             "requirements",
-            lambda: SpellbookCreationSystem.phase_requirements_factory(spellbook, scheduler),
+            lambda: SpellbookCreationSystem.phase_requirements_factory(
+                spellbook, scheduler, compiler_system
+            ),
         )
         scheduler.register_phase(
             "symbolic_graph",
-            lambda: SpellbookCreationSystem.phase_symbolic_graph_factory(spellbook, scheduler),
+            lambda: SpellbookCreationSystem.phase_symbolic_graph_factory(
+                spellbook, scheduler, compiler_system
+            ),
         )
         scheduler.register_phase(
             "local_frame",
-            lambda: SpellbookCreationSystem.phase_local_frame_factory(spellbook, scheduler),
+            lambda: SpellbookCreationSystem.phase_local_frame_factory(
+                spellbook, scheduler, compiler_system
+            ),
         )
         scheduler.register_phase(
             "validation",
-            lambda: SpellbookCreationSystem.phase_validation_factory(spellbook, scheduler),
+            lambda: SpellbookCreationSystem.phase_validation_factory(
+                spellbook, scheduler, compiler_system
+            ),
         )
 
     @staticmethod
@@ -1366,32 +1402,23 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        def _register(scheduler: PhaseScheduler) -> None:
-            scheduler.register_phase(
-                "root_blueprints",
-                lambda: SpellbookCreationSystem.phase_root_blueprints_factory(
-                    spellbook, scheduler, conduit_id
+        compiler_system = SpellCompilerSystem()
+        try:
+            return SpellbookCreationSystem._run_scheduler_with_phases(
+                spellbook=spellbook,
+                phase_scheduler_cls=phase_scheduler_cls,
+                context_name="_run_resolution_phases_for_conduit",
+                register_phases=lambda scheduler: SpellbookCreationSystem._register_conduit_resolution_phases(
+                    spellbook=spellbook,
+                    scheduler=scheduler,
+                    compiler_system=compiler_system,
+                    conduit_id=conduit_id,
+                    plan_skip_state=[None],
+                    force_skip_plan_phases=True,
                 ),
             )
-            scheduler.register_phase(
-                "system_validation",
-                lambda: SpellbookCreationSystem.phase_system_validation_factory(
-                    spellbook, scheduler, conduit_id
-                ),
-            )
-            scheduler.register_phase(
-                "change_control",
-                lambda: SpellbookCreationSystem.phase_change_control_factory(
-                    spellbook, scheduler, conduit_id
-                ),
-            )
-
-        return SpellbookCreationSystem._run_scheduler_with_phases(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-            context_name="_run_resolution_phases_for_conduit",
-            register_phases=_register,
-        )
+        finally:
+            compiler_system.cleanup()
 
     @staticmethod
     def _run_conduit_plan_resolution_phases(
@@ -1414,38 +1441,23 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        def _register(scheduler: PhaseScheduler) -> None:
-            scheduler.register_phase(
-                "occurrence_plan",
-                lambda: SpellbookCreationSystem.phase_occurrence_plan_factory(
-                    spellbook, scheduler, conduit_id
+        compiler_system = SpellCompilerSystem()
+        try:
+            return SpellbookCreationSystem._run_scheduler_with_phases(
+                spellbook=spellbook,
+                phase_scheduler_cls=phase_scheduler_cls,
+                context_name="_run_resolution_phases_for_conduit",
+                register_phases=lambda scheduler: SpellbookCreationSystem._register_conduit_resolution_phases(
+                    spellbook=spellbook,
+                    scheduler=scheduler,
+                    compiler_system=compiler_system,
+                    conduit_id=conduit_id,
+                    plan_skip_state=[False],
+                    force_skip_plan_phases=False,
                 ),
             )
-            scheduler.register_phase(
-                "injection_plan",
-                lambda: SpellbookCreationSystem.phase_injection_plan_factory(
-                    spellbook, scheduler, conduit_id
-                ),
-            )
-            scheduler.register_phase(
-                "patch_maps",
-                lambda: SpellbookCreationSystem.phase_patch_maps_factory(
-                    spellbook, scheduler, conduit_id
-                ),
-            )
-            scheduler.register_phase(
-                "execution_plan",
-                lambda: SpellbookCreationSystem.phase_execution_plan_factory(
-                    spellbook, scheduler, conduit_id
-                ),
-            )
-
-        return SpellbookCreationSystem._run_scheduler_with_phases(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-            context_name="_run_resolution_phases_for_conduit",
-            register_phases=_register,
-        )
+        finally:
+            compiler_system.cleanup()
 
     @staticmethod
     def _register_target_single_phase(
@@ -1453,8 +1465,8 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             phase_name: str,
             target_spell_id: str,
-            conduit_id: str,
             phase_func: Callable[..., Any],
+            args: Tuple[Any, ...],
     ) -> None:
         """
         Purpose:
@@ -1465,8 +1477,8 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler receiving the phase.
             phase_name: Phase name/label prefix.
             target_spell_id: Target spell id for labelling metadata.
-            conduit_id: Conduit scope id.
             phase_func: Bound spell phase callable.
+            args: Concrete argument tuple for the phase callable.
         Returns:
             None.
         """
@@ -1475,7 +1487,7 @@ class SpellbookCreationSystem(Cleanable):
             lambda: [
                 scheduler.create_unit_of_work(
                     func=phase_func,
-                    args=(conduit_id, scheduler.cancel_event,),
+                    args=args,
                     label=f"{phase_name}:{target_spell_id}",
                     metadata={
                         "phase": phase_name,
@@ -1511,35 +1523,39 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        def _register(scheduler: PhaseScheduler) -> None:
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="root_blueprints_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_root_blueprints_local,
-            )
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="system_validation_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_system_validation_local,
-            )
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="change_control_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_change_control_local,
-            )
+        compiler_system = SpellCompilerSystem()
+        try:
+            def _register(scheduler: PhaseScheduler) -> None:
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="root_blueprints_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_root_blueprints_local,
+                    args=(spellbook, target_spell, conduit_id, scheduler.cancel_event,),
+                )
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="system_validation_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_system_validation_local,
+                    args=(spellbook, target_spell, conduit_id, scheduler.cancel_event,),
+                )
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="change_control_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_change_control_local,
+                    args=(spellbook, target_spell, conduit_id,),
+                )
 
-        return SpellbookCreationSystem._run_scheduler_with_phases(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-            context_name="_run_resolution_phases_for_target_spell",
-            register_phases=_register,
-        )
+            return SpellbookCreationSystem._run_scheduler_with_phases(
+                spellbook=spellbook,
+                phase_scheduler_cls=phase_scheduler_cls,
+                context_name="_run_resolution_phases_for_target_spell",
+                register_phases=_register,
+            )
+        finally:
+            compiler_system.cleanup()
 
     @staticmethod
     def _collect_target_resolution_scope(
@@ -1595,42 +1611,46 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        def _register(scheduler: PhaseScheduler) -> None:
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="occurrence_plan_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_occurrence_plan,
-            )
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="injection_plan_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_injection_plan,
-            )
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="patch_maps_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_patch_maps,
-            )
-            SpellbookCreationSystem._register_target_single_phase(
-                scheduler=scheduler,
-                phase_name="execution_plan_local",
-                target_spell_id=target_spell_id,
-                conduit_id=conduit_id,
-                phase_func=target_spell.run_phase_execution_plan,
-            )
+        compiler_system = SpellCompilerSystem()
+        try:
+            def _register(scheduler: PhaseScheduler) -> None:
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="occurrence_plan_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_occurrence_plan,
+                    args=(spellbook, target_spell,),
+                )
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="injection_plan_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_injection_plan,
+                    args=(target_spell,),
+                )
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="patch_maps_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_patch_maps,
+                    args=(target_spell,),
+                )
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="execution_plan_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_execution_plan,
+                    args=(spellbook, target_spell,),
+                )
 
-        return SpellbookCreationSystem._run_scheduler_with_phases(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-            context_name="_run_resolution_phases_for_target_spell",
-            register_phases=_register,
-        )
+            return SpellbookCreationSystem._run_scheduler_with_phases(
+                spellbook=spellbook,
+                phase_scheduler_cls=phase_scheduler_cls,
+                context_name="_run_resolution_phases_for_target_spell",
+                register_phases=_register,
+            )
+        finally:
+            compiler_system.cleanup()
 
     @staticmethod
     def _extract_missing_dependency_ids(exc: PhaseExecutionError) -> List[str]:
@@ -1757,9 +1777,10 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             phase_name: str,
             phase_callable_attr: str,
-            conduit_id: Optional[str] = None,
+            args_factory: Callable[[ISpell, Any], Tuple[Any, ...]],
     ) -> Sequence[IUnitOfWork]:
         """
         Purpose:
@@ -1769,19 +1790,20 @@ class SpellbookCreationSystem(Cleanable):
             - Preserves existing label and metadata shape:
               `label="<phase_name>:<spell_id>"`,
               `metadata={"phase": <phase_name>, "spell_id": <spell_id>}`.
-            - Uses `(cancel_event,)` args for structural phases and
-              `(conduit_id, cancel_event,)` args for conduit-scoped phases.
+            - Uses the supplied compiler-system front method for all units.
+            - Uses the provided `args_factory` to keep phase argument shape exact.
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
             phase_name: Phase label prefix and metadata phase value.
-            phase_callable_attr: Spell method name to invoke for each unit.
-            conduit_id: Optional conduit scope id for conduit-scoped phases.
+            phase_callable_attr: Compiler-system method name to invoke for each unit.
+            args_factory: Builder for unit args per spell.
         Returns:
             Sequence[IUnitOfWork]: Per-spell units for the requested phase.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
-            AttributeError: If a spell does not expose `phase_callable_attr`.
+            AttributeError: If compiler system does not expose `phase_callable_attr`.
         """
         spellbook.check_cleaned()
         spells = spellbook._spells
@@ -1790,21 +1812,14 @@ class SpellbookCreationSystem(Cleanable):
 
         cancel_event = scheduler.cancel_event
         create_unit_of_work = scheduler.create_unit_of_work
-        if conduit_id is None:
-            args_factory: Callable[[ISpell], Tuple[Any, ...]] = (
-                lambda _spell: (cancel_event,)
-            )
-        else:
-            args_factory = lambda _spell: (conduit_id, cancel_event,)
-
         units: List[IUnitOfWork] = []
+        phase_func = getattr(compiler_system, phase_callable_attr)
         for spell in spells.values():
-            phase_func = getattr(spell, phase_callable_attr)
             spell_id = spell.spell_id
             units.append(
                 create_unit_of_work(
                     func=phase_func,
-                    args=args_factory(spell),
+                    args=args_factory(spell, cancel_event),
                     label=f"{phase_name}:{spell_id}",
                     metadata={
                         "phase": phase_name,
@@ -1818,6 +1833,7 @@ class SpellbookCreationSystem(Cleanable):
     def phase_requirements_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
     ) -> Sequence[IUnitOfWork]:
         """
         Purpose:
@@ -1835,14 +1851,17 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="requirements",
             phase_callable_attr="run_phase_requirements",
+            args_factory=lambda spell, cancel_event: (spell, cancel_event),
         )
 
     @staticmethod
     def phase_symbolic_graph_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
     ) -> Sequence[IUnitOfWork]:
         """
         Purpose:
@@ -1860,14 +1879,17 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="symbolic_graph",
             phase_callable_attr="run_phase_symbolic_graph",
+            args_factory=lambda spell, cancel_event: (spell, cancel_event),
         )
 
     @staticmethod
     def phase_local_frame_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
     ) -> Sequence[IUnitOfWork]:
         """
         Purpose:
@@ -1885,14 +1907,21 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="local_frame",
             phase_callable_attr="run_phase_local_frame",
+            args_factory=lambda spell, cancel_event: (
+                spellbook,
+                spell,
+                cancel_event,
+            ),
         )
 
     @staticmethod
     def phase_validation_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
     ) -> Sequence[IUnitOfWork]:
         """
         Purpose:
@@ -1910,14 +1939,21 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="validation",
             phase_callable_attr="run_phase_validation",
+            args_factory=lambda spell, cancel_event: (
+                spellbook,
+                spell,
+                cancel_event,
+            ),
         )
 
     @staticmethod
     def phase_root_blueprints_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -1942,8 +1978,8 @@ class SpellbookCreationSystem(Cleanable):
         lead_spell = next(iter(spellbook._spells.values()))
         return [
             scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_root_blueprints,
-                args=(conduit_id, scheduler.cancel_event,),
+                func=compiler_system.run_phase_root_blueprints,
+                args=(spellbook, lead_spell, conduit_id, scheduler.cancel_event,),
                 label=f"root_blueprints:{lead_spell.spell_id}",
                 metadata={
                     "phase": "root_blueprints",
@@ -1957,6 +1993,7 @@ class SpellbookCreationSystem(Cleanable):
     def phase_occurrence_plan_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -1977,15 +2014,17 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="occurrence_plan",
             phase_callable_attr="run_phase_occurrence_plan",
-            conduit_id=conduit_id,
+            args_factory=lambda spell, cancel_event: (spellbook, spell),
         )
 
     @staticmethod
     def phase_injection_plan_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -2006,15 +2045,17 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="injection_plan",
             phase_callable_attr="run_phase_injection_plan",
-            conduit_id=conduit_id,
+            args_factory=lambda spell, cancel_event: (spell,),
         )
 
     @staticmethod
     def phase_patch_maps_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -2035,15 +2076,17 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="patch_maps",
             phase_callable_attr="run_phase_patch_maps",
-            conduit_id=conduit_id,
+            args_factory=lambda spell, cancel_event: (spell,),
         )
 
     @staticmethod
     def phase_execution_plan_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -2064,15 +2107,17 @@ class SpellbookCreationSystem(Cleanable):
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
+            compiler_system=compiler_system,
             phase_name="execution_plan",
             phase_callable_attr="run_phase_execution_plan",
-            conduit_id=conduit_id,
+            args_factory=lambda spell, cancel_event: (spellbook, spell),
         )
 
     @staticmethod
     def phase_system_validation_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -2097,8 +2142,8 @@ class SpellbookCreationSystem(Cleanable):
         lead_spell = next(iter(spellbook._spells.values()))
         return [
             scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_system_validation,
-                args=(conduit_id, scheduler.cancel_event,),
+                func=compiler_system.run_phase_system_validation,
+                args=(spellbook, lead_spell, conduit_id, scheduler.cancel_event,),
                 label=f"system_validation:{lead_spell.spell_id}",
                 metadata={
                     "phase": "system_validation",
@@ -2112,6 +2157,7 @@ class SpellbookCreationSystem(Cleanable):
     def phase_change_control_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
             conduit_id: str,
     ) -> Sequence[IUnitOfWork]:
         """
@@ -2136,8 +2182,8 @@ class SpellbookCreationSystem(Cleanable):
         lead_spell = next(iter(spellbook._spells.values()))
         return [
             scheduler.create_unit_of_work(
-                func=lead_spell.run_phase_change_control,
-                args=(conduit_id, scheduler.cancel_event,),
+                func=compiler_system.run_phase_change_control,
+                args=(spellbook, lead_spell, conduit_id,),
                 label=f"change_control:{lead_spell.spell_id}",
                 metadata={
                     "phase": "change_control",
