@@ -381,6 +381,981 @@ class SharedCompilerExecutions:
         ir_payload["signatures"]["phase2_5"] = phase2_5_signature
 
     @staticmethod
+    def freeze_phase11_schema_value(value: Any) -> Any:
+        """
+        Normalize arbitrary values into deterministic schema-safe forms.
+
+        Purpose:
+            Convert nested payload values into primitive/tuple structures so
+            phase8_11 IR rows can be serialized without leaking live objects.
+        Contract:
+            - Primitive values are returned as-is.
+            - Dict/list/tuple/set values are recursively normalized.
+            - Non-primitive objects are represented by deterministic repr text.
+        """
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, dict):
+            return tuple(
+                sorted(
+                    (
+                        key,
+                        SharedCompilerExecutions.freeze_phase11_schema_value(item),
+                    )
+                    for key, item in value.items()
+                )
+            )
+        if isinstance(value, (list, tuple)):
+            return tuple(
+                SharedCompilerExecutions.freeze_phase11_schema_value(item)
+                for item in value
+            )
+        if isinstance(value, set):
+            return tuple(
+                sorted(
+                    (
+                        SharedCompilerExecutions.freeze_phase11_schema_value(item)
+                        for item in value
+                    ),
+                    key=repr,
+                )
+            )
+        return repr(value)
+
+    @staticmethod
+    def normalize_instance_key(
+            instance_key: Tuple[str, Optional[int]],
+    ) -> Tuple[str, Optional[int]]:
+        """
+        Normalize one execution-plan instance key.
+        """
+        return instance_key[0], instance_key[1]
+
+    @staticmethod
+    def normalize_occurrence_key(
+            occurrence_key: Tuple[str, Optional[int]],
+    ) -> Tuple[str, Optional[int]]:
+        """
+        Normalize one occurrence-plan key.
+        """
+        return occurrence_key[0], occurrence_key[1]
+
+    @staticmethod
+    def instance_key_sort_key(
+            instance_key: Tuple[str, Optional[int]],
+    ) -> Tuple[str, int]:
+        """
+        Build a deterministic sort key for normalized instance keys.
+        """
+        path_id = instance_key[1]
+        return (
+            instance_key[0],
+            -1 if path_id is None else path_id,
+        )
+
+    @staticmethod
+    def occurrence_key_sort_key(
+            occurrence_key: Tuple[str, Optional[int]],
+    ) -> Tuple[str, int]:
+        """
+        Build a deterministic sort key for normalized occurrence keys.
+        """
+        path_id = occurrence_key[1]
+        return (
+            occurrence_key[0],
+            -1 if path_id is None else path_id,
+        )
+
+    @staticmethod
+    def build_fast_transient_schema(
+            transient_plan: Optional[Tuple[Any, ...]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Convert the Phase11 transient tuple into a schema-only IR payload.
+        """
+        if transient_plan is None:
+            return None
+        return {
+            "step_count": transient_plan[0],
+            "root_step_index": transient_plan[1],
+            "call_modes": tuple(transient_plan[3]),
+            "dep1": tuple(transient_plan[4]),
+            "dep2a": tuple(transient_plan[5]),
+            "dep2b": tuple(transient_plan[6]),
+            "dep3a": tuple(transient_plan[7]),
+            "dep3b": tuple(transient_plan[8]),
+            "dep3c": tuple(transient_plan[9]),
+            "dep4a": tuple(transient_plan[10]),
+            "dep4b": tuple(transient_plan[11]),
+            "dep4c": tuple(transient_plan[12]),
+            "dep4d": tuple(transient_plan[13]),
+            "dep5a": tuple(transient_plan[14]),
+            "dep5b": tuple(transient_plan[15]),
+            "dep5c": tuple(transient_plan[16]),
+            "dep5d": tuple(transient_plan[17]),
+            "dep5e": tuple(transient_plan[18]),
+            "dep6a": tuple(transient_plan[19]),
+            "dep6b": tuple(transient_plan[20]),
+            "dep6c": tuple(transient_plan[21]),
+            "dep6d": tuple(transient_plan[22]),
+            "dep6e": tuple(transient_plan[23]),
+            "dep6f": tuple(transient_plan[24]),
+            "dep7a": tuple(transient_plan[25]),
+            "dep7b": tuple(transient_plan[26]),
+            "dep7c": tuple(transient_plan[27]),
+            "dep7d": tuple(transient_plan[28]),
+            "dep7e": tuple(transient_plan[29]),
+            "dep7f": tuple(transient_plan[30]),
+            "dep7g": tuple(transient_plan[31]),
+            "dep8a": tuple(transient_plan[32]),
+            "dep8b": tuple(transient_plan[33]),
+            "dep8c": tuple(transient_plan[34]),
+            "dep8d": tuple(transient_plan[35]),
+            "dep8e": tuple(transient_plan[36]),
+            "dep8f": tuple(transient_plan[37]),
+            "dep8g": tuple(transient_plan[38]),
+            "dep8h": tuple(transient_plan[39]),
+        }
+
+    @staticmethod
+    def build_fast_transient_signature(
+            transient_schema: Optional[Dict[str, Any]],
+    ) -> Optional[str]:
+        """
+        Build a deterministic signature for a Phase 11 fast transient plan.
+        """
+        if transient_schema is None:
+            return None
+        return SharedCompilerExecutions.hash_codegen_signature(
+            transient_schema["step_count"],
+            transient_schema["root_step_index"],
+            transient_schema["call_modes"],
+            transient_schema["dep1"],
+            transient_schema["dep2a"],
+            transient_schema["dep2b"],
+            transient_schema["dep3a"],
+            transient_schema["dep3b"],
+            transient_schema["dep3c"],
+            transient_schema["dep4a"],
+            transient_schema["dep4b"],
+            transient_schema["dep4c"],
+            transient_schema["dep4d"],
+            transient_schema["dep5a"],
+            transient_schema["dep5b"],
+            transient_schema["dep5c"],
+            transient_schema["dep5d"],
+            transient_schema["dep5e"],
+            transient_schema["dep6a"],
+            transient_schema["dep6b"],
+            transient_schema["dep6c"],
+            transient_schema["dep6d"],
+            transient_schema["dep6e"],
+            transient_schema["dep6f"],
+            transient_schema["dep7a"],
+            transient_schema["dep7b"],
+            transient_schema["dep7c"],
+            transient_schema["dep7d"],
+            transient_schema["dep7e"],
+            transient_schema["dep7f"],
+            transient_schema["dep7g"],
+            transient_schema["dep8a"],
+            transient_schema["dep8b"],
+            transient_schema["dep8c"],
+            transient_schema["dep8d"],
+            transient_schema["dep8e"],
+            transient_schema["dep8f"],
+            transient_schema["dep8g"],
+            transient_schema["dep8h"],
+        )
+
+    @staticmethod
+    def build_occurrence_graph_rows(
+            occurrence_graph: Mapping[
+                Tuple[str, int],
+                Mapping[str, Sequence[Tuple[str, int]]],
+            ],
+    ) -> Tuple[Tuple[Any, ...], ...]:
+        """
+        Build deterministic schema rows for the Phase8 occurrence graph.
+        """
+        rows: List[Tuple[Any, ...]] = []
+        for occurrence_key in sorted(
+                occurrence_graph.keys(),
+                key=SharedCompilerExecutions.occurrence_key_sort_key,
+        ):
+            dependency_map = occurrence_graph[occurrence_key]
+            dependency_rows: List[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]]] = []
+            for param_name in sorted(dependency_map.keys()):
+                dependency_occurrences = dependency_map[param_name]
+                normalized_occurrences_list = [
+                    SharedCompilerExecutions.normalize_occurrence_key(
+                        dependency_occurrence
+                    )
+                    for dependency_occurrence in dependency_occurrences
+                ]
+                if len(normalized_occurrences_list) > 1:
+                    normalized_occurrences_list.sort(
+                        key=SharedCompilerExecutions.occurrence_key_sort_key,
+                    )
+                normalized_occurrences = tuple(normalized_occurrences_list)
+                dependency_rows.append((param_name, normalized_occurrences))
+            rows.append(
+                (
+                    SharedCompilerExecutions.normalize_occurrence_key(occurrence_key),
+                    tuple(dependency_rows),
+                )
+            )
+        return tuple(rows)
+
+    @staticmethod
+    def build_occurrence_instance_key_rows(
+            instance_keys_by_spell_id: Mapping[
+                str,
+                Sequence[Tuple[str, Optional[int]]],
+            ],
+    ) -> Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...]:
+        """
+        Build deterministic schema rows for Phase8 instance-key planning.
+        """
+        rows: List[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]]] = []
+        for spell_id in sorted(instance_keys_by_spell_id.keys()):
+            instance_keys_list = [
+                SharedCompilerExecutions.normalize_instance_key(instance_key)
+                for instance_key in instance_keys_by_spell_id[spell_id]
+            ]
+            if len(instance_keys_list) > 1:
+                instance_keys_list.sort(
+                    key=SharedCompilerExecutions.instance_key_sort_key
+                )
+            rows.append((spell_id, tuple(instance_keys_list)))
+        return tuple(rows)
+
+    @staticmethod
+    def build_occurrence_canonical_rows(
+            canonical_occurrences_by_spell_id: Mapping[
+                str,
+                Tuple[str, Optional[int]],
+            ],
+    ) -> Tuple[Tuple[str, Tuple[str, Optional[int]]], ...]:
+        """
+        Build deterministic schema rows for Phase8 canonical occurrences.
+        """
+        rows: List[Tuple[str, Tuple[str, Optional[int]]]] = []
+        for spell_id in sorted(canonical_occurrences_by_spell_id.keys()):
+            rows.append(
+                (
+                    spell_id,
+                    SharedCompilerExecutions.normalize_occurrence_key(
+                        canonical_occurrences_by_spell_id[spell_id]
+                    ),
+                )
+            )
+        return tuple(rows)
+
+    @staticmethod
+    def build_occurrence_contract_override_rows(
+            contract_overrides_by_occurrence: Mapping[
+                Tuple[str, int],
+                Mapping[str, Any],
+            ],
+    ) -> Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...]:
+        """
+        Build deterministic schema rows for occurrence-scoped contract payloads.
+        """
+        rows: List[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]]] = []
+        for occurrence_key in sorted(
+                contract_overrides_by_occurrence.keys(),
+                key=SharedCompilerExecutions.occurrence_key_sort_key,
+        ):
+            payload = contract_overrides_by_occurrence[occurrence_key]
+            payload_items = tuple(
+                sorted(
+                    (
+                        param_name,
+                        SharedCompilerExecutions.freeze_phase11_schema_value(value),
+                    )
+                    for param_name, value in payload.items()
+                )
+            )
+            rows.append(
+                (
+                    SharedCompilerExecutions.normalize_occurrence_key(occurrence_key),
+                    payload_items,
+                )
+            )
+        return tuple(rows)
+
+    @staticmethod
+    def build_occurrence_contract_override_spell_rows(
+            contract_overrides_by_spell_id: Mapping[
+                str,
+                Sequence[Tuple[Tuple[str, Optional[int]], Mapping[str, Any]]],
+            ],
+    ) -> Tuple[
+        Tuple[
+            str,
+            Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...],
+        ],
+        ...,
+    ]:
+        """
+        Build deterministic schema rows for spell-grouped contract payloads.
+        """
+        rows: List[
+            Tuple[
+                str,
+                Tuple[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]], ...],
+            ]
+        ] = []
+        for spell_id in sorted(contract_overrides_by_spell_id.keys()):
+            grouped_rows: List[Tuple[Tuple[str, Optional[int]], Tuple[Tuple[str, Any], ...]]] = []
+            for occurrence_key, payload in contract_overrides_by_spell_id[spell_id]:
+                payload_items = tuple(
+                    sorted(
+                        (
+                            param_name,
+                            SharedCompilerExecutions.freeze_phase11_schema_value(value),
+                        )
+                        for param_name, value in payload.items()
+                    )
+                )
+                grouped_rows.append(
+                    (
+                        SharedCompilerExecutions.normalize_occurrence_key(occurrence_key),
+                        payload_items,
+                    )
+                )
+            grouped_rows.sort(
+                key=lambda row: SharedCompilerExecutions.occurrence_key_sort_key(row[0]),
+            )
+            rows.append((spell_id, tuple(grouped_rows)))
+        return tuple(rows)
+
+    @staticmethod
+    def build_injection_instance_rows(
+            instance_injections: Mapping[Tuple[str, Optional[int]], Any],
+    ) -> Tuple[Tuple[Any, ...], ...]:
+        """
+        Build deterministic schema rows for Phase9 injection specifications.
+        """
+        rows: List[Tuple[Any, ...]] = []
+        for instance_key in sorted(
+                instance_injections.keys(),
+                key=SharedCompilerExecutions.instance_key_sort_key,
+        ):
+            injection_spec = instance_injections[instance_key]
+            allow_list_aggregation = bool(injection_spec.allow_list_aggregation)
+            uses_positional_override = bool(injection_spec.uses_positional_override)
+            contract_payload_items: Tuple[Tuple[str, Any], ...] = ()
+            param_rows: List[Tuple[Any, ...]] = []
+            contract_payload = injection_spec.contract_payload
+            if contract_payload:
+                contract_payload_items = tuple(
+                    sorted(
+                        (
+                            param_name,
+                            SharedCompilerExecutions.freeze_phase11_schema_value(value),
+                        )
+                        for param_name, value in contract_payload.items()
+                    )
+                )
+
+            param_sources = injection_spec.param_sources
+            if param_sources:
+                for param_name in sorted(param_sources.keys()):
+                    param_source = param_sources[param_name]
+                    kind = param_source.kind
+                    dependency_keys: Tuple[Tuple[str, Optional[int]], ...] = ()
+                    raw_dependency_keys = param_source.dependency_keys
+                    if raw_dependency_keys:
+                        dependency_key_list: List[Tuple[str, Optional[int]]] = [
+                            (
+                                str(dependency_key[0]),
+                                dependency_key[1],
+                            )
+                            for dependency_key in raw_dependency_keys
+                        ]
+                        if len(dependency_key_list) > 1:
+                            dependency_key_list.sort(
+                                key=SharedCompilerExecutions.instance_key_sort_key,
+                            )
+                        dependency_keys = tuple(dependency_key_list)
+                    override_key = param_source.override_key
+                    contract_key = param_source.contract_key
+                    param_rows.append(
+                        (
+                            param_name,
+                            kind,
+                            dependency_keys,
+                            override_key,
+                            contract_key,
+                        )
+                    )
+
+            rows.append(
+                (
+                    tuple(instance_key),
+                    allow_list_aggregation,
+                    uses_positional_override,
+                    contract_payload_items,
+                    tuple(param_rows),
+                )
+            )
+        return tuple(rows)
+
+    @staticmethod
+    def build_override_target_rows(
+            override_patch_map: Any,
+    ) -> Tuple[Tuple[Any, ...], ...]:
+        """
+        Build deterministic schema rows for Phase10 override patch-map targets.
+        """
+        if override_patch_map is None:
+            return ()
+        targets_by_spec = override_patch_map.targets_by_spec
+        specificity_by_spec = override_patch_map.specificity_by_spec
+        rows: List[Tuple[Any, ...]] = []
+        for spec_key in sorted(targets_by_spec.keys()):
+            raw_targets = targets_by_spec[spec_key]
+            socket_rows: List[Tuple[str, str, int, str]] = []
+            for socket_ref in raw_targets:
+                socket_rows.append(
+                    (
+                        socket_ref.node_id,
+                        socket_ref.param_name,
+                        socket_ref.param_path_id,
+                        socket_ref.socket_kind.value,
+                    )
+                )
+            if len(socket_rows) > 1:
+                socket_rows.sort(key=SharedCompilerExecutions.socket_row_sort_key)
+
+            specificity_value = None
+            if specificity_by_spec:
+                specificity = specificity_by_spec.get(spec_key)
+                if specificity is not None:
+                    specificity_value = int(specificity)
+
+            rows.append(
+                (
+                    spec_key,
+                    specificity_value,
+                    tuple(socket_rows),
+                )
+            )
+        return tuple(rows)
+
+    @staticmethod
+    def build_mutation_target_rows(
+            mutation_patch_map: Any,
+    ) -> Tuple[Tuple[Any, ...], ...]:
+        """
+        Build deterministic schema rows for Phase10 mutation patch-map targets.
+        """
+        if mutation_patch_map is None:
+            return ()
+        targets_by_spec = mutation_patch_map.targets_by_spec
+        rows: List[Tuple[Any, ...]] = []
+        for spec_key in sorted(targets_by_spec.keys()):
+            raw_patches = targets_by_spec[spec_key]
+            patch_rows: List[Tuple[Any, ...]] = []
+            for patch in raw_patches:
+                patch_rows.append(
+                    (
+                        patch.child_spell_id,
+                        patch.param_name,
+                        patch.param_path_id,
+                        patch.old_parent_id,
+                    )
+                )
+            if len(patch_rows) > 1:
+                patch_rows.sort(
+                    key=lambda row: (
+                        row[0],
+                        row[1],
+                        row[2],
+                        "" if row[3] is None else row[3],
+                    )
+                )
+            rows.append((spec_key, tuple(patch_rows)))
+        return tuple(rows)
+
+    @staticmethod
+    def build_phase11_step_ir_row(
+            step: Any,
+            *,
+            include_override_metadata: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Build one schema-only Phase11 step row for IR export.
+        """
+        dependency_resolution_order = tuple(
+            (
+                param_name,
+                tuple(dependency_keys),
+            )
+            for param_name, dependency_keys in step.dependency_resolution_order
+        )
+        contract_payload_items: Tuple[Any, ...] = ()
+        if step.contract_payload:
+            contract_payload_items = tuple(
+                sorted(
+                    (
+                        param_name,
+                        SharedCompilerExecutions.freeze_phase11_schema_value(value),
+                    )
+                    for param_name, value in step.contract_payload.items()
+                )
+            )
+        override_match_prefix = None
+        override_match_prefix_len = 0
+        override_keys: Tuple[Any, ...] = ()
+        expects_overrides = False
+        if include_override_metadata:
+            override_match_prefix = step.override_match_prefix
+            override_match_prefix_len = step.override_match_prefix_len
+            override_keys = tuple(step.override_keys)
+            expects_overrides = step.expects_overrides
+        return {
+            "instance_key": tuple(step.instance_key),
+            "spell_id": step.spell.spell_index.current,
+            "existence": step.existence.name,
+            "creations_target_kind": step.creations_target_kind,
+            "shared_instance": step.shared_instance,
+            "dependency_resolution_order": dependency_resolution_order,
+            "override_match_prefix": override_match_prefix,
+            "override_match_prefix_len": override_match_prefix_len,
+            "override_keys": override_keys,
+            "expects_overrides": expects_overrides,
+            "contract_keys": tuple(step.contract_keys),
+            "allow_list_aggregation": step.allow_list_aggregation,
+            "uses_positional_override": step.uses_positional_override,
+            "contract_positional_override": SharedCompilerExecutions.freeze_phase11_schema_value(
+                step.contract_positional_override,
+            ),
+            "has_contract_payload": step.has_contract_payload,
+            "contract_payload_items": contract_payload_items,
+            "lock_hint": step.lock_hint,
+            "use_spell_lock_hint": step.use_spell_lock_hint,
+            "requires_spellspace": step.requires_spellspace,
+            "owner_conduit_required": step.owner_conduit_required,
+            "must_register": step.must_register,
+            "disposal_method_names": tuple(step.disposal_method_names),
+        }
+
+    @staticmethod
+    def build_phase12_no_overrides_step_signature_row(
+            step: Any,
+    ) -> Tuple[Any, ...]:
+        """
+        Build one deterministic signature row for no-overrides compile caching.
+        """
+        dependency_resolution_order = tuple(
+            (
+                param_name,
+                tuple(dependency_keys),
+            )
+            for param_name, dependency_keys in step.dependency_resolution_order
+        )
+        contract_payload_items: Tuple[Any, ...] = ()
+        if step.contract_payload:
+            contract_payload_items = tuple(
+                sorted(
+                    (
+                        param_name,
+                        SharedCompilerExecutions.freeze_phase11_schema_value(value),
+                    )
+                    for param_name, value in step.contract_payload.items()
+                )
+            )
+        return (
+            tuple(step.instance_key),
+            step.spell.spell_index.current,
+            step.existence.name,
+            step.creations_target_kind,
+            dependency_resolution_order,
+            bool(step.uses_positional_override),
+            SharedCompilerExecutions.freeze_phase11_schema_value(
+                step.contract_positional_override
+            ),
+            bool(step.has_contract_payload),
+            contract_payload_items,
+            bool(step.use_spell_lock_hint),
+            bool(step.must_register),
+        )
+
+    @staticmethod
+    def build_phase11_spell_signature_row(
+            spell: ISpell,
+    ) -> Tuple[Any, ...]:
+        """
+        Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
+        """
+        optimistic_object_identity = None
+        if spell.user_created_object is not None:
+            optimistic_object_identity = id(spell.user_created_object)
+        is_callable_spell = spell.spell_type in (
+            SpellType.SPELL,
+            SpellType.SPELL_WITH_SPELLFRAME,
+            SpellType.SPELL_WITH_BINDING_NAME,
+            SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            SpellType.METHOD,
+            SpellType.METHOD_WITH_BINDING_NAME,
+            SpellType.METHOD_WITH_SPELLFRAME,
+            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
+            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        )
+        must_register = True
+        if spell.existence is Existence.many and not spell.has_disposal_methods:
+            must_register = False
+        return (
+            spell.spell_index.current,
+            spell.existence.name,
+            bool(spell.is_existing_creation),
+            bool(is_callable_spell),
+            bool(must_register),
+            bool(spell.has_disposal_methods),
+            tuple(spell.disposal_method_names),
+            optimistic_object_identity,
+        )
+
+    @staticmethod
+    def build_phase11_injection_spec_signature_row(
+            injection_spec: Any,
+            *,
+            include_override_metadata: bool = True,
+    ) -> Tuple[Any, ...]:
+        """
+        Build deterministic InjectionSpec row for Phase 11 input signatures.
+        """
+        param_rows: List[Tuple[Any, ...]] = []
+        param_sources = injection_spec.param_sources
+        for param_name in sorted(param_sources.keys()):
+            param_source = param_sources[param_name]
+            dependency_keys = None
+            if param_source.dependency_keys is not None:
+                dependency_keys = tuple(
+                    tuple(dependency_key)
+                    for dependency_key in param_source.dependency_keys
+                )
+            override_key = None
+            if include_override_metadata:
+                override_key = param_source.override_key
+            param_rows.append(
+                (
+                    param_name,
+                    param_source.kind,
+                    dependency_keys,
+                    override_key,
+                    param_source.contract_key,
+                )
+            )
+
+        contract_payload = injection_spec.contract_payload
+        normalized_contract_payload = None
+        if contract_payload is not None:
+            normalized_contract_payload = dict(contract_payload)
+            if (
+                    "__args__" in normalized_contract_payload
+                    and isinstance(normalized_contract_payload["__args__"], list)
+            ):
+                normalized_contract_payload["__args__"] = tuple(
+                    normalized_contract_payload["__args__"]
+                )
+
+        return (
+            tuple(param_rows),
+            bool(injection_spec.allow_list_aggregation),
+            bool(injection_spec.uses_positional_override),
+            normalized_contract_payload,
+        )
+
+    @staticmethod
+    def build_phase11_variant_ir_payload(
+            plan: Optional[ExecutionPlan],
+    ) -> Dict[str, Any]:
+        """
+        Export one Phase 11 execution-plan variant into IR fields.
+        """
+        if plan is None:
+            return {
+                "plan_variant": None,
+                "root_spell_id": None,
+                "step_count": 0,
+                "step_spell_ids": (),
+                "transient_signature": None,
+                "signature": None,
+                "transient_schema": None,
+                "steps_rows": (),
+                "steps_rows_signature": None,
+            }
+
+        steps = plan.steps
+        include_override_metadata = (
+                plan.plan_variant != ExecutionPlanVariant.NO_OVERRIDES_FAST
+        )
+        steps_rows = tuple(
+            SharedCompilerExecutions.build_phase11_step_ir_row(
+                step,
+                include_override_metadata=include_override_metadata,
+            )
+            for step in steps
+        )
+        steps_rows_signature = SharedCompilerExecutions.hash_codegen_signature(
+            steps_rows
+        )
+        step_spell_ids = tuple(
+            step.spell.spell_index.current
+            for step in steps
+        )
+        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
+            plan.fast_transient_plan
+        )
+        transient_signature = SharedCompilerExecutions.build_fast_transient_signature(
+            transient_schema
+        )
+        signature = SharedCompilerExecutions.hash_codegen_signature(
+            plan.plan_variant,
+            plan.root_spell_id,
+            step_spell_ids,
+            steps_rows_signature,
+            transient_signature,
+        )
+        return {
+            "plan_variant": plan.plan_variant,
+            "root_spell_id": plan.root_spell_id,
+            "step_count": len(steps),
+            "step_spell_ids": step_spell_ids,
+            "transient_signature": transient_signature,
+            "signature": signature,
+            "transient_schema": transient_schema,
+            "steps_rows": steps_rows,
+            "steps_rows_signature": steps_rows_signature,
+        }
+
+    @staticmethod
+    def capture_phase8_11_codegen_ir(
+            artifact: SpellCompilerArtifact,
+    ) -> None:
+        """
+        Export phases 8-11 artifacts into the artifact-scoped Codegen IR payload.
+        """
+        occurrence_execution_order: Tuple[str, ...] = ()
+        occurrence_root_instance_key: Optional[Tuple[str, Optional[int]]] = None
+        occurrence_shared_spell_ids: Tuple[str, ...] = ()
+        occurrence_contract_complete: Optional[bool] = None
+        occurrence_graph_rows: Tuple[Tuple[Any, ...], ...] = ()
+        occurrence_instance_key_rows: Tuple[Tuple[Any, ...], ...] = ()
+        occurrence_canonical_rows: Tuple[Tuple[Any, ...], ...] = ()
+        occurrence_contract_override_rows: Tuple[Tuple[Any, ...], ...] = ()
+        occurrence_contract_override_spell_rows: Tuple[Tuple[Any, ...], ...] = ()
+        if artifact._occurrence_plan_phase8 is not None:
+            occurrence_execution_order = tuple(artifact._occurrence_plan_phase8.execution_order)
+            occurrence_root_instance_key = artifact._occurrence_plan_phase8.root_instance_key
+            occurrence_shared_spell_ids = tuple(sorted(artifact._occurrence_plan_phase8.shared_spell_ids))
+            occurrence_contract_complete = artifact._occurrence_plan_phase8.contract_dependencies_complete
+            try:
+                occurrence_graph_rows = SharedCompilerExecutions.build_occurrence_graph_rows(
+                    artifact._occurrence_plan_phase8.occurrence_graph,
+                )
+            except AttributeError:
+                occurrence_graph_rows = ()
+            try:
+                occurrence_instance_key_rows = SharedCompilerExecutions.build_occurrence_instance_key_rows(
+                    artifact._occurrence_plan_phase8.instance_keys_by_spell_id,
+                )
+            except AttributeError:
+                occurrence_instance_key_rows = ()
+            try:
+                occurrence_canonical_rows = SharedCompilerExecutions.build_occurrence_canonical_rows(
+                    artifact._occurrence_plan_phase8.canonical_occurrences_by_spell_id,
+                )
+            except AttributeError:
+                occurrence_canonical_rows = ()
+            try:
+                occurrence_contract_override_rows = SharedCompilerExecutions.build_occurrence_contract_override_rows(
+                    artifact._occurrence_plan_phase8.contract_overrides_by_occurrence,
+                )
+            except AttributeError:
+                occurrence_contract_override_rows = ()
+            try:
+                occurrence_contract_override_spell_rows = SharedCompilerExecutions.build_occurrence_contract_override_spell_rows(
+                    artifact._occurrence_plan_phase8.contract_overrides_by_spell_id,
+                )
+            except AttributeError:
+                occurrence_contract_override_spell_rows = ()
+
+        injection_instance_keys: Tuple[Tuple[str, Optional[int]], ...] = ()
+        injection_instance_rows: Tuple[Tuple[Any, ...], ...] = ()
+        if artifact._injection_plan_phase9 is not None:
+            injection_instance_keys = tuple(
+                sorted(
+                    artifact._injection_plan_phase9.instance_injections.keys(),
+                    key=lambda key: (key[0], -1 if key[1] is None else key[1]),
+                )
+            )
+            try:
+                injection_instance_rows = SharedCompilerExecutions.build_injection_instance_rows(
+                    artifact._injection_plan_phase9.instance_injections,
+                )
+            except AttributeError:
+                injection_instance_rows = ()
+
+        override_target_specs: Tuple[str, ...] = ()
+        override_target_rows: Tuple[Tuple[Any, ...], ...] = ()
+        if artifact._override_patch_map_phase10 is not None:
+            override_target_specs = tuple(
+                sorted(artifact._override_patch_map_phase10.targets_by_spec.keys())
+            )
+            override_target_rows = SharedCompilerExecutions.build_override_target_rows(
+                artifact._override_patch_map_phase10,
+            )
+
+        mutation_target_specs: Tuple[str, ...] = ()
+        mutation_target_rows: Tuple[Tuple[Any, ...], ...] = ()
+        if artifact._mutation_patch_map_phase10 is not None:
+            mutation_target_specs = tuple(
+                sorted(artifact._mutation_patch_map_phase10.targets_by_spec.keys())
+            )
+            mutation_target_rows = SharedCompilerExecutions.build_mutation_target_rows(
+                artifact._mutation_patch_map_phase10,
+            )
+
+        no_overrides_payload = SharedCompilerExecutions.build_phase11_variant_ir_payload(
+            artifact._execution_plan_phase11_no_overrides
+        )
+        overrides_payload = SharedCompilerExecutions.build_phase11_variant_ir_payload(
+            artifact._execution_plan_phase11_overrides
+        )
+        overrides_with_mutations_payload = SharedCompilerExecutions.build_phase11_variant_ir_payload(
+            artifact._execution_plan_phase11
+        )
+
+        phase8_11_signature = SharedCompilerExecutions.hash_codegen_signature(
+            occurrence_execution_order,
+            occurrence_root_instance_key,
+            occurrence_shared_spell_ids,
+            occurrence_contract_complete,
+            occurrence_graph_rows,
+            occurrence_instance_key_rows,
+            occurrence_canonical_rows,
+            occurrence_contract_override_rows,
+            occurrence_contract_override_spell_rows,
+            injection_instance_keys,
+            injection_instance_rows,
+            override_target_specs,
+            override_target_rows,
+            mutation_target_specs,
+            mutation_target_rows,
+            no_overrides_payload["signature"],
+            overrides_payload["signature"],
+            overrides_with_mutations_payload["signature"],
+        )
+
+        phase8_11_payload = {
+            "occurrence": {
+                "execution_order": occurrence_execution_order,
+                "root_instance_key": occurrence_root_instance_key,
+                "shared_spell_ids": occurrence_shared_spell_ids,
+                "contract_dependencies_complete": occurrence_contract_complete,
+                "graph_rows": occurrence_graph_rows,
+                "instance_key_rows": occurrence_instance_key_rows,
+                "canonical_occurrence_rows": occurrence_canonical_rows,
+                "contract_override_rows": occurrence_contract_override_rows,
+                "contract_override_spell_rows": occurrence_contract_override_spell_rows,
+            },
+            "injection": {
+                "instance_keys": injection_instance_keys,
+                "instance_key_count": len(injection_instance_keys),
+                "instance_rows": injection_instance_rows,
+            },
+            "patch_maps": {
+                "override_target_specs": override_target_specs,
+                "override_target_rows": override_target_rows,
+                "mutation_target_specs": mutation_target_specs,
+                "mutation_target_rows": mutation_target_rows,
+            },
+            "execution": {
+                "no_overrides": no_overrides_payload,
+                "overrides": overrides_payload,
+                "overrides_with_mutations": overrides_with_mutations_payload,
+            },
+            "signature": phase8_11_signature,
+        }
+
+        ir_payload = SharedCompilerExecutions.ensure_codegen_ir(artifact)
+        ir_payload["phase8_11"] = phase8_11_payload
+        ir_payload["signatures"]["phase8_11"] = phase8_11_signature
+        artifact._phase8_11_codegen_ir_dirty = False
+
+    @staticmethod
+    def capture_phase8_11_codegen_ir_if_dirty(
+            artifact: SpellCompilerArtifact,
+    ) -> None:
+        """
+        Flush phase8_11 codegen export only when stale.
+        """
+        if not artifact._phase8_11_codegen_ir_dirty:
+            return
+        SharedCompilerExecutions.capture_phase8_11_codegen_ir(artifact)
+
+    @staticmethod
+    def reset_phase2_5_codegen_ir(
+            artifact: SpellCompilerArtifact,
+    ) -> None:
+        """
+        Clear the phase2_5 segment from Codegen IR.
+        """
+        if artifact._codegen_ir is None:
+            return
+        artifact._codegen_ir["phase2_5"] = {}
+        artifact._codegen_ir["signatures"].pop("phase2_5", None)
+
+    @staticmethod
+    def try_build_execution_plan_variant_from_base(
+            *,
+            base_plan: Any,
+            plan_variant: str,
+    ) -> Optional[ExecutionPlan]:
+        """
+        Attempt to derive a non-fast Phase 11 variant from an existing base plan.
+        """
+        try:
+            root_spell_id = base_plan.root_spell_id
+            root_instance_key = base_plan.root_instance_key
+            steps = base_plan.steps
+            spell_id_step_index = base_plan.spell_id_step_index
+            optimistic_object_refs_by_spell_id = base_plan.optimistic_object_refs_by_spell_id
+            available_param_by_spell_id = base_plan.available_param_by_spell_id
+        except AttributeError:
+            return None
+
+        if root_spell_id is None or root_instance_key is None:
+            return None
+        if (
+                steps is None
+                or spell_id_step_index is None
+                or optimistic_object_refs_by_spell_id is None
+                or available_param_by_spell_id is None
+        ):
+            return None
+
+        try:
+            return ExecutionPlan(
+                root_spell_id=root_spell_id,
+                root_instance_key=root_instance_key,
+                steps=list(steps),
+                spell_id_step_index=dict(spell_id_step_index),
+                optimistic_object_refs_by_spell_id=dict(optimistic_object_refs_by_spell_id),
+                available_param_by_spell_id=dict(available_param_by_spell_id),
+                plan_variant=plan_variant,
+            )
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
     def reset_phase8_11_codegen_ir(
             spell: ISpell,
             artifact: SpellCompilerArtifact,

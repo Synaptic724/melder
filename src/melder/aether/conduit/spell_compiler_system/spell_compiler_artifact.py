@@ -262,6 +262,8 @@ class SpellCompilerArtifact(Cleanable):
 
         Contract:
             - Clears the reusable Phase 1-4 artifacts only.
+            - Clears the exported `phase2_5` codegen snapshot because its
+              structural source artifacts are no longer valid after reset.
             - Preserves Phase 5 and later plan/codegen artifacts.
 
         Returns:
@@ -272,6 +274,10 @@ class SpellCompilerArtifact(Cleanable):
             if self._cleaned:
                 return
             self._cleanup_phase_artifacts_locked()
+            from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+                SharedCompilerExecutions,
+            )
+            SharedCompilerExecutions.reset_phase2_5_codegen_ir(self)
 
     def cleanup_phase_artifacts(self) -> None:
         """
