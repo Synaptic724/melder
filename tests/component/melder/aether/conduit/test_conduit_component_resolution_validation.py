@@ -10,6 +10,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution
     ConduitResolutionState,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -115,21 +118,21 @@ def _wrap_phase_counter(
 ) -> None:
     """
     Purpose:
-        Wrap a SpellCrafter phase method and count invocations.
+        Wrap a SpellCompilerSystem phase method and count invocations.
     Contract:
         - Increments counters[counter_key] once per invocation.
         - Delegates to the original method to preserve behavior.
     Args:
         monkeypatch: Pytest monkeypatch fixture.
         counters: Mutable phase-counter mapping.
-        method_name: SpellCrafter method name to wrap.
+        method_name: SpellCompilerSystem method name to wrap.
         counter_key: Counter key to increment.
     Returns:
         None.
     """
-    original = getattr(SpellCrafter, method_name)
+    original = getattr(SpellCompilerSystem, method_name)
 
-    def _wrapped(self: SpellCrafter, *args, **kwargs):
+    def _wrapped(self: SpellCompilerSystem, *args, **kwargs):
         """
         Purpose:
             Count invocation and delegate to original method.

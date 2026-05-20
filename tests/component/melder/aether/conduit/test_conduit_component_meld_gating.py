@@ -7,6 +7,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -115,7 +118,15 @@ def test_component_conduit_meld_blocks_dirty_root_change_control() -> None:
         conduit_id = conduit._id
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_all_phases(conduit_id)
+        compiler_system = SpellCompilerSystem()
+        try:
+            compiler_system.run_all_phases(
+                spellbook,
+                spell,
+                conduit_id,
+            )
+        finally:
+            compiler_system.cleanup()
 
         change_control_manager = spellbook._aether._get_change_control_manager(
             spellbook._aetheric_frame

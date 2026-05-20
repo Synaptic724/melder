@@ -1578,10 +1578,16 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates crafter/index access failures from target spell.
         """
-        scoped_spell_ids = target_spell.get_local_resolution_scoped_spell_ids()
-        if target_spell_id not in scoped_spell_ids:
-            scoped_spell_ids.add(target_spell_id)
-        scoped_root_ids = target_spell.get_local_resolution_scoped_root_ids()
+        scoped_spell_ids: Set[str] = {target_spell_id}
+        system_index = target_spell._compiler_artifact._spell_system_index_phase5
+        if system_index is not None:
+            scoped_spell_ids.update(system_index.nodes.keys())
+
+        root_blueprints = target_spell._compiler_artifact._entire_dag_blueprint_phase5
+        if root_blueprints is None or len(root_blueprints) == 0:
+            scoped_root_ids: Collection[str] = ()
+        else:
+            scoped_root_ids = tuple(root_blueprints.keys())
         if len(scoped_root_ids) == 0:
             scoped_root_ids = (target_spell_id,)
         return scoped_spell_ids, scoped_root_ids
