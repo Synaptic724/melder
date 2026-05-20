@@ -19,7 +19,6 @@ from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -234,7 +233,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: ISpellIndex, spell: ISpell) -> SpellSystemState:
+    def register_index(self, spell_index: ISpellIndex) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 
@@ -256,8 +255,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
         if spell_index is None:
             raise ValueError("spell_index cannot be None")
-        if spell is None:
-            raise ValueError("spell cannot be None")
 
         index_id = spell_index.id
         current_id = spell_index.current
@@ -281,7 +278,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             # Refresh the spell-id index as well
             self._states_by_spell_id[current_id] = state
 
-            owner_spellbook_id = self._resolve_spellbook_id(spell)
+            owner_spellbook_id = self._resolve_spellbook_id_from_index(spell_index)
             if owner_spellbook_id is not None and self._index_owner_spellbook_id is not None:
                 existing_owner = self._index_owner_spellbook_id.get(index_id)
                 if existing_owner is not None and existing_owner != owner_spellbook_id:
@@ -339,23 +336,24 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     # ------------------------------------------------------------------
     # Internal indexing helpers
     # ------------------------------------------------------------------
-    def _resolve_spellbook_id(self, spell: ISpell) -> Optional[str]:
+    def _resolve_spellbook_id_from_index(self, spell_index: ISpellIndex) -> Optional[str]:
         """
-        Resolve the owning spellbook id for a spell, if available.
+        Resolve the owning spellbook id for an attached spell index, if available.
 
-        This is the bridge between one spell index and the spellbook-scoped reverse
-        indexes maintained later in this file. If a spell can no longer be tied
-        back to a spellbook, those scoped indexes cannot be updated safely.
+        This is the bridge between one spell index owner attachment and the
+        spellbook-scoped reverse indexes maintained later in this file. If a
+        spell index can no longer be tied back to an owning spellbook, those
+        scoped indexes cannot be updated safely.
 
         Args:
-            spell: Spell instance that may carry a Spellbook reference.
+            spell_index: SpellIndex instance that may carry an owning Spellbook reference.
         Returns:
             Optional[str]: Spellbook id or None if unavailable.
         """
-        if spell is None:
+        if spell_index is None:
             return None
         try:
-            spellbook = spell._spellbook
+            spellbook = spell_index._owner_spellbook
         except AttributeError:
             return None
         if spellbook is None:

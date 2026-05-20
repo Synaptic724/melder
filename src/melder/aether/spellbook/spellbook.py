@@ -2923,7 +2923,6 @@ and logging.
 
             self._spell_system_states.register_index(
                 spell_index=new_spell.spell_index,
-                spell=new_spell,
             )
             if self._conjured and self._conduit is not None:
                 self._register_spell_with_risk_manager(

@@ -31,7 +31,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     - One instance per AethericFrame (owned by the frame and initialized
       alongside Spellbook / DevOpsManager).
     - Spellbook / SpellCrafter call:
-        * `register_index(...)` when a new SpellIndex+Spell appears
+        * `register_index(...)` when a new SpellIndex appears
         * `update_dependencies(...)` after Phase 3/4 attaches dependency ids
         * `mark_structural_change(...)` when a spell index is rebound/mutated
     - DevOps / validation flows call:
@@ -53,7 +53,7 @@ class ISpellSystemStates(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: ISpellIndex, spell: 'ISpell') -> SpellSystemState:
+    def register_index(self, spell_index: ISpellIndex) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 
@@ -64,6 +64,8 @@ class ISpellSystemStates(ICleanable, Protocol):
           `spell_index.current`.
         - Update the spell-id index so `get_by_spell_id(...)` can resolve
           by current version id.
+        - Record owner Spellbook identity from the attached SpellIndex owner
+          surface when available.
         - Mark the spell index as structurally gated with reason
           SpellStateChangeReason.register_or_rebind and add it to the dirty set.
 

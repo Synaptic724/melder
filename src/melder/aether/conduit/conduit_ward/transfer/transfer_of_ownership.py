@@ -648,7 +648,7 @@ class TransferOfOwnership(Cleanable):
         spell_states = self._source_spellbook._spell_system_states
         state = spell_states.get_by_index_id(spell_index.id)
         if state is None:
-            spell_states.register_index(spell_index, self.spell)
+            spell_states.register_index(spell_index)
             state = spell_states.get_by_index_id(spell_index.id)
         if state is None:
             raise RuntimeError("Failed to register lineage for transfer disable.")
@@ -778,7 +778,7 @@ class TransferOfOwnership(Cleanable):
             raise RuntimeError("Source Spellbook has no SpellSystemStates.")
         if tgt_states is not None and tgt_states is not src_states:
             tgt_states.unregister_index(spell_obj.spell_index)
-        src_states.register_index(spell_obj.spell_index, spell_obj)
+        src_states.register_index(spell_obj.spell_index)
 
     def _get_resolution_required_for_spellbook(self, spellbook: Any) -> bool:
         """
@@ -1288,7 +1288,6 @@ class TransferOfOwnership(Cleanable):
                     spell_obj._crafter = None
                 tgt_states.register_index(
                     spell_index=spell_obj.spell_index,
-                    spell=spell_obj,
                 )
                 src_book._unregister_spell_with_risk_manager(self.source_conduit._id, spell_obj)
                 tgt_book._register_spell_with_risk_manager(self.target_conduit._id, spell_obj)
