@@ -37,7 +37,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -254,5 +254,6 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
         assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+
 
 

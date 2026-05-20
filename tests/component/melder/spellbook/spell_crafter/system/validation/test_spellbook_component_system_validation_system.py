@@ -82,7 +82,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -929,5 +929,6 @@ def test_component_system_validation_collects_multiple_errors() -> None:
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+
 
 

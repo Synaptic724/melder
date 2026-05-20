@@ -270,7 +270,7 @@ class _SpellSystemStatesStub:
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
 
-    def register_index(self, spell_index: object, spell: object) -> None:
+    def register_index(self, spell_index: object) -> None:
         """
         Purpose:
             Record a lineage registration call from Spellbook.bind.
@@ -1543,4 +1543,5 @@ def test_component_spell_crafter_run_phase_system_validation_local_scopes_result
         assert outside_crafter.validation_result_phase6 is None
     finally:
         spellbook.cleanup()
+
 

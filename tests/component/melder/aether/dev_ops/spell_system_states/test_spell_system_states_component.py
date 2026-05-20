@@ -27,7 +27,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index instance.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -213,7 +213,7 @@ def test_component_spell_system_states_rebind_updates_spell_id_index() -> None:
         assert state.current_spell_id == "spell-rebind-v1"
 
         index.update("spell-rebind-v2")
-        states.register_index(index, object())
+        states.register_index(index)
 
         state = states.get_by_index_id(index.id)
         assert state is not None
@@ -425,7 +425,7 @@ def test_component_spell_system_states_rebind_preserves_old_spell_id_mapping() -
         state = states.get_by_index_id(index.id)
         assert state is not None
         index.update("spell-rebind-new-id")
-        states.register_index(index, object())
+        states.register_index(index)
         assert states.get_by_spell_id("spell-rebind-old-id") is state
         assert states.get_by_spell_id("spell-rebind-new-id") is state
     finally:
@@ -535,5 +535,6 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
         assert SpellState.impacted_by_dependency not in flags
     finally:
         frame.cleanup()
+
 
 

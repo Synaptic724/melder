@@ -51,7 +51,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The registered lineage object.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, _SpellStub(spell_id))
+    states.register_index(index)
     return index
 
 
@@ -276,5 +276,6 @@ def test_component_dag_targeting_path_ignores_same_name_elsewhere() -> None:
         assert socket.node_id == ids["root"]
     finally:
         blueprint.cleanup()
+
 
 

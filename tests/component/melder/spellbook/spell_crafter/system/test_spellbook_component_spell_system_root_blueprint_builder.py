@@ -30,7 +30,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -284,5 +284,6 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
         assert blueprint.dag_index.get_by_exact_path(("config",)) != []
     finally:
         frame.cleanup()
+
 
 

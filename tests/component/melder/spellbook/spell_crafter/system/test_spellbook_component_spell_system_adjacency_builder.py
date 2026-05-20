@@ -27,7 +27,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -267,5 +267,6 @@ def test_component_adjacency_builder_ignores_unregistered_topology_entry() -> No
         assert snapshot.topologies == {root_id: None}
     finally:
         frame.cleanup()
+
 
 

@@ -36,7 +36,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -200,5 +200,6 @@ def test_component_validation_state_from_system_validation_tracks_diagnostics() 
         assert warning.cleaned is True
     finally:
         frame.cleanup()
+
 
 

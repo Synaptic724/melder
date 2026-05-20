@@ -56,6 +56,15 @@ def _build_owned_spell(spellbook_id: str = "book-1") -> ISpell:
     return spell
 
 
+def _attach_index_owner(index: SpellIndex, spell: ISpell) -> SpellIndex:
+    """
+    Mirror the live Spellbook bind path by stamping owner references onto the index.
+    """
+    index._owner_spellbook = spell._spellbook
+    index._owner_spell = spell
+    return index
+
+
 def _build_topology(
     spell_id: str,
     *,
@@ -120,7 +129,7 @@ def test_register_index_creates_new(states_manager, mock_spell_index, mock_spell
     - The state is indexed by lineage ID and current spell version ID.
     - The lineage is marked dirty upon registration.
     """
-    state = states_manager.register_index(mock_spell_index, mock_spell)
+    state = states_manager.register_index(mock_spell_index)
     
     assert isinstance(state, SpellSystemState)
     assert state.spell_index_id == "idx-1"
@@ -135,18 +144,18 @@ def test_register_index_creates_new(states_manager, mock_spell_index, mock_spell
     assert "idx-1" in dirty
 
 def test_register_index_updates_existing(states_manager, mock_spell_index, mock_spell):
-    states_manager.register_index(mock_spell_index, mock_spell)
+    states_manager.register_index(mock_spell_index)
     
     # Update index current
     mock_spell_index.current = "spell-2"
     
-    state = states_manager.register_index(mock_spell_index, mock_spell)
+    state = states_manager.register_index(mock_spell_index)
     assert state.current_spell_id == "spell-2"
     assert states_manager.get_by_spell_id("spell-2") is state
 
 def test_register_validation(states_manager, mock_spell):
     with pytest.raises(ValueError):
-        states_manager.register_index(None, mock_spell)
+        states_manager.register_index(None)
 
 # ----------------------------------------------------------------------
 # 2.5. Unregistration
@@ -167,7 +176,7 @@ def test_unregister_index_triggers_risk_manager(
     risk_manager = MagicMock()
     states_manager.set_risk_manager(risk_manager)
 
-    states_manager.register_index(mock_spell_index, mock_spell)
+    states_manager.register_index(mock_spell_index)
     states_manager.unregister_index(mock_spell_index)
 
     calls = risk_manager.on_structural_validity_change.call_args_list
@@ -189,8 +198,8 @@ def test_unregister_index_marks_dependents_gated(
     idx_a = MagicMock(spec=ISpellIndex, id="idx-a", current="spell-a")
     idx_b = MagicMock(spec=ISpellIndex, id="idx-b", current="spell-b")
 
-    states_manager.register_index(idx_a, mock_spell)
-    states_manager.register_index(idx_b, mock_spell)
+    states_manager.register_index(idx_a)
+    states_manager.register_index(idx_b)
     states_manager.update_dependencies(idx_b, ["spell-a"])
     states_manager.consume_dirty_indexes()
 
@@ -215,11 +224,11 @@ def test_update_dependencies(states_manager, mock_spell_index, mock_spell):
     - The subject lineage is marked dirty.
     """
     # Register main spell
-    states_manager.register_index(mock_spell_index, mock_spell)
+    states_manager.register_index(mock_spell_index)
     
     # Register a dependency (so we can check reverse edges)
     dep_index = MagicMock(spec=ISpellIndex, id="idx-dep", current="spell-dep")
-    states_manager.register_index(dep_index, mock_spell)
+    states_manager.register_index(dep_index)
     
     # Consume dirty to clear initial
     states_manager.consume_dirty_indexes()
@@ -241,13 +250,13 @@ def test_update_dependencies(states_manager, mock_spell_index, mock_spell):
 def test_update_dependencies_removes_old(states_manager, mock_spell_index, mock_spell):
     # Setup: Main -> Dep1
     dep1 = MagicMock(spec=ISpellIndex, id="d1", current="s-d1")
-    states_manager.register_index(dep1, mock_spell)
-    states_manager.register_index(mock_spell_index, mock_spell)
+    states_manager.register_index(dep1)
+    states_manager.register_index(mock_spell_index)
     states_manager.update_dependencies(mock_spell_index, ["s-d1"])
     
     # Setup: New: Main -> Dep2 (removes Dep1)
     dep2 = MagicMock(spec=ISpellIndex, id="d2", current="s-d2")
-    states_manager.register_index(dep2, mock_spell)
+    states_manager.register_index(dep2)
     
     states_manager.update_dependencies(mock_spell_index, ["s-d2"])
     
@@ -280,9 +289,9 @@ def test_compute_impact_closure(states_manager, mock_spell):
     idx_c = MagicMock(spec=ISpellIndex, id="C", current="s-C")
     
     # Register
-    states_manager.register_index(idx_a, mock_spell)
-    states_manager.register_index(idx_b, mock_spell)
-    states_manager.register_index(idx_c, mock_spell)
+    states_manager.register_index(idx_a)
+    states_manager.register_index(idx_b)
+    states_manager.register_index(idx_c)
     
     # Wire dependencies: B depends on A, C depends on B
     # A <- B <- C
@@ -316,7 +325,7 @@ def test_cleanup(states_manager, mock_spell_index, mock_spell):
     - Reference to the frame is dropped.
     - Accessors raise RuntimeError after cleanup.
     """
-    states_manager.register_index(mock_spell_index, mock_spell)
+    states_manager.register_index(mock_spell_index)
     states_manager.cleanup()
     
     assert states_manager._cleaned
@@ -338,7 +347,7 @@ def test_iter_states(states_manager, mock_spell_index, mock_spell):
     """
     Verify `iter_states` returns a safe snapshot list of all states.
     """
-    states_manager.register_index(mock_spell_index, mock_spell)
+    states_manager.register_index(mock_spell_index)
     states = states_manager.iter_states()
     assert len(states) == 1
     assert states[0].spell_index_id == "idx-1"
@@ -476,7 +485,8 @@ def test_register_local_topology_builds_collection_and_contract_indexes(
     """
     spell = _build_owned_spell("book-1")
     index = SpellIndex("spell-topology-1")
-    states_manager.register_index(index, spell)
+    _attach_index_owner(index, spell)
+    states_manager.register_index(index)
     states_manager.consume_dirty_indexes()
 
     topology = _build_topology(index.current)
@@ -521,7 +531,8 @@ def test_register_local_topology_replaces_stale_collection_and_contract_keys(
     """
     spell = _build_owned_spell("book-1")
     index = SpellIndex("spell-topology-replace")
-    states_manager.register_index(index, spell)
+    _attach_index_owner(index, spell)
+    states_manager.register_index(index)
     states_manager.consume_dirty_indexes()
 
     topology_a = _build_topology(
@@ -574,8 +585,10 @@ def test_mark_contract_dependents_dirty_marks_all_keys_when_unspecified(
     first_index = SpellIndex("spell-contract-a")
     second_index = SpellIndex("spell-contract-b")
 
-    states_manager.register_index(first_index, spell)
-    states_manager.register_index(second_index, spell)
+    _attach_index_owner(first_index, spell)
+    _attach_index_owner(second_index, spell)
+    states_manager.register_index(first_index)
+    states_manager.register_index(second_index)
     states_manager.consume_dirty_indexes()
 
     first_topology = _build_topology(
@@ -612,7 +625,8 @@ def test_cleanup_cascades_to_resolution_states_topologies_and_indexes(
     """
     spell = _build_owned_spell("book-cleanup")
     index = SpellIndex("spell-cleanup")
-    states_manager.register_index(index, spell)
+    _attach_index_owner(index, spell)
+    states_manager.register_index(index)
     topology = _build_topology(index.current)
     states_manager.register_local_topology(index, topology)
 
@@ -653,12 +667,14 @@ def test_register_index_owner_change_rebuilds_topology_indexes_under_new_book(
     second_spell = _build_owned_spell("book-b")
     index = SpellIndex("spell-owner-change")
 
-    states_manager.register_index(index, first_spell)
+    _attach_index_owner(index, first_spell)
+    states_manager.register_index(index)
     topology = _build_topology(index.current)
     states_manager.register_local_topology(index, topology)
     states_manager.consume_dirty_indexes()
 
-    states_manager.register_index(index, second_spell)
+    _attach_index_owner(index, second_spell)
+    states_manager.register_index(index)
 
     assert states_manager.mark_collection_dependents_dirty(
         spellbook_id="book-a",
@@ -695,7 +711,8 @@ def test_update_dependencies_creates_missing_lineage_state_on_first_use(
     root_index = SpellIndex("spell-late-root")
     dependency_index = SpellIndex("spell-late-dependency")
 
-    states_manager.register_index(dependency_index, _build_owned_spell("book-1"))
+    _attach_index_owner(dependency_index, _build_owned_spell("book-1"))
+    states_manager.register_index(dependency_index)
     states_manager.consume_dirty_indexes()
 
     states_manager.update_dependencies(root_index, [dependency_index.current])
@@ -776,8 +793,10 @@ def test_unregister_index_removes_topology_indexes_and_reverse_edges(
     root_index = SpellIndex("spell-remove-root")
     dependency_index = SpellIndex("spell-remove-dependency")
 
-    states_manager.register_index(dependency_index, _build_owned_spell("book-remove"))
-    states_manager.register_index(root_index, spell)
+    _attach_index_owner(dependency_index, _build_owned_spell("book-remove"))
+    _attach_index_owner(root_index, spell)
+    states_manager.register_index(dependency_index)
+    states_manager.register_index(root_index)
     states_manager.register_local_topology(root_index, _build_topology(root_index.current))
     states_manager.update_dependencies(root_index, [dependency_index.current])
     states_manager.consume_dirty_indexes()
@@ -815,7 +834,8 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
     """
     spell = _build_owned_spell("book-filter")
     index = SpellIndex("spell-filter")
-    states_manager.register_index(index, spell)
+    _attach_index_owner(index, spell)
+    states_manager.register_index(index)
     states_manager.consume_dirty_indexes()
 
     topology = SpellLocalTopology(
@@ -1026,4 +1046,5 @@ def test_unregister_index_missing_state_clears_stale_spell_id_mapping(
 
     assert removed_state is None
     assert states_manager.get_by_spell_id(index.current) is None
+
 

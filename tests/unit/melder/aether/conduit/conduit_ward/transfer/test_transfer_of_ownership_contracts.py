@@ -114,7 +114,7 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex, spell: Any) -> None:
+    def register_index(self, spell_index: SpellIndex) -> None:
         """
         Register a lineage state for the given spell index.
 
@@ -1570,4 +1570,5 @@ def test_execute_invalidate_false_sets_gated_validity() -> None:
     assert current_state is not None
     assert current_state.validity == SpellValidity.gated
     assert current_state.change_reason == SpellStateChangeReason.structure_changed
+
 

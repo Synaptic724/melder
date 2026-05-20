@@ -115,7 +115,7 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex, spell: Any) -> None:
+    def register_index(self, spell_index: SpellIndex) -> None:
         """
         Register a lineage state for the provided spell index.
 
@@ -4437,4 +4437,5 @@ def test_repoint_borrowers_ignores_cluster_borrower() -> None:
     transfer._repoint_borrowers([{"type": "cluster"}], env.spell)
     assert env.target_ward.link_calls == []
     assert env.target_ward.add_calls == []
+
 

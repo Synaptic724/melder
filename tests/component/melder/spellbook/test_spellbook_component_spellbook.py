@@ -99,7 +99,7 @@ class _SpellSystemStatesStub:
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
 
-    def register_index(self, spell_index: object, spell: object) -> None:
+    def register_index(self, spell_index: object) -> None:
         """
         Purpose:
             Record a lineage registration from Spellbook.bind.
@@ -1260,4 +1260,5 @@ def test_component_spellbook_remove_contracted_spell_raises_when_missing_version
             spellbook._remove_contracted_spell("missing-version", conduit_id)
     finally:
         spellbook.cleanup()
+
 

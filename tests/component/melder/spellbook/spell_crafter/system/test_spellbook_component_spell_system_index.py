@@ -36,7 +36,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -381,5 +381,6 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
         assert conduit_state.get_spell_validity(root_b) is SpellValidity.valid
     finally:
         frame.cleanup()
+
 
 

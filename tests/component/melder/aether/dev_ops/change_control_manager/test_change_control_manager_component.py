@@ -37,7 +37,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         SpellIndex: The created spell index instance.
     """
     index = SpellIndex(spell_id)
-    states.register_index(index, object())
+    states.register_index(index)
     return index
 
 
@@ -219,7 +219,7 @@ def test_component_change_control_pending_change_round_trip() -> None:
     states = frame.spell_system_states
     manager = frame.dev_ops_manager.change_control_manager
     index = SpellIndex("spell-pending-change")
-    states.register_index(index, object())
+    states.register_index(index)
     try:
         manager.register_pending_change(
             index,
@@ -873,5 +873,6 @@ def test_component_change_control_revalidate_dirty_roots_respects_cancellation()
         signal.cleanup()
         _cleanup_blueprints(blueprints)
         frame.cleanup()
+
 
 
