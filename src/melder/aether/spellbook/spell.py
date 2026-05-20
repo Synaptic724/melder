@@ -85,7 +85,7 @@ class Spell(Cleanable, ISpell):
     - Enables hook-based lifecycle support (pre, activation, post).
     - Acts as a source of truth for spell identity and access.
     - Stores conjure-time disposal metadata (matched method names + boolean flag).
-    - Tracks whether runtime resolution is still required before first context build.
+    - Tracks whether runtime resolution is still required before the first context build.
     - Caches Phase 11 execution-plan metrics (node count, max depth, etc.) for
       runtime path selection.
 
@@ -119,7 +119,7 @@ class Spell(Cleanable, ISpell):
         binding_name (Optional[str]):
             The logical name this spell is bound to (e.g., "database", "engine").
             Normalized as part of the internal key via SpellInputUtils.
-            May be None for unnamed/default bindings.
+            Maybe None for unnamed/default bindings.
 
         spell_name (str):
             The actual internal name of the object or callable (for display/debugging).
@@ -164,7 +164,7 @@ class Spell(Cleanable, ISpell):
             Arbitrary tags and metadata for internal use or future extensions.
 
     Threading / Concurrency:
-        - Internal multi-field mutation is guarded by `_lock`.
+        - '_Lock' guards internal multi-field mutation.
         - Spell-owned runtime context publication uses `_creation_context_switch`
           so only one builder wins publication at a time.
         - Higher-level conduit/spellbook orchestration still owns system-level
@@ -270,7 +270,7 @@ class Spell(Cleanable, ISpell):
             spell (Any): The underlying callable/class/instance being registered.
             spell_index (SpellIndex): Lineage/version tracker for this spell.
             spellframe (Optional[Any]): Logical frame/contract used to scope the spell.
-            binding_name (Optional[str]): Optional binding key used to disambiguate spells under the same frame.
+            binding_name (Optional[str]): Optional binding key is used to disambiguate spells under the same frame.
             spell_name (str): Resolved name for the spell (qualname or type name).
             existence (Existence): Lifecycle policy for instantiation/sharing semantics.
             spell_type (SpellType): Classification of the spell (class/method/lambda/existing-creation variants).
@@ -357,7 +357,7 @@ class Spell(Cleanable, ISpell):
         self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
-        # Phase 11 execution-plan metrics (populated during conjure).
+        # Phase 11 execution-plan metrics (populated during conjuring).
         self.execution_plan_step_count: Optional[int] = None
         self.execution_plan_unique_spell_count: Optional[int] = None
         self.execution_plan_max_occurrence_depth: Optional[int] = None
@@ -410,7 +410,7 @@ class Spell(Cleanable, ISpell):
     #region Disposal
     def cleanup(self) -> None:
         """
-        Release spell-owned runtime state and permanently retire this Spell.
+        Release the spell-owned runtime state and permanently retire this Spell.
 
         Purpose:
             Deterministically tear down the spell-local runtime surface so later
@@ -427,7 +427,7 @@ class Spell(Cleanable, ISpell):
               metrics, spell-owned factory/context state, conduit ownership
               state, spellbook references, and reflective profile state.
             - Sets `_cleaned` before the guarded section exits, then drops the
-              `_lock` reference itself after teardown completes.
+              `_lock` reference itself after the teardown completes.
 
         Runtime resolution and instance lifecycle remain owned by the Resolution
         / Meld layer, not by this class.
@@ -568,13 +568,13 @@ class Spell(Cleanable, ISpell):
         Args:
             pre_hooks:
                 Optional list/tuple of pre-cast hooks. Each hook must accept no
-                arguments and is invoked before resolution.
+                arguments and be invoked before resolution.
             activation_hooks:
                 Optional list/tuple of activation hooks. Each hook receives the
                 newly created instance as its first argument.
             post_hooks:
                 Optional list/tuple of post-cast hooks. Each hook must accept no
-                arguments and is invoked after resolution.
+                arguments and be invoked after resolution.
 
         Returns:
             None.
@@ -743,7 +743,7 @@ class Spell(Cleanable, ISpell):
             traceback: TracebackType | None,
     ) -> None:
         """
-        Release the spell's internal lock after a context-manager block.
+        Release the spell's internal lock after a context-manager's block.
 
         Returns:
             None.
@@ -905,7 +905,7 @@ class Spell(Cleanable, ISpell):
         """
         Phase 1 artifact for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_requirements` via :class:`SpellCrafter`.
+        This is populated by: meth:`run_phase_requirements 'via: class:`SpellCrafter`.
         """
         if self._crafter is None:
             return None
@@ -919,7 +919,7 @@ class Spell(Cleanable, ISpell):
         """
         Phase 2 symbolic graph for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_symbolic_graph` via :class:`SpellCrafter`.
+        This is populated by: meth:`run_phase_symbolic_graph 'via: class:`SpellCrafter`.
         """
         if self._crafter is None:
             return None
@@ -930,7 +930,7 @@ class Spell(Cleanable, ISpell):
         """
         Phase 3 local resolution frame / DAG for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_local_frame` via :class:`SpellCrafter`.
+        This is populated by: meth:`run_phase_local_frame 'via: class:`SpellCrafter`.
         Concrete type is intentionally opaque here; callers should treat it as
         an internal resolution artifact.
         """
@@ -943,7 +943,7 @@ class Spell(Cleanable, ISpell):
         """
         Phase 4 validation result for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        This is populated by: meth:`run_phase_validation 'via: class:`SpellCrafter`.
         """
         if self._crafter is None:
             return None
@@ -954,7 +954,7 @@ class Spell(Cleanable, ISpell):
         """
         Phase 6 validation result for this spell, if it has been computed.
 
-        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        This is populated by: meth:`run_phase_validation 'via: class:`SpellCrafter`.
         """
         if self._crafter is None:
             return None
@@ -1014,8 +1014,7 @@ class Spell(Cleanable, ISpell):
             - Safe to call multiple times on a live spell.
             - Requires the spell to be attached to a dynamic runtime
               environment.
-            - Clears the spell-owned `CreationContext` so cached runtime
-              dispatch state cannot survive a structural invalidation.
+            - Clears the spell-owned `CreationContext` so the cached runtime dispatch state cannot survive a structural invalidation.
             - Sets `resolution_complete=False` and `resolution_required=True`
               so the next meld re-enters the deferred runtime plan path after
               structural validation succeeds.
@@ -1122,8 +1121,7 @@ class Spell(Cleanable, ISpell):
 
         Contract:
             - Replaces the current dependency graph/dependencies references.
-            - Invalidates any existing spell-owned CreationContext so runtime
-              shape is rebuilt against the updated spell structure.
+            - Invalidates any existing spell-owned CreationContext so the runtime shape is rebuilt against the updated spell structure.
 
         Args:
             dag:
@@ -1190,7 +1188,7 @@ class Spell(Cleanable, ISpell):
         for this spell from Phase 1 requirements.
 
         Contract:
-            - Requires Phase 1 to have completed successfully.
+            - Requires Phase 1 to be completed successfully.
             - Does not return a value; artifacts are stored on the crafter.
             - Does not execute later phases.
 
@@ -1216,7 +1214,7 @@ class Spell(Cleanable, ISpell):
         Spellbook and build the local resolution frame.
 
         Contract:
-            - Requires Phases 1 and 2 to have completed successfully.
+            - Requires Phases 1 and 2 to be completed successfully.
             - Does not return a value; artifacts are stored on the crafter.
             - Does not execute later phases.
 
@@ -1242,7 +1240,7 @@ class Spell(Cleanable, ISpell):
         artifacts and set validated/broken flags.
 
         Contract:
-            - Requires Phases 1-3 to have completed successfully.
+            - Requires Phases 1-3 to be completed successfully.
             - Does not return a value; results are stored on the crafter.
             - Does not execute later phases.
 
@@ -1269,7 +1267,7 @@ class Spell(Cleanable, ISpell):
         and a SpellSystemIndex for the current frame.
 
         Contract:
-            - Requires Phase 4 to have completed successfully.
+            - Requires Phase 4 to be completed successfully.
             - Does not return a value; artifacts are stored on the crafter.
             - Does not execute later phases.
 
@@ -1298,7 +1296,7 @@ class Spell(Cleanable, ISpell):
         target spell and its dependency closure.
 
         Contract:
-            - Requires Phase 4 to have completed successfully.
+            - Requires Phase 4 to be completed successfully.
             - Scope is limited to this spell plus transitive dependencies.
             - Does not execute later phases.
         Args:
@@ -1433,7 +1431,7 @@ class Spell(Cleanable, ISpell):
         and update per-conduit resolution validity.
 
         Contract:
-            - Requires Phase 5 to have completed successfully.
+            - Requires Phase 5 to be completed successfully.
             - Does not return a value; results are stored on the crafter.
             - Does not execute later phases.
 
@@ -1574,16 +1572,16 @@ class Spell(Cleanable, ISpell):
         """
         Convenience helper to run **structural phases only** (1-4) for this spell.
 
-        Phases executed via the :class:`SpellCrafter`:
+        Phases executed via the: class:`SpellCrafter`:
 
             1. Requirements extraction.
             2. Symbolic graph construction.
             3. Local resolution frame / DAG construction.
             4. Validation.
 
-        Each phase honours the optional :class:`CancellationEvent`. If the
-        event is set, the underlying phase methods will raise via
-        ``cancel_event.throw_if_set()``.
+        Each phase honours the optional: class:`CancellationEvent`. If the
+        event is set, the underlying phase methods will rise via
+        "cancel_event.throw_if_set()".
 
         Raises:
             Exception: Propagates exceptions raised by the underlying phases.
@@ -1604,7 +1602,7 @@ class Spell(Cleanable, ISpell):
         """
         Convenience helper to run **all compiler / resolution phases** for this spell, in order.
 
-        Phases executed via the :class:`SpellCrafter`:
+        Phases executed via the: class:`SpellCrafter`:
 
             - Phase 1: Requirements extraction.
             - Phase 2: Symbolic graph construction.
@@ -1618,9 +1616,9 @@ class Spell(Cleanable, ISpell):
             - Phase 10: Patch map compilation.
             - Phase 11: Execution plan compilation.
 
-        Each phase honours the optional :class:`CancellationEvent`. If the
-        event is set, the underlying phase methods will raise via
-        ``cancel_event.throw_if_set()``.
+        Each phase honours the optional: class:`CancellationEvent`. If the
+        event is set, the underlying phase methods will rise via
+        "cancel_event.throw_if_set()".
 
         Args:
             conduit_id:
@@ -1663,7 +1661,7 @@ class Spell(Cleanable, ISpell):
             - Mutation and contract operations can ask for the current lineage state.
             - Higher-level dev-ops and validation pipelines can inspect this value
               while orchestrating Phase 1-7 revalidation.
-            - Returns `None` when SpellSystemStates is unavailable or the lineage is
+            - Returns `None` when SpellSystemStates are unavailable or the lineage is
               not currently tracked.
 
         Returns:
@@ -1732,7 +1730,7 @@ class Spell(Cleanable, ISpell):
               environment.
             - Requires overrides-enabled posture for this spell.
             - Stores the raw overlay payload on the spell.
-            - Clears the spell-owned `CreationContext` so runtime shape is rebuilt
+            - Clears the spell-owned `CreationContext` so the runtime shape is rebuilt
               on the next meld path.
             - Marks spell lineage state through SpellSystemStates when that service
               is available.

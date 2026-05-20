@@ -29,7 +29,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 @mypyc_attr(native_class=True)
 class CompilerPhase2:
     """
-    Static compiler phase 2 surface.
+    Compiler phase 2 surface.
 
     Purpose:
         Expose the current symbolic-graph build behavior through a compiler-

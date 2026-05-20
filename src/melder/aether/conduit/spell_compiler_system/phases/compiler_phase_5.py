@@ -37,7 +37,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 @mypyc_attr(native_class=True)
 class CompilerPhase5:
     """
-    Static compiler phase 5 surface.
+    Compiler phase 5 surface.
 
     Purpose:
         Expose the current rooted-blueprint build behavior through a compiler-
@@ -459,29 +459,21 @@ class CompilerPhase5:
         """
         Phase 5 entrypoint.
 
-        Build deep DAG blueprints (`RootResolutionBlueprints`) and a frame-level
-        `SpellSystemIndex` using existing Phase 1-4 artifacts.
+        Builds deep DAG blueprints (RootResolutionBlueprints) and a frame-level
+        SpellSystemIndex. This step uses only existing Phase 1-4 artifacts; no
+        new discovery occurs. The resulting DAGs and index are scoped to spells
+        visible to the current Spellbook (local + contracted).
 
-        Responsibilities:
-            - Build adjacency from system states.
-            - Filter to spellbook-visible spell ids.
-            - Build deep DAGs and phase-5 index.
-            - Attach phase-5 artifacts to participating spells.
-            - Update owning artifact phase-2-5 codegen cache and invalidate
-              phase 8-11 cache when outputs change.
-            - Rebuild component-of index in change control and register a dirty-root revalidator.
+        Phase 5 produces two related outputs:
+            - A root-only blueprint map for system validation (Phase 6).
+            - Per-spell blueprints attached to constructed spells so Phase 8-10
+              and Phase 11 compilation can proceed for any meldable spell.
+            - The change-control component-of map is rebuilt from owned roots
+              only, so contracted roots are not revalidated by this conduit.
 
         Args:
-            spell:
-                Bound target spell for this phase call.
-            artifact:
-                Phase artifact receiving phase-5 caches.
-            spellbook:
-                Spellbook used for visibility and ownership boundaries.
-            spell_system_states:
-                Required SpellSystemStates dependency.
             conduit_id:
-                Conduit identifier used by change-control rebuild registration.
+                Conduit identifier used to scope resolution artifacts.
             cancel_event:
                 Optional cancellation handle.
 

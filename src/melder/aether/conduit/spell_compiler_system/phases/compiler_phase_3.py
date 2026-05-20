@@ -46,7 +46,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 @mypyc_attr(native_class=True)
 class CompilerPhase3:
     """
-    Static compiler phase 3 surface.
+    Compiler phase 3 surface.
 
     Purpose:
         Expose the current local-frame / DAG build behavior through a
@@ -664,12 +664,22 @@ class CompilerPhase3:
         Phase 3 - Build the local-frame DAG and constructor topology.
 
         Responsibilities:
-            - Guard against use-after-clean and cancellation.
-            - Require both requirements and symbolic graph artifacts from prior
-              phases.
-            - Build local constructor DAG + topology and persist to artifact + spell
-              system state.
-            - Record artifact-wide codegen signatures for cache-consistency.
+            * Consume the Phase 2 symbolic graph and resolve each socket into
+              concrete dependency spell ids.
+            * Build the local constructor DAG
+              (:class:`DirectedAcyclicWorkGraph`) rooted at this spell, where:
+                  - dependency spells are parents,
+                  - this spell is the child/root node.
+            * Build and register a :class:`SpellLocalTopology` describing the
+              constructor sockets (normal sockets, SpellContract sockets,
+              MutationContract sockets) and the resolved target spell ids.
+            * Persist:
+                  - the ordered local frame
+                    (:class:`SpellResolutionFrame`) on this compiler artifact,
+                  - direct dependency ids on the Spell via
+                    :meth:`Spell._add_build_details`,
+                  - local topology and direct dependencies into
+                    :class:`SpellSystemStates`.
 
         Args:
             spell:
@@ -684,9 +694,17 @@ class CompilerPhase3:
                 Optional cooperative cancellation signal.
 
         Contracts:
-            - Does not mutate `spell` construction behavior directly.
-            - Mutation occurs only through artifact and system-state caches.
-            - Returns no value; consumers observe `artifact` side effects.
+            * Phases 1 and 2 must already have completed successfully. If
+              requirements or symbolic graph are missing, this method raises
+              instead of auto-running earlier phases.
+            * Assumes the bound Spell is attached to a Spellbook; direct
+              Spellbook map iteration is used for resolution.
+            * Stores the local DAG and direct dependency list on the Spell via
+              :meth:`Spell._add_build_details`, and keeps a
+              :class:`SpellResolutionFrame` on this compiler artifact.
+            * Does not return a value; callers rely on:
+                  - `artifact._resolution_frame` for ordering, and
+                  - SpellSystemStates for dependencies and topology.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)

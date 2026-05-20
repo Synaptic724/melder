@@ -122,6 +122,11 @@ class CompilerPhase9:
             - Does not mutate the occurrence plan.
 
         Args:
+            spell:
+                Root spell under compilation.
+            artifact:
+                Phase-8 artifact output holder used for signature and plan
+                caching.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
@@ -131,16 +136,6 @@ class CompilerPhase9:
         Raises:
             RuntimeError:
                 If Phase 8 artifacts are missing for this spell.
-        Returns:
-            None.
-
-        Args:
-            spell:
-                Root spell under compilation.
-            artifact:
-                Phase-8 artifact output holder used for signature and plan caching.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
 
         Threading:
             - Not thread-safe; expected to run under spellbook phase scheduling.

@@ -18,7 +18,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 @mypyc_attr(native_class=True)
 class CompilerPhase1:
     """
-    Static compiler phase 1 surface.
+    Compiler phase 1 surface.
 
     Purpose:
         Expose the current requirements-extraction behaviour through a

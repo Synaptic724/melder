@@ -30,7 +30,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 @mypyc_attr(native_class=True)
 class CompilerPhase4:
     """
-    Static compiler phase 4 surface.
+    Compiler phase 4 surface.
 
     Purpose:
         Expose the current structural-validation behavior through a compiler-
