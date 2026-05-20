@@ -6,6 +6,9 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import RepositoryWithLogger
@@ -59,7 +62,7 @@ def _wrap_phase_method(
 ) -> None:
     """
     Purpose:
-        Wrap a SpellCrafter phase method to count invocations.
+        Wrap a SpellCompilerSystem phase method to count invocations.
     Contract:
         - Increments counters[counter_key] once per method call.
         - Delegates to the original method to preserve behavior.
@@ -71,17 +74,17 @@ def _wrap_phase_method(
     Returns:
         None.
     """
-    original = getattr(SpellCrafter, method_name)
+    original = getattr(SpellCompilerSystem, method_name)
 
-    def _wrapped(self: SpellCrafter, *args: Any, **kwargs: Any) -> None:
+    def _wrapped(self: SpellCompilerSystem, *args: Any, **kwargs: Any) -> None:
         """
         Purpose:
-            Count a SpellCrafter phase invocation before delegating to the original method.
+            Count a SpellCompilerSystem phase invocation before delegating to the original method.
         Contract:
             - Increments the supplied counter exactly once per call.
             - Preserves the original method behavior and return value.
         Args:
-            self: SpellCrafter instance.
+            self: SpellCompilerSystem instance.
             *args: Positional arguments passed to the original method.
             **kwargs: Keyword arguments passed to the original method.
         Returns:
@@ -90,7 +93,7 @@ def _wrap_phase_method(
         counters[counter_key] += 1
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(SpellCrafter, method_name, _wrapped)
+    monkeypatch.setattr(SpellCompilerSystem, method_name, _wrapped)
 
 
 def _wrap_phase_method_record_spell_ids(
@@ -101,7 +104,7 @@ def _wrap_phase_method_record_spell_ids(
 ) -> None:
     """
     Purpose:
-        Wrap a SpellCrafter phase method and record spell ids per invocation.
+        Wrap a SpellCompilerSystem phase method and record spell ids per invocation.
     Contract:
         - Appends self._spell.spell_id to records[record_key] once per call.
         - Delegates to the original method to preserve behavior.
@@ -113,26 +116,30 @@ def _wrap_phase_method_record_spell_ids(
     Returns:
         None.
     """
-    original = getattr(SpellCrafter, method_name)
+    original = getattr(SpellCompilerSystem, method_name)
 
-    def _wrapped(self: SpellCrafter, *args: Any, **kwargs: Any) -> None:
+    def _wrapped(self: SpellCompilerSystem, *args: Any, **kwargs: Any) -> None:
         """
         Purpose:
-            Record phase invocation spell identity before delegation.
+            Record compiler-phase invocation spell identity before delegation.
         Contract:
             - Appends exactly one spell id per invocation.
             - Preserves the original method behavior and return value.
         Args:
-            self: SpellCrafter instance.
+            self: SpellCompilerSystem instance.
             *args: Positional arguments passed to the original method.
             **kwargs: Keyword arguments passed to the original method.
         Returns:
             None.
         """
-        records[record_key].append(self._spell.spell_id)
+        if method_name in ("run_phase_injection_plan", "run_phase_patch_maps"):
+            spell = args[0]
+        else:
+            spell = args[1]
+        records[record_key].append(spell.spell_id)
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(SpellCrafter, method_name, _wrapped)
+    monkeypatch.setattr(SpellCompilerSystem, method_name, _wrapped)
 
 
 def test_component_frame_level_phase_invocations_are_per_spell(

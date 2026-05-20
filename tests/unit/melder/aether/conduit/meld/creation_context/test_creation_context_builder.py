@@ -32,7 +32,11 @@ def _make_crafter(
         _override_patch_map_phase10=override_patch_map_phase10,
         _codegen_ir=codegen_ir,
         _root_blueprint_phase5=root_blueprint_phase5,
+        _phase8_11_codegen_ir_dirty=False,
     )
+
+
+_DEFAULT_ARTIFACT = object()
 
 
 def _make_spell(
@@ -52,7 +56,7 @@ def _make_spell(
     return SimpleNamespace(
         spell_id="s1",
         is_existing_creation=is_existing_creation,
-        _compiler_artifact=_make_crafter() if crafter is _DEFAULT_CRAFTER else crafter,
+        _compiler_artifact=_make_crafter() if crafter is _DEFAULT_ARTIFACT else crafter,
         existence=existence,
         execution_plan_dispatch_route=execution_plan_dispatch_route,
         has_mutation_override=has_mutation_override,
@@ -60,9 +64,9 @@ def _make_spell(
     )
 
 def test_build_requires_crafter_for_non_existing_spells() -> None:
-    """Verify build rejects non-existing spells without crafter artifacts."""
+    """Verify build rejects non-existing spells without compiler artifacts."""
     builder = CreationContextBuilder()
-    spell = _make_spell(is_existing_creation=False, crafter=None)
+    spell = _make_spell(is_existing_creation=False, crafter=SimpleNamespace(_execution_plan_phase11_no_overrides=None, _override_patch_map_phase10=None, _codegen_ir=None, _phase8_11_codegen_ir_dirty=False))
 
     with pytest.raises(RuntimeError, match="Cannot build CreationContext"):
         builder.build(spell)
@@ -209,7 +213,7 @@ def test_resolve_fast_transient_uses_phase11_plan_when_present() -> None:
 def test_resolve_fast_transient_returns_false_when_plan_missing() -> None:
     """Verify missing phase11 plans disable fast transient dispatch."""
     spell = _make_spell(
-        crafter=SimpleNamespace(execution_plan_phase11_no_overrides=None),
+        crafter=SimpleNamespace(_execution_plan_phase11_no_overrides=None),
         execution_plan_dispatch_route=None,
     )
     assert CreationContextBuilder._resolve_fast_transient_no_overrides_enabled(spell) is False
@@ -351,3 +355,5 @@ def test_build_mutation_override_route_config_delegates_when_mutation_enabled(
         CreationContextBuilder._build_mutation_override_route_config(spell=spell)
         is sentinel
     )
+
+

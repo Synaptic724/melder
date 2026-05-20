@@ -178,6 +178,7 @@ class _SpellStub:
         self.spellframe = spellframe
         self.spell_name = spell_name
         self.binding_name = binding_name
+        self.requirements = requirements
         self._crafter = _CrafterStub(requirements)
 
 
@@ -492,7 +493,7 @@ def test_binding_resolution_cycle_skips_unusable_spellbook_entries() -> None:
         binding_name=None,
         requirements=None,
     )
-    no_crafter_spell._crafter = None
+    no_crafter_spell.requirements = None
     no_requirements_spell = _SpellStub(
         spell_id="no-req",
         spellframe=FrameB,

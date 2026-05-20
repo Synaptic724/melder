@@ -15,6 +15,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
@@ -1078,6 +1081,8 @@ def build_spell(
         owned_spell=False,
         _spellbook=None,
         _spell_system_states=None,
+        _cleanup_creation_context=lambda: None,
+        _compiler_artifact=SpellCompilerArtifact(spell_id),
         _crafter=None,
         _key=f"key-{spell_id}",
         dependencies=list(dependencies),

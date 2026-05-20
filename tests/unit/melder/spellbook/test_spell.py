@@ -992,54 +992,26 @@ def test_resolution_properties_return_none_without_crafter():
 )
 def test_resolution_properties_delegate_to_crafter(prop_name, expected):
     spell = _make_spell()
-    crafter = _DummyCrafter()
-    spell._crafter = crafter
+    spell._compiler_artifact._requirements = "req"
+    spell._compiler_artifact._symbolic_graph = "sym"
+    spell._compiler_artifact._resolution_frame = "frame"
+    spell._compiler_artifact._validation_result_phase4 = "p4"
+    spell._compiler_artifact._validation_result_phase6 = "p6"
+    spell._compiler_artifact._validated_phase4 = True
+    spell._compiler_artifact._validated_phase6 = True
+    spell._compiler_artifact._validated = True
+    spell._compiler_artifact._is_broken = False
     assert getattr(spell, prop_name) == expected
 
 
-def test_run_all_phases_invokes_crafter_in_order():
+def test_spell_does_not_expose_run_all_phases_facade():
     spell = _make_spell()
-    crafter = _DummyCrafter()
-    spell._ensure_crafter = types.MethodType(lambda self: crafter, spell)
-    cancel_event = object()
-
-    spell.run_all_phases("cid", cancel_event=cancel_event)
-
-    assert crafter.calls == [
-        "requirements",
-        "symbolic_graph",
-        "local_frame",
-        "validation",
-        "root_blueprints",
-        "system_validation",
-        "change_control",
-        "occurrence_plan",
-        "injection_plan",
-        "patch_maps",
-        "execution_plan",
-        "cleanup_phase_artifacts",
-    ]
-    observed = [
-        ev[1] if isinstance(ev, tuple) else ev for ev in crafter.seen_cancel_events
-    ]
-    assert all(ev is cancel_event for ev in observed)
+    assert not hasattr(spell, "run_all_phases")
 
 
-def test_run_structural_phases_invokes_crafter_in_order():
+def test_spell_does_not_expose_run_structural_phases_facade():
     spell = _make_spell()
-    crafter = _DummyCrafter()
-    spell._ensure_crafter = types.MethodType(lambda self: crafter, spell)
-    cancel_event = object()
-
-    spell.run_structural_phases(cancel_event=cancel_event)
-
-    assert crafter.calls == [
-        "requirements",
-        "symbolic_graph",
-        "local_frame",
-        "validation",
-    ]
-    assert all(ev is cancel_event for ev in crafter.seen_cancel_events)
+    assert not hasattr(spell, "run_structural_phases")
 
 
 @pytest.mark.parametrize(
@@ -1245,37 +1217,15 @@ def test_system_state_after_cleanup_raises():
         _ = spell.system_state
 
 
-def test_run_all_phases_rejects_after_cleanup():
+def test_removed_spell_phase_facades_stay_absent_after_cleanup():
     spell = _make_spell()
     spell.cleanup()
-    with pytest.raises(RuntimeError):
-        spell.run_all_phases("cid")
+    assert not hasattr(spell, "run_all_phases")
 
 
-def test_ensure_crafter_lazy_creation_uses_imported_class(monkeypatch):
-    created = {}
-
-    class DummySpellCrafter:
-        def __init__(self, owner, *, resolution_profile=None):
-            created["owner"] = owner
-            created["resolution_profile"] = resolution_profile
-
-    dummy_module = types.SimpleNamespace(SpellCrafter=DummySpellCrafter)
-    module_name = "melder.aether.spellbook.spell_compiler.spell_compiler"
-    original = sys.modules.get(module_name)
-    sys.modules[module_name] = dummy_module
-    try:
-        spell = _make_spell()
-        crafter = spell._ensure_crafter()
-        assert created["owner"] is spell
-        assert isinstance(crafter, DummySpellCrafter)
-        # second call returns cached instance
-        assert spell._ensure_crafter() is crafter
-    finally:
-        if original is not None:
-            sys.modules[module_name] = original
-        else:
-            sys.modules.pop(module_name, None)
+def test_spell_does_not_expose_ensure_crafter() -> None:
+    spell = _make_spell()
+    assert not hasattr(spell, "_ensure_crafter")
 
 
 def test_cleanup_creation_context_and_factory_swallow_child_cleanup_errors() -> None:
@@ -1336,26 +1286,11 @@ def test_get_or_build_creation_context_uses_switch_fast_path_and_factory() -> No
     assert factory.calls == [spell]
 
 
-def test_local_phase_facades_delegate_to_crafter() -> None:
+def test_spell_does_not_expose_local_phase_facades() -> None:
     spell = _make_spell()
-    crafter = _DummyCrafter()
-    spell._ensure_crafter = types.MethodType(lambda self: crafter, spell)
-    cancel_event = object()
-
-    spell.run_phase_root_blueprints_local("cid", cancel_event=cancel_event)
-    spell.run_phase_system_validation_local("cid", cancel_event=cancel_event)
-    spell.run_phase_change_control_local("cid", cancel_event=cancel_event)
-
-    assert crafter.calls == [
-        "root_blueprints_local",
-        "system_validation_local",
-        "change_control_local",
-    ]
-    assert crafter.seen_cancel_events == [
-        ("cid", cancel_event),
-        ("cid", cancel_event),
-        ("cid", cancel_event),
-    ]
+    assert not hasattr(spell, "run_phase_root_blueprints_local")
+    assert not hasattr(spell, "run_phase_system_validation_local")
+    assert not hasattr(spell, "run_phase_change_control_local")
 
 
 def test_system_state_returns_none_when_states_registry_missing() -> None:

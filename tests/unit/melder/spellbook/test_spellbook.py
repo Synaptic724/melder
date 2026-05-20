@@ -13,6 +13,12 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -72,6 +78,7 @@ class DummySpell:
         self.spellframe = spellframe
         self.binding_name = binding_name
         self.existence = existence
+        self._compiler_artifact = SpellCompilerArtifact(spell_id)
         self.profile = None
         self.resolution_required = False
         self.resolution_complete = False
@@ -800,7 +807,7 @@ class DummyPhaseScheduler:
         self.spellbook = spellbook
         self.configuration = configuration
         self.phases = {}
-        self.cancel_event = object()
+        self.cancel_event = types.SimpleNamespace(is_set=False)
         self.cleaned = False
 
     def register_phase(self, name, factory):
@@ -981,15 +988,15 @@ def _run_resolution_phases(sb: Spellbook, conduit_id: str):
 def patch_spell_validation_system(monkeypatch):
     """
     Purpose:
-        Replace SpellValidationSystem with a stub for unit tests.
+        Preserve compatibility with older test setup without patching a dead seam.
     Contract:
-        Patches SpellValidationSystem for the duration of each test.
+        The current Spellbook no longer exposes a module-level
+        `SpellValidationSystem` construction seam, so this fixture is a no-op.
     Args:
         monkeypatch: Pytest fixture for patching module attributes.
     Returns:
         None.
     """
-    monkeypatch.setattr("melder.aether.spellbook.spellbook.SpellValidationSystem", DummySpellValidationSystem)
     yield
 
 
@@ -2481,16 +2488,17 @@ def test_phase_factories_build_units_and_label():
     spell = DummySpell(spell_id="x")
     sb._spells = {DummySpellIndex(): spell}
     scheduler = DummyPhaseScheduler(sb, None)
-    req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler)
-    sym_units = SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler)
-    loc_units = SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler)
-    val_units = SpellbookCreationSystem.phase_validation_factory(sb, scheduler)
-    root_units = SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, "cid")
-    occ_units = SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, "cid")
-    inj_units = SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, "cid")
-    patch_units = SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, "cid")
-    sys_units = SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, "cid")
-    change_units = SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, "cid")
+    compiler_system = SpellCompilerSystem()
+    req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler, compiler_system)
+    sym_units = SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler, compiler_system)
+    loc_units = SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler, compiler_system)
+    val_units = SpellbookCreationSystem.phase_validation_factory(sb, scheduler, compiler_system)
+    root_units = SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, compiler_system, "cid")
+    occ_units = SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, compiler_system, "cid")
+    inj_units = SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, compiler_system, "cid")
+    patch_units = SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, compiler_system, "cid")
+    sys_units = SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, compiler_system, "cid")
+    change_units = SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, compiler_system, "cid")
     assert req_units[0]["label"] == "requirements:x"
     assert sym_units[0]["label"] == "symbolic_graph:x"
     assert loc_units[0]["label"] == "local_frame:x"
@@ -2517,8 +2525,9 @@ def test_phase_factories_guard_cleaned():
     sb = Spellbook()
     sb._cleaned = True
     scheduler = DummyPhaseScheduler(sb, None)
+    compiler_system = SpellCompilerSystem()
     with pytest.raises(RuntimeError):
-        SpellbookCreationSystem.phase_requirements_factory(sb, scheduler)
+        SpellbookCreationSystem.phase_requirements_factory(sb, scheduler, compiler_system)
 
 
 def test_run_resolution_phases_success(monkeypatch):
@@ -3206,16 +3215,17 @@ def test_phase_factories_return_empty_when_no_spells():
     sb = Spellbook()
     sb._spells = {}
     scheduler = DummyPhaseScheduler(sb, None)
-    assert SpellbookCreationSystem.phase_requirements_factory(sb, scheduler) == []
-    assert SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler) == []
-    assert SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler) == []
-    assert SpellbookCreationSystem.phase_validation_factory(sb, scheduler) == []
-    assert SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, "cid") == []
-    assert SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, "cid") == []
-    assert SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, "cid") == []
-    assert SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, "cid") == []
-    assert SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, "cid") == []
-    assert SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, "cid") == []
+    compiler_system = SpellCompilerSystem()
+    assert SpellbookCreationSystem.phase_requirements_factory(sb, scheduler, compiler_system) == []
+    assert SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler, compiler_system) == []
+    assert SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler, compiler_system) == []
+    assert SpellbookCreationSystem.phase_validation_factory(sb, scheduler, compiler_system) == []
+    assert SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, compiler_system, "cid") == []
+    assert SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, compiler_system, "cid") == []
+    assert SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, compiler_system, "cid") == []
+    assert SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, compiler_system, "cid") == []
+    assert SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, compiler_system, "cid") == []
+    assert SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, compiler_system, "cid") == []
 
 
 def test_run_resolution_phases_with_multiple_spells():
@@ -3771,17 +3781,18 @@ def test_phase_factories_metadata_contains_spell_id():
     spell = DummySpell(spell_id="abc")
     sb._spells = {DummySpellIndex(sid="abc"): spell}
     scheduler = DummyPhaseScheduler(sb, None)
+    compiler_system = SpellCompilerSystem()
     for units in (
-        SpellbookCreationSystem.phase_requirements_factory(sb, scheduler),
-        SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler),
-        SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler),
-        SpellbookCreationSystem.phase_validation_factory(sb, scheduler),
-        SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, "cid"),
-        SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, "cid"),
-        SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, "cid"),
-        SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, "cid"),
-        SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, "cid"),
-        SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, "cid"),
+        SpellbookCreationSystem.phase_requirements_factory(sb, scheduler, compiler_system),
+        SpellbookCreationSystem.phase_symbolic_graph_factory(sb, scheduler, compiler_system),
+        SpellbookCreationSystem.phase_local_frame_factory(sb, scheduler, compiler_system),
+        SpellbookCreationSystem.phase_validation_factory(sb, scheduler, compiler_system),
+        SpellbookCreationSystem.phase_root_blueprints_factory(sb, scheduler, compiler_system, "cid"),
+        SpellbookCreationSystem.phase_occurrence_plan_factory(sb, scheduler, compiler_system, "cid"),
+        SpellbookCreationSystem.phase_injection_plan_factory(sb, scheduler, compiler_system, "cid"),
+        SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, compiler_system, "cid"),
+        SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, compiler_system, "cid"),
+        SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, compiler_system, "cid"),
     ):
         assert units[0]["metadata"]["spell_id"] == "abc"
 
@@ -4054,7 +4065,8 @@ def test_phase_factories_return_distinct_labels_per_spell():
     s2 = DummySpell(spell_id="b")
     sb._spells = {DummySpellIndex(sid="a"): s1, DummySpellIndex(sid="b"): s2}
     scheduler = DummyPhaseScheduler(sb, None)
-    req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler)
+    compiler_system = SpellCompilerSystem()
+    req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler, compiler_system)
     assert {u["label"] for u in req_units} == {"requirements:a", "requirements:b"}
 
 
@@ -4894,30 +4906,14 @@ def test_run_resolution_phases_propagates_phase_exception(monkeypatch):
                     func(*args)
             return {}
 
-    class BadSpell(DummySpell):
-        """
-        Purpose:
-            Provide a spell stub that raises during Phase 1.
-        Contract:
-            run_phase_requirements raises RuntimeError.
-        """
-        def run_phase_requirements(self, cancel_event):
-            """
-            Purpose:
-                Simulate phase failure.
-            Contract:
-                Raises RuntimeError unconditionally.
-            Args:
-                cancel_event: Cancellation event passed by scheduler.
-            Raises:
-                RuntimeError: Always raised for the stub.
-            """
-            raise RuntimeError("boom")
-
     sb = Spellbook()
-    sb._spells = {DummySpellIndex(): BadSpell()}
+    sb._spells = {DummySpellIndex(): DummySpell()}
     sb._logger = DummySafeLogger()
     monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", ExecScheduler)
+    monkeypatch.setattr(
+        "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_requirements",
+        lambda self, spell, cancel_event=None: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
     with pytest.raises(RuntimeError):
         _run_resolution_phases(sb, "cid")
 

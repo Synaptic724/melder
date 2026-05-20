@@ -5,6 +5,12 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFr
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import OccurrencePlanBuilder
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
@@ -86,6 +92,7 @@ class _StubSpellbook:
             spell.key: spell_index for spell_index, spell in spells.items()
         }
         self._lookup_contracted_spells: Dict[str, Dict[tuple, _StubSpellIndex]] = {}
+        self._spell_system_states = _SystemStatesStub()
         self._spell_id_pool: Dict[str, "_StubSpell"] = {
             spell_index.current: spell for spell_index, spell in spells.items()
         }
@@ -165,6 +172,7 @@ class _StubSpell:
             spellbook = _StubSpellbook({})
         self._spellbook = spellbook
         self._spell_system_states = None
+        self._compiler_artifact = SpellCompilerArtifact(spell_id)
         self.is_existing_creation = False
         self.requirements = None
 
@@ -397,10 +405,10 @@ def test_run_phase_occurrence_plan_requires_phase5() -> None:
         spell_callable=_root_factory,
         spellbook=_StubSpellbook({}),
     )
-    crafter = SpellCrafter(root_spell)
+    compiler_system = SpellCompilerSystem()
 
     with pytest.raises(RuntimeError, match="Phase 5 root blueprint is required"):
-        crafter.run_phase_occurrence_plan(conduit_id="conduit")
+        compiler_system.run_phase_occurrence_plan(root_spell._spellbook, root_spell)
 
 
 def test_run_phase_occurrence_plan_compiles_for_root() -> None:
@@ -434,14 +442,14 @@ def test_run_phase_occurrence_plan_compiles_for_root() -> None:
 
     blueprint = _make_blueprint(root_id, dep_id)
 
-    crafter = SpellCrafter(root_spell)
-    crafter._spell_system_states = _SystemStatesStub()
-    crafter._root_blueprint_phase5 = blueprint
-    crafter._entire_dag_blueprint_phase5 = {root_id: blueprint}
+    compiler_system = SpellCompilerSystem()
+    root_spell._spell_system_states = _SystemStatesStub()
+    root_spell._compiler_artifact._root_blueprint_phase5 = blueprint
+    root_spell._compiler_artifact._entire_dag_blueprint_phase5 = {root_id: blueprint}
 
-    crafter.run_phase_occurrence_plan(conduit_id="conduit")
+    compiler_system.run_phase_occurrence_plan(spellbook, root_spell)
 
-    plan = crafter.occurrence_plan_phase8
+    plan = root_spell._compiler_artifact._occurrence_plan_phase8
     assert plan is not None
     assert plan.root_spell_id == root_id
     assert plan.execution_order == [dep_id, root_id]

@@ -281,6 +281,7 @@ class _SpellStub:
         self._spell_system_states = spell_system_states
         self._spellbook = spellbook
         self._compiler_artifact = SpellCompilerArtifact(spell_id)
+        self.spell = lambda: None
         self.execution_plan_dispatch_route = None
         self.is_broken = is_broken
         self.is_existing_creation = is_existing_creation
@@ -695,12 +696,21 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
     """
     effective_creations = creations or MagicMock()
     conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
-    return Meld(
+    meld = Meld(
         creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,
     )
+    meld._spell_compiler_system = SimpleNamespace(
+        run_structural_phases=lambda spellbook, spell, cancel_event=None: spell.run_structural_phases(),
+        is_current_spell_phase5_root=lambda spell: bool(
+            getattr(spell._compiler_artifact, "_root_blueprint_phase5", None)
+            and spell._compiler_artifact._root_blueprint_phase5.root_spell_id == spell.spell_index.current
+        ),
+        cleanup=lambda: None,
+    )
+    return meld
 
 
 def _make_creations(
@@ -2492,4 +2502,5 @@ def test_describe_live_creation_status_reports_spellspace_gap_without_scope() ->
         "active_spellspace_id": None,
         "creation_count": 0,
     }
+
 

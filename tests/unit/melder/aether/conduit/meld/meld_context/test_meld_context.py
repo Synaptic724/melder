@@ -37,6 +37,7 @@ class _CompilerArtifactStub:
         self._override_patch_map_phase10 = None
         self._root_blueprint_phase5 = None
         self._codegen_ir = None
+        self._phase8_11_codegen_ir_dirty = False
 
 
 _DEFAULT_ARTIFACT = object()
@@ -240,7 +241,14 @@ def test_builder_requires_compiler_artifact_for_non_existing_creation() -> None:
         - build raises RuntimeError when compiler artifacts are missing.
     """
     builder = CreationContextBuilder()
-    spell = _SpellStub(artifact=None)
+    spell = _SpellStub(
+        artifact=SimpleNamespace(
+            _execution_plan_phase11_no_overrides=None,
+            _override_patch_map_phase10=None,
+            _codegen_ir=None,
+            _phase8_11_codegen_ir_dirty=False,
+        )
+    )
     spell.is_existing_creation = False
     with pytest.raises(RuntimeError, match="Cannot build CreationContext"):
         builder.build(spell)
@@ -271,4 +279,5 @@ def test_factory_build_for_spell_dynamic_attaches_lineage_gate() -> None:
     finally:
         context.cleanup()
         factory.cleanup()
+
 

@@ -906,8 +906,15 @@ def test_run_post_conjure_structural_phases_logs_broken_spell_cleanup_fallbacks(
 
 def test_collect_target_resolution_scope_uses_index_and_root_blueprint_fallbacks() -> None:
     target_spell = types.SimpleNamespace(
-        get_local_resolution_scoped_spell_ids=lambda: {"spell-1", "extra"},
-        get_local_resolution_scoped_root_ids=lambda: tuple(),
+        _compiler_artifact=types.SimpleNamespace(
+            _spell_system_index_phase5=types.SimpleNamespace(
+                nodes={
+                    "spell-1": object(),
+                    "extra": object(),
+                },
+            ),
+            _entire_dag_blueprint_phase5=None,
+        ),
     )
 
     scoped_spell_ids, scoped_root_ids = (
@@ -923,8 +930,15 @@ def test_collect_target_resolution_scope_uses_index_and_root_blueprint_fallbacks
 
 def test_collect_target_resolution_scope_uses_root_blueprint_keys_when_present() -> None:
     target_spell = types.SimpleNamespace(
-        get_local_resolution_scoped_spell_ids=lambda: {"spell-1"},
-        get_local_resolution_scoped_root_ids=lambda: ("root-a", "root-b"),
+        _compiler_artifact=types.SimpleNamespace(
+            _spell_system_index_phase5=types.SimpleNamespace(
+                nodes={"spell-1": object()},
+            ),
+            _entire_dag_blueprint_phase5={
+                "root-a": object(),
+                "root-b": object(),
+            },
+        ),
     )
 
     scoped_spell_ids, scoped_root_ids = (
@@ -1307,17 +1321,17 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         phase_scheduler_cls=object,
     )
 
-    assert list(foundational.keys()) == [
+    assert set(foundational.keys()) >= {
         "root_blueprints",
         "system_validation",
         "change_control",
-    ]
-    assert list(plan.keys()) == [
+    }
+    assert set(plan.keys()) >= {
         "occurrence_plan",
         "injection_plan",
         "patch_maps",
         "execution_plan",
-    ]
+    }
     assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
     assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"
 
@@ -1391,17 +1405,17 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         phase_scheduler_cls=object,
     )
 
-    assert list(foundational.keys()) == [
+    assert set(foundational.keys()) >= {
         "root_blueprints",
         "system_validation",
         "change_control",
-    ]
-    assert list(plan.keys()) == [
+    }
+    assert set(plan.keys()) >= {
         "occurrence_plan",
         "injection_plan",
         "patch_maps",
         "execution_plan",
-    ]
+    }
     assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
     assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"
 

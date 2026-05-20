@@ -7,6 +7,9 @@ from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
+from melder.aether.spellbook.spell_compiler.spell_compiler import (
+    SpellCompiler,
+)
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
@@ -108,15 +111,12 @@ def test_spell_cleanup_cleans_compiler_artifact_foundation() -> None:
     assert not hasattr(spell, "_compiler_artifact")
 
 
-def test_spell_compiler_system_creates_spell_crafter() -> None:
-    """SpellCompilerSystem should create a concrete SpellCrafter for a Spell."""
+def test_spell_compiler_system_owns_spell_compiler() -> None:
+    """SpellCompilerSystem should own a concrete SpellCompiler instance."""
     spell = _make_spell()
-    compiler_system = SpellCompilerSystem(spell._spellbook)
+    compiler_system = SpellCompilerSystem()
 
-    crafter = compiler_system.create_spell_crafter_for_spell(spell)
-
-    assert isinstance(crafter, SpellCrafter)
-    assert crafter.spell is spell
+    assert isinstance(compiler_system._spell_compiler, SpellCompiler)
 
 
 def test_meld_initializes_spell_compiler_system_foundation() -> None:
