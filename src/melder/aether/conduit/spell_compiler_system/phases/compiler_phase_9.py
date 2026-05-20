@@ -71,7 +71,6 @@ class CompilerPhase9:
             artifact:
                 Spell-owned compiler artifact whose phase-8 signature state is
                 being queried.
-        Args:
             occurrence_plan:
                 Phase8 occurrence plan used to build phase9 injection plan.
         Returns:
@@ -132,6 +131,16 @@ class CompilerPhase9:
         Raises:
             RuntimeError:
                 If Phase 8 artifacts are missing for this spell.
+        Returns:
+            None.
+
+        Args:
+            spell:
+                Root spell under compilation.
+            artifact:
+                Phase-8 artifact output holder used for signature and plan caching.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
 
         Threading:
             - Not thread-safe; expected to run under spellbook phase scheduling.
@@ -144,6 +153,7 @@ class CompilerPhase9:
         if spell.is_existing_creation:
             return
 
+        # Stage 1: require phase-8 plan and build phase-9 signature gate.
         occurrence_plan = self._get_required_occurrence_plan_phase8(artifact)
         injection_plan_input_signature = self._build_phase9_injection_plan_input_signature(
             artifact,
@@ -157,7 +167,7 @@ class CompilerPhase9:
                 and artifact._injection_plan_phase9 is not None
         ):
             return
-
+        # Stage 2: rebuild injection plan and hot-swap references.
         builder = InjectionPlanBuilder(
             occurrence_plan=occurrence_plan,
         )

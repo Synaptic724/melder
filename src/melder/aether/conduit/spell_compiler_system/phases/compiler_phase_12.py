@@ -98,8 +98,7 @@ class CompilerPhase12:
 
         Purpose:
             Consume the artifact-held phase-11/12 handoff state without
-            recomputing the compile signature or transient schema through phase
-            11.
+            recomputing the compile signature/transient schema through phase 11.
         Contract:
             - Stores `None` executor/signature when the plan is missing or empty.
             - Reuses existing executor when the artifact-held plan signature is
@@ -155,6 +154,8 @@ class CompilerPhase12:
         Purpose:
             Compile from exported phase8-11 payloads when codegen-ir readers
             trigger lazy capture or when payload-only compile paths are used.
+            Compile from exported payload without requiring phase 11 plan schema
+            capture.
         Contract:
             - Stores `None` executor/signature when payload is missing.
             - Reuses existing executor when the payload signature is unchanged.
@@ -164,6 +165,10 @@ class CompilerPhase12:
                 Phase11 no-overrides payload dictionary or `None`.
         Returns:
             None.
+        Raises:
+            RuntimeError:
+                If required payload fields are absent or if payload rows are
+                missing while a non-empty compile would be expected.
         """
         if not no_overrides_payload:
             artifact._phase12_no_overrides_executor = None

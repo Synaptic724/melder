@@ -46,6 +46,12 @@ class CompilerPhase11:
             self,
             artifact: SpellCompilerArtifact,
     ) -> IOccurrencePlan:
+        """
+        Return the Phase 8 occurrence plan or raise.
+
+        Returns:
+            IOccurrencePlan: Attached Phase 8 occurrence plan.
+        """
         occurrence_plan = artifact._occurrence_plan_phase8
         if occurrence_plan is None:
             raise RuntimeError("SpellCrafter Phase 8 occurrence plan is required.")
@@ -117,6 +123,22 @@ class CompilerPhase11:
             self,
             transient_plan: Optional[Tuple[Any, ...]],
     ) -> Optional[Dict[str, Any]]:
+        """
+        Convert the Phase11 transient tuple into a schema-only IR payload.
+
+        Purpose:
+            Remove callable/object references from transient payload export while
+            preserving all indices needed for no-overrides transient codegen.
+        Contract:
+            - Returns None when no transient plan exists.
+            - Returned payload contains only ints and tuples of ints.
+        Args:
+            transient_plan:
+                Phase 11 transient tuple payload.
+        Returns:
+            Optional[Dict[str, Any]]:
+                Schema-only transient payload, or None.
+        """
         if transient_plan is None:
             return None
         return {
@@ -165,6 +187,24 @@ class CompilerPhase11:
             self,
             transient_schema: Optional[Dict[str, Any]],
     ) -> Optional[str]:
+        """
+        Build a deterministic signature for a Phase 11 fast transient plan.
+
+        Purpose:
+            Fingerprint transient plan structure without including call-target
+            object identities, which are process-local and nondeterministic.
+        Contract:
+            - Returns None when no transient plan exists.
+            - Signature includes step counts, call modes, and dependency index
+              arrays used by no-overrides execution.
+        Args:
+            transient_schema:
+                Schema-only transient payload exported by
+                `_build_fast_transient_schema`.
+        Returns:
+            Optional[str]:
+                Deterministic transient signature, or None.
+        """
         if transient_schema is None:
             return None
         return SharedCompilerExecutions.hash_codegen_signature(
@@ -213,6 +253,23 @@ class CompilerPhase11:
             self,
             step: Any,
     ) -> Tuple[Any, ...]:
+        """
+        Build one deterministic signature row for no-overrides compile caching.
+
+        Purpose:
+            Capture only the step fields that influence phase12 no-overrides
+            compiled source/namespace behaviour without constructing full IR
+            payload dict rows.
+        Contract:
+            - Returns a tuple-only row with deterministic ordering.
+            - Includes dependency, contract, lock, and registration semantics.
+        Args:
+            step:
+                ExecutionPlanStep-like object.
+        Returns:
+            Tuple[Any, ...]:
+                Deterministic row used by no-overrides plan signature hashing.
+        """
         dependency_resolution_order = tuple(
             (
                 param_name,
@@ -249,6 +306,22 @@ class CompilerPhase11:
             self,
             spell: ISpell,
     ) -> Tuple[Any, ...]:
+        """
+        Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
+
+        Purpose:
+            Capture spell fields consumed by `ExecutionPlanBuilder.build` so
+            phase11 can detect when a no-overrides rebuild is required.
+        Contract:
+            - Includes existence/register/disposal and optimistic-object identity.
+            - Uses primitive/tuple values only for deterministic hashing.
+        Args:
+            spell:
+                Spell referenced by occurrence execution order.
+        Returns:
+            Tuple[Any, ...]:
+                Deterministic spell metadata row.
+        """
         optimistic_object_identity = None
         if spell.user_created_object is not None:
             optimistic_object_identity = id(spell.user_created_object)
@@ -285,6 +358,24 @@ class CompilerPhase11:
             *,
             include_override_metadata: bool = True,
     ) -> Tuple[Any, ...]:
+        """
+        Build deterministic InjectionSpec row for Phase 11 input signatures.
+
+        Purpose:
+            Normalize injection metadata used by `ExecutionPlanBuilder.build`
+            without allocating Phase 11 steps.
+        Contract:
+            - Includes param source wiring, aggregation flags, and contract payload.
+            - Returns tuple-only deterministic structure.
+        Args:
+            injection_spec:
+                Phase 9 InjectionSpec-like object.
+            include_override_metadata:
+                Whether override metadata should be included in each param row.
+        Returns:
+            Tuple[Any, ...]:
+                Deterministic signature row.
+        """
         param_rows: List[Tuple[Any, ...]] = []
         param_sources = injection_spec.param_sources
         for param_name in sorted(param_sources.keys()):
@@ -334,6 +425,29 @@ class CompilerPhase11:
             injection_plan: Optional[IInjectionPlan],
             spell_lookup: Dict[str, ISpell],
     ) -> Optional[str]:
+        """
+        Build a deterministic no-overrides input signature for Phase 11 reuse.
+
+        Purpose:
+            Detect semantic drift in plan-builder inputs so repeated warm runs
+            can safely skip redundant no-overrides full builds.
+        Contract:
+            - Returns `None` when required spell/injection inputs are missing,
+              forcing the legacy rebuild path.
+            - Includes occurrence graph rows, injection wiring rows, and spell
+              metadata consumed by `ExecutionPlanBuilder.build`.
+        Args:
+            occurrence_plan:
+                Phase 8 occurrence plan for this spell.
+            injection_plan:
+                Optional Phase 9 injection plan.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+        Returns:
+            Optional[str]:
+                Deterministic input signature, or `None` when rebuild must not be
+                elided due to missing inputs.
+        """
         try:
             execution_order = tuple(occurrence_plan.execution_order)
             shared_spell_ids = occurrence_plan.shared_spell_ids
@@ -455,6 +569,25 @@ class CompilerPhase11:
             plan: ExecutionPlan,
             transient_schema: Optional[Dict[str, Any]],
     ) -> str:
+        """
+        Build deterministic no-overrides compile signature from a Phase11 plan.
+
+        Purpose:
+            Fingerprint compile-affecting plan semantics in phase11 hot path
+            without building full no-overrides IR payload rows.
+        Contract:
+            - Includes root instance key, step semantic rows, and transient
+              schema signature.
+            - Returned signature changes when no-overrides compiler inputs drift.
+        Args:
+            plan:
+                No-overrides execution plan.
+            transient_schema:
+                Schema-only transient payload for this plan.
+        Returns:
+            str:
+                Deterministic compile cache signature.
+        """
         step_signature_rows = tuple(
             self._build_phase12_no_overrides_step_signature_row(step)
             for step in plan.steps
@@ -479,6 +612,21 @@ class CompilerPhase11:
             occurrence_plan: IOccurrencePlan,
             plan: ExecutionPlan,
     ) -> None:
+        """
+        Cache Phase 11 execution-plan metrics on the owning spell.
+
+        Contract:
+            - Requires valid Phase 8 occurrence plan and Phase 11 plan inputs.
+            - Stores derived metrics on the spell for fast runtime inspection.
+            - Intended for small/shallow graph path selection heuristics.
+        Args:
+            spell:
+                Spell owning runtime metrics.
+            occurrence_plan:
+                Phase 8 occurrence plan.
+            plan:
+                Execution plan whose shape controls computed metrics.
+        """
         if occurrence_plan is None or plan is None:
             return
 
@@ -544,6 +692,28 @@ class CompilerPhase11:
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
     ) -> ExecutionPlan:
+        """
+        Build one Phase 11 execution-plan variant from phase8/phase9 artifacts.
+
+        Purpose:
+            Provide the canonical builder path used when variant reuse is not
+            possible or when a full rebuild is explicitly required.
+        Contract:
+            - Returns a fresh `ExecutionPlan` object for the requested variant.
+            - Does not mutate source occurrence/injection artifacts.
+        Args:
+            occurrence_plan:
+                Phase8 occurrence plan.
+            injection_plan:
+                Optional phase9 injection plan.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+            plan_variant:
+                Target `ExecutionPlanVariant` label.
+        Returns:
+            ExecutionPlan:
+                Fresh execution plan for the requested variant.
+        """
         builder = ExecutionPlanBuilder(
             occurrence_plan=occurrence_plan,
             injection_plan=injection_plan,
@@ -558,6 +728,29 @@ class CompilerPhase11:
             artifact: SpellCompilerArtifact,
             plan: Optional[ExecutionPlan],
     ) -> None:
+        """
+        Persist phase-11 handoff payloads/signatures required by phase-12.
+
+        Purpose:
+            Store no-overrides execution-plan schema and signatures directly on
+            the owning artifact, and gate `resolution_complete` when the cached
+            executor is still valid.
+        Contract:
+            - Clears phase-12 executor cache when a plan signature drifts.
+            - Preserves `spell.resolution_complete = True` only when signature
+              and executor cache line up.
+            - Sets `resolution_complete = False` on missing or non-empty-plan
+              signature changes.
+        Args:
+            spell:
+                Spell that should receive resolution_complete state updates.
+            artifact:
+                Target artifact that stores phase11/phase12 handoff values.
+            plan:
+                No-overrides execution plan.
+        Returns:
+            None.
+        """
         if plan is None or not plan.steps:
             artifact._phase11_no_overrides_transient_schema = None
             artifact._phase11_no_overrides_plan_signature = None
@@ -586,6 +779,18 @@ class CompilerPhase11:
             self,
             artifact: SpellCompilerArtifact,
     ) -> None:
+        """
+        Mark phase8_11 codegen export as stale.
+
+        Purpose:
+            Record that one or more Phase8-11 artifacts are changed and a new IR
+            export is required before consumers read phase8_11 payloads.
+        Contract:
+            - Idempotent; repeated calls keep the dirty state true.
+            - Does not mutate codegen payloads directly.
+        Returns:
+            None.
+        """
         artifact._phase8_11_codegen_ir_dirty = True
 
     def run(
@@ -595,6 +800,9 @@ class CompilerPhase11:
             spellbook: ISpellbook,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
+        # ------------------------------------------------------------------
+        # Phase 11 - Execution Assembly Plan
+        # ------------------------------------------------------------------
         """
         Phase 11 - Execution plan compilation.
 
@@ -617,6 +825,18 @@ class CompilerPhase11:
               inputs are missing.
             - Stops at the approved phase-11/12 boundary by storing handoff
               state on the artifact instead of compiling phase 12 immediately.
+        Args:
+            spell:
+                Spell being compiled.
+            artifact:
+                Spell compiler artifact containing phase-11 cached artifacts.
+            spellbook:
+                Spellbook used to resolve live spell lookup map.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+        Raises:
+            RuntimeError:
+                If phase-8 or required phase-9 artifacts are missing.
         """
         artifact.check_cleaned()
         if spell.is_existing_creation:

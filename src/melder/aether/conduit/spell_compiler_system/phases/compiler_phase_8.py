@@ -42,6 +42,20 @@ class CompilerPhase8:
     ) -> IRootResolutionBlueprint:
         """
         Return the Phase 5 root blueprint or raise.
+
+        Purpose:
+            Resolve and validate phase-5 blueprint dependency before compiling
+            occurrence artifacts.
+        Contract:
+            - Raises when the Phase-5 root blueprint is missing.
+            - Returns a non-None blueprint map for downstream occurrence-plan
+              construction.
+        Args:
+            artifact:
+                Compiler artifact carrying phase-5 state.
+        Returns:
+            IRootResolutionBlueprint:
+                The current root blueprint required for phase-8.
         """
         root_blueprint = artifact._root_blueprint_phase5
         if root_blueprint is None:
@@ -51,6 +65,20 @@ class CompilerPhase8:
     def _freeze_phase11_schema_value(self, value: Any) -> Any:
         """
         Normalize arbitrary values into deterministic schema-safe forms.
+
+        Purpose:
+            Convert mutable/composite runtime values to deterministic, hashable
+            representations for signature construction.
+        Contract:
+            - Preserves primitive scalar values.
+            - Recursively normalizes container structures.
+            - Falls back to a canonical string representation for unknown types.
+        Args:
+            value:
+                Any object participating in schema/signature capture.
+        Returns:
+            Any:
+                Deterministic, immutable, hashable representation.
         """
         if value is None or isinstance(value, (bool, int, float, str)):
             return value
@@ -91,6 +119,28 @@ class CompilerPhase8:
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build a lightweight deterministic key for phase8 signature reuse.
+
+        Purpose:
+            Avoid recomputing deep phase8 signature hashing when inputs are
+            unchanged between warm runs.
+        Contract:
+            - Returns None when required inputs are unavailable.
+            - Returns None when any spell has a mutation override, forcing the
+              deep signature path.
+            - Mirrors no-mutation phase8 signature surfaces used for plan reuse.
+        Args:
+            root_blueprint:
+                Phase-5 root blueprint for this spell.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+            spellbook:
+                Active spellbook used to resolve contracted routing state.
+            spell_system_states:
+                Optional spell system states for local topology capture.
+        Returns:
+            Optional[Tuple[Any, ...]]:
+                Deterministic fast-key tuple or None when deep-signature fallback
+                is required.
         """
         if root_blueprint is None or spell_lookup is None:
             return None
@@ -209,6 +259,26 @@ class CompilerPhase8:
     ) -> Optional[str]:
         """
         Build a deterministic phase8 input signature for occurrence-plan reuse.
+
+        Purpose:
+            Detect semantic drift in phase8 inputs so warm runs can safely skip
+            redundant occurrence-plan rebuilds when inputs are unchanged.
+        Contract:
+            - Returns None when required inputs are unavailable, forcing rebuild.
+            - Includes blueprint shape, spell mutation/existence signals, local
+              topology socket structure, and contracted-provider routing state.
+        Args:
+            root_blueprint:
+                Phase-5 root blueprint for this spell.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+            spellbook:
+                Active spellbook providing contracted spell wiring context.
+            spell_system_states:
+                Optional system state for local topology snapshot.
+        Returns:
+            Optional[str]:
+                Deterministic signature string, or None when rebuild is required.
         """
         if root_blueprint is None or spell_lookup is None:
             return None
@@ -320,6 +390,10 @@ class CompilerPhase8:
     ) -> None:
         """
         Mark phase8_11 codegen export as stale.
+
+        Contract:
+            - Sets the artifact dirty flag used by downstream codegen consumers.
+            - No mutation beyond the dirty-bit for cache invalidation.
         """
         artifact._phase8_11_codegen_ir_dirty = True
 
@@ -336,6 +410,26 @@ class CompilerPhase8:
 
         Compiles an OccurrencePlan for spells with attached Phase-5 blueprints.
         Existing-creation spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 5 root blueprint to be present.
+            - Builds plan only when the blueprint is available and spell is not
+              an existing-creation.
+            - Replaces any existing occurrence plan for this artifact.
+            - Uses spellbook-managed spell_id_pool as the lookup map.
+        Args:
+            spell:
+                Root spell under compilation.
+            artifact:
+                Conduit artifact owning phase-8 cached outputs.
+            spellbook:
+                Active spellbook supplying lookup and runtime wiring.
+            spell_system_states:
+                Optional system states passed into the builder.
+            cancel_event:
+                Reserved for scheduler-style cancellation (currently unused).
+        Returns:
+            None.
         """
         artifact.check_cleaned()
         if spell.is_existing_creation:
@@ -348,6 +442,7 @@ class CompilerPhase8:
             spellbook=spellbook,
             spell_system_states=spell_system_states,
         )
+        # Stage 1: derive and compare fast-key/signature inputs for warm reuse.
         can_reuse_phase8_signature_fast_key = (
                 phase8_occurrence_plan_fast_key is not None
                 and artifact._phase8_occurrence_plan_fast_key == phase8_occurrence_plan_fast_key
@@ -362,6 +457,7 @@ class CompilerPhase8:
                 spellbook=spellbook,
                 spell_system_states=spell_system_states,
             )
+        # Stage 2: cache fast-key for next run and gate rebuild on signature match.
         if phase8_occurrence_plan_fast_key is not None:
             artifact._phase8_occurrence_plan_fast_key = phase8_occurrence_plan_fast_key
         else:
@@ -373,6 +469,7 @@ class CompilerPhase8:
         ):
             return
 
+        # Stage 3: construct a new occurrence plan and hot-swap outputs.
         builder = OccurrencePlanBuilder(
             root_spell=spell,
             blueprint=root_blueprint,

@@ -36,6 +36,9 @@ class CompilerPhase10:
     ) -> IRootResolutionBlueprint:
         """
         Return the Phase 5 root blueprint or raise.
+
+        Returns:
+            IRootResolutionBlueprint: Attached Phase 5 root blueprint.
         """
         root_blueprint = artifact._root_blueprint_phase5
         if root_blueprint is None:
@@ -104,6 +107,9 @@ class CompilerPhase10:
             artifact: SpellCompilerArtifact,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
+        # ------------------------------------------------------------------
+        # Phase 10 - Patch Maps
+        # ------------------------------------------------------------------
         """
         Phase 10 - Patch map compilation.
 
@@ -121,11 +127,20 @@ class CompilerPhase10:
             - Does not mutate the root blueprint.
 
         Args:
+            spell:
+                Spell currently in phase execution.
+            artifact:
+                Spell compiler artifact that owns this phase state.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If Phase 5 artifacts are missing or the root blueprint is
+                missing for this spell.
 
         Threading:
             - Not thread-safe; expected to run under spellbook phase scheduling.

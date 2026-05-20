@@ -65,8 +65,15 @@ class CompilerPhase7:
     ) -> None:
         """
         Phase 7 - Change-control wiring.
+
+        Behaviour (conduit-scoped, idempotent):
+            - Ensure the ChangeControlManager is present for the frame.
+            - Ensure the component-of index is (re)built from the Phase-5 root
+              blueprints.
+            - Ensure the revalidator hook is registered.
         """
         artifact.check_cleaned()
+        # Stage 1: install conduit-wide component-of rebuild wiring.
         self._ensure_change_control_ready(
             spell,
             artifact,
@@ -84,8 +91,29 @@ class CompilerPhase7:
     ) -> None:
         """
         Phase 7 local entrypoint.
+
+        Purpose:
+            Refresh change-control wiring only for locally revalidated roots.
+        Contract:
+            - Upserts component-of mappings for local root blueprints.
+            - Preserves mappings for unrelated roots on the conduit.
+            - Registers a revalidator when missing.
+        Args:
+            spell:
+                The local spell context driving this phase.
+            artifact:
+                Local compiler artifact with Phase-5 root blueprints in scope.
+            spellbook:
+                Visible spellbook owning this artifact.
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal (unused in wiring path).
+        Returns:
+            None.
         """
         artifact.check_cleaned()
+        # Stage 1: install local change-control upsert wiring.
         self._ensure_change_control_ready_local(
             spell,
             artifact,
@@ -102,6 +130,20 @@ class CompilerPhase7:
     ) -> None:
         """
         Internal helper to (re)wire change-control after Phase 5 artifacts exist.
+
+        Contract:
+            - Requires Phase-5 root-blueprint artifacts to be present.
+            - Rebuilds conduit-scoped component-of mappings for owned root ids.
+            - Installs a change-control revalidator if missing.
+        Args:
+            spell:
+                Top-level spell used as a context anchor.
+            artifact:
+                Conduit-level artifact containing the Phase-5 blueprint map.
+            spellbook:
+                Active spellbook supplying the change-control manager.
+            conduit_id:
+                Conduit identifier used for component-of registration.
         """
         frame_name = CompilerPhase5()._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
@@ -154,6 +196,20 @@ class CompilerPhase7:
     ) -> None:
         """
         Internal helper to upsert local change-control wiring after local Phase 5.
+
+        Contract:
+            - Requires local Phase-5 root blueprints on this artifact.
+            - Uses component-of upsert semantics to preserve unrelated roots.
+            - Registers the same revalidator contract as frame-wide wiring.
+        Args:
+            spell:
+                The local spell entrypoint context.
+            artifact:
+                Local artifact containing the scoped Phase-5 root blueprint map.
+            spellbook:
+                Active spellbook supplying the change-control manager.
+            conduit_id:
+                Conduit identifier used for conduit-local component-of updates.
         """
         frame_name = CompilerPhase5()._get_required_spellbook_frame_name(spellbook)
         change_control_manager = spellbook._aether._get_change_control_manager(frame_name)
