@@ -126,7 +126,7 @@ def test_conduit_cluster_auto_link_dependencies_toggle() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-a")
         cluster = cloud._get_cluster("cluster-a")
         cluster.set_auto_link_dependencies(False)
@@ -170,7 +170,7 @@ def test_conduit_cluster_refresh_shares_after_new_bind() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(owner, "cluster-a")
         cloud.add_conduit_to_cluster(borrower, "cluster-a")
@@ -217,7 +217,7 @@ def test_conduit_cluster_leave_preserves_manual_contracts() -> None:
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         assert owner.link(borrower) is True
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(owner, "cluster-a")
         cloud.add_conduit_to_cluster(borrower, "cluster-a")

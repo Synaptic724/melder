@@ -182,18 +182,13 @@ def conduit_cloud_stub() -> MagicMock:
     Provide a ConduitCloud double for current-frame conduit and cluster flows.
 
     Contract:
-        - Supports root-conduit registration/unregistration helpers.
-        - Supports dynamic cloud registration helpers.
         - Supports current-frame conduit lookup and cluster-management helpers.
+        - Acts as the frame-local lookup surface derived by `ConduitWard`.
 
     Returns:
         MagicMock: ConduitCloud-like stub.
     """
     stub = MagicMock()
-    stub._add_root_conduit.return_value = None
-    stub._remove_root_conduit.return_value = None
-    stub._register_conduit.return_value = None
-    stub._unregister_conduit.return_value = None
     stub.create_cluster.return_value = None
     stub.delete_cluster.return_value = None
     stub.add_conduit_to_cluster.return_value = None
@@ -206,11 +201,33 @@ def conduit_cloud_stub() -> MagicMock:
 
 
 @pytest.fixture()
+def aetheric_frame_stub(conduit_cloud_stub: MagicMock) -> MagicMock:
+    """
+    Provide an AethericFrame-like stub for direct conduit construction.
+
+    Contract:
+        - Exposes frame-owned conduit registration helpers.
+        - Exposes the frame-local conduit cloud used by `ConduitWard`.
+
+    Returns:
+        MagicMock: AethericFrame-like stub.
+    """
+    stub = MagicMock()
+    stub._conduit_cloud = conduit_cloud_stub
+    stub.register_root_conduit.return_value = None
+    stub.unregister_root_conduit.return_value = None
+    stub.register_dynamic_conduit.return_value = None
+    stub.unregister_dynamic_conduit.return_value = None
+    return stub
+
+
+@pytest.fixture()
 def conduit_lesser(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
     dev_ops_manager_stub: MagicMock,
     conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> Conduit:
     """
     Build a lesser Conduit for unit tests.
@@ -230,11 +247,11 @@ def conduit_lesser(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
-        aetheric_frame="default",
+        aetheric_frame_name="default",
+        aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
         root_conduit_id="root-1",
         dev_ops_manager=dev_ops_manager_stub,
-        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)
@@ -247,6 +264,7 @@ def conduit_normal(
     aether_stub: MagicMock,
     dev_ops_manager_stub: MagicMock,
     conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> Conduit:
     """
     Build a normal Conduit for unit tests with Aether isolated.
@@ -267,10 +285,10 @@ def conduit_normal(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
-        aetheric_frame="default",
+        aetheric_frame_name="default",
+        aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
         dev_ops_manager=dev_ops_manager_stub,
-        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)
@@ -283,6 +301,7 @@ def conduit_dynamic_normal(
     aether_stub: MagicMock,
     dev_ops_manager_stub: MagicMock,
     conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> Conduit:
     """
     Build a dynamic, normal Conduit for contract and link tests.
@@ -303,11 +322,11 @@ def conduit_dynamic_normal(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.normal,
-        aetheric_frame="default",
+        aetheric_frame_name="default",
+        aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
         automatic=False,
         dev_ops_manager=dev_ops_manager_stub,
-        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)
@@ -320,6 +339,7 @@ def conduit_dynamic_lesser(
     aether_stub: MagicMock,
     dev_ops_manager_stub: MagicMock,
     conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> Conduit:
     """
     Build a dynamic, lesser Conduit for upgrade tests.
@@ -340,12 +360,12 @@ def conduit_dynamic_lesser(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
         conduit_state=ConduitState.lesser,
-        aetheric_frame="default",
+        aetheric_frame_name="default",
+        aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
         automatic=False,
         root_conduit_id="root-1",
         dev_ops_manager=dev_ops_manager_stub,
-        conduit_cloud=conduit_cloud_stub,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)

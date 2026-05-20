@@ -603,7 +603,7 @@ def test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_insta
     try:
         for borrower in borrowers:
             owner.link(borrower)
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-hard")
         cloud.add_conduit_to_cluster(owner, "cluster-hard")
         for borrower in borrowers:
@@ -951,8 +951,8 @@ def test_conduit_cluster_concurrent_meld_two_clusters_isolated() -> None:
         cluster_a_owner.link(cluster_a_peer)
         cluster_b_owner.link(cluster_b_peer)
 
-        cloud_a = cluster_a_owner._spellbook._aether.get_conduit_cloud(cluster_a_owner._aetheric_frame)
-        cloud_b = cluster_b_owner._spellbook._aether.get_conduit_cloud(cluster_b_owner._aetheric_frame)
+        cloud_a = cluster_a_owner._spellbook._aether.get_conduit_cloud(cluster_a_owner._aetheric_frame_name)
+        cloud_b = cluster_b_owner._spellbook._aether.get_conduit_cloud(cluster_b_owner._aetheric_frame_name)
         cloud_a.create_cluster("cluster-a")
         cloud_a.add_conduit_to_cluster(cluster_a_owner, "cluster-a")
         cloud_a.add_conduit_to_cluster(cluster_a_peer, "cluster-a")

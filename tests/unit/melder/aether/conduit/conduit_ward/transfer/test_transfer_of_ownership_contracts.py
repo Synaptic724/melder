@@ -882,7 +882,7 @@ class FakeConduit:
         """
         self._id = conduit_id
         self._name = name
-        self._aetheric_frame = frame_name
+        self._aetheric_frame_name = frame_name
         self.__dynamic_environment__ = dynamic
         self._spellbook = spellbook
         self._creations = creations

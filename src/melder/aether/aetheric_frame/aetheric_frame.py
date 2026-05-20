@@ -205,6 +205,70 @@ class AethericFrame(Cleanable, IAethericFrame):
         del self._spell_system_states
         del self._dev_ops_manager
 
+    def register_root_conduit(self, conduit: IConduit) -> None:
+        """
+        Register one root conduit into the frame-owned root-conduit stores.
+
+        Args:
+            conduit:
+                Root conduit to attach to this frame.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the conduit name is missing or the root id/name already
+                exists in this frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            conduit_id = conduit._id
+            conduit_name = conduit._name
+            if not conduit_name:
+                raise ValueError("Root conduit name is required.")
+            if conduit_id in self._conduits:
+                raise ValueError(
+                    "Conduit with ID {0} already exists.".format(conduit_id)
+                )
+            existing_name_id = self._conduit_ids_by_name.get(conduit_name)
+            if existing_name_id is not None and existing_name_id != conduit_id:
+                raise ValueError(
+                    "Conduit with name {0} already exists.".format(conduit_name)
+                )
+            self._conduits[conduit_id] = conduit
+            self._conduit_ids_by_name[conduit_name] = conduit_id
+
+    def unregister_root_conduit(self, conduit: IConduit) -> None:
+        """
+        Remove one root conduit from the frame-owned root-conduit stores.
+
+        Args:
+            conduit:
+                Root conduit to detach from this frame.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the conduit id is not currently registered in this frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            conduit_id = conduit._id
+            removed = self._conduits.pop(conduit_id, None)
+            if removed is None:
+                raise ValueError(
+                    "Conduit with ID {0} does not exist.".format(conduit_id)
+                )
+            conduit_name = removed._name
+            if conduit_name:
+                mapped_id = self._conduit_ids_by_name.get(conduit_name)
+                if mapped_id == conduit_id:
+                    self._conduit_ids_by_name.pop(conduit_name, None)
+
+
     # ------------------------------------------------------------------
     # Context Manager
     # ------------------------------------------------------------------

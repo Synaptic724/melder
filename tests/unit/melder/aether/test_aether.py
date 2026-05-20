@@ -432,12 +432,12 @@ def test_cleanup_aetheric_frames_tolerant_of_errors(aether_with_mocks):
 # 3. Delegation Tests (Conduits)
 # ----------------------------------------------------------------------
 
-def test_add_conduit_delegates_to_default(aether_with_mocks):
+def test_register_root_conduit_delegates_to_default_frame(aether_with_mocks):
     """
-    Verify `_add_conduit` delegates to the default frame.
+    Verify root-conduit registration is owned by the default frame.
 
     Contract:
-    - If no frame name is provided, the conduit is added to the default frame's registry.
+    - The default frame stores the conduit id and root name directly.
     """
     a = aether_with_mocks
     frame_mock = a._default_frame
@@ -448,8 +448,13 @@ def test_add_conduit_delegates_to_default(aether_with_mocks):
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
     conduit.name = "root"
+    conduit._name = "root"
+    frame_mock.register_root_conduit.side_effect = lambda item: (
+        conduits_dict.__setitem__(item._id, item),
+        frame_mock._conduit_ids_by_name.__setitem__(item.name, item._id),
+    )
     
-    a._add_conduit(conduit)
+    frame_mock.register_root_conduit(conduit)
     
     assert "c1" in conduits_dict
     assert conduits_dict["c1"] is conduit
@@ -505,25 +510,29 @@ def test_aether_cleanup_cleans_hosted_crystallizer(aether_with_mocks):
     assert crystallizer.cleaned is True
     assert not hasattr(a, "_crystallizer")
 
-def test_add_conduit_delegates_to_custom_frame(aether_with_mocks):
-    """_add_conduit delegates to a specific frame."""
+def test_register_root_conduit_delegates_to_custom_frame(aether_with_mocks):
+    """Frame-owned root registration works on a non-default frame."""
     a = aether_with_mocks
-    frame_mock = MagicMock()
+    frame_mock = a._ensure_frame("f1")
     frame_mock._conduits = {}
     frame_mock._conduit_ids_by_name = {}
-    a._aetheric_frames["f1"] = frame_mock
     
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
     conduit.name = "root"
+    conduit._name = "root"
+    frame_mock.register_root_conduit.side_effect = lambda item: (
+        frame_mock._conduits.__setitem__(item._id, item),
+        frame_mock._conduit_ids_by_name.__setitem__(item.name, item._id),
+    )
     
-    a._add_conduit(conduit, "f1")
+    frame_mock.register_root_conduit(conduit)
     
     assert "c1" in frame_mock._conduits
     assert frame_mock._conduit_ids_by_name["root"] == "c1"
 
-def test_add_conduit_duplicate_raises(aether_with_mocks):
-    """_add_conduit raises ValueError if ID exists."""
+def test_register_root_conduit_duplicate_raises(aether_with_mocks):
+    """Frame-owned root registration raises ValueError if ID exists."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     conduit = MagicMock(spec=IConduit)
@@ -532,13 +541,16 @@ def test_add_conduit_duplicate_raises(aether_with_mocks):
     conduit.name = "root"
     frame_mock._conduits = {"c1": conduit}
     frame_mock._conduit_ids_by_name = {"root": "c1"}
+    frame_mock.register_root_conduit.side_effect = ValueError(
+        "Conduit with ID c1 already exists."
+    )
     
     with pytest.raises(ValueError, match="already exists"):
-        a._add_conduit(conduit)
+        frame_mock.register_root_conduit(conduit)
 
 
-def test_add_conduit_requires_root_name(aether_with_mocks):
-    """_add_conduit raises ValueError when the root conduit name is missing."""
+def test_register_root_conduit_requires_root_name(aether_with_mocks):
+    """Frame-owned root registration raises ValueError when the root conduit name is missing."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     frame_mock._conduits = {}
@@ -546,13 +558,17 @@ def test_add_conduit_requires_root_name(aether_with_mocks):
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
     conduit.name = None
+    conduit._name = None
+    frame_mock.register_root_conduit.side_effect = ValueError(
+        "Root conduit name is required."
+    )
 
     with pytest.raises(ValueError, match="Root conduit name is required"):
-        a._add_conduit(conduit)
+        frame_mock.register_root_conduit(conduit)
 
 
-def test_add_conduit_duplicate_name_raises(aether_with_mocks):
-    """_add_conduit raises ValueError if the root conduit name already exists."""
+def test_register_root_conduit_duplicate_name_raises(aether_with_mocks):
+    """Frame-owned root registration raises ValueError if the root conduit name already exists."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     existing = MagicMock(spec=IConduit)
@@ -561,14 +577,18 @@ def test_add_conduit_duplicate_name_raises(aether_with_mocks):
     incoming = MagicMock(spec=IConduit)
     incoming._id = "c2"
     incoming.name = "root"
+    incoming._name = "root"
     frame_mock._conduits = {"c1": existing}
     frame_mock._conduit_ids_by_name = {"root": "c1"}
+    frame_mock.register_root_conduit.side_effect = ValueError(
+        "Conduit with name root already exists."
+    )
 
     with pytest.raises(ValueError, match="Conduit with name root already exists"):
-        a._add_conduit(incoming)
+        frame_mock.register_root_conduit(incoming)
 
-def test_remove_conduit_delegates(aether_with_mocks):
-    """_remove_conduit removes from the frame's dict."""
+def test_unregister_root_conduit_delegates(aether_with_mocks):
+    """Frame-owned root unregistration removes from the frame's dict."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     conduit = MagicMock(spec=IConduit)
@@ -577,23 +597,31 @@ def test_remove_conduit_delegates(aether_with_mocks):
     conduit.name = "root"
     frame_mock._conduits = {"c1": conduit}
     frame_mock._conduit_ids_by_name = {"root": "c1"}
+    frame_mock.unregister_root_conduit.side_effect = lambda item: (
+        frame_mock._conduits.pop(item._id, None),
+        frame_mock._conduit_ids_by_name.pop(item._name, None),
+    )
     
-    a._remove_conduit(conduit)
+    frame_mock.unregister_root_conduit(conduit)
     
     assert "c1" not in frame_mock._conduits
     assert "root" not in frame_mock._conduit_ids_by_name
 
-def test_remove_conduit_missing_raises(aether_with_mocks):
-    """_remove_conduit raises ValueError if ID not found."""
+def test_unregister_root_conduit_missing_raises(aether_with_mocks):
+    """Frame-owned root unregistration raises ValueError if ID not found."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     frame_mock._conduits = {}
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
     conduit._name = "root"
+    conduit.name = "root"
+    frame_mock.unregister_root_conduit.side_effect = ValueError(
+        "Conduit with ID c1 does not exist."
+    )
     
     with pytest.raises(ValueError, match="does not exist"):
-        a._remove_conduit(conduit)
+        frame_mock.unregister_root_conduit(conduit)
 
 def test_get_conduit_by_id(aether_with_mocks):
     """_get_conduit_by_id retrieves from frame dict."""
@@ -1073,9 +1101,9 @@ def test_access_invalid_frame_raises(aether_with_mocks):
     
     with pytest.raises(ValueError, match="does not exist"):
         a._get_configuration("missing_frame")
-        
+
     with pytest.raises(ValueError, match="does not exist"):
-        a._add_conduit(MagicMock(), "missing_frame")
+        a._get_existing_frame("missing_frame")
 
 def test_ensure_default_frame_raises_if_missing(aether_with_mocks):
     """RuntimeError if default frame is gone (e.g. manually removed)."""
@@ -1614,17 +1642,17 @@ def test_refresh_version_registry(aether_with_mocks):
 # 9. Extra Coverage (20 new tests)
 # ----------------------------------------------------------------------
 
-def test_add_conduit_validates_frame_exists(aether_with_mocks):
-    """_add_conduit raises ValueError if frame missing."""
+def test_get_existing_frame_validates_frame_exists_for_removed_registration_helpers(aether_with_mocks):
+    """Removed Aether registration helper paths now fail through _get_existing_frame."""
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
-        a._add_conduit(MagicMock(), "missing_frame")
+        a._get_existing_frame("missing_frame")
 
-def test_remove_conduit_validates_frame_exists(aether_with_mocks):
-    """_remove_conduit raises ValueError if frame missing."""
+def test_get_existing_frame_validates_frame_exists_for_removed_unregistration_helpers(aether_with_mocks):
+    """Removed Aether unregistration helper paths now fail through _get_existing_frame."""
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
-        a._remove_conduit(MagicMock(), "missing_frame")
+        a._get_existing_frame("missing_frame")
 
 def test_get_existing_frame_validates_frame_exists_for_removed_cluster_helpers(aether_with_mocks):
     """Removed cluster-helper call paths now fail through _get_existing_frame."""

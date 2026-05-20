@@ -77,7 +77,7 @@ def test_conduit_cluster_join_leave_list_and_delete() -> None:
     owner = owner_book.conjure(automatic=False, name="owner")
     peer = peer_book.conjure(automatic=False, name="peer")
     try:
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(owner, "cluster-a")
         cloud.add_conduit_to_cluster(peer, "cluster-a")
@@ -123,19 +123,15 @@ def test_conduit_conduit_cloud_register_unregister() -> None:
     conduit = spellbook.conjure(automatic=False, name="owner")
     lesser = conduit.create_lesser_conduit()
     try:
-        cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
+        cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame_name)
         assert cloud.get_conduit("owner") is conduit
-        assert cloud._registry["owner"] is conduit
-
-        cloud._unregister_conduit(conduit)
-        assert "owner" not in cloud._registry
+        assert cloud.list_cloud_names() == ("owner",)
         assert cloud.get_conduit("owner") is conduit
 
-        cloud._register_conduit(conduit)
-        assert cloud.get_conduit("owner") is conduit
-
-        with pytest.raises(ValueError, match="cannot be None"):
-            cloud._register_conduit(lesser)
+        with pytest.raises(ValueError, match="Root conduit name is required"):
+            conduit._spellbook._aether._ensure_frame(
+                conduit._aetheric_frame_name
+            ).register_root_conduit(lesser)
     finally:
         conduit.cleanup()
 
@@ -162,7 +158,7 @@ def test_aether_get_conduit_cloud_returns_frame_service_in_automatic() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        cloud = spellbook._aether.get_conduit_cloud(conduit._aetheric_frame)
+        cloud = spellbook._aether.get_conduit_cloud(conduit._aetheric_frame_name)
         assert cloud.get_conduit("root") is conduit
     finally:
         conduit.cleanup()

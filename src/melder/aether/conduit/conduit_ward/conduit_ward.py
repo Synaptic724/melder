@@ -2,7 +2,7 @@ import inspect
 import threading
 from contextlib import contextmanager
 from types import TracebackType
-from typing import List, Optional, Any, Tuple, Dict, Iterable, Generator, Type
+from typing import List, Any, Tuple, Dict, Iterable, Generator, Type, Optional
 
 from mypy_extensions import mypyc_attr
 
@@ -14,6 +14,8 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.iconduit import IConduit
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.interfaces.ispell import ISpell
@@ -83,7 +85,14 @@ class ConduitWard(Cleanable, IConduitWard):
     - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
     """
     __melder_internal__ = _mrg.sentinel
-    def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
+    def __init__(
+            self,
+            conduit: IConduit,
+            dynamic: bool,
+            conduit_type: ConduitState,
+            policy: Policies,
+            aetheric_frame: IAethericFrame,
+    ):
         """
         Initialize the ward for one conduit.
 
@@ -107,12 +116,16 @@ class ConduitWard(Cleanable, IConduitWard):
                 Current conduit lifecycle state (`normal` or `lesser`).
             policy:
                 Initial ward policy to apply.
+            aetheric_frame:
+                Live frame object used to derive the same-frame cloud lookup
+                surface for this ward.
         """
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()
 
         ## Conduit Ward properties
         self._conduit: IConduit = conduit
+        self._conduit_cloud: IConduitCloud = aetheric_frame._conduit_cloud
         self._logger: ISafeLogger = conduit._logger
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
@@ -190,6 +203,7 @@ class ConduitWard(Cleanable, IConduitWard):
             del self._root_conduit
             del self._policy
             del self._conduit
+            del self._conduit_cloud
             del self._dynamic
             
             # Null logger metadata last (outside lock)
@@ -659,7 +673,7 @@ class ConduitWard(Cleanable, IConduitWard):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError("Cannot link a conduit to itself.")
-        if self._conduit._aetheric_frame != target_conduit._aetheric_frame:
+        if self._conduit._aetheric_frame_name != target_conduit._aetheric_frame_name:
             self._logger.error(
                 "link: target conduit is in a different frame",
                 method_name="_link",
@@ -669,8 +683,8 @@ class ConduitWard(Cleanable, IConduitWard):
             raise RuntimeError(
                 "Cannot link conduits across different AethericFrames: "
                 "{0} != {1}".format(
-                    self._conduit._aetheric_frame,
-                    target_conduit._aetheric_frame,
+                    self._conduit._aetheric_frame_name,
+                    target_conduit._aetheric_frame_name,
                 )
             )
         if not self._dynamic:
@@ -1305,9 +1319,8 @@ class ConduitWard(Cleanable, IConduitWard):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 raise TypeError(f"Expected conduit_id as str, got {type(conduit_id).__name__}")
-            conduit = self._conduit._spellbook._aether.get_conduit_by_id(
+            conduit = self._conduit_cloud.get_conduit_by_id(
                 conduit_id,
-                aetheric_frame,
             )
             if conduit is None:
                 self._logger.error(
@@ -2907,7 +2920,7 @@ class ConduitWard(Cleanable, IConduitWard):
         else:
             resolved_spell = self._conduit.get_spell_by_id(
                 spell,
-                self._conduit._aetheric_frame,
+                self._conduit._aetheric_frame_name,
             )
 
         if resolved_spell is None:

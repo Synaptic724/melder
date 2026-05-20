@@ -8,8 +8,8 @@ class IConduitCloud(ICleanable, Protocol):
     Interface for a frame-local conduit and cluster service facade.
 
     The ConduitCloud provides a central location to retrieve root conduits
-    within one frame, manage explicit dynamic cloud registration, and orchestrate
-    frame-local conduit-cluster behavior.
+    within one frame, derive named dynamic conduit visibility from the frame-owned
+    conduit set, and orchestrate frame-local conduit-cluster behavior.
     """
     _id: str
 
@@ -62,7 +62,7 @@ class IConduitCloud(ICleanable, Protocol):
 
     def list_cloud_names(self) -> Tuple[str, ...]:
         """
-        Return the explicit dynamic cloud-entry names in this frame.
+        Return the derived named dynamic root-conduit view for this frame.
         """
         ...
 
@@ -87,43 +87,6 @@ class IConduitCloud(ICleanable, Protocol):
     def find_conduit_id_by_name(self, name: str) -> Optional[str]:
         """
         Return the conduit id registered for one name, if present.
-        """
-        ...
-
-    def _register_conduit(self, conduit: IConduit) -> None:
-        """
-        Registers a named conduit into the cloud. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit instance to register.
-
-        Raises:
-            ValueError: If the conduit's name is None or already exists
-                in the registry.
-        """
-        ...
-
-    def _unregister_conduit(self, conduit: IConduit) -> None:
-        """
-        Remove one named conduit from the cloud. (Internal use)
-
-        Args:
-            conduit (IConduit): The conduit instance to unregister.
-
-        Raises:
-            ValueError: If the conduit name is missing or not registered.
-        """
-        ...
-
-    def _add_root_conduit(self, conduit: IConduit) -> None:
-        """
-        Register one root conduit into the borrowed frame-owned root stores.
-        """
-        ...
-
-    def _remove_root_conduit(self, conduit: IConduit) -> None:
-        """
-        Remove one root conduit from the borrowed frame-owned root stores.
         """
         ...
 

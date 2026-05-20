@@ -141,11 +141,7 @@ def test_aether_conduit_cloud_unregister_removes_entry() -> None:
     try:
         cloud = aether._ensure_frame(frame_name)._conduit_cloud
         assert cloud.get_conduit("root") is conduit
-        assert cloud._registry["root"] is conduit
-
-        cloud._unregister_conduit(conduit)
-        assert "root" not in cloud._registry
-        assert cloud.get_conduit("root") is conduit
+        assert cloud.list_cloud_names() == ("root",)
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -176,12 +172,13 @@ def test_aether_add_remove_conduit_duplicate_errors() -> None:
     conduit = spellbook.conjure(name="root")
     aether = Aether()
     try:
+        frame = aether._ensure_frame(frame_name)
         with pytest.raises(ValueError, match="already exists"):
-            aether._add_conduit(conduit, frame_name)
+            frame.register_root_conduit(conduit)
 
-        aether._remove_conduit(conduit, frame_name)
+        frame.unregister_root_conduit(conduit)
         with pytest.raises(ValueError, match="does not exist"):
-            aether._remove_conduit(conduit, frame_name)
+            frame.unregister_root_conduit(conduit)
     finally:
         conduit.cleanup()
         spellbook.cleanup()

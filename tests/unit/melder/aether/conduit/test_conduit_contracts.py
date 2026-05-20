@@ -31,11 +31,8 @@ def _build_conduit(
     """
     dev_ops_manager = MagicMock()
     dev_ops_manager.creation_gate_controller = CreationGateController()
+    aetheric_frame_object = MagicMock()
     conduit_cloud = MagicMock()
-    conduit_cloud._add_root_conduit.return_value = None
-    conduit_cloud._remove_root_conduit.return_value = None
-    conduit_cloud._register_conduit.return_value = None
-    conduit_cloud._unregister_conduit.return_value = None
     conduit_cloud.create_cluster.return_value = None
     conduit_cloud.delete_cluster.return_value = None
     conduit_cloud.add_conduit_to_cluster.return_value = None
@@ -44,16 +41,19 @@ def _build_conduit(
     conduit_cloud.refresh_cluster_shares_for_conduit.return_value = None
     conduit_cloud.get_conduit_by_id.return_value = None
     conduit_cloud.get_conduit_by_name.return_value = None
+    aetheric_frame_object._conduit_cloud = conduit_cloud
+    aetheric_frame_object.register_root_conduit.return_value = None
+    aetheric_frame_object.unregister_root_conduit.return_value = None
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
     return Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
-        aetheric_frame=aetheric_frame,
+        aetheric_frame_name=aetheric_frame,
+        aetheric_frame=aetheric_frame_object,
         policy=policy,
         dev_ops_manager=dev_ops_manager,
-        conduit_cloud=conduit_cloud,
         automatic=automatic,
         name=name,
         root_conduit_id=root_conduit_id,

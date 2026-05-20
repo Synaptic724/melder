@@ -145,7 +145,7 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
     try:
         owner_id = owner.id
         owner_name = owner.name
-        cloud = observer._spellbook._aether.get_conduit_cloud(observer._aetheric_frame)
+        cloud = observer._spellbook._aether.get_conduit_cloud(observer._aetheric_frame_name)
 
         assert cloud.get_conduit_by_id(owner_id) is owner
         assert cloud.get_conduit_by_name(owner_name) is owner
@@ -345,7 +345,7 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
                 permissions="create",
             )
         assert isinstance(lesser.meld(spell=config_id), BasicConfig)
-        cloud = root._spellbook._aether.get_conduit_cloud(root._aetheric_frame)
+        cloud = root._spellbook._aether.get_conduit_cloud(root._aetheric_frame_name)
         assert cloud.get_conduit_by_name("upgraded") is lesser
     finally:
         root.cleanup()

@@ -270,7 +270,7 @@ def test_upgrade_to_normal_raises_when_not_lesser(
 
 def test_upgrade_to_normal_transitions_and_registers(
     conduit_dynamic_lesser: Conduit,
-    conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> None:
     """
     Verify upgrade_to_normal transitions state and registers the conduit.
@@ -303,8 +303,9 @@ def test_upgrade_to_normal_transitions_and_registers(
     assert conduit_dynamic_lesser._meld._resolution_conduit_id == conduit_dynamic_lesser._id
     conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.assert_called_once_with()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook.assert_called_once_with()
-    conduit_cloud_stub._add_root_conduit.assert_called_once_with(conduit_dynamic_lesser)
-    conduit_cloud_stub._register_conduit.assert_called_once_with(conduit_dynamic_lesser)
+    aetheric_frame_stub.register_root_conduit.assert_called_once_with(
+        conduit_dynamic_lesser
+    )
     conduit_dynamic_lesser._nexus._publish_conduit_record.assert_called_once_with(
         conduit_dynamic_lesser
     )
@@ -312,7 +313,7 @@ def test_upgrade_to_normal_transitions_and_registers(
 
 def test_upgrade_to_normal_defaults_name_when_omitted(
     conduit_dynamic_lesser: Conduit,
-    conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> None:
     """
     Verify upgrade_to_normal assigns the default root name when omitted.
@@ -330,7 +331,9 @@ def test_upgrade_to_normal_defaults_name_when_omitted(
 
     assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
     assert conduit_dynamic_lesser._name == "default"
-    conduit_cloud_stub._add_root_conduit.assert_called_once_with(conduit_dynamic_lesser)
+    aetheric_frame_stub.register_root_conduit.assert_called_once_with(
+        conduit_dynamic_lesser
+    )
 
 
 def test_upgrade_to_normal_registers_hooks(

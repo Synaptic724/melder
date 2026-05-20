@@ -992,8 +992,8 @@ class Nexus(Cleanable, INexus):
             short-circuited.
         """
         published = self._frame_descriptor_manager._publish_conduit_record(conduit)
-        if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame):
-            self._ensure_frame_acl_container(conduit._aetheric_frame)
+        if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame_name):
+            self._ensure_frame_acl_container(conduit._aetheric_frame_name)
         return published
 
     def _remove_conduit_record(

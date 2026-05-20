@@ -66,12 +66,9 @@ def _build_conduit(
     if dev_ops_manager is None:
         dev_ops_manager = MagicMock()
         dev_ops_manager.creation_gate_controller = CreationGateController()
+    aetheric_frame_object = MagicMock()
     if conduit_cloud is None:
         conduit_cloud = MagicMock()
-        conduit_cloud._add_root_conduit.return_value = None
-        conduit_cloud._remove_root_conduit.return_value = None
-        conduit_cloud._register_conduit.return_value = None
-        conduit_cloud._unregister_conduit.return_value = None
         conduit_cloud.create_cluster.return_value = None
         conduit_cloud.delete_cluster.return_value = None
         conduit_cloud.add_conduit_to_cluster.return_value = None
@@ -80,16 +77,19 @@ def _build_conduit(
         conduit_cloud.refresh_cluster_shares_for_conduit.return_value = None
         conduit_cloud.get_conduit_by_id.return_value = None
         conduit_cloud.get_conduit_by_name.return_value = None
+    aetheric_frame_object._conduit_cloud = conduit_cloud
+    aetheric_frame_object.register_root_conduit.return_value = None
+    aetheric_frame_object.unregister_root_conduit.return_value = None
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
     return Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
-        aetheric_frame=aetheric_frame,
+        aetheric_frame_name=aetheric_frame,
+        aetheric_frame=aetheric_frame_object,
         policy=policy,
         dev_ops_manager=dev_ops_manager,
-        conduit_cloud=conduit_cloud,
         automatic=automatic,
         name=name,
         logger=logger,
@@ -334,7 +334,7 @@ def test_apply_configuration_flags_updates_dynamic_environment(
     try:
         conduit._apply_configuration_flags()
         assert conduit.__dynamic_environment__ is True
-        assert conduit._conduit_cloud is not None
+        assert conduit._aetheric_frame is not None
     finally:
         conduit.cleanup()
 
@@ -1002,7 +1002,7 @@ def test_resolve_peer_conduit_for_contract_hooks_uses_cloud_for_current_frame_id
     conduit_dynamic_normal._conduit_ward = MagicMock()
     conduit_dynamic_normal._conduit_ward._add_spell_to_contract.return_value = True
     peer = MagicMock()
-    conduit_dynamic_normal._conduit_cloud.get_conduit_by_id.return_value = peer
+    conduit_dynamic_normal._aetheric_frame._conduit_cloud.get_conduit_by_id.return_value = peer
     events: list[tuple[Conduit, Conduit]] = []
 
     def hook(left: Conduit, right: Conduit) -> None:
@@ -1042,7 +1042,7 @@ def test_resolve_peer_conduit_for_contract_hooks_uses_cloud_for_current_frame_id
     )
 
     assert result is True
-    conduit_dynamic_normal._conduit_cloud.get_conduit_by_id.assert_called_once_with("peer-1")
+    conduit_dynamic_normal._aetheric_frame._conduit_cloud.get_conduit_by_id.assert_called_once_with("peer-1")
     assert events == [(conduit_dynamic_normal, peer)]
 
 
@@ -1230,12 +1230,11 @@ def test_cleanup_normal_unregisters_root_state_and_removes_spells(
         name="alpha",
     )
     try:
-        conduit_cloud = conduit._conduit_cloud
-        conduit_cloud.reset_mock()
+        aetheric_frame = conduit._aetheric_frame
+        aetheric_frame.reset_mock()
         conduit.cleanup()
         spellbook_stub._unregister_conduit_spells_from_aether.assert_called_once_with(conduit._id)
-        conduit_cloud._remove_root_conduit.assert_called_once_with(conduit)
-        conduit_cloud._unregister_conduit.assert_called_once_with(conduit)
+        aetheric_frame.unregister_root_conduit.assert_called_once_with(conduit)
     finally:
         if not conduit._cleaned:
             conduit.cleanup()

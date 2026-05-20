@@ -19,15 +19,14 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     `ConduitCloud` is the current-frame service surface used for:
     - direct root-conduit lookup inside one frame,
-    - explicit dynamic cloud registration,
+    - derived named-cloud visibility over frame-owned conduits,
     - cluster creation / membership / share refresh, and
-    - root-conduit registry operations that do not belong on `Conduit`.
+    - frame-local conduit discovery that does not belong on `Conduit`.
 
     Contract:
     - One cloud belongs to one frame name.
     - Borrows frame-owned root-conduit stores by reference.
     - Owns the frame-local cluster registry and cluster lifecycle.
-    - Owns a separate dynamic cloud registry for explicit named-cloud exposure.
     - Does not own conduit lifecycle; `AethericFrame` remains the owner of the
       borrowed conduit stores.
     - Thread-safe access is serialized with the instance `RLock`.
@@ -54,7 +53,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
             conduit_ids_by_name (Dict[str, str]):
                 Borrowed root-conduit name registry owned by the frame.
         Contract:
-            - Starts with an empty dynamic cloud registry.
             - Starts with an empty owned cluster registry.
             - Stores the owning frame name for later diagnostics/identity.
             - Retains borrowed references to the frame-owned root-conduit
@@ -66,7 +64,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._conduits: Dict[str, IConduit] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, IConduitCluster] = {}
-        self._registry: Dict[str, IConduit] = {}
         self._id: str = str(ulid.ULID())
 
     def cleanup(self) -> None:
@@ -81,7 +78,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
             - Idempotent and lock-guarded.
             - Cleans cloud-owned cluster state before dropping owned refs.
             - Does not clean the conduit objects or clear the borrowed
-              frame-owned root stores.
+              frame-owned root-conduit stores.
         """
         if self._cleaned:
             return
@@ -94,10 +91,8 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 except Exception:
                     pass
             self._conduit_clusters.clear()
-            self._registry.clear()
             self._cleaned = True
 
-            del self._registry
             del self._conduits
             del self._conduit_ids_by_name
             del self._conduit_clusters
@@ -237,14 +232,14 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     def list_cloud_names(self) -> Tuple[str, ...]:
         """
-        Return the explicit dynamic cloud-entry names in this frame.
+        Return the derived named dynamic root-conduit view for this frame.
 
         Returns:
             Tuple[str, ...]: Snapshot of dynamic cloud-entry names.
         """
         self.check_cleaned()
         with self._lock:
-            return tuple(self._registry.keys())
+            return tuple(self._conduit_ids_by_name.keys())
 
     def count_conduits(self) -> int:
         """
@@ -301,126 +296,6 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self.check_cleaned()
         with self._lock:
             return self._conduit_ids_by_name.get(name)
-
-    def _register_conduit(self, conduit: IConduit) -> None:
-        """
-        Register one named conduit in the cloud.
-
-        Purpose:
-            Insert a live conduit into the frame-local name registry after the
-            owning frame has already accepted the conduit.
-
-        Args:
-            conduit (IConduit): The conduit instance to register.
-
-        Contract:
-            - Conduit names must be present and unique.
-            - The cloud stores the live conduit object without taking ownership
-              of its lifecycle.
-
-        Raises:
-            ValueError: If the conduit's name is None or already exists
-                in the registry.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if conduit.name is None:
-                raise ValueError("Conduit name cannot be None for cloud registration.")
-
-            if conduit.name in self._registry:
-                raise ValueError(
-                    "Conduit with name {0} already exists in the cloud. Please rename conduit to something unique.".format(
-                        conduit.name
-                    )
-                )
-            self._registry[conduit.name] = conduit
-
-    def _unregister_conduit(self, conduit: IConduit) -> None:
-        """
-        Remove one named conduit from the cloud.
-
-        Purpose:
-            Keep the frame-local name registry in sync when a conduit leaves the
-            owning frame.
-
-        Args:
-            conduit (IConduit): The conduit instance to unregister.
-
-        Contract:
-            - Requires the conduit name to be present.
-            - Raises when the named conduit is not currently registered.
-
-        Raises:
-            ValueError: If the conduit has no name or is not registered.
-        """
-        self.check_cleaned()
-        with self._lock:
-            conduit_name = conduit._name
-            if conduit_name is None:
-                raise ValueError("Conduit name cannot be None for cloud unregistration.")
-
-            removed = self._registry.pop(conduit_name, None)
-            if removed is None:
-                raise ValueError(
-                    "Conduit with name {0} is not registered in the cloud.".format(
-                        conduit_name
-                    )
-                )
-
-    def _add_root_conduit(self, conduit: IConduit) -> None:
-        """
-        Register one root conduit into the borrowed frame-owned root stores.
-
-        Args:
-            conduit (IConduit): Root conduit to register.
-
-        Raises:
-            ValueError: If the conduit id or name is missing or already present.
-        """
-        self.check_cleaned()
-        with self._lock:
-            conduit_id = conduit._id
-            conduit_name = conduit._name
-            if not conduit_name:
-                raise ValueError("Root conduit name is required.")
-            if conduit_id in self._conduits:
-                raise ValueError(
-                    "Conduit with ID {0} already exists.".format(conduit_id)
-                )
-            existing_name_id = self._conduit_ids_by_name.get(conduit_name)
-            if existing_name_id is not None and existing_name_id != conduit_id:
-                raise ValueError(
-                    "Conduit with name {0} already exists.".format(conduit_name)
-                )
-            self._conduits[conduit_id] = conduit
-            self._conduit_ids_by_name[conduit_name] = conduit_id
-
-    def _remove_root_conduit(self, conduit: IConduit) -> None:
-        """
-        Remove one root conduit from the borrowed frame-owned root stores.
-
-        Args:
-            conduit (IConduit): Root conduit to remove.
-
-        Raises:
-            ValueError: If the conduit is not present.
-        """
-        self.check_cleaned()
-        with self._lock:
-            conduit_id = conduit._id
-            removed = self._conduits.pop(conduit_id, None)
-            if removed is None:
-                raise ValueError(
-                    "Conduit with ID {0} does not exist.".format(conduit_id)
-                )
-            conduit_name = removed._name
-            if conduit_name:
-                mapped_id = self._conduit_ids_by_name.get(conduit_name)
-                if mapped_id == conduit_id:
-                    self._conduit_ids_by_name.pop(conduit_name, None)
-                cloud_entry = self._registry.get(conduit_name)
-                if cloud_entry is removed:
-                    self._registry.pop(conduit_name, None)
 
     def create_cluster(self, cluster_name: str) -> None:
         """

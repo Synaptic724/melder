@@ -46,11 +46,8 @@ def _build_conduit(
     """
     dev_ops_manager = MagicMock()
     dev_ops_manager.creation_gate_controller = CreationGateController()
+    aetheric_frame_object = MagicMock()
     conduit_cloud = MagicMock()
-    conduit_cloud._add_root_conduit.return_value = None
-    conduit_cloud._remove_root_conduit.return_value = None
-    conduit_cloud._register_conduit.return_value = None
-    conduit_cloud._unregister_conduit.return_value = None
     conduit_cloud.create_cluster.return_value = None
     conduit_cloud.delete_cluster.return_value = None
     conduit_cloud.add_conduit_to_cluster.return_value = None
@@ -59,16 +56,19 @@ def _build_conduit(
     conduit_cloud.refresh_cluster_shares_for_conduit.return_value = None
     conduit_cloud.get_conduit_by_id.return_value = None
     conduit_cloud.get_conduit_by_name.return_value = None
+    aetheric_frame_object._conduit_cloud = conduit_cloud
+    aetheric_frame_object.register_root_conduit.return_value = None
+    aetheric_frame_object.unregister_root_conduit.return_value = None
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
     return Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
-        aetheric_frame=aetheric_frame,
+        aetheric_frame_name=aetheric_frame,
+        aetheric_frame=aetheric_frame_object,
         policy=policy,
         dev_ops_manager=dev_ops_manager,
-        conduit_cloud=conduit_cloud,
         automatic=automatic,
         name=name,
         logger=logger,
@@ -587,7 +587,7 @@ def test_cleanup_normal_conduit_tolerates_child_cleanup_errors(
     conduit_normal._creations.cleanup.side_effect = RuntimeError("creations boom")
     conduit_normal._spellbook._spell_system_states.drop_conduit_resolution_state.side_effect = RuntimeError("state boom")
     conduit_normal._spellbook.cleanup.side_effect = RuntimeError("spellbook boom")
-    conduit_normal._conduit_cloud._remove_root_conduit.side_effect = RuntimeError("cloud boom")
+    conduit_normal._aetheric_frame.unregister_root_conduit.side_effect = RuntimeError("frame boom")
 
     conduit_normal._cleanup_normal_conduit()
 
@@ -723,7 +723,7 @@ def test_remove_conduit_record_from_nexus_publishes_for_lesser(
 
     conduit_lesser._nexus._remove_conduit_record.assert_called_once_with(
         conduit_lesser._id,
-        conduit_lesser._aetheric_frame,
+        conduit_lesser._aetheric_frame_name,
     )
 
 

@@ -110,7 +110,7 @@ class TransferOfOwnership(Cleanable):
         self._source_spellbook: ISpellbook = self.source_conduit._spellbook
         self._target_spellbook: ISpellbook = self.target_conduit._spellbook
         self._aether: IAether = self._source_spellbook._aether
-        self._frame_name: str = self.source_conduit._aetheric_frame
+        self._frame_name: str = self.source_conduit._aetheric_frame_name
         self._preflight_summary: Dict[str, Any] = {}
         change_control_manager = self._aether._get_change_control_manager(
             self._frame_name
@@ -441,7 +441,7 @@ class TransferOfOwnership(Cleanable):
             RuntimeError: If the source conduit does not expose a valid cloud.
         """
         conduit_cloud: IConduitCloud = self._aether.get_conduit_cloud(
-            self.source_conduit._aetheric_frame
+            self.source_conduit._aetheric_frame_name
         )
         if conduit_cloud is None:
             raise RuntimeError("Source conduit did not return a valid ConduitCloud.")
@@ -949,7 +949,7 @@ class TransferOfOwnership(Cleanable):
         try:
             if conduit is None or not conduit._id:
                 return False
-            frame_name = conduit._aetheric_frame or self._frame_name
+            frame_name = conduit._aetheric_frame_name or self._frame_name
             frame = self._aether._get_existing_frame(frame_name)
             spell_registry = frame._spell_registry
             conduit_registry = spell_registry.get(conduit._id)

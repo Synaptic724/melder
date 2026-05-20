@@ -22,6 +22,19 @@ from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import 
 # Fixtures
 # ----------------------------------------------------------------------
 
+def _make_frame_with_cloud() -> MagicMock:
+    """
+    Build a minimal frame stub exposing the ward lookup cloud.
+
+    Returns:
+        MagicMock: Frame stub with a cloud-like lookup surface.
+    """
+    cloud = MagicMock()
+    cloud.get_conduit_by_id.return_value = None
+    frame = MagicMock()
+    frame._conduit_cloud = cloud
+    return frame
+
 def _make_conduit_with_ward(
     conduit_id: str,
     *,
@@ -44,10 +57,17 @@ def _make_conduit_with_ward(
     conduit._id = conduit_id
     conduit._logger = MagicMock()
     conduit._conduit_state = conduit_state
-    conduit._aetheric_frame = aetheric_frame
+    conduit._aetheric_frame_name = aetheric_frame
     conduit._spellbook = MagicMock()
     conduit._spellbook._aether = MagicMock()
-    ward = ConduitWard(conduit, dynamic, conduit_state, Policies.default)
+    conduit._ward_frame = _make_frame_with_cloud()
+    ward = ConduitWard(
+        conduit,
+        dynamic,
+        conduit_state,
+        Policies.default,
+        conduit._ward_frame,
+    )
     conduit._conduit_ward = ward
     return conduit, ward
 
@@ -58,16 +78,23 @@ def mock_conduit():
     c._id = "conduit-1"
     c._logger = MagicMock()
     c._conduit_state = ConduitState.normal
-    c._aetheric_frame = "default"
+    c._aetheric_frame_name = "default"
     c._spellbook = MagicMock()
     c._spellbook._aether = MagicMock()
+    c._ward_frame = _make_frame_with_cloud()
     # Circular ref often needed
     return c
 
 @pytest.fixture
 def ward(mock_conduit):
     # dynamic=True, type=normal, policy=default
-    w = ConduitWard(mock_conduit, True, ConduitState.normal, Policies.default)
+    w = ConduitWard(
+        mock_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        mock_conduit._ward_frame,
+    )
     # Link back
     mock_conduit._conduit_ward = w
     return w
@@ -85,7 +112,13 @@ def test_init_success(mock_conduit):
     - Policy is set.
     - Indices are empty.
     """
-    w = ConduitWard(mock_conduit, True, ConduitState.normal, Policies.default)
+    w = ConduitWard(
+        mock_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        mock_conduit._ward_frame,
+    )
     assert w._id == "conduit-1"
     assert w._policy == Policies.default
     assert w._conduit_type == ConduitState.normal
@@ -94,7 +127,13 @@ def test_init_success(mock_conduit):
 
 def test_init_sets_default_policy_if_none(mock_conduit):
     """Verify None policy defaults to Policies.default."""
-    w = ConduitWard(mock_conduit, True, ConduitState.normal, None)
+    w = ConduitWard(
+        mock_conduit,
+        True,
+        ConduitState.normal,
+        None,
+        mock_conduit._ward_frame,
+    )
     assert w._policy == Policies.default
     assert w.root_conduit is mock_conduit
 
@@ -186,7 +225,13 @@ def test_set_new_policy_fails_non_dynamic(mock_conduit):
     """
     Verify policy change fails if not dynamic environment.
     """
-    w = ConduitWard(mock_conduit, False, ConduitState.normal, Policies.default)
+    w = ConduitWard(
+        mock_conduit,
+        False,
+        ConduitState.normal,
+        Policies.default,
+        mock_conduit._ward_frame,
+    )
     with pytest.raises(RuntimeError, match="not enabled"):
         w._set_new_policy(Policies.whitelist_all)
 
@@ -194,7 +239,13 @@ def test_set_new_policy_fails_lesser(mock_conduit):
     """
     Verify lesser conduits cannot change policy.
     """
-    w = ConduitWard(mock_conduit, True, ConduitState.lesser, Policies.default)
+    w = ConduitWard(
+        mock_conduit,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        mock_conduit._ward_frame,
+    )
     with pytest.raises(RuntimeError, match="lesser Conduit"):
         w._set_new_policy(Policies.whitelist_all)
 
@@ -219,7 +270,7 @@ def test_link_lesser_fails(ward):
     """Verify linking to lesser conduit via _link is forbidden."""
     target = MagicMock(spec=IConduit)
     target._conduit_state = ConduitState.lesser
-    target._aetheric_frame = "default"
+    target._aetheric_frame_name = "default"
     
     with pytest.raises(RuntimeError, match="lesser conduit"):
         ward._link(target)
@@ -231,7 +282,7 @@ def test_link_cross_frame_fails(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
-    target_conduit._aetheric_frame = "other_frame"
+    target_conduit._aetheric_frame_name = "other_frame"
     target_conduit._logger = MagicMock()
 
     with pytest.raises(RuntimeError, match="different AethericFrames"):
@@ -244,10 +295,17 @@ def test_create_new_contract_success(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
     target_conduit._logger = MagicMock()
-    
-    target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
+    target_conduit._ward_frame = _make_frame_with_cloud()
+
+    target_ward = ConduitWard(
+        target_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        target_conduit._ward_frame,
+    )
     target_conduit._conduit_ward = target_ward
     
     # Mock spellbooks
@@ -272,9 +330,16 @@ def test_sever_link_success(ward):
     # Setup link
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
     target_conduit._logger = MagicMock()
-    target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
+    target_conduit._ward_frame = _make_frame_with_cloud()
+    target_ward = ConduitWard(
+        target_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        target_conduit._ward_frame,
+    )
     target_conduit._conduit_ward = target_ward
     
     ward._conduit._spellbook = MagicMock()
@@ -302,7 +367,14 @@ def test_link_lesser_conduit(ward):
     child._id = "child-1"
     child._logger = MagicMock()
     child._conduit_state = ConduitState.lesser
-    child._conduit_ward = ConduitWard(child, True, ConduitState.lesser, Policies.default)
+    child._ward_frame = _make_frame_with_cloud()
+    child._conduit_ward = ConduitWard(
+        child,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        child._ward_frame,
+    )
     
     ward._link_lesser_conduit(child)
     
@@ -323,7 +395,14 @@ def test_link_lesser_conduit_requires_root_conduit() -> None:
     parent._id = "parent-1"
     parent._logger = MagicMock()
     parent._conduit_state = ConduitState.lesser
-    parent_ward = ConduitWard(parent, True, ConduitState.lesser, Policies.default)
+    parent._ward_frame = _make_frame_with_cloud()
+    parent_ward = ConduitWard(
+        parent,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        parent._ward_frame,
+    )
     parent._conduit_ward = parent_ward
 
     child = MagicMock(spec=IConduit)
@@ -345,7 +424,14 @@ def test_link_lesser_conduit_rejects_non_normal_root() -> None:
     parent._id = "parent-2"
     parent._logger = MagicMock()
     parent._conduit_state = ConduitState.lesser
-    parent_ward = ConduitWard(parent, True, ConduitState.lesser, Policies.default)
+    parent._ward_frame = _make_frame_with_cloud()
+    parent_ward = ConduitWard(
+        parent,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        parent._ward_frame,
+    )
     parent._conduit_ward = parent_ward
 
     root = MagicMock(spec=IConduit)
@@ -367,7 +453,14 @@ def test_root_conduit_property_raises_when_missing_for_lesser_lineage() -> None:
     conduit._id = "lesser-1"
     conduit._logger = MagicMock()
     conduit._conduit_state = ConduitState.lesser
-    ward = ConduitWard(conduit, True, ConduitState.lesser, Policies.default)
+    conduit._ward_frame = _make_frame_with_cloud()
+    ward = ConduitWard(
+        conduit,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        conduit._ward_frame,
+    )
 
     with pytest.raises(RuntimeError, match="Root conduit is not set"):
         _ = ward.root_conduit
@@ -380,7 +473,14 @@ def test_root_conduit_property_raises_when_root_not_normal() -> None:
     conduit._id = "lesser-2"
     conduit._logger = MagicMock()
     conduit._conduit_state = ConduitState.lesser
-    ward = ConduitWard(conduit, True, ConduitState.lesser, Policies.default)
+    conduit._ward_frame = _make_frame_with_cloud()
+    ward = ConduitWard(
+        conduit,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        conduit._ward_frame,
+    )
     root = MagicMock(spec=IConduit)
     root._conduit_state = ConduitState.lesser
     ward._root_conduit = root
@@ -406,7 +506,14 @@ def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
     parent._id = "parent-3"
     parent._logger = MagicMock()
     parent._conduit_state = ConduitState.lesser
-    parent_ward = ConduitWard(parent, True, ConduitState.lesser, Policies.default)
+    parent._ward_frame = _make_frame_with_cloud()
+    parent_ward = ConduitWard(
+        parent,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        parent._ward_frame,
+    )
     parent._conduit_ward = parent_ward
     parent_ward._root_conduit = root
 
@@ -414,7 +521,14 @@ def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
     child._id = "child-3"
     child._logger = MagicMock()
     child._conduit_state = ConduitState.lesser
-    child._conduit_ward = ConduitWard(child, True, ConduitState.lesser, Policies.default)
+    child._ward_frame = _make_frame_with_cloud()
+    child._conduit_ward = ConduitWard(
+        child,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        child._ward_frame,
+    )
 
     parent_ward._link_lesser_conduit(child)
 
@@ -598,7 +712,14 @@ def test_add_spell_to_contract_flow(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._logger = MagicMock()
-    target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
+    target_conduit._ward_frame = _make_frame_with_cloud()
+    target_ward = ConduitWard(
+        target_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        target_conduit._ward_frame,
+    )
     target_conduit._conduit_ward = target_ward
     
     ward._conduit._spellbook = MagicMock()
@@ -620,7 +741,7 @@ def test_add_spell_to_contract_flow(ward):
     # Mock retrieval
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
-    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(
         return_value=target_conduit
     )
     
@@ -645,7 +766,7 @@ def test_add_spell_no_contract_raises(ward):
     # Mock retrieval
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
-    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(
         return_value=target_conduit
     )
     spell = MagicMock(spec=ISpell)
@@ -668,7 +789,7 @@ def test_link_fails_when_inbound_only_policy(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
 
     with pytest.raises(RuntimeError, match="inbound_only"):
         ward._link(target_conduit)
@@ -680,10 +801,16 @@ def test_link_fails_when_target_outbound_only_policy(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
     target_conduit._logger = MagicMock()
-
-    target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
+    target_conduit._ward_frame = _make_frame_with_cloud()
+    target_ward = ConduitWard(
+        target_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        target_conduit._ward_frame,
+    )
     target_ward._policy = Policies.outbound_only
     target_conduit._conduit_ward = target_ward
 
@@ -698,7 +825,7 @@ def test_link_fails_when_non_dynamic():
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
 
     with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
         local_ward._link(target_conduit)
@@ -710,9 +837,16 @@ def test_link_returns_true_when_contract_already_exists(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
     target_conduit._logger = MagicMock()
-    target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
+    target_conduit._ward_frame = _make_frame_with_cloud()
+    target_ward = ConduitWard(
+        target_conduit,
+        True,
+        ConduitState.normal,
+        Policies.default,
+        target_conduit._ward_frame,
+    )
     target_conduit._conduit_ward = target_ward
 
     ward._conduit._spellbook = MagicMock()
@@ -732,7 +866,7 @@ def test_link_returns_false_when_target_not_normal(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.cleaned
-    target_conduit._aetheric_frame = "default"
+    target_conduit._aetheric_frame_name = "default"
 
     result = ward._link(target_conduit)
 
@@ -1028,7 +1162,7 @@ def test_check_conduit_id_and_conduit_raises_when_unresolved(ward):
     """
     Verify _check_conduit_id_and_conduit errors when conduit_id cannot be resolved.
     """
-    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=None)
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(return_value=None)
 
     with pytest.raises(RuntimeError, match="Could not resolve conduit"):
         ward._check_conduit_id_and_conduit(conduit_id="missing")
@@ -1039,7 +1173,7 @@ def test_check_conduit_id_and_conduit_raises_on_id_mismatch(ward):
     """
     target = MagicMock(spec=IConduit)
     target._id = "other"
-    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=target)
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(return_value=target)
 
     with pytest.raises(RuntimeError, match="does not match conduit internal ID"):
         ward._check_conduit_id_and_conduit(conduit_id="conduit-2")
@@ -1050,7 +1184,7 @@ def test_check_conduit_id_and_conduit_success(ward):
     """
     target = MagicMock(spec=IConduit)
     target._id = "conduit-2"
-    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=target)
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(return_value=target)
 
     resolved_id, resolved_conduit = ward._check_conduit_id_and_conduit(conduit_id="conduit-2")
 
@@ -1069,9 +1203,16 @@ def test_init_rejects_invalid_policy_type():
     conduit._id = "conduit-1"
     conduit._logger = MagicMock()
     conduit._conduit_state = ConduitState.normal
+    conduit._ward_frame = _make_frame_with_cloud()
 
     with pytest.raises(TypeError, match="Expected Policies enum instance"):
-        ConduitWard(conduit, True, ConduitState.normal, "invalid")
+        ConduitWard(
+            conduit,
+            True,
+            ConduitState.normal,
+            "invalid",
+            conduit._ward_frame,
+        )
 
 def test_set_new_policy_accepts_str(ward):
     """
@@ -2036,18 +2177,25 @@ def test_check_spell_id_and_spell_passes_aetheric_frame(ward):
     assert ward._conduit.get_spell_by_id.call_args == (("sha-1", "frame-1"),)
     assert ward._conduit.inspect_spell.call_count == 0
 
-def test_check_conduit_id_and_conduit_passes_aetheric_frame(ward):
+def test_check_conduit_id_and_conduit_uses_cloud_lookup_directly(ward):
     """
-    Verify _check_conduit_id_and_conduit forwards aetheric_frame to conduit resolvers.
+    Verify _check_conduit_id_and_conduit uses the ward cloud lookup directly.
     """
     target = MagicMock(spec=IConduit)
     target._id = "conduit-2"
-    ward._conduit._spellbook._aether.get_conduit_by_id = MagicMock(return_value=target)
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(
+        return_value=target
+    )
 
-    ward._check_conduit_id_and_conduit(conduit_id="conduit-2", aetheric_frame="frame-1")
+    resolved_id, resolved_conduit = ward._check_conduit_id_and_conduit(
+        conduit_id="conduit-2",
+        aetheric_frame="frame-1",
+    )
 
-    assert ward._conduit._spellbook._aether.get_conduit_by_id.call_args == (
-        ("conduit-2", "frame-1"),
+    assert resolved_id == "conduit-2"
+    assert resolved_conduit is target
+    ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id.assert_called_once_with(
+        "conduit-2"
     )
 
 # ----------------------------------------------------------------------

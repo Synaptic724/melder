@@ -10,50 +10,54 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 
 def test_add_root_conduit_delegates(
     conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> None:
     """
-    Verify _add_root_conduit delegates to the injected ConduitCloud.
+    Verify _add_root_conduit delegates to the injected frame owner.
 
     Contract:
-        - ConduitCloud receives _add_root_conduit with this conduit.
+        - The frame owner receives register_root_conduit with this conduit.
 
     Args:
         conduit_normal (Conduit): Normal conduit under test.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub for delegation checks.
+        aetheric_frame_stub (MagicMock): Frame stub for delegation checks.
 
     Raises:
         AssertionError: If delegation call is missing.
     """
-    conduit_cloud_stub.reset_mock()
+    aetheric_frame_stub.reset_mock()
 
     conduit_normal._add_root_conduit()
 
-    conduit_cloud_stub._add_root_conduit.assert_called_once_with(conduit_normal)
+    aetheric_frame_stub.register_root_conduit.assert_called_once_with(
+        conduit_normal
+    )
 
 
 def test_remove_root_conduit_delegates(
     conduit_normal: Conduit,
-    conduit_cloud_stub: MagicMock,
+    aetheric_frame_stub: MagicMock,
 ) -> None:
     """
-    Verify _remove_root_conduit delegates to the injected ConduitCloud.
+    Verify _remove_root_conduit delegates to the injected frame owner.
 
     Contract:
-        - ConduitCloud receives _remove_root_conduit with this conduit.
+        - The frame owner receives unregister_root_conduit with this conduit.
 
     Args:
         conduit_normal (Conduit): Normal conduit under test.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub for delegation checks.
+        aetheric_frame_stub (MagicMock): Frame stub for delegation checks.
 
     Raises:
         AssertionError: If delegation call is missing.
     """
-    conduit_cloud_stub.reset_mock()
+    aetheric_frame_stub.reset_mock()
 
     conduit_normal._remove_root_conduit()
 
-    conduit_cloud_stub._remove_root_conduit.assert_called_once_with(conduit_normal)
+    aetheric_frame_stub.unregister_root_conduit.assert_called_once_with(
+        conduit_normal
+    )
 
 
 def test_add_spells_to_aether_registers_spell_indices(

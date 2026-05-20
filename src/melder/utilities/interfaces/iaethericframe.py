@@ -40,6 +40,18 @@ class IAethericFrame(ICleanable, Protocol):
     _spell_registry: Dict[str, Set[ISpellIndex]]
     name: str
 
+    def register_root_conduit(self, conduit: IConduit) -> None:
+        """
+        Register one root conduit into this frame's root-conduit stores.
+        """
+        ...
+
+    def unregister_root_conduit(self, conduit: IConduit) -> None:
+        """
+        Remove one root conduit from this frame's root-conduit stores.
+        """
+        ...
+
     @property
     def spell_system_states(self) -> ISpellSystemStates:
         """

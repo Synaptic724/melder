@@ -356,10 +356,17 @@ class FakeConduit:
         self._name = name
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = dynamic
-        self._aetheric_frame = "default"
+        self._aetheric_frame_name = "default"
         self._configuration = None
         self._logger = FakeLogger()
         self._spellbook = FakeSpellbook()
+        self._ward_frame = SimpleNamespace(
+            _conduit_cloud=SimpleNamespace(
+                get_conduit_by_id=lambda conduit_id: self._known_conduits.get(
+                    conduit_id
+                )
+            )
+        )
         self._conduit_state = ConduitState.normal
         self._creations = None
         self._meld = None
@@ -367,7 +374,13 @@ class FakeConduit:
         self._known_conduits: dict[str, "FakeConduit"] = {}
         self._spell_by_id: dict[str, FakeSpell] = {}
         self._spell_owners: dict[str, "FakeConduit"] = {}
-        self._conduit_ward = ConduitWard(self, dynamic, self._conduit_state, policy)
+        self._conduit_ward = ConduitWard(
+            self,
+            dynamic,
+            self._conduit_state,
+            policy,
+            self._ward_frame,
+        )
 
     @property
     def cleaned(self) -> bool:

@@ -251,7 +251,7 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     assert inspected_target_id == spell_id
 
     owner.link(borrower)
-    cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+    cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
     cloud.create_cluster("cluster-a")
     cloud.add_conduit_to_cluster(owner, "cluster-a")
     cloud.add_conduit_to_cluster(borrower, "cluster-a")

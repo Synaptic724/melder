@@ -935,7 +935,7 @@ class FakeConduit:
         """
         self._id = conduit_id
         self._name = name
-        self._aetheric_frame = frame_name
+        self._aetheric_frame_name = frame_name
         self.__dynamic_environment__ = dynamic
         self._spellbook = spellbook
         self._creations = creations
@@ -1977,7 +1977,7 @@ def test_collect_impacted_conduit_ids_includes_peers_clusters_and_lineage_holder
     holder_ward = FakeConduitWard(Policies.default)
     holder = FakeConduit(
         "holder",
-        frame_name=env.source._aetheric_frame,
+        frame_name=env.source._aetheric_frame_name,
         spellbook=holder_book,
         creations=FakeCreations(),
         ward=holder_ward,
@@ -2022,7 +2022,7 @@ def test_gate_transfer_impacts_marks_root_and_impacted_conduits_dirty() -> None:
     holder_ward = FakeConduitWard(Policies.default)
     holder = FakeConduit(
         "holder",
-        frame_name=env.source._aetheric_frame,
+        frame_name=env.source._aetheric_frame_name,
         spellbook=holder_book,
         creations=FakeCreations(),
         ward=holder_ward,
@@ -2365,7 +2365,7 @@ def test_unshare_target_conduit_contract_removes_target_detail_and_registers_rol
             "spell_id": env.spell.spell_id,
             "conduit": env.source,
             "conduit_id": SOURCE_ID,
-            "aetheric_frame": env.source._aetheric_frame,
+            "aetheric_frame": env.source._aetheric_frame_name,
         }
     ]
     assert len(transfer._rollback_actions) == 1
@@ -4282,7 +4282,7 @@ def test_spell_in_registry_non_default_frame() -> None:
     frame = FakeFrame()
     frame._spell_registry[SOURCE_ID] = {env.spell_index}
     env.aether._aetheric_frames["frame-1"] = frame
-    env.source._aetheric_frame = "frame-1"
+    env.source._aetheric_frame_name = "frame-1"
     transfer = TransferOfOwnership(
         source_conduit=env.source,
         target_conduit=env.target,

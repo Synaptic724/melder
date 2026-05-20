@@ -447,7 +447,11 @@ class ConduitCluster(Cleanable, IConduitCluster):
                         spell=spell,
                         conduit=owner,
                         permissions=getattr(spell, "permissions", "create"),
-                        aetheric_frame=getattr(owner, "_aetheric_frame", "default"),
+                        aetheric_frame=getattr(
+                            owner,
+                            "_aetheric_frame_name",
+                            "default",
+                        ),
                         reason=DetailReason.root,
                         root_spell_id=cluster_root_id,
                         link_dependencies=link_deps,

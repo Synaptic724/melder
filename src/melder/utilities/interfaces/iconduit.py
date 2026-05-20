@@ -32,7 +32,8 @@ class IConduit(ICleanable, Protocol):
     _id: str
     _name: Optional[str]
     __dynamic_environment__: bool
-    _aetheric_frame: str
+    _aetheric_frame_name: str
+    _aetheric_frame: Any
     _spellbook: ISpellbook
     _nexus: Any
     _root_conduit_id: str

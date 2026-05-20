@@ -345,7 +345,7 @@ class MutationResearch(Cleanable, IMutationResearch):
         if spellbook is None:
             raise RuntimeError("Conduit has no spellbook.")
         spell_system_states = spellbook._spell_system_states
-        change_control = self._aether._get_change_control_manager(conduit._aetheric_frame)
+        change_control = self._aether._get_change_control_manager(conduit._aetheric_frame_name)
         return MutationConduit(
             conduit=conduit,
             mutation_research=self,

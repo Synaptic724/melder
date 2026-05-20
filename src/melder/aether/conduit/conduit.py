@@ -17,7 +17,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispell import ISpell
@@ -72,8 +72,8 @@ class Conduit(Cleanable, IConduit):
         - Uses an internal `RLock` for multi-step conduit state transitions.
         - Relies on `CreationGate` and `CreationGateController` for meld admission
           and lineage-aware gate control.
-        - Delegates current-frame conduit and cluster coordination to the
-          injected ConduitCloud.
+        - Delegates current-frame registration to the injected AethericFrame and
+          reads lookup/cluster coordination through the frame-owned cloud service.
         - Delegates gate governance to the injected DevOpsManager and
           CreationGateController.
 
@@ -106,10 +106,10 @@ class Conduit(Cleanable, IConduit):
             spellbook: ISpellbook,
             configuration: IConfiguration,
             conduit_state: ConduitState,
-            aetheric_frame: str,
+            aetheric_frame_name: str,
+            aetheric_frame: IAethericFrame,
             policy: Policies,
             dev_ops_manager: IDevOpsManager,
-            conduit_cloud: IConduitCloud,
             automatic: bool = True,
             name: Optional[str] = None,
             logger: Any | None = None,
@@ -129,8 +129,11 @@ class Conduit(Cleanable, IConduit):
                 The locked system configuration.
             conduit_state (ConduitState):
                 The role of this Conduit ('normal' or 'lesser').
-            aetheric_frame (str):
+            aetheric_frame_name (str):
                 The Aetheric frame name this Conduit belongs to.
+            aetheric_frame (IAethericFrame):
+                The live frame object that owns registration and frame-local
+                cloud services for this conduit.
             policy (Policies):
                 The Conduit policy that governs linking and contract behavior.
             automatic (bool, optional):
@@ -146,9 +149,6 @@ class Conduit(Cleanable, IConduit):
                 Root conduit id for this lineage. Required for lesser conduits.
             dev_ops_manager (IDevOpsManager):
                 Frame-owned DevOpsManager injected into this conduit at
-                construction time.
-            conduit_cloud (IConduitCloud):
-                Frame-owned ConduitCloud injected into this conduit at
                 construction time.
             creation_gate (CreationGate | None, optional):
                 Optional CreationGate to register for this conduit. When None,
@@ -180,7 +180,8 @@ class Conduit(Cleanable, IConduit):
         self.__dynamic_environment__: bool = False
         self._nexus_publish_enabled: bool = False
         self._automatic: bool = automatic
-        self._aetheric_frame: str = aetheric_frame
+        self._aetheric_frame_name: str = aetheric_frame_name
+        self._aetheric_frame: IAethericFrame = aetheric_frame
         # Special Configuration
         if not isinstance(configuration, IConfiguration):
             raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
@@ -190,7 +191,6 @@ class Conduit(Cleanable, IConduit):
         self._spellbook: ISpellbook = spellbook
         self._nexus: INexus = spellbook._nexus
         self._dev_ops_manager: IDevOpsManager = dev_ops_manager
-        self._conduit_cloud: IConduitCloud = conduit_cloud
         self._logger: ISafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()
@@ -242,7 +242,8 @@ class Conduit(Cleanable, IConduit):
             conduit=self,
             dynamic=self.__dynamic_environment__,
             conduit_type=self._conduit_state,
-            policy=policy
+            policy=policy,
+            aetheric_frame=self._aetheric_frame,
         )
 
 
@@ -344,7 +345,7 @@ class Conduit(Cleanable, IConduit):
         del self._creation_gate
         del self._creation_gate_controller
         del self._dev_ops_manager
-        del self._conduit_cloud
+        del self._aetheric_frame
         del self._creations
         del self._spellspace_stack
         del self._spellspace_registry
@@ -399,8 +400,6 @@ class Conduit(Cleanable, IConduit):
             if self._spellbook is not None:
                 self._spellbook._unregister_conduit_spells_from_aether(self._id)
             self._remove_root_conduit()
-            if self.__dynamic_environment__ and self._name is not None:
-                self._conduit_cloud._unregister_conduit(self)
             self._publish_frame_record_to_nexus()
         except Exception as e:
             self._logger.error(f"Error unregistering root conduit state: {e}", "_cleanup_normal_conduit", exc_info=True)
@@ -425,13 +424,13 @@ class Conduit(Cleanable, IConduit):
         del self._creation_gate
         del self._creation_gate_controller
         del self._dev_ops_manager
-        del self._conduit_cloud
+        del self._aetheric_frame
         del self._creations
         del self._spellbook
         del self._configuration
         del self._spellspace_stack
         del self._spellspace_registry
-        del self._aetheric_frame
+        del self._aetheric_frame_name
         del self._root_conduit_id
         del self._nexus
 
@@ -512,7 +511,7 @@ class Conduit(Cleanable, IConduit):
         ):
             return
 
-        self._nexus._remove_conduit_record(self._id, self._aetheric_frame)
+        self._nexus._remove_conduit_record(self._id, self._aetheric_frame_name)
 
     def _cleanup_spellspaces(self) -> None:
         """
@@ -679,7 +678,7 @@ class Conduit(Cleanable, IConduit):
             groups=["lifecycle", "organization"],
             system_groups=["spellbook", "aether"],
             props={
-                "aether_frame": self._aetheric_frame,
+                "aether_frame": self._aetheric_frame_name,
                 "conduit_state": str(self._conduit_state),
             },
             channels="system",
@@ -703,7 +702,7 @@ class Conduit(Cleanable, IConduit):
             groups=["lifecycle", "organization"],
             system_groups=["spellbook", "aether"],
             props={
-                "aether_frame": self._aetheric_frame,
+                "aether_frame": self._aetheric_frame_name,
                 "conduit_state": str(self._conduit_state),
             },
             channels="system",
@@ -722,8 +721,6 @@ class Conduit(Cleanable, IConduit):
             try:
                 self._add_root_conduit()
                 self._add_spells_to_aether()
-                if self.__dynamic_environment__ and self._name is not None:
-                    self._conduit_cloud._register_conduit(self)
             except Exception as e:
                 self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
                 raise
@@ -996,7 +993,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             ValueError: If the conduit id or name already exists in the frame.
         """
-        self._conduit_cloud._add_root_conduit(self)
+        self._aetheric_frame.register_root_conduit(self)
 
     def _remove_root_conduit(self) -> None:
         """
@@ -1007,7 +1004,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             ValueError: If the conduit is not present in the frame state.
         """
-        self._conduit_cloud._remove_root_conduit(self)
+        self._aetheric_frame.unregister_root_conduit(self)
 
 
     def _creations_configuration(self, configuration: IConfiguration) -> Creations:
@@ -1348,10 +1345,8 @@ class Conduit(Cleanable, IConduit):
                             exc_info=True,
                         )
 
-                # Step 5: Register as a full Conduit in Aether and Conduit Cloud
+                # Step 5: Register as a full Conduit in frame-owned runtime state.
                 self._add_root_conduit()
-                if self.__dynamic_environment__ and self._name is not None:
-                    self._conduit_cloud._register_conduit(self)
 
                 # Step 6: If the caller supplied per-conduit hooks, register them now.
                 if hooks:
@@ -1455,13 +1450,13 @@ class Conduit(Cleanable, IConduit):
                 spellbook=self._spellbook,
                 configuration=self._configuration,
                 conduit_state=ConduitState.lesser,
+                aetheric_frame_name=self._aetheric_frame_name,
                 aetheric_frame=self._aetheric_frame,
                 policy=Policies.default,
                 automatic=self._automatic,
                 logger=logger,
                 root_conduit_id=root_conduit_id,
                 dev_ops_manager=self._dev_ops_manager,
-                conduit_cloud=self._conduit_cloud,
             )
             if new_conduit._conduit_ward is not None:
                 new_conduit._conduit_ward._root_conduit = root_conduit
@@ -3802,7 +3797,7 @@ class Conduit(Cleanable, IConduit):
             conduit_name = self._name
             conduit_state = str(self._conduit_state)
             dynamic_environment = self.__dynamic_environment__
-            aetheric_frame = self._aetheric_frame
+            aetheric_frame = self._aetheric_frame_name
             spellbook = self._spellbook
 
         spellbook_snapshot = None
@@ -3923,11 +3918,13 @@ class Conduit(Cleanable, IConduit):
         if conduit_id is None:
             return None
 
-        frame = self._aetheric_frame if aetheric_frame == "default" else aetheric_frame
-        if frame != self._aetheric_frame:
+        frame = self._aetheric_frame_name if aetheric_frame == "default" else aetheric_frame
+        if frame != self._aetheric_frame_name:
             return None
         try:
-            return self._conduit_cloud.get_conduit_by_id(conduit_id)
+            return self._aetheric_frame._conduit_cloud.get_conduit_by_id(
+                conduit_id
+            )
         except Exception:
             # Hooks are advisory; failure to resolve a peer must not
             # break the primary contract APIs.

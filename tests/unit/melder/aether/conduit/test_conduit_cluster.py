@@ -86,7 +86,7 @@ class _ConduitStub:
         """Initialize the conduit stub with spellbook and optional raise rules."""
         self._id = conduit_id
         self._spellbook = spellbook
-        self._aetheric_frame = aetheric_frame
+        self._aetheric_frame_name = aetheric_frame
         self._raise_on = raise_on or {}
         self.contract_with_deps_calls: list[dict[str, Any]] = []
         self.contract_calls: list[dict[str, Any]] = []

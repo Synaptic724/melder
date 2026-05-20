@@ -22,7 +22,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispellbook import ISpellbook
@@ -180,7 +180,7 @@ class SpellbookCreationSystem(Cleanable):
         dev_ops_manager = SpellbookCreationSystem._resolve_frame_dev_ops_manager(
             spellbook=spellbook,
         )
-        conduit_cloud = SpellbookCreationSystem._resolve_frame_conduit_cloud(
+        aetheric_frame = SpellbookCreationSystem._resolve_existing_frame(
             spellbook=spellbook,
         )
 
@@ -192,7 +192,7 @@ class SpellbookCreationSystem(Cleanable):
             policy=policy_enum,
             conduit_id=conduit_id,
             dev_ops_manager=dev_ops_manager,
-            conduit_cloud=conduit_cloud,
+            aetheric_frame=aetheric_frame,
         )
         SpellbookCreationSystem._activate_conjured_conduit(
             spellbook=spellbook,
@@ -304,7 +304,7 @@ class SpellbookCreationSystem(Cleanable):
             policy: Policies,
             conduit_id: str,
             dev_ops_manager: IDevOpsManager,
-            conduit_cloud: IConduitCloud,
+            aetheric_frame: IAethericFrame,
     ) -> Conduit:
         """
         Purpose:
@@ -320,7 +320,7 @@ class SpellbookCreationSystem(Cleanable):
             policy: Resolved policy enum.
             conduit_id: Generated conduit id.
             dev_ops_manager: Frame-owned DevOpsManager for the conduit frame.
-            conduit_cloud: Frame-owned ConduitCloud for the conduit frame.
+            aetheric_frame: Live frame object for the conduit frame.
         Returns:
             Conduit: Newly constructed conduit instance.
         Raises:
@@ -332,13 +332,13 @@ class SpellbookCreationSystem(Cleanable):
             name=resolved_name,
             conduit_state=ConduitState.normal,
             configuration=spellbook._configuration,
-            aetheric_frame=spellbook._aetheric_frame,
+            aetheric_frame_name=spellbook._aetheric_frame,
+            aetheric_frame=aetheric_frame,
             policy=policy,
             automatic=automatic,
             logger=conduit_logger,
             conduit_id=conduit_id,
             dev_ops_manager=dev_ops_manager,
-            conduit_cloud=conduit_cloud,
         )
 
     @staticmethod
@@ -366,27 +366,25 @@ class SpellbookCreationSystem(Cleanable):
         return manager
 
     @staticmethod
-    def _resolve_frame_conduit_cloud(
+    def _resolve_existing_frame(
             *,
             spellbook: ISpellbook,
-    ) -> IConduitCloud:
+    ) -> IAethericFrame:
         """
         Purpose:
-            Resolve the frame-owned ConduitCloud required for root conduit creation.
+            Resolve the live frame object required for root conduit creation.
 
         Contract:
             - Delegates through the owning Spellbook's shared Aether surface.
-            - Returns the live ConduitCloud owned by the target frame.
+            - Returns the live AethericFrame owned by the target frame.
 
         Args:
             spellbook: Owning Spellbook for this conjure run.
 
         Returns:
-            IConduitCloud: Frame-owned ConduitCloud for the target frame.
+            IAethericFrame: The live frame object for the target frame.
         """
-        frame = spellbook._aether._get_existing_frame(spellbook._aetheric_frame)
-        conduit_cloud: IConduitCloud = frame._conduit_cloud
-        return conduit_cloud
+        return spellbook._aether._get_existing_frame(spellbook._aetheric_frame)
 
     @staticmethod
     def _activate_conjured_conduit(

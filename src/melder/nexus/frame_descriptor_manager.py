@@ -335,7 +335,7 @@ class FrameDescriptorManager(Cleanable):
         ):
             return False
 
-        frame_name = conduit._aetheric_frame
+        frame_name = conduit._aetheric_frame_name
         with self._lock:
             frame_posture = self._get_publishable_frame_posture(frame_name)
             if frame_posture is None:
