@@ -33,7 +33,18 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> Dict[str, Any]:
         """
-        Return the compiler artifact codegen IR payload, creating it when needed.
+        Ensure compiler-artifact codegen IR storage is initialized.
+
+        Purpose:
+            Centralize IR allocation so phase exporters can write into one
+            stable payload owned by this artifact.
+        Contract:
+            - Initializes once per artifact when absent.
+            - Returns the artifact-owned mutable payload by reference.
+            - Includes baseline phase buckets required by all phase executors.
+        Returns:
+            Dict[str, Any]:
+                Mutable codegen IR mapping for this artifact.
         """
         if artifact._codegen_ir is None:
             artifact._codegen_ir = {
@@ -47,6 +58,20 @@ class SharedCompilerExecutions:
     def serialize_codegen_signature_part(part: Any) -> bytes:
         """
         Serialize one signature part into deterministic bytes.
+
+        Purpose:
+            Keep hash input stable while avoiding expensive object-sensitive
+            representations on mixed payload graphs.
+        Contract:
+            - Uses typed fast-paths for common primitives.
+            - Uses `pickle` for supported container/object values.
+            - Falls back to textual representation when pickling fails.
+        Args:
+            part:
+                One signature segment being hashed.
+        Returns:
+            bytes:
+                Deterministic encoded bytes for hashing.
         """
         part_type = type(part)
         if (
@@ -86,7 +111,20 @@ class SharedCompilerExecutions:
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
         """
-        Build a deterministic signature from primitive IR parts.
+        Build a deterministic signature from IR parts.
+
+        Purpose:
+            Produce stable fingerprints for codegen-exported state so repeated
+            calls can skip unchanged compile work.
+        Contract:
+            - Signature is deterministic for equal-ordered payload parts.
+            - Does not depend on process-local object identity.
+        Args:
+            *parts:
+                Ordered IR signature segments.
+        Returns:
+            str:
+                SHA256 hex digest for the supplied parts.
         """
         digest = hashlib.sha256()
         for part in parts:
@@ -102,6 +140,18 @@ class SharedCompilerExecutions:
     ) -> Tuple[str, int, str, str]:
         """
         Build a deterministic sort key for socket schema rows.
+
+        Purpose:
+            Normalize socket row ordering used by codegen helpers.
+        Contract:
+            - Sorts by node id, then path id, then parameter name, then socket kind.
+            - Returns a compact tuple directly comparable by Python sort.
+        Args:
+            socket_row:
+                Socket row `(node_id, param_name, param_path_id, socket_kind)`.
+        Returns:
+            Tuple[str, int, str, str]:
+                Sort key for reproducible schema export order.
         """
         return (
             socket_row[0],
@@ -116,6 +166,18 @@ class SharedCompilerExecutions:
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
         Build deterministic schema rows for Phase5 socket references.
+
+        Purpose:
+            Export explicit socket routing data from the root blueprint into
+            phase2-5 IR without leaking live socket objects.
+        Contract:
+            - Returns only primitive tuple rows.
+            - Ignores malformed socket objects that do not expose required
+              fields.
+            - Output row order is deterministic.
+        Returns:
+            Tuple[Tuple[Any, ...], ...]:
+                Rows `(node_id, param_name, param_path_id, socket_kind)`.
         """
         if artifact._root_blueprint_phase5 is None:
             return ()
@@ -141,6 +203,17 @@ class SharedCompilerExecutions:
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
         Build deterministic schema rows for Phase5 DAG edges.
+
+        Purpose:
+            Export parent→child routing from the root blueprint DAG so codegen
+            consumers can validate structure from IR alone.
+        Contract:
+            - Returns only primitive tuple rows.
+            - Ignores malformed DAG nodes that do not expose expected fields.
+            - Output row order is deterministic.
+        Returns:
+            Tuple[Tuple[Any, ...], ...]:
+                Rows `(parent_spell_id, child_spell_id, param_name, socket_kind)`.
         """
         if artifact._root_blueprint_phase5 is None:
             return ()
@@ -193,7 +266,17 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Export phases 2-5 artifacts into the spell-scoped Codegen IR payload.
+        Export phases 2-5 artifacts into the artifact-scoped Codegen IR payload.
+
+        Purpose:
+            Persist normalized structural metadata used by downstream phase
+            planners without re-reading mutable phase objects at runtime.
+        Contract:
+            - Safe to call repeatedly; latest phase artifacts overwrite prior IR.
+            - Captures deterministic, order-stable tuples for signatures.
+            - Updates `signatures.phase2_5` on each export.
+        Returns:
+            None.
         """
         symbolic_dependencies: Tuple[Tuple[Any, ...], ...] = ()
         if artifact._symbolic_graph is not None:
@@ -298,6 +381,17 @@ class SharedCompilerExecutions:
     ) -> None:
         """
         Clear the phase8_11 segment from Codegen IR and Phase 12 artifacts.
+
+        Purpose:
+            Invalidate runtime execution artifacts whenever Phase8+ state is
+            cleared or invalidated.
+        Contract:
+            - No-op when IR is not initialized.
+            - Always clears the compiled no-overrides executor cache and phase
+              intermediate signatures/keys.
+            - Preserves mutable artifact shape for live callers.
+        Returns:
+            None.
         """
         if artifact._codegen_ir is not None:
             artifact._codegen_ir["phase8_11"] = {}
@@ -305,6 +399,9 @@ class SharedCompilerExecutions:
         artifact._phase8_11_codegen_ir_dirty = False
         spell.resolution_complete = False
 
+        # This path resets caches on a still-live artifact. Downstream phase
+        # logic reads these attributes directly, so they must remain present
+        # and reset to empty-cache state instead of being deleted.
         artifact._phase12_no_overrides_executor = None
         artifact._phase12_no_overrides_executor_signature = None
         artifact._phase8_occurrence_plan_input_signature = None

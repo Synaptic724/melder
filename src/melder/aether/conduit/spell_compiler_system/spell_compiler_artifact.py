@@ -89,6 +89,18 @@ class SpellCompilerArtifact(Cleanable):
         """
         Initialize one empty compiler artifact container.
 
+        Purpose:
+            Create a new artifact bucket dedicated to one spell identity and
+            initialize all phase cache fields to their unset state.
+
+        Contract:
+            - Tracks only spell-scoped compiler/build caches for phase
+              pipelines.
+            - Starts empty so callers must fill artifacts through compiler phase
+              execution.
+            - Holds a lock for any future synchronized cleanup or cache-reset
+              operations.
+
         Args:
             spell_id: Owning spell version identity stamped into this artifact.
 
@@ -146,6 +158,9 @@ class SpellCompilerArtifact(Cleanable):
             - Best-effort cleans attached artifact objects when they expose
               `cleanup()`.
             - Drops local references after cleanup completes.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -248,6 +263,9 @@ class SpellCompilerArtifact(Cleanable):
         Contract:
             - Clears the reusable Phase 1-4 artifacts only.
             - Preserves Phase 5 and later plan/codegen artifacts.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -261,6 +279,9 @@ class SpellCompilerArtifact(Cleanable):
 
         Contract:
             - Behaves exactly like `reset_phase_artifacts()`.
+
+        Returns:
+            None.
         """
         self.reset_phase_artifacts()
 
@@ -271,6 +292,9 @@ class SpellCompilerArtifact(Cleanable):
         Contract:
             - Best-effort cleans owned structural-validation artifacts.
             - Leaves Phase 5 and later state untouched.
+
+        Returns:
+            None.
         """
         if self._requirements is not None:
             try:
@@ -317,6 +341,12 @@ class SpellCompilerArtifact(Cleanable):
             - Cleans and nulls Phase 8-11 plan/executor state.
             - Clears the Phase 5 system index.
             - Resets later transient execution/signature state.
+
+        Args:
+            None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._root_blueprint_phase5 = None
@@ -367,6 +397,14 @@ class SpellCompilerArtifact(Cleanable):
     def _cleanup_execution_plans_phase11(self) -> None:
         """
         Deterministically clean all Phase 11 execution plan variants.
+
+        Contract:
+            - Best-effort cleans all three execution-plan caches for no-overrides,
+              overrides, and default variant.
+            - Leaves non-plan mutable state (for example phase-5 caches) untouched.
+
+        Returns:
+            None.
         """
         if self._execution_plan_phase11 is not None:
             try:
