@@ -2,8 +2,8 @@ from typing import Optional, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.spell_compiler import (
-    SpellCompiler,
+from melder.aether.spellbook.spell_crafter.spell_crafter import (
+    SpellCrafter,
 )
 from melder.aether.spellbook.spell_crafter.validation.validation_system import (
     SpellValidationSystem,
@@ -23,13 +23,12 @@ class SpellCompilerSystem(Cleanable):
 
     Purpose:
         Own the instantiated compiler and the validator collaborator used to
-        execute spell compilation phases against spell-owned
-        `SpellCompilerArtifact` state.
+        execute spell compilation phases against the spell-owned ` SpellCompilerArtifact ` state.
 
     Contract:
         - Owns one instantiated `SpellCompiler`.
         - Owns one instantiated `SpellValidationSystem`.
-        - Does not own per-spell compiler artifact state; that remains on the
+        - Does not own a per-spell compiler artifact state; that remains on the
           spell.
         - Does not own a Spellbook; callers provide `spellbook` explicitly at
           call time.
@@ -46,16 +45,6 @@ class SpellCompilerSystem(Cleanable):
         """
             Create a new SpellCrafter for one bound: class: 'Spell`.
             
-            Args:
-                spell:
-                    The owning spell. The crafter treats it as read-only except
-                    when later phases push finalized build details back into the
-                    spell through internal spell-owned update hooks.
-                resolution_profile:
-                    Optional prebuilt resolution profile. When supplied, the crafter
-                    seeds Phase 1 requirements from that profile instead of
-                    rebuilding them immediately.
-            
             Contract:
                 - Captures shared spell-owned services needed by later phases, such
                   as the spell validator and spell-system-state view.
@@ -64,7 +53,7 @@ class SpellCompilerSystem(Cleanable):
                   duplicating the first requirements extraction step.
         """
         super().__init__()
-        self._spell_compiler: SpellCompiler = SpellCompiler()
+        self._spell_compiler: SpellCrafter = SpellCrafter()
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
 
     def cleanup(self) -> None:
@@ -304,7 +293,7 @@ class SpellCompilerSystem(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Phase 5 local - target spell closure blueprint construction (front-facing compiler-system facade).
+        Phase 5 local-target spell closure blueprint construction (front-facing compiler-system facade).
 
         Delegates to the compiler system to build local Phase 5 artifacts for
         the target spell and its dependency closure.
@@ -691,7 +680,7 @@ class SpellCompilerSystem(Cleanable):
         Purpose:
             Provide one compiler-system-owned semantic check for runtime callers
             that need to distinguish root validity from spell validity without
-            reading `SpellCrafter` state directly.
+            reading the ` SpellCrafter ` state directly.
 
         Contract:
             - Returns False when no current spell id exists.
@@ -815,8 +804,8 @@ class SpellCompilerSystem(Cleanable):
             3. Local resolution frame / DAG construction.
             4. Validation.
 
-        Each phase honors the optional `CancellationEvent`. If the event is
-        set, the underlying phase methods raise through the shared cancellation
+        Each phase honours the optional `CancellationEvent`. If the event is
+        set, the underlying phase methods rise through the shared cancellation
         path.
 
         Args:
@@ -877,8 +866,8 @@ class SpellCompilerSystem(Cleanable):
             - Phase 11: Execution plan compilation.
             - Phase 12: No-overrides executor compilation.
 
-        Each phase honors the optional `CancellationEvent`. If the event is
-        set, the underlying phase methods raise through the shared cancellation
+        Each phase honours the optional `CancellationEvent`. If the event is
+        set, the underlying phase methods rise through the shared cancellation
         path.
 
         Args:

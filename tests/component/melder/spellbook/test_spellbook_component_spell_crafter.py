@@ -6,6 +6,9 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
     select_occurrence_plan,
@@ -71,6 +74,281 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[ob
         Optional[Spell]: The resolved spell or None if missing.
     """
     return spellbook._spell_id_pool.get(spell_id)
+
+
+def _run_phase_requirements(spell: object) -> None:
+    """
+    Purpose:
+        Run compiler phase 1 through the compiler-system surface for one spell.
+    Contract:
+        - Constructs a short-lived compiler system.
+        - Cleans that compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_requirements(spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_symbolic_graph(spell: object) -> None:
+    """
+    Purpose:
+        Run compiler phase 2 through the compiler-system surface for one spell.
+    Contract:
+        - Constructs a short-lived compiler system.
+        - Cleans that compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_symbolic_graph(spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_local_frame(spell: object) -> None:
+    """
+    Purpose:
+        Run compiler phase 3 through the compiler-system surface for one spell.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Cleans the short-lived compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_local_frame(spell._spellbook, spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_validation(spell: object, validator: Optional[object] = None) -> None:
+    """
+    Purpose:
+        Run compiler phase 4 through the compiler-system surface for one spell.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Allows tests to override the spell validator on the short-lived
+          compiler system when they are explicitly testing validator behavior.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+        validator:
+            Optional replacement validator used only for the current call.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        if validator is not None:
+            compiler_system._spell_validator = validator
+        compiler_system.run_phase_validation(spell._spellbook, spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_root_blueprints(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 5 frame-wide through the compiler-system surface.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Lead/root spell under test.
+        conduit_id:
+            Conduit identifier used for the phase.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_root_blueprints(spell._spellbook, spell, conduit_id)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_root_blueprints_local(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 5 local through the compiler-system surface.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Target spell under test.
+        conduit_id:
+            Conduit identifier used for the phase.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_root_blueprints_local(
+            spell._spellbook,
+            spell,
+            conduit_id,
+        )
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_system_validation(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 6 frame-wide through the compiler-system surface.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Lead/root spell under test.
+        conduit_id:
+            Conduit identifier used for the phase.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_system_validation(spell._spellbook, spell, conduit_id)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_system_validation_local(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 6 local through the compiler-system surface.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Target spell under test.
+        conduit_id:
+            Conduit identifier used for the phase.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_system_validation_local(
+            spell._spellbook,
+            spell,
+            conduit_id,
+        )
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_occurrence_plan(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 8 through the compiler-system surface for one spell.
+    Contract:
+        - Ignores the legacy conduit_id argument because the compiler-system
+          surface now consumes only the spell for this phase.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+        conduit_id:
+            Legacy conduit id argument kept only to simplify test call sites.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_occurrence_plan(spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_injection_plan(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 9 through the compiler-system surface for one spell.
+    Contract:
+        - Ignores the legacy conduit_id argument because the compiler-system
+          surface now consumes only the spell for this phase.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+        conduit_id:
+            Legacy conduit id argument kept only to simplify test call sites.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_injection_plan(spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_patch_maps(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 10 through the compiler-system surface for one spell.
+    Contract:
+        - Ignores the legacy conduit_id argument because the compiler-system
+          surface now consumes only the spell for this phase.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+        conduit_id:
+            Legacy conduit id argument kept only to simplify test call sites.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_patch_maps(spell)
+    finally:
+        compiler_system.cleanup()
+
+
+def _run_phase_execution_plan(spell: object, conduit_id: str) -> None:
+    """
+    Purpose:
+        Run compiler phase 11/12 through the compiler-system surface for one spell.
+    Contract:
+        - Uses the spell-owned Spellbook as the live compiler context.
+        - Ignores the legacy conduit_id argument because the compiler-system
+          surface now consumes spellbook + spell for this phase.
+        - Cleans the compiler system before returning.
+    Args:
+        spell:
+            Spell under test.
+        conduit_id:
+            Legacy conduit id argument kept only to simplify test call sites.
+    Returns:
+        None.
+    """
+    compiler_system = SpellCompilerSystem()
+    try:
+        compiler_system.run_phase_execution_plan(spell._spellbook, spell)
+    finally:
+        compiler_system.cleanup()
 
 
 class _SpellIndexStub:
@@ -389,10 +667,10 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
         with pytest.raises(RuntimeError, match="SpellMap default could not be resolved"):
-            spell.run_phase_local_frame()
+            _run_phase_local_frame(spell)
     finally:
         spellbook.cleanup()
 
@@ -465,10 +743,10 @@ def test_component_spell_crafter_spellmap_default_raises_on_multiple_candidates(
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
         with pytest.raises(RuntimeError, match="multiple"):
-            spell.run_phase_local_frame()
+            _run_phase_local_frame(spell)
     finally:
         spellbook.cleanup()
 
@@ -536,9 +814,9 @@ def test_component_spell_crafter_spellmap_default_prefers_explicit_spell() -> No
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
 
         assert set(spell.dependencies) == {explicit_id}
         topology = spell._spell_system_states.get_local_topology(spell.spell_index)
@@ -612,9 +890,9 @@ def test_component_spell_crafter_spellmap_default_resolves_frame_only_candidate(
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
 
         assert set(spell.dependencies) == {candidate_id}
         dependencies = states.dependencies_by_spell.get(spell.spell_index)
@@ -685,10 +963,10 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
         with pytest.raises(RuntimeError, match="multiple"):
-            spell.run_phase_local_frame()
+            _run_phase_local_frame(spell)
     finally:
         spellbook.cleanup()
 
@@ -753,9 +1031,9 @@ def test_component_spell_crafter_contract_sockets_register_topology() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
 
         assert spell.dependencies == []
         topology = states.get_local_topology(spell.spell_index)
@@ -817,9 +1095,9 @@ def test_component_spell_crafter_collection_di_allows_empty_collection() -> None
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
 
         assert spell.dependencies == []
         topology = spell._spell_system_states.get_local_topology(spell.spell_index)
@@ -865,13 +1143,11 @@ def test_component_spell_crafter_validation_caches_result() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        assert spell._crafter is not None
-        spell._crafter._spell_validator = validator
-        spell.run_phase_validation()
-        spell.run_phase_validation()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
+        _run_phase_validation(spell, validator=validator)
+        _run_phase_validation(spell, validator=validator)
 
         assert validator.call_count == 1
         assert spell.validation_result_phase4 is validator.result
@@ -911,12 +1187,10 @@ def test_component_spell_crafter_validation_marks_broken_on_error() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
-        assert spell._crafter is not None
-        spell._crafter._spell_validator = validator
-        spell.run_phase_validation()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
+        _run_phase_validation(spell, validator=validator)
 
         assert spell.validation_result_phase4 is validator.result
         assert spell.is_broken
@@ -976,9 +1250,9 @@ def test_component_spell_crafter_updates_system_states_for_dependencies() -> Non
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
-        spell.run_phase_requirements()
-        spell.run_phase_symbolic_graph()
-        spell.run_phase_local_frame()
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        _run_phase_local_frame(spell)
 
         dependencies = states.dependencies_by_spell.get(spell.spell_index)
         assert dependencies is not None
@@ -1035,24 +1309,24 @@ def test_component_spell_crafter_builds_real_execution_plan_for_dependency_chain
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
-        local_spells[0].run_phase_root_blueprints(conduit_id)
+        _run_phase_root_blueprints(local_spells[0], conduit_id)
 
         for spell in local_spells:
-            spell.run_phase_occurrence_plan(conduit_id)
-            spell.run_phase_injection_plan(conduit_id)
-            spell.run_phase_patch_maps(conduit_id)
-            spell.run_phase_execution_plan(conduit_id)
+            _run_phase_occurrence_plan(spell, conduit_id)
+            _run_phase_injection_plan(spell, conduit_id)
+            _run_phase_patch_maps(spell, conduit_id)
+            _run_phase_execution_plan(spell, conduit_id)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        crafter = consumer_spell._ensure_crafter()
-        plan = crafter._execution_plan_phase11_no_overrides
+        artifact = consumer_spell._compiler_artifact
+        plan = artifact._execution_plan_phase11_no_overrides
 
         assert plan is not None
         assert plan.root_spell_id == consumer_id
@@ -1109,21 +1383,21 @@ def test_component_spell_crafter_builds_real_injection_plan_for_dependency_chain
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
-        local_spells[0].run_phase_root_blueprints(conduit_id)
+        _run_phase_root_blueprints(local_spells[0], conduit_id)
 
         for spell in local_spells:
-            spell.run_phase_occurrence_plan(conduit_id)
-            spell.run_phase_injection_plan(conduit_id)
+            _run_phase_occurrence_plan(spell, conduit_id)
+            _run_phase_injection_plan(spell, conduit_id)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        plan = consumer_spell._ensure_crafter()._injection_plan_phase9
+        plan = consumer_spell._compiler_artifact._injection_plan_phase9
 
         assert plan is not None
         assert plan.root_spell_id == consumer_id
@@ -1189,20 +1463,20 @@ def test_component_spell_crafter_builds_real_occurrence_plan_for_dependency_chai
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
-        local_spells[0].run_phase_root_blueprints(conduit_id)
+        _run_phase_root_blueprints(local_spells[0], conduit_id)
 
         for spell in local_spells:
-            spell.run_phase_occurrence_plan(conduit_id)
+            _run_phase_occurrence_plan(spell, conduit_id)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        plan = consumer_spell._ensure_crafter()._occurrence_plan_phase8
+        plan = consumer_spell._compiler_artifact._occurrence_plan_phase8
 
         assert plan is not None
         assert plan.root_spell_id == consumer_id
@@ -1271,24 +1545,24 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
-        local_spells[0].run_phase_root_blueprints(conduit_id)
+        _run_phase_root_blueprints(local_spells[0], conduit_id)
 
         for spell in local_spells:
-            spell.run_phase_occurrence_plan(conduit_id)
-            spell.run_phase_injection_plan(conduit_id)
-            spell.run_phase_patch_maps(conduit_id)
+            _run_phase_occurrence_plan(spell, conduit_id)
+            _run_phase_injection_plan(spell, conduit_id)
+            _run_phase_patch_maps(spell, conduit_id)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        crafter = consumer_spell._ensure_crafter()
-        override_patch_map = crafter._override_patch_map_phase10
-        mutation_patch_map = crafter._mutation_patch_map_phase10
+        artifact = consumer_spell._compiler_artifact
+        override_patch_map = artifact._override_patch_map_phase10
+        mutation_patch_map = artifact._mutation_patch_map_phase10
 
         assert override_patch_map is not None
         assert mutation_patch_map is not None
@@ -1354,25 +1628,25 @@ def test_component_spell_crafter_executes_real_overrides_executor_for_dependency
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
-        local_spells[0].run_phase_root_blueprints(conduit_id)
+        _run_phase_root_blueprints(local_spells[0], conduit_id)
 
         for spell in local_spells:
-            spell.run_phase_occurrence_plan(conduit_id)
-            spell.run_phase_injection_plan(conduit_id)
-            spell.run_phase_patch_maps(conduit_id)
-            spell.run_phase_execution_plan(conduit_id)
+            _run_phase_occurrence_plan(spell, conduit_id)
+            _run_phase_injection_plan(spell, conduit_id)
+            _run_phase_patch_maps(spell, conduit_id)
+            _run_phase_execution_plan(spell, conduit_id)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        crafter = consumer_spell._ensure_crafter()
-        override_patch_map = crafter._override_patch_map_phase10
-        execution_plan = crafter._execution_plan_phase11_overrides
+        artifact = consumer_spell._compiler_artifact
+        override_patch_map = artifact._override_patch_map_phase10
+        execution_plan = artifact._execution_plan_phase11_overrides
 
         assert override_patch_map is not None
         assert execution_plan is not None
@@ -1382,7 +1656,7 @@ def test_component_spell_crafter_executes_real_overrides_executor_for_dependency
             execution_plan=execution_plan,
             override_targets_by_spell_id={consumer_id: targeted_sockets},
             any_overrides_present=True,
-            path_registry=crafter._root_blueprint_phase5.path_registry,
+            path_registry=artifact._root_blueprint_phase5.path_registry,
         )
 
         override_value = object()
@@ -1445,10 +1719,10 @@ def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_depen
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         service_spell = _get_spell_by_version_id(spellbook, service_id)
@@ -1457,22 +1731,22 @@ def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_depen
         assert service_spell is not None
         assert outside_spell is not None
 
-        consumer_spell.run_phase_root_blueprints_local("cid")
+        _run_phase_root_blueprints_local(consumer_spell, "cid")
 
-        consumer_crafter = consumer_spell._ensure_crafter()
-        service_crafter = service_spell._ensure_crafter()
-        outside_crafter = outside_spell._ensure_crafter()
+        consumer_artifact = consumer_spell._compiler_artifact
+        service_artifact = service_spell._compiler_artifact
+        outside_artifact = outside_spell._compiler_artifact
 
-        assert consumer_crafter._entire_dag_blueprint_phase5 is not None
-        assert set(consumer_crafter._entire_dag_blueprint_phase5.keys()) == {consumer_id}
-        assert consumer_crafter.spell_system_index_phase5 is not None
-        assert consumer_crafter.spell_system_index_phase5.get_node(consumer_id) is not None
-        assert consumer_crafter.spell_system_index_phase5.get_node(service_id) is not None
-        assert consumer_crafter.spell_system_index_phase5.get_node(outside_id) is None
+        assert consumer_artifact._entire_dag_blueprint_phase5 is not None
+        assert set(consumer_artifact._entire_dag_blueprint_phase5.keys()) == {consumer_id}
+        assert consumer_artifact._spell_system_index_phase5 is not None
+        assert consumer_artifact._spell_system_index_phase5.get_node(consumer_id) is not None
+        assert consumer_artifact._spell_system_index_phase5.get_node(service_id) is not None
+        assert consumer_artifact._spell_system_index_phase5.get_node(outside_id) is None
 
-        assert consumer_crafter.root_blueprint_phase5 is not None
-        assert service_crafter.root_blueprint_phase5 is not None
-        assert outside_crafter.root_blueprint_phase5 is None
+        assert consumer_artifact._root_blueprint_phase5 is not None
+        assert service_artifact._root_blueprint_phase5 is not None
+        assert outside_artifact._root_blueprint_phase5 is None
     finally:
         spellbook.cleanup()
 
@@ -1520,10 +1794,10 @@ def test_component_spell_crafter_run_phase_system_validation_local_scopes_result
     try:
         local_spells = list(spellbook._spells.values())
         for spell in local_spells:
-            spell.run_phase_requirements()
-            spell.run_phase_symbolic_graph()
-            spell.run_phase_local_frame()
-            spell.run_phase_validation()
+            _run_phase_requirements(spell)
+            _run_phase_symbolic_graph(spell)
+            _run_phase_local_frame(spell)
+            _run_phase_validation(spell)
 
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         service_spell = _get_spell_by_version_id(spellbook, service_id)
@@ -1532,19 +1806,16 @@ def test_component_spell_crafter_run_phase_system_validation_local_scopes_result
         assert service_spell is not None
         assert outside_spell is not None
 
-        consumer_spell.run_phase_root_blueprints_local("cid")
-        consumer_spell.run_phase_system_validation_local("cid")
+        _run_phase_root_blueprints_local(consumer_spell, "cid")
+        _run_phase_system_validation_local(consumer_spell, "cid")
 
-        consumer_crafter = consumer_spell._ensure_crafter()
-        service_crafter = service_spell._ensure_crafter()
-        outside_crafter = outside_spell._ensure_crafter()
-
-        assert consumer_crafter.validation_result_phase6 is not None
-        assert consumer_crafter.validated is True
-        assert service_crafter.validation_result_phase6 is consumer_crafter.validation_result_phase6
-        assert service_crafter.validated is True
-        assert outside_crafter.validation_result_phase6 is None
+        assert consumer_spell.validation_result_phase6 is not None
+        assert consumer_spell.validated is True
+        assert service_spell.validation_result_phase6 is consumer_spell.validation_result_phase6
+        assert service_spell.validated is True
+        assert outside_spell.validation_result_phase6 is None
     finally:
         spellbook.cleanup()
+
 
 

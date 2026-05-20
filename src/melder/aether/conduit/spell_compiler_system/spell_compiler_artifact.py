@@ -90,14 +90,8 @@ class SpellCompilerArtifact(Cleanable):
             Create a new SpellCrafter for one bound: class: 'Spell`.
             
             Args:
-                spell:
-                    The owning spell. The crafter treats it as read-only except
-                    when later phases push finalized build details back into the
-                    spell through internal spell-owned update hooks.
-                resolution_profile:
-                    Optional prebuilt resolution profile. When supplied, the crafter
-                    seeds Phase 1 requirements from that profile instead of
-                    rebuilding them immediately.
+                spell_id:
+                    The spell identifier. Must be non-empty.
             
             Contract:
                 - Captures shared spell-owned services needed by later phases, such
