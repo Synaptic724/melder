@@ -39,11 +39,11 @@ class SpellbookCreationSystem(Cleanable):
 
     Purpose:
         Encapsulate conjure-only orchestration concerns that previously lived
-        inline in ``Spellbook.conjure`` while preserving Spellbook ownership of
+        inline in "Spellbook.conjure" while preserving Spellbook ownership of
         shared phase/revalidation methods.
 
     Contract:
-        - Uses Spellbook methods for overlapping behavior (configuration
+        - Uses Spellbook methods for overlapping behaviour (configuration
           freeze/bind, structural phases, resolution phases, and spell checks).
         - Owns conjure-only orchestration helpers (hook flow, policy gate,
           disposal metadata pass, and conduit ownership stamping).
@@ -52,7 +52,7 @@ class SpellbookCreationSystem(Cleanable):
 
     Threading:
         Spellbook is expected to hold its own lock while invoking this system.
-        This class uses an internal lock only to make ``cleanup()`` idempotent
+        This class uses an internal lock only to make "cleanup()" idempotent
         under concurrent teardown calls.
     """
 
@@ -86,7 +86,7 @@ class SpellbookCreationSystem(Cleanable):
             - Uses injected classes so tests can monkeypatch construction flow.
             - Instance is cleaned via `cleanup()` and must not be reused after cleanup.
         Args:
-            spellbook: Owning Spellbook instance for this run.
+            spellbook: Owning a Spellbook instance for this run.
             policy: Requested conduit policy string.
             automatic: Automatic-mode flag.
             name: Optional conduit name.
@@ -110,7 +110,7 @@ class SpellbookCreationSystem(Cleanable):
     def cleanup(self) -> None:
         """
         Purpose:
-            Deterministically teardown this helper and release owned references.
+            Deterministically tear down this helper and release owned references.
         Contract:
             - Idempotent.
             - Drops all strong references to Spellbook and construction inputs.
@@ -398,7 +398,7 @@ class SpellbookCreationSystem(Cleanable):
             Finalize spellbook state and post-construction conduit wiring.
         Contract:
             - Marks Spellbook as conjured and disables default binding transaction.
-            - Fires activation/post hooks in order.
+            - Fires activation/post-hooks in order.
             - Wires conduit ownership into local spells and registers risk manager.
         Args:
             spellbook: Owning Spellbook instance.
@@ -437,10 +437,10 @@ class SpellbookCreationSystem(Cleanable):
     def check_system_state(spellbook: Any, policy: str, automatic: bool) -> None:
         """
         Purpose:
-            Validate requested policy compatibility with current system state.
+            Validate requested policy compatibility with the current system state.
         Contract:
-            - Automatic mode only allows ``Policies.default``.
-            - Dynamic policy usage requires ``SystemState.dynamic``.
+            - Automatic mode only allows "Policies.default".
+            - Dynamic policy usage requires "SystemState.dynamic".
             - Raises RuntimeError with diagnostic context on policy/state mismatch.
         Args:
             spellbook: Owning Spellbook instance.
@@ -491,7 +491,7 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Class-bound spells receive matched disposal methods.
             - Non-class spells or missing profiles receive empty metadata.
-            - Updates ``disposal_method_names`` and ``has_disposal_methods``.
+            - Updates "disposal_method_names" and "has_disposal_methods".
         Args:
             spellbook: Owning Spellbook instance.
         Returns:
@@ -580,7 +580,7 @@ class SpellbookCreationSystem(Cleanable):
     ) -> bool:
         """
         Purpose:
-            Read `full_ahead_of_time_compilation` from configuration.
+            Read `full_ahead_of_time_compilation` from the configuration.
         Contract:
             - Defaults to `True` when configuration does not expose a value.
             - Accepts only boolean configuration values.
@@ -782,7 +782,7 @@ class SpellbookCreationSystem(Cleanable):
         Purpose:
             Run structural phases for spells bound after a conduit is already conjured.
         Contract:
-            - No-ops when `spells` is empty.
+            - No-ops when `spells` are empty.
             - Uses one shared CancellationEventSignal for the run.
             - Raises SpellbookValidationError when any spell resolves as broken.
         Args:
@@ -1179,7 +1179,7 @@ class SpellbookCreationSystem(Cleanable):
             - Emits context-aware error logs on cleanup exceptions.
         Args:
             spellbook: Owning Spellbook instance.
-            scheduler: Scheduler to cleanup.
+            scheduler: Scheduler to clean up.
             context_name: Logging context label.
         Returns:
             None.
@@ -1310,7 +1310,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             None.
         Raises:
-            SpellbookValidationError: Always raised with `broken_spells`.
+            SpellbookValidationError: Always rose with `broken_spells`.
         """
         broken_spell_ids = [spell.spell_id for spell in broken_spells]
         broken_spell_names = [spell.spell_name for spell in broken_spells]
@@ -1331,7 +1331,7 @@ class SpellbookCreationSystem(Cleanable):
     ) -> bool:
         """
         Purpose:
-            Read conduit resolution error state from SpellSystemStates.
+            Read the conduit resolution error state from SpellSystemStates.
         Contract:
             - Returns False when no resolution errors are present.
         Args:
@@ -1464,7 +1464,7 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             scheduler: Scheduler receiving the phase.
             phase_name: Phase name/label prefix.
-            target_spell_id: Target spell id for labeling metadata.
+            target_spell_id: Target spell id for labelling metadata.
             conduit_id: Conduit scope id.
             phase_func: Bound spell phase callable.
         Returns:
@@ -1730,7 +1730,7 @@ class SpellbookCreationSystem(Cleanable):
             - Suppresses per-spell cleanup exceptions.
         Args:
             spellbook: Owning Spellbook instance.
-            spell_ids: Optional scoped spell ids to cleanup.
+            spell_ids: Optional scoped spell ids to clean up.
         Returns:
             None.
         """
@@ -1780,7 +1780,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Per-spell units for the requested phase.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
             AttributeError: If a spell does not expose `phase_callable_attr`.
         """
         spellbook.check_cleaned()
@@ -1830,7 +1830,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Requirements phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -1855,7 +1855,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Symbolic graph phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -1880,7 +1880,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Local frame phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -1905,7 +1905,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Validation phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -1933,7 +1933,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Root-blueprints phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
         if not spellbook._spells:
@@ -1972,7 +1972,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Occurrence-plan phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -2001,7 +2001,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Injection-plan phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -2030,7 +2030,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Patch-maps phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -2059,7 +2059,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Execution-plan phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
@@ -2088,7 +2088,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: System-validation phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
         if not spellbook._spells:
@@ -2127,7 +2127,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Sequence[IUnitOfWork]: Change-control phase units.
         Raises:
-            RuntimeError: If spellbook has already been cleaned.
+            RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
         if not spellbook._spells:
