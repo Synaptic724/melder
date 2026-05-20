@@ -1,13 +1,10 @@
 import threading
 from typing import Dict, Set, Optional, List
-
 from mypy_extensions import mypyc_attr
-
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -43,23 +40,35 @@ class ConduitCluster(Cleanable, IConduitCluster):
     __slots__ = (
         "_lock",
         "_name",
+        "_registry",
+        "_aetheric_frame_name",
         "members",
         "shared_spells",
         "auto_link_dependencies",
         "_cleaned",
     )
 
-    def __init__(self, name: str, auto_link_dependencies: bool = True):
+    def __init__(
+            self,
+            name: str,
+            registry: Dict[str, IConduit],
+            aetheric_frame_name: str,
+            auto_link_dependencies: bool = True,
+    ):
         """
         Initialize a cluster container.
 
         Args:
             name: Cluster name.
+            registry: Borrowed frame-local conduit registry keyed by conduit id.
+            aetheric_frame_name: Owning frame name for contract operations.
             auto_link_dependencies: If True, sharing pulls dependency closure.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
+        self._registry: Dict[str, IConduit] = registry
+        self._aetheric_frame_name: str = aetheric_frame_name
         self.members: Set[str] = set()
         self.shared_spells: Dict[str, Set[ISpellIndex]] = {}
         self.auto_link_dependencies: bool = auto_link_dependencies
@@ -90,6 +99,8 @@ class ConduitCluster(Cleanable, IConduitCluster):
                         pass
                 self.shared_spells.clear()
             del self.auto_link_dependencies
+            del self._registry
+            del self._aetheric_frame_name
             del self._name
         del self._lock
 
@@ -171,7 +182,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
     # ------------------------------------------------------------------
     # Share helpers (operate on live conduit objects)
     # ------------------------------------------------------------------
-    def handle_join(self, conduit: IConduit, cloud: IConduitCloud) -> None:
+    def handle_join(self, conduit: IConduit) -> None:
         """
         Add a member and auto-share all roots between the new member and existing peers.
 
@@ -184,7 +195,6 @@ class ConduitCluster(Cleanable, IConduitCluster):
 
         Args:
             conduit: The conduit joining the cluster.
-            cloud: The owning ConduitCloud (provides conduit lookup).
 
         Returns:
             None
@@ -196,9 +206,8 @@ class ConduitCluster(Cleanable, IConduitCluster):
 
         # Refresh registry for all members (including new)
         for member_id in member_ids:
-            try:
-                member = cloud.get_conduit_by_id(member_id)
-            except ValueError:
+            member = self._resolve_conduit_by_id(member_id)
+            if member is None:
                 continue
             self.refresh_shareable_roots(member)
 
@@ -206,14 +215,13 @@ class ConduitCluster(Cleanable, IConduitCluster):
         for peer_id in member_ids:
             if peer_id == conduit._id:
                 continue
-            try:
-                peer = cloud.get_conduit_by_id(peer_id)
-            except ValueError:
+            peer = self._resolve_conduit_by_id(peer_id)
+            if peer is None:
                 continue
             self.share_to_borrower(conduit, peer)
             self.share_to_borrower(peer, conduit)
 
-    def handle_leave(self, conduit: IConduit, cloud: IConduitCloud) -> None:
+    def handle_leave(self, conduit: IConduit) -> None:
         """
         Remove a member and tear down shared roots between it and remaining peers.
 
@@ -225,7 +233,6 @@ class ConduitCluster(Cleanable, IConduitCluster):
 
         Args:
             conduit: The conduit leaving the cluster.
-            cloud: The owning ConduitCloud (provides conduit lookup).
 
         Returns:
             None
@@ -238,18 +245,25 @@ class ConduitCluster(Cleanable, IConduitCluster):
 
         peers: List[IConduit] = []
         for conduit_id in member_ids:
-            try:
-                peers.append(cloud.get_conduit_by_id(conduit_id))
-            except ValueError:
-                continue
+            peer = self._resolve_conduit_by_id(conduit_id)
+            if peer is not None:
+                peers.append(peer)
 
         # Remove spells this conduit owned from peers
         for peer in peers:
-            self.remove_shared_from_borrower(conduit, peer, cloud.frame_name)
+            self.remove_shared_from_borrower(
+                conduit,
+                peer,
+                self._aetheric_frame_name,
+            )
 
         # Remove spells peers owned from this conduit
         for peer in peers:
-            self.remove_shared_from_borrower(peer, conduit, cloud.frame_name)
+            self.remove_shared_from_borrower(
+                peer,
+                conduit,
+                self._aetheric_frame_name,
+            )
 
         with self._lock:
             self.shared_spells.pop(leaver_id, None)
@@ -270,13 +284,12 @@ class ConduitCluster(Cleanable, IConduitCluster):
         for spell in shareables:
             self.add_shared_spell(owner_id, spell.spell_index)
 
-    def refresh_member_shares(self, conduit: IConduit, cloud: IConduitCloud) -> None:
+    def refresh_member_shares(self, conduit: IConduit) -> None:
         """
         Refresh and (re)share this member's shareable roots with all peers in the cluster.
 
         Args:
             conduit: Member conduit whose roots should be refreshed.
-            cloud: Owning ConduitCloud for conduit lookup.
 
         Returns:
             None
@@ -288,9 +301,8 @@ class ConduitCluster(Cleanable, IConduitCluster):
         for peer_id in member_ids:
             if peer_id == conduit._id:
                 continue
-            try:
-                peer = cloud.get_conduit_by_id(peer_id)
-            except ValueError:
+            peer = self._resolve_conduit_by_id(peer_id)
+            if peer is None:
                 continue
             self.share_to_borrower(conduit, peer)
             self.share_to_borrower(peer, conduit)
@@ -298,7 +310,6 @@ class ConduitCluster(Cleanable, IConduitCluster):
     def add_and_share_spell(
             self,
             owner: IConduit,
-            cloud: IConduitCloud,
             spell: ISpell,
             link_dependencies: Optional[bool] = None,
     ) -> None:
@@ -314,7 +325,6 @@ class ConduitCluster(Cleanable, IConduitCluster):
 
         Args:
             owner: Conduit that owns the spell.
-            cloud: ConduitCloud for conduit lookup.
             spell: Spell object to share.
             link_dependencies: Override auto_link_dependencies if provided.
         """
@@ -329,9 +339,8 @@ class ConduitCluster(Cleanable, IConduitCluster):
         for peer_id in member_ids:
             if peer_id == owner_id:
                 continue
-            try:
-                peer = cloud.get_conduit_by_id(peer_id)
-            except ValueError:
+            peer = self._resolve_conduit_by_id(peer_id)
+            if peer is None:
                 continue
             if link_deps:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
@@ -344,7 +353,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
                             spell=spell,
                             conduit=owner,
                             permissions=getattr(spell, "permissions", "create"),
-                            aetheric_frame=cloud.frame_name,
+                            aetheric_frame=self._aetheric_frame_name,
                             reason=DetailReason.root,
                             root_spell_id=cluster_root_id,
                             link_dependencies=True,
@@ -352,7 +361,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
                 except Exception:
                     continue
 
-    def remove_and_strip_spell(self, owner: IConduit, cloud: IConduitCloud, spell: ISpell) -> None:
+    def remove_and_strip_spell(self, owner: IConduit, spell: ISpell) -> None:
         """
         Explicitly remove a shared root from the cluster and strip it from peers.
 
@@ -364,7 +373,6 @@ class ConduitCluster(Cleanable, IConduitCluster):
 
         Args:
             owner: Conduit that owns the spell.
-            cloud: ConduitCloud for conduit lookup.
             spell: Spell object to remove.
         """
         self.check_cleaned()
@@ -376,9 +384,8 @@ class ConduitCluster(Cleanable, IConduitCluster):
         for peer_id in member_ids:
             if peer_id == owner_id:
                 continue
-            try:
-                peer = cloud.get_conduit_by_id(peer_id)
-            except ValueError:
+            peer = self._resolve_conduit_by_id(peer_id)
+            if peer is None:
                 continue
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
@@ -389,7 +396,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
                     peer.remove_root_from_contracts(
                         root_spell_id=cluster_root_id,
                         conduit=owner,
-                        aetheric_frame=cloud.frame_name,
+                        aetheric_frame=self._aetheric_frame_name,
                     )
             except Exception:
                 continue
@@ -403,7 +410,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
                             spell=spell,
                             conduit=owner,
                             permissions=getattr(spell, "permissions", "create"),
-                            aetheric_frame=cloud.frame_name,
+                            aetheric_frame=self._aetheric_frame_name,
                             reason=DetailReason.manual,
                             root_spell_id=spell.spell_id,
                             link_dependencies=False,
@@ -447,11 +454,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
                         spell=spell,
                         conduit=owner,
                         permissions=getattr(spell, "permissions", "create"),
-                        aetheric_frame=getattr(
-                            owner,
-                            "_aetheric_frame_name",
-                            "default",
-                        ),
+                        aetheric_frame=self._aetheric_frame_name,
                         reason=DetailReason.root,
                         root_spell_id=cluster_root_id,
                         link_dependencies=link_deps,
@@ -539,6 +542,19 @@ class ConduitCluster(Cleanable, IConduitCluster):
             return None
         with book._lock:
             return book._spells.get(spell_index)
+
+    def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[IConduit]:
+        """
+        Resolve one conduit directly from the borrowed frame-local registry.
+
+        Args:
+            conduit_id: Conduit identifier to resolve.
+
+        Returns:
+            Optional[IConduit]: Matching conduit when present, else None.
+        """
+        self.check_cleaned()
+        return self._registry.get(conduit_id)
 
     # ------------------------------------------------------------------
     # Configuration / diagnostics

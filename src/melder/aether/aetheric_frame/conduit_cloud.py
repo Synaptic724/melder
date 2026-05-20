@@ -313,7 +313,11 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 raise ValueError(
                     "Cluster with name {0} already exists.".format(cluster_name)
                 )
-            self._conduit_clusters[cluster_name] = ConduitCluster(cluster_name)
+            self._conduit_clusters[cluster_name] = ConduitCluster(
+                cluster_name,
+                self._conduits,
+                self._name,
+            )
 
     def delete_cluster(self, cluster_name: str) -> None:
         """
@@ -345,7 +349,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self.check_cleaned()
         cluster = self._get_cluster(cluster_name)
         cluster.add_member(conduit.id)
-        cluster.handle_join(conduit, self)
+        cluster.handle_join(conduit)
 
     def remove_conduit_from_cluster(
             self,
@@ -362,7 +366,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self.check_cleaned()
         cluster = self._get_cluster(cluster_name)
         cluster.remove_member(conduit.id)
-        cluster.handle_leave(conduit, self)
+        cluster.handle_leave(conduit)
 
     def get_clusters_for_conduit(self, conduit_id: str) -> List[str]:
         """
@@ -393,7 +397,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         cluster_names = self.get_clusters_for_conduit(conduit.id)
         for cluster_name in cluster_names:
             cluster = self._get_cluster(cluster_name)
-            cluster.refresh_member_shares(conduit, self)
+            cluster.refresh_member_shares(conduit)
 
     def get_cluster(self, cluster_name: str) -> IConduitCluster:
         """
