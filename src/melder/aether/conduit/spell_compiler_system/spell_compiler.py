@@ -223,7 +223,6 @@ class SpellCompiler:
 
     def run_phase_validation(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spell_validator: ISpellValidationSystem,
@@ -245,10 +244,6 @@ class SpellCompiler:
             - Keeps cancellation cooperative for long-running validations.
 
         Args:
-            spellbook:
-                Spellbook providing the front-door compiler context for this
-                request. Phase 4 itself remains driven by the explicit
-                validator and spell-system-state inputs.
             spell:
                 Spell under validation.
             artifact:
@@ -264,7 +259,6 @@ class SpellCompiler:
             None.
         """
         self._phase_4.run(
-            spellbook,
             spell,
             artifact,
             spell_validator,
@@ -672,12 +666,16 @@ class SpellCompiler:
 
         Purpose:
             Build final execution plans for spell invocation from all prior phase
-            artifacts and spellbook context.
+            artifacts and spellbook context, then materialize the phase-12
+            no-overrides executor from the artifact handoff.
 
         Contract:
             - Requires phase-8 to phase-10 outputs for complete plan synthesis.
             - Stores phase-11 execution plans on the artifact for downstream
               runner/executor compilation.
+            - Preserves the internal phase-11/12 split, but keeps the front
+              execution-plan entrypoint execution-ready by immediately compiling
+              the phase-12 no-overrides executor after phase 11 completes.
             - Honors cancellation while constructing runtime execution structure.
 
         Args:
@@ -699,9 +697,15 @@ class SpellCompiler:
             spellbook,
             cancel_event=cancel_event,
         )
+        self._phase_12.compile_no_overrides_executor(
+            spellbook,
+            spell,
+            artifact,
+        )
 
     def compile_phase12_no_overrides_executor(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
     ) -> None:
@@ -718,6 +722,9 @@ class SpellCompiler:
               provided artifact.
 
         Args:
+            spellbook:
+                Spellbook providing explicit spell lookup context for payload
+                compile fallback.
             spell:
                 Spell whose executor is being compiled.
             artifact:
@@ -727,6 +734,7 @@ class SpellCompiler:
             None.
         """
         self._phase_12.compile_no_overrides_executor(
+            spellbook,
             spell,
             artifact,
         )
@@ -769,6 +777,7 @@ class SpellCompiler:
 
     def compile_phase12_no_overrides_executor_from_payload(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             no_overrides_payload: Dict[str, Any],
@@ -786,6 +795,9 @@ class SpellCompiler:
             - Refreshes compile cache metadata according to the payload signature.
 
         Args:
+            spellbook:
+                Spellbook providing explicit spell lookup context for payload
+                compilation.
             spell:
                 Spell for which executor code is being generated.
             artifact:
@@ -797,6 +809,7 @@ class SpellCompiler:
             None.
         """
         self._phase_12.compile_no_overrides_executor_from_payload(
+            spellbook,
             spell,
             artifact,
             no_overrides_payload,

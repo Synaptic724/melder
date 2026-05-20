@@ -445,6 +445,9 @@ class SpellCompilerSystem(Cleanable):
         Contract:
             - Invalidates the spell-owned CreationContext after execution-plan
               changes so meld rebuilds a fresh spell-shaped runtime context.
+            - Preserves the internal phase-11/12 split, but extends the front
+              execution-plan path to compile the phase-12 no-overrides executor
+              immediately after phase 11 completes.
 
         Args:
             spellbook:
@@ -760,6 +763,7 @@ class SpellCompilerSystem(Cleanable):
             - Phase 9: Injection plan compilation.
             - Phase 10: Patch map compilation.
             - Phase 11: Execution plan compilation.
+            - Phase 12: No-overrides executor compilation.
 
         Each phase honors the optional `CancellationEvent`. If the event is
         set, the underlying phase methods raise through the shared cancellation

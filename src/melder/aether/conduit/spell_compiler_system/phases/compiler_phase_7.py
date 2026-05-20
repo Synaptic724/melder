@@ -45,16 +45,6 @@ class CompilerPhase7:
             )
         return root_blueprints
 
-    @staticmethod
-    def _get_required_crafter_from_spell(spell: ISpell):
-        """
-        Return the live crafter attached to one spell or raise.
-        """
-        crafter = spell._crafter
-        if crafter is None:
-            raise RuntimeError("Spell must have a live SpellCrafter.")
-        return crafter
-
     def run(
             self,
             spell: ISpell,
@@ -166,17 +156,30 @@ class CompilerPhase7:
             This closure is registered on the conduit’s change-control slot, so
             later dirty-root events can drive a full spell-level recompilation
             through the current Spellbook/runtime view.
+
+            Contract:
+                - Resolves each root spell from the live spellbook `_spell_id_pool`.
+                - Reuses the compiler-system front façade for each root.
+                - Re-runs foundational phases via `run_all_phases(...)` using
+                  explicit `spellbook` and `spell` inputs instead of reaching
+                  back through the spell-owned `SpellCrafter`.
+                - Returns only successfully revalidated root ids.
             """
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
+                from melder.aether.conduit.spell_compiler_system.spell_compiler_system import SpellCompilerSystem
+
                 spell_instance = spellbook._spell_id_pool[root_id]
-                crafter = self._get_required_crafter_from_spell(
-                    spell_instance
-                )
-                crafter.run_all_phases(
-                    conduit_id=conduit_id,
-                    cancel_event=cancel_event,
-                )
+                compiler_system = SpellCompilerSystem()
+                try:
+                    compiler_system.run_all_phases(
+                        spellbook,
+                        spell_instance,
+                        conduit_id=conduit_id,
+                        cancel_event=cancel_event,
+                    )
+                finally:
+                    compiler_system.cleanup()
                 validated_roots.add(root_id)
 
             return validated_roots
@@ -233,17 +236,30 @@ class CompilerPhase7:
             is installed from the local wiring path, so scoped revalidation can
             still hand dirty roots back into the full spell-phase pipeline for
             this conduit.
+
+            Contract:
+                - Resolves each root spell from the live spellbook `_spell_id_pool`.
+                - Reuses the compiler-system front façade for each root.
+                - Re-runs foundational phases via `run_all_phases(...)` using
+                  explicit `spellbook` and `spell` inputs instead of reaching
+                  back through the spell-owned `SpellCrafter`.
+                - Returns only successfully revalidated root ids.
             """
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
+                from melder.aether.conduit.spell_compiler_system.spell_compiler_system import SpellCompilerSystem
+
                 spell_instance = spellbook._spell_id_pool[root_id]
-                crafter = self._get_required_crafter_from_spell(
-                    spell_instance
-                )
-                crafter.run_all_phases(
-                    conduit_id=conduit_id,
-                    cancel_event=cancel_event,
-                )
+                compiler_system = SpellCompilerSystem()
+                try:
+                    compiler_system.run_all_phases(
+                        spellbook,
+                        spell_instance,
+                        conduit_id=conduit_id,
+                        cancel_event=cancel_event,
+                    )
+                finally:
+                    compiler_system.cleanup()
                 validated_roots.add(root_id)
 
             return validated_roots

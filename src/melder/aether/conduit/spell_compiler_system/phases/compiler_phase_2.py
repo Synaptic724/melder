@@ -32,12 +32,12 @@ class CompilerPhase2:
     Compiler phase 2 surface.
 
     Purpose:
-        Expose the current symbolic-graph build behavior through a compiler-
+        Expose the current symbolic-graph build behaviour through a compiler-
         owned phase class.
 
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
-        - Directly ports the canonical `SpellCrafter` phase-2 behavior.
+        - Directly ports the canonical `SpellCrafter` phase-2 behaviour.
         - Does not own spell, artifact, or runtime collaborator lifecycle.
     """
 
@@ -53,9 +53,8 @@ class CompilerPhase2:
         Phase 2 - Build the symbolic dependency graph for this Spell.
 
         Responsibilities:
-            * Consume Phase 1 requirements and construct a
-              :class:`SpellSymbolicGraph` describing all constructor sockets.
-            * Create one :class:`SpellSymbolicDependency` per constructor
+            * Consume Phase 1 requirements and construct a: class:`SpellSymbolicGraph` describing all constructor sockets.
+            * Create one: class:`SpellSymbolicDependency` per constructor
               parameter that should be represented as a socket, including:
                   - plain (caller-supplied) parameters,
                   - normal DI sockets (single, collection, SpellMap),
@@ -84,7 +83,7 @@ class CompilerPhase2:
 
         Raises:
             RuntimeError:
-                If requirements are missing or the spell is missing a bound
+                If requirements are missing or the spell is missing, a bound
                 current spell id.
         """
         artifact.check_cleaned()

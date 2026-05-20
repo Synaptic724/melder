@@ -12,6 +12,7 @@ from melder.aether.spellbook.spell_crafter.blueprints.phase12_no_overrides_execu
     compile_phase12_no_overrides_executor,
     compile_phase12_no_overrides_executor_from_plan,
 )
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 
 
@@ -36,6 +37,7 @@ class CompilerPhase12:
 
     def compile_no_overrides_executor(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
     ) -> None:
@@ -50,6 +52,14 @@ class CompilerPhase12:
             - Reuses existing executor when IR signature is unchanged.
             - Stores None when no compatible transient IR exists.
             - Never mutates Phase 11 plans.
+        Args:
+            spellbook:
+                Spellbook providing explicit spell lookup context for payload
+                compile fallback.
+            spell:
+                Spell whose phase-12 executor is being materialized.
+            artifact:
+                Compiler artifact holding phase-11/12 handoff state.
         Returns:
             None.
         """
@@ -64,6 +74,7 @@ class CompilerPhase12:
 
         if artifact._codegen_ir is None:
             self.compile_no_overrides_executor_from_payload(
+                spellbook,
                 spell,
                 artifact,
                 None,
@@ -74,6 +85,7 @@ class CompilerPhase12:
         execution_payload = phase8_11.get("execution")
         if not execution_payload:
             self.compile_no_overrides_executor_from_payload(
+                spellbook,
                 spell,
                 artifact,
                 None,
@@ -82,6 +94,7 @@ class CompilerPhase12:
 
         no_overrides_payload = execution_payload.get("no_overrides")
         self.compile_no_overrides_executor_from_payload(
+            spellbook,
             spell,
             artifact,
             no_overrides_payload,
@@ -144,6 +157,7 @@ class CompilerPhase12:
 
     def compile_no_overrides_executor_from_payload(
             self,
+            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             no_overrides_payload: Optional[Dict[str, Any]],
@@ -161,6 +175,13 @@ class CompilerPhase12:
             - Reuses existing executor when the payload signature is unchanged.
             - Raises on malformed payload shape for non-empty plans.
         Args:
+            spellbook:
+                Spellbook providing explicit spell lookup context for payload
+                compilation.
+            spell:
+                Spell whose phase-12 executor cache is being updated.
+            artifact:
+                Compiler artifact receiving compiled executor state.
             no_overrides_payload:
                 Phase11 no-overrides payload dictionary or `None`.
         Returns:
@@ -207,7 +228,7 @@ class CompilerPhase12:
 
         compiled_executor = compile_phase12_no_overrides_executor(
             codegen_ir=no_overrides_payload,
-            spell_lookup=spell._spellbook._spell_id_pool,
+            spell_lookup=spellbook._spell_id_pool,
         )
         if no_overrides_payload.get("step_count", 0) > 0 and compiled_executor is None:
             raise RuntimeError(

@@ -21,7 +21,6 @@ from melder.aether.conduit.spell_compiler_system.phases.utility import (
 from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
@@ -48,7 +47,6 @@ class CompilerPhase4:
 
     def run(
             self,
-            spellbook: ISpellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spell_validator: ISpellValidationSystem,
@@ -83,10 +81,6 @@ class CompilerPhase4:
               flags instead of a direct return value.
 
         Args:
-            spellbook:
-                Spellbook providing the front-door compiler context for this
-                request. Phase 4 itself still uses the explicit validator and
-                spell-system-state collaborators directly.
             spell:
                 Spell whose Phase 4 validation should run.
             artifact:
