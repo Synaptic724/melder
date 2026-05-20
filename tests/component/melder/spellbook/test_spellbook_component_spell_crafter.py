@@ -868,6 +868,8 @@ def test_component_spell_crafter_validation_caches_result() -> None:
         spell.run_phase_requirements()
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
+        assert spell._crafter is not None
+        spell._crafter._spell_validator = validator
         spell.run_phase_validation()
         spell.run_phase_validation()
 
@@ -912,6 +914,8 @@ def test_component_spell_crafter_validation_marks_broken_on_error() -> None:
         spell.run_phase_requirements()
         spell.run_phase_symbolic_graph()
         spell.run_phase_local_frame()
+        assert spell._crafter is not None
+        spell._crafter._spell_validator = validator
         spell.run_phase_validation()
 
         assert spell.validation_result_phase4 is validator.result

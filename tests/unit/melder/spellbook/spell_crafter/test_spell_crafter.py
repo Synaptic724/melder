@@ -1342,6 +1342,7 @@ def _build_spell_and_crafter(
     spellbook._spells_by_id[spell.spell_index.current] = spell
     spellbook._spell_id_pool[spell.spell_index.current] = spell
     crafter = SpellCrafter(spell)
+    crafter._spell_validator = validator
     spell._crafter = crafter
     return crafter, spell, validator
 

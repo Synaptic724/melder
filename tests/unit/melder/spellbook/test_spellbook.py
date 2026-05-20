@@ -1963,10 +1963,6 @@ def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
         def cleanup(self):
             raise RuntimeError("config cleanup boom")
 
-    class _BadValidator(DummySpellValidationSystem):
-        def cleanup(self):
-            raise RuntimeError("validator cleanup boom")
-
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._cleanup_spells = lambda: None
@@ -1981,8 +1977,6 @@ def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
     sb._configuration = _BadConfig()
     sb._spell_versions = _BadMap()
     sb._contracted_versions = _BadMap()
-    sb._spell_validator = _BadValidator()
-
     sb._cleanup_components()
 
     assert not hasattr(sb, "_spells")
@@ -1995,7 +1989,6 @@ def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
     assert not hasattr(sb, "_configuration")
     assert not hasattr(sb, "_spell_versions")
     assert not hasattr(sb, "_contracted_versions")
-    assert not hasattr(sb, "_spell_validator")
     assert len(sb._logger.error_calls) >= 1
 
 
@@ -2533,7 +2526,7 @@ def test_run_resolution_phases_success(monkeypatch):
     Purpose:
         Verify resolution phases run and return expected keys.
     Contract:
-        SpellbookCreationSystem.run_resolution_phases returns all phase results and sets validator.
+        SpellbookCreationSystem.run_resolution_phases returns all phase results.
     Args:
         monkeypatch: Pytest fixture for patching dependencies.
     Returns:
@@ -2559,7 +2552,6 @@ def test_run_resolution_phases_success(monkeypatch):
         "system_validation",
         "change_control",
     }
-    assert isinstance(sb._spell_validator, DummySpellValidationSystem)
 
 
 def test_run_resolution_phases_broken_spell_raises(monkeypatch):
@@ -2828,13 +2820,11 @@ def test_cleanup_idempotent_and_clears_fields():
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._configuration = DummyConfig()
-    sb._spell_validator = DummySpellValidationSystem()
     sb.cleanup()
     assert sb._cleaned is True
     assert not hasattr(sb, "_spells")
     assert not hasattr(sb, "_logger")
     assert not hasattr(sb, "_configuration")
-    assert not hasattr(sb, "_spell_validator")
     assert hasattr(sb, "_lock")
 
 

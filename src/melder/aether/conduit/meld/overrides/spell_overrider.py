@@ -31,9 +31,9 @@ class SpellOverrider(Cleanable):
     OverrideMap for a specific root blueprint.
 
     The targeting semantics are shared with mutation overrides:
-      * PATH:       a>b>c
-      * UNIQUE:     *param  (exactly one match required)
-      * BROADCAST:  **param (one or more matches required)
+      * PATH: a>b>c
+      * UNIQUE: *param (exactly one match required)
+      * BROADCAST: **param (one or more matches required)
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
@@ -43,7 +43,7 @@ class SpellOverrider(Cleanable):
         Initialize the spell-override resolver for one root blueprint.
 
         Args:
-            blueprint: Root blueprint whose DAG/index provide the override
+            blueprint: Root blueprint whose DAG/index provides the override
                 targeting surface.
         Contract:
             - Requires a prebuilt root blueprint.
