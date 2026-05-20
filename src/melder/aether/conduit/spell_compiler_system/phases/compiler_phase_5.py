@@ -52,28 +52,6 @@ class CompilerPhase5:
 
     __slots__ = ()
 
-    @staticmethod
-    def _get_required_crafter_from_spell(spell: ISpell):
-        """
-        Return the live crafter attached to one spell or raise.
-
-        Args:
-            spell:
-                Spell expected to own a live SpellCrafter.
-
-        Returns:
-            Any:
-                The live crafter instance.
-
-        Raises:
-            RuntimeError:
-                If the spell has no attached crafter.
-        """
-        crafter = spell._crafter
-        if crafter is None:
-            raise RuntimeError("Spell must have a live SpellCrafter.")
-        return crafter
-
     def _get_required_spellbook_frame_name(self, spellbook: ISpellbook) -> str:
         """
             Return the non-empty owning frame name for one spellbook or raise.

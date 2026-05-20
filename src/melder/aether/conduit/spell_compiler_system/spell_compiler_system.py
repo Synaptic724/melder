@@ -249,7 +249,6 @@ class SpellCompilerSystem(Cleanable):
                   flags instead of a direct return value.
         """
         self._spell_compiler.run_phase_validation(
-            spellbook,
             spell,
             spell._compiler_artifact,
             self._spell_validator,
@@ -836,12 +835,10 @@ class SpellCompilerSystem(Cleanable):
             Exception: Propagates exceptions raised by the underlying phases.
         """
         self.run_phase_requirements(
-            spellbook,
             spell,
             cancel_event=cancel_event,
         )
         self.run_phase_symbolic_graph(
-            spellbook,
             spell,
             cancel_event=cancel_event,
         )
@@ -902,12 +899,10 @@ class SpellCompilerSystem(Cleanable):
             Exception: Propagates exceptions raised by the underlying phases.
         """
         self.run_phase_requirements(
-            spellbook,
             spell,
             cancel_event=cancel_event,
         )
         self.run_phase_symbolic_graph(
-            spellbook,
             spell,
             cancel_event=cancel_event,
         )
@@ -938,10 +933,7 @@ class SpellCompilerSystem(Cleanable):
             spell,
             conduit_id,
         )
-        self.run_phase_occurrence_plan(
-            spellbook,
-            spell,
-        )
+        self.run_phase_occurrence_plan(spell)
         self.run_phase_injection_plan(
             spell,
         )

@@ -144,7 +144,7 @@ class Meld(Cleanable, IMeld):
         # Foundation runtime compiler owner surface for later spell compiler
         # ownership decomposition.
         self._spell_compiler_system: SpellCompilerSystem = (
-            SpellCompilerSystem(spellbook)
+            SpellCompilerSystem()
         )
 
 
@@ -709,9 +709,12 @@ class Meld(Cleanable, IMeld):
         if self._gated_validation_required(spell):
             with spell._lock:
                 if self._gated_validation_required(spell):
-                    spell.run_structural_phases()
+                    self._spell_compiler_system.run_structural_phases(
+                        self._spellbook,
+                        spell,
+                    )
 
-                    # If the crafter thinks it's broken, we hard-pin to invalid and bail.
+                    # If structural validation produced errors, hard-pin to invalid and bail.
                     if spell.is_broken:
                         if state is not None:
                             state.set_validity(SpellValidity.invalid)

@@ -13,9 +13,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellcrafter import ISpellCrafter
-from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
-from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
+
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
@@ -43,7 +41,6 @@ from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import 
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 
@@ -171,10 +168,9 @@ class Spell(Cleanable, ISpell):
           concurrency decisions; this class only protects its own local state.
 
     Lifecycle / Cleanup:
-        - `Spell` owns its spell compiler artifact foundation, its current
-          `SpellCrafter`, spell-owned `CreationContextFactory`, spell-owned
-          `CreationContext`, hook lists, dependency/build artifacts, and cached
-          execution-plan metrics.
+        - `Spell` owns its spell compiler artifact foundation, spell-owned
+          `CreationContextFactory`, spell-owned `CreationContext`, hook lists,
+          dependency/build artifacts, and cached execution-plan metrics.
         - Conduit ownership can be restamped later, which invalidates the
           spell-owned `CreationContext` and rebuilds the spell-owned factory.
         - `cleanup()` is deterministic, best-effort for owned child cleanup, and
@@ -195,7 +191,6 @@ class Spell(Cleanable, ISpell):
         "_creation_context_factory",
         "_creation_context_switch",
         "_compiler_artifact",
-        "_crafter",
         "_dynamic_environment",
         "_hooks_enabled",
         "_id",
@@ -367,9 +362,6 @@ class Spell(Cleanable, ISpell):
         self.execution_plan_has_existing_creations: Optional[bool] = None
         self.execution_plan_dispatch_route: Optional[str] = None
 
-        # Per-spell compiler / resolution helper (SpellCrafter).
-        # This owns all Phase artifacts and is disposable.
-        self._crafter: Optional[ISpellCrafter] = None
         # Foundation artifact home for compiler/build state that will be
         # split away from SpellCrafter in later slices.
         self._compiler_artifact: SpellCompilerArtifact = (
@@ -460,15 +452,6 @@ class Spell(Cleanable, ISpell):
                     self._compiler_artifact.cleanup()
                 except Exception:
                     pass
-
-            # Phase artifacts - deterministically dropped via SpellCrafter.
-            if self._crafter is not None:
-                try:
-                    self._crafter.cleanup()
-                except Exception:
-                    # Never let cleanup explosions propagate.
-                    pass
-                self._crafter = None
 
             try:
                 if self.spell_index is not None:
@@ -776,35 +759,6 @@ class Spell(Cleanable, ISpell):
             f"frame={frame}, SHA256={self.spell_id})"
         )
 
-    #region Internal helpers
-    def _ensure_crafter(self) -> "ISpellCrafter":
-        """
-        Lazily create and attach the spell-owned `SpellCrafter`.
-
-        Contract:
-            - Returns the same attached crafter until cleanup clears it.
-            - Performs a local import to avoid circular import coupling between
-              `spell.py` and `spell_crafter.py`.
-            - Seeds the crafter with the current spell resolution profile when
-              the attached reflective profile exposes one.
-
-        Returns:
-            ISpellCrafter:
-                The spell-owned crafter responsible for compiler and resolution phases.
-
-        """
-        if self._crafter is None:
-            from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
-            resolution_profile = None
-            if isinstance(self.profile, (ISpellGeneralProfile, ISpellDetailedProfile)):
-                resolution_profile = self.profile.resolution_profile
-            self._crafter = SpellCrafter(
-                self,
-                resolution_profile=resolution_profile,
-            )
-        return self._crafter
-    #endregion Internal helpers
-
     #region Introspection Helpers
     @property
     def key(self) -> tuple[str, str]:
@@ -905,60 +859,52 @@ class Spell(Cleanable, ISpell):
         """
         Phase 1 artifact for this spell, if it has been computed.
 
-        This is populated by: meth:`run_phase_requirements 'via: class:`SpellCrafter`.
+        This is populated by the compiler artifact during structural phase
+        execution.
         """
-        if self._crafter is None:
-            return None
-        requirements = self._crafter.requirements
-        if requirements is None:
-            return None
-        return requirements
+        return self._compiler_artifact._requirements
 
     @property
     def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:
         """
         Phase 2 symbolic graph for this spell, if it has been computed.
 
-        This is populated by: meth:`run_phase_symbolic_graph 'via: class:`SpellCrafter`.
+        This is populated by the compiler artifact during structural phase
+        execution.
         """
-        if self._crafter is None:
-            return None
-        return self._crafter.symbolic_graph
+        return self._compiler_artifact._symbolic_graph
 
     @property
     def resolution_frame(self) -> Any:
         """
         Phase 3 local resolution frame / DAG for this spell, if it has been computed.
 
-        This is populated by: meth:`run_phase_local_frame 'via: class:`SpellCrafter`.
+        This is populated by the compiler artifact during structural phase
+        execution.
         Concrete type is intentionally opaque here; callers should treat it as
         an internal resolution artifact.
         """
-        if self._crafter is None:
-            return None
-        return self._crafter.resolution_frame
+        return self._compiler_artifact._resolution_frame
 
     @property
     def validation_result_phase4(self) -> Optional[SpellValidationResult]:
         """
         Phase 4 validation result for this spell, if it has been computed.
 
-        This is populated by: meth:`run_phase_validation 'via: class:`SpellCrafter`.
+        This is populated by the compiler artifact during structural phase
+        execution.
         """
-        if self._crafter is None:
-            return None
-        return self._crafter.validation_result_phase4
+        return self._compiler_artifact._validation_result_phase4
 
     @property
     def validation_result_phase6(self) -> Optional[SpellSystemValidationState]:
         """
         Phase 6 validation result for this spell, if it has been computed.
 
-        This is populated by: meth:`run_phase_validation 'via: class:`SpellCrafter`.
+        This is populated by the compiler artifact during conduit-scoped
+        validation.
         """
-        if self._crafter is None:
-            return None
-        return self._crafter.validation_result_phase6
+        return self._compiler_artifact._validation_result_phase6
 
     @property
     def validated(self) -> bool:
@@ -967,13 +913,11 @@ class Spell(Cleanable, ISpell):
 
         Returns:
             bool:
-                False until a crafter exists and its validation result marks the
-                spell valid.
+                False until Phase 4 validation has populated the compiler
+                artifact.
 
         """
-        if self._crafter is None:
-            return False
-        return self._crafter.validated
+        return self._compiler_artifact._validated_phase4
 
     @property
     def is_broken(self) -> bool:
@@ -982,12 +926,11 @@ class Spell(Cleanable, ISpell):
 
         Returns:
             bool:
-                False until a crafter exists and flags the spell as broken.
+                False until Phase 4 validation has populated the compiler
+                artifact.
 
         """
-        if self._crafter is None:
-            return False
-        return self._crafter.is_broken
+        return self._compiler_artifact._is_broken
     #endregion Introspection Helpers
 
     #region Configuration
@@ -1147,507 +1090,6 @@ class Spell(Cleanable, ISpell):
 
 
     #endregion Configuration
-    #region Resolution Phases
-    def run_phase_requirements(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 1 - Requirements extraction (facade).
-
-        Delegates to the SpellCrafter to analyze constructor requirements
-        and capture dependency metadata for this spell.
-
-        Contract:
-            - Requires a live Spell (not cleaned).
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute any later phases.
-
-        Args:
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        Notes:
-            Phase artifacts are cleaned after Phase 7; spell-level dependency
-            data and system state remain available.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_requirements(cancel_event=cancel_event)
-
-    def run_phase_symbolic_graph(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 2 - Symbolic graph construction (facade).
-
-        Delegates to the SpellCrafter to build the symbolic dependency graph
-        for this spell from Phase 1 requirements.
-
-        Contract:
-            - Requires Phase 1 to be completed successfully.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
-
-    def run_phase_local_frame(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 3 - Local resolution frame / DAG (facade).
-
-        Delegates to the SpellCrafter to resolve dependencies against the
-        Spellbook and build the local resolution frame.
-
-        Contract:
-            - Requires Phases 1 and 2 to be completed successfully.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_local_frame(cancel_event=cancel_event)
-
-    def run_phase_validation(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 4 - Per-spell validation (facade).
-
-        Delegates to the SpellCrafter to validate this spell's Phase 1-3
-        artifacts and set validated/broken flags.
-
-        Contract:
-            - Requires Phases 1-3 to be completed successfully.
-            - Does not return a value; results are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_validation(cancel_event=cancel_event)
-
-    def run_phase_root_blueprints(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 5 - Root blueprint construction (facade).
-
-        Delegates to the SpellCrafter to build system-level DAG blueprints
-        and a SpellSystemIndex for the current frame.
-
-        Contract:
-            - Requires Phase 4 to be completed successfully.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_root_blueprints_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 5 local - target spell closure blueprint construction (facade).
-
-        Delegates to the SpellCrafter to build local Phase 5 artifacts for the
-        target spell and its dependency closure.
-
-        Contract:
-            - Requires Phase 4 to be completed successfully.
-            - Scope is limited to this spell plus transitive dependencies.
-            - Does not execute later phases.
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_root_blueprints_local(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_occurrence_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 8 - Occurrence plan compilation (facade).
-
-        Delegates to the SpellCrafter to compile the occurrence plan for root
-        spells. Non-root spells are treated as a no-op.
-
-        Contract:
-            - Requires Phase 5 artifacts to be available.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_injection_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 9 - Injection plan compilation (facade).
-
-        Delegates to the SpellCrafter to compile the injection plan for root
-        spells. Non-root spells are treated as a no-op.
-
-        Contract:
-            - Requires Phase 8 artifacts to be available.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_patch_maps(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 10 - Patch map compilation (facade).
-
-        Delegates to the SpellCrafter to compile override and mutation patch maps
-        for root spells. Non-root spells are treated as a no-op.
-
-        Contract:
-            - Requires Phase 9 artifacts to be available.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_execution_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 11 - Execution plan compilation (facade).
-
-        Delegates to the SpellCrafter to compile the execution plan for
-        root spells. Non-root spells are treated as a no-op.
-
-        Contract:
-            - Invalidates the spell-owned CreationContext after execution-plan
-              changes so meld rebuilds a fresh spell-shaped runtime context.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
-        self._cleanup_creation_context()
-
-    def run_phase_system_validation(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 6 - System-level validation (facade).
-
-        Delegates to the SpellCrafter to validate system-level DAG integrity
-        and update per-conduit resolution validity.
-
-        Contract:
-            - Requires Phase 5 to be completed successfully.
-            - Does not return a value; results are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_system_validation_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 6 local - scoped system validation (facade).
-
-        Delegates to the SpellCrafter to validate only the local Phase 5 scope
-        for this spell.
-
-        Contract:
-            - Requires local Phase 5 artifacts.
-            - Updates per-conduit resolution validity for scoped ids only.
-            - Does not execute later phases.
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_system_validation_local(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_change_control(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 7 - Change-control wiring (facade).
-
-        Delegates to the SpellCrafter to ensure change-control wiring and
-        component-of indexing are prepared for this frame.
-
-        Contract:
-            - Requires Phase 5 artifacts to be available.
-            - Does not return a value; wiring occurs inside the crafter.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
-
-    def run_phase_change_control_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Phase 7 local - scoped change-control wiring (facade).
-
-        Delegates to the SpellCrafter to refresh change-control mappings only
-        for locally revalidated roots.
-
-        Contract:
-            - Requires local Phase 5 artifacts.
-            - Preserves component-of mappings for unrelated roots.
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        crafter.run_phase_change_control_local(conduit_id, cancel_event=cancel_event)
-
-    def get_local_resolution_scoped_spell_ids(self) -> Set[str]:
-        """
-        Return the spell ids currently covered by this spell's local Phase 5 scope.
-
-        Contract:
-            - Always includes this spell's current `spell_id`.
-            - Adds any additional spell ids present in the local Phase 5 system
-              index when that artifact exists.
-
-        Returns:
-            Set[str]: Spell ids in the local target-resolution scope.
-        """
-        self.check_cleaned()
-        scoped_spell_ids: Set[str] = {self.spell_id}
-        crafter = self._ensure_crafter()
-        scoped_spell_ids.update(crafter.get_phase5_spell_ids())
-        return scoped_spell_ids
-
-    def get_local_resolution_scoped_root_ids(self) -> Tuple[str, ...]:
-        """
-        Return the root ids currently covered by this spell's local Phase 5 scope.
-
-        Contract:
-            - Falls back to `(self.spell_id,)` when no local Phase 5 rooted
-              blueprints are available yet.
-
-        Returns:
-            Tuple[str, ...]: Root ids in the local target-resolution scope.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-        scoped_root_ids = crafter.get_phase5_root_ids()
-        if len(scoped_root_ids) == 0:
-            return (self.spell_id,)
-        return scoped_root_ids
-
-    def run_structural_phases(
-            self,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Convenience helper to run **structural phases only** (1-4) for this spell.
-
-        Phases executed via the: class:`SpellCrafter`:
-
-            1. Requirements extraction.
-            2. Symbolic graph construction.
-            3. Local resolution frame / DAG construction.
-            4. Validation.
-
-        Each phase honours the optional: class:`CancellationEvent`. If the
-        event is set, the underlying phase methods will rise via
-        "cancel_event.throw_if_set()".
-
-        Raises:
-            Exception: Propagates exceptions raised by the underlying phases.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-
-        crafter.run_phase_requirements(cancel_event=cancel_event)
-        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
-        crafter.run_phase_local_frame(cancel_event=cancel_event)
-        crafter.run_phase_validation(cancel_event=cancel_event)
-
-    def run_all_phases(
-            self,
-            conduit_id: str,
-            cancel_event: Optional[CancellationEvent] = None,
-    ) -> None:
-        """
-        Convenience helper to run **all compiler / resolution phases** for this spell, in order.
-
-        Phases executed via the: class:`SpellCrafter`:
-
-            - Phase 1: Requirements extraction.
-            - Phase 2: Symbolic graph construction.
-            - Phase 3: Local resolution frame / DAG construction.
-            - Phase 4: Validation.
-            - Phase 5: Root blueprint construction.
-            - Phase 6: System validation.
-            - Phase 7: Change-control wiring.
-            - Phase 8: Occurrence plan compilation.
-            - Phase 9: Injection plan compilation.
-            - Phase 10: Patch map compilation.
-            - Phase 11: Execution plan compilation.
-
-        Each phase honours the optional: class:`CancellationEvent`. If the
-        event is set, the underlying phase methods will rise via
-        "cancel_event.throw_if_set()".
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Raises:
-            Exception: Propagates exceptions raised by the underlying phases.
-        """
-        self.check_cleaned()
-        crafter = self._ensure_crafter()
-
-        crafter.run_phase_requirements(cancel_event=cancel_event)
-        crafter.run_phase_symbolic_graph(cancel_event=cancel_event)
-        crafter.run_phase_local_frame(cancel_event=cancel_event)
-        crafter.run_phase_validation(cancel_event=cancel_event)
-        crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
-        self._cleanup_creation_context()
-        crafter.cleanup_phase_artifacts()
-
-
-    #endregion Resolution Phases
     #region Spell Mutations
     @property
     def system_state(self) -> Optional["SpellSystemState"]:

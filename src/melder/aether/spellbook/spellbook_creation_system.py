@@ -1755,22 +1755,26 @@ class SpellbookCreationSystem(Cleanable):
             None.
         """
         spellbook.check_cleaned()
-        if spell_ids is None:
-            for spell in spellbook._spells.values():
+        compiler_system = SpellCompilerSystem()
+        try:
+            if spell_ids is None:
+                for spell in spellbook._spells.values():
+                    try:
+                        compiler_system.cleanup_phase_artifacts(spell)
+                    except Exception:
+                        pass
+                return
+
+            for spell_id in spell_ids:
+                spell = spellbook._spell_id_pool.get(spell_id)
+                if spell is None:
+                    continue
                 try:
-                    spell.crafter.cleanup_phase_artifacts()
+                    compiler_system.cleanup_phase_artifacts(spell)
                 except Exception:
                     pass
-            return
-
-        for spell_id in spell_ids:
-            spell = spellbook._spell_id_pool.get(spell_id)
-            if spell is None:
-                continue
-            try:
-                spell.crafter.cleanup_phase_artifacts()
-            except Exception:
-                pass
+        finally:
+            compiler_system.cleanup()
 
     @staticmethod
     def _build_per_spell_phase_units(

@@ -755,7 +755,9 @@ class TransferOfOwnership(Cleanable):
                     src_book._spell_id_pool[spell_id] = spell_obj
             spell_obj._spellbook = src_book
             spell_obj._spell_system_states = src_book._spell_system_states
-            spell_obj._crafter = None
+            spell_obj._cleanup_creation_context()
+            spell_obj._compiler_artifact.cleanup_phase_artifacts()
+            spell_obj._compiler_artifact.clear_phase5_artifacts()
             tgt_book._unregister_spell_with_risk_manager(self.target_conduit._id, spell_obj)
             src_book._register_spell_with_risk_manager(self.source_conduit._id, spell_obj)
         try:
@@ -1285,7 +1287,9 @@ class TransferOfOwnership(Cleanable):
                 if spell_obj._spellbook is not tgt_book:
                     spell_obj._spellbook = tgt_book
                     spell_obj._spell_system_states = tgt_book._spell_system_states
-                    spell_obj._crafter = None
+                    spell_obj._cleanup_creation_context()
+                    spell_obj._compiler_artifact.cleanup_phase_artifacts()
+                    spell_obj._compiler_artifact.clear_phase5_artifacts()
                 tgt_states.register_index(
                     spell_index=spell_obj.spell_index,
                 )
