@@ -1,7 +1,6 @@
 from typing import Any, Optional
-
 from mypy_extensions import mypyc_attr
-
+from melder.aether.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
@@ -41,6 +40,8 @@ class SpellCompilerSystem(Cleanable):
         if spellbook is None:
             raise ValueError("spellbook cannot be None.")
         self._spellbook: ISpellbook = spellbook
+        # Spell validator
+        self._spell_validator: SpellValidationSystem = SpellValidationSystem()
 
     def cleanup(self) -> None:
         """
@@ -54,6 +55,7 @@ class SpellCompilerSystem(Cleanable):
             return
         self._cleaned = True
         del self._spellbook
+        del self._spell_validator
 
     def create_spell_crafter_for_spell(self, spell: ISpell) -> SpellCrafter:
         """
