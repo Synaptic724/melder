@@ -13,7 +13,6 @@ from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
 
 
 class _StubSpellIndex:
@@ -756,3 +755,4 @@ def test_compile_contract_overrides_is_stable_across_occurrence_map_orders() -> 
     assert second_complete is True
     assert first_occurrence_map == second_occurrence_map
     assert first_spell_map == second_spell_map
+

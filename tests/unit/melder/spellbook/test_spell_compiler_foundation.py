@@ -10,7 +10,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
-from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.general_base.cleanable import Cleanable
@@ -128,3 +127,4 @@ def test_meld_initializes_spell_compiler_system_foundation() -> None:
     meld = Meld(creations=creations, spellbook=spellbook)
 
     assert isinstance(meld._spell_compiler_system, SpellCompilerSystem)
+

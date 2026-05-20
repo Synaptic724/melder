@@ -5,7 +5,6 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicLogger
@@ -388,3 +387,4 @@ def test_component_meld_revalidation_phase_8_to_11_runs_for_target_only(
         assert records["execution"] == [local_spell_id]
     finally:
         spellbook.cleanup()
+

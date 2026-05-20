@@ -7,9 +7,7 @@ from threading import RLock
 
 import pytest
 
-import melder.aether.spellbook.spell_compiler.spell_crafter as spell_crafter_module
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -8374,5 +8372,6 @@ def test_codegen_ir_property_flushes_phase8_11_when_dirty(
     assert flush_calls == [True]
     assert payload is crafter._codegen_ir
     assert crafter._phase8_11_codegen_ir_dirty is False
+
 
 
