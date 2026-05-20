@@ -63,21 +63,21 @@ class SharedCompilerExecutions:
     @staticmethod
     def serialize_codegen_signature_part(part: Any) -> bytes:
         """
-        Serialize one signature part into deterministic bytes.
-
-        Purpose:
-            Keep hash input stable while avoiding expensive object-sensitive
-            representations on mixed payload graphs.
-        Contract:
-            - Uses typed fast-paths for common primitives.
-            - Uses `pickle` for supported container/object values.
-            - Falls back to textual representation when pickling fails.
-        Args:
-            part:
-                One signature segment being hashed.
-        Returns:
-            bytes:
-                Deterministic encoded bytes for hashing.
+            Serialize one signature part into deterministic bytes.
+            
+            Purpose:
+                Avoid expensive mega-`repr(...)` materialization on large nested
+                IR payloads while preserving deterministic signature behaviour.
+            Contract:
+                - Uses typed fastpaths for common scalar values.
+                - Uses direct `pickle` fallback for container and unsupported values.
+                - Falls back to `repr(...).encode(...)` for non-picklable values.
+            Args:
+                part:
+                    One primitive/tuple/dict/set signature segment.
+            Returns:
+                bytes:
+                    Deterministic encoded bytes for hashing.
         """
         part_type = type(part)
         if (
@@ -117,20 +117,20 @@ class SharedCompilerExecutions:
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
         """
-        Build a deterministic signature from IR parts.
-
-        Purpose:
-            Produce stable fingerprints for codegen-exported state so repeated
-            calls can skip unchanged compile work.
-        Contract:
-            - Signature is deterministic for equal-ordered payload parts.
-            - Does not depend on process-local object identity.
-        Args:
-            *parts:
-                Ordered IR signature segments.
-        Returns:
-            str:
-                SHA256 hex digest for the supplied parts.
+            Build a deterministic signature from primitive IR parts.
+            
+            Purpose:
+                Produce stable fingerprints for phase-exported IR slices so Phase 12
+                compilation can skip unchanged payloads.
+            Contract:
+                - Signature is deterministic for equal-ordered inputs.
+                - Does not depend on process-randomized object identity.
+            Args:
+                *parts:
+                    Ordered primitive payload parts.
+            Returns:
+                str:
+                    SHA256 hex digest for the supplied parts.
         """
         digest = hashlib.sha256()
         for part in parts:
@@ -208,18 +208,18 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> Tuple[Tuple[Any, ...], ...]:
         """
-        Build deterministic schema rows for Phase5 DAG edges.
-
-        Purpose:
-            Export parent→child routing from the root blueprint DAG so codegen
-            consumers can validate structure from IR alone.
-        Contract:
-            - Returns only primitive tuple rows.
-            - Ignores malformed DAG nodes that do not expose expected fields.
-            - Output row order is deterministic.
-        Returns:
-            Tuple[Tuple[Any, ...], ...]:
-                Rows `(parent_spell_id, child_spell_id, param_name, socket_kind)`.
+            Build deterministic schema rows for Phase5 DAG edges.
+            
+            Purpose:
+                Export explicit parent->child routing from the root blueprint DAG so
+                codegen consumers can validate structural semantics from IR alone.
+            Contract:
+                - Returns only primitive tuple rows.
+                - Ignores malformed DAG nodes that do not expose expected fields.
+                - Output row order is deterministic.
+            Returns:
+                Tuple[Tuple[Any, ...], ...]:
+                    Rows `(parent_spell_id, child_spell_id, param_name, socket_kind)`.
         """
         if artifact._root_blueprint_phase5 is None:
             return ()

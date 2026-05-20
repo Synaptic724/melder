@@ -87,28 +87,24 @@ class SpellCompilerArtifact(Cleanable):
 
     def __init__(self, spell_id: str) -> None:
         """
-        Initialize one empty compiler artifact container.
-
-        Purpose:
-            Create a new artifact bucket dedicated to one spell identity and
-            initialize all phase cache fields to their unset state.
-
-        Contract:
-            - Tracks only spell-scoped compiler/build caches for phase
-              pipelines.
-            - Starts empty so callers must fill artifacts through compiler phase
-              execution.
-            - Holds a lock for any future synchronized cleanup or cache-reset
-              operations.
-
-        Args:
-            spell_id: Owning spell version identity stamped into this artifact.
-
-        Raises:
-            ValueError: If `spell_id` is empty.
-
-        Returns:
-            None.
+            Create a new SpellCrafter for one bound: class: 'Spell`.
+            
+            Args:
+                spell:
+                    The owning spell. The crafter treats it as read-only except
+                    when later phases push finalized build details back into the
+                    spell through internal spell-owned update hooks.
+                resolution_profile:
+                    Optional prebuilt resolution profile. When supplied, the crafter
+                    seeds Phase 1 requirements from that profile instead of
+                    rebuilding them immediately.
+            
+            Contract:
+                - Captures shared spell-owned services needed by later phases, such
+                  as the spell validator and spell-system-state view.
+                - Starts with empty artifact caches for all later phases.
+                - Allows callers that already built a resolution profile to avoid
+                  duplicating the first requirements extraction step.
         """
         super().__init__()
         if not spell_id:
@@ -151,16 +147,20 @@ class SpellCompilerArtifact(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Deterministically release attached compiler/build artifacts.
-
-        Contract:
-            - Idempotent cleanup.
-            - Best-effort cleans attached artifact objects when they expose
-              `cleanup()`.
-            - Drops local references after cleanup completes.
-
-        Returns:
-            None.
+            Deterministically release all crafter-owned phase artifacts.
+            
+            Behaviour:
+                * Cleans and clears structural artifacts from Phases 1-4.
+                * Cleans and clears later blueprint/plan/index artifacts from
+                  Phases 5-11 when present.
+                * Drops cached compiled executor/codegen state.
+                * Resets validation and broken-state flags held by the crafter.
+                * Releases references to the owning spell and shared helper
+                  services without mutating or disposing those external owners.
+            
+            Contract:
+                Cleanup is idempotent. After cleanup, the crafter is unusable and
+                future accesses must fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -258,16 +258,14 @@ class SpellCompilerArtifact(Cleanable):
 
     def reset_phase_artifacts(self) -> None:
         """
-        Release structural-validation artifacts while keeping later plan state.
-
-        Contract:
-            - Clears the reusable Phase 1-4 artifacts only.
-            - Clears the exported `phase2_5` codegen snapshot because its
-              structural source artifacts are no longer valid after reset.
-            - Preserves Phase 5 and later plan/codegen artifacts.
-
-        Returns:
-            None.
+            Release transient validation/build artifacts without disposing of the
+            crafter.
+            
+            Contract:
+                - Clears the reusable artifacts owned by Phases 1-4 and Phase 6.
+                - Preserves later rooted/planning artifacts so a spell that already
+                  advanced into runtime planning does not lose those caches.
+                - Keeps the crafter alive for future phase runs.
         """
         self.check_cleaned()
         with self._lock:
@@ -281,26 +279,23 @@ class SpellCompilerArtifact(Cleanable):
 
     def cleanup_phase_artifacts(self) -> None:
         """
-        Backward-compatible alias for structural artifact reset.
-
-        Contract:
-            - Behaves exactly like `reset_phase_artifacts()`.
-
-        Returns:
-            None.
+            Backward-compatible alias for reset_phase_artifacts.
+            
+            This keeps the SpellCrafter reusable for future phase runs while
+            releasing the transient structural-validation artifact set.
         """
         self.reset_phase_artifacts()
 
     def _cleanup_phase_artifacts_locked(self) -> None:
         """
-        Internal structural-artifact cleanup for the Phase 1-4 state group.
-
-        Contract:
-            - Best-effort cleans owned structural-validation artifacts.
-            - Leaves Phase 5 and later state untouched.
-
-        Returns:
-            None.
+            Internal helper that clears the reusable structural-validation artifact
+            set under the crafter lock.
+            
+            Contract:
+                - Best-effort cleans owned artifact objects before pulling them.
+                - Leaves Phase 5 and later plan/codegen artifacts untouched.
+                - Refreshes the phase2_5 codegen snapshot after the structural
+                  layers are cleared.
         """
         if self._requirements is not None:
             try:
@@ -340,19 +335,15 @@ class SpellCompilerArtifact(Cleanable):
 
     def clear_phase5_artifacts(self) -> None:
         """
-        Clear Phase 5 and later state while keeping Phase 1-4 artifacts.
-
-        Contract:
-            - Drops the Phase 5 blueprint reference.
-            - Cleans and nulls Phase 8-11 plan/executor state.
-            - Clears the Phase 5 system index.
-            - Resets later transient execution/signature state.
-
-        Args:
-            None.
-
-        Returns:
-            None.
+            Deterministically clear Phase 5 state and all dependent later-phase
+            artifacts.
+            
+            Contract:
+                - Drops the Phase 5 blueprint reference.
+                - Cleans and nulls compiled occurrence, injection, patch-map, and
+                  execution-plan artifacts that depend on that Phase 5 state.
+                - Clears the spell-system index and later-phase cache signatures.
+                - Leaves Phase 1-4 artifacts intact.
         """
         self.check_cleaned()
         self._root_blueprint_phase5 = None

@@ -87,8 +87,24 @@ class SpellCompiler:
 
     def __init__(self) -> None:
         """
-        Initialize the compiler-owned phase instances currently wired through
-        phase 5.
+            Create a new SpellCrafter for one bound: class: 'Spell`.
+            
+            Args:
+                spell:
+                    The owning spell. The crafter treats it as read-only except
+                    when later phases push finalized build details back into the
+                    spell through internal spell-owned update hooks.
+                resolution_profile:
+                    Optional prebuilt resolution profile. When supplied, the crafter
+                    seeds Phase 1 requirements from that profile instead of
+                    rebuilding them immediately.
+            
+            Contract:
+                - Captures shared spell-owned services needed by later phases, such
+                  as the spell validator and spell-system-state view.
+                - Starts with empty artifact caches for all later phases.
+                - Allows callers that already built a resolution profile to avoid
+                  duplicating the first requirements extraction step.
         """
         self._phase_1 = CompilerPhase1()
         self._phase_2 = CompilerPhase2()
@@ -110,28 +126,24 @@ class SpellCompiler:
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 1 (requirements) for one spell.
-
-        Purpose:
-            Populate the phase-1 requirements artifact and cache it on the
-            provided :class:`SpellCompilerArtifact`.
-
-        Contract:
-            - Does not consume local system state (phase 1 is spell-local only).
-            - Honors cancellation via the optional signal while collecting
-              requirements.
-            - Leaves phase-2+ artifacts untouched for deferred execution.
-
-        Args:
-            spell:
-                Spell to run requirements extraction against.
-            artifact:
-                Shared compiler artifact object that receives phase-1 data.
-            cancel_event:
-                Optional cancellation signal for cooperative cancellation.
-
-        Returns:
-            None.
+            Phase 1 - Analyze the Spell constructor and capture DI requirements.
+            
+            Responsibilities:
+                * Inspect the bound Spell's constructor and classify every parameter
+                  into a: class:`ParameterDIShape` (normal DI, SpellMap, contracts, etc.).
+                * Build a: class:`SpellRequirements` object that records per-parameter
+                  metadata (name, position, shape, optionality, annotations).
+                * Store the requirements on this SpellCrafter (``_requirements``) for
+                  later phases to consume.
+            
+            Contracts:
+                * Must only be called for a Spell that is fully constructed and
+                  attached to a Spellbook.
+                * Does **not** call any other phases. The caller is responsible for
+                  running phases in order.
+                * Does **not** mutate the Spell, SpellSystemStates, or any DAG
+                  structures. It only updates this SpellCrafter's internal state.
+                * Does not return a value; consumers read "self._requirements".
         """
         self._phase_1.run(
             spell,
@@ -146,28 +158,27 @@ class SpellCompiler:
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 2 (symbolic graph construction).
-
-        Purpose:
-            Build and cache the symbolic graph from phase-1 requirements using
-            the provided artifact.
-
-        Contract:
-            - Requires phase-1 requirements to be available on the artifact.
-            - Produces symbolic constructor graph primitives that drive local
-              DAG and dependency planning later.
-            - Stores all phase-2 artifacts only on the shared artifact.
-
-        Args:
-            spell:
-                Spell that currently owns the compiler artifact.
-            artifact:
-                Mutable compiler artifact receiving symbolic graph state.
-            cancel_event:
-                Optional cancellation signal for cooperative cancellation.
-
-        Returns:
-            None.
+            Phase 2 - Build the symbolic dependency graph for this Spell.
+            
+            Responsibilities:
+                * Consume Phase 1 requirements and construct a: class:`SpellSymbolicGraph` describing all constructor sockets.
+                * Create one: class:`SpellSymbolicDependency` per constructor
+                  parameter that should be represented as a socket, including:
+                      - plain (caller-supplied) parameters,
+                      - normal DI sockets (single, collection, SpellMap),
+                      - SpellContract sockets,
+                      - MutationContract sockets.
+                * Store the symbolic graph on this SpellCrafter
+                  (``_symbolic_graph``) for later phases.
+            
+            Contracts:
+                * Phase 1 (requirements) must already have run successfully.
+                  This method will raise if requirements are missing; it does
+                  **not** auto-run Phase 1.
+                * Does **not** build any concrete DAG or talk to SpellSystemStates.
+                * Does **not** mutate the Spell. It only updates this
+                  SpellCrafter's internal state.
+                * Does not return a value; consumers read "self._symbolic_graph".
         """
         self._phase_2.run(
             spell,
@@ -184,34 +195,46 @@ class SpellCompiler:
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 3 (local frame + DAG).
-
-        Purpose:
-            Resolve local frame DAG artifacts for one conduit-spell context using
-            the current spellbook and spell-system state view.
-
-        Contract:
-            - Requires phase-2 symbolic graph to exist on the artifact.
-            - Writes resolved local-frame artifacts to the artifact for later
-              validation and blueprint phases.
-            - Uses the provided spell-system state to determine local
-              visibility and topology constraints.
-
-        Args:
-            spell:
-                Spell being compiled.
-            artifact:
-                Compiler artifact that stores phase-3 local frame artifacts.
-            spellbook:
-                Host spellbook context for local topology lookup.
-            spell_system_states:
-                Resolved system-state provider for visibility and topology
-                queries.
-            cancel_event:
-                Optional cancellation signal for cooperative cancellation.
-
-        Returns:
-            None.
+            Phase 3 - Build the local-frame DAG and constructor topology.
+            
+            Responsibilities:
+                * Consume Phase 1 requirements and Phase 2 symbolic graph for the
+                  bound Spell.
+                * Resolve **normal** DI sockets (single, collection, SpellMap)
+                  against the Spellbook and build a **local-frame DAG** where:
+                      - the root node is this Spell's version id, and
+                      - direct edges represent first-hop constructor dependencies.
+                * Track, per constructor parameter, which dependency spell ids were
+                  bound during resolution.
+                * Build a: class:`SpellLocalTopology` snapshot that describes all
+                  sockets (normal, SpellContract, MutationContract) and their
+                  concrete targets where applicable.
+                * Register both:
+                      - direct dependency spell ids, and
+                      - the local topology
+                  into: class:`SpellSystemStates`.
+            
+            Socket semantics:
+                * Normal DI shapes (single, collection, SpellMap) produce DAG nodes,
+                  DAG edges, and concrete "target_spell_ids" entries in topology.
+                * SpellContract and MutationContract sockets are **metadata-only** at
+                  this phase:
+                      - they appear in the symbolic graph and topology,
+                      - they do **not** produce DAG edges or bound targets yet.
+                * Plain parameters are **metadata-only** at this phase:
+                      - they appear in the symbolic graph and topology,
+                      - they do **not** produce DAG edges or bound targets.
+            
+            Contracts:
+                * Phases 1 and 2 must already have completed successfully. If
+                  requirements or symbolic graph are missing, this method raises
+                  instead of auto-running earlier phases.
+                * Assumes the bound Spell is attached to a Spellbook; direct
+                  Spellbook map iteration is used for resolution.
+                * Stores the local DAG and direct dependency list on the Spell via: meth:`Spell._add_build_details`, and keeps a: class:`SpellResolutionFrame` internally on this SpellCrafter.
+                * Does not return a value; callers rely on:
+                      - "self._resolution_frame" for ordering, and
+                      - SpellSystemStates for dependencies and topology.
         """
         self._phase_3.run(
             spell,
@@ -230,33 +253,30 @@ class SpellCompiler:
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 4 (structural validation).
-
-        Purpose:
-            Execute phase-4 validation on the local frame artifacts and store
-            the validation outcome for downstream behavior.
-
-        Contract:
-            - Accepts nullable spell-system state when phase-4 only needs static
-              spell metadata.
-            - May set broken-state signals on the artifact based on validation
-              findings.
-            - Keeps cancellation cooperative for long-running validations.
-
-        Args:
-            spell:
-                Spell under validation.
-            artifact:
-                Shared compiler artifact to receive validation outputs.
-            spell_validator:
-                Validator implementation used by phase-4 checks.
-            spell_system_states:
-                Optional spell-system state provider used by validation rules.
-            cancel_event:
-                Optional cancellation signal for cooperative cancellation.
-
-        Returns:
-            None.
+            Phase 4 - Per-spell validation using SpellValidationSystem.
+            
+            Responsibilities:
+                * Assume Phases 1-3 have completed for this Spell.
+                * Delegate to: class:`SpellValidationSystem` to validate this spell
+                  using:
+                      - Phase 1 requirements,
+                      - Phase 2 symbolic graph,
+                      - Phase 3 resolution frame.
+                * Cache the resulting: class:`SpellValidationResult 'and expose it
+                  via: attr:`validation_result`, :attr:`validated`,
+                  and: attr:`is_broken`.
+                * Update global structural validity (SpellSystemState) when available,
+                  including gating spells with missing SpellContract providers.
+            
+            Contracts:
+                * Does **not** call Phases 1-3. If any of the required artifacts
+                  are missing, this method raises.
+                * Does **not** mutate the Spell or build any DAGs. It only records
+                  validation outcome and diagnostics on this SpellCrafter.
+                * If the SpellSystemState is no longer valid (unknown/gated/invalid),
+                  the validation is re-run even if this phase is previously completed.
+                * Returns "None"; callers rely on the stored validation result and
+                  flags instead of a direct return value.
         """
         self._phase_4.run(
             spell,
@@ -591,27 +611,45 @@ class SpellCompiler:
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 9 (injection plan).
-
-        Purpose:
-            Derive injection ordering and patch intent from previous planning data.
-
-        Contract:
-            - Requires phase-8 completion in normal execution order.
-            - Produces immutable-like injector plans on the artifact for phase
-              10 operations.
-            - Uses cancellation token for long-running planning workloads.
-
-        Args:
-            spell:
-                Spell for which to compile injection plans.
-            artifact:
-                Shared compiler artifact receiving phase-9 data.
-            cancel_event:
-                Optional cancellation signal for cooperative cancellation.
-
-        Returns:
-            None.
+            Phase 9 - Injection plan compilation.
+            
+            Compiles an InjectionPlan for spells using Phase-8 occurrence plans.
+            Existing-creation spells are treated as a no-op.
+            
+            Purpose:
+                Precompute dependency-to-parameter wiring so meld can inject without
+                recomputing occurrence-driven dependency paths at runtime.
+            
+            Contract:
+                - Requires Phase 8 artifacts to be available.
+                - Builds plan only when an occurrence plan is attached for this spell.
+                - Replaces any existing InjectionPlan for this spell.
+                - Does not mutate the occurrence plan.
+            
+            Args:
+                conduit_id:
+                    Conduit identifier used to scope resolution artifacts.
+                cancel_event:
+                    Optional cancellation signal shared across the scheduler.
+            
+            Returns:
+                None.
+            
+            Raises:
+                ValueError:
+                    If conduit_id is empty.
+                RuntimeError:
+                    If Phase 8 artifacts are missing for this spell, or if the
+                    root blueprint is missing for this spell.
+                OperationCancelledError:
+                    If cancel_event signals cancellation.
+            
+            Threading:
+                - Not thread-safe; expected to run under spellbook phase scheduling.
+            
+            Lifecycle:
+                - Replaces any prior InjectionPlan reference for this spell.
+                - Prior plan objects are cleaned during SpellCrafter teardown.
         """
         self._phase_9.run(
             spell,
@@ -626,27 +664,45 @@ class SpellCompiler:
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Run compiler phase 10 (patch map generation).
-
-        Purpose:
-            Convert injection plans into override and mutation patch maps used by
-            runtime execution.
-
-        Contract:
-            - Requires phase-9 outputs to be present.
-            - Emits patch-map artifacts consumed by phase-11 compilation.
-            - Supports cooperative cancellation.
-
-        Args:
-            spell:
-                Spell owning the compiler artifact.
-            artifact:
-                Compiler artifact receiving phase-10 patch maps.
-            cancel_event:
-                Optional cancellation signal for cooperative cancellation.
-
-        Returns:
-            None.
+            Phase 10 - Patch map compilation.
+            
+            Compiles override and mutation patch maps for spells using
+            Phase-5 blueprints. Existing-creation spells are treated as a no-op.
+            
+            Purpose:
+                Precompute override and mutation targeting so meld can apply
+                TargetSpec overrides without scanning the blueprint every call.
+            
+            Contract:
+                - Requires Phase 5 artifacts to be available.
+                - Builds maps only when a blueprint is attached for this spell.
+                - Replaces any existing patch maps for this spell.
+                - Does not mutate the root blueprint.
+            
+            Args:
+                conduit_id:
+                    Conduit identifier used to scope resolution artifacts.
+                cancel_event:
+                    Optional cancellation signal shared across the scheduler.
+            
+            Returns:
+                None.
+            
+            Raises:
+                ValueError:
+                    If conduit_id is empty.
+                RuntimeError:
+                    If Phase 5 artifacts are missing or the root blueprint is missing
+                    for this spell.
+                OperationCancelledError:
+                    If cancel_event signals cancellation.
+            
+            Threading:
+                - Not thread-safe; expected to run under spellbook phase scheduling.
+            
+            Lifecycle:
+                - Replaces any prior patch map references for this spell.
+                - Prior map objects are cleaned during SpellCrafter teardown.
         """
         self._phase_10.run(
             spell,

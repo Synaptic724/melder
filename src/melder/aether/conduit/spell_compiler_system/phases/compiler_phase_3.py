@@ -112,31 +112,37 @@ class CompilerPhase3:
             spellbook: ISpellbook,
     ) -> Generator[tuple[Any, Any], Any, None]:
         """
-        Iterate all visible spells via the Spellbook's live spell_id_pool.
-
-        Args:
-            spellbook:
-                Spellbook owning the live spell-id pool.
-
-        Yields:
-            tuple[Any, Any]:
-                `(spell_index, spell_instance)` pairs for every visible spell.
+            Iterate all visible spells via the Spellbook's live spell_id_pool.
+            
+            Purpose:
+                Provide a single internal iterator that Phase 3 can use for
+                resolution without relying on any scanner wrapper.
+            Contract:
+                - Yields "(spell_index, spell)" in the insertion order of
+                  "_spell_id_pool".
+                - Uses the Spellbook's live "_spell_id_pool" directly; no copies
+                  or snapshots are created.
+            Returns:
+                Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
         """
         for spell_instance in spellbook._spell_id_pool.values():
             yield spell_instance.spell_index, spell_instance
 
     def _normalize_annotation_for_matching(self, annotation: Any) -> Any:
         """
-        Normalize a DI annotation for Phase 3 matching.
-
-        Args:
-            annotation:
-                Raw annotation from requirement metadata.
-
-        Returns:
-            Any:
-                Optional canonical annotation after ForwardRef and Optional/Union
-                normalization.
+            Normalize a DI annotation for Phase 3 matching.
+            
+            This unwraps Optional/Union-with-None annotations and converts
+            ForwardRef tokens into their string names so name-based matching
+            can succeed for local forward references.
+            
+            Args:
+                annotation:
+                    The raw annotation object from Phase 1.
+            
+            Returns:
+                Any:
+                    The normalized annotation to use for matching.
         """
         if isinstance(annotation, typing.ForwardRef):
             return annotation.__forward_arg__
@@ -304,18 +310,15 @@ class CompilerPhase3:
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
-        Resolve a COLLECTION_BY_ANNOTATION dependency to **all** matching
-        spells (classes, methods, lambdas) bound under the given frame/type.
-
-        Args:
-            spellbook:
-                Spellbook used for candidate enumeration.
-            dep:
-                Dependency metadata for this constructor parameter.
-
-        Returns:
-            Dict[Any, ISpell]:
-                Mapping from every matching `spell_index` to spell.
+            Resolve a COLLECTION_BY_ANNOTATION dependency to **all** matching
+            spells (classes, methods, lambdas) bound under the given frame/type.
+            
+            This corresponds to list[FrameType]-style DI where the user explicitly
+            asked for "all implementations".
+            
+            Returns:
+                Dict[SpellIndex, Spell]: mapping of all candidates. It is valid
+                for this mapping to be empty (an empty collection will be injected).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -335,15 +338,18 @@ class CompilerPhase3:
 
     def _socket_kind_for_dep(self, dep: SpellSymbolicDependency) -> SocketKind:
         """
-        Map a symbolic dependency's DI shape into a SocketKind.
-
-        Args:
-            dep:
-                Dependency metadata to classify.
-
-        Returns:
-            SocketKind:
-                Contract-aware socket kind when applicable, otherwise NORMAL.
+            Map a symbolic dependency's DI shape into a SocketKind.
+            
+            NORMAL:
+                Regular DI parameter (annotation, SpellMap, collection) or a
+                plain constructor socket.
+            SPELL_CONTRACT:
+                SpellContract socket - must be satisfied by a provider.
+            MUTATION_CONTRACT:
+                MutationContract socket - can be rewired at meld-time.
+            
+            For now, we classify based solely on `dep.di_shape`. If we later
+            introduce additional DI shapes, this is the central mapping point.
         """
         di_shape = dep.di_shape
 
@@ -480,18 +486,30 @@ class CompilerPhase3:
             socket_targets: Dict[tuple[str, int], List[str]],
     ) -> SpellLocalTopology:
         """
-        Construct a SpellLocalTopology describing this Spell's constructor sockets.
-
-        Args:
-            spell:
-                Spell whose topology is being reconstructed.
-            graph:
-                Symbolic dependency graph generated in Phase 3/2.
-            socket_targets:
-                Resolved target spell IDs keyed by `(param_name, position)`.
-
-        Returns:
-            SpellLocalTopology: Local topology with deterministic ordering.
+            Internal helper for Phase 3.
+            
+            Construct a: class:`SpellLocalTopology` describing this Spell's
+            constructor sockets, based on:
+            
+                * the symbolic dependencies from: class:`SpellSymbolicGraph`, and
+                * the concrete dependency spell ids resolved during Phase 3.
+            
+            For each: class:`SpellSymbolicDependency`:
+                * Determine "socket_kind" from its: class:`ParameterDIShape`.
+                * Copy "is_collection" and "is_optional" flags from the
+                  symbolic graph.
+                * Look up any concrete targets via "socket_targets" using
+                    "(param_name, position)". Normal DI sockets may have one or
+                    many targets; contract, mutation, and plain sockets will
+                    typically have none at this phase.
+                * Preserve contract metadata for SpellContract / MutationContract
+                  sockets (canonical key, late-binding flag).
+                * Create a: class:`SpellSocketDescriptor` for that parameter.
+            
+            The resulting: class:`SpellLocalTopology` is a per-spell, constructor-
+            local view of sockets that later phases (blueprint assembly, override
+            targeting, change-control) will consume. It is registered into: class:`SpellSystemStates` by Phase 3; this method does not talk to
+            SpellSystemStates directly.
         """
         spell_id = self._get_required_current_spell_id(spell)
         descriptors: List[SpellSocketDescriptor] = []
@@ -540,38 +558,35 @@ class CompilerPhase3:
             return_dependencies: bool = False,
     ) -> Union[DirectedAcyclicWorkGraph, Tuple[DirectedAcyclicWorkGraph, List[str]]]:
         """
-        Build the per-spell local dependency DAG and optional dependency list.
-
-        Responsibilities:
-            - Resolve annotation-driven and spellmap defaults into concrete
-              dependency spell IDs.
-            - Register resolved dependency nodes and parent->child edges against
-              the local DAG.
-            - Persist local topology and dependency IDs into
-              `ISpellSystemStates`.
-
-        Args:
-            spell:
-                Bound spell being resolved.
-            spellbook:
-                Live spell registry used for dependency discovery.
-            spell_system_states:
-                Spell-system state surface used to cache topology + dependencies.
-            requirements:
-                Phase 1 requirements for this spell.
-            graph:
-                Phase 2 symbolic graph.
-            cancellation_event:
-                Optional cancellation signal.
-            return_dependencies:
-                When True, return both DAG and ordered dependency spell IDs.
-
-        Returns:
-            Union[
-                DirectedAcyclicWorkGraph,
-                Tuple[DirectedAcyclicWorkGraph, List[str]]
-            ]: Graph alone, or graph and dependency spell IDs when
-            `return_dependencies=True`.
+            Internal helper for Phase 3.
+            
+            Build the concrete DAG for this Spell's **local frame** and emit
+            constructor topology into SpellSystemStates.
+            
+            Responsibilities:
+                * Add a DAG node for the root Spell (current SpellIndex version).
+                * For each symbolic dependency:
+                      - resolve normal DI shapes via direct Spellbook map iteration,
+                      - add DAG nodes for resolved dependency spells,
+                      - add edges from each dependency node to the root node,
+                        tagging edges with "param_name" and "socket_kind".
+                * Track, per constructor socket "(param_name, position)", the
+                  concrete dependency spell ids resolved in this phase.
+                * Build a: class:`SpellLocalTopology` from the symbolic graph plus
+                  the per-socket targets.
+                * Call into: class:`SpellSystemStates`:
+                      - record direct dependency spell ids, and
+                      - register the local topology for this Spell.
+            
+            Important:
+                * This helper does **not** mutate the Spell object. All artifacts
+                  (DAG, topology, dependency ids) remain in these SpellCrafter and
+                  SpellSystemStates.
+                * If "return_dependencies" is True, it returns a tuple of
+                  "(dag, dependency_spell_ids)"; otherwise it returns only the DAG.
+                * SpellContract and MutationContract sockets take part in the
+                  symbolic graph and topology but do not produce DAG edges or
+                  concrete targets at this stage.
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")

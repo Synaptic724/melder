@@ -110,6 +110,13 @@ class CompilerPhase6:
             self,
             artifact: SpellCompilerArtifact,
     ) -> Dict[str, IRootResolutionBlueprint]:
+        """
+            Return the Phase 5 root-blueprint map or raise.
+            
+            Returns:
+                Dict[str, IRootResolutionBlueprint]: Root blueprint map keyed by
+                root spell id.
+        """
         root_blueprints = artifact._entire_dag_blueprint_phase5
         if root_blueprints is None:
             raise RuntimeError(
@@ -121,6 +128,12 @@ class CompilerPhase6:
             self,
             artifact: SpellCompilerArtifact,
     ):
+        """
+            Return the Phase 5 system index or raise.
+            
+            Returns:
+                SpellSystemIndex: Attached Phase 5 system index.
+        """
         system_index = artifact._spell_system_index_phase5
         if system_index is None:
             raise RuntimeError("SpellCrafter Phase 5 system index is required.")
@@ -254,6 +267,19 @@ class CompilerPhase6:
         return diagnostics
 
     def _build_strategies(self) -> List[Any]:
+        """
+            Build the fixed phase-6 validation strategy pipeline.
+            
+            Purpose:
+                Centralize the strategy objects used by both frame-wide and local
+                system-validation execution so both paths keep the same policy.
+            Contract:
+                - Order of strategies remains canonical for deterministic diagnostics.
+                - Returns a new list instance on each call to avoid accidental sharing.
+            Returns:
+                List[Any]:
+                    Ordered validation strategy instances for phase-6 execution.
+        """
         return [
             CycleDetectionStrategy(),
             BrokenSpellInDagStrategy(),

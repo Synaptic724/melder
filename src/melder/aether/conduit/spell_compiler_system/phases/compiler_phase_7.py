@@ -36,7 +36,11 @@ class CompilerPhase7:
             artifact: SpellCompilerArtifact,
     ):
         """
-        Return the Phase 5 root-blueprint map or raise.
+            Return the Phase 5 root-blueprint map or raise.
+            
+            Returns:
+                Dict[str, IRootResolutionBlueprint]: Root blueprint map keyed by
+                root spell id.
         """
         root_blueprints = artifact._entire_dag_blueprint_phase5
         if root_blueprints is None:

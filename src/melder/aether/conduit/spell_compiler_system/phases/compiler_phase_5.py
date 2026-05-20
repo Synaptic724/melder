@@ -76,18 +76,19 @@ class CompilerPhase5:
 
     def _get_required_spellbook_frame_name(self, spellbook: ISpellbook) -> str:
         """
-        Resolve the owning frame name from the provided spellbook.
-
-        Args:
-            spellbook:
-                Spellbook whose owning frame is required.
-
-        Returns:
-            str: Aetheric frame name.
-
-        Raises:
-            RuntimeError:
-                If the spellbook does not expose a concrete frame name.
+            Return the non-empty owning frame name for one spellbook or raise.
+            
+            Args:
+                spellbook:
+                    Owning a spellbook whose frame name is required.
+            
+            Returns:
+                str: Concrete-owning frame name.
+            
+            Raises:
+                RuntimeError:
+                    If the spellbook does not currently expose a concrete frame
+                    name.
         """
         frame_name = spellbook._aetheric_frame
         if frame_name is None:
@@ -371,24 +372,26 @@ class CompilerPhase5:
             visible_spell_ids: Collection[str],
     ) -> SpellSystemAdjacencySnapshot:
         """
-        Filter a frame-wide adjacency snapshot to spells visible in this Spellbook.
-
-        Purpose:
-            Restrict an adjacency snapshot to the subset of spell ids visible to
-            the current Spellbook.
-        Contract:
-            - Preserves all edges whose source and target are visible.
-            - Preserves topologies for visible spells only.
-            - Recomputes root spell ids after visibility filtering.
-            - Does not mutate the source snapshot.
-        Args:
-            snapshot:
-                Full frame adjacency snapshot.
-            visible_spell_ids:
-                Spell ids that should remain visible in the filtered result.
-        Returns:
-            SpellSystemAdjacencySnapshot:
-                Snapshot filtered to visible spell ids.
+            Internal
+            
+            Filter a frame-wide adjacency snapshot to spells visible in this Spellbook.
+            
+            Purpose:
+                Ensure Phase-5/6 validation only considers spells that the current
+                Spellbook can resolve (local + contracted).
+            Contract:
+                - Dependency sets are referenced directly from the adjacency view.
+                - Reverse edges and root spell ids are recomputed using visible spell ids.
+                - Topologies are retained only for visible spell ids.
+            Args:
+                snapshot:
+                    Frame-wide SpellSystemAdjacencySnapshot to filter.
+                visible_spell_ids:
+                    Version ids are visible to this Spellbook. This collection is treated
+                    as a live view and is not copied.
+            Returns:
+                SpellSystemAdjacencySnapshot:
+                    A filtered snapshot scoped to the provided spell ids.
         """
         all_spell_ids: Collection[str] = visible_spell_ids
         dependencies: Dict[str, Set[str]] = {}
@@ -422,23 +425,24 @@ class CompilerPhase5:
             root_blueprints: Mapping[str, IRootResolutionBlueprint],
     ) -> Dict[str, IRootResolutionBlueprint]:
         """
-        Filter root blueprints to owned spell ids only.
-
-        Purpose:
-            Limit component-of rebuilds to spell ids owned by this spellbook.
-
-        Contract:
-            - Returns a filtered mapping containing only roots owned by this
-              spellbook.
-            - Does not mutate the provided mapping.
-        Args:
-            spellbook:
-                Spellbook whose owned roots should be preserved.
-            root_blueprints:
-                Root blueprint map keyed by root spell id.
-        Returns:
-            Dict[str, IRootResolutionBlueprint]:
-                Filtered root blueprint map containing only owned roots.
+            Internal
+            
+            Filter root blueprints to owned spell ids only.
+            
+            Purpose:
+                Limit component-of rebuilds to spell ids owned by this Spellbook
+                while still allowing contracted spells to appear as dependencies
+                under owned roots.
+            Contract:
+                - Returns a new mapping containing only roots present in
+                  `spellbook._spells_by_id`.
+                - Does not mutate the provided root_blueprints mapping.
+            Args:
+                root_blueprints:
+                    Mapping of root spell_id to RootResolutionBlueprint.
+            Returns:
+                Dict[str, RootResolutionBlueprint]:
+                    Filtered mapping containing only owned roots.
         """
         owned_spell_ids = spellbook._spells_by_id.keys()
         return {

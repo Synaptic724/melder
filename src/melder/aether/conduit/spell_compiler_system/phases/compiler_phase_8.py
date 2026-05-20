@@ -362,11 +362,16 @@ class CompilerPhase8:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Mark phase8_11 codegen export as stale.
-
-        Contract:
-            - Sets the artifact dirty flag used by downstream codegen consumers.
-            - No mutation beyond the dirty-bit for cache invalidation.
+            Mark phase8_11 codegen export as stale.
+            
+            Purpose:
+                Record that one or more Phase8-11 artifacts are changed and a new IR
+                export is required before consumers read phase8_11 payloads.
+            Contract:
+                - Idempotent; repeated calls keep the dirty state true.
+                - Does not mutate codegen payloads directly.
+            Returns:
+                None.
         """
         artifact._phase8_11_codegen_ir_dirty = True
 

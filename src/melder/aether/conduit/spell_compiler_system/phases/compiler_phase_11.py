@@ -58,30 +58,91 @@ class CompilerPhase11:
         return occurrence_plan
 
     def _freeze_phase11_schema_value(self, value: Any) -> Any:
+        """
+            Normalize arbitrary values into deterministic schema-safe forms.
+            
+            Purpose:
+                Convert nested payload values into primitive/tuple structures so
+                Phase11 IR rows can be serialized without leaking live objects.
+            Contract:
+                - Primitive values are returned as-is.
+                - Dict/list/tuple/set values are recursively normalized.
+                - Non-primitive objects are represented by deterministic repr text.
+            Args:
+                value:
+                    Raw value captured from plan metadata.
+            Returns:
+                Any:
+                    Deterministic schema-safe value.
+        """
         return SharedCompilerExecutions.freeze_phase11_schema_value(value)
 
     @staticmethod
     def _normalize_instance_key(
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
+        """
+            Return one explicit two-element instance key tuple.
+            
+            Purpose:
+                Preserve the stable `(spell_id, path_id)` key shape instead of
+                widening through generic `tuple(...)` reconstruction.
+        """
         return SharedCompilerExecutions.normalize_instance_key(instance_key)
 
     @staticmethod
     def _normalize_occurrence_key(
             occurrence_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
+        """
+            Return one explicit two-element occurrence key tuple.
+            
+            Purpose:
+                Preserve the stable `(spell_id, path_id)` key shape instead of
+                widening through generic `tuple(...)` reconstruction.
+        """
         return SharedCompilerExecutions.normalize_occurrence_key(occurrence_key)
 
     @staticmethod
     def _instance_key_sort_key(
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, int]:
+        """
+            Build a deterministic sort key for instance-key tuples.
+            
+            Purpose:
+                Keep schema-row ordering stable for `(spell_id, path_id)` keys.
+            Contract:
+                - `None` path ids sort before concrete path ids.
+                - Spell id remains the primary sort dimension.
+            Args:
+                instance_key:
+                    Instance key `(spell_id, path_id)`.
+            Returns:
+                Tuple[str, int]:
+                    Comparable sort key.
+        """
         return SharedCompilerExecutions.instance_key_sort_key(instance_key)
 
     @staticmethod
     def _occurrence_key_sort_key(
             occurrence_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, int]:
+        """
+            Build a deterministic sort key for occurrence-key tuples.
+            
+            Purpose:
+                Keep occurrence schema row ordering stable across equivalent maps.
+            Contract:
+                - `None` path ids sort before concrete path ids.
+                - Spell id remains the primary sort dimension.
+            Args:
+                occurrence_key:
+                    Occurrence key `(spell_id, path_id)`.
+            Returns:
+                Tuple[str, int]:
+                    Comparable sort key.
+        """
         return SharedCompilerExecutions.occurrence_key_sort_key(occurrence_key)
 
     def _build_fast_transient_schema(
