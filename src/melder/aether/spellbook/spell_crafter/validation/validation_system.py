@@ -65,11 +65,11 @@ class SpellValidationSystem(Cleanable, ISpellValidationSystem):
 
     Typical usage
     -------------
-    * Phase 4 of the SpellCrafter creates a ``SpellValidationSystem``.
+    * Phase 4 of the SpellCrafter creates a "SpellValidationSystem".
     * Built-in strategies are auto-registered in the constructor.
-    * :meth:`validate_spell` is invoked with a fully-built spell context.
-    * The returned :class:`SpellValidationResult` is stored on the crafter
-      and surfaced via :attr:`Spell.validated` / :attr:`Spell.is_broken`.
+    *: meth:`validate_spell` is invoked with a fully built spell context.
+    * The returned: class:`SpellValidationResult` is stored on the crafter
+      and surfaced via: attr:`Spell.validated` /: attr:`Spell.is_broken`.
 
     The system itself is **ephemeral** – it is created per validation run
     and cleaned up afterwards. Strategies are owned by the system and are
@@ -173,12 +173,12 @@ class SpellValidationSystem(Cleanable, ISpellValidationSystem):
 
         Args:
             strategy:
-                The strategy instance to register. Its ``name`` property is
+                The strategy instance to register. Its "name" property is
                 used as the key.
 
         Raises:
             ValueError:
-                If ``strategy`` is None or has an empty name.
+                If "strategy" is None or has an empty name.
 
         Contract:
             - Replaces any existing strategy with the same name.
@@ -251,8 +251,7 @@ class SpellValidationSystem(Cleanable, ISpellValidationSystem):
         Validate a single spell using all registered strategies.
 
         Purpose:
-            Execute spell-level validation strategies and return a unified
-            :class:`SpellValidationResult` containing all issues.
+            Execute spell-level validation strategies and return a unified: class:`SpellValidationResult` containing all issues.
         Contract:
             - Executes each strategy in registry order against the same context.
             - Appends all reported issues into the result in the order produced.
@@ -267,7 +266,7 @@ class SpellValidationSystem(Cleanable, ISpellValidationSystem):
         Returns:
             SpellValidationResult: Aggregated issues for the spell.
         Raises:
-            ValueError: If ``spell`` is None.
+            ValueError: If "spell" is None.
             Exception: Propagates any strategy exceptions or cancellation errors.
         """
         self.check_cleaned()
