@@ -3,19 +3,19 @@
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
     ClassBindingProfile,
     InstanceBindingProfile,
     SpellBindingKind,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy import (
     ResolutionProfileStrategy,
 )
 from melder.aether.spellbook.spellbook import Spellbook

@@ -2,7 +2,7 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_types.spell_types import SpellType
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions

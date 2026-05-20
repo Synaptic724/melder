@@ -1,13 +1,13 @@
 import pytest
 from typing import Dict, List, Optional
 
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import (
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
     SpellValidationContext,
 )
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import (
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
-from melder.aether.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
+from melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy import (
     DuplicateSpellNameStrategy,
 )
 

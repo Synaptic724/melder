@@ -1,10 +1,10 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
 
 def _socket(name: str, pos: int, targets=()):

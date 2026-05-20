@@ -7,10 +7,10 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
 from tests.mocks.spellbook.core_classes import BasicConfig

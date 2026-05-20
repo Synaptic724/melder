@@ -2,10 +2,10 @@ import inspect
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.method_inspector import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector import (
     MethodInspector,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import (
     InspectorUtility,
 )
 

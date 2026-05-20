@@ -139,7 +139,7 @@ def _cleanup_melder(state: _MelderState) -> None:
 def _patch_melder_signature_follow_wrapped(disable_follow_wrapped: bool) -> Callable[[], None]:
     if not disable_follow_wrapped:
         return lambda: None
-    from melder.aether.spellbook.spell_crafter.blueprints import occurrence_plan as occurrence_plan_module
+    from melder.aether.spellbook.spell_compiler.blueprints import occurrence_plan as occurrence_plan_module
 
     original = occurrence_plan_module.inspect.signature
     occurrence_plan_module.inspect.signature = functools.partial(
@@ -201,7 +201,7 @@ def _patch_melder_skip_phases_8_11(skip_phases: bool) -> Callable[[], None]:
 def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) -> Callable[[], None]:
     if not skip_validation:
         return lambda: None
-    from melder.aether.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
+    from melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy import (
         DuplicateSpellNameStrategy,
     )
 
@@ -221,7 +221,7 @@ def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) ->
 def _patch_melder_skip_contract_signature_scan(skip_scan: bool) -> Callable[[], None]:
     if not skip_scan:
         return lambda: None
-    from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import OccurrencePlanBuilder
 
     original = OccurrencePlanBuilder._iter_spell_contract_defaults
 

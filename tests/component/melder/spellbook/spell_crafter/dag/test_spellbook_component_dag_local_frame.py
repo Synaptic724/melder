@@ -3,7 +3,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
 from melder.aether.spellbook.spellbook import Spellbook

@@ -6,17 +6,17 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
-from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
     select_occurrence_plan,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor import (
     compile_phase12_overrides_executor,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService

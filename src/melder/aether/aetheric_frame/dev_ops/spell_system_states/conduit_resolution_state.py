@@ -8,7 +8,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )

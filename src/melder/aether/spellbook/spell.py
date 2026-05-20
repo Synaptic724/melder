@@ -29,16 +29,16 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
     SpellSystemState,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
     SpellValidationResult,
 )
-from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
 

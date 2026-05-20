@@ -3,21 +3,21 @@ from types import SimpleNamespace
 
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionPlanBuilder,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
     OccurrencePlan,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
     OccurrencePlanBuilder,
 )
-from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )

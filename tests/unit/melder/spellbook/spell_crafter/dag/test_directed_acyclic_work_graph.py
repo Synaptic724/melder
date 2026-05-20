@@ -1,9 +1,9 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
 
 def test_add_node_and_dependency_builds_graph():

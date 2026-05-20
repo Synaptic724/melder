@@ -105,7 +105,7 @@ def _reset_aether_singleton() -> None:
 def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) -> Callable[[], None]:
     if not skip_validation:
         return lambda: None
-    from melder.aether.spellbook.spell_crafter.validation.strategies.duplicate_spell_name_strategy import (
+    from melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy import (
         DuplicateSpellNameStrategy,
     )
 
@@ -125,7 +125,7 @@ def _patch_melder_skip_duplicate_spell_name_validation(skip_validation: bool) ->
 def _patch_melder_skip_contract_signature_scan(skip_scan: bool) -> Callable[[], None]:
     if not skip_scan:
         return lambda: None
-    from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import OccurrencePlanBuilder
 
     original = OccurrencePlanBuilder._iter_spell_contract_defaults
 

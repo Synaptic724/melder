@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
     OccurrencePlan,
     OccurrencePlanBuilder,
     OccurrencePlanSelection,

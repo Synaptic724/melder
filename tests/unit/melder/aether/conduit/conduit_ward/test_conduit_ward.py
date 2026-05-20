@@ -12,8 +12,8 @@ from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types i
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )

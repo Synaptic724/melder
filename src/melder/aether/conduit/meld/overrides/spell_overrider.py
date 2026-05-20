@@ -4,11 +4,11 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from enum import IntEnum
 from typing import Any, Dict
 
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine, SocketRef
-from melder.aether.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagTargetingEngine, SocketRef
+from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.utilities.general_base.cleanable import Cleanable
 
 

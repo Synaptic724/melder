@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Annotated, List, Optional, Union, get_args, get_origin
 
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector import (
     ClassInspector,
 )
 

@@ -1,18 +1,18 @@
 import pytest
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     InstanceBindingProfile,
     OtherBindingProfile,
     SpellBindingKind,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
-from melder.aether.spellbook.spell_crafter.validation.strategies.existing_creation_compatibility_strategy import (
+from melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy import (
     ExistingCreationCompatibilityStrategy,
 )
 

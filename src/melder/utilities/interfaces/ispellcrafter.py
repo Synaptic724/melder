@@ -1,19 +1,19 @@
 from typing import Any, Callable, Dict, Optional, Protocol, Set, Tuple, runtime_checkable
 
-from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
     SpellValidationResult,
 )
-from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlan
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import ExecutionPlan
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan

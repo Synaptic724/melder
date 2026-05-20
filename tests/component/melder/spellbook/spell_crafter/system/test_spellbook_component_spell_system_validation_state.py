@@ -5,19 +5,19 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.strategy_base import (
+from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 

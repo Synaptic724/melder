@@ -1,7 +1,7 @@
 import types
 
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors import inspector_utility as utility_module
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors import inspector_utility as utility_module
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import (
     InspectorUtility,
 )
 
@@ -83,7 +83,7 @@ def test_unwrap_callable_returns_input_on_failure(monkeypatch):
     obj = Opaque()
     # Simulate inspect.unwrap exploding to exercise fallback
     monkeypatch.setattr(
-        "melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility.inspect.unwrap",
+        "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.inspect.unwrap",
         lambda o: (_ for _ in ()).throw(RuntimeError("fail")),
     )
     assert InspectorUtility.unwrap_callable(obj) is obj

@@ -1,10 +1,10 @@
 from types import SimpleNamespace
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
     SpellResolutionProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.strategies import \
+from melder.aether.spellbook.spell_compiler.spell_examiner.strategies import \
     resolution_profile_strategy as resolution_module
 
 

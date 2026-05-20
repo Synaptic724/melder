@@ -5,14 +5,14 @@ from typing import Callable, List, Optional
 
 import pytest
 
-import melder.aether.spellbook.spell_crafter.validation.validation_system as validation_system_module
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import (
+import melder.aether.spellbook.spell_compiler.validation.validation_system as validation_system_module
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
-from melder.aether.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
+from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
-from melder.aether.spellbook.spell_crafter.validation.validation_system import (
+from melder.aether.spellbook.spell_compiler.validation.validation_system import (
     SpellValidationSystem,
 )
 

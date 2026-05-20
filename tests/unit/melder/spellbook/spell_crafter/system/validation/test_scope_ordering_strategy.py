@@ -1,9 +1,9 @@
 import pytest
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.validation.scope_ordering_strategy import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy import (
     ScopeOrderingStrategy,
 )
 

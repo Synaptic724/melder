@@ -4,20 +4,20 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.dag.dag_index import SocketRef
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+from melder.aether.spellbook.spell_compiler.dag.dag_index import SocketRef
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy import (
     SocketRefSanityStrategy,
 )
 from melder.aether.spellbook.spellbook import Spellbook

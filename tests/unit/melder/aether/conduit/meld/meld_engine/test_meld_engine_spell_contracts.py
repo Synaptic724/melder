@@ -5,7 +5,7 @@ import pytest
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import OccurrencePlanBuilder
+from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import OccurrencePlanBuilder
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 

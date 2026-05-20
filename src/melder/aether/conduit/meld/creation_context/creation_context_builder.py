@@ -6,7 +6,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
     OverrideRouteConfig,
 )
-from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
 from melder.aether.spellbook.existence.existence import Existence

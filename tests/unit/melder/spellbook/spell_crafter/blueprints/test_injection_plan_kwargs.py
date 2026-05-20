@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionSpec,
     ParamSource,
     build_kwargs_from_injection_spec,

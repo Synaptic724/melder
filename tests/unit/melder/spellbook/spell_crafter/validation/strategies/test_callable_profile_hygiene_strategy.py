@@ -1,19 +1,19 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
     ClassBindingProfile,
     InstanceBindingProfile,
     OtherBindingProfile,
     SpellBindingKind,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
-from melder.aether.spellbook.spell_crafter.validation.strategies.callable_profile_hygiene_strategy import (
+from melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy import (
     CallableProfileHygieneStrategy,
 )
 

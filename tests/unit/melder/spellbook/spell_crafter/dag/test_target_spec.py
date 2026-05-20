@@ -1,6 +1,6 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec, TargetSpecKind
 
 
 def test_parse_path_trims_and_segments():

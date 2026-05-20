@@ -4,7 +4,7 @@ from typing import Tuple
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.blueprints.patch_maps import (
+from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import (
     MutationEdgePatch,
     MutationPatchMap,
     OverridePatchMap,
@@ -15,14 +15,14 @@ from melder.aether.spellbook.spell_crafter.blueprints.patch_maps import (
     apply_phase10_mutation_overrides,
     apply_phase10_override_payload,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
 
 def _build_blueprint() -> Tuple[RootResolutionBlueprint, SocketRef, SocketRef]:

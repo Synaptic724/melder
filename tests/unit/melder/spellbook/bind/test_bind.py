@@ -8,7 +8,7 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
     SpellBindingKind,
     ClassBindingProfile,
@@ -17,7 +17,7 @@ from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profi
     OtherBindingProfile,
     CallableParameterBindingSummary,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
 

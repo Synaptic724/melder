@@ -1,7 +1,7 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
 from melder.utilities.general_base.cleanable import Cleanable

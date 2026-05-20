@@ -1,10 +1,10 @@
 from types import SimpleNamespace
 
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import (
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError

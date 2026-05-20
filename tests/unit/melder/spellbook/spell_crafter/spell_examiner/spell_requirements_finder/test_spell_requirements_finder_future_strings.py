@@ -8,16 +8,16 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_parameter_requirements import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_requirements import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
     SpellRequirements,
 )
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_requirements_finder import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType

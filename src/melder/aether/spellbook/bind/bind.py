@@ -16,12 +16,12 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.spellbook.spell import Spell
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
+from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import SpellExaminer
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
     ClassBindingProfile,
     CallableBindingProfile,

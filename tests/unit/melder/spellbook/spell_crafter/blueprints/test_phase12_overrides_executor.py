@@ -6,10 +6,10 @@ from typing import Any, Dict, Tuple
 
 import pytest
 
-import melder.aether.spellbook.spell_crafter.blueprints.phase12_overrides_executor as phase12_module
+import melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor as phase12_module
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
-from melder.aether.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import ExecutionPlanTargetKind
+from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor import (
     build_phase12_override_step_target_counts_from_rows,
     compile_phase12_overrides_executor_code_object,
     compile_phase12_overrides_executor_from_code_object,

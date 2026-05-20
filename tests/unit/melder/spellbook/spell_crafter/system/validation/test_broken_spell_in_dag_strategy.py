@@ -1,13 +1,13 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy import (
     BrokenSpellInDagStrategy,
 )
 

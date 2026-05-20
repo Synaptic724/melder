@@ -39,10 +39,10 @@ from melder.nexus.rift.frame_viewer.view_spell import (
 from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile import (
     ClassProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile import (
     MethodProfile,
 )
 from melder.aether.spellbook.configuration.system_state import SystemState

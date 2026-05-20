@@ -3,10 +3,10 @@ from __future__ import annotations
 import pytest
 
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.spellbook.spell_crafter.validation.strategies.spellmap_shape_validation_strategy import (
+from melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy import (
     SpellMapShapeValidationStrategy,
 )
 

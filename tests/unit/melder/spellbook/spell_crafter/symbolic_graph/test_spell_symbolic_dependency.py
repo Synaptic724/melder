@@ -2,10 +2,10 @@ import threading
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
+from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
 

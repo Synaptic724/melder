@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionPlan,
     InjectionPlanBuilder,
     InjectionSpec,

@@ -5,8 +5,8 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_context import SpellValidationContext
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_issue import SpellValidationIssue
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 

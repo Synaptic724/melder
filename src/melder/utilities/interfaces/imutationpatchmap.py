@@ -1,5 +1,5 @@
 from typing import Dict, List, Protocol, runtime_checkable
-from melder.aether.spellbook.spell_crafter.blueprints.patch_maps import MutationEdgePatch
+from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationEdgePatch
 from melder.utilities.interfaces.icleanable import ICleanable
 
 

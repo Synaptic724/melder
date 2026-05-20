@@ -11,9 +11,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import SystemDiagnostic
-from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
 )
 from melder.utilities.general_base.cleanable import Cleanable

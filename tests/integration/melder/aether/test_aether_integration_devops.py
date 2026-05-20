@@ -6,14 +6,14 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
-from melder.aether.spellbook.spell_crafter.topology.spell_local_topology import (
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
     SpellSocketDescriptor,
 )

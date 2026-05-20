@@ -12,7 +12,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
+from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService

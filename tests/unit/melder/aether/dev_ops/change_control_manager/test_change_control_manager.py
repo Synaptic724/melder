@@ -13,7 +13,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 )
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 CONDUIT_ID = "conduit-1"

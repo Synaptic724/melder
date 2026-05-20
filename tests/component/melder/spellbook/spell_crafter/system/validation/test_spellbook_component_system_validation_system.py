@@ -8,42 +8,42 @@ from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, SocketRef
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import (
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy import (
     BrokenSpellInDagStrategy,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.cycle_detection_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy import (
     CycleDetectionStrategy,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy import (
     GraphConsistencyStrategy,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.missing_phase4_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy import (
     MissingPhase4Strategy,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.root_viability_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.socket_ref_sanity_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy import (
     SocketRefSanityStrategy,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.strategy_base import (
+from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 from melder.utilities.custom_exceptions.operation_cancelled_error import (

@@ -4,7 +4,7 @@ import typing
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.validation.strategies.annotation_shape_guard_strategy import (
+from melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy import (
     AnnotationShapeGuardStrategy,
 )
 

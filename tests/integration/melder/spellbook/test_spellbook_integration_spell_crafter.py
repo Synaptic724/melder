@@ -7,8 +7,8 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.helpers.general_helpers import SpellInputUtils

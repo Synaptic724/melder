@@ -9,7 +9,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
     OverrideRouteConfig,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
+from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import ExecutionPlanTargetKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 

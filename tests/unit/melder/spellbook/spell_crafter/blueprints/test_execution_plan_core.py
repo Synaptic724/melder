@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 import pytest
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
     ExecutionPlanCallMode,
@@ -14,7 +14,7 @@ from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanTargetKind,
     ExecutionPlanVariant,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
+from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionSpec,
     ParamSource,
 )

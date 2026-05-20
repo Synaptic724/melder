@@ -4,18 +4,18 @@ from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.graph_consistency_strategy import (
+from melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy import (
     GraphConsistencyStrategy,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType

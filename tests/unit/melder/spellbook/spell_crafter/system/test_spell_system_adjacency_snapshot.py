@@ -1,6 +1,6 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_snapshot import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
     SpellSystemAdjacencySnapshot,
 )
 

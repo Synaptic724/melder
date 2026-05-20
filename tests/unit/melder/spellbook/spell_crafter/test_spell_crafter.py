@@ -7,22 +7,22 @@ from threading import RLock
 
 import pytest
 
-import melder.aether.spellbook.spell_crafter.spell_crafter as spell_crafter_module
+import melder.aether.spellbook.spell_compiler.spell_crafter as spell_crafter_module
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter
+from melder.aether.spellbook.spell_compiler.spell_crafter import SpellCrafter
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_dependency import (
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
-from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
+from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
 from melder.aether.spellbook.configuration.system_state import SystemState

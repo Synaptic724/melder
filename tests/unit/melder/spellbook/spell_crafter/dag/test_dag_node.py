@@ -1,6 +1,6 @@
 import pytest
 
-from melder.aether.spellbook.spell_crafter.dag.dag_node import DagNode
+from melder.aether.spellbook.spell_compiler.dag.dag_node import DagNode
 
 
 def test_add_dependency_records_both_directions_and_params():

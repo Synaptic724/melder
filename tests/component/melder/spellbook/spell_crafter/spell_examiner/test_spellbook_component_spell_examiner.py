@@ -3,11 +3,11 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
     SpellBindingKind,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
+from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import SpellExaminer
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService

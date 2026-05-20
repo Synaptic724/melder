@@ -1,7 +1,7 @@
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
     ClassBindingProfile,
     InstanceBindingProfile,

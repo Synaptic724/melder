@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 import inspect
 
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     SpellBindingKind,
     ClassBindingProfile,
     CallableBindingProfile,
     InstanceBindingProfile,
     OtherBindingProfile,
 )
-from melder.aether.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
 )
 

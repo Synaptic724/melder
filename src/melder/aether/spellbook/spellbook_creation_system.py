@@ -4,16 +4,16 @@ from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Seq
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
 )
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )

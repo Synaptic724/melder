@@ -2,8 +2,8 @@ import threading
 
 import pytest
 
-from melder.aether.spellbook.spell_crafter.dag.dag_node import DagNode
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.dag_node import DagNode
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
 
@@ -148,7 +148,7 @@ def test_component_dag_records_socket_kind_for_edge() -> None:
     Returns:
         None.
     """
-    from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+    from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
     dag = DirectedAcyclicWorkGraph()
     dag.add_dependency(

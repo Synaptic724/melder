@@ -7,9 +7,9 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndex, SocketRef
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.validation.validation_system import SpellValidationSystem
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, SocketRef
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.validation.validation_system import SpellValidationSystem
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from tests.mocks.spellbook.core_classes import BasicService

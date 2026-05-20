@@ -4,22 +4,22 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
-from melder.aether.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_system import (
     SpellSystemValidationSystem,
 )
-from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
+from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.aether.spellbook.spell_crafter.system.validation.strategy_base import (
+from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
 

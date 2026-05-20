@@ -5,8 +5,8 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.dag.dag_index import DagIndexBuilder
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndexBuilder
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService

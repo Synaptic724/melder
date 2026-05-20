@@ -10,7 +10,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_codegen import
     compile_creation_context_instance_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.aether.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor import (
     compile_phase12_overrides_executor_code_object,
     compile_phase12_overrides_executor,
     _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache,

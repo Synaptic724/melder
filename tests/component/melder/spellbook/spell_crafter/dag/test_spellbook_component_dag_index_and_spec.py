@@ -2,14 +2,14 @@ import pytest
 
 from typing import Sequence
 
-from melder.aether.spellbook.spell_crafter.dag.dag_index import (
+from melder.aether.spellbook.spell_compiler.dag.dag_index import (
     DagIndex,
     DagTargetingEngine,
     PathRegistry,
     SocketRef,
 )
-from melder.aether.spellbook.spell_crafter.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_crafter.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec, TargetSpecKind
 
 
 def _path_id(registry: PathRegistry, path: Sequence[str]) -> int:

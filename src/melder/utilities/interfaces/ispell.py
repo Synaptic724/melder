@@ -12,13 +12,13 @@ from typing import (
 )
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
+from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
-from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
     SpellValidationResult,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
