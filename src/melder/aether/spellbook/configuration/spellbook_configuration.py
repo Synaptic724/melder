@@ -2,7 +2,6 @@ import threading
 from typing import Any, Dict, Type, Callable, Iterator
 import ulid
 from mypy_extensions import mypyc_attr
-
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
