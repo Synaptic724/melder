@@ -5,6 +5,9 @@ import pytest
 
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
@@ -253,7 +256,12 @@ def _install_stub_phase_factories(
     def _install(method_name: str, phase_name: str) -> None:
         calls.setdefault(phase_name, 0)
 
-        def _factory(_spellbook: Any, _scheduler: Any, _conduit_id: str) -> Sequence[Any]:
+        def _factory(
+                _spellbook: Any,
+                _scheduler: Any,
+                _compiler_system: Any,
+                _conduit_id: str,
+        ) -> Sequence[Any]:
             calls[phase_name] = calls.get(phase_name, 0) + 1
             if phase_name == "change_control" and change_control_hook is not None:
                 change_control_hook()
@@ -668,23 +676,31 @@ def test_extract_missing_dependency_ids_filters_non_keyerrors() -> None:
     ]
 
 
-def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells() -> None:
+def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     spellbook = _StubSpellbook()
 
-    class _Crafter:
+    class _Spell:
         def __init__(self, fail: bool = False) -> None:
-            self.calls = 0
+            self.cleanup_calls = 0
             self._fail = fail
 
-        def cleanup_phase_artifacts(self) -> None:
-            self.calls += 1
-            if self._fail:
-                raise RuntimeError("cleanup boom")
+    def _fake_cleanup_phase_artifacts(self, spell) -> None:
+        spell.cleanup_calls += 1
+        if spell._fail:
+            raise RuntimeError("cleanup boom")
 
-    all_spell = types.SimpleNamespace(crafter=_Crafter())
-    failing_spell = types.SimpleNamespace(crafter=_Crafter(fail=True))
-    scoped_spell = types.SimpleNamespace(crafter=_Crafter())
-    scoped_failing_spell = types.SimpleNamespace(crafter=_Crafter(fail=True))
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "cleanup_phase_artifacts",
+        _fake_cleanup_phase_artifacts,
+    )
+
+    all_spell = _Spell()
+    failing_spell = _Spell(fail=True)
+    scoped_spell = _Spell()
+    scoped_failing_spell = _Spell(fail=True)
     spellbook._spells = {"a": all_spell, "b": failing_spell}
     spellbook._spell_id_pool = {"c": scoped_spell, "d": scoped_failing_spell}
 
@@ -695,10 +711,10 @@ def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells()
     )
 
     assert spellbook.check_cleaned_calls == 2
-    assert all_spell.crafter.calls == 1
-    assert failing_spell.crafter.calls == 1
-    assert scoped_spell.crafter.calls == 1
-    assert scoped_failing_spell.crafter.calls == 1
+    assert all_spell.cleanup_calls == 1
+    assert failing_spell.cleanup_calls == 1
+    assert scoped_spell.cleanup_calls == 1
+    assert scoped_failing_spell.cleanup_calls == 1
 
 
 def test_define_disposal_metadata_on_spells_matches_class_profile_methods() -> None:
@@ -802,6 +818,13 @@ def test_run_post_conjure_structural_phases_handles_empty_and_failure_cleanup(
         "melder.aether.spellbook.spellbook_creation_system.CancellationEventSignal",
         _Signal,
     )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_structural_phases",
+        lambda self, spellbook, spell, cancel_event=None: spell.run_structural_phases(
+            cancel_event=cancel_event
+        ),
+    )
 
     SpellbookCreationSystem.run_post_conjure_structural_phases(spellbook, [])
     assert spellbook.check_cleaned_calls == 1
@@ -845,6 +868,13 @@ def test_run_post_conjure_structural_phases_logs_broken_spell_cleanup_fallbacks(
     monkeypatch.setattr(
         "melder.aether.spellbook.spellbook_creation_system.CancellationEventSignal",
         _Signal,
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_structural_phases",
+        lambda self, spellbook, spell, cancel_event=None: spell.run_structural_phases(
+            cancel_event=cancel_event
+        ),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
@@ -934,8 +964,8 @@ def test_register_target_single_phase_builds_local_scope_unit() -> None:
         scheduler=scheduler,
         phase_name="local_phase",
         target_spell_id="spell-1",
-        conduit_id="cid",
         phase_func=_phase,
+        args=("cid", "cancel"),
     )
 
     units = scheduler.factories["local_phase"]()
@@ -1233,37 +1263,37 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_root_blueprints_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["root_blueprints"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["root_blueprints"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_system_validation_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["system_validation"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["system_validation"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_change_control_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["change_control"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["change_control"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_occurrence_plan_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["occurrence_plan"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["occurrence_plan"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_injection_plan_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["injection_plan"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["injection_plan"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_patch_maps_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["patch_maps"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["patch_maps"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_execution_plan_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["execution_plan"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["execution_plan"]),
     )
 
     foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
@@ -1317,37 +1347,37 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_root_blueprints_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["root_blueprints"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["root_blueprints"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_system_validation_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["system_validation"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["system_validation"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_change_control_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["change_control"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["change_control"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_occurrence_plan_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["occurrence_plan"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["occurrence_plan"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_injection_plan_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["injection_plan"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["injection_plan"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_patch_maps_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["patch_maps"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["patch_maps"]),
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
         "phase_execution_plan_factory",
-        staticmethod(lambda spellbook, scheduler, conduit_id: ["execution_plan"]),
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["execution_plan"]),
     )
 
     foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(

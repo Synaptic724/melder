@@ -86,11 +86,9 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
-            crafter = spell_instance._crafter
-            if crafter is None or crafter.requirements is None:
+            requirements = spell_instance.requirements
+            if requirements is None:
                 continue
-
-            requirements = crafter.requirements
             if requirements.cleaned:
                 continue
             try:

@@ -114,8 +114,7 @@ class ISpell(ICleanable, Protocol):
     _spellbook: "ISpellbook"
 
     # Per-spell resolution phase artifacts
-    # Note: These are populated by the resolution pipeline via SpellCrafter
-    _crafter: Optional["ISpellCrafter"]
+    # Note: These are populated by the resolution pipeline.
     _creation_context: Any
     _creation_context_factory: Optional["ICreationContextFactory"]
     _creation_context_switch: CounterSwitch
@@ -440,7 +439,7 @@ class ISpell(ICleanable, Protocol):
 
         Attach static build-time dependency graph details to this spell.
 
-        This is typically invoked by the SpellCrafter / DAG builder after it has
+        This is typically invoked by the structural DAG builder after it has
         analyzed the spell's parameters and constructed a dependency DAG.
 
         Args:
@@ -465,8 +464,7 @@ class ISpell(ICleanable, Protocol):
         """
         Return the Phase 1 requirements artifact for this spell, if present.
 
-        This is populated by :meth:`run_phase_requirements` via
-        :class:`SpellCrafter`.
+        This is populated by structural phase execution.
         """
         ...
 
@@ -475,8 +473,7 @@ class ISpell(ICleanable, Protocol):
         """
         Return the Phase 2 symbolic graph for this spell, if present.
 
-        This is populated by :meth:`run_phase_symbolic_graph` via
-        :class:`SpellCrafter`.
+        This is populated by structural phase execution.
         """
         ...
 
@@ -485,8 +482,8 @@ class ISpell(ICleanable, Protocol):
         """
         Return the Phase 3 local resolution frame / DAG for this spell, if present.
 
-        This is populated by :meth:`run_phase_local_frame` via
-        :class:`SpellCrafter`. Concrete type is intentionally opaque here;
+        This is populated by structural phase execution. Concrete type is
+        intentionally opaque here;
         callers should treat it as an internal resolution artifact.
         """
         ...
@@ -496,8 +493,7 @@ class ISpell(ICleanable, Protocol):
         """
         Return the Phase 4 validation result for this spell, if present.
 
-        This is populated by :meth:`run_phase_validation` via
-        :class:`SpellCrafter`.
+        This is populated by structural phase execution.
         """
         ...
 
@@ -506,8 +502,7 @@ class ISpell(ICleanable, Protocol):
         """
         Return the Phase 6 validation result for this spell, if present.
 
-        This is populated by :meth:`run_phase_validation` via
-        :class:`SpellCrafter`.
+        This is populated by conduit-scoped validation.
         """
         ...
 
@@ -525,321 +520,3 @@ class ISpell(ICleanable, Protocol):
         """
         ...
 
-    # ------------------------------------------------------------------
-    # Resolution / compilation phases
-    # ------------------------------------------------------------------
-    def run_phase_requirements(
-            self,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 1 - Requirements Extraction (facade).
-
-        Delegates to :class:`SpellCrafter` to:
-
-            - Inspect the spell's constructor/signature and metadata.
-            - Determine dependencies (spellframes, binding names, types, etc.).
-            - Capture existence constraints that are relevant to resolution.
-
-        Side effects:
-            - Stores a :class:`SpellRequirements` instance inside the crafter.
-
-        The return value is intentionally ignored at the Spell level; callers
-        should access :attr:`requirements` if they need the artifact.
-        """
-        ...
-
-    def run_phase_symbolic_graph(
-            self,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 2 - Symbolic Graph Construction (facade).
-
-        Delegates to :class:`SpellCrafter`.
-
-        In the full implementation, this will:
-
-            - Use Phase 1 requirements to construct a per-spell symbolic graph.
-            - Represent DI relationships as nodes/edges, without binding to
-              concrete creations yet.
-
-        The Spell class does not use the return value; later phases read
-        artifacts via the crafter if needed.
-        """
-        ...
-
-    def run_phase_local_frame(
-            self,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 3 - Local Resolution Frame / DAG (facade).
-
-        Delegates to :class:`SpellCrafter`.
-
-        In the full implementation, this will:
-
-            - Translate the symbolic graph into a concrete, per-spell
-              resolution frame / local DAG.
-            - Encode the order and actions required for resolution.
-            - Eventually push the final DAG into this Spell via
-              :meth:`_add_build_details`.
-
-        The Spell class does not use the return value; later phases read
-        artifacts via the crafter if needed.
-        """
-        ...
-
-    def run_phase_validation(
-            self,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 4 - Validation (facade).
-
-        Delegates to :class:`SpellCrafter`.
-
-        In the full implementation, this will:
-
-            - Validate the resolution frame and requirements.
-            - Populate underlying validation results.
-            - Set validated/broken flags.
-
-        The Spell class does not use the return value; callers consult
-        :attr:`validated` and :attr:`is_broken`.
-        """
-        ...
-
-    def run_phase_root_blueprints(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 5 - Root blueprint construction (facade).
-
-        Delegates to the SpellCrafter to build system-level DAG blueprints
-        and a SpellSystemIndex for the current frame.
-
-        Contract:
-            - Requires Phase 4 to have completed successfully.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def run_phase_root_blueprints_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 5 (local) - Root blueprint construction scoped to one target spell.
-        """
-        ...
-
-    def run_phase_occurrence_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 8 - Occurrence plan compilation (facade).
-
-        Delegates to :class:`SpellCrafter` to compile an OccurrencePlan for
-        root spells. Non-root spells are treated as a no-op.
-
-        Contract:
-            - Requires Phase 5 artifacts to be available.
-            - Does not return a value; artifacts are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def run_phase_system_validation(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 6 - System-level validation (facade).
-
-        Delegates to the SpellCrafter to validate system-level DAG integrity
-        and update index validity states.
-
-        Contract:
-            - Requires Phase 5 to have completed successfully.
-            - Does not return a value; results are stored on the crafter.
-            - Does not execute later phases.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def run_phase_injection_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 9 - Injection plan compilation (facade).
-        """
-        ...
-
-    def run_phase_patch_maps(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 10 - Patch map compilation (facade).
-        """
-        ...
-
-    def run_phase_execution_plan(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 11 - Execution plan compilation (facade).
-        """
-        ...
-
-    def run_phase_system_validation_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 6 (local) - System validation scoped to one target spell.
-        """
-        ...
-
-    def run_phase_change_control(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 7 - Change-control wiring (facade).
-
-        Delegates to the SpellCrafter to ensure change-control wiring and
-        component-of indexing are prepared for this frame.
-
-        Contract:
-            - Requires Phase 5 artifacts to be available.
-            - Does not return a value; wiring occurs inside the crafter.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def run_phase_change_control_local(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Phase 7 (local) - Change-control wiring scoped to one target spell.
-        """
-        ...
-
-    def get_local_resolution_scoped_spell_ids(self) -> Set[str]:
-        """
-        Return the spell ids covered by this spell's local Phase 5 target scope.
-        """
-        ...
-
-    def get_local_resolution_scoped_root_ids(self) -> Tuple[str, ...]:
-        """
-        Return the root ids covered by this spell's local Phase 5 target scope.
-        """
-        ...
-
-    def run_structural_phases(
-            self,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Convenience helper to run **structural phases only** (1-4) for this spell.
-
-        Phases executed via the :class:`SpellCrafter`:
-
-            1. Requirements extraction.
-            2. Symbolic graph construction.
-            3. Local resolution frame / DAG construction.
-            4. Validation (structural only).
-
-        Each phase honours the optional :class:`CancellationEvent`. If the
-        event is set, the underlying phase methods will raise via
-        ``cancel_event.throw_if_set()``.
-
-        Raises:
-            Exception: Propagates exceptions raised by the underlying phases.
-        """
-        ...
-
-    def run_all_phases(
-            self,
-            conduit_id: str,
-            cancel_event: Optional['CancellationEvent'] = None,
-    ) -> None:
-        """
-        Convenience helper to run **all compiler / resolution phases** for this spell, in order.
-
-        Phases executed via the :class:`SpellCrafter`:
-
-            - Phase 1: Requirements extraction.
-            - Phase 2: Symbolic graph construction.
-            - Phase 3: Local resolution frame / DAG construction.
-            - Phase 4: Validation.
-            - Phase 5: Root blueprint construction.
-            - Phase 8: Occurrence plan compilation.
-            - Phase 6: System validation.
-            - Phase 7: Change-control wiring.
-
-        Each phase honours the optional :class:`CancellationEvent`. If the
-        event is set, the underlying phase methods will raise via
-        ``cancel_event.throw_if_set()``.
-
-        Args:
-            conduit_id:
-                Conduit identifier used to scope resolution artifacts.
-            cancel_event:
-                Optional cancellation signal shared across the scheduler.
-        """
-        ...

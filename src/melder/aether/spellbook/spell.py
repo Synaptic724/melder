@@ -362,8 +362,8 @@ class Spell(Cleanable, ISpell):
         self.execution_plan_has_existing_creations: Optional[bool] = None
         self.execution_plan_dispatch_route: Optional[str] = None
 
-        # Foundation artifact home for compiler/build state that will be
-        # split away from SpellCrafter in later slices.
+        # Foundation artifact home for compiler/build state and validation
+        # artifacts owned directly by the Spell.
         self._compiler_artifact: SpellCompilerArtifact = (
             SpellCompilerArtifact(self.spell_id)
         )
@@ -1059,7 +1059,7 @@ class Spell(Cleanable, ISpell):
 
         Attach static build-time dependency graph details to this spell.
 
-        This is typically invoked by the SpellCrafter / DAG builder after it has
+        This is typically invoked by the structural DAG builder after it has
         analyzed the spell's parameters and constructed a dependency DAG.
 
         Contract:
