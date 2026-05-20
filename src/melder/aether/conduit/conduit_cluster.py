@@ -3,6 +3,7 @@ from typing import Dict, Set, Optional, List
 from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.ispell import ISpell
@@ -66,6 +67,7 @@ class ConduitCluster(Cleanable, IConduitCluster):
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
+        self._id: str = IDBuilder.create_id()
         self._name: str = name
         self._registry: Dict[str, IConduit] = registry
         self._aetheric_frame_name: str = aetheric_frame_name
@@ -103,6 +105,20 @@ class ConduitCluster(Cleanable, IConduitCluster):
             del self._aetheric_frame_name
             del self._name
         del self._lock
+
+    @property
+    def id(self) -> str:
+        """
+        Unique identifier for the cluster.
+        """
+        return self._id
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the cluster.
+        """
+        return self._name
 
     def add_member(self, conduit_id: str) -> None:
         """

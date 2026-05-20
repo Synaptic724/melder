@@ -2,15 +2,14 @@ from typing import Optional, List, Any, Callable, Sequence, Set, Tuple
 import ulid
 from threading import RLock
 from types import TracebackType
-
 from mypy_extensions import mypyc_attr
 
+# Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
-# Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
