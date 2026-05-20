@@ -179,9 +179,9 @@ class _ContractingConduitStub:
 class _FrameStub:
     """
     Purpose:
-        Provide a minimal cloud-facing stub for ConduitCluster member lookups.
+        Provide a minimal frame-local registry stub for ConduitCluster.
     Contract:
-        - Exposes get_conduit_by_id(...) and frame_name.
+        - Exposes `_conduits` and `frame_name`.
     """
 
     def __init__(
@@ -202,24 +202,26 @@ class _FrameStub:
         self.frame_name = frame_name
         self._conduits = {conduit._id: conduit for conduit in conduits}
 
-    def get_conduit_by_id(self, conduit_id: str) -> _ContractingConduitStub:
-        """
-        Purpose:
-            Resolve one conduit by id from the stub registry.
-        Contract:
-            - Returns the conduit when present.
-            - Raises ValueError when the conduit id is missing.
-        Args:
-            conduit_id: Conduit id to resolve.
-        Returns:
-            _ContractingConduitStub: Matching conduit.
-        Raises:
-            ValueError: If the conduit id is not present.
-        """
-        conduit = self._conduits.get(conduit_id)
-        if conduit is None:
-            raise ValueError(f"Conduit with id {conduit_id} not found.")
-        return conduit
+def _make_cluster(
+        name: str = "cluster-a",
+        registry: Optional[Dict[str, _ContractingConduitStub]] = None,
+        aetheric_frame_name: str = "default",
+        auto_link_dependencies: bool = True,
+) -> ConduitCluster:
+    """
+    Purpose:
+        Build a ConduitCluster using the narrow registry plus frame-name contract.
+    Contract:
+        - Uses an empty registry by default for tests that do not need peer lookup.
+    """
+    if registry is None:
+        registry = {}
+    return ConduitCluster(
+        name,
+        registry,
+        aetheric_frame_name,
+        auto_link_dependencies,
+    )
 
 
 def _make_spellbook() -> Spellbook:
@@ -318,7 +320,10 @@ def test_component_cluster_share_to_borrower_contracts_real_spell() -> None:
         conduit_id="borrower-1",
         spellbook=_make_spellbook(),
     )
-    cluster = _make_cluster("cluster-a")
+    cluster = _make_cluster(
+        "cluster-a",
+        aetheric_frame_name="frame-a",
+    )
     spell = _get_spell_by_version_id(spellbook, spell_id)
     assert spell is not None
     cluster.add_shared_spell(owner._id, spell.spell_index)
@@ -362,7 +367,7 @@ def test_component_cluster_remove_and_strip_spell_uses_real_spell() -> None:
         spellbook=_make_spellbook(),
     )
     frame = _FrameStub([owner, borrower], frame_name="frame-1")
-    cluster = _make_cluster("cluster-a")
+    cluster = _make_cluster("cluster-a", frame._conduits, frame.frame_name)
     cluster.add_member(owner._id)
     cluster.add_member(borrower._id)
     spell = _get_spell_by_version_id(spellbook, spell_id)
@@ -426,7 +431,7 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
         aetheric_frame="frame-peer",
     )
     frame = _FrameStub([owner, peer], frame_name="frame-owner")
-    cluster = _make_cluster("cluster-a")
+    cluster = _make_cluster("cluster-a", frame._conduits, frame.frame_name)
 
     cluster.handle_join(owner)
     cluster.handle_join(peer)
@@ -451,7 +456,7 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
             "spell": peer_spell,
             "conduit": peer,
             "permissions": peer_spell.permissions,
-            "aetheric_frame": "frame-peer",
+            "aetheric_frame": "frame-owner",
             "reason": DetailReason.root,
             "root_spell_id": cluster._cluster_root_id(peer._id, peer_spell.spell_id),
             "link_dependencies": True,

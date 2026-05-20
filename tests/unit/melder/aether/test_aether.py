@@ -1175,7 +1175,7 @@ def test_frame_cloud_create_cluster(aether_with_mocks):
         frame_mock._conduit_cloud.create_cluster("cluster1")
 
         assert "cluster1" in frame_mock._conduit_cloud._conduit_clusters
-        mock_cluster_cls.assert_called_with("cluster1")
+        mock_cluster_cls.assert_called_with("cluster1", {}, "default")
 
 def test_frame_cloud_create_cluster_duplicate(aether_with_mocks):
     """Creating duplicate cluster via frame cloud raises ValueError."""
@@ -1242,7 +1242,7 @@ def test_frame_cloud_add_conduit_to_cluster(aether_with_mocks):
     frame_mock._conduit_cloud.add_conduit_to_cluster(conduit, "cluster1")
 
     cluster_mock.add_member.assert_called_with("c1")
-    cluster_mock.handle_join.assert_called_with(conduit, frame_mock._conduit_cloud)
+    cluster_mock.handle_join.assert_called_with(conduit)
 
 
 def test_frame_cloud_add_conduit_to_cluster_propagates_join_hook_failure(aether_with_mocks):
@@ -1269,7 +1269,7 @@ def test_frame_cloud_remove_conduit_from_cluster(aether_with_mocks):
 
     a._default_frame._conduit_cloud.remove_conduit_from_cluster(conduit, "c1")
     cluster.remove_member.assert_called_with("cid")
-    cluster.handle_leave.assert_called_with(conduit, a._default_frame._conduit_cloud)
+    cluster.handle_leave.assert_called_with(conduit)
 
 
 def test_frame_cloud_remove_conduit_from_cluster_propagates_leave_hook_failure(aether_with_mocks):
@@ -1367,7 +1367,7 @@ def test_refresh_cluster_shares_for_conduit(aether_with_mocks):
     conduit._id = "cid"
 
     a._default_frame._conduit_cloud.refresh_cluster_shares_for_conduit(conduit)
-    cluster.refresh_member_shares.assert_called_with(conduit, a._default_frame._conduit_cloud)
+    cluster.refresh_member_shares.assert_called_with(conduit)
 
 
 def test_removed_cluster_helpers_are_not_exposed_on_aether(aether_with_mocks):
