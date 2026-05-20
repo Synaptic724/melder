@@ -20,6 +20,12 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
+from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+    SpellSystemValidationState,
+)
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+    SpellValidationResult,
+)
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -485,7 +491,7 @@ class ISpell(ICleanable, Protocol):
         ...
 
     @property
-    def validation_result_phase4(self) -> Any:
+    def validation_result_phase4(self) -> Optional[SpellValidationResult]:
         """
         Return the Phase 4 validation result for this spell, if present.
 
@@ -495,7 +501,7 @@ class ISpell(ICleanable, Protocol):
         ...
 
     @property
-    def validation_result_phase6(self) -> Any:
+    def validation_result_phase6(self) -> Optional[SpellSystemValidationState]:
         """
         Return the Phase 6 validation result for this spell, if present.
 

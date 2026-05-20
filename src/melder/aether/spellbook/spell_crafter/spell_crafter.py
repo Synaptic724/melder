@@ -81,6 +81,9 @@ from melder.aether.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
 from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import SpellSystemValidationState
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+    SpellValidationResult,
+)
 from melder.aether.spellbook.spell_crafter.system.spell_system_validation_system import SpellSystemValidationSystem
 from melder.aether.spellbook.spell_crafter.system.validation.cycle_detection_strategy import CycleDetectionStrategy
 from melder.aether.spellbook.spell_crafter.system.validation.broken_spell_in_dag_strategy import BrokenSpellInDagStrategy
@@ -258,21 +261,25 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
         self._lock: threading.RLock = threading.RLock()
         self._spell: ISpell = spell
+
         spellbook = spell._spellbook
+
         self._spell_validator: ISpellValidationSystem = spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = (
             self._get_required_spell_system_states_from_spell(spell)
         )
+
         self._requirements: Optional[ISpellRequirements] = None
         if resolution_profile is not None:
             self._requirements = resolution_profile.requirements
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
+
         # Phase 3 artifact - currently a SpellResolutionFrame summarising the
         # concrete dependency DAG that is pushed into the owning Spell.
         self._resolution_frame: Optional[SpellResolutionFrame] = None
-        self._validation_result_phase4: Any = None
+        self._validation_result_phase4: Optional[SpellValidationResult] = None
         self._validated_phase4: bool = False
-        self._validation_result_phase6: Any = None
+        self._validation_result_phase6: Optional[SpellSystemValidationState] = None
         self._validated_phase6: bool = False
         self._root_blueprint_phase5: Optional[IRootResolutionBlueprint] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
@@ -295,6 +302,121 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, IRootResolutionBlueprint]] = None
         self._is_broken: bool = False
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release all crafter-owned phase artifacts.
+
+        Behaviour:
+            * Cleans and clears structural artifacts from Phases 1-4.
+            * Cleans and clears later blueprint/plan/index artifacts from
+              Phases 5-11 when present.
+            * Drops cached compiled executor/codegen state.
+            * Resets validation and broken-state flags held by the crafter.
+            * Releases references to the owning spell and shared helper
+              services without mutating or disposing those external owners.
+
+        Contract:
+            Cleanup is idempotent. After cleanup, the crafter is unusable and
+            future accesses must fail through `check_cleaned()`.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+
+            self._cleanup_phase_artifacts_locked()
+            if self._root_blueprint_phase5 is not None:
+                try:
+                    self._root_blueprint_phase5.cleanup()
+                except Exception:
+                    pass
+            if self._occurrence_plan_phase8 is not None:
+                try:
+                    self._occurrence_plan_phase8.cleanup()
+                except Exception:
+                    pass
+            if self._injection_plan_phase9 is not None:
+                try:
+                    self._injection_plan_phase9.cleanup()
+                except Exception:
+                    pass
+            if self._override_patch_map_phase10 is not None:
+                try:
+                    self._override_patch_map_phase10.cleanup()
+                except Exception:
+                    pass
+            if self._mutation_patch_map_phase10 is not None:
+                try:
+                    self._mutation_patch_map_phase10.cleanup()
+                except Exception:
+                    pass
+            if self._execution_plan_phase11 is not None:
+                try:
+                    self._execution_plan_phase11.cleanup()
+                except Exception:
+                    pass
+            if self._execution_plan_phase11_no_overrides is not None:
+                try:
+                    self._execution_plan_phase11_no_overrides.cleanup()
+                except Exception:
+                    pass
+            if self._execution_plan_phase11_overrides is not None:
+                try:
+                    self._execution_plan_phase11_overrides.cleanup()
+                except Exception:
+                    pass
+            if self._spell_system_index_phase5 is not None:
+                try:
+                    self._spell_system_index_phase5.cleanup()
+                except Exception:
+                    pass
+            if self._entire_dag_blueprint_phase5 is not None:
+                for blueprint in list(self._entire_dag_blueprint_phase5.values()):
+                    if blueprint is None:
+                        continue
+                    try:
+                        blueprint.cleanup()
+                    except Exception:
+                        pass
+                try:
+                    self._entire_dag_blueprint_phase5.clear()
+                except Exception:
+                    pass
+            self._cleaned = True
+            self._phase8_11_codegen_ir_dirty = False
+            self._validated_phase4 = False
+            self._validated_phase6 = False
+            self._is_broken = False
+
+            del self._root_blueprint_phase5
+            del self._phase8_occurrence_plan_input_signature
+            del self._phase8_occurrence_plan_fast_key
+            del self._occurrence_plan_phase8
+            del self._phase9_injection_plan_input_signature
+            del self._injection_plan_phase9
+            del self._override_patch_map_phase10
+            del self._mutation_patch_map_phase10
+            del self._phase10_patch_maps_input_signature
+            del self._execution_plan_phase11
+            del self._execution_plan_phase11_no_overrides
+            del self._execution_plan_phase11_overrides
+            del self._phase12_no_overrides_executor
+            del self._phase12_no_overrides_executor_signature
+            del self._phase11_no_overrides_input_signature
+            del self._phase11_no_overrides_fast_key
+            del self._codegen_ir
+            del self._spell_system_index_phase5
+            del self._entire_dag_blueprint_phase5
+            del self._spell_system_states
+            del self._spell
+            del self._spell_validator
 
     @staticmethod
     def _get_required_spellbook_frame_name(spellbook: ISpellbook) -> str:
@@ -460,121 +582,6 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         return root_blueprints
 
     # ------------------------------------------------------------------
-    # Cleanup
-    # ------------------------------------------------------------------
-
-    def cleanup(self) -> None:
-        """
-        Deterministically release all crafter-owned phase artifacts.
-
-        Behaviour:
-            * Cleans and clears structural artifacts from Phases 1-4.
-            * Cleans and clears later blueprint/plan/index artifacts from
-              Phases 5-11 when present.
-            * Drops cached compiled executor/codegen state.
-            * Resets validation and broken-state flags held by the crafter.
-            * Releases references to the owning spell and shared helper
-              services without mutating or disposing those external owners.
-
-        Contract:
-            Cleanup is idempotent. After cleanup, the crafter is unusable and
-            future accesses must fail through `check_cleaned()`.
-        """
-        if self._cleaned:
-            return
-
-        with self._lock:
-            if self._cleaned:
-                return
-
-            self._cleanup_phase_artifacts_locked()
-            if self._root_blueprint_phase5 is not None:
-                try:
-                    self._root_blueprint_phase5.cleanup()
-                except Exception:
-                    pass
-            if self._occurrence_plan_phase8 is not None:
-                try:
-                    self._occurrence_plan_phase8.cleanup()
-                except Exception:
-                    pass
-            if self._injection_plan_phase9 is not None:
-                try:
-                    self._injection_plan_phase9.cleanup()
-                except Exception:
-                    pass
-            if self._override_patch_map_phase10 is not None:
-                try:
-                    self._override_patch_map_phase10.cleanup()
-                except Exception:
-                    pass
-            if self._mutation_patch_map_phase10 is not None:
-                try:
-                    self._mutation_patch_map_phase10.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11 is not None:
-                try:
-                    self._execution_plan_phase11.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11_no_overrides is not None:
-                try:
-                    self._execution_plan_phase11_no_overrides.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11_overrides is not None:
-                try:
-                    self._execution_plan_phase11_overrides.cleanup()
-                except Exception:
-                    pass
-            if self._spell_system_index_phase5 is not None:
-                try:
-                    self._spell_system_index_phase5.cleanup()
-                except Exception:
-                    pass
-            if self._entire_dag_blueprint_phase5 is not None:
-                for blueprint in list(self._entire_dag_blueprint_phase5.values()):
-                    if blueprint is None:
-                        continue
-                    try:
-                        blueprint.cleanup()
-                    except Exception:
-                        pass
-                try:
-                    self._entire_dag_blueprint_phase5.clear()
-                except Exception:
-                    pass
-            self._cleaned = True
-            self._phase8_11_codegen_ir_dirty = False
-            self._validated_phase4 = False
-            self._validated_phase6 = False
-            self._is_broken = False
-
-            del self._root_blueprint_phase5
-            del self._phase8_occurrence_plan_input_signature
-            del self._phase8_occurrence_plan_fast_key
-            del self._occurrence_plan_phase8
-            del self._phase9_injection_plan_input_signature
-            del self._injection_plan_phase9
-            del self._override_patch_map_phase10
-            del self._mutation_patch_map_phase10
-            del self._phase10_patch_maps_input_signature
-            del self._execution_plan_phase11
-            del self._execution_plan_phase11_no_overrides
-            del self._execution_plan_phase11_overrides
-            del self._phase12_no_overrides_executor
-            del self._phase12_no_overrides_executor_signature
-            del self._phase11_no_overrides_input_signature
-            del self._phase11_no_overrides_fast_key
-            del self._codegen_ir
-            del self._spell_system_index_phase5
-            del self._entire_dag_blueprint_phase5
-            del self._spell_system_states
-            del self._spell
-            del self._spell_validator
-
-    # ------------------------------------------------------------------
     # Core properties
     # ------------------------------------------------------------------
 
@@ -627,11 +634,11 @@ class SpellCrafter(Cleanable, ISpellCrafter):
         return self._resolution_frame
 
     @property
-    def validation_result_phase4(self) -> Any:
+    def validation_result_phase4(self) -> Optional[SpellValidationResult]:
         """
         Phase 4 validation result artifact, if any.
 
-        Once Phase 4 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
+        Returns the concrete `SpellValidationResult` from Phase 4 when present.
         to avoid constraining callers.
         """
         self.check_cleaned()
@@ -830,11 +837,11 @@ class SpellCrafter(Cleanable, ISpellCrafter):
 
 
     @property
-    def validation_result_phase6(self) -> Any:
+    def validation_result_phase6(self) -> Optional[SpellSystemValidationState]:
         """
         Phase 6 validation result artifact, if any.
 
-        Once Phase 6 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
+        Returns the concrete `SpellSystemValidationState` from Phase 6 when present.
         to avoid constraining callers.
         """
         self.check_cleaned()

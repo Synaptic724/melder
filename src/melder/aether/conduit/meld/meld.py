@@ -27,6 +27,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+    SpellCompilerSystem,
+)
 
 @mypyc_attr(native_class=True)
 class Meld(Cleanable, IMeld):
@@ -51,6 +54,8 @@ class Meld(Cleanable, IMeld):
     - reuse existing creations when allowed, or dispatch into creation-context
       runtime lanes when construction is required
     - run pre-cast, activation, post-cast, and meld-level hooks when present
+    - own the foundation runtime compiler system surface for later dynamic
+      recompilation ownership work
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -136,6 +141,11 @@ class Meld(Cleanable, IMeld):
         self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
             meld_hooks if meld_hooks is not None else {}
         )
+        # Foundation runtime compiler owner surface for later spell compiler
+        # ownership decomposition.
+        self._spell_compiler_system: SpellCompilerSystem = (
+            SpellCompilerSystem(spellbook)
+        )
 
 
     def cleanup(self) -> None:
@@ -187,6 +197,8 @@ class Meld(Cleanable, IMeld):
             del self._spell_id_resolution_cache
             del self._max_resolution_cache_size
             del self._change_control_manager_by_frame
+            self._spell_compiler_system.cleanup()
+            del self._spell_compiler_system
 
 
     # region Context Manager

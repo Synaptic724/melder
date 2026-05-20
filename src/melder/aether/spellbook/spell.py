@@ -31,6 +31,15 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
     SpellSystemState,
 )
+from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+    SpellSystemValidationState,
+)
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+    SpellValidationResult,
+)
+from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+    SpellCompilerArtifact,
+)
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
@@ -162,9 +171,10 @@ class Spell(Cleanable, ISpell):
           concurrency decisions; this class only protects its own local state.
 
     Lifecycle / Cleanup:
-        - `Spell` owns its `SpellCrafter`, spell-owned `CreationContextFactory`,
-          spell-owned `CreationContext`, hook lists, dependency/build artifacts,
-          and cached execution-plan metrics.
+        - `Spell` owns its spell compiler artifact foundation, its current
+          `SpellCrafter`, spell-owned `CreationContextFactory`, spell-owned
+          `CreationContext`, hook lists, dependency/build artifacts, and cached
+          execution-plan metrics.
         - Conduit ownership can be restamped later, which invalidates the
           spell-owned `CreationContext` and rebuilds the spell-owned factory.
         - `cleanup()` is deterministic, best-effort for owned child cleanup, and
@@ -184,6 +194,7 @@ class Spell(Cleanable, ISpell):
         "_creation_context",
         "_creation_context_factory",
         "_creation_context_switch",
+        "_compiler_artifact",
         "_crafter",
         "_dynamic_environment",
         "_hooks_enabled",
@@ -359,6 +370,11 @@ class Spell(Cleanable, ISpell):
         # Per-spell compiler / resolution helper (SpellCrafter).
         # This owns all Phase artifacts and is disposable.
         self._crafter: Optional[ISpellCrafter] = None
+        # Foundation artifact home for compiler/build state that will be
+        # split away from SpellCrafter in later slices.
+        self._compiler_artifact: SpellCompilerArtifact = (
+            SpellCompilerArtifact(self.spell_id)
+        )
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
@@ -439,6 +455,12 @@ class Spell(Cleanable, ISpell):
                 except Exception:
                     pass
 
+            if self._compiler_artifact is not None:
+                try:
+                    self._compiler_artifact.cleanup()
+                except Exception:
+                    pass
+
             # Phase artifacts - deterministically dropped via SpellCrafter.
             if self._crafter is not None:
                 try:
@@ -516,6 +538,7 @@ class Spell(Cleanable, ISpell):
             del self._creation_context
             del self._creation_context_factory
             del self._creation_context_switch
+            del self._compiler_artifact
             del self._dynamic_environment
             del self.resolution_required
             del self.resolution_complete
@@ -916,7 +939,7 @@ class Spell(Cleanable, ISpell):
         return self._crafter.resolution_frame
 
     @property
-    def validation_result_phase4(self) -> Any:
+    def validation_result_phase4(self) -> Optional[SpellValidationResult]:
         """
         Phase 4 validation result for this spell, if it has been computed.
 
@@ -927,7 +950,7 @@ class Spell(Cleanable, ISpell):
         return self._crafter.validation_result_phase4
 
     @property
-    def validation_result_phase6(self) -> Any:
+    def validation_result_phase6(self) -> Optional[SpellSystemValidationState]:
         """
         Phase 6 validation result for this spell, if it has been computed.
 

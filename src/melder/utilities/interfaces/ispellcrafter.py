@@ -3,6 +3,12 @@ from typing import Any, Callable, Dict, Optional, Protocol, Set, Tuple, runtime_
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
+from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (
+    SpellSystemValidationState,
+)
+from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
+    SpellValidationResult,
+)
 from melder.aether.spellbook.spell_crafter.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
@@ -73,11 +79,11 @@ class ISpellCrafter(ICleanable, Protocol):
         ...
 
     @property
-    def validation_result_phase4(self) -> Any:
+    def validation_result_phase4(self) -> Optional[SpellValidationResult]:
         """
         Phase 4 validation result artifact, if any.
 
-        Once Phase 4 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
+        Return the concrete `SpellValidationResult` from Phase 4 when present.
         to avoid constraining callers.
         """
         ...
@@ -251,11 +257,11 @@ class ISpellCrafter(ICleanable, Protocol):
         ...
 
     @property
-    def validation_result_phase6(self) -> Any:
+    def validation_result_phase6(self) -> Optional[SpellSystemValidationState]:
         """
         Phase 6 validation result artifact, if any.
 
-        Once Phase 6 is wired, this will typically be a: class:`SpellValidationResult 'produced by the: class:`SpellValidationSystem`. For now the type is kept as "Any"
+        Return the concrete `SpellSystemValidationState` from Phase 6 when present.
         to avoid constraining callers.
         """
         ...
