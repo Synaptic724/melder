@@ -709,7 +709,7 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                             {
                                 "surface": "command",
                                 "method": "get_target_attribute",
-                                "args": ["_aetheric_frame"],
+                                "args": ["_aetheric_frame_name"],
                                 "save_as": "conduit_frame_name",
                             },
                         ]
@@ -1034,7 +1034,7 @@ def _assert_capability_turn_script_result(
         assert saved_results["existing_object"].kind == "capability_live"
         return
     if kind == "nexus_frame_link_cycle":
-        assert saved_results["created_conduit"]._aetheric_frame == scenario["created_frame_name"]
+        assert saved_results["created_conduit"]._aetheric_frame_name == scenario["created_frame_name"]
         assert saved_results["assigned_frames"] == (
             bench.frame_name,
             scenario["created_frame_name"],

@@ -603,7 +603,7 @@ def _build_workspace_frame_scenarios() -> List[Dict[str, object]]:
                         "args": [
                             "finance_root = command.get_nexus_frame('finance')\n"
                             "workstation.bind_object('finance_root', finance_root, weak_ref=False)\n"
-                            "result = finance_root._aetheric_frame"
+                            "result = finance_root._aetheric_frame_name"
                         ],
                         "kwargs": {"frame_name": "@manifest.frames.ops.frame_name"},
                         "save_as": "created",
@@ -617,7 +617,7 @@ def _build_workspace_frame_scenarios() -> List[Dict[str, object]]:
                     {
                         "surface": "command",
                         "method": "get_target_attribute",
-                        "args": ["_aetheric_frame"],
+                        "args": ["_aetheric_frame_name"],
                         "save_as": "frame_name",
                     },
                 ]

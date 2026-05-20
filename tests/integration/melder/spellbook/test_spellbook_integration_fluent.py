@@ -413,7 +413,7 @@ def test_spellbook_fluent_as_unique_per_conduit_cluster_shares_across_cluster() 
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(owner, "cluster-a")
         cloud.add_conduit_to_cluster(borrower, "cluster-a")

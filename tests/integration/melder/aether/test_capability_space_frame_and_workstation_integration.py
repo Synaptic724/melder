@@ -524,7 +524,7 @@ def _assert_nexus_frame_scenario(scenario_name: str) -> None:
 
     if scenario_name == "create_returns_root_conduit":
         assert conduit.name == "root"
-        assert conduit._aetheric_frame == frame_name
+        assert conduit._aetheric_frame_name == frame_name
         return
     if scenario_name == "get_returns_created_root_conduit":
         assert rift.get_nexus_frame(frame_name) is conduit

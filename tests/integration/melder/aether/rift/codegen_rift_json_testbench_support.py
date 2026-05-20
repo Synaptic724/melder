@@ -313,12 +313,12 @@ class CodegenRiftJsonBench:
                 "ops_root": {
                     "id": self.ops_root_conduit.id,
                     "name": self.ops_root_conduit.name,
-                    "frame_name": self.ops_root_conduit._aetheric_frame,
+                    "frame_name": self.ops_root_conduit._aetheric_frame_name,
                 },
                 "finance_root": {
                     "id": self.finance_root_conduit.id,
                     "name": self.finance_root_conduit.name,
-                    "frame_name": self.finance_root_conduit._aetheric_frame,
+                    "frame_name": self.finance_root_conduit._aetheric_frame_name,
                 },
             },
         }
