@@ -706,7 +706,7 @@ class ConduitWard(Cleanable, IConduitWard):
             )
             raise RuntimeError("This conduit is inbound_only and cannot initiate outbound links.")
 
-        target_ward = getattr(target_conduit, "_conduit_ward", None)
+        target_ward = target_conduit._conduit_ward
         if target_ward is not None and target_ward._policy == Policies.outbound_only:
             self._logger.error(
                 "link: target rejects inbound links (policy=outbound_only)",

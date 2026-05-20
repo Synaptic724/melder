@@ -72,6 +72,8 @@ class SpellCompilerArtifact(Cleanable):
         "_execution_plan_phase11",
         "_execution_plan_phase11_no_overrides",
         "_execution_plan_phase11_overrides",
+        "_phase11_no_overrides_plan_signature",
+        "_phase11_no_overrides_transient_schema",
         "_phase12_no_overrides_executor",
         "_phase12_no_overrides_executor_signature",
         "_phase11_no_overrides_input_signature",
@@ -121,6 +123,8 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
+        self._phase11_no_overrides_plan_signature: Optional[str] = None
+        self._phase11_no_overrides_transient_schema: Optional[Dict[str, Any]] = None
         self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
         self._phase12_no_overrides_executor_signature: Optional[str] = None
         self._phase11_no_overrides_input_signature: Optional[str] = None
@@ -227,6 +231,8 @@ class SpellCompilerArtifact(Cleanable):
             del self._execution_plan_phase11
             del self._execution_plan_phase11_no_overrides
             del self._execution_plan_phase11_overrides
+            del self._phase11_no_overrides_plan_signature
+            del self._phase11_no_overrides_transient_schema
             del self._phase12_no_overrides_executor
             del self._phase12_no_overrides_executor_signature
             del self._phase11_no_overrides_input_signature
@@ -351,6 +357,8 @@ class SpellCompilerArtifact(Cleanable):
         self._spell_system_index_phase5 = None
 
         self._phase8_11_codegen_ir_dirty = False
+        self._phase11_no_overrides_plan_signature = None
+        self._phase11_no_overrides_transient_schema = None
         self._phase12_no_overrides_executor = None
         self._phase12_no_overrides_executor_signature = None
         self._phase11_no_overrides_input_signature = None
@@ -378,3 +386,5 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_plan_phase11 = None
         self._execution_plan_phase11_no_overrides = None
         self._execution_plan_phase11_overrides = None
+        self._phase11_no_overrides_plan_signature = None
+        self._phase11_no_overrides_transient_schema = None
