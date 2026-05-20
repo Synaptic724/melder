@@ -2,13 +2,12 @@ from typing import Optional, Set
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_5 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_5 import (
     CompilerPhase5,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
@@ -158,7 +157,7 @@ class CompilerPhase7:
             """
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
-                from melder.aether.conduit.spell_compiler_system.spell_compiler_system import SpellCompilerSystem
+                from melder.aether.spellbook.spell_crafter.spell_compiler_system import SpellCompilerSystem
 
                 spell_instance = spellbook._spell_id_pool[root_id]
                 compiler_system = SpellCompilerSystem()
@@ -235,7 +234,7 @@ class CompilerPhase7:
             """
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
-                from melder.aether.conduit.spell_compiler_system.spell_compiler_system import SpellCompilerSystem
+                from melder.aether.spellbook.spell_crafter.spell_compiler_system import SpellCompilerSystem
 
                 spell_instance = spellbook._spell_id_pool[root_id]
                 compiler_system = SpellCompilerSystem()

@@ -27,7 +27,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
     SpellCompilerSystem,
 )
 

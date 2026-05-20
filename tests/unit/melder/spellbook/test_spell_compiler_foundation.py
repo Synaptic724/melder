@@ -4,10 +4,10 @@ from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.spell_crafter.spell_crafter import SpellCrafter

@@ -12,13 +12,13 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import (
     SpellValidity,
 )
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
-from melder.aether.conduit.spell_compiler_system.phases.utility import (
+from melder.aether.spellbook.spell_crafter.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.utilities.interfaces.ispell import ISpell

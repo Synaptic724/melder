@@ -2,10 +2,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.blueprints.occurrence_plan import (
@@ -15,7 +15,6 @@ from melder.utilities.interfaces.irootresolutionblueprint import IRootResolution
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 @mypyc_attr(native_class=True)

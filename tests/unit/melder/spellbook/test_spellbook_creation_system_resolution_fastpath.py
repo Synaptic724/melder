@@ -5,7 +5,7 @@ import pytest
 
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem

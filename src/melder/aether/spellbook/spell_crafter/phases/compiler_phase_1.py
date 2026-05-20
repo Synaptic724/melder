@@ -2,10 +2,10 @@ from typing import Optional
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.phases.utility import (
+from melder.aether.spellbook.spell_crafter.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.spell_requirements_finder.spell_requirements_finder import (

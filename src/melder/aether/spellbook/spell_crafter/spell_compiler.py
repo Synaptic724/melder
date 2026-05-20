@@ -2,43 +2,43 @@ from typing import Any, Dict, Optional
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_1 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_1 import (
     CompilerPhase1,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_10 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_10 import (
     CompilerPhase10,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_11 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_11 import (
     CompilerPhase11,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_12 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_12 import (
     CompilerPhase12,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_2 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_2 import (
     CompilerPhase2,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_3 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_3 import (
     CompilerPhase3,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_4 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_4 import (
     CompilerPhase4,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_5 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_5 import (
     CompilerPhase5,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_6 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_6 import (
     CompilerPhase6,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_7 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_7 import (
     CompilerPhase7,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_8 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_8 import (
     CompilerPhase8,
 )
-from melder.aether.conduit.spell_compiler_system.phases.compiler_phase_9 import (
+from melder.aether.spellbook.spell_crafter.phases.compiler_phase_9 import (
     CompilerPhase9,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
@@ -52,7 +52,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 
 @mypyc_attr(native_class=True)
-class SpellCrafter:
+class SpellCompiler:
     """
     Compiler-owned facade over the extracted spell compiler phase surfaces.
 
@@ -88,7 +88,17 @@ class SpellCrafter:
     def __init__(self) -> None:
         """
             Create a new SpellCrafter for one bound: class: 'Spell`.
-
+            
+            Args:
+                spell:
+                    The owning spell. The crafter treats it as read-only except
+                    when later phases push finalized build details back into the
+                    spell through internal spell-owned update hooks.
+                resolution_profile:
+                    Optional prebuilt resolution profile. When supplied, the crafter
+                    seeds Phase 1 requirements from that profile instead of
+                    rebuilding them immediately.
+            
             Contract:
                 - Captures shared spell-owned services needed by later phases, such
                   as the spell validator and spell-system-state view.

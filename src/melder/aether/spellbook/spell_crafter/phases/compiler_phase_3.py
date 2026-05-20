@@ -5,13 +5,13 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Union, get_args,
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
-from melder.aether.conduit.spell_compiler_system.phases.utility import (
+from melder.aether.spellbook.spell_crafter.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.dag.directed_acyclic_work_graph import (

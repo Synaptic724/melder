@@ -4,7 +4,7 @@ from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Seq
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState

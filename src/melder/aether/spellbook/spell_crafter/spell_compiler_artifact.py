@@ -266,7 +266,7 @@ class SpellCompilerArtifact(Cleanable):
             if self._cleaned:
                 return
             self._cleanup_phase_artifacts_locked()
-            from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+            from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
                 SharedCompilerExecutions,
             )
             SharedCompilerExecutions.reset_phase2_5_codegen_ir(self)

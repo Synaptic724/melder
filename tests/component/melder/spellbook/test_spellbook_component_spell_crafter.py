@@ -6,7 +6,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
-from melder.aether.conduit.spell_compiler_system.spell_compiler_system import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence

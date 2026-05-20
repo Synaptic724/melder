@@ -2,10 +2,10 @@ from typing import Any, Dict, Optional
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
 from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (

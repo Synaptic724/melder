@@ -2,7 +2,7 @@ from typing import Optional
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
@@ -10,7 +10,6 @@ from melder.aether.spellbook.spell_crafter.blueprints.injection_plan import (
 )
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 @mypyc_attr(native_class=True)

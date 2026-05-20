@@ -2,10 +2,10 @@ from typing import Collection, Dict, List, Mapping, Optional, Set
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.system.spell_system_adjacency_builder import (
@@ -542,7 +542,7 @@ class CompilerPhase5:
             """
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
-                from melder.aether.conduit.spell_compiler_system.spell_compiler_system import SpellCompilerSystem
+                from melder.aether.spellbook.spell_crafter.spell_compiler_system import SpellCompilerSystem
 
                 spell_instance = spellbook._spell_id_pool[root_id]
                 compiler_system = SpellCompilerSystem()

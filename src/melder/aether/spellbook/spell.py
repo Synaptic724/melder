@@ -1,4 +1,4 @@
-from typing import Optional, List, Any, Callable, Sequence, Set, Tuple
+from typing import Optional, List, Any, Callable, Sequence
 import ulid
 from threading import RLock
 from types import TracebackType
@@ -35,7 +35,7 @@ from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state 
 from melder.aether.spellbook.spell_crafter.validation.spell_validation_result import (
     SpellValidationResult,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (

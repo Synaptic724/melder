@@ -2,7 +2,7 @@ from typing import Any, Collection, Dict, List, Optional, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.system.spell_system_validation_state import (

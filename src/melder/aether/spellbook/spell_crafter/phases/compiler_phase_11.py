@@ -2,23 +2,20 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
     ExecutionPlanCallMode,
     ExecutionPlanVariant,
 )
-from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
 

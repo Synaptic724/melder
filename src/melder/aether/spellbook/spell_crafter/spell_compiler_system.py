@@ -2,8 +2,8 @@ from typing import Optional, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_crafter.spell_crafter import (
-    SpellCrafter,
+from melder.aether.spellbook.spell_crafter.spell_compiler import (
+    SpellCompiler,
 )
 from melder.aether.spellbook.spell_crafter.validation.validation_system import (
     SpellValidationSystem,
@@ -53,7 +53,7 @@ class SpellCompilerSystem(Cleanable):
                   duplicating the first requirements extraction step.
         """
         super().__init__()
-        self._spell_compiler: SpellCrafter = SpellCrafter()
+        self._spell_compiler: SpellCompiler = SpellCompiler()
         self._spell_validator: SpellValidationSystem = SpellValidationSystem()
 
     def cleanup(self) -> None:

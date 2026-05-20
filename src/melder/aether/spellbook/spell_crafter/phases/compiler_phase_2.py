@@ -4,13 +4,13 @@ from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.aether.conduit.spell_compiler_system.phases.shared_compiler_executions import (
+from melder.aether.spellbook.spell_crafter.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
-from melder.aether.conduit.spell_compiler_system.phases.utility import (
+from melder.aether.spellbook.spell_crafter.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.conduit.spell_compiler_system.spell_compiler_artifact import (
+from melder.aether.spellbook.spell_crafter.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_crafter.spell_requirements_finder.parameter_di_shape import (
