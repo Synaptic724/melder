@@ -10,25 +10,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-def _get_risk_manager_callback(
-        risk_manager: Optional[object],
-) -> Optional[Callable[[str, Optional[SpellValidity]], None]]:
-    """
-    Return the structural-validity callback when the collaborator exposes it.
-
-    Contract:
-        - Accepts the current loose collaborator surface (`object | None`).
-        - Returns a callable only when the collaborator exposes a callable
-          `on_structural_validity_change(...)` attribute.
-        - Leaves plain objects and missing callbacks as `None`.
-    """
-    if risk_manager is None:
-        return None
-    callback = getattr(risk_manager, "on_structural_validity_change", None)
-    if not callable(callback):
-        return None
-    return callback
-
 @mypyc_attr(native_class=True)
 class SpellSystemState(Cleanable):
     """
@@ -343,7 +324,7 @@ class SpellSystemState(Cleanable):
             - Ignores None entries in add/remove flag iterables.
         """
         self.check_cleaned()
-        callback = _get_risk_manager_callback(self._risk_manager)
+        callback = self._risk_manager.on_structural_validity_change
         lineage_id = self._spell_index_id
         with self._lock:
             if self._flags is None:
