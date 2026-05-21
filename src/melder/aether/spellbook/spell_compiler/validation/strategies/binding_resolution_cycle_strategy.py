@@ -2,6 +2,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
+        SpellParameterRequirement,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 from mypy_extensions import mypyc_attr
 
@@ -10,9 +14,6 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
-)
-from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
-    SpellParameterRequirement,
 )
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
     SpellValidationContext,
@@ -24,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
     SpellValidationStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
 class BindingResolutionCycleStrategy(SpellValidationStrategy):
@@ -51,7 +51,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             description="Detects binding-key dependency cycles implied by requirements.",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Detect binding-key cycles reachable from the current spell.
 

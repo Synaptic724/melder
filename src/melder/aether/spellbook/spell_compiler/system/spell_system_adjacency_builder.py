@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Set
+from typing import TYPE_CHECKING, Dict, Optional, Set
 
 from mypy_extensions import mypyc_attr
 
@@ -62,10 +62,12 @@ class SpellSystemAdjacencyBuilder:
         all_dependency_ids: Set[str] = set()
 
         # Optional per-spell constructor topologies keyed by version-id.
-        topologies: Dict[str, 'SpellLocalTopology'] = {}
+        topologies: Dict[str, Optional[SpellLocalTopology]] = {}
 
         with spell_system_states._lock:
             states_by_index_id = spell_system_states._states_by_index_id
+            if states_by_index_id is None:
+                raise RuntimeError("SpellSystemStates has been cleaned.")
             local_topologies = spell_system_states._local_topologies
 
             for state in states_by_index_id.values():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from typing import TYPE_CHECKING
 
 from mypy_extensions import mypyc_attr
 
@@ -9,9 +10,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_prof
     ClassBindingProfile,
     InstanceBindingProfile,
     OtherBindingProfile,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
-    SpellValidationContext,
 )
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
@@ -22,6 +20,10 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
     SpellDetailedProfile,
 )
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
+        SpellValidationContext,
+    )
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
@@ -46,7 +48,7 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
             description="Ensures spell targets match binding profiles and callable/class expectations.",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate that the spell target aligns with its binding profile.
         """

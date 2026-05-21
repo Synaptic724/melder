@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import inspect
 import typing
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
-    SpellValidationContext,
 )
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
@@ -18,6 +15,10 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
+        SpellValidationContext,
+    )
 
 @mypyc_attr(native_class=True)
 class ParameterPolicyStrategy(SpellValidationStrategy):
@@ -39,7 +40,7 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
             description="Flags DI usage on variadic parameters and inconsistent DI annotations.",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate parameter shapes against DI policy constraints.
         """

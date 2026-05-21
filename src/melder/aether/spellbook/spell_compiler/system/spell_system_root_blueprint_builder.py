@@ -141,9 +141,12 @@ class SpellSystemRootBlueprintBuilder:
             dag_index=None,                # Phase-5 DagIndex builder will populate
         )
 
+        topologies = snapshot.topologies
+        if topologies is None:
+            raise RuntimeError("Missing topologies in SpellSystemAdjacencySnapshot")
         self._overlay_sockets_and_index(
             blueprint=blueprint,
-            topologies=snapshot.topologies,
+            topologies=topologies,
         )
 
         return blueprint
@@ -243,7 +246,7 @@ class SpellSystemRootBlueprintBuilder:
     def _overlay_sockets_and_index(
             self,
             blueprint: RootResolutionBlueprint,
-            topologies: Dict[str, SpellLocalTopology],
+            topologies: Dict[str, Optional[SpellLocalTopology]],
     ) -> None:
         """
         Overlay SocketRefs and prepare the PathRegistry for the blueprint.

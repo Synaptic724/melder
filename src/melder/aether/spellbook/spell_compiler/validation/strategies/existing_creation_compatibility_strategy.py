@@ -1,14 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     InstanceBindingProfile,
     OtherBindingProfile,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
-    SpellValidationContext,
 )
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
@@ -22,6 +20,10 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_pro
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
+        SpellValidationContext,
+    )
 
 @mypyc_attr(native_class=True)
 class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
@@ -40,7 +42,7 @@ class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
             description="Checks existing-creation spells for instance presence and compatible policies.",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate existing-creation spell wiring and policies.
         """

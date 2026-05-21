@@ -384,7 +384,10 @@ class CompilerPhase5:
         all_spell_ids: Collection[str] = visible_spell_ids
         dependencies: Dict[str, Set[str]] = {}
         reverse_dependencies: Dict[str, Set[str]] = {}
-        topologies: Dict[str, SpellLocalTopology] = {}
+        topologies: Optional[Dict[str, Optional[SpellLocalTopology]]] = None
+        snapshot_topologies = snapshot.topologies
+        if snapshot_topologies is not None:
+            topologies = {}
 
         for spell_id in all_spell_ids:
             deps = snapshot.dependencies.get(spell_id, set())
@@ -393,9 +396,8 @@ class CompilerPhase5:
             for dep_id in filtered_deps:
                 reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
-            topology = snapshot.topologies.get(spell_id)
-            if topology is not None:
-                topologies[spell_id] = topology
+            if topologies is not None and snapshot_topologies is not None:
+                topologies[spell_id] = snapshot_topologies.get(spell_id)
 
         root_spell_ids = {spell_id for spell_id in all_spell_ids if spell_id not in reverse_dependencies}
 

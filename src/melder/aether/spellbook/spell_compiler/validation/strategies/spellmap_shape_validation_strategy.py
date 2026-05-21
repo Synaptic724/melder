@@ -1,13 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
-    SpellValidationContext,
 )
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
@@ -16,6 +14,10 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
     SpellValidationStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
+        SpellValidationContext,
+    )
 
 @mypyc_attr(native_class=True)
 class SpellMapShapeValidationStrategy(SpellValidationStrategy):
@@ -37,7 +39,7 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
             description="Validates SpellMap defaults for required fields and normalized binding names.",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate SpellMap defaults attached to constructor parameters.
         """
