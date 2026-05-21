@@ -28,7 +28,6 @@ from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.ibind import IBind
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
@@ -53,7 +52,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     IAetherConfiguration: AetherConfiguration,
     IAetherConfigurationBuilder: AetherConfigurationBuilder,
     IAethericFrame: AethericFrame,
-    IBind: Bind,
     IChangeControlManager: ChangeControlManager,
     IConduit: Conduit,
     IConduitCloud: ConduitCloud,

@@ -1,4 +1,4 @@
-from types import TracebackType
+﻿from types import TracebackType
 from typing import Any, Dict, Optional, Protocol, Set, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 

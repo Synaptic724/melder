@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Union, runtime_checkable
+﻿from typing import Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclcodegenbuilder import IFrameACLCodegenBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration

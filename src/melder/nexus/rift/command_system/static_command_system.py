@@ -6,10 +6,9 @@ from melder.nexus.rift.command_system.command_system import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
-from melder.utilities.interfaces.istaticcommandsystem import IStaticCommandSystem
 
 
-class StaticCommandSystem(CommandSystem, IStaticCommandSystem):
+class StaticCommandSystem(CommandSystem):
     """
     Internal
 

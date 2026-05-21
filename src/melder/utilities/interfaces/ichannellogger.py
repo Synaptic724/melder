@@ -1,4 +1,4 @@
-from logging import LogRecord
+﻿from logging import LogRecord
 from types import TracebackType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable

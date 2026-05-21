@@ -8,7 +8,6 @@ from mypy_extensions import mypyc_attr
 # Melder Imports
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ibind import IBind
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
@@ -32,7 +31,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_prof
 
 #region Bind
 @mypyc_attr(native_class=True)
-class Bind(Cleanable, IBind):
+class Bind(Cleanable):
     """
     Spellbook registration gateway for classes, callables, and concrete objects.
 

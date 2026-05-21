@@ -1,4 +1,4 @@
-from typing import Any, Dict, Protocol, runtime_checkable
+﻿from typing import Any, Dict, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable

@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Optional, Protocol, Tuple, runtime_checkable
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.interfaces.idescriptorpayload import IDescriptorPayload

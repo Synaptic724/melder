@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Protocol, runtime_checkable
+﻿from typing import Any, Dict, List, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
 

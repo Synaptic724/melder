@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, runtime_checkable
 
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration

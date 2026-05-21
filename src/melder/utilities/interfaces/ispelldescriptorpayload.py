@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.idescriptorpayload import IDescriptorPayload
 
 @runtime_checkable

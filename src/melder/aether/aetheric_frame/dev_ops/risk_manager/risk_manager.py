@@ -8,7 +8,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.iriskmanager import IRiskManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @mypyc_attr(native_class=True)
@@ -48,7 +47,7 @@ class _ConduitRiskState:
         self.risky_resolution: Set[str] = set()
 
 @mypyc_attr(native_class=True)
-class RiskManager(Cleanable, IRiskManager):
+class RiskManager(Cleanable):
     """
     DevOps risk tracking for meld validation gating.
 

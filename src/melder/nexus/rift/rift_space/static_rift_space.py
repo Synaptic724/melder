@@ -8,11 +8,10 @@ from melder.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.istaticriftspace import IStaticRiftSpace
 from melder.utilities.interfaces.iriftgate import IRiftGate
 
 
-class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
+class StaticRiftSpace(RiftSpace):
     """
     Internal
 
