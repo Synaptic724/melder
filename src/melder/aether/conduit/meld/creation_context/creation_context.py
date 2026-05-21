@@ -23,7 +23,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.conduit.creations.creations import Creations
-from melder.utilities.synchronization.creation_gate import CreationGate
+    from melder.utilities.synchronization.creation_gate import CreationGate
 
 @mypyc_attr(native_class=True)
 class OverrideRouteConfig(Cleanable):

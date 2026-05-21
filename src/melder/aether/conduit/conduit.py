@@ -40,7 +40,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.mutation_research.mutation_research import MutationResearch
-if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 
 #region Conduit
@@ -563,7 +562,7 @@ class Conduit(Cleanable):
     # SpellSpace support
     # ------------------------------------------------------------------ #
 
-    def get_active_spellspace(self) -> Optional["SpellSpace"]:
+    def get_active_spellspace(self) -> Optional[SpellSpace]:
         """
         Return the currently active SpellSpace for this Conduit, if any.
 
@@ -575,7 +574,7 @@ class Conduit(Cleanable):
             return None
         return stack[-1]
 
-    def create_spellspace(self) -> "SpellSpace":
+    def create_spellspace(self) -> SpellSpace:
         """
         Create a SpellSpace bound to this Conduit.
 
@@ -639,7 +638,7 @@ class Conduit(Cleanable):
         self._spellspace_registry.discard(space)
 
     @contextmanager
-    def enter_spellspace(self) -> Generator["SpellSpace", None, None]:
+    def enter_spellspace(self) -> Generator[SpellSpace, None, None]:
         """
         Context-managed SpellSpace. Pushes onto the stack, yields it, and cleans it on exit.
 

@@ -1,19 +1,19 @@
-from typing import TYPE_CHECKING, TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING, Optional, Set
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
+    from melder.utilities.synchronization.creation_gate import CreationGate
+    from melder.utilities.synchronization.creation_gate_controller import (
+        CreationGateController,
+    )
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.synchronization.creation_gate import CreationGate
-from melder.utilities.synchronization.creation_gate_controller import (
-    CreationGateController,
-)
 
 @mypyc_attr(native_class=True)
 class CreationContextFactory(Cleanable):

@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional, Any, Callable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.utilities.synchronization.creation_gate import CreationGate
 
 from mypy_extensions import mypyc_attr
 
@@ -13,7 +14,6 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
     SharedCompilerExecutions,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.synchronization.creation_gate import CreationGate
 
 @mypyc_attr(native_class=True)
 class CreationContextBuilder:
