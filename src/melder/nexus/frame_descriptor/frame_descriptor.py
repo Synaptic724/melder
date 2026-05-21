@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame_configuration import (
         AethericFrameConfiguration,
     )
+    from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
     from melder.nexus.frame_descriptor.frame_record import FrameRecord
     from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
@@ -80,8 +81,8 @@ class FrameDescriptor(Cleanable):
         self._frame_name: str = frame_name
         self._frame_handle: Optional[AethericFrame] = None
         self._frame_configuration: Optional[AethericFrameConfiguration] = None
-        self._frame_overview: Optional["FrameRecord"] = None
-        self._conduit_records_by_id: Dict[str, "ConduitRecord"] = {}
+        self._frame_overview: Optional[FrameRecord] = None
+        self._conduit_records_by_id: Dict[str, ConduitRecord] = {}
         self._spell_records_by_key: Dict[Tuple[str, str], SpellRecord] = {}
         self._spell_keys_by_conduit_id: Dict[str, Set[Tuple[str, str]]] = {}
         self._spell_keys_by_spellbook_id: Dict[str, Set[Tuple[str, str]]] = {}
@@ -312,7 +313,7 @@ class FrameDescriptor(Cleanable):
         with self._lock:
             self._frame_configuration = frame_configuration
 
-    def set_frame_overview(self, frame_overview: "FrameRecord") -> None:
+    def set_frame_overview(self, frame_overview: FrameRecord) -> None:
         """
         Replace the owned frame overview record.
 
@@ -373,7 +374,7 @@ class FrameDescriptor(Cleanable):
             self._spell_keys_by_conduit_id.clear()
             self._spell_keys_by_spellbook_id.clear()
 
-    def upsert_conduit_record(self, conduit_record: "ConduitRecord") -> None:
+    def upsert_conduit_record(self, conduit_record: ConduitRecord) -> None:
         """
         Upsert one conduit record owned by this descriptor.
 

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -39,7 +39,7 @@ class SpellExaminer(Cleanable):
         idempotent, clears the registry, and leaves the object unusable.
     """
 
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_profile_builders_by_name",

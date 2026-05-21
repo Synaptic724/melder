@@ -2,7 +2,18 @@
 import threading
 from contextlib import contextmanager
 from types import TracebackType
-from typing import TYPE_CHECKING, List, Any, Tuple, Dict, Iterable, Generator, Type, Optional
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Any,
+    Tuple,
+    Dict,
+    Iterable,
+    Generator,
+    Type,
+    Optional,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -94,7 +105,7 @@ class ConduitWard(Cleanable):
       `_sever_link_contract`) so contract teardown stays consistent with spell maps.
     - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     def __init__(
             self,
             conduit: Conduit,

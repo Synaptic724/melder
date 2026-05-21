@@ -1,5 +1,5 @@
 ﻿from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, List, Set
+from typing import TYPE_CHECKING, Dict, Mapping, Optional, List, Set, ClassVar
 from mypy_extensions import mypyc_attr
 #Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -36,7 +36,7 @@ class SpellSystemValidationStrategy(ABC):
           inputs.
     """
 
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
 
     @abstractmethod

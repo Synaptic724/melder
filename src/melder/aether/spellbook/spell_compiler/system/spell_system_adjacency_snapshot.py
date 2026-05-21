@@ -1,4 +1,4 @@
-from typing import Collection, Dict, Optional, Set, TYPE_CHECKING
+from typing import Collection, Dict, Optional, Set, TYPE_CHECKING, ClassVar
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -24,7 +24,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     * This view holds live references to SpellSystemStates data and does not
       copy or own the underlying collections.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_dependencies",
         "_reverse_dependencies",

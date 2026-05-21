@@ -5,7 +5,7 @@ from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
-from typing import Set
+from typing import Set, ClassVar
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -32,7 +32,7 @@ class Detail(Cleanable):
         reason (DetailReason): Why this detail exists in the contract.
         sources (Set[str]): Root spell ids that currently justify this detail.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (
         "_lock",
         "_id",

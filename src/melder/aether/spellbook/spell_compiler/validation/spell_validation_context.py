@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional, List, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -57,7 +57,7 @@ class SpellValidationContext(Cleanable):
     - Optional artifact cleanup is controlled by `cleanup_artifacts`; the
       caller decides whether the context owns those artifacts for teardown.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellbook",

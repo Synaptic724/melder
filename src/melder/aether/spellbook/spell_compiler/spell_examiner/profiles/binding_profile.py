@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -30,7 +30,7 @@ class SpellBindingProfile(Cleanable):
         - Leaves subtype-specific detail fields to concrete binding-profile
           variants.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["kind", "original_object"]
     __deletable__ = ["kind", "original_object"]
 
@@ -74,7 +74,7 @@ class ClassBindingProfile(SpellBindingProfile):
     Enough to fingerprint, reason about protocol compatibility, and produce diagnostics.
     Very shallow per-method view (names only), no deep inspection.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "name",
         "qualname",
@@ -206,7 +206,7 @@ class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ["name", "kind", "default_repr", "annotation_repr"]
 
     def __init__(
@@ -248,7 +248,7 @@ class CallableBindingProfile(SpellBindingProfile):
         - Avoids deeper runtime-resolution detail, which belongs to later
           profile phases.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "name",
         "qualname",
@@ -378,7 +378,7 @@ class InstanceBindingProfile(SpellBindingProfile):
     """
     Binding-time view of an existing object instance bound as an EXISTING_CREATION spell.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "type_name",
         "module",
@@ -447,7 +447,7 @@ class OtherBindingProfile(SpellBindingProfile):
         Stores only the minimum detached identity/representation surface for
         otherwise unsupported candidate types.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
         "type_name",
         "module",

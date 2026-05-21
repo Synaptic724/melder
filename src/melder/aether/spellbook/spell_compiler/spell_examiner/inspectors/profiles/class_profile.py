@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -21,7 +21,7 @@ class ClassProfile(Cleanable):
         - Provenance fields are best-effort and may be None.
         - Cleanup() is idempotent and clears all owned references.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "name",
         "qualname",

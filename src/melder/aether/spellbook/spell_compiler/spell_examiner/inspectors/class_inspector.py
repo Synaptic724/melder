@@ -44,7 +44,7 @@ class ClassInspector(Cleanable):
         "max_repr",
         "data",
     ]
-    utility: type[InspectorUtility] = InspectorUtility
+    utility: ClassVar[type[InspectorUtility]] = InspectorUtility
     def __init__(
             self,
             cls: Type, # The class object to inspect

@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Iterable, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -27,7 +27,7 @@ class SpellSystemNode(Cleanable):
         * ward_id – owning ward (optional).
         * is_root – whether this spell is considered a root for the frame.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_lineage_id",

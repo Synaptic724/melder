@@ -8,9 +8,6 @@ from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus_frame_manager import NexusFrameManager
-if TYPE_CHECKING:
-    from melder.aether.conduit.conduit import Conduit
-    from melder.nexus.nexus_frame_manager import NexusFrameManager
 
 
 class NexusFrameBuilder(Cleanable):

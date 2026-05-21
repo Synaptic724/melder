@@ -1,4 +1,14 @@
-from typing import TYPE_CHECKING, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Set, Tuple, ClassVar
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from mypy_extensions import mypyc_attr
+# Melder imports
+from melder.aether.spellbook.spell_compiler.spell_compiler import (
+    SpellCompiler,
+)
+from melder.aether.spellbook.spell_compiler.validation.validation_system import (
+    SpellValidationSystem,
+)
+from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -7,15 +17,6 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
-
-from melder.aether.spellbook.spell_compiler.spell_compiler import (
-    SpellCompiler,
-)
-from melder.aether.spellbook.spell_compiler.validation.validation_system import (
-    SpellValidationSystem,
-)
-from melder.utilities.general_base.cleanable import Cleanable
 
 
 @mypyc_attr(native_class=True)
@@ -37,12 +38,15 @@ class SpellCompilerSystem(Cleanable):
         - Delegates through the compiled `SpellCompiler` surface for phases
           1-12.
     """
-
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_compiler",
         "_spell_validator",
     ]
-
+    __deletable__ = [
+        "_spell_compiler",
+        "_spell_validator",
+    ]
     def __init__(self) -> None:
         """
             Create a new SpellCrafter for one bound: class: 'Spell`.
@@ -60,24 +64,27 @@ class SpellCompilerSystem(Cleanable):
 
     def cleanup(self) -> None:
         """
-            Deterministically release all crafter-owned phase artifacts.
-            
-            Behaviour:
-                * Cleans and clears structural artifacts from Phases 1-4.
-                * Cleans and clears later blueprint/plan/index artifacts from
-                  Phases 5-11 when present.
-                * Drops cached compiled executor/codegen state.
-                * Resets validation and broken-state flags held by the crafter.
-                * Releases references to the owning spell and shared helper
-                  services without mutating or disposing those external owners.
-            
-            Contract:
-                Cleanup is idempotent. After cleanup, the crafter is unusable and
-                future accesses must fail through `check_cleaned()`.
+        Deterministically release all crafter-owned phase artifacts.
+
+        Behaviour:
+            * Cleans and clears structural artifacts from Phases 1-4.
+            * Cleans and clears later blueprint/plan/index artifacts from
+              Phases 5-11 when present.
+            * Drops cached compiled executor/codegen state.
+            * Resets validation and broken-state flags held by the crafter.
+            * Releases references to the owning spell and shared helper
+              services without mutating or disposing those external owners.
+
+        Contract:
+            Cleanup is idempotent. After cleanup, the crafter is unusable and
+            future accesses must fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
         self._cleaned = True
+        self._spell_compiler.cleanup()
+        if hasattr(self._spell_validator, "cleanup"):
+            self._spell_validator.cleanup()
         del self._spell_validator
         del self._spell_compiler
 

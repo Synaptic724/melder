@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional, List
+from typing import TYPE_CHECKING, Any, Optional, List, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -20,8 +20,9 @@ class SpellSymbolicNode(Cleanable):
 
     For now, it is just a tagged node with an identifier and metadata bag.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["node_id", "kind", "metadata"]
+    __deletable__: ClassVar[List[str]] = ["node_id", "kind", "metadata"]
 
     def __init__(self, node_id: str, kind: str, metadata: Optional[dict[str, Any]] = None) -> None:
         """
@@ -67,8 +68,9 @@ class SpellSymbolicEdge(Cleanable):
     Semantically this is:
         "node_from depends on node_to (optionally via parameter X)".
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["from_node", "to_node", "via_parameter"]
+    __deletable__: ClassVar[List[str]] = ["from_node", "to_node", "via_parameter"]
 
     def __init__(self, from_node: str, to_node: str, via_parameter: Optional[str] = None) -> None:
         """
@@ -112,8 +114,9 @@ class SpellSymbolicGraph(Cleanable):
     No global DAG semantics. No resolution against the Spellbook. This is
     purely a structural description derived from SpellRequirements.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell_id", "nodes", "edges"]
+    __deletable__: ClassVar[List[str]] = ["spell_id", "nodes", "edges"]
 
     def __init__(
             self,
@@ -176,8 +179,9 @@ class SpellResolutionFrame(Cleanable):
     This is the structure that `Meld` / the resolver will eventually walk in
     topological order to construct instances.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell_id", "ordered_node_ids"]
+    __deletable__: ClassVar[List[str]] = ["spell_id", "ordered_node_ids"]
 
     def __init__(self, spell_id: str, ordered_node_ids: Optional[List[str]] = None) -> None:
         """
@@ -217,8 +221,9 @@ class SpellValidationIssue(Cleanable):
     """
     One validation warning or error associated with a spell's resolution state.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["code", "message", "details"]
+    __deletable__: ClassVar[List[str]] = ["code", "message", "details"]
 
     def __init__(self, code: str, message: str, details: Optional[dict[str, Any]] = None) -> None:
         """
@@ -262,8 +267,9 @@ class SpellValidationResult(Cleanable):
     Phase 4 artifact: readiness / health summary for a spell's resolution
     artifacts (requirements + symbolic graph + local frame).
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["is_valid", "errors", "warnings"]
+    __deletable__: ClassVar[List[str]] = ["is_valid", "errors", "warnings"]
 
     def __init__(
             self,
@@ -337,7 +343,7 @@ class SpellResolutionProfile(Cleanable):
     In the initial integration, you will likely populate only `requirements`,
     and leave the others as None until their phases are implemented.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "existence",
@@ -348,6 +354,9 @@ class SpellResolutionProfile(Cleanable):
         "resolution_frame",
         "validation",
     ]
+    __deletable__: ClassVar[List[str]] = ["spell_id", "existence", "spellframe", "binding_name",
+                                          "requirements", "symbolic_graph", "resolution_frame", "validation"]
+
 
     def __init__(
             self,

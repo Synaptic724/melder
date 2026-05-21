@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar, TYPE_CHECKING
+from typing import Any, Optional, Type, TypeVar, TYPE_CHECKING, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -45,7 +45,7 @@ class SpellGeneralProfile(Cleanable):
         spell-owned `.profile` payload.
     """
 
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "profile_name",
         "profile_version",

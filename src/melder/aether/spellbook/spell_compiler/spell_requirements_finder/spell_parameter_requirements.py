@@ -1,6 +1,6 @@
 import inspect
 import threading
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -33,7 +33,7 @@ class SpellParameterRequirement(Cleanable):
         * How DI *might* satisfy it (via type-hint, SpellMap, collection).
         * Optionality and element type info for collections.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",
@@ -51,6 +51,7 @@ class SpellParameterRequirement(Cleanable):
         "_spellmap_default",
     ]
     __deletable__ = [
+        "_lock",
         "_name",
         "_position",
         "_kind",

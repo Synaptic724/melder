@@ -5,7 +5,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus import Nexus
-    from melder.aether.aether import Aether
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode

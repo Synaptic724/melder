@@ -238,14 +238,15 @@ class SpellSystemRootBlueprintBuilder:
         # ------------------------------------------------------------------
         # 3. Add provider -> dependent edges within the reachable subgraph.
         # ------------------------------------------------------------------
-        dag.add_dependencies_bulk(
-            (
-                (provider_id, consumer_id, None, None)
-                for consumer_id in ordered_reachable_ids
-                for provider_id in sorted(dependencies.get(consumer_id) or ())
-                if provider_id in reachable_ids
-            )
-        )
+        dependency_edges = []
+        for consumer_id in ordered_reachable_ids:
+            for provider_id in sorted(dependencies.get(consumer_id) or ()):
+                if provider_id in reachable_ids:
+                    dependency_edges.append(
+                        (provider_id, consumer_id, None, None)
+                    )
+
+        dag.add_dependencies_bulk(dependency_edges)
 
         # ------------------------------------------------------------------
         # 4. Compute a stable topological ordering of node ids.

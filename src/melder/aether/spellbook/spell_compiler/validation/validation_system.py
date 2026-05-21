@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -76,7 +76,7 @@ class SpellValidationSystem(Cleanable):
     and cleaned up afterwards. Strategies are owned by the system and are
     also cleaned when the system is cleaned.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_strategies",

@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Optional, Sequence, List, Iterable
+from typing import Any, Optional, Sequence, List, Iterable, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -36,7 +36,7 @@ class SpellRequirements(Cleanable):
 
     Those concerns are reserved for later phases.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",
@@ -47,6 +47,7 @@ class SpellRequirements(Cleanable):
         "_parameters",
     ]
     __deletable__ = [
+        "_lock",
         "_spell_id",
         "_spell_type",
         "_existence",

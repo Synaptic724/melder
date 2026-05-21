@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -27,13 +27,20 @@ class ResolutionFrame(Cleanable):
     It does NOT know about graph structure or spell details; it only stores values
     keyed by ids/names decided by SpellCrafter/DAG builder.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_errors",
         "_id",
         "_lock",
         "_overrides",
         "_results",
+    ]
+    __deletable__: ClassVar[List[str]] = [
+        "_errors",
+        "_lock",
+        "_overrides",
+        "_results",
+        "_id"
     ]
     def __init__(self, overrides: Optional[Dict[str, Any]] = None) -> None:
         """

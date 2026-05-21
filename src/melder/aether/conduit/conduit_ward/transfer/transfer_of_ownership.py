@@ -1,7 +1,17 @@
 import threading
 import ulid
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    cast,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -56,7 +66,7 @@ class TransferOfOwnership(Cleanable):
         Broader cleanup and post-flip repair flows rely on the locks and
         invariants provided by the subsystems they call into.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     def __init__(
         self,
         *,

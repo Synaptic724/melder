@@ -1,7 +1,7 @@
 import threading
 import ulid
 from types import TracebackType
-from typing import Any
+from typing import Any, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -26,7 +26,7 @@ class Creation(Cleanable):
       `cleanup()` / `close()` / `dispose()` on the wrapped object.
     - The actual disposal decision belongs to `Creations`.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_value",

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -38,7 +38,7 @@ class SpellValidationResult(Cleanable):
     - Convenience properties expose whether any error/warning class is present
       without forcing callers to rescan the issue list manually.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "spell_name",

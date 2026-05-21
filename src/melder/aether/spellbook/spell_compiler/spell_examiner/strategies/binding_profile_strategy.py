@@ -1,5 +1,5 @@
 import inspect
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -21,7 +21,7 @@ class BindingProfileStrategy:
     This is the only strategy used at `Bind` time. It does not depend on
     Spell or any phase artifacts.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ("show_dunders", "max_repr")
 
     def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:

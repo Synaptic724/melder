@@ -1,24 +1,5 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
-    from melder.aether.spellbook.spellbook import Spellbook
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
-        SpellSystemStates,
-    )
-    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-        ExecutionPlan,
-    )
-    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-        SpellCompilerArtifact,
-    )
-    from melder.aether.spellbook.spell_compiler.validation.validation_system import (
-        SpellValidationSystem,
-    )
-    from melder.utilities.synchronization.cancellation_event_signal import (
-        CancellationEvent,
-    )
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, ClassVar
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_1 import (
@@ -57,10 +38,31 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
     CompilerPhase12,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
+        ExecutionPlan,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+    from melder.aether.spellbook.spell_compiler.validation.validation_system import (
+        SpellValidationSystem,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
+
 
 
 @mypyc_attr(native_class=True)
-class SpellCompiler:
+class SpellCompiler(Cleanable):
     """
     Compiler-owned facade over the extracted spell compiler phase surfaces.
 
@@ -77,8 +79,8 @@ class SpellCompiler:
           phase surfaces.
         - Does not instantiate the static helper classes.
     """
-
-    __slots__ = (
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
         "_phase_1",
         "_phase_2",
         "_phase_3",
@@ -87,11 +89,25 @@ class SpellCompiler:
         "_phase_6",
         "_phase_7",
         "_phase_8",
-        "_phase_10",
         "_phase_9",
+        "_phase_10",
         "_phase_11",
         "_phase_12",
-    )
+    ]
+    __deletable__ = [
+        "_phase_1",
+        "_phase_2",
+        "_phase_3",
+        "_phase_4",
+        "_phase_5",
+        "_phase_6",
+        "_phase_7",
+        "_phase_8",
+        "_phase_9",
+        "_phase_10",
+        "_phase_11",
+        "_phase_12",
+    ]
 
     def __init__(self) -> None:
         """
@@ -104,6 +120,7 @@ class SpellCompiler:
                 - Allows callers that already built a resolution profile to avoid
                   duplicating the first requirements extraction step.
         """
+        super().__init__()
         self._phase_1 = CompilerPhase1()
         self._phase_2 = CompilerPhase2()
         self._phase_3 = CompilerPhase3()
@@ -112,10 +129,32 @@ class SpellCompiler:
         self._phase_6 = CompilerPhase6()
         self._phase_7 = CompilerPhase7()
         self._phase_8 = CompilerPhase8()
-        self._phase_10 = CompilerPhase10()
         self._phase_9 = CompilerPhase9()
+        self._phase_10 = CompilerPhase10()
         self._phase_11 = CompilerPhase11()
         self._phase_12 = CompilerPhase12()
+
+    def cleanup(self) -> None:
+        """
+        Clean up all compiler-owned state.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._phase_1
+        del self._phase_2
+        del self._phase_3
+        del self._phase_4
+        del self._phase_5
+        del self._phase_6
+        del self._phase_7
+        del self._phase_8
+        del self._phase_9
+        del self._phase_10
+        del self._phase_11
+        del self._phase_12
+
+
 
     def run_phase_requirements(
             self,

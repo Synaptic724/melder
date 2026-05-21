@@ -1,7 +1,7 @@
 from collections import deque
 from contextvars import ContextVar
 from threading import RLock
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, ClassVar
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -32,7 +32,7 @@ class Creations(Cleanable):
     - cleanup errors are aggregated and raised only after teardown work
       finishes
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_owner_conduit_id",
         "_id",

@@ -1,4 +1,4 @@
-﻿from typing import Optional, Any, Dict
+﻿from typing import Optional, Any, Dict, ClassVar
 from threading import RLock
 from types import TracebackType
 
@@ -35,7 +35,7 @@ class Contract(Cleanable):
         _details_a / _details_b: Per-ward maps of spell_id -> Detail.
         _id: Unique identifier for this contract instance.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     def __init__(self, ward_a: ConduitWard, ward_b: ConduitWard):
         """

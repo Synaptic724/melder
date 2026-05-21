@@ -1,6 +1,6 @@
 import inspect
 from inspect import Parameter
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -32,10 +32,11 @@ class MethodInspector(Cleanable):
     Raises:
         TypeError: If fn is not callable.
     """
-    __melder_internal__ = _mrg.sentinel
-    utility = InspectorUtility
-    max_repr = 120
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    utility: ClassVar[type[InspectorUtility]] = InspectorUtility
+    max_repr: ClassVar[int] = 120
     __slots__ = Cleanable.__slots__ +  ["fn", "_max_repr", "data"]
+    __deletable__ = ["fn", "_max_repr", "data"]
     def __init__(self, fn: Callable[..., Any], *, max_repr: int = 120):
         """
         Initializes the MethodInspector.

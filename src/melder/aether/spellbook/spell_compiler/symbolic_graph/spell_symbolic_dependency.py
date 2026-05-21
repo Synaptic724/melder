@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -68,7 +68,7 @@ class SpellSymbolicDependency(Cleanable):
         For MUTATION_CONTRACT shapes, whether the contract declares
         late binding semantics. For all other shapes, this is None.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

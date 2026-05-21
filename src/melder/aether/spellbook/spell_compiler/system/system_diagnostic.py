@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -35,7 +35,7 @@ class SystemDiagnostic(Cleanable):
         source: Optional strategy identifier that produced the diagnostic.
         details: Optional structured payload for tooling.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_code",
         "_message",

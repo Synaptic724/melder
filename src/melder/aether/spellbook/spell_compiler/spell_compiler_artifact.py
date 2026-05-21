@@ -1,8 +1,8 @@
 import threading
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
     from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationPatchMap, OverridePatchMap
@@ -51,8 +51,43 @@ class SpellCompilerArtifact(Cleanable):
         - Starts empty and additive; existing `SpellCrafter` behavior remains
           authoritative until later slices migrate reads and writes.
     """
-
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "spell_id",
+        "_requirements",
+        "_symbolic_graph",
+        "_resolution_frame",
+        "_validation_result_phase4",
+        "_validated_phase4",
+        "_validation_result_phase6",
+        "_validated_phase6",
+        "_validated",
+        "_root_blueprint_phase5",
+        "_phase8_occurrence_plan_input_signature",
+        "_phase8_occurrence_plan_fast_key",
+        "_occurrence_plan_phase8",
+        "_phase9_injection_plan_input_signature",
+        "_injection_plan_phase9",
+        "_override_patch_map_phase10",
+        "_mutation_patch_map_phase10",
+        "_phase10_patch_maps_input_signature",
+        "_execution_plan_phase11",
+        "_execution_plan_phase11_no_overrides",
+        "_execution_plan_phase11_overrides",
+        "_phase11_no_overrides_plan_signature",
+        "_phase11_no_overrides_transient_schema",
+        "_phase12_no_overrides_executor",
+        "_phase12_no_overrides_executor_signature",
+        "_phase11_no_overrides_input_signature",
+        "_phase11_no_overrides_fast_key",
+        "_codegen_ir",
+        "_phase8_11_codegen_ir_dirty",
+        "_spell_system_index_phase5",
+        "_is_broken",
+        "_entire_dag_blueprint_phase5",
+    ]
+    __deletable__ = [
         "_lock",
         "spell_id",
         "_requirements",

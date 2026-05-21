@@ -3,8 +3,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
-    from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
+    from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+        AethericFrameConfiguration,
+    )
+    from melder.nexus.nexus import Nexus
 
 from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
@@ -20,9 +23,6 @@ from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.aetheric_frame.aetheric_frame_configuration import (
-    AethericFrameConfiguration,
-)
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )

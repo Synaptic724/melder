@@ -1,5 +1,5 @@
 # Melder Imports
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -20,7 +20,7 @@ class ResolutionProfileStrategy:
     This is where we hook into SpellRequirementsFinder and, later, into
     symbolic graph / frame / validation phases.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
 
     def __init__(self) -> None:

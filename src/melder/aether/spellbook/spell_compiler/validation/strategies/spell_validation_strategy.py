@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -21,7 +21,7 @@ class SpellValidationStrategy(Cleanable):
     * Prefer appending issues instead of raising; raising is reserved for
       truly unrecoverable situations.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_name",
         "_description",

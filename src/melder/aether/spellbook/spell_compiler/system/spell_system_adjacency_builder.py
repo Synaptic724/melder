@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Optional, Set
+from typing import TYPE_CHECKING, Dict, Optional, Set, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -26,7 +26,7 @@ class SpellSystemAdjacencyBuilder:
     All higher-level semantics (RootResolutionBlueprints, Phase 6
     validation, etc.) sit on top of this structural view.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = []
 
     @staticmethod

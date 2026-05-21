@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Tuple
+from typing import Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -41,7 +41,7 @@ class TargetSpec:
             The parameter name used for UNIQUE / BROADCAST specs (e.g. ``"logger"``).
             "None" for PATH specs.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     kind: TargetSpecKind
     path: Tuple[str, ...] | None = None
     param_name: str | None = None

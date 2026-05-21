@@ -1,5 +1,5 @@
 import threading
-from typing import List, Optional
+from typing import List, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -41,7 +41,7 @@ class SpellSymbolicGraph(Cleanable):
 
     Those concerns belong to Phase 3 (local frame / DAG) and Phase 4 (validation).
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

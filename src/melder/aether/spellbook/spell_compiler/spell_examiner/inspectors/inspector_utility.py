@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Optional
+from typing import Any, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -22,7 +22,7 @@ class InspectorUtility:
           causes inspection to fail.
         - The utility does not own any mutable runtime state.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:

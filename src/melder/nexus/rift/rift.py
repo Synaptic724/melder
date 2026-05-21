@@ -3,9 +3,6 @@ from typing import Any, Dict, Optional, Sequence, Tuple, TYPE_CHECKING
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.nexus.rift.projection.command_projection import CommandProjection
-from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
@@ -14,10 +11,16 @@ from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.logger.safe_logger import SafeLogger
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus import Nexus
+    from melder.nexus.configuration.rift_configuration import RiftConfiguration
+    from melder.nexus.rift.projection.codegen_projection import CodegenProjection
+    from melder.nexus.rift.projection.command_projection import CommandProjection
+    from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+    from melder.nexus.rift.projection.view_projection import ViewProjection
+    from melder.nexus.rift.rift_space.rift_space import RiftSpace
+    from melder.utilities.logger.safe_logger import SafeLogger
 
 
 class Rift(Cleanable):

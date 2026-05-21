@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -29,7 +29,7 @@ class SpellValidationIssue(Cleanable):
     details:
         Optional extra context for tooling (parameter name, cycle, etc.).
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "severity",
         "code",

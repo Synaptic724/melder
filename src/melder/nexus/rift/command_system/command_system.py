@@ -3,12 +3,12 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
+    from melder.nexus.acl.frame_acl_compiled_access_surface import (
+        CompiledFrameACLAccessSurface,
+    )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aether import Aether
-from melder.nexus.acl.frame_acl_compiled_access_surface import (
-    CompiledFrameACLAccessSurface,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 

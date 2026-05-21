@@ -1,5 +1,5 @@
 ﻿import threading
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
@@ -47,7 +47,7 @@ class MutationResearch(Cleanable):
           future facades when needed.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     _instance = None
     _lock = threading.RLock()
     _initialized = False

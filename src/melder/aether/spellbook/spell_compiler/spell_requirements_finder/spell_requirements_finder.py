@@ -4,12 +4,8 @@ import inspect
 import threading
 import typing
 import types
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
-    from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from mypy_extensions import mypyc_attr
 
 # Melder imports
@@ -27,6 +23,11 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.general_base.cleanable import Cleanable
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+
+
 @mypyc_attr(native_class=True)
 class SpellRequirementsFinder(Cleanable):
     """
@@ -69,7 +70,7 @@ class SpellRequirementsFinder(Cleanable):
     intentionally anchors its output to the current spell version rather than
     any legacy unversioned spell id.
     """
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell",
         "_requirements",
@@ -81,7 +82,7 @@ class SpellRequirementsFinder(Cleanable):
         "_lock",
     ]
 
-    _TYPING_ALIASES: Dict[str, Any] = {
+    _TYPING_ALIASES: ClassVar[Dict[str, object]] = {
         "Optional": typing.Optional,
         "Union": typing.Union,
         "List": typing.List,

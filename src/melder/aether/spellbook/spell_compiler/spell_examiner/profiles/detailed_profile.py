@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, ClassVar
 from types import MappingProxyType
 
 from mypy_extensions import mypyc_attr
@@ -54,7 +54,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
         adds the richer inspector payloads.
     """
 
-    #__melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellGeneralProfile.__slots__ + [
         "_show_dunders",
         "_max_repr",

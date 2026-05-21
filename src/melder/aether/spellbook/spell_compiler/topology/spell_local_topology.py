@@ -33,8 +33,8 @@ class SpellSocketDescriptor:
         socket_kind:
             The logical kind of socket:
 
-            * NORMAL           – standard DI edge or plain parameter socket.
-            * SPELL_CONTRACT   – cross-conduit spell contract socket.
+            * NORMAL – standard DI edge or plain parameter socket.
+            * SPELL_CONTRACT – cross-conduit spell contract socket.
             * MUTATION_CONTRACT – mutation contract socket.
 
         is_collection:
@@ -44,22 +44,22 @@ class SpellSocketDescriptor:
             True if the parameter is optional / has a default.
 
         target_spell_ids:
-            The direct dependency spell version IDs that this socket *actually*
+            The direct dependency spells version IDs that this socket *actually*
             resolved to during Phase 3, if any.
 
             For contract / mutation sockets that are not yet resolved, this
             will typically be an empty tuple.
 
         dependency_key:
-            Canonical ``(frame_key, binding_key)`` for NORMAL DI sockets.
+            Canonical "(frame_key, binding_key)" for NORMAL DI sockets.
             This is populated for single/collection/SpellMap sockets that
             participate in DI resolution. For collection sockets, the frame
             key is used for targeted revalidation, while the binding key
             remains informational.
 
         contract_key:
-            Canonical ``(frame_key, binding_key)`` for contract sockets.
-            This is populated for SPELL_CONTRACT and MUTATION_CONTRACT
+            Canonical "(frame_key, binding_key)" for contract sockets.
+            This is populated with SPELL_CONTRACT and MUTATION_CONTRACT
             sockets to support system-level contract validation.
 
         contract_late_binding:
@@ -84,7 +84,7 @@ class SpellLocalTopology(Cleanable):
     Local topology view for a single spell's constructor.
 
     This is intentionally small and immutable-ish. It is produced once
-    during SpellCrafter Phase 3 and handed to :class:`SpellSystemStates`
+    during SpellCrafter Phase 3 and handed to: class:`SpellSystemStates`
     for aggregation, change-control, and eventual blueprint building.
 
     Contract:
