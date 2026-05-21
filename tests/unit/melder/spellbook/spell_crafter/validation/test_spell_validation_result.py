@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from typing import cast
 
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
@@ -180,6 +181,58 @@ def test_has_warnings_true_when_any_warning_present() -> None:
     assert result.has_warnings is True
 
 
+def test_errors_property_filters_only_error_issues() -> None:
+    """
+    Purpose:
+        Ensure the split error view reflects only error-severity issues.
+    Contract:
+        errors returns a detached list containing only issues whose severity is
+        "error".
+    Returns:
+        None.
+    Raises:
+        AssertionError: If filtering is incorrect.
+    """
+    warning = SpellValidationIssue("warning", "W", "warn")
+    error = SpellValidationIssue("error", "E", "err")
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[warning, error],
+    )
+
+    errors = result.errors
+
+    assert errors == [error]
+    assert errors is not result.issues
+
+
+def test_warnings_property_filters_only_warning_issues() -> None:
+    """
+    Purpose:
+        Ensure the split warning view reflects only warning-severity issues.
+    Contract:
+        warnings returns a detached list containing only issues whose severity
+        is "warning".
+    Returns:
+        None.
+    Raises:
+        AssertionError: If filtering is incorrect.
+    """
+    warning = SpellValidationIssue("warning", "W", "warn")
+    error = SpellValidationIssue("error", "E", "err")
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[warning, error],
+    )
+
+    warnings = result.warnings
+
+    assert warnings == [warning]
+    assert warnings is not result.issues
+
+
 def test_has_warnings_false_when_no_warnings() -> None:
     """
     Purpose:
@@ -226,7 +279,11 @@ def test_cleanup_calls_issue_cleanup() -> None:
         AssertionError: If issue cleanup is not invoked.
     """
     issue = _IssueStub()
-    result = SpellValidationResult(spell_id="id", spell_name="name", issues=[issue])
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[cast(SpellValidationIssue, issue)],
+    )
     result.cleanup()
     assert issue.cleanup_calls == 1
 
@@ -243,7 +300,11 @@ def test_cleanup_swallows_issue_cleanup_errors() -> None:
         AssertionError: If cleanup raises or cleaned flag is false.
     """
     issue = _IssueStub(raise_on_cleanup=True)
-    result = SpellValidationResult(spell_id="id", spell_name="name", issues=[issue])
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[cast(SpellValidationIssue, issue)],
+    )
     result.cleanup()
     assert result.cleaned is True
 
@@ -277,7 +338,11 @@ def test_cleanup_returns_immediately_when_already_cleaned() -> None:
         AssertionError: If cleanup work is repeated after the result is cleaned.
     """
     issue = _IssueStub()
-    result = SpellValidationResult(spell_id="id", spell_name="name", issues=[issue])
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[cast(SpellValidationIssue, issue)],
+    )
 
     result.cleanup()
     assert issue.cleanup_calls == 1

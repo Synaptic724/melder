@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -7,7 +8,13 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
+    SpellValidationResult,
+)
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 
 def test_spellbook_validation_error_includes_spell_summary() -> None:
@@ -27,7 +34,7 @@ def test_spellbook_validation_error_includes_spell_summary() -> None:
         spellframe="frame-1",
     )
 
-    error = SpellbookValidationError([spell])
+    error = SpellbookValidationError([cast("Spell", spell)])
     message = str(error)
 
     assert "Broken spells" in message
@@ -153,7 +160,7 @@ def test_spellbook_validation_error_includes_phase_diagnostics() -> None:
         phase4=_Phase4Result([issue]),
         phase6=_Phase6State([diag], []),
     )
-    error = SpellbookValidationError([spell])
+    error = SpellbookValidationError([cast("Spell", spell)])
     message = str(error)
 
     assert "Phase 4 issues" in message
@@ -162,6 +169,45 @@ def test_spellbook_validation_error_includes_phase_diagnostics() -> None:
     assert "Phase 6 diagnostics" in message
     assert "DIAG_CODE" in message
     assert "DiagStrategy" in message
+
+
+def test_spellbook_validation_error_accepts_live_phase4_result() -> None:
+    """
+    Purpose:
+        Verify the exception renderer works against the live Phase 4 result
+        type rather than only stubbed objects.
+    Contract:
+        A real SpellValidationResult with one issue renders the issue details
+        in the formatted exception message.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live Phase 4 result is not rendered correctly.
+    """
+    issue = SpellValidationIssue(
+        severity="error",
+        code="LIVE_PHASE4",
+        message="Live phase4 issue.",
+        source="LiveStrategy",
+    )
+    phase4_result = SpellValidationResult(
+        spell_id="spell-1",
+        spell_name="RootSpell",
+        issues=[issue],
+    )
+    spell = SimpleNamespace(
+        spell_name="RootSpell",
+        spell_id="spell-1",
+        spellframe="frame-1",
+        validation_result_phase4=phase4_result,
+        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
+    )
+
+    error = SpellbookValidationError([cast("Spell", spell)])
+    message = str(error)
+
+    assert "LIVE_PHASE4" in message
+    assert "LiveStrategy" in message
 
 
 def test_spellbook_validation_error_message_example_without_diagnostics() -> None:
@@ -181,7 +227,7 @@ def test_spellbook_validation_error_message_example_without_diagnostics() -> Non
         spellframe="frame-1",
     )
 
-    error = SpellbookValidationError([spell])
+    error = SpellbookValidationError([cast("Spell", spell)])
     message = str(error)
 
     expected = "\n".join(
@@ -236,7 +282,7 @@ def test_spellbook_validation_error_message_example_with_diagnostics() -> None:
         validation_result_phase6=SimpleNamespace(errors=[diag], warnings=[]),
     )
 
-    error = SpellbookValidationError([spell])
+    error = SpellbookValidationError([cast("Spell", spell)])
     message = str(error)
 
     expected = "\n".join(
