@@ -1,18 +1,20 @@
-import threading
+﻿import threading
 from typing import TYPE_CHECKING, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduit import IConduit
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.mutation_research.mutation_research import MutationResearch
 
 
@@ -44,7 +46,7 @@ class MutationConduit(Cleanable):
     def __init__(
             self,
             *,
-            conduit: IConduit,
+            conduit: Conduit,
             mutation_research: "MutationResearch",
             spell_system_states: SpellSystemStates,
             change_control_manager: ChangeControlManager,
@@ -66,7 +68,7 @@ class MutationConduit(Cleanable):
             raise ValueError("change_control_manager cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._conduit: IConduit = conduit
+        self._conduit: Conduit = conduit
         self._mutation_research = mutation_research
         self._spell_system_states: SpellSystemStates = spell_system_states
         self._change_control_manager: ChangeControlManager = change_control_manager
@@ -103,12 +105,12 @@ class MutationConduit(Cleanable):
         return self._id
 
     @property
-    def conduit(self) -> IConduit:
+    def conduit(self) -> Conduit:
         """
         Return the underlying conduit reference.
 
         Returns:
-            IConduit: Underlying conduit.
+            Conduit: Underlying conduit.
         """
         self.check_cleaned()
         return self._conduit
@@ -145,4 +147,5 @@ class MutationConduit(Cleanable):
         """
         self.check_cleaned()
         return self._change_control_manager
+
 

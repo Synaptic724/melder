@@ -16,15 +16,8 @@ from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationS
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-if TYPE_CHECKING:
-    from melder.aether.spellbook.bind.spell_index import SpellIndex
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
-from melder.utilities.interfaces.iunitofwork import UnitOfWork
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces.iaether import Aether
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.existence.existence import Existence
@@ -37,6 +30,12 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.nexus import Nexus
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.utilities.synchronization.unit_of_work import UnitOfWork
 
 #region Spellbook
 @mypyc_attr(native_class=True)
@@ -184,7 +183,7 @@ and logging.
         self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
-        self._conduit: Optional[IConduit] = None
+        self._conduit: Optional[Conduit] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
@@ -432,7 +431,7 @@ and logging.
 
     #endregion Disposal
     #region Context Manager
-    def __enter__(self) -> Spellbook:
+    def __enter__(self) -> "Spellbook":
         """
         Enter the Spellbook lock context and return `self`.
 
@@ -538,7 +537,7 @@ and logging.
         """
         return spell_index
 
-    def _get_required_conduit_surface(self) -> IConduit:
+    def _get_required_conduit_surface(self) -> Conduit:
         """
         Return the live-conjured conduit surface or raise.
         """
@@ -1519,7 +1518,7 @@ and logging.
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[IConduit]:
+    ) -> Optional[Conduit]:
         """
         Internal
 
@@ -1533,7 +1532,7 @@ and logging.
                 Spellbook's current frame.
 
         Returns:
-            Optional[IConduit]:
+            Optional[Conduit]:
                 Owning conduit when found, otherwise "None".
         """
         if aetheric_frame_name == "default":
@@ -3184,7 +3183,7 @@ and logging.
         """
         self._spellbook_validation_required = bool(required)
 
-    def _register_conduit_with_risk_manager(self, conduit: IConduit) -> None:
+    def _register_conduit_with_risk_manager(self, conduit: Conduit) -> None:
         """
         Internal
 
@@ -3434,7 +3433,7 @@ and logging.
         )
         return self._nexus_publish_enabled
 
-    def _publish_nexus_state_for_conjure(self, conduit: IConduit) -> None:
+    def _publish_nexus_state_for_conjure(self, conduit: Conduit) -> None:
         """
         Internal
 
@@ -3612,7 +3611,7 @@ and logging.
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: Optional[str] = None, conduit_logger: Optional[Any] = None) -> IConduit:
+    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: Optional[str] = None, conduit_logger: Optional[Any] = None) -> Conduit:
         """
         Public API
 
@@ -3883,6 +3882,7 @@ and logging.
 
     #endregion
 #endregion
+
 
 
 

@@ -1,7 +1,8 @@
-import threading
+﻿import threading
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
     from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -24,9 +25,6 @@ from melder.mutation_research.research.spell.node.spell_mutation_node import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduit import IConduit
-
-
 class MutationResearch(Cleanable):
     """
     Singleton mutation-research root hosted by `Aether`.
@@ -321,7 +319,7 @@ class MutationResearch(Cleanable):
         with self._lock:
             self._activated = False
 
-    def create_mutation_conduit(self, conduit: IConduit) -> MutationConduit:
+    def create_mutation_conduit(self, conduit: Conduit) -> MutationConduit:
         """
         Create one placeholder mutation-conduit facade for a live conduit.
 
@@ -616,4 +614,5 @@ class MutationResearch(Cleanable):
             raise RuntimeError(
                 "MutationResearchConfiguration must be configured before this operation."
             )
+
 

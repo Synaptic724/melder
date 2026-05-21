@@ -1,5 +1,4 @@
 import typing
-import weakref
 
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
@@ -7,9 +6,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.configuration.system_state import SystemState
 
 
-_TEST_FRAME_POSTURES: "weakref.WeakKeyDictionary[SpellbookConfiguration, AethericFrameConfiguration]" = (
-    weakref.WeakKeyDictionary()
-)
+_TEST_FRAME_POSTURES: dict[int, AethericFrameConfiguration] = {}
 
 
 def _get_or_create_detached_frame_posture(
@@ -18,7 +15,8 @@ def _get_or_create_detached_frame_posture(
     """
     Return one detached frame-posture copy for the given SpellbookConfiguration.
     """
-    frame_configuration = _TEST_FRAME_POSTURES.get(configuration)
+    configuration_id = id(configuration)
+    frame_configuration = _TEST_FRAME_POSTURES.get(configuration_id)
     if frame_configuration is None:
         frame_configuration = AethericFrameConfiguration(
             origin_spellbook_id=None,
@@ -27,7 +25,7 @@ def _get_or_create_detached_frame_posture(
             rift_enabled=False,
             shared_framewide_spellbook_configuration=False,
         )
-        _TEST_FRAME_POSTURES[configuration] = frame_configuration
+        _TEST_FRAME_POSTURES[configuration_id] = frame_configuration
     return frame_configuration
 
 

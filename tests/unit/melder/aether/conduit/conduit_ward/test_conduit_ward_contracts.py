@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import threading
 from types import SimpleNamespace
@@ -15,7 +15,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell import Spell
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.iconduit import IConduit
+from melder.aether.conduit.conduit import Conduit
 
 
 class ProtocolStub:
@@ -477,9 +477,6 @@ class FakeConduit:
             if spell is not None:
                 return spell
         return None
-
-
-_attach_protocol_stubs(FakeConduit, IConduit)
 
 
 def _build_conduit_pair(
@@ -3191,3 +3188,4 @@ def test_get_spell_in_contracts_returns_none_when_no_contracts(
     _, borrower = conduit_pair
 
     assert borrower._conduit_ward._get_spell_in_contracts("spell-44") is None
+

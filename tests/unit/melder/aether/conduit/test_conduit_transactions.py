@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+﻿from unittest.mock import MagicMock
 
 import pytest
 
@@ -168,7 +168,7 @@ def test_conduit_begin_transaction_rejects_non_conduit_objects_in_link_list(
     """Link transactions should reject non-conduit objects in the conduits list."""
     spellbook_stub.begin_transaction = MagicMock()
 
-    with pytest.raises(TypeError, match="IConduit"):
+    with pytest.raises(TypeError, match="Conduit"):
         conduit_dynamic_normal.begin_transaction(
             ChangeTransactionType.LINK,
             conduits=[conduit_dynamic_normal, object()],
@@ -303,4 +303,5 @@ def test_conduit_transaction_context_ends_on_exception(
     spellbook_stub.end_transaction.assert_called_once_with(
         transaction_type=ChangeTransactionType.BIND
     )
+
 

@@ -1,5 +1,5 @@
-import threading
-from typing import Any, Dict, Optional, Sequence, Tuple
+﻿import threading
+from typing import Any, Dict, Optional, Sequence, Tuple, TYPE_CHECKING
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
@@ -14,14 +14,13 @@ from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.iconduit import IConduit
-
-from melder.utilities.interfaces.irift import IRift
-if TYPE_CHECKING:
-    from melder.nexus.nexus import Nexus
 from melder.utilities.logger.safe_logger import SafeLogger
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+    from melder.nexus.nexus import Nexus
 
-class Rift(Cleanable, IRift):
+
+class Rift(Cleanable):
     """
     Internal
 
@@ -929,7 +928,7 @@ class Rift(Cleanable, IRift):
                 space_id=space_id,
             )
         return primary_space
-    def get_nexus_frame(self, frame_name: Optional[str] = None) -> IConduit:
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> Conduit:
         """
         Internal
 
@@ -944,7 +943,7 @@ class Rift(Cleanable, IRift):
             identity and the current Nexus/Rift frame policy.
 
         Returns:
-            IConduit: Root conduit for the resolved Nexus-managed frame.
+            Conduit: Root conduit for the resolved Nexus-managed frame.
         """
         self.check_cleaned()
         return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
@@ -954,7 +953,7 @@ class Rift(Cleanable, IRift):
             frame_name: Optional[str] = None,
             root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Internal
 
@@ -973,7 +972,7 @@ class Rift(Cleanable, IRift):
             identity and current frame policy.
 
         Returns:
-            IConduit: Root conduit for the newly created frame.
+            Conduit: Root conduit for the newly created frame.
 
         Raises:
             ValueError: If the target Nexus-managed frame already exists or
@@ -1044,6 +1043,7 @@ class Rift(Cleanable, IRift):
             "on_nexus_frame_disposed",
         )
         return
+
 
 
 

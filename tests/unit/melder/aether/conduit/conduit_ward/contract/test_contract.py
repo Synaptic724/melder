@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from unittest.mock import MagicMock, patch
 from threading import RLock
 from types import SimpleNamespace
@@ -9,7 +9,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
-from melder.utilities.interfaces.iconduit import IConduit
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 # Fixtures
@@ -23,9 +23,9 @@ def mock_conduit_ward_a():
     Returns:
         MagicMock: Ward A mock instance.
     """
-    ward = MagicMock(spec=ConduitWard)
+    ward = MagicMock()
     ward._id = "ward_a_id"
-    ward._conduit = MagicMock(spec=IConduit)
+    ward._conduit = MagicMock()
     ward._conduit._id = "conduit_a_id"
     ward._conduit_ward = ward # Self-reference for _get_peer
     return ward
@@ -40,9 +40,9 @@ def mock_conduit_ward_b():
     Returns:
         MagicMock: Ward B mock instance.
     """
-    ward = MagicMock(spec=ConduitWard)
+    ward = MagicMock()
     ward._id = "ward_b_id"
-    ward._conduit = MagicMock(spec=IConduit)
+    ward._conduit = MagicMock()
     ward._conduit._id = "conduit_b_id"
     ward._conduit_ward = ward # Self-reference for _get_peer
     return ward
@@ -323,7 +323,7 @@ def test_get_peer_raises_for_invalid_ward(contract):
     Raises:
         AssertionError: If the expected ValueError is not raised.
     """
-    invalid_ward = MagicMock(spec=ConduitWard)
+    invalid_ward = MagicMock()
     with pytest.raises(ValueError, match="Ward is not a member of this contract."):
         contract._get_peer(invalid_ward)
 
@@ -399,7 +399,7 @@ def test_get_detail_map_raises_for_invalid_ward(contract):
     Raises:
         AssertionError: If the expected ValueError is not raised.
     """
-    invalid_ward = MagicMock(spec=ConduitWard)
+    invalid_ward = MagicMock()
     with pytest.raises(ValueError, match="Invalid ward for contract access."):
         contract._get_detail_map(invalid_ward)
 
@@ -934,3 +934,5 @@ def test_grant_spells_to_ward_raises_for_missing_spell_id(contract, mock_conduit
 
     with pytest.raises(ValueError, match="Spell id"):
         contract._grant(mock_conduit_ward_a, ["spell_2"], Permissions.read)
+
+

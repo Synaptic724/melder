@@ -6,6 +6,8 @@ from types import ModuleType, TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Tuple, Callable, Iterable, Dict, Generator
 from mypy_extensions import mypyc_attr
 
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+
 if TYPE_CHECKING:
     from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
@@ -20,11 +22,8 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces.inexus import Nexus
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
 from melder.utilities.synchronization.creation_gate import CreationGate
@@ -46,7 +45,19 @@ if TYPE_CHECKING:
 
 #region Conduit
 @mypyc_attr(native_class=True)
-class Conduit(Cleanable, IConduit):
+def _is_conduit_surface(value: Any) -> bool:
+    """
+    Return whether one object exposes the runtime conduit surface.
+    """
+    return (
+        value is not None
+        and hasattr(value, "_id")
+        and hasattr(value, "_conduit_ward")
+    )
+
+
+@mypyc_attr(native_class=True)
+class Conduit(Cleanable):
     """
     A `Conduit` is the runtime scope, execution boundary, and contract-aware access
     surface for one branch of the Melder graph.
@@ -818,7 +829,7 @@ class Conduit(Cleanable, IConduit):
 
 
     #region Context Management
-    def __enter__(self) -> IConduit:
+    def __enter__(self) -> Conduit:
         """
         Public API
 
@@ -1388,7 +1399,7 @@ class Conduit(Cleanable, IConduit):
 
         self._publish_conduit_record_to_nexus()
 
-    def create_lesser_conduit(self, logger: Any | None = None) -> IConduit:
+    def create_lesser_conduit(self, logger: Any | None = None) -> Conduit:
         """
         Public API
 
@@ -1423,7 +1434,7 @@ class Conduit(Cleanable, IConduit):
                        hook(parent_conduit, new_conduit)
 
         Returns:
-            IConduit: The newly created lesser Conduit instance.
+            Conduit: The newly created lesser Conduit instance.
 
         Raises:
             RuntimeError: If the parent Conduit is cleaned.
@@ -1431,7 +1442,7 @@ class Conduit(Cleanable, IConduit):
         self.check_cleaned()
 
         with self._lock:
-            root_conduit: Optional[IConduit]
+            root_conduit: Optional[Conduit]
             if self._conduit_state == ConduitState.normal:
                 root_conduit = self
             else:
@@ -1511,7 +1522,7 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[IConduit]:
+    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Conduit]:
         """
         Public API
 
@@ -1524,7 +1535,7 @@ class Conduit(Cleanable, IConduit):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[IConduit]: The conduit that registered the spell, or None if not found.
+            Optional[Conduit]: The conduit that registered the spell, or None if not found.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1751,7 +1762,7 @@ class Conduit(Cleanable, IConduit):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[IConduit]] = None,
+            conduits: Optional[Iterable[Conduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -1837,13 +1848,13 @@ class Conduit(Cleanable, IConduit):
         conduit_values: list[str] = []
         if conduits:
             for conduit in conduits:
-                if not isinstance(conduit, IConduit):
+                if not _is_conduit_surface(conduit):
                     self._logger.error(
                         "begin_transaction received non-conduit object",
                         "begin_transaction",
                     )
                     raise TypeError(
-                        "conduits must contain IConduit instances."
+                        "conduits must contain Conduit-compatible objects."
                     )
                 if conduit._id not in conduit_values:
                     conduit_values.append(conduit._id)
@@ -1934,7 +1945,7 @@ class Conduit(Cleanable, IConduit):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[IConduit]] = None,
+            conduits: Optional[Iterable[Conduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -2263,7 +2274,7 @@ class Conduit(Cleanable, IConduit):
             self,
             *,
             spell: Spell | str | SpellIndex,
-            target_conduit: IConduit,
+            target_conduit: Conduit,
             move_creations: bool = False,
             include_dependencies: bool = False,
             force_unshare: bool = True,
@@ -2694,7 +2705,7 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Meld
     #region Conduit Ward API
-    def link(self, target_conduit: IConduit) -> bool:
+    def link(self, target_conduit: Conduit) -> bool:
         """
         Public API
 
@@ -2708,7 +2719,7 @@ class Conduit(Cleanable, IConduit):
             - "on_conduit_post_link(self, target_conduit)"
 
         Args:
-            target_conduit (IConduit): The target Conduit to link to.
+            target_conduit (Conduit): The target Conduit to link to.
 
         Returns:
             bool: True if the linking process succeeds.
@@ -2716,7 +2727,7 @@ class Conduit(Cleanable, IConduit):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
-            TypeError: If `target_conduit` is not an `IConduit` instance.
+            TypeError: If `target_conduit` is not an `Conduit` instance.
             RuntimeError: If the target conduit does not have a valid creation context.
             RuntimeError: If the target conduit belongs to a different `AethericFrame`.
         """
@@ -2724,9 +2735,9 @@ class Conduit(Cleanable, IConduit):
         if not self.__dynamic_environment__:
             self._logger.error("link in non-dynamic env", "link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        if not isinstance(target_conduit, IConduit):
-            self._logger.error("link target not IConduit", "link")
-            raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
+        if not _is_conduit_surface(target_conduit):
+            self._logger.error("link target not Conduit-compatible", "link")
+            raise TypeError(f"Expected Conduit-compatible object, got {type(target_conduit).__name__}")
         if not target_conduit._id:
             self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
@@ -2750,7 +2761,7 @@ class Conduit(Cleanable, IConduit):
 
         return linked
 
-    def sever_link(self, target_conduit: IConduit) -> bool:
+    def sever_link(self, target_conduit: Conduit) -> bool:
         """
         Public API
 
@@ -2764,7 +2775,7 @@ class Conduit(Cleanable, IConduit):
             - "on_conduit_post_unlink(self, target_conduit)"
 
         Args:
-            target_conduit (IConduit): The target Conduit whose link to sever.
+            target_conduit (Conduit): The target Conduit whose link to sever.
 
         Returns:
             bool: True if the link was successfully severed.
@@ -2797,7 +2808,7 @@ class Conduit(Cleanable, IConduit):
 
         return unlinked
 
-    def get_links(self) -> list[IConduit]:
+    def get_links(self) -> list[Conduit]:
         """
         Public API
 
@@ -2819,7 +2830,7 @@ class Conduit(Cleanable, IConduit):
         with self._lock:
             return self._conduit_ward._get_links()
 
-    def get_lesser_conduit(self, conduit_id: str) -> Optional[IConduit]:
+    def get_lesser_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """
         Internal
 
@@ -2829,7 +2840,7 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str): The ID of the lesser conduit to retrieve.
 
         Returns:
-            Optional[IConduit]: The linked lesser conduit if found, otherwise None.
+            Optional[Conduit]: The linked lesser conduit if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2839,7 +2850,7 @@ class Conduit(Cleanable, IConduit):
             return self._conduit_ward._get_lesser_conduit(conduit_id)
 
 
-    def get_initiated_conduit(self, conduit_id: str) -> Optional[IConduit]:
+    def get_initiated_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """
         Public API
 
@@ -2852,7 +2863,7 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str): The ID of the target conduit this conduit linked to.
 
         Returns:
-            Optional[IConduit]: The target conduit if the link exists, otherwise None.
+            Optional[Conduit]: The target conduit if the link exists, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2862,7 +2873,7 @@ class Conduit(Cleanable, IConduit):
             return self._conduit_ward._get_initiated_conduit(conduit_id)
 
 
-    def get_provider_conduit(self, conduit_id: str) -> Optional[IConduit]:
+    def get_provider_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """
         Public API
 
@@ -2875,7 +2886,7 @@ class Conduit(Cleanable, IConduit):
             conduit_id (str): The ID of the source conduit that linked to this one.
 
         Returns:
-            Optional[IConduit]: The source conduit if the link exists, otherwise None.
+            Optional[Conduit]: The source conduit if the link exists, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2885,7 +2896,7 @@ class Conduit(Cleanable, IConduit):
             return self._conduit_ward._get_provider_conduit(conduit_id)
 
 
-    def get_initiated_conduits(self) -> list[IConduit]:
+    def get_initiated_conduits(self) -> list[Conduit]:
         """
         Public API
 
@@ -2894,7 +2905,7 @@ class Conduit(Cleanable, IConduit):
         This is useful for understanding the dependencies and relationships initiated by this conduit.
 
         Returns:
-            list[IConduit]: A list of conduits this conduit linked to.
+            list[Conduit]: A list of conduits this conduit linked to.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2903,7 +2914,7 @@ class Conduit(Cleanable, IConduit):
         with self._lock:
             return self._conduit_ward._get_initiated_conduits()
 
-    def get_provider_conduits(self) -> list[IConduit]:
+    def get_provider_conduits(self) -> list[Conduit]:
         """
         Public API
 
@@ -2912,7 +2923,7 @@ class Conduit(Cleanable, IConduit):
         These are the conduits that depend on this one for contracted spells.
 
         Returns:
-            list[IConduit]: A list of conduits that have linked to this conduit as the provider.
+            list[Conduit]: A list of conduits that have linked to this conduit as the provider.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -3084,7 +3095,7 @@ class Conduit(Cleanable, IConduit):
     def _resolve_contract_peer_ids(
             self,
             *,
-            conduit: Optional[IConduit],
+            conduit: Optional[Conduit],
             conduit_id: Optional[str],
             allow_all_links: bool,
     ) -> Tuple[str, ...]:
@@ -3131,7 +3142,7 @@ class Conduit(Cleanable, IConduit):
     def _require_link_transaction_for_contract(
             self,
             *,
-            conduit: Optional[IConduit],
+            conduit: Optional[Conduit],
             conduit_id: Optional[str],
             allow_all_links: bool,
     ) -> None:
@@ -3226,7 +3237,7 @@ class Conduit(Cleanable, IConduit):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -3249,7 +3260,7 @@ class Conduit(Cleanable, IConduit):
         Args:
             spell (Spell, optional): The spell object to contract.
             spell_id (str, optional): The unique ID of the spell to contract.
-            conduit (IConduit, optional): The target conduit to contract with.
+            conduit (Conduit, optional): The target conduit to contract with.
             conduit_id (str, optional): The str of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level granted for this spell (default is "create").
             aetheric_frame (str): Optional frame override used to locate the target conduit.
@@ -3299,7 +3310,7 @@ class Conduit(Cleanable, IConduit):
     def add_spells_to_contract(
             self,
             spell_ids: list[str],
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -3316,7 +3327,7 @@ class Conduit(Cleanable, IConduit):
 
         Args:
             spell_ids (list[str]): List of spell IDs to contract.
-            conduit (IConduit, optional): The target conduit to contract with.
+            conduit (Conduit, optional): The target conduit to contract with.
             conduit_id (str, optional): The id of the target conduit (used if `conduit` is not provided).
             permissions (str): The permission level granted for all spells (default is "create").
             aetheric_frame (str): Optional frame override used to locate the target conduit.
@@ -3377,7 +3388,7 @@ class Conduit(Cleanable, IConduit):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             root_spell_id: Optional[str] = None,
             aetheric_frame: str = "default",
@@ -3393,7 +3404,7 @@ class Conduit(Cleanable, IConduit):
         Args:
             spell (Spell, optional): The spell object to remove.
             spell_id (str, optional): The unique ID of the spell to remove.
-            conduit (IConduit, optional): The target conduit involved in the contract.
+            conduit (Conduit, optional): The target conduit involved in the contract.
             conduit_id (str, optional): id of the target conduit (used if `conduit` not provided).
             aetheric_frame (str): Optional frame override to resolve the target conduit.
 
@@ -3435,7 +3446,7 @@ class Conduit(Cleanable, IConduit):
             self,
             *,
             spell_ids: Optional[list[str]] = None,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             root_spell_id: Optional[str] = None,
             aetheric_frame: str = "default",
@@ -3449,7 +3460,7 @@ class Conduit(Cleanable, IConduit):
 
         Args:
             spell_ids (list[str], optional): List of spell IDs to remove.
-            conduit (IConduit, optional): Target conduit object.
+            conduit (Conduit, optional): Target conduit object.
             conduit_id (str, optional): str of target conduit (used if `conduit` is not provided).
             aetheric_frame (str): Optional frame override.
             root_spell_id (str, optional): str of root spell ID (used if `conduit` is not provided).
@@ -3499,7 +3510,7 @@ class Conduit(Cleanable, IConduit):
 
         return normalized
 
-    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: Optional[IConduit] = None,
+    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: Optional[Conduit] = None,
                                    conduit_id: Optional[str] = None, aetheric_frame: str = "default") -> dict:
         """
         Public API
@@ -3529,7 +3540,7 @@ class Conduit(Cleanable, IConduit):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -3556,7 +3567,7 @@ class Conduit(Cleanable, IConduit):
     def _remove_all_spells_from_contract(
             self,
             *,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> bool | None:
@@ -3569,7 +3580,7 @@ class Conduit(Cleanable, IConduit):
         resetting the spell relationship between the two conduits.
 
         Args:
-            conduit (IConduit, optional): Target conduit object.
+            conduit (Conduit, optional): Target conduit object.
             conduit_id (str, optional): str of target conduit (used if `conduit` is not provided).
             aetheric_frame (str): Optional frame override.
 
@@ -3706,7 +3717,7 @@ class Conduit(Cleanable, IConduit):
         return self._conduit_ward._get_spells_in_contract_by_conduit_name(conduit_name)
 
 
-    def get_contracted_conduits(self) -> list[Tuple[str, IConduit]] | None:
+    def get_contracted_conduits(self) -> list[Tuple[str, Conduit]] | None:
         """
         Public API
 
@@ -3715,7 +3726,7 @@ class Conduit(Cleanable, IConduit):
         Each returned conduit represents a peer in the current dynamic spell network.
 
         Returns:
-            list[Tuple[str, IConduit]] | None: List of (`conduit_id`, `IConduit`) tuples, or None if no contracts exist.
+            list[Tuple[str, Conduit]] | None: List of (`conduit_id`, `Conduit`) tuples, or None if no contracts exist.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
@@ -3839,10 +3850,10 @@ class Conduit(Cleanable, IConduit):
     #region Hooks
     def _resolve_peer_conduit_for_contract_hooks(
             self,
-            conduit: IConduit | None,
+            conduit: Conduit | None,
             conduit_id: str | None,
             aetheric_frame: str,
-    ) -> Optional[IConduit]:
+    ) -> Optional[Conduit]:
         """
         Internal
 
@@ -3857,7 +3868,7 @@ class Conduit(Cleanable, IConduit):
         possible.
 
         Args:
-            conduit (IConduit | None):
+            conduit (Conduit | None):
                 Optional direct conduit instance supplied by the caller.
             conduit_id (str | None):
                 Optional conduit id, used when `conduit` is not provided.
@@ -3865,7 +3876,7 @@ class Conduit(Cleanable, IConduit):
                 Frame hint; "default" means this Conduit's own frame.
 
         Returns:
-            Optional[IConduit]:
+            Optional[Conduit]:
                 The resolved peer conduit, or None if it cannot be resolved.
         """
         if conduit is not None:
@@ -3887,7 +3898,7 @@ class Conduit(Cleanable, IConduit):
             return None
 
 
-    def _fire_conduit_hooks(self, hook_name: str, *conduits: IConduit) -> None:
+    def _fire_conduit_hooks(self, hook_name: str, *conduits: Conduit) -> None:
         """
         Internal
 
@@ -3937,6 +3948,12 @@ class Conduit(Cleanable, IConduit):
 
 #endregion Hooks
 #endregion Conduit
+
+
+from melder.aether.conduit.conduit_ward import conduit_ward as _conduit_ward_module
+
+_conduit_ward_module.Conduit = Conduit
+
 
 
 

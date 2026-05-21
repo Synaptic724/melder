@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 import threading
@@ -12,7 +12,7 @@ from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.utilities.interfaces.iconduit import IConduit
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -450,7 +450,7 @@ def test_register_root_conduit_delegates_to_default_frame(aether_with_mocks):
     frame_mock._conduits = conduits_dict
     frame_mock._conduit_ids_by_name = {}
     
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit._id = "c1"
     conduit.name = "root"
     conduit._name = "root"
@@ -522,7 +522,7 @@ def test_register_root_conduit_delegates_to_custom_frame(aether_with_mocks):
     frame_mock._conduits = {}
     frame_mock._conduit_ids_by_name = {}
     
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit._id = "c1"
     conduit.name = "root"
     conduit._name = "root"
@@ -540,7 +540,7 @@ def test_register_root_conduit_duplicate_raises(aether_with_mocks):
     """Frame-owned root registration raises ValueError if ID exists."""
     a = aether_with_mocks
     frame_mock = a._default_frame
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit._id = "c1"
     conduit._name = "root"
     conduit.name = "root"
@@ -560,7 +560,7 @@ def test_register_root_conduit_requires_root_name(aether_with_mocks):
     frame_mock = a._default_frame
     frame_mock._conduits = {}
     frame_mock._conduit_ids_by_name = {}
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit._id = "c1"
     conduit.name = None
     conduit._name = None
@@ -576,10 +576,10 @@ def test_register_root_conduit_duplicate_name_raises(aether_with_mocks):
     """Frame-owned root registration raises ValueError if the root conduit name already exists."""
     a = aether_with_mocks
     frame_mock = a._default_frame
-    existing = MagicMock(spec=IConduit)
+    existing = MagicMock()
     existing._id = "c1"
     existing.name = "root"
-    incoming = MagicMock(spec=IConduit)
+    incoming = MagicMock()
     incoming._id = "c2"
     incoming.name = "root"
     incoming._name = "root"
@@ -596,7 +596,7 @@ def test_unregister_root_conduit_delegates(aether_with_mocks):
     """Frame-owned root unregistration removes from the frame's dict."""
     a = aether_with_mocks
     frame_mock = a._default_frame
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit._id = "c1"
     conduit._name = "root"
     conduit.name = "root"
@@ -617,7 +617,7 @@ def test_unregister_root_conduit_missing_raises(aether_with_mocks):
     a = aether_with_mocks
     frame_mock = a._default_frame
     frame_mock._conduits = {}
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit._id = "c1"
     conduit._name = "root"
     conduit.name = "root"
@@ -705,7 +705,7 @@ def test_get_existing_frame_returns_frame_with_cloud(aether_with_mocks):
 def test_get_conduit_cloud_returns_frame_owned_cloud(aether_with_mocks) -> None:
     """get_conduit_cloud should return the cloud owned by the requested frame."""
     a = aether_with_mocks
-    cloud = MagicMock(spec=ConduitCloud)
+    cloud = MagicMock()
     a._default_frame._conduit_cloud = cloud
 
     assert a.get_conduit_cloud() is cloud
@@ -737,15 +737,15 @@ def test_aether_conduit_discovery_helpers_expose_frame_inventory(
         None.
     """
     a = aether_with_mocks
-    conduit_a = MagicMock(spec=IConduit)
+    conduit_a = MagicMock()
     conduit_a.name = "alpha"
     conduit_a._id = "c1"
-    conduit_b = MagicMock(spec=IConduit)
+    conduit_b = MagicMock()
     conduit_b.name = "beta"
     conduit_b._id = "c2"
     a._default_frame._conduits = {"c1": conduit_a, "c2": conduit_b}
     a._default_frame._conduit_ids_by_name = {"alpha": "c1", "beta": "c2"}
-    cloud = MagicMock(spec=ConduitCloud)
+    cloud = MagicMock()
     a._default_frame._conduit_cloud = cloud
 
     assert a.list_conduit_ids() == ("c1", "c2")
@@ -1751,3 +1751,5 @@ def test_get_devops_manager_validates_frame_exists(aether_with_mocks):
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
         a._get_devops_manager("missing_frame")
+
+

@@ -1,14 +1,15 @@
 import threading
-from typing import Callable, Iterable, Optional, Set
+from typing import Callable, Iterable, Optional, Set, TYPE_CHECKING
 
 from mypy_extensions import mypyc_attr
-
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 
 @mypyc_attr(native_class=True)
 class SpellSystemState(Cleanable):
@@ -103,7 +104,7 @@ class SpellSystemState(Cleanable):
         self._change_reason: SpellStateChangeReason | None = SpellStateChangeReason.new_lineage
         self._transitively_dirty: bool = False
         self._last_validated_at: Optional[float] = None
-        self._risk_manager: Optional[object] = None
+        self._risk_manager: Optional[RiskManager] = None
 
     # ------------------------------------------------------------------
     # Cleanup

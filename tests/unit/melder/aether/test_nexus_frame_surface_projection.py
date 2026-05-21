@@ -292,10 +292,12 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
     apply_calls = []
     sync_calls = []
     original_create_frame_projection_sets_for_rift = (
-        nexus.create_frame_projection_sets_for_rift
+        Nexus.create_frame_projection_sets_for_rift
     )
-    original_apply_projection_sets = rift._apply_projection_sets
+    rift_type = type(rift)
+    original_apply_projection_sets = rift_type._apply_projection_sets
     def wrapped_create_frame_projection_sets_for_rift(
+            self,
             rift_id: str,
             *,
             frame_names=None,
@@ -307,11 +309,13 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
             )
         )
         return original_create_frame_projection_sets_for_rift(
+            self,
             rift_id,
             frame_names=frame_names,
         )
 
     def wrapped_apply_projection_sets(
+            self,
             projection_sets_by_frame_name,
             *,
             merge: bool = False,
@@ -323,17 +327,18 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
             )
         )
         return original_apply_projection_sets(
+            self,
             projection_sets_by_frame_name,
             merge=merge,
         )
 
     monkeypatch.setattr(
-        nexus,
+        Nexus,
         "create_frame_projection_sets_for_rift",
         wrapped_create_frame_projection_sets_for_rift,
     )
     monkeypatch.setattr(
-        rift,
+        rift_type,
         "_apply_projection_sets",
         wrapped_apply_projection_sets,
     )

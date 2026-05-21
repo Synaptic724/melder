@@ -1,6 +1,8 @@
-import threading
+﻿import threading
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aether import Aether
@@ -9,7 +11,6 @@ from melder.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduit import IConduit
 
 
 class CommandSystem(Cleanable):
@@ -148,7 +149,7 @@ class CommandSystem(Cleanable):
             conduit_id: str,
             *,
             frame_name: str,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Resolve one conduit object while the command lock is already held.
 
@@ -1600,4 +1601,5 @@ class CommandSystem(Cleanable):
             raise ValueError(
                 "Aetheric frame '{0}' does not exist.".format(frame_name)
             ) from exc
+
 

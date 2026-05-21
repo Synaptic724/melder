@@ -2,7 +2,6 @@ import threading
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
 
 from mypy_extensions import mypyc_attr
-
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
@@ -21,6 +20,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.spellbook.bind.spell_index import SpellIndex
+    from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 
 
 def _get_structural_risk_manager_callback(
@@ -801,7 +801,11 @@ class SpellSystemStates(Cleanable):
                 if dep_state is not None:
                     dep_state.remove_dependent(index_id)
 
-            callback = _get_structural_risk_manager_callback(self._risk_manager)
+            callback = (
+                self._risk_manager.on_structural_validity_change
+                if self._risk_manager is not None
+                else None
+            )
 
         if removed_state is None:
             return None
@@ -814,7 +818,7 @@ class SpellSystemStates(Cleanable):
         return removed_state
 
 
-    def set_risk_manager(self, risk_manager: Optional[object]) -> None:
+    def set_risk_manager(self, risk_manager: Optional[RiskManager]) -> None:
         """
         Attach one `RiskManager` to the registry and all live child state
         objects.

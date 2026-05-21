@@ -8,6 +8,13 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFr
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+    OtherBindingProfile,
+    SpellBindingKind,
+)
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
@@ -62,13 +69,20 @@ def _bind_frame_posture(
     aether._ensure_frame(frame_name).bind_frame_configuration(frame_configuration)
 
 
-class _PayloadProfile(Cleanable):
+class _PayloadProfile(SpellGeneralProfile):
     def __init__(self, name: str = "detailed") -> None:
-        super().__init__()
+        binding_profile = OtherBindingProfile(
+            kind=SpellBindingKind.OTHER,
+            original_object=object(),
+            type_name="_PayloadProfile",
+            module=__name__,
+            repr_string="<payload-profile>",
+        )
+        super().__init__(
+            binding_profile=binding_profile,
+            resolution_profile=object(),
+        )
         self.profile_name = name
-        self.profile_version = "0.0.1"
-        self.binding_profile = object()
-        self.resolution_profile = object()
 
     def to_descriptor_payload(self) -> SpellDescriptorPayload:
         return SpellDescriptorPayload(
@@ -84,11 +98,6 @@ class _PayloadProfile(Cleanable):
 
     def complete_with_spell(self, spell) -> None:
         return None
-
-    def cleanup(self) -> None:
-        if self._cleaned:
-            return
-        self._cleaned = True
 
 
 def test_publish_frame_record_does_not_require_nexus_enable() -> None:

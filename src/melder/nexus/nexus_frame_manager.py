@@ -1,10 +1,12 @@
-import threading
-from typing import Dict, Optional, Set, Tuple
+﻿import threading
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.nexus.frame_descriptor.frame_descriptor_payload import (
@@ -12,12 +14,9 @@ from melder.nexus.frame_descriptor.frame_descriptor_payload import (
 )
 from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.nexus.nexus_frame_builder import NexusFrameBuilder
-from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 
 class NexusFrameManager(Cleanable):
@@ -183,7 +182,7 @@ class NexusFrameManager(Cleanable):
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
             root_conduit_name: str = "root",
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Create one rooted dynamic Nexus-managed conduit directly.
 
@@ -192,7 +191,7 @@ class NexusFrameManager(Cleanable):
             authored frame posture used by internal agent workspaces.
 
         Returns:
-            IConduit: Root conduit for the managed frame.
+            Conduit: Root conduit for the managed frame.
         """
         return self.create(
             NexusFrameConfiguration.create_dynamic_defaults(
@@ -206,7 +205,7 @@ class NexusFrameManager(Cleanable):
     def create(
             self,
             configuration: NexusFrameConfiguration,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Create one rooted Nexus-managed conduit from authored configuration.
 
@@ -228,7 +227,7 @@ class NexusFrameManager(Cleanable):
                 Authored frame configuration.
 
         Returns:
-            IConduit: Root conduit for the managed frame.
+            Conduit: Root conduit for the managed frame.
         """
         self.check_cleaned()
         if not isinstance(configuration, NexusFrameConfiguration):
@@ -246,7 +245,7 @@ class NexusFrameManager(Cleanable):
             configuration: NexusFrameConfiguration,
             *,
             validate_raw_mode: bool,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Realize one rooted Nexus-managed conduit from authored configuration.
 
@@ -263,12 +262,12 @@ class NexusFrameManager(Cleanable):
                 authoring path and must enforce raw mode constraints.
 
         Returns:
-            IConduit: Root conduit for the managed frame.
+            Conduit: Root conduit for the managed frame.
         """
         frame_name = configuration.frame_name
         if validate_raw_mode:
             self._validate_raw_creation_for_mode(frame_name)
-        root_conduit: Optional[IConduit] = None
+        root_conduit: Optional[Conduit] = None
         spellbook_id: Optional[str] = None
         frame: Optional[AethericFrame] = None
         with self._lock:
@@ -454,7 +453,7 @@ class NexusFrameManager(Cleanable):
             frame_name: Optional[str] = None,
             root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Create one rooted Nexus-managed conduit for a Rift.
 
@@ -475,7 +474,7 @@ class NexusFrameManager(Cleanable):
                 Immutable flag for newly created frames.
 
         Returns:
-            IConduit: Root conduit for the newly created frame.
+            Conduit: Root conduit for the newly created frame.
 
         Raises:
             ValueError: If the target frame already exists or creation is not
@@ -928,7 +927,7 @@ class NexusFrameManager(Cleanable):
     def _conjure_root_conduit_for_configuration(
             self,
             configuration: NexusFrameConfiguration,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Conjure the required root conduit for one Nexus-managed frame.
 
@@ -943,7 +942,7 @@ class NexusFrameManager(Cleanable):
                 Authored configuration that drives rooted creation.
 
         Returns:
-            IConduit: Newly created root conduit.
+            Conduit: Newly created root conduit.
         """
         from melder.aether.spellbook.spellbook import Spellbook
 
@@ -968,7 +967,7 @@ class NexusFrameManager(Cleanable):
             frame_name: str,
             *,
             root_conduit_name: str = "root",
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Return the required root conduit for an already managed frame.
 
@@ -983,7 +982,7 @@ class NexusFrameManager(Cleanable):
                 Preferred root conduit name.
 
         Returns:
-            IConduit: Matching root conduit for the frame.
+            Conduit: Matching root conduit for the frame.
         """
         with self._lock:
             frame = self._frames_by_name.get(frame_name)
@@ -1092,7 +1091,7 @@ class NexusFrameManager(Cleanable):
 
     @staticmethod
     def _get_root_conduit_spellbook_id(
-            root_conduit: IConduit,
+            root_conduit: Conduit,
     ) -> str:
         """
         Return the originating spellbook id from one rooted conduit.
@@ -1111,3 +1110,4 @@ class NexusFrameManager(Cleanable):
         """
         spellbook = root_conduit._spellbook
         return spellbook._id
+

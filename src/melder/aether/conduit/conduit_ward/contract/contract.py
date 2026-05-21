@@ -1,4 +1,4 @@
-from typing import Optional, Any, Dict
+﻿from typing import Optional, Any, Dict
 from threading import RLock
 from types import TracebackType
 
@@ -12,8 +12,8 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.id_builder import IDBuilder
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
@@ -61,7 +61,7 @@ class Contract(Cleanable):
         """
         Idempotently tear down this contract and all contained Details.
 
-        Clears both wardsÃ¢â‚¬â„¢ detail maps, nulls ward references, and marks the
+        Clears both wardsÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ detail maps, nulls ward references, and marks the
         contract cleaned so it can no longer be used.
         """
         if self._cleaned:
@@ -136,7 +136,7 @@ class Contract(Cleanable):
             return self._ward_a
         raise ValueError("Ward is not a member of this contract.")
 
-    def _get_opposite_conduit(self, contract: Contract, known_id: str) -> Optional[IConduit]:
+    def _get_opposite_conduit(self, contract: Contract, known_id: str) -> Optional[Conduit]:
         """
         Internal
 
@@ -146,7 +146,7 @@ class Contract(Cleanable):
             contract: The contract to search within.
             known_id: Conduit ID you already know.
         Returns:
-            Optional[IConduit]: The peer conduit if found, else None.
+            Optional[Conduit]: The peer conduit if found, else None.
         """
         if contract._ward_a._conduit._id == known_id:
             return contract._ward_b._conduit
@@ -331,3 +331,4 @@ class Contract(Cleanable):
                 contract_type=ContractTypes.initiated,
                 reason=DetailReason.other,
             )
+

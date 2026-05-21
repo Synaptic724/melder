@@ -4,10 +4,6 @@ from typing import TYPE_CHECKING, Optional, Set, Dict, Type
 import ulid
 from mypy_extensions import mypyc_attr
 # Melder Imports
-from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iaether import IAether
-
-from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
@@ -16,7 +12,11 @@ from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.bind.spell_index import SpellIndex
+    from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+    from melder.aether.aether import Aether
+
 @mypyc_attr(native_class=True)
 class AethericFrame(Cleanable):
     """
@@ -71,8 +71,8 @@ class AethericFrame(Cleanable):
         self._lock: threading.RLock = threading.RLock()
 
         # All root conduits created in this frame:
-        #   conduit_id -> IConduit
-        self._conduits: Dict[str, IConduit] = {}
+        #   conduit_id -> Conduit
+        self._conduits: Dict[str, Conduit] = {}
         # Stable root-conduit name registry:
         #   conduit_name -> conduit_id
         self._conduit_ids_by_name: Dict[str, str] = {}
@@ -206,7 +206,7 @@ class AethericFrame(Cleanable):
         del self._spell_system_states
         del self._dev_ops_manager
 
-    def register_root_conduit(self, conduit: IConduit) -> None:
+    def register_root_conduit(self, conduit: Conduit) -> None:
         """
         Register one root conduit into the frame-owned root-conduit stores.
 
@@ -240,7 +240,7 @@ class AethericFrame(Cleanable):
             self._conduits[conduit_id] = conduit
             self._conduit_ids_by_name[conduit_name] = conduit_id
 
-    def unregister_root_conduit(self, conduit: IConduit) -> None:
+    def unregister_root_conduit(self, conduit: Conduit) -> None:
         """
         Remove one root conduit from the frame-owned root-conduit stores.
 
@@ -560,5 +560,6 @@ class AethericFrame(Cleanable):
                     if version_id in spell_index.get_all_versions():
                         return spell_index
         return None
+
 
 

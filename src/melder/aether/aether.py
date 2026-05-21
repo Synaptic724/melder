@@ -11,10 +11,7 @@ from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.utilities.interfaces.iaether import IAether
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
-from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -23,11 +20,13 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.mutation_research.mutation_research import MutationResearch
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+    from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 @mypyc_attr(native_class=True)
 class Aether(Cleanable):
@@ -1057,7 +1056,7 @@ class Aether(Cleanable):
             self,
             name: str,
             aetheric_frame_name: str = "default",
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Return one registered root conduit by name.
 
@@ -1068,7 +1067,7 @@ class Aether(Cleanable):
                 Name of the target frame.
 
         Returns:
-            IConduit: Matching root conduit.
+            Conduit: Matching root conduit.
 
         Raises:
             ValueError: If the frame does not exist or the conduit is missing.
@@ -1080,7 +1079,7 @@ class Aether(Cleanable):
             self,
             conduit_id: str,
             aetheric_frame_name: str = "default",
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Return one registered root conduit by id.
 
@@ -1091,7 +1090,7 @@ class Aether(Cleanable):
                 Name of the target frame.
 
         Returns:
-            IConduit: Matching root conduit.
+            Conduit: Matching root conduit.
 
         Raises:
             ValueError: If the frame does not exist or the conduit is missing.
@@ -1125,7 +1124,7 @@ class Aether(Cleanable):
         frame = self._get_existing_frame(aetheric_frame_name)
         return frame._conduit_cloud
 
-    def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> Conduit:
         """
         Find a root conduit within one frame by its registered name.
 
@@ -1136,7 +1135,7 @@ class Aether(Cleanable):
                 Name of the frame to search.
 
         Returns:
-            IConduit:
+            Conduit:
                 The matching conduit.
 
         Raises:
@@ -1161,7 +1160,7 @@ class Aether(Cleanable):
         self._logger.error(f"Conduit with name {name} not found.", "_get_conduit_by_name", exc_info=True)
         raise ValueError(f"Conduit with name {name} not found.")
 
-    def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> Conduit:
         """
         Find a root conduit within one frame by its id.
 
@@ -1172,7 +1171,7 @@ class Aether(Cleanable):
                 Name of the frame to search.
 
         Returns:
-            IConduit:
+            Conduit:
                 The matching conduit.
 
         Raises:
@@ -1195,7 +1194,7 @@ class Aether(Cleanable):
         self._logger.error(f"Conduit with signature {signature} not found.", "_get_conduit_by_id", exc_info=True)
         raise ValueError(f"Conduit with signature {signature} not found.")
 
-    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> IConduit:
+    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Conduit:
         """
         Finds the conduit that owns a specific spell ID within a frame.
 
@@ -1204,7 +1203,7 @@ class Aether(Cleanable):
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            IConduit: The conduit that owns the spell.
+            Conduit: The conduit that owns the spell.
 
         Raises:
             ValueError: If the frame does not exist or the spell ID is not found.
@@ -1614,5 +1613,6 @@ class Aether(Cleanable):
         devops.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
 
     #endregion DevOps Management
+
 
 

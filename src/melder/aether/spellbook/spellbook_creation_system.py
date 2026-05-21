@@ -1,10 +1,5 @@
 ﻿import threading
 from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
-    from melder.aether.spellbook.spellbook import Spellbook
-
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.conduit import Conduit
@@ -33,7 +28,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
     SpellGeneralProfile,
 )
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-from melder.utilities.interfaces.iunitofwork import UnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -42,6 +36,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
+    from melder.utilities.synchronization.unit_of_work import UnitOfWork
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
 
 @mypyc_attr(native_class=True)
 class SpellbookCreationSystem(Cleanable):

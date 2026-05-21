@@ -1,4 +1,4 @@
-import inspect
+﻿import inspect
 import threading
 from contextlib import contextmanager
 from types import TracebackType
@@ -13,10 +13,10 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.spellbook.spell import Spell
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -28,6 +28,17 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+def _is_conduit_surface(value: Any) -> bool:
+    """
+    Return whether one object exposes the runtime conduit surface.
+    """
+    return (
+        value is not None
+        and hasattr(value, "_id")
+        and hasattr(value, "_conduit_ward")
+    )
+
 
 # TODO: Ensure that links properly connect to the spell and its dependencies not just the spell itself.
 # TODO: If a specific policy is set such as blacklist or whitelist, ensure that the spellbook the entire spellbook is managed properly.
@@ -86,7 +97,7 @@ class ConduitWard(Cleanable):
     __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
-            conduit: IConduit,
+            conduit: Conduit,
             dynamic: bool,
             conduit_type: ConduitState,
             policy: Policies,
@@ -123,7 +134,7 @@ class ConduitWard(Cleanable):
         self._lock: threading.RLock  = threading.RLock()
 
         ## Conduit Ward properties
-        self._conduit: IConduit = conduit
+        self._conduit: Conduit = conduit
         self._conduit_cloud: ConduitCloud = aetheric_frame._conduit_cloud
         self._logger: SafeLogger = conduit._logger
         self._dynamic: bool = dynamic
@@ -141,11 +152,11 @@ class ConduitWard(Cleanable):
         self._contracts: Dict[str, Contract] = {} # [ContractID] -> Contract
 
         # Lineage Links
-        self._parent_conduit: IConduit | None = None
-        self._root_conduit: IConduit | None = (
+        self._parent_conduit: Conduit | None = None
+        self._root_conduit: Conduit | None = (
             conduit if conduit_type == ConduitState.normal else None
         )
-        self._lesser_conduits: Dict[str, IConduit] = {} # [Lesser ConduitID] -> Lesser Conduit
+        self._lesser_conduits: Dict[str, Conduit] = {} # [Lesser ConduitID] -> Lesser Conduit
 
         try:
             self._policy = self._set_initial_policy(policy)
@@ -315,7 +326,7 @@ class ConduitWard(Cleanable):
     #endregion Context Manager
     #region Properties
     @property
-    def root_conduit(self) -> Optional[IConduit]:
+    def root_conduit(self) -> Optional[Conduit]:
         """
         Return the root (normal) conduit for this lineage.
 
@@ -337,7 +348,7 @@ class ConduitWard(Cleanable):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[IConduit]] = None,
+            conduits: Optional[Iterable[Conduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -428,7 +439,7 @@ class ConduitWard(Cleanable):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[IConduit]] = None,
+            conduits: Optional[Iterable[Conduit]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -635,14 +646,14 @@ class ConduitWard(Cleanable):
 
     #endregion Conduit Ward Configuration
     #region Link Management
-    def _link(self, target_conduit: IConduit) -> bool:
+    def _link(self, target_conduit: Conduit) -> bool:
         """
         Internal
 
         Attempts to establish a link (contract) with another normal Conduit.
 
         Args:
-            target_conduit (IConduit): The target Conduit to link to.
+            target_conduit (Conduit): The target Conduit to link to.
 
         Returns:
             bool: True if the contract was established or already exists.
@@ -729,7 +740,7 @@ class ConduitWard(Cleanable):
         return False
 
 
-    def _create_new_contract(self, target_conduit: IConduit) -> bool:
+    def _create_new_contract(self, target_conduit: Conduit) -> bool:
         """
         Internal
 
@@ -738,7 +749,7 @@ class ConduitWard(Cleanable):
         This method handles simultaneous locking of both wards to prevent deadlocks.
 
         Args:
-            target_conduit (IConduit): The conduit to link with.
+            target_conduit (Conduit): The conduit to link with.
 
         Returns:
             bool: True if the contract was created successfully.
@@ -778,61 +789,61 @@ class ConduitWard(Cleanable):
             return True
 
 
-    def _find_contract_id(self, target_conduit: IConduit) -> Optional[str]:
+    def _find_contract_id(self, target_conduit: Conduit) -> Optional[str]:
         """
         Internal
 
         Finds a contract ID associated with the specified target conduit.
 
         Args:
-            target_conduit (IConduit): The target conduit to find the contract for.
+            target_conduit (Conduit): The target conduit to find the contract for.
 
         Returns:
             Optional[str]: The ID of the found contract or None if not found.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            TypeError: If `target_conduit` is not an `IConduit` instance.
+            TypeError: If `target_conduit` is not an `Conduit` instance.
         """
         self.check_cleaned()
-        if not isinstance(target_conduit, IConduit):
+        if not _is_conduit_surface(target_conduit):
             self._logger.error(
-                f"find_contract_id: target not IConduit ({type(target_conduit).__name__})",
+                f"find_contract_id: target not Conduit-compatible ({type(target_conduit).__name__})",
                 method_name="_find_contract_id",
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
-            raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
+            raise TypeError(f"Expected Conduit-compatible object, got {type(target_conduit).__name__}")
         initiated_contract = self._initiated_index.get(target_conduit._conduit_ward._id, None)
         received_contract = self._received_index.get(target_conduit._conduit_ward._id, None)
         cid = initiated_contract if initiated_contract is not None else received_contract
         return cid
 
-    def _find_contract(self, target_conduit: IConduit) -> Optional[Contract]:
+    def _find_contract(self, target_conduit: Conduit) -> Optional[Contract]:
         """
         Internal
 
         Finds the contract object linked to the given target conduit.
 
         Args:
-            target_conduit (IConduit): The target conduit to find the contract for.
+            target_conduit (Conduit): The target conduit to find the contract for.
 
         Returns:
             Optional[Contract]: The contract object if it exists, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            TypeError: If `target_conduit` is not an `IConduit` instance.
+            TypeError: If `target_conduit` is not an `Conduit` instance.
         """
         self.check_cleaned()
-        if not isinstance(target_conduit, IConduit):
+        if not _is_conduit_surface(target_conduit):
             self._logger.error(
-                f"find_contract: target not IConduit ({type(target_conduit).__name__})",
+                f"find_contract: target not Conduit-compatible ({type(target_conduit).__name__})",
                 method_name="_find_contract",
                 owner_id=self._id, owner_display=self._display_name,
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
-            raise TypeError(f"Expected IConduit instance, got {type(target_conduit).__name__}")
+            raise TypeError(f"Expected Conduit-compatible object, got {type(target_conduit).__name__}")
         peer_id = target_conduit._conduit_ward._id
         contract_id = (
             self._initiated_index.get(peer_id)
@@ -868,14 +879,14 @@ class ConduitWard(Cleanable):
         contract = self._contracts.get(check_id)
         return contract
 
-    def _sever_link(self, target_conduit: IConduit) -> bool:
+    def _sever_link(self, target_conduit: Conduit) -> bool:
         """
         Internal
 
         Sever the link (contract) between this Conduit and its target Conduit.
 
         Args:
-            target_conduit (IConduit): The target Conduit to sever the link with.
+            target_conduit (Conduit): The target Conduit to sever the link with.
 
         Returns:
             bool: True if the link was successfully severed.
@@ -896,14 +907,14 @@ class ConduitWard(Cleanable):
             )
             raise RuntimeError("No contract found to sever with the target conduit.")
 
-    def _remove_contract(self, target_conduit: IConduit) -> bool:
+    def _remove_contract(self, target_conduit: Conduit) -> bool:
         """
         Internal
 
         Removes the contract and cleans up internal indices and spellbook links.
 
         Args:
-            target_conduit (IConduit): The conduit whose contract should be removed.
+            target_conduit (Conduit): The conduit whose contract should be removed.
 
         Returns:
             bool: True if the contract was removed successfully.
@@ -967,7 +978,7 @@ class ConduitWard(Cleanable):
                 return True
         return False
 
-    def _link_lesser_conduit(self, lesser_conduit: IConduit) -> None:
+    def _link_lesser_conduit(self, lesser_conduit: Conduit) -> None:
         """
         Internal
 
@@ -976,13 +987,13 @@ class ConduitWard(Cleanable):
         This establishes the parent-child lineage relationship.
 
         Args:
-            lesser_conduit (IConduit): The lesser conduit to link.
+            lesser_conduit (Conduit): The lesser conduit to link.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        root_conduit: Optional[IConduit]
+        root_conduit: Optional[Conduit]
         if self._conduit_type == ConduitState.normal:
             root_conduit = self._conduit
         else:
@@ -1007,7 +1018,7 @@ class ConduitWard(Cleanable):
             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
         )
 
-    def _get_lesser_conduit(self, conduit_id: str) -> Optional[IConduit]:
+    def _get_lesser_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """
         Internal
 
@@ -1017,7 +1028,7 @@ class ConduitWard(Cleanable):
             conduit_id (str): The ID of the conduit to retrieve.
 
         Returns:
-            Optional[IConduit]: The matched conduit if found, else None.
+            Optional[Conduit]: The matched conduit if found, else None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1033,14 +1044,14 @@ class ConduitWard(Cleanable):
                     return result
         return None
 
-    def _get_links(self) -> List[IConduit]:
+    def _get_links(self) -> List[Conduit]:
         """
         Internal
 
         Returns a combined list of all peer conduits this conduit has contracts with (both initiated and provider).
 
         Returns:
-            List[IConduit]: A list of all linked peer conduits.
+            List[Conduit]: A list of all linked peer conduits.
         """
         with self._lock:
             initiated = [self._get_initiated_conduit(cid) for cid in self._initiated_index.keys()]
@@ -1049,14 +1060,14 @@ class ConduitWard(Cleanable):
         return result
 
 
-    def _get_initiated_conduits(self) -> List[IConduit]:
+    def _get_initiated_conduits(self) -> List[Conduit]:
         """
         Internal
 
         Retrieves all conduits that this conduit has initiated contracts toward (outbound links).
 
         Returns:
-            List[IConduit]: A list of conduits that this conduit has initiated contracts with.
+            List[Conduit]: A list of conduits that this conduit has initiated contracts with.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1069,14 +1080,14 @@ class ConduitWard(Cleanable):
         return result
 
 
-    def _get_provider_conduits(self) -> List[IConduit]:
+    def _get_provider_conduits(self) -> List[Conduit]:
         """
         Internal
 
         Retrieves all conduits that have initiated contracts to this conduit (inbound links).
 
         Returns:
-            List[IConduit]: A list of conduits that have linked to this conduit as a provider.
+            List[Conduit]: A list of conduits that have linked to this conduit as a provider.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1088,7 +1099,7 @@ class ConduitWard(Cleanable):
         ]
         return result
 
-    def _get_initiated_conduit(self, conduit_id: str) -> Optional[IConduit]:
+    def _get_initiated_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """
         Internal
 
@@ -1098,7 +1109,7 @@ class ConduitWard(Cleanable):
             conduit_id (str): The ID of the target conduit this conduit linked to.
 
         Returns:
-            Optional[IConduit]: The target conduit if the link exists, otherwise None.
+            Optional[Conduit]: The target conduit if the link exists, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1112,7 +1123,7 @@ class ConduitWard(Cleanable):
                 return res
         return None
 
-    def _get_provider_conduit(self, conduit_id: str) -> Optional[IConduit]:
+    def _get_provider_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """
         Internal
 
@@ -1122,7 +1133,7 @@ class ConduitWard(Cleanable):
             conduit_id (str): The ID of the source conduit that linked to this one.
 
         Returns:
-            Optional[IConduit]: The source conduit if the link exists, otherwise None.
+            Optional[Conduit]: The source conduit if the link exists, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -1154,7 +1165,7 @@ class ConduitWard(Cleanable):
             return
 
         # Snapshot peers under lock, then sever contracts one by one.
-        peers: list[IConduit] = []
+        peers: list[Conduit] = []
         with self._lock:
             if self._cleaned:
                 return
@@ -1279,21 +1290,21 @@ class ConduitWard(Cleanable):
 
 
     def _check_conduit_id_and_conduit(self,
-                                      conduit: Optional[IConduit] = None,
+                                      conduit: Optional[Conduit] = None,
                                       conduit_id: Optional[str] = None,
-                                      aetheric_frame: str = "default") -> Tuple[str, IConduit]:
+                                      aetheric_frame: str = "default") -> Tuple[str, Conduit]:
         """
         Internal
 
         Validation and resolution helper: ensures both a conduit ID and its corresponding conduit object are available.
 
         Args:
-            conduit (IConduit, optional): The target conduit object.
+            conduit (Conduit, optional): The target conduit object.
             conduit_id (str, optional): The unique ID of the target conduit.
             aetheric_frame (str): The Aetheric Frame to search within.
 
         Returns:
-            Tuple[str, IConduit]: The resolved (conduit_id, conduit) pair.
+            Tuple[str, Conduit]: The resolved (conduit_id, conduit) pair.
 
         Raises:
             ValueError: If neither `conduit` nor `conduit_id` is provided.
@@ -1331,14 +1342,14 @@ class ConduitWard(Cleanable):
                 raise RuntimeError(f"Could not resolve conduit for conduit_id '{conduit_id}'.")
 
         if conduit_id is None:
-            if not isinstance(conduit, IConduit):
+            if not _is_conduit_surface(conduit):
                 self._logger.error(
                     f"check_conduit_id_and_conduit: conduit wrong type {type(conduit).__name__}",
                     method_name="_check_conduit_id_and_conduit",
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
-                raise TypeError(f"Expected IConduit instance, got {type(conduit).__name__}")
+                raise TypeError(f"Expected Conduit-compatible object, got {type(conduit).__name__}")
             conduit_id = conduit._id
             if conduit_id is None:
                 self._logger.error(
@@ -1486,7 +1497,7 @@ class ConduitWard(Cleanable):
         )
         contract._add(ward, restored_detail)
 
-    def _check_spell_if_eligible(self, spell: Spell, conduit: IConduit, permissions: Permissions) -> None:
+    def _check_spell_if_eligible(self, spell: Spell, conduit: Conduit, permissions: Permissions) -> None:
         """
         Internal
 
@@ -1494,7 +1505,7 @@ class ConduitWard(Cleanable):
 
         Args:
             spell (Spell): The spell to check.
-            conduit (IConduit): The conduit proposing the contract.
+            conduit (Conduit): The conduit proposing the contract.
             permissions (Permissions): The permissions requested for the contract.
 
         Raises:
@@ -1556,7 +1567,7 @@ class ConduitWard(Cleanable):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -1579,7 +1590,7 @@ class ConduitWard(Cleanable):
         Args:
             spell (Spell, optional): The spell object to contract.
             spell_id (str, optional): The unique version ID of the spell.
-            conduit (IConduit, optional): The target peer conduit.
+            conduit (Conduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
             permissions (str): The permission level granted for this spell.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
@@ -1918,7 +1929,7 @@ class ConduitWard(Cleanable):
             self,
             *,
             root_spell_id: str,
-            conduit: Optional[IConduit] = None,
+            conduit: Optional[Conduit] = None,
             conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> dict[str, list[str] | dict[str, str]]:
@@ -1942,7 +1953,7 @@ class ConduitWard(Cleanable):
 
         # Resolve a specific contract if conduit is provided, else scan all.
         target_contracts: list[Contract] = []
-        target_peers: list[IConduit] = []
+        target_peers: list[Conduit] = []
 
         if conduit is not None or conduit_id is not None:
             _, resolved_conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
@@ -1957,7 +1968,7 @@ class ConduitWard(Cleanable):
 
         success_contract_ids: list[str] = []
         failed_contract_ids: dict[str, str] = {}
-        contracts_to_sever: list[IConduit] = []
+        contracts_to_sever: list[Conduit] = []
 
         for idx, contract in enumerate(target_contracts):
             peer_conduit = target_peers[idx] if idx < len(target_peers) else None
@@ -2275,7 +2286,7 @@ class ConduitWard(Cleanable):
             walk(dep)
 
 
-    def _add_spells_to_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None,
+    def _add_spells_to_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[Conduit] = None, conduit_id: Optional[str] = None,
                                 permissions: str = "create", aetheric_frame: str = "default",
                                 reason: DetailReason = DetailReason.manual, link_dependencies: bool = False) -> dict[str, list[str] | dict[str, str]]:
         """
@@ -2290,7 +2301,7 @@ class ConduitWard(Cleanable):
 
         Args:
             spell_ids (list[str], optional): List of spell IDs to contract.
-            conduit (IConduit, optional): The target peer conduit.
+            conduit (Conduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
             permissions (str): The permission level to apply to all spells (default is "create").
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
@@ -2337,7 +2348,7 @@ class ConduitWard(Cleanable):
             "failed": failed_spell_ids,
         }
 
-    def _remove_spell_from_contract(self, *, spell: Optional[Spell] = None, spell_id: Optional[str] = None, conduit: Optional[IConduit] = None,
+    def _remove_spell_from_contract(self, *, spell: Optional[Spell] = None, spell_id: Optional[str] = None, conduit: Optional[Conduit] = None,
                                     conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame: str = "default") -> bool | None:
         """
         Internal
@@ -2351,7 +2362,7 @@ class ConduitWard(Cleanable):
         Args:
             spell (Spell, optional): The spell object to remove.
             spell_id (str, optional): The unique ID of the spell to remove.
-            conduit (IConduit, optional): The target peer conduit.
+            conduit (Conduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
             root_spell_id (str, optional): Source root spell_id; if provided, only that source is removed.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
@@ -2467,7 +2478,7 @@ class ConduitWard(Cleanable):
         raise RuntimeError(f"No contract found for conduit ID {conduit_id}")
 
 
-    def _remove_spells_from_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[IConduit] = None,
+    def _remove_spells_from_contract(self, *, spell_ids: Optional[list[str]] = None, conduit: Optional[Conduit] = None,
                                      conduit_id: Optional[str] = None, root_spell_id: str | None = None,
                                      aetheric_frame: str = "default") -> dict[str, list[str] | dict[str, str]]:
         """
@@ -2482,7 +2493,7 @@ class ConduitWard(Cleanable):
 
         Args:
             spell_ids (list[str], optional): List of spell IDs to remove.
-            conduit (IConduit, optional): The target peer conduit.
+            conduit (Conduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
@@ -2525,7 +2536,7 @@ class ConduitWard(Cleanable):
             "failed": failed_spell_ids,
         }
 
-    def _remove_all_spells_from_contract(self, *, conduit: Optional[IConduit] = None, conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame: str = "default") -> bool | None:
+    def _remove_all_spells_from_contract(self, *, conduit: Optional[Conduit] = None, conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame: str = "default") -> bool | None:
         """
         Internal
 
@@ -2535,7 +2546,7 @@ class ConduitWard(Cleanable):
         so future melds re-resolve dependencies after the bulk removal.
 
         Args:
-            conduit (IConduit, optional): The target peer conduit.
+            conduit (Conduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
@@ -2851,7 +2862,7 @@ class ConduitWard(Cleanable):
 
         return None
 
-    def _get_contracted_conduits(self) -> list[Tuple[str, IConduit]] | None:
+    def _get_contracted_conduits(self) -> list[Tuple[str, Conduit]] | None:
         """
         Internal
 
@@ -2861,7 +2872,7 @@ class ConduitWard(Cleanable):
             None
 
         Returns:
-            list[Tuple[str, IConduit]] | None: A list of (`conduit_id`, `IConduit`) tuples. Returns None if no links exist.
+            list[Tuple[str, Conduit]] | None: A list of (`conduit_id`, `Conduit`) tuples. Returns None if no links exist.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2880,7 +2891,7 @@ class ConduitWard(Cleanable):
             self,
             *,
             spell: Spell | str | SpellIndex,
-            target_conduit: IConduit,
+            target_conduit: Conduit,
             move_creations: bool = False,
             include_dependencies: bool = False,
             force_unshare: bool = True,
@@ -3073,3 +3084,4 @@ class ConduitWard(Cleanable):
 
 #endregion Spellbinding API
 #endregion ConduitWard
+

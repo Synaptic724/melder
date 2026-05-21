@@ -4,9 +4,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
-from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
+    from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 
 
@@ -60,7 +60,7 @@ class CodegenRoomObjectsStrategy(Cleanable):
             self,
             configuration: CodegenNamespaceConfiguration,
             *,
-            rift: IRift,
+            rift: Rift,
             space: CodegenRiftSpace,
     ) -> Dict[str, object]:
         """

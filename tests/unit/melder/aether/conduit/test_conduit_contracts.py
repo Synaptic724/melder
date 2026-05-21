@@ -1,4 +1,4 @@
-import time
+﻿import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -117,7 +117,7 @@ def test_link_rejects_non_conduit_target(conduit_dynamic_normal: Conduit) -> Non
     Verify link enforces target type validation.
 
     Contract:
-        - Non-IConduit targets raise TypeError.
+        - Non-Conduit targets raise TypeError.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
@@ -125,7 +125,7 @@ def test_link_rejects_non_conduit_target(conduit_dynamic_normal: Conduit) -> Non
     Raises:
         AssertionError: If non-conduit targets do not raise.
     """
-    with pytest.raises(TypeError, match="Expected IConduit"):
+    with pytest.raises(TypeError, match="Expected Conduit"):
         conduit_dynamic_normal.link(object())
 
 
@@ -1478,4 +1478,5 @@ def test_cleanup_lesser_conduits_delegates(conduit_normal: Conduit) -> None:
     conduit_normal.cleanup_lesser_conduits()
 
     conduit_normal._conduit_ward.cleanup_all_lesser_conduits.assert_called_once_with()
+
 

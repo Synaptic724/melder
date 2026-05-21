@@ -1,9 +1,10 @@
-import threading
+﻿import threading
 import time
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aether import Aether
 
 from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
@@ -43,13 +44,12 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 
 
-from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.configuration.spellbook_configuration import (
         SpellbookConfiguration,
     )
@@ -187,7 +187,7 @@ class Nexus(Cleanable):
             self._configured: bool = configuration is not None
             self._enabled: bool = False
 
-            self._rifts_by_id: Dict[str, IRift] = {}
+            self._rifts_by_id: Dict[str, Rift] = {}
             self._rift_ids_by_name: Dict[str, str] = {}
             self._next_default_rift_number: int = 1
             self._rift_profiles_by_name: Dict[str, RiftConfiguration] = {}
@@ -694,7 +694,7 @@ class Nexus(Cleanable):
             metadata: Optional[Dict[str, object]] = None,
             creation_token: Optional[str] = None,
             logger: Optional[Any] = None,
-    ) -> IRift:
+    ) -> Rift:
         """
         Internal
 
@@ -732,7 +732,7 @@ class Nexus(Cleanable):
                 Rift.
 
         Returns:
-            IRift: Newly created and registered live Rift.
+            Rift: Newly created and registered live Rift.
         """
         self._require_rift_creation_allowed(creation_token)
         from melder.nexus.rift.rift import Rift
@@ -776,7 +776,7 @@ class Nexus(Cleanable):
                     rift_gate.cleanup()
                 raise
 
-    def add_rift(self, rift: IRift) -> None:
+    def add_rift(self, rift: Rift) -> None:
         """
         Internal
 
@@ -832,7 +832,7 @@ class Nexus(Cleanable):
             self,
             rift_id: str,
             access_token: Optional[str] = None,
-    ) -> IRift:
+    ) -> Rift:
         """
         Internal
 
@@ -849,7 +849,7 @@ class Nexus(Cleanable):
             - Returns the live registered Rift object, not a detached copy.
 
         Returns:
-            IRift: Registered Rift object.
+            Rift: Registered Rift object.
         """
         self._require_rift_access_allowed(access_token)
         try:
@@ -861,7 +861,7 @@ class Nexus(Cleanable):
             self,
             rift_name: str,
             access_token: Optional[str] = None,
-    ) -> IRift:
+    ) -> Rift:
         """
         Internal
 
@@ -879,7 +879,7 @@ class Nexus(Cleanable):
               live object exposed by `get_rift(...)`.
 
         Returns:
-            IRift: Registered Rift object.
+            Rift: Registered Rift object.
         """
         self._require_rift_access_allowed(access_token)
         try:
@@ -2102,7 +2102,7 @@ class Nexus(Cleanable):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Internal
 
@@ -2117,7 +2117,7 @@ class Nexus(Cleanable):
                 derives the requested frame from the current topology mode.
 
         Returns:
-            IConduit: Root conduit for the resolved Nexus-managed frame.
+            Conduit: Root conduit for the resolved Nexus-managed frame.
 
         Raises:
             ValueError: If the requesting Rift or requested frame is not
@@ -2135,7 +2135,7 @@ class Nexus(Cleanable):
             frame_name: Optional[str] = None,
             root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> IConduit:
+    ) -> Conduit:
         """
         Internal
 
@@ -2154,7 +2154,7 @@ class Nexus(Cleanable):
                 explicit external cleanup path removes it.
 
         Returns:
-            IConduit: Root conduit for the newly created frame.
+            Conduit: Root conduit for the newly created frame.
 
         Raises:
             ValueError: If creation is not valid under the current topology
@@ -2726,7 +2726,7 @@ class Nexus(Cleanable):
         self._ensure_frame_acl_container(frame_name)
         return descriptor
 
-    def _get_required_rift(self, rift_id: str) -> IRift:
+    def _get_required_rift(self, rift_id: str) -> Rift:
         """
         Internal
 
@@ -2741,7 +2741,7 @@ class Nexus(Cleanable):
             absence.
 
         Returns:
-            IRift: Registered Rift object.
+            Rift: Registered Rift object.
         """
         try:
             return self._rifts_by_id[rift_id]
@@ -2876,6 +2876,7 @@ class Nexus(Cleanable):
             value = configuration.get_property(key)
             cloned_configuration.set_property(key, value)
         return cloned_configuration
+
 
 
 

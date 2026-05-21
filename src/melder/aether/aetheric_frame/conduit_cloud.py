@@ -1,12 +1,13 @@
-import threading
-from typing import Dict, List, Optional, Tuple
+﻿import threading
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
 import ulid
 from mypy_extensions import mypyc_attr
 from types import TracebackType
 
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -34,7 +35,7 @@ class ConduitCloud(Cleanable):
     def __init__(
             self,
             name: str,
-            conduits: Dict[str, IConduit],
+            conduits: Dict[str, Conduit],
             conduit_ids_by_name: Dict[str, str],
     ) -> None:
         """
@@ -46,7 +47,7 @@ class ConduitCloud(Cleanable):
 
         Args:
             name (str): The name of the AethericFrame this cloud serves.
-            conduits (Dict[str, IConduit]):
+            conduits (Dict[str, Conduit]):
                 Borrowed root-conduit registry owned by the frame.
             conduit_ids_by_name (Dict[str, str]):
                 Borrowed root-conduit name registry owned by the frame.
@@ -59,7 +60,7 @@ class ConduitCloud(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
-        self._conduits: Dict[str, IConduit] = conduits
+        self._conduits: Dict[str, Conduit] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
         self._id: str = str(ulid.ULID())
@@ -135,7 +136,7 @@ class ConduitCloud(Cleanable):
         return self._name
 
 
-    def get_conduit(self, name: str) -> IConduit:
+    def get_conduit(self, name: str) -> Conduit:
         """
         Return a root conduit by name from this frame.
 
@@ -151,7 +152,7 @@ class ConduitCloud(Cleanable):
               missing.
 
         Returns:
-            IConduit: The conduit instance.
+            Conduit: The conduit instance.
 
         Raises:
             RuntimeError: If the ConduitCloud is cleaned.
@@ -159,7 +160,7 @@ class ConduitCloud(Cleanable):
         """
         return self.get_conduit_by_name(name)
 
-    def get_conduit_by_name(self, name: str) -> IConduit:
+    def get_conduit_by_name(self, name: str) -> Conduit:
         """
         Return a root conduit by name from this frame.
 
@@ -168,7 +169,7 @@ class ConduitCloud(Cleanable):
                 Root conduit name to resolve.
 
         Returns:
-            IConduit: Matching conduit instance.
+            Conduit: Matching conduit instance.
 
         Raises:
             RuntimeError: If the ConduitCloud is cleaned.
@@ -184,7 +185,7 @@ class ConduitCloud(Cleanable):
                 raise ValueError("Conduit with name {0} not found.".format(name))
             return conduit
 
-    def get_conduit_by_id(self, conduit_id: str) -> IConduit:
+    def get_conduit_by_id(self, conduit_id: str) -> Conduit:
         """
         Return a root conduit by id from this frame.
 
@@ -193,7 +194,7 @@ class ConduitCloud(Cleanable):
                 Root conduit id to resolve.
 
         Returns:
-            IConduit: Matching conduit instance.
+            Conduit: Matching conduit instance.
 
         Raises:
             RuntimeError: If the ConduitCloud is cleaned.
@@ -336,12 +337,12 @@ class ConduitCloud(Cleanable):
             )
         cluster.cleanup()
 
-    def add_conduit_to_cluster(self, conduit: IConduit, cluster_name: str) -> None:
+    def add_conduit_to_cluster(self, conduit: Conduit, cluster_name: str) -> None:
         """
         Add one conduit to one frame-local cluster.
 
         Args:
-            conduit (IConduit): Conduit to add.
+            conduit (Conduit): Conduit to add.
             cluster_name (str): Target cluster.
         """
         self.check_cleaned()
@@ -351,14 +352,14 @@ class ConduitCloud(Cleanable):
 
     def remove_conduit_from_cluster(
             self,
-            conduit: IConduit,
+            conduit: Conduit,
             cluster_name: str,
     ) -> None:
         """
         Remove one conduit from one frame-local cluster.
 
         Args:
-            conduit (IConduit): Conduit to remove.
+            conduit (Conduit): Conduit to remove.
             cluster_name (str): Target cluster.
         """
         self.check_cleaned()
@@ -384,12 +385,12 @@ class ConduitCloud(Cleanable):
             if conduit_id in cluster.get_members()
         ]
 
-    def refresh_cluster_shares_for_conduit(self, conduit: IConduit) -> None:
+    def refresh_cluster_shares_for_conduit(self, conduit: Conduit) -> None:
         """
         Refresh cluster sharing for one conduit across all of its clusters.
 
         Args:
-            conduit (IConduit): Target conduit.
+            conduit (Conduit): Target conduit.
         """
         self.check_cleaned()
         cluster_names = self.get_clusters_for_conduit(conduit.id)
@@ -444,3 +445,4 @@ class ConduitCloud(Cleanable):
                 "Cluster with name {0} does not exist.".format(cluster_name)
             )
         return cluster
+

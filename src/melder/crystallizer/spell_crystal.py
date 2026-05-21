@@ -7,13 +7,14 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
+from melder.crystallizer.synthetic_module import SyntheticModule
+
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.isyntheticmodule import SyntheticModule
 
 
 class SpellCrystal(Cleanable):

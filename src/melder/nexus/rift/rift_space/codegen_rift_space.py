@@ -1,5 +1,8 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift import Rift
 
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -10,7 +13,6 @@ from melder.nexus.rift.command_system.codegen_command_system import (
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
-from melder.utilities.interfaces.irift import IRift
 
 
 class CodegenRiftSpace(RiftSpace):
@@ -41,7 +43,7 @@ class CodegenRiftSpace(RiftSpace):
             self,
             owner_rift_id: str,
             *,
-            rift: IRift,
+            rift: Rift,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             rift_gate: Optional[RiftGate] = None,
@@ -89,7 +91,7 @@ class CodegenRiftSpace(RiftSpace):
         )
         self.command_system.attach_codegen_system(self._codegen_system)
 
-    def _create_command_system(self, rift: IRift) -> CommandSystem:
+    def _create_command_system(self, rift: Rift) -> CommandSystem:
         """
         Build the codegen room's command system.
 

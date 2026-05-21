@@ -1,13 +1,6 @@
-﻿from typing import TYPE_CHECKING, Optional, Set
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
-        RootResolutionBlueprint,
-    )
-    from melder.aether.spellbook.spellbook import Spellbook
-
+﻿from typing import TYPE_CHECKING, Optional, Set, Dict
 from mypy_extensions import mypyc_attr
-
+#Melder Imports
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_5 import (
     CompilerPhase5,
 )
@@ -15,7 +8,11 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spellbook import Spellbook
 
 @mypyc_attr(native_class=True)
 class CompilerPhase7:
@@ -23,12 +20,12 @@ class CompilerPhase7:
     Compiler phase 7 surface.
 
     Purpose:
-        Expose the current change-control wiring behavior through a compiler-
+        Expose the current change-control wiring behaviour through a compiler-
         owned phase class.
 
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
-        - Directly ports the canonical `SpellCrafter` phase-7 behavior.
+        - Directly ports the canonical `SpellCrafter` phase-7 behaviour.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -38,7 +35,7 @@ class CompilerPhase7:
     def _get_required_entire_dag_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
-    ) :
+    ) -> Dict[str, RootResolutionBlueprint]:
         """
             Return the Phase 5 root-blueprint map or raise.
             

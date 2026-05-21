@@ -3,10 +3,6 @@ import ulid
 from threading import RLock
 from types import TracebackType
 from mypy_extensions import mypyc_attr
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
-
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -17,8 +13,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-if TYPE_CHECKING:
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -27,9 +21,6 @@ from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
-    SpellSystemState,
-)
 from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
@@ -47,6 +38,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
     )
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+    from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 
 
 
@@ -374,7 +368,7 @@ class Spell(Cleanable):
             SpellCompilerArtifact(self.spell_id)
         )
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
-        self._creation_context: Optional[Any] = None
+        self._creation_context: Optional[CreationContext] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
         self._creation_context_factory: Optional[CreationContextFactory] = None
         # Spell-owned selector latch for one-leader CreationContext publication.

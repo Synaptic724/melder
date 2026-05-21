@@ -1,14 +1,15 @@
-from typing import TYPE_CHECKING, Dict, Optional
+﻿from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iconduit import IConduit
 
 from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus_frame_manager import NexusFrameManager
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus_frame_manager import NexusFrameManager
 
 
@@ -225,7 +226,7 @@ class NexusFrameBuilder(Cleanable):
             root_conduit_name=self._root_conduit_name,
         )
 
-    def create(self) -> IConduit:
+    def create(self) -> Conduit:
         """
         Build and create the authored frame through the owning manager.
 
@@ -235,7 +236,8 @@ class NexusFrameBuilder(Cleanable):
             immediately.
 
         Returns:
-            IConduit: Rooted conduit created through the owning manager.
+            Conduit: Rooted conduit created through the owning manager.
         """
         self.check_cleaned()
         return self._manager.create(self.build())
+

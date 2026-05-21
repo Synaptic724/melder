@@ -1,10 +1,10 @@
-import threading
+﻿import threading
 from unittest.mock import MagicMock
 
 import pytest
 
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
-from melder.utilities.interfaces.iconduit import IConduit
+from melder.aether.conduit.conduit import Conduit
 
 
 @pytest.fixture
@@ -13,10 +13,10 @@ def conduit_cloud():
     Provide a fresh ConduitCloud plus its borrowed backing stores.
 
     Returns:
-        tuple[ConduitCloud, dict[str, IConduit], dict[str, str]]:
+        tuple[ConduitCloud, dict[str, Conduit], dict[str, str]]:
             The cloud plus the borrowed root registries.
     """
-    root_conduits: dict[str, IConduit] = {}
+    root_conduits: dict[str, Conduit] = {}
     conduit_ids_by_name: dict[str, str] = {}
     cloud = ConduitCloud(
         "test_frame",
@@ -35,7 +35,7 @@ def mock_conduit():
     Returns:
         MagicMock: Conduit double for lookup tests.
     """
-    conduit = MagicMock(spec=IConduit)
+    conduit = MagicMock()
     conduit.id = "conduit-1"
     conduit._id = "conduit-1"
     conduit.name = "test_conduit"
@@ -185,7 +185,7 @@ def test_cleanup_returns_early_when_cleaned_flips_inside_lock(conduit_cloud) -> 
     Verify cleanup returns safely if another path marks the cloud cleaned inside the lock.
     """
     cloud, root_conduits, _ = conduit_cloud
-    root_conduits["x"] = MagicMock(spec=IConduit)
+    root_conduits["x"] = MagicMock()
     original_lock = cloud._lock
 
     class _LockThatMarksCleaned:
@@ -229,3 +229,5 @@ def test_methods_raise_after_cleanup(conduit_cloud, mock_conduit) -> None:
 
     with pytest.raises(RuntimeError):
         cloud.create_cluster("cluster-1")
+
+

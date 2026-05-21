@@ -43,9 +43,9 @@ from melder.nexus.rift.codegen_system.namespace.codegen_namespace import Codegen
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
-from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
+    from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 
 
@@ -88,7 +88,7 @@ class CodegenSystem(Cleanable):
         "_monitor",
     ]
 
-    def __init__(self, *, rift: IRift, space: CodegenRiftSpace) -> None:
+    def __init__(self, *, rift: Rift, space: CodegenRiftSpace) -> None:
         """
         Initialize one root codegen system.
 
@@ -113,7 +113,7 @@ class CodegenSystem(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()
-        self._rift: IRift = rift
+        self._rift: Rift = rift
         self._space: CodegenRiftSpace = space
         self._validator: CodegenValidator = CodegenValidator()
         self._validation_reporter: CodegenValidationReporter = (

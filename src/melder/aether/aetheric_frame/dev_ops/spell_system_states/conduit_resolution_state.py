@@ -14,16 +14,17 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
         SpellStateChangeReason,
     )
+    from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 
 
 def _get_resolution_risk_manager_callback(
-        risk_manager: Optional[object],
+        risk_manager: Optional[RiskManager],
 ) -> Optional[Callable[[str, str, Optional[SpellValidity]], None]]:
     """
     Return the resolution-validity callback when the collaborator exposes it.
 
     Contract:
-        - Accepts the current loose collaborator surface (`object | None`).
+        - Accepts the current loose collaborator surface (`RiskManager | None`).
         - Returns a callable only when the collaborator exposes a callable
           `on_resolution_validity_change(...)` attribute.
         - Leaves plain objects and missing callbacks as `None`.
@@ -128,7 +129,7 @@ class ConduitResolutionState(Cleanable):
         self._last_validated_at: Optional[float] = None
         self._last_change_reason: Optional[SpellStateChangeReason] = None
         self._initial_validity: SpellValidity = initial_validity
-        self._risk_manager: Optional[object] = None
+        self._risk_manager: Optional[RiskManager] = None
 
     # ------------------------------------------------------------------ #
     # Validity accessors                                                  #
@@ -646,7 +647,7 @@ class ConduitResolutionState(Cleanable):
             del self._risk_manager
         del self._lock
 
-    def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
+    def _set_risk_manager(self, risk_manager: Optional[RiskManager]) -> None:
         """
         Attach or detach the `RiskManager` callback reference.
 

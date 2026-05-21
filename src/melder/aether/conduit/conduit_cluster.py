@@ -1,16 +1,16 @@
-import threading
+﻿import threading
 from typing import TYPE_CHECKING, Dict, Set, Optional, List
 from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 @mypyc_attr(native_class=True)
@@ -53,7 +53,7 @@ class ConduitCluster(Cleanable):
     def __init__(
             self,
             name: str,
-            registry: Dict[str, IConduit],
+            registry: Dict[str, Conduit],
             aetheric_frame_name: str,
             auto_link_dependencies: bool = True,
     ):
@@ -70,7 +70,7 @@ class ConduitCluster(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._name: str = name
-        self._registry: Dict[str, IConduit] = registry
+        self._registry: Dict[str, Conduit] = registry
         self._aetheric_frame_name: str = aetheric_frame_name
         self.members: Set[str] = set()
         self.shared_spells: Dict[str, Set[SpellIndex]] = {}
@@ -199,7 +199,7 @@ class ConduitCluster(Cleanable):
     # ------------------------------------------------------------------
     # Share helpers (operate on live conduit objects)
     # ------------------------------------------------------------------
-    def handle_join(self, conduit: IConduit) -> None:
+    def handle_join(self, conduit: Conduit) -> None:
         """
         Add a member and auto-share all roots between the new member and existing peers.
 
@@ -238,7 +238,7 @@ class ConduitCluster(Cleanable):
             self.share_to_borrower(conduit, peer)
             self.share_to_borrower(peer, conduit)
 
-    def handle_leave(self, conduit: IConduit) -> None:
+    def handle_leave(self, conduit: Conduit) -> None:
         """
         Remove a member and tear down shared roots between it and remaining peers.
 
@@ -260,7 +260,7 @@ class ConduitCluster(Cleanable):
             member_ids = set(self.members)
             leaver_id = conduit._id
 
-        peers: List[IConduit] = []
+        peers: List[Conduit] = []
         for conduit_id in member_ids:
             peer = self._resolve_conduit_by_id(conduit_id)
             if peer is not None:
@@ -285,7 +285,7 @@ class ConduitCluster(Cleanable):
         with self._lock:
             self.shared_spells.pop(leaver_id, None)
 
-    def refresh_shareable_roots(self, owner: IConduit) -> None:
+    def refresh_shareable_roots(self, owner: Conduit) -> None:
         """
         Ensure shared_spells has all shareable SpellIndexes for the owner.
 
@@ -301,7 +301,7 @@ class ConduitCluster(Cleanable):
         for spell in shareables:
             self.add_shared_spell(owner_id, spell.spell_index)
 
-    def refresh_member_shares(self, conduit: IConduit) -> None:
+    def refresh_member_shares(self, conduit: Conduit) -> None:
         """
         Refresh and (re)share this member's shareable roots with all peers in the cluster.
 
@@ -326,7 +326,7 @@ class ConduitCluster(Cleanable):
 
     def add_and_share_spell(
             self,
-            owner: IConduit,
+            owner: Conduit,
             spell: Spell,
             link_dependencies: Optional[bool] = None,
     ) -> None:
@@ -378,7 +378,7 @@ class ConduitCluster(Cleanable):
                 except Exception:
                     continue
 
-    def remove_and_strip_spell(self, owner: IConduit, spell: Spell) -> None:
+    def remove_and_strip_spell(self, owner: Conduit, spell: Spell) -> None:
         """
         Explicitly remove a shared root from the cluster and strip it from peers.
 
@@ -435,7 +435,7 @@ class ConduitCluster(Cleanable):
                 except Exception:
                     continue
 
-    def share_to_borrower(self, owner: IConduit, borrower: IConduit) -> None:
+    def share_to_borrower(self, owner: Conduit, borrower: Conduit) -> None:
         """
         Contract all shared roots from one owner into one borrower.
 
@@ -479,7 +479,7 @@ class ConduitCluster(Cleanable):
             except Exception:
                 continue
 
-    def remove_shared_from_borrower(self, owner: IConduit, borrower: IConduit, aetheric_frame: str = "default") -> None:
+    def remove_shared_from_borrower(self, owner: Conduit, borrower: Conduit, aetheric_frame: str = "default") -> None:
         """
         Remove all shared roots from one owner on the borrower side.
 
@@ -522,7 +522,7 @@ class ConduitCluster(Cleanable):
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
-    def _get_shareable_spells(self, conduit: IConduit) -> List[Spell]:
+    def _get_shareable_spells(self, conduit: Conduit) -> List[Spell]:
         """
         Return shareable spells from a conduit (existence == unique_per_conduit_cluster).
 
@@ -542,7 +542,7 @@ class ConduitCluster(Cleanable):
                 if hasattr(spell, "existence") and spell.existence == Existence.unique_per_conduit_cluster
             ]
 
-    def _resolve_spell_from_index(self, conduit: IConduit, spell_index: SpellIndex) -> Optional[Spell]:
+    def _resolve_spell_from_index(self, conduit: Conduit, spell_index: SpellIndex) -> Optional[Spell]:
         """
         Resolve a Spell object from a conduit given its SpellIndex.
 
@@ -560,7 +560,7 @@ class ConduitCluster(Cleanable):
         with book._lock:
             return book._spells.get(spell_index)
 
-    def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[IConduit]:
+    def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[Conduit]:
         """
         Resolve one conduit directly from the borrowed frame-local registry.
 
@@ -568,7 +568,7 @@ class ConduitCluster(Cleanable):
             conduit_id: Conduit identifier to resolve.
 
         Returns:
-            Optional[IConduit]: Matching conduit when present, else None.
+            Optional[Conduit]: Matching conduit when present, else None.
         """
         self.check_cleaned()
         return self._registry.get(conduit_id)
@@ -626,3 +626,4 @@ class ConduitCluster(Cleanable):
                 "members": list(self.members),
                 "shared_spells": shared_summary,
             }
+

@@ -39,9 +39,9 @@ from melder.utilities.helpers.class_surface_ast_describer import (
 )
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.utilities.interfaces.irift import IRift
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
 if TYPE_CHECKING:
+    from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.frame_link.frame_link import FrameLink
 
 
@@ -96,7 +96,7 @@ class FrameViewer(Cleanable):
     def __init__(
             self,
             *,
-            rift: IRift,
+            rift: Rift,
             action_hook_scope_factory: Optional[Callable[..., Any]] = None,
     ) -> None:
         """
@@ -111,7 +111,7 @@ class FrameViewer(Cleanable):
             raise TypeError("rift cannot be None.")
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
-        self._rift: IRift = rift
+        self._rift: Rift = rift
         self._action_hook_scope_factory: Optional[Callable[..., Any]] = (
             action_hook_scope_factory
         )

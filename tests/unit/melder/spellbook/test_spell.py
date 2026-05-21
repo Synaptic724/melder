@@ -193,7 +193,6 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     dependency_graph = _Disposable()
     resolution_profile = _CleanableProfile()
     binding_profile = _CleanableProfile()
-    crafter = _Disposable()
 
     spell = Spell(
         spell=lambda: None,
@@ -909,16 +908,17 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     )
 
     spell.dependency_graph = dependency_graph
+    compiler_artifact = spell._compiler_artifact
     general_profile = SpellGeneralProfile(
         binding_profile=binding_profile,
         resolution_profile=resolution_profile,
     )
     spell.profile = general_profile
-    spell._crafter = crafter
 
     spell.cleanup()
 
     assert dependency_graph.cleaned is True
+    assert compiler_artifact.cleaned is True
     assert resolution_profile.cleaned is True
     assert binding_profile.cleaned is True
     assert not hasattr(spell, "profile")

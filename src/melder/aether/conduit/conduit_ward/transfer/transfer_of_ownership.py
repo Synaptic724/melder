@@ -10,13 +10,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iaether import Aether
-if TYPE_CHECKING:
-    from melder.aether.aether import Aether
-    from melder.aether.spellbook.spell import Spell
-    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
-    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.safeguard import SafeGuard
@@ -26,7 +19,13 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aether import Aether
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
+
 @mypyc_attr(native_class=True)
 class TransferOfOwnership(Cleanable):
     """
@@ -61,8 +60,8 @@ class TransferOfOwnership(Cleanable):
     def __init__(
         self,
         *,
-        source_conduit: IConduit,
-        target_conduit: IConduit,
+        source_conduit: Conduit,
+        target_conduit: Conduit,
         spell: Spell,
         move_creations: bool = False,
         include_dependencies: bool = False,
@@ -100,8 +99,8 @@ class TransferOfOwnership(Cleanable):
                 lineages dirty so stale downstream state is not reused.
         """
         super().__init__()
-        self.source_conduit: IConduit = source_conduit
-        self.target_conduit: IConduit = target_conduit
+        self.source_conduit: Conduit = source_conduit
+        self.target_conduit: Conduit = target_conduit
         self.spell: Spell = spell
         self.move_creations: bool = move_creations
         self.include_dependencies: bool = include_dependencies

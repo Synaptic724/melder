@@ -626,9 +626,9 @@ def test_snapshot_split_hook_maps_from_configuration_uses_static_hook_lists(
         _ = conduit
 
     monkeypatch.setattr(
-        configuration,
+        SpellbookConfiguration,
         "get_hooks",
-        lambda owner_id: {
+        lambda self, owner_id: {
             "on_conduit_cleanup_start": [known_conduit_hook],
             "on_meld_pre_resolve": [known_meld_hook],
             "unknown_hook_name": [unknown_hook],

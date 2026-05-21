@@ -7,9 +7,9 @@ from melder.nexus.rift.command_system.command_system import (
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
-from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
+    from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 
 from melder.nexus.rift.rift_space.workstation import Workstation
@@ -71,7 +71,7 @@ class CodegenCommandSystem(CommandSystem):
     def __init__(
             self,
             *,
-            rift: IRift,
+            rift: Rift,
             space: CodegenRiftSpace,
             workstation: Workstation,
             codegen_system: Optional[CodegenSystem] = None,

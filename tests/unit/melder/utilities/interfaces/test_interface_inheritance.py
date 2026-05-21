@@ -10,13 +10,10 @@ from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
-_INTERFACE_MAP: Dict[type, type] = {
-    IConduit: Conduit,
-}
+_INTERFACE_MAP: Dict[type, type] = {}
 
 
 def test_interfaces_aggregator_exports_asset_icleanable() -> None:
@@ -44,4 +41,5 @@ def test_concrete_types_explicitly_inherit_interfaces(
         AssertionError: If an implementation does not inherit the expected interface.
     """
     assert interface_type in implementation_type.__mro__
+
 
