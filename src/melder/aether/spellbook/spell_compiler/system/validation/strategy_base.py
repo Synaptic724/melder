@@ -36,7 +36,7 @@ class SpellSystemValidationStrategy(ABC):
           inputs.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @abstractmethod

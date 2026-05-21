@@ -35,8 +35,17 @@ class SystemDiagnostic(Cleanable):
         source: Optional strategy identifier that produced the diagnostic.
         details: Optional structured payload for tooling.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_code",
+        "_message",
+        "_severity",
+        "_spell_id",
+        "_root_id",
+        "_source",
+        "_details",
+    ]
+    __deletable__ = [
         "_code",
         "_message",
         "_severity",

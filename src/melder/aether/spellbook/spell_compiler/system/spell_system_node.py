@@ -27,8 +27,18 @@ class SpellSystemNode(Cleanable):
         * ward_id – owning ward (optional).
         * is_root – whether this spell is considered a root for the frame.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_spell_id",
+        "_lineage_id",
+        "_dependencies",
+        "existence",
+        "spell_type",
+        "conduit_id",
+        "ward_id",
+        "is_root",
+    ]
+    __deletable__ = [
         "_spell_id",
         "_lineage_id",
         "_dependencies",
