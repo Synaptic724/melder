@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 from mypy_extensions import mypyc_attr
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 @mypyc_attr(native_class=True)
 class SpellValidationStrategy(Cleanable):
     """
@@ -66,7 +69,7 @@ class SpellValidationStrategy(Cleanable):
     # Overridables
     # ------------------------------------------------------------------ #
 
-    def validate(self, context: 'SpellValidationContext') -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Execute this validation strategy against a single spell.
 

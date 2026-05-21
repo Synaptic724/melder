@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 @mypyc_attr(native_class=True)
 class ResolutionFramePresenceStrategy(SpellValidationStrategy):
@@ -34,7 +37,7 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
             description="Verifies that Phase 3 produced a resolution frame and DAG.",
         )
 
-    def validate(self, context: 'SpellValidationContext') -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate that Phase 3 artifacts exist for the current spell.
 

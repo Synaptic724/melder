@@ -1,10 +1,11 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 @mypyc_attr(native_class=True)
 class DanglingDependenciesStrategy(SpellValidationStrategy):
@@ -39,7 +40,7 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
             description="Checks that all dependency spell_ids resolve to spells.",
         )
 
-    def validate(self, context: 'SpellValidationContext') -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate that every declared dependency id resolves to a visible spell.
 

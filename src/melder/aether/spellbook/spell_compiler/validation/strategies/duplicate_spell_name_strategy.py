@@ -1,13 +1,13 @@
-from typing import Dict, List, Any
+from typing import TYPE_CHECKING, Dict, List, Any
 
 from mypy_extensions import mypyc_attr
 
-# Melder imports
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 @mypyc_attr(native_class=True)
 class DuplicateSpellNameStrategy(SpellValidationStrategy):
@@ -48,7 +48,7 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             ),
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Detect ambiguous visible spell-name collisions.
 

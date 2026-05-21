@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -7,9 +7,6 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
-    SpellValidationContext,
-)
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
@@ -17,6 +14,10 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
     SpellValidationStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
+        SpellValidationContext,
+    )
 
 @mypyc_attr(native_class=True)
 class ContractProviderPresenceStrategy(SpellValidationStrategy):
@@ -46,7 +47,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
             description="Validates SpellContract and MutationContract provider availability.",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate contract sockets against visible providers.
 

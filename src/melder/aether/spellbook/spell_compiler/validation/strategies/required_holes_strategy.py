@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 @mypyc_attr(native_class=True)
 class RequiredHolesStrategy(SpellValidationStrategy):
@@ -37,7 +40,7 @@ class RequiredHolesStrategy(SpellValidationStrategy):
             description="Flags parameters that DI will never satisfy and that lack defaults.",
         )
 
-    def validate(self, context: 'SpellValidationContext') -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Emit warnings for required holes discovered in the requirements model.
 

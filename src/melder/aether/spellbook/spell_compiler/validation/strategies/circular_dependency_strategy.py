@@ -1,11 +1,14 @@
 from typing import Dict, List
 
+from typing import TYPE_CHECKING
+
 from mypy_extensions import mypyc_attr
 
 # Melder imports
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 @mypyc_attr(native_class=True)
 class CircularDependencyStrategy(SpellValidationStrategy):

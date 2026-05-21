@@ -516,6 +516,11 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates configuration property access failures.
         """
+        if spellbook._configuration is None:
+            raise RuntimeError(
+                "Cannot define disposal metadata without a configuration. "
+                f"(spellbook={spellbook})"
+            )
         target_methods = list(spellbook._configuration.get_property("disposal_method_names"))
         if len(target_methods) == 0:
             return
@@ -784,6 +789,7 @@ class SpellbookCreationSystem(Cleanable):
                     compiler_system=compiler_system,
                 ),
             )
+
             broken_spells = SpellbookCreationSystem._collect_broken_spells(
                 spells=spellbook._spells.values(),
             )
@@ -1786,7 +1792,7 @@ class SpellbookCreationSystem(Cleanable):
                 return
 
             for spell_id in spell_ids:
-                spell = spellbook._spell_id_pool.get(spell_id)
+                spell = spellbook._spell_id_pool.get(spell_id, None)
                 if spell is None:
                     continue
                 try:

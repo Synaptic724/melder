@@ -32,6 +32,7 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state
     SpellSystemValidationState,
 )
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+    SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
 from melder.utilities.general_base.cleanable import Cleanable
