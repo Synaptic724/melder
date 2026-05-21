@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import inspect
 import typing
 from typing import TYPE_CHECKING, Any, Tuple, get_args, get_origin
@@ -48,7 +46,7 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
             description="Flags unsupported DI annotation shapes (set/dict/tuple, invalid list elements).",
         )
 
-    def validate(self, context: "SpellValidationContext") -> None:
+    def validate(self, context: SpellValidationContext) -> None:
         """
         Validate the spell's parameter annotations for unsupported DI shapes.
 

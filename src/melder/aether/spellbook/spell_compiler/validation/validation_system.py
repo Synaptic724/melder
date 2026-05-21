@@ -13,6 +13,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
         SpellSymbolicGraph,
     )
+    from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
+        SpellValidationStrategy,
+    )
     from melder.utilities.synchronization.cancellation_event_signal import (
         CancellationEvent,
     )
@@ -53,9 +56,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.contract_provi
 from melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy import (
     BindingResolutionCycleStrategy,
 )
-from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
-    SpellValidationStrategy,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -94,7 +94,7 @@ class SpellValidationSystem(Cleanable):
         """
         super().__init__()
         self._lock: RLock = RLock()
-        self._strategies: Dict[str, 'SpellValidationStrategy'] = {}
+        self._strategies: Dict[str, SpellValidationStrategy] = {}
         self._register_builtin_strategies()
 
     # ------------------------------------------------------------------ #
@@ -168,7 +168,7 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(CallableProfileHygieneStrategy())
         self.register_strategy(ExistingCreationCompatibilityStrategy())
 
-    def register_strategy(self, strategy: 'SpellValidationStrategy') -> None:
+    def register_strategy(self, strategy: SpellValidationStrategy) -> None:
         """
         Register (or replace) a validation strategy.
 
@@ -222,7 +222,7 @@ class SpellValidationSystem(Cleanable):
                 # Validation cleanup should never explode callers.
                 pass
 
-    def iter_strategies(self) -> List['SpellValidationStrategy']:
+    def iter_strategies(self) -> List[SpellValidationStrategy]:
         """
         Return a snapshot list of all registered strategies.
 

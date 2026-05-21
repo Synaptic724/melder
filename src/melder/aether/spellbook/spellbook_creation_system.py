@@ -27,7 +27,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_pro
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
-from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -35,6 +34,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
     from melder.aether.spellbook.spell import Spell

@@ -5,6 +5,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
         SpellParameterRequirement,
     )
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
+        SpellValidationContext,
+    )
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 from mypy_extensions import mypyc_attr
@@ -14,9 +17,6 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
-    SpellValidationContext,
 )
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,

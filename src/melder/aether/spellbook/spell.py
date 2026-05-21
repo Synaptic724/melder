@@ -16,7 +16,6 @@ from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
@@ -25,6 +24,7 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph 
 )
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
         SpellSystemStates,
     )
@@ -254,7 +254,7 @@ class Spell(Cleanable):
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
-            spellbook: "Spellbook",
+            spellbook: Spellbook,
             profile: Optional[Any] = None,
             existing_object: Optional[object] = None,
             *args: Any,

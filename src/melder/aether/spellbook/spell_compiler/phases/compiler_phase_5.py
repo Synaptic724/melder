@@ -15,6 +15,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
         SpellCompilerArtifact,
     )
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+        SpellLocalTopology,
+    )
     from melder.utilities.synchronization.cancellation_event_signal import (
         CancellationEvent,
     )
@@ -38,9 +41,6 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_node import (
 )
 from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
-)
-from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
-    SpellLocalTopology,
 )
 
 

@@ -15,6 +15,12 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
     )
+    from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency import (
+        SpellSymbolicDependency,
+    )
+    from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
+        SpellSymbolicGraph,
+    )
     from melder.utilities.synchronization.cancellation_event_signal import (
         CancellationEvent,
     )
@@ -36,12 +42,6 @@ from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
 )
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
-)
-from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency import (
-    SpellSymbolicDependency,
-)
-from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
-    SpellSymbolicGraph,
 )
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
