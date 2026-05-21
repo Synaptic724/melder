@@ -11,7 +11,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.icreation import ICreation
+from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 @mypyc_attr(native_class=True)
 class Meld(Cleanable):
     """
-    ## 🪄 Meld: Spell Activation and Dependency Resolution
+    ## Ã°Å¸Âªâ€ž Meld: Spell Activation and Dependency Resolution
 
     Meld is the **conduit-level entry point** for *activating* spells (components/dependencies)
     within a specific `Conduit`. It handles the full lifecycle of spell resolution,
@@ -523,7 +523,7 @@ class Meld(Cleanable):
 
         if existence is Existence.unique_per_conduit:
             creation = caller_creations._creations.get(spell_id)
-            if not isinstance(creation, ICreation):
+            if not isinstance(creation, Creation):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
@@ -556,7 +556,7 @@ class Meld(Cleanable):
                     "Spell '{0}' is not live.".format(spell_id)
                 )
             creation = owner_creations._creations.get(spell_id)
-            if not isinstance(creation, ICreation):
+            if not isinstance(creation, Creation):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
@@ -1098,7 +1098,7 @@ class Meld(Cleanable):
         if validity is SpellValidity.unknown or validity is SpellValidity.gated:
             return True
 
-        # invalid / disabled / cleaned → hard block, no attempt to resolve
+        # invalid / disabled / cleaned Ã¢â€ â€™ hard block, no attempt to resolve
         if (
                 validity is SpellValidity.invalid
                 or validity is SpellValidity.disabled
@@ -1108,7 +1108,7 @@ class Meld(Cleanable):
                 raise SpellbookValidationError([spell])
             raise SpellbookValidationError([spell])
 
-        # Extremely defensive: any future enum value → treat as not resolvable.
+        # Extremely defensive: any future enum value Ã¢â€ â€™ treat as not resolvable.
         raise SpellbookValidationError([spell])
 
 
@@ -1522,7 +1522,7 @@ class Meld(Cleanable):
                 logical frame key for resolution.
             spellframe:
                 Optional spellframe / Protocol / interface used as part of
-                the DI identity. If None, the spell’s own type/name is
+                the DI identity. If None, the spellÃ¢â‚¬â„¢s own type/name is
                 used by the normalization helper.
             binding_name:
                 Optional binding name to discriminate multiple spells
@@ -1542,11 +1542,11 @@ class Meld(Cleanable):
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
-        # 1) string spell → treated as spell_id (SHA)
+        # 1) string spell Ã¢â€ â€™ treated as spell_id (SHA)
         if isinstance(spell, str):
             return self._resolve_spell_by_id(spell)
 
-        # 2) Everything else → (frame_key, binding_key) path
+        # 2) Everything else Ã¢â€ â€™ (frame_key, binding_key) path
 
         # Decide what we use as "spell" for name-based resolution:
         # - if we have a concrete spell object (class/function), use that

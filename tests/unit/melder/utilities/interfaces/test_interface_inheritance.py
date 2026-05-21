@@ -34,7 +34,6 @@ from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
@@ -47,7 +46,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     ISpell: Spell,
     ISpellbook: Spellbook,
     ISpellIndex: SpellIndex,
-    ISpellSpace: SpellSpace,
 }
 
 

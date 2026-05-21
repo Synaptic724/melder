@@ -5,7 +5,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.nexus.rift.rift_space.event_system.rift_event import RiftEvent
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iriftevent import IRiftEvent
 
 
 class RiftEventSystem(Cleanable):
@@ -78,7 +77,7 @@ class RiftEventSystem(Cleanable):
         self._rift_id: str = rift_id
         self._space_id: str = space_id
         self._space_kind: str = space_kind
-        self._callbacks_by_subscription_id: Dict[str, Callable[[IRiftEvent], None]] = {}
+        self._callbacks_by_subscription_id: Dict[str, Callable[[RiftEvent], None]] = {}
 
     def cleanup(self) -> None:
         """
@@ -121,7 +120,7 @@ class RiftEventSystem(Cleanable):
 
     def register_event_callback(
             self,
-            callback: Callable[[IRiftEvent], None],
+            callback: Callable[[RiftEvent], None],
     ) -> str:
         """
         Register one event callback for this room.
@@ -171,7 +170,7 @@ class RiftEventSystem(Cleanable):
             payload: Optional[Dict[str, object]] = None,
             frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
-    ) -> IRiftEvent:
+    ) -> RiftEvent:
         """
         Create one room-local runtime event without emitting it.
 
@@ -186,7 +185,7 @@ class RiftEventSystem(Cleanable):
                 Optional metadata mapping.
 
         Returns:
-            IRiftEvent: New event object.
+            RiftEvent: New event object.
 
         Raises:
             ValueError: If `event_type` is empty.
@@ -204,7 +203,7 @@ class RiftEventSystem(Cleanable):
             metadata=metadata,
         )
 
-    def emit_event(self, event: IRiftEvent) -> None:
+    def emit_event(self, event: RiftEvent) -> None:
         """
         Emit one runtime event to all registered callbacks.
 
@@ -216,11 +215,11 @@ class RiftEventSystem(Cleanable):
             None.
 
         Raises:
-            TypeError: If `event` does not satisfy `IRiftEvent`.
+            TypeError: If `event` does not satisfy `RiftEvent`.
         """
         self.check_cleaned()
-        if not isinstance(event, IRiftEvent):
-            raise TypeError("event must satisfy IRiftEvent.")
+        if not isinstance(event, RiftEvent):
+            raise TypeError("event must satisfy RiftEvent.")
         with self._lock:
             callbacks = list(self._callbacks_by_subscription_id.values())
         for callback in callbacks:
@@ -233,7 +232,7 @@ class RiftEventSystem(Cleanable):
             payload: Optional[Dict[str, object]] = None,
             frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
-    ) -> IRiftEvent:
+    ) -> RiftEvent:
         """
         Create one runtime event and emit it immediately.
 
@@ -248,7 +247,7 @@ class RiftEventSystem(Cleanable):
                 Optional metadata mapping.
 
         Returns:
-            IRiftEvent: Emitted event object.
+            RiftEvent: Emitted event object.
         """
         event = self.create_event(
             event_type,

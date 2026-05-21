@@ -9,14 +9,13 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.ispellspace import ISpellSpace
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.meld.meld import Meld
 
 
 @mypyc_attr(native_class=True)
-class SpellSpace(Cleanable, ISpellSpace):
+class SpellSpace(Cleanable):
     """
     Explicit scope handle for `Existence.unique_per_spell_space`.
 
@@ -58,7 +57,7 @@ class SpellSpace(Cleanable, ISpellSpace):
             owner_conduit_id: str,
             meld: Meld,
             creations: Creations,
-            spellspace_registry: set[ISpellSpace],
+            spellspace_registry: set[SpellSpace],
     ) -> None:
         """
         Create one explicit spellspace scope.
@@ -94,7 +93,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         self._owner_conduit_id: str = owner_conduit_id
         self._meld: Meld = meld
         self._creations: Creations = creations
-        self._spellspace_registry: set[ISpellSpace] = spellspace_registry
+        self._spellspace_registry: set[SpellSpace] = spellspace_registry
         self._version: int = 0
 
     def cleanup(self) -> None:

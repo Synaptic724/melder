@@ -4,15 +4,14 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
-    from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
+    from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
+
 from melder.nexus.rift.rift_space.workstation import Workstation
 
 
@@ -75,7 +74,7 @@ class CodegenCommandSystem(CommandSystem):
             rift: IRift,
             space: CodegenRiftSpace,
             workstation: Workstation,
-            codegen_system: Optional[ICodegenSystem] = None,
+            codegen_system: Optional[CodegenSystem] = None,
     ) -> None:
         """
         Initialize one codegen-room command surface.
@@ -99,7 +98,7 @@ class CodegenCommandSystem(CommandSystem):
             space=space,
             workstation=workstation,
         )
-        self._codegen_system: Optional[ICodegenSystem] = codegen_system
+        self._codegen_system: Optional[CodegenSystem] = codegen_system
 
     def cleanup(self) -> None:
         """
@@ -113,7 +112,7 @@ class CodegenCommandSystem(CommandSystem):
         self._codegen_system = None
         super().cleanup()
 
-    def attach_codegen_system(self, codegen_system: ICodegenSystem) -> None:
+    def attach_codegen_system(self, codegen_system: CodegenSystem) -> None:
         """
         Attach the room-owned `CodegenSystem` after room initialization.
 
@@ -725,7 +724,7 @@ class CodegenCommandSystem(CommandSystem):
             metadata=metadata,
         )
 
-    def _require_codegen_system(self) -> ICodegenSystem:
+    def _require_codegen_system(self) -> CodegenSystem:
         """
         Return the attached room-owned `CodegenSystem`.
 

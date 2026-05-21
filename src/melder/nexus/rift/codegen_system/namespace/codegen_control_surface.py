@@ -1,9 +1,11 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 
 
 class CodegenControlSurface:
@@ -34,7 +36,7 @@ class CodegenControlSurface:
     def __init__(
             self,
             *,
-            codegen_system: ICodegenSystem,
+            codegen_system: CodegenSystem,
             default_frame_name: str,
             recursive_codegen_allowed: bool,
     ) -> None:

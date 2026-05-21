@@ -17,6 +17,7 @@ from melder.utilities.synchronization.creation_gate_controller import (
 from melder.utilities.interfaces.ispellbook import ISpellbook
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.spell_space.spell_space import SpellSpace
     from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.meld.meld import Meld
 
@@ -363,16 +364,16 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_active_spellspace(self) -> Optional["ISpellSpace"]:
+    def get_active_spellspace(self) -> Optional["SpellSpace"]:
         """
         Return the currently active spellspace for this conduit, if any.
 
         Returns:
-            Optional[ISpellSpace]: Active spellspace or None.
+            Optional[SpellSpace]: Active spellspace or None.
         """
         ...
 
-    def _unregister_spellspace(self, space: "ISpellSpace") -> None:
+    def _unregister_spellspace(self, space: "SpellSpace") -> None:
         """
         Internal
 
@@ -1593,4 +1594,3 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
 
 
-from melder.utilities.interfaces.ispellspace import ISpellSpace

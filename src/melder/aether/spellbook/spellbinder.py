@@ -5,13 +5,12 @@ from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @mypyc_attr(native_class=True)
-class SpellBinder(Cleanable, ISpellBinder):
+class SpellBinder(Cleanable):
     """
     Fluent registration helper for configuring one Spellbook bind operation at a time.
 

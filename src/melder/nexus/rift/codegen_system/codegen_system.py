@@ -41,7 +41,6 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
-from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
@@ -50,7 +49,7 @@ if TYPE_CHECKING:
     from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 
 
-class CodegenSystem(Cleanable, ICodegenSystem):
+class CodegenSystem(Cleanable):
     """
     Internal
 

@@ -20,7 +20,6 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ispellspace import ISpellSpace
 from melder.utilities.interfaces.inexus import INexus
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
@@ -211,7 +210,7 @@ class Conduit(Cleanable, IConduit):
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
-        self._spellspace_registry: set[ISpellSpace] = set()
+        self._spellspace_registry: set[SpellSpace] = set()
         self._creations: Creations = self._creations_configuration(configuration)
         self._creation_gate_controller: CreationGateController = (
             self._dev_ops_manager.creation_gate_controller
@@ -585,7 +584,7 @@ class Conduit(Cleanable, IConduit):
         self._register_spellspace(space)
         return space
 
-    def _register_spellspace(self, space: ISpellSpace) -> None:
+    def _register_spellspace(self, space: SpellSpace) -> None:
         """
         Internal
 
@@ -597,14 +596,14 @@ class Conduit(Cleanable, IConduit):
             - Safe to call multiple times for the same spellspace.
 
         Args:
-            space (ISpellSpace): The spellspace to track.
+            space (SpellSpace): The spellspace to track.
         """
         self.check_cleaned()
         if space is None:
             return
         self._spellspace_registry.add(space)
 
-    def _unregister_spellspace(self, space: ISpellSpace) -> None:
+    def _unregister_spellspace(self, space: SpellSpace) -> None:
         """
         Internal
 
@@ -616,7 +615,7 @@ class Conduit(Cleanable, IConduit):
             - Safe to call multiple times for the same spellspace.
 
         Args:
-            space (ISpellSpace): The spellspace to untrack.
+            space (SpellSpace): The spellspace to untrack.
         """
         if space is None:
             return
@@ -2189,7 +2188,7 @@ class Conduit(Cleanable, IConduit):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduitâ€™s own spellbook**.
+        conduitÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -2228,7 +2227,7 @@ class Conduit(Cleanable, IConduit):
 
         Purpose:
             Expose the process-wide mutation-research root through the conduit
-            faÃ§ade so callers do not need to reach through private conduit
+            faÃƒÆ’Ã‚Â§ade so callers do not need to reach through private conduit
             state to access the Aether-owned runtime surface.
 
         Returns:
@@ -3775,7 +3774,7 @@ class Conduit(Cleanable, IConduit):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
+        including the peer conduitÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:
