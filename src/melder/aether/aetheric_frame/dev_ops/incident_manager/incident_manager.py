@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING, ClassVar
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
@@ -33,11 +33,16 @@ class IncidentManager(Cleanable):
       registry itself.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_incidents_by_id",
         "_next_numeric_id",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_lock",
+        "_incidents_by_id",
+        "_next_numeric_id"
     ]
 
     def __init__(self) -> None:

@@ -1,6 +1,6 @@
 ﻿import threading
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
@@ -81,9 +81,9 @@ class Nexus(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _instance = None
-    _lock = threading.RLock()
-    _initialized = False
+    _instance: ClassVar[Optional["Nexus"]] = None
+    _lock: ClassVar[threading.RLock] = threading.RLock()
+    _initialized: ClassVar[bool] = False
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_logger",
@@ -117,11 +117,15 @@ class Nexus(Cleanable):
         Returns:
             Nexus: The one process-wide Nexus instance.
         """
-        if cls._instance is None:
+        instance = cls._instance
+        if instance is None:
             with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(Nexus, cls).__new__(cls)
-        return cls._instance
+                instance = cls._instance
+                if instance is None:
+                    instance = super(Nexus, cls).__new__(cls)
+                    cls._instance = instance
+        assert instance is not None
+        return instance
 
     def __init__(
             self,

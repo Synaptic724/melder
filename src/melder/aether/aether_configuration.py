@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -23,8 +23,15 @@ class AetherConfiguration(Cleanable):
         - explicit logger attachment remains outside this config surface
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_lock",
+        "_frozen",
+        "_activated",
+        "_properties",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_id",
         "_lock",
         "_frozen",

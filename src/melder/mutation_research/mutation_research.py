@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
-    from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
@@ -48,9 +47,9 @@ class MutationResearch(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _instance = None
-    _lock = threading.RLock()
-    _initialized = False
+    _instance: ClassVar[Optional["MutationResearch"]] = None
+    _lock: ClassVar[threading.RLock] = threading.RLock()
+    _initialized: ClassVar[bool] = False
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_aether",
@@ -60,18 +59,26 @@ class MutationResearch(Cleanable):
         "_sessions_by_index",
     ]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(
+            cls,
+            *args: object,
+            **kwargs: object,
+    ) -> "MutationResearch":
         """
         Return the singleton MutationResearch instance.
 
         Returns:
             MutationResearch: Process-wide mutation-research root.
         """
-        if cls._instance is None:
+        instance = cls._instance
+        if instance is None:
             with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(MutationResearch, cls).__new__(cls)
-        return cls._instance
+                instance = cls._instance
+                if instance is None:
+                    instance = super(MutationResearch, cls).__new__(cls)
+                    cls._instance = instance
+        assert instance is not None
+        return instance
 
     def __init__(
             self,

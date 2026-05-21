@@ -39,7 +39,7 @@ class SpellOverrider(Cleanable):
       * BROADCAST: **param (one or more matches required)
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __slots__: ClassVar[list[str]] = Cleanable.__slots__ + ["_blueprint", "_engine"]
+    __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
     __deletable__ = [
         "_blueprint", "_engine"
     ]
