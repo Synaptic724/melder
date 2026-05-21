@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
@@ -13,11 +13,15 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+        FrameACLProfileBuilder,
+    )
 
 
 class FrameACLCompiler(Cleanable):

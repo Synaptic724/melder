@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -22,7 +22,13 @@ from melder.nexus.acl.configurations.profiles.codegen.safe_profile import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcodegenprofilestrategy import IFrameACLCodegenProfileStrategy
+CodegenProfileStrategy = Union[
+    SafeCodegenProfileStrategy,
+    HybridCodegenProfileStrategy,
+    PermissiveCodegenProfileStrategy,
+    FullAccessCodegenProfileStrategy,
+    PrecisionCodegenProfileStrategy,
+]
 
 
 class FrameACLCodegenProfileBuilder(Cleanable):
@@ -57,7 +63,7 @@ class FrameACLCodegenProfileBuilder(Cleanable):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._strategies_by_name: Dict[str, IFrameACLCodegenProfileStrategy] = {}
+        self._strategies_by_name: Dict[str, CodegenProfileStrategy] = {}
         self.load_defaults()
 
     def cleanup(self) -> None:
@@ -102,7 +108,7 @@ class FrameACLCodegenProfileBuilder(Cleanable):
 
     def register_strategy(
             self,
-            strategy: IFrameACLCodegenProfileStrategy,
+            strategy: CodegenProfileStrategy,
     ) -> None:
         """
         Register or replace one codegen-profile construction strategy.
@@ -119,7 +125,7 @@ class FrameACLCodegenProfileBuilder(Cleanable):
     def get_required_strategy(
             self,
             strategy_name: str,
-    ) -> IFrameACLCodegenProfileStrategy:
+    ) -> CodegenProfileStrategy:
         """
         Return one registered codegen-profile strategy or raise.
         """

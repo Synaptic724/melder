@@ -1,5 +1,5 @@
 import threading
-from typing import Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report import (
@@ -14,11 +14,15 @@ from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+        FrameACLProfileBuilder,
+    )
 
 
 class FrameACLSetCompatibilityValidator(Cleanable):

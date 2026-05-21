@@ -25,7 +25,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.acl.configurations.frame_acl_command_configuration import FrameACLCommandConfiguration
 from melder.nexus.acl.configurations.frame_acl_codegen_configuration import FrameACLCodegenConfiguration
-from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
+from melder.nexus.acl.configurations.profiles.frame_acl_profile import (
+    FrameACLProfile,
+)
 from melder.nexus.acl.configurations.frame_acl_view_configuration import FrameACLViewConfiguration
 
 if TYPE_CHECKING:
@@ -422,7 +424,7 @@ class FrameACLBuilder(Cleanable):
 
     def apply_frame_acl_profile(
             self,
-            frame_acl_profile: IFrameACLProfile,
+            frame_acl_profile: FrameACLProfile,
     ) -> None:
         """
         Apply one composed ACL profile into the active family draft.
@@ -442,8 +444,10 @@ class FrameACLBuilder(Cleanable):
                 If no draft session is active.
         """
         self.check_cleaned()
-        if not isinstance(frame_acl_profile, IFrameACLProfile):
-            raise TypeError("frame_acl_profile must satisfy IFrameACLProfile.")
+        if not isinstance(frame_acl_profile, FrameACLProfile):
+            raise TypeError(
+                "frame_acl_profile must be a FrameACLProfile instance."
+            )
         with self._lock:
             if not self._change_active or self._draft_configuration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")

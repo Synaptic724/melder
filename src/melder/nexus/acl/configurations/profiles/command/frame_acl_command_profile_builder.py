@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
@@ -19,7 +19,12 @@ from melder.nexus.acl.configurations.profiles.command.safe_profile import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcommandprofilestrategy import IFrameACLCommandProfileStrategy
+CommandProfileStrategy = Union[
+    SafeCommandProfileStrategy,
+    HybridCommandProfileStrategy,
+    PermissiveCommandProfileStrategy,
+    PrecisionCommandProfileStrategy,
+]
 
 
 class FrameACLCommandProfileBuilder(Cleanable):
@@ -54,7 +59,7 @@ class FrameACLCommandProfileBuilder(Cleanable):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._strategies_by_name: Dict[str, IFrameACLCommandProfileStrategy] = {}
+        self._strategies_by_name: Dict[str, CommandProfileStrategy] = {}
         self.load_defaults()
 
     def cleanup(self) -> None:
@@ -98,7 +103,7 @@ class FrameACLCommandProfileBuilder(Cleanable):
 
     def register_strategy(
             self,
-            strategy: IFrameACLCommandProfileStrategy,
+            strategy: CommandProfileStrategy,
     ) -> None:
         """
         Register or replace one command-profile construction strategy.
@@ -122,7 +127,7 @@ class FrameACLCommandProfileBuilder(Cleanable):
     def get_required_strategy(
             self,
             strategy_name: str,
-    ) -> IFrameACLCommandProfileStrategy:
+    ) -> CommandProfileStrategy:
         """
         Return one registered command-profile strategy or raise.
         """

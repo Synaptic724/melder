@@ -374,7 +374,7 @@ def test_component_spellbook_initialize_configuration_propagates_aether_errors(
     """
     spellbook = Spellbook()
 
-    def _raise_get_configuration() -> None:
+    def _raise_get_configuration(_self: object) -> None:
         """
         Purpose:
             Simulate a configuration lookup failure.

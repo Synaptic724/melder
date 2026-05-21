@@ -18,12 +18,11 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
-class FrameACLProfile(Cleanable, IFrameACLProfile):
+class FrameACLProfile(Cleanable):
     """
     Purpose:
         Represent one composed ACL profile that pairs reusable view, command,

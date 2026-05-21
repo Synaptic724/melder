@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
@@ -19,7 +19,12 @@ from melder.nexus.acl.configurations.profiles.view.safe_profile import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclviewprofilestrategy import IFrameACLViewProfileStrategy
+ViewProfileStrategy = Union[
+    SafeViewProfileStrategy,
+    HybridViewProfileStrategy,
+    PermissiveViewProfileStrategy,
+    PrecisionViewProfileStrategy,
+]
 
 
 class FrameACLViewProfileBuilder(Cleanable):
@@ -54,7 +59,7 @@ class FrameACLViewProfileBuilder(Cleanable):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._strategies_by_name: Dict[str, IFrameACLViewProfileStrategy] = {}
+        self._strategies_by_name: Dict[str, ViewProfileStrategy] = {}
         self.load_defaults()
 
     def cleanup(self) -> None:
@@ -98,7 +103,7 @@ class FrameACLViewProfileBuilder(Cleanable):
 
     def register_strategy(
             self,
-            strategy: IFrameACLViewProfileStrategy,
+            strategy: ViewProfileStrategy,
     ) -> None:
         """
         Register or replace one view-profile construction strategy.
@@ -122,7 +127,7 @@ class FrameACLViewProfileBuilder(Cleanable):
     def get_required_strategy(
             self,
             strategy_name: str,
-    ) -> IFrameACLViewProfileStrategy:
+    ) -> ViewProfileStrategy:
         """
         Return one registered view-profile strategy or raise.
         """
