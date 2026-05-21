@@ -4,7 +4,10 @@ import inspect
 import threading
 import typing
 import types
-from typing import Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -22,7 +25,6 @@ from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -89,7 +91,7 @@ class SpellRequirementsFinder(Cleanable):
         "Mapping": typing.Mapping,
     }
 
-    def __init__(self, spell: ISpell) -> None:
+    def __init__(self, spell: Spell) -> None:
         """
         Initialize a new requirements finder for the given :class:`Spell`.
 
@@ -104,7 +106,7 @@ class SpellRequirementsFinder(Cleanable):
             raise ValueError("spell must not be None.")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell: ISpell = spell
+        self._spell: Spell = spell
         self._requirements: Optional[SpellRequirements] = None
 
     # ------------------------------------------------------------------
@@ -146,7 +148,7 @@ class SpellRequirementsFinder(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def spell(self) -> ISpell:
+    def spell(self) -> Spell:
         """
         The underlying :class:`Spell` being analysed.
 
@@ -265,7 +267,7 @@ class SpellRequirementsFinder(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-    def _resolve_call_target(self, spell: ISpell) -> Any:
+    def _resolve_call_target(self, spell: Spell) -> Any:
         """
         Determine the **call target** for this spell.
 

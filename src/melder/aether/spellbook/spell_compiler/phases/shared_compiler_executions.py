@@ -1,6 +1,9 @@
 import hashlib
 import pickle
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -13,9 +16,6 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanVariant,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
-from melder.utilities.interfaces.ispell import ISpell
-
-
 @mypyc_attr(native_class=True)
 class SharedCompilerExecutions:
     """
@@ -268,7 +268,7 @@ class SharedCompilerExecutions:
 
     @staticmethod
     def capture_phase2_5_codegen_ir(
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
@@ -1187,7 +1187,7 @@ class SharedCompilerExecutions:
 
     @staticmethod
     def build_phase11_spell_signature_row(
-            spell: ISpell,
+            spell: Spell,
     ) -> Tuple[Any, ...]:
         """
             Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
@@ -1647,7 +1647,7 @@ class SharedCompilerExecutions:
 
     @staticmethod
     def reset_phase8_11_codegen_ir(
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """

@@ -20,7 +20,9 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.aether.aetheric_frame.aetheric_frame_configuration import (
     AethericFrameConfiguration,
 )
-from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -496,7 +498,7 @@ class FrameDescriptorManager(Cleanable):
 
             profile = spell.profile
             payload: Optional[SpellDescriptorPayload] = None
-            if isinstance(profile, ISpellGeneralProfile):
+            if isinstance(profile, SpellGeneralProfile):
                 payload = profile.to_descriptor_payload()
             if payload is None:
                 raise RuntimeError(

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional, Set, Tuple
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -11,7 +12,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler import (
 from melder.aether.spellbook.spell_compiler.validation.validation_system import (
     SpellValidationSystem,
 )
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -83,7 +83,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_requirements(
             self,
-            spell: ISpell,
+            spell: Spell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -119,7 +119,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_symbolic_graph(
             self,
-            spell: ISpell,
+            spell: Spell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -154,7 +154,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_local_frame(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -210,7 +210,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_validation(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -250,7 +250,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_root_blueprints(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -290,7 +290,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_root_blueprints_local(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -331,7 +331,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_occurrence_plan(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
         Phase 8 - Occurrence plan compilation (front-facing compiler-system facade).
@@ -364,7 +364,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_injection_plan(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
             Phase 9 - Injection plan compilation.
@@ -401,7 +401,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_patch_maps(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
             Phase 10 - Patch map compilation.
@@ -439,7 +439,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_execution_plan(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
             Phase 11 - Execution plan compilation.
@@ -453,7 +453,7 @@ class SpellCompilerSystem(Cleanable):
                 - Requires Phase 8 artifacts to be available.
                 - Uses Phase 9 injection plan when available.
                 - Replaces existing ExecutionPlan references for this spell.
-                - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
+                - Uses the Spellbook-managed spell_id_pool (spell_id -> Spell) as the
                   spell lookup map without rebuilding it per phase.
                 - Reuses cached no-overrides plan when the deterministic Phase11 no-overrides input signature is unchanged.
                 - Reuses the full cached phase11 variant set when the signature is
@@ -471,7 +471,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_system_validation(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -512,7 +512,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_system_validation_local(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -553,7 +553,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_change_control(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
     ) -> None:
         """
@@ -589,7 +589,7 @@ class SpellCompilerSystem(Cleanable):
     def run_phase_change_control_local(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
     ) -> None:
         """
@@ -623,7 +623,7 @@ class SpellCompilerSystem(Cleanable):
 
     def get_local_resolution_scoped_spell_ids(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> Set[str]:
         """
         Return the spell ids currently covered by this spell's local Phase 5 scope.
@@ -651,7 +651,7 @@ class SpellCompilerSystem(Cleanable):
 
     def get_local_resolution_scoped_root_ids(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> Tuple[str, ...]:
         """
         Return the root ids currently covered by this spell's local Phase 5 scope.
@@ -674,7 +674,7 @@ class SpellCompilerSystem(Cleanable):
 
     def is_current_spell_phase5_root(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> bool:
         """
         Return whether the spell's current id is the root id of its Phase 5 blueprint.
@@ -709,7 +709,7 @@ class SpellCompilerSystem(Cleanable):
 
     def reset_phase_artifacts(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
         Release transient structural-validation artifacts for one spell.
@@ -739,7 +739,7 @@ class SpellCompilerSystem(Cleanable):
 
     def cleanup_phase_artifacts(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
         Backward-compatible alias for structural artifact reset.
@@ -765,7 +765,7 @@ class SpellCompilerSystem(Cleanable):
 
     def clear_phase5_artifacts(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
         Clear Phase 5 and later compiler state for one spell.
@@ -794,7 +794,7 @@ class SpellCompilerSystem(Cleanable):
     def run_structural_phases(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -847,7 +847,7 @@ class SpellCompilerSystem(Cleanable):
     def run_all_phases(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:

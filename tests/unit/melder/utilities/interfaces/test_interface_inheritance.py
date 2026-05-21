@@ -13,14 +13,12 @@ from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
 _INTERFACE_MAP: Dict[type, type] = {
     IConduit: Conduit,
     IConfiguration: SpellbookConfiguration,
-    ISpell: Spell,
 }
 
 

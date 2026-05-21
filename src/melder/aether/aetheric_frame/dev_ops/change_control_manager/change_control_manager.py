@@ -1,4 +1,4 @@
-from threading import RLock
+﻿from threading import RLock
 from typing import (
     Any,
     Callable,
@@ -35,6 +35,9 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
         ChangeControlStagedMutation,
@@ -43,7 +46,6 @@ if TYPE_CHECKING:
         ChangeControlTransactionRequest,
     )
 
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
@@ -1161,7 +1163,7 @@ class ChangeControlManager(Cleanable):
     def rebuild_component_of(
             self,
             conduit_id: str,
-            root_blueprints: Dict[str, IRootResolutionBlueprint],
+            root_blueprints: Dict[str, RootResolutionBlueprint],
     ) -> None:
         """
         Rebuild the component-of index for a conduit from root blueprints.
@@ -1216,7 +1218,7 @@ class ChangeControlManager(Cleanable):
     def upsert_component_of(
             self,
             conduit_id: str,
-            root_blueprints: Dict[str, IRootResolutionBlueprint],
+            root_blueprints: Dict[str, RootResolutionBlueprint],
     ) -> None:
         """
         Upsert component-of mappings for specific roots without full rebuild.
@@ -1515,3 +1517,4 @@ class ChangeControlManager(Cleanable):
                     else None
                 ),
             }
+

@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, Any, Optional, Callable
 from mypy_extensions import mypyc_attr
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 # Melder Imports
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -103,7 +103,7 @@ class SpellBinder(Cleanable):
         # 3. Initialize Transient State directly (Satisfying __slots__)
         # We initialize these to None/Defaults immediately to ensure the object
         # is valid before any methods (like _reset_current) are called.
-        self._spell: ISpell | None = None
+        self._spell: Spell | None = None
         self._existence: Existence = default_existence
         self._permissions: str = default_permissions
         self._profile: str = default_profile

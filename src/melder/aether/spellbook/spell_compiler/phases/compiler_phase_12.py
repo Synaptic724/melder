@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -18,9 +19,6 @@ from melder.aether.spellbook.spell_compiler.blueprints.phase12_no_overrides_exec
     compile_phase12_no_overrides_executor,
     compile_phase12_no_overrides_executor_from_plan,
 )
-from melder.utilities.interfaces.ispell import ISpell
-
-
 @mypyc_attr(native_class=True)
 class CompilerPhase12:
     """
@@ -43,7 +41,7 @@ class CompilerPhase12:
     def compile_no_overrides_executor(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
@@ -110,7 +108,7 @@ class CompilerPhase12:
 
     def compile_no_overrides_executor_from_plan(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             plan: Optional[ExecutionPlan],
     ) -> None:
@@ -166,7 +164,7 @@ class CompilerPhase12:
     def compile_no_overrides_executor_from_payload(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             no_overrides_payload: Optional[Dict[str, Any]],
     ) -> None:

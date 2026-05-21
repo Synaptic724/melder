@@ -3,13 +3,14 @@ from typing import Dict, Optional, Set, List, TYPE_CHECKING
 from mypy_extensions import mypyc_attr
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
-    from melder.utilities.interfaces.ispell import ISpell
+    from melder.utilities.interfaces.ispell import Spell
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
@@ -203,7 +204,7 @@ class RiskManager(Cleanable):
                 if not conduits:
                     self._lineage_conduits.pop(lineage_id, None)
 
-    def register_spell(self, conduit_id: str, spell: ISpell) -> None:
+    def register_spell(self, conduit_id: str, spell: Spell) -> None:
         """
         Register a spell into a conduit's risk tracking.
 
@@ -248,7 +249,7 @@ class RiskManager(Cleanable):
         self._update_resolution_risk(conduit_id, lineage_id, self._get_resolution_validity(conduit_id, spell))
         self._refresh_spellbook_flag(conduit_id)
 
-    def unregister_spell(self, conduit_id: str, spell: ISpell) -> None:
+    def unregister_spell(self, conduit_id: str, spell: Spell) -> None:
         """
         Remove a spell from a conduit's risk tracking.
 
@@ -347,7 +348,7 @@ class RiskManager(Cleanable):
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
-    def _iter_spellbook_spells(self, spellbook: Spellbook) -> List[ISpell]:
+    def _iter_spellbook_spells(self, spellbook: Spellbook) -> List[Spell]:
         """
         Collect all spells currently visible through the spellbook.
 
@@ -355,7 +356,7 @@ class RiskManager(Cleanable):
         spells so initial conduit risk registration starts from the same visible
         surface that meld can later observe.
         """
-        spells: List[ISpell] = []
+        spells: List[Spell] = []
         try:
             if spellbook._spells is not None:
                 spells.extend(spellbook._spells.values())
@@ -366,7 +367,7 @@ class RiskManager(Cleanable):
             pass
         return spells
 
-    def _resolve_lineage_id(self, spell: ISpell) -> Optional[str]:
+    def _resolve_lineage_id(self, spell: Spell) -> Optional[str]:
         """
         Resolve the stable lineage id for a spell, if available.
 
@@ -398,7 +399,7 @@ class RiskManager(Cleanable):
             return None
         return state.spell_index_id
 
-    def _get_structural_validity(self, spell: ISpell) -> Optional[SpellValidity]:
+    def _get_structural_validity(self, spell: Spell) -> Optional[SpellValidity]:
         """
         Return the spell's current structural validity classification.
 
@@ -417,7 +418,7 @@ class RiskManager(Cleanable):
             return SpellValidity.unknown
         return state.validity
 
-    def _get_resolution_validity(self, conduit_id: str, spell: ISpell) -> Optional[SpellValidity]:
+    def _get_resolution_validity(self, conduit_id: str, spell: Spell) -> Optional[SpellValidity]:
         """
         Return the spell's current per-conduit resolution validity.
 

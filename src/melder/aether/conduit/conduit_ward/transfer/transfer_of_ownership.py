@@ -12,10 +12,10 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaether import IAether
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.safeguard import SafeGuard
@@ -62,7 +62,7 @@ class TransferOfOwnership(Cleanable):
         *,
         source_conduit: IConduit,
         target_conduit: IConduit,
-        spell: ISpell,
+        spell: Spell,
         move_creations: bool = False,
         include_dependencies: bool = False,
         force_unshare: bool = True,
@@ -101,7 +101,7 @@ class TransferOfOwnership(Cleanable):
         super().__init__()
         self.source_conduit: IConduit = source_conduit
         self.target_conduit: IConduit = target_conduit
-        self.spell: ISpell = spell
+        self.spell: Spell = spell
         self.move_creations: bool = move_creations
         self.include_dependencies: bool = include_dependencies
         self.force_unshare: bool = force_unshare

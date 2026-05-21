@@ -19,7 +19,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution
     ResolutionProfileStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.spellbook.spell import Spell
 
 
@@ -98,12 +97,12 @@ class SpellGeneralProfile(Cleanable):
         Contract:
             - Always builds the binding profile first from the raw candidate
               surface.
-            - When `target` is already an `ISpell`, completes the same profile
+            - When `target` is already an `Spell`, completes the same profile
               object with resolution data before returning it.
 
         Returns:
             GeneralProfileT:
-                New profile object. If `target` is an `ISpell`, the returned
+                New profile object. If `target` is an `Spell`, the returned
                 profile is already fully completed.
         """
         binding_target = target.spell if isinstance(target, Spell) else target
@@ -116,7 +115,7 @@ class SpellGeneralProfile(Cleanable):
             profile.complete_with_spell(target)
         return profile
 
-    def complete_with_spell(self, spell: ISpell) -> None:
+    def complete_with_spell(self, spell: Spell) -> None:
         """
         Complete phase 2 of the profile lifecycle using one spell runtime
         surface.

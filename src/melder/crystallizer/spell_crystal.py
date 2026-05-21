@@ -5,12 +5,14 @@ import site
 import sys
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.isyntheticmodule import ISyntheticModule
 
 
@@ -24,7 +26,7 @@ class SpellCrystal(Cleanable):
         work continues.
 
     Contract:
-        - constructed from one live `ISpell`
+        - constructed from one live `Spell`
         - anchored to the spell's concrete SHA256 identity
         - resolves the root target module
         - recursively walks tracked module dependencies
@@ -82,7 +84,7 @@ class SpellCrystal(Cleanable):
 
     def __init__(
             self,
-            spell: ISpell,
+            spell: Spell,
             user_source_root_paths: Optional[Sequence[Union[str, Path]]] = None,
     ) -> None:
         """
@@ -94,14 +96,14 @@ class SpellCrystal(Cleanable):
             activation step.
 
         Contract:
-            - Accepts exactly one live `ISpell`.
+            - Accepts exactly one live `Spell`.
             - Uses the spell's concrete `spell_id` as the current manifest id.
             - Resolves the root bound target and its root module.
             - Classifies the root module into user-source, site-package,
               synthetic, or unknown.
             - Walks tracked imports and records the flat manifest fields the
               current loader slice needs.
-            - Does not retain the live `ISpell` or the live root target
+            - Does not retain the live `Spell` or the live root target
               reference after construction.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation.
@@ -761,10 +763,10 @@ class SpellCrystal(Cleanable):
 
     def _resolve_root_target_from_spell(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> Tuple[Any, str, str, str, str]:
         """
-        Resolve the root bound target and its root module identity from `ISpell`.
+        Resolve the root bound target and its root module identity from `Spell`.
 
         Purpose:
             Convert one live spell into the smallest target-identity tuple the

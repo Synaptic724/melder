@@ -13,9 +13,9 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell import Spell
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispell import ISpell
 
 
 class ProtocolStub:
@@ -135,8 +135,6 @@ class FakeSpell:
         self.spell_index.update(version_id)
         self.spell_id = version_id
 
-
-_attach_protocol_stubs(FakeSpell, ISpell)
 
 
 class FakeSpellbook:

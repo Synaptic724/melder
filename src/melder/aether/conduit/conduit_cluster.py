@@ -5,13 +5,13 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 @mypyc_attr(native_class=True)
 class ConduitCluster(Cleanable):
@@ -327,7 +327,7 @@ class ConduitCluster(Cleanable):
     def add_and_share_spell(
             self,
             owner: IConduit,
-            spell: ISpell,
+            spell: Spell,
             link_dependencies: Optional[bool] = None,
     ) -> None:
         """
@@ -378,7 +378,7 @@ class ConduitCluster(Cleanable):
                 except Exception:
                     continue
 
-    def remove_and_strip_spell(self, owner: IConduit, spell: ISpell) -> None:
+    def remove_and_strip_spell(self, owner: IConduit, spell: Spell) -> None:
         """
         Explicitly remove a shared root from the cluster and strip it from peers.
 
@@ -522,7 +522,7 @@ class ConduitCluster(Cleanable):
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
-    def _get_shareable_spells(self, conduit: IConduit) -> List[ISpell]:
+    def _get_shareable_spells(self, conduit: IConduit) -> List[Spell]:
         """
         Return shareable spells from a conduit (existence == unique_per_conduit_cluster).
 
@@ -542,7 +542,7 @@ class ConduitCluster(Cleanable):
                 if hasattr(spell, "existence") and spell.existence == Existence.unique_per_conduit_cluster
             ]
 
-    def _resolve_spell_from_index(self, conduit: IConduit, spell_index: SpellIndex) -> Optional[ISpell]:
+    def _resolve_spell_from_index(self, conduit: IConduit, spell_index: SpellIndex) -> Optional[Spell]:
         """
         Resolve a Spell object from a conduit given its SpellIndex.
 
@@ -551,7 +551,7 @@ class ConduitCluster(Cleanable):
             spell_index: SpellIndex to resolve.
 
         Returns:
-            Optional[ISpell]: The spell if found.
+            Optional[Spell]: The spell if found.
         """
         self.check_cleaned()
         book = conduit._spellbook

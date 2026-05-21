@@ -15,7 +15,6 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.ispell import ISpell
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
@@ -53,7 +52,7 @@ if TYPE_CHECKING:
 
 #region Spell
 @mypyc_attr(native_class=True)
-class Spell(Cleanable, ISpell):
+class Spell(Cleanable):
     """
     Internal
 

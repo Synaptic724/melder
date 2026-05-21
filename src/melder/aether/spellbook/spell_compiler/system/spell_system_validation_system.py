@@ -1,4 +1,10 @@
-from typing import Dict, Iterable, List, Mapping, Optional, Set, Sequence
+﻿from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Set, Sequence
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -19,9 +25,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
     SpellSystemValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
@@ -83,12 +87,12 @@ class SpellSystemValidationSystem(Cleanable):
             self,
             *,
             index: SpellSystemIndex,
-            blueprints: Dict[str, IRootResolutionBlueprint],
+            blueprints: Dict[str, RootResolutionBlueprint],
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: SpellSystemStates,
             conduit_id: Optional[str] = None,
-            spell_lookup: Optional[Mapping[str, ISpell]] = None,
+            spell_lookup: Optional[Mapping[str, Spell]] = None,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> SpellSystemValidationState:
         """
@@ -194,7 +198,7 @@ class SpellSystemValidationSystem(Cleanable):
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             index: SpellSystemIndex,
-            blueprints: Mapping[str, IRootResolutionBlueprint],
+            blueprints: Mapping[str, RootResolutionBlueprint],
             diagnostics: Sequence[SystemDiagnostic],
             has_error: bool,
     ) -> None:
@@ -236,3 +240,4 @@ class SpellSystemValidationSystem(Cleanable):
         except Exception:
             # Resolution state is best-effort; diagnostics still returned to caller.
             return
+

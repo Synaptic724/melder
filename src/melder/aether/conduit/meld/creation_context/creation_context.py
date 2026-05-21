@@ -20,8 +20,8 @@ from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executo
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.conduit.creations.creations import Creations
 from melder.utilities.synchronization.creation_gate import CreationGate
 
@@ -172,7 +172,7 @@ class CreationContext(Cleanable):
     def __init__(
             self,
             *,
-            spell: ISpell,
+            spell: Spell,
             dynamic_environment: bool = False,
             creation_gate: Optional[CreationGate] = None,
             creation_gate_index_id: Optional[str] = None,
@@ -213,7 +213,7 @@ class CreationContext(Cleanable):
                 Prebound override route config for mutation calls.
         """
         super().__init__()
-        self._spell: ISpell = spell
+        self._spell: Spell = spell
         self._spell_id: str = spell.spell_id
         self._dynamic_environment: bool = bool(dynamic_environment)
         if self._dynamic_environment and creation_gate is None:
@@ -740,7 +740,7 @@ class CreationContext(Cleanable):
     @staticmethod
     def _split_override_payload(
             *,
-            spell: ISpell,
+            spell: Spell,
             override_payload: Dict[str, Any],
     ) -> Tuple[Dict[str, Any], Optional[Sequence[Any]]]:
         """

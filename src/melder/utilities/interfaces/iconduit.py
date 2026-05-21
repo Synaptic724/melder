@@ -8,13 +8,13 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.conduit.spell_space.spell_space import SpellSpace
     from melder.aether.conduit.creations.creations import Creations
@@ -79,7 +79,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _register_to_creations(self, spell: ISpell, instance: Any) -> None:
+    def _register_to_creations(self, spell: Spell, instance: Any) -> None:
         """
         Register one user-created object into the conduit-owned creations
         manager.
@@ -445,7 +445,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[ISpell]:
+    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Spell]:
         """
         Public API
 
@@ -456,21 +456,21 @@ class IConduit(ICleanable, Protocol):
           1) Uses Aether to locate the owning conduit.
           2) Searches that conduit's spellbook for a SpellIndex whose lineage contains
              this version ID.
-          3) Returns the corresponding ISpell instance if found.
+          3) Returns the corresponding Spell instance if found.
 
         Args:
             spell_id (str): The unique version identifier of the spell (SHA256).
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[ISpell]: The spell object if found, otherwise None.
+            Optional[Spell]: The spell object if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
         ...
 
-    def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
+    def find_contracted_spell(self, spell_id: str) -> Optional[Spell]:
         """
         Internal
 
@@ -481,18 +481,18 @@ class IConduit(ICleanable, Protocol):
             spell_id (str): The unique version ID (SHA) of the spell to find.
 
         Returns:
-            Optional[ISpell]: The contracted spell instance, or None if not found.
+            Optional[Spell]: The contracted spell instance, or None if not found.
         """
         ...
 
-    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[ISpell]:
+    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[Spell]:
         """
         Public API
 
         Retrieves a spell object by its stable SpellIndex lineage id.
 
         Returns:
-            Optional[ISpell]: The spell object if found, otherwise None.
+            Optional[Spell]: The spell object if found, otherwise None.
         """
         ...
 
@@ -504,7 +504,7 @@ class IConduit(ICleanable, Protocol):
 
         This now uses:
           1) Spellbook.find_spell_index(...) to locate the SpellIndex lineage.
-          2) Spellbook._find_spell(SpellIndex) to retrieve the ISpell.
+          2) Spellbook._find_spell(SpellIndex) to retrieve the Spell.
           3) Returns spell.spell_id (the current head version for that lineage).
 
         Args:
@@ -1214,7 +1214,7 @@ class IConduit(ICleanable, Protocol):
     def add_spell_to_contract(
             self,
             *,
-            spell: Optional[ISpell] = None,
+            spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
@@ -1237,7 +1237,7 @@ class IConduit(ICleanable, Protocol):
         active link transaction that includes both conduits.
 
         Args:
-            spell (ISpell, optional): The spell object to contract.
+            spell (Spell, optional): The spell object to contract.
             spell_id (str, optional): The unique ID of the spell to contract.
             conduit (IConduit, optional): The target conduit to contract with.
             conduit_id (str, optional): The str of the target conduit (used if `conduit` is not provided).
@@ -1295,7 +1295,7 @@ class IConduit(ICleanable, Protocol):
     def remove_spell_from_contract(
             self,
             *,
-            spell: Optional[ISpell] = None,
+            spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
@@ -1311,7 +1311,7 @@ class IConduit(ICleanable, Protocol):
         Once removed, the spell is no longer accessible across the link.
 
         Args:
-            spell (ISpell, optional): The spell object to remove.
+            spell (Spell, optional): The spell object to remove.
             spell_id (str, optional): The unique ID of the spell to remove.
             conduit (IConduit, optional): The target conduit involved in the contract.
             conduit_id (str, optional): id of the target conduit (used if `conduit` not provided).
@@ -1376,7 +1376,7 @@ class IConduit(ICleanable, Protocol):
     def add_spell_to_contract_with_dependencies(
             self,
             *,
-            spell: Optional[ISpell] = None,
+            spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional['IConduit'] = None,
             conduit_id: Optional[str] = None,
@@ -1423,7 +1423,7 @@ class IConduit(ICleanable, Protocol):
     def get_all_spells_in_contracts(
             self,
             validate: bool = True,
-    ) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
+    ) -> Optional[dict[str, list[Tuple[str, Spell]]]]:
         """
         Public API
 
@@ -1436,7 +1436,7 @@ class IConduit(ICleanable, Protocol):
             validate (bool): If True, performs contract consistency validation before returning data.
 
         Returns:
-            Optional[dict[str, list[Tuple[str, ISpell]]]]: Dictionary mapping peer conduit ids to lists of (spell_id, ISpell) tuples,
+            Optional[dict[str, list[Tuple[str, Spell]]]]: Dictionary mapping peer conduit ids to lists of (spell_id, Spell) tuples,
             or None if no contracts exist.
 
         Raises:
@@ -1445,7 +1445,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, ISpell]]:
+    def get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, Spell]]:
         """
         Public API
 
@@ -1458,7 +1458,7 @@ class IConduit(ICleanable, Protocol):
             spell_id (str): The unique ID of the spell.
 
         Returns:
-            Optional[tuple[str, ISpell]]: Tuple of (`conduit_id`, `spell`) if found, otherwise None.
+            Optional[tuple[str, Spell]]: Tuple of (`conduit_id`, `spell`) if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).
@@ -1469,7 +1469,7 @@ class IConduit(ICleanable, Protocol):
     def get_spells_in_contract_by_conduit(
             self,
             conduit_id: str,
-    ) -> dict[str, list[tuple[str, ISpell]]] | None:
+    ) -> dict[str, list[tuple[str, Spell]]] | None:
         """
         Public API
 
@@ -1482,7 +1482,7 @@ class IConduit(ICleanable, Protocol):
             conduit_id (str): id of the target peer conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None
+            dict[str, list[tuple[str, Spell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `Spell`) tuples or None
             if not found. When a contract exists but contains no spells, inbound/outbound lists are empty.
 
         Raises:
@@ -1494,7 +1494,7 @@ class IConduit(ICleanable, Protocol):
     def get_spells_in_contract_by_conduit_name(
             self,
             conduit_name: str,
-    ) -> dict[str, list[tuple[str, ISpell]]] | None:
+    ) -> dict[str, list[tuple[str, Spell]]] | None:
         """
         Public API
 
@@ -1506,7 +1506,7 @@ class IConduit(ICleanable, Protocol):
             conduit_name (str): Name of the peer conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `ISpell`) tuples or None if not found.
+            dict[str, list[tuple[str, Spell]]] | None: Dictionary of `spell_id` -> (`spell_id`, `Spell`) tuples or None if not found.
 
         Raises:
             RuntimeError: If the Conduit fails, contract qualification checks (cleaned, not normal, not dynamic).

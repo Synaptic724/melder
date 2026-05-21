@@ -2,6 +2,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -44,7 +45,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
     SpellValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
@@ -242,7 +242,7 @@ class SpellValidationSystem(Cleanable):
     def validate_spell(
             self,
             *,
-            spell: ISpell,
+            spell: Spell,
             requirements: Optional[SpellRequirements],
             symbolic_graph: Optional[SpellSymbolicGraph],
             resolution_frame: Optional[SpellResolutionFrame],

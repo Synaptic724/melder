@@ -1,6 +1,10 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+﻿from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -14,8 +18,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
     OccurrencePlanBuilder,
 )
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 
@@ -40,7 +42,7 @@ class CompilerPhase8:
     def _get_required_root_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
-    ) -> IRootResolutionBlueprint:
+    ) -> RootResolutionBlueprint:
         """
         Return the Phase 5 root blueprint or raise.
 
@@ -55,7 +57,7 @@ class CompilerPhase8:
             artifact:
                 Compiler artifact carrying phase-5 state.
         Returns:
-            IRootResolutionBlueprint:
+            RootResolutionBlueprint:
                 The current root blueprint required for phase-8.
         """
         root_blueprint = artifact._root_blueprint_phase5
@@ -86,8 +88,8 @@ class CompilerPhase8:
     def _build_phase8_occurrence_plan_fast_key(
             self,
             *,
-            root_blueprint: Optional[IRootResolutionBlueprint],
-            spell_lookup: Optional[Dict[str, ISpell]],
+            root_blueprint: Optional[RootResolutionBlueprint],
+            spell_lookup: Optional[Dict[str, Spell]],
             spellbook: Spellbook,
             spell_system_states: Optional[SpellSystemStates],
     ) -> Optional[Tuple[Any, ...]]:
@@ -226,8 +228,8 @@ class CompilerPhase8:
     def _build_phase8_occurrence_plan_input_signature(
             self,
             *,
-            root_blueprint: Optional[IRootResolutionBlueprint],
-            spell_lookup: Optional[Dict[str, ISpell]],
+            root_blueprint: Optional[RootResolutionBlueprint],
+            spell_lookup: Optional[Dict[str, Spell]],
             spellbook: Spellbook,
             spell_system_states: Optional[SpellSystemStates],
     ) -> Optional[str]:
@@ -378,7 +380,7 @@ class CompilerPhase8:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: Optional[SpellSystemStates],
@@ -462,3 +464,4 @@ class CompilerPhase8:
         artifact._occurrence_plan_phase8 = plan
         artifact._phase8_occurrence_plan_input_signature = occurrence_plan_input_signature
         self._mark_phase8_11_codegen_ir_dirty(artifact)
+

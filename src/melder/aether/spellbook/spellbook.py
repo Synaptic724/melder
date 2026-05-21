@@ -17,7 +17,6 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
@@ -184,7 +183,7 @@ and logging.
         self._binding_transaction_active: bool = True
         self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
-        self._pending_structural_spells: List[ISpell] = []
+        self._pending_structural_spells: List[Spell] = []
         self._conduit: Optional[IConduit] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
@@ -205,18 +204,18 @@ and logging.
         self._initialize_logging(logger)
 
         # Core spell storage (SpellIndex Maps)
-        self._spells: Dict[SpellIndex, ISpell] = {}
+        self._spells: Dict[SpellIndex, Spell] = {}
         self._spell_versions: Set[str] = set()
         self._lookup_spells: Dict[tuple, SpellIndex]  = {}
-        self._spells_by_id: Dict[str, ISpell] = {}
-        self._spell_id_pool: Dict[str, ISpell] = {}
+        self._spells_by_id: Dict[str, Spell] = {}
+        self._spell_id_pool: Dict[str, Spell] = {}
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
+        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}
         self._contracted_versions: Dict[str, Set[str]] = {}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
-        self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
+        self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}
 
         # Spell States System
         self._spell_system_states: SpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
@@ -566,7 +565,7 @@ and logging.
             raise RuntimeError("Spellbook configuration is unavailable.")
         return configuration
 
-    def _register_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+    def _register_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -581,7 +580,7 @@ and logging.
 
         Args:
             spell_id (str): Current version id for the spell.
-            spell (ISpell): Owned spell instance.
+            spell (Spell): Owned spell instance.
 
         Raises:
             RuntimeError: If the Spellbook is cleaned or the map is missing.
@@ -611,7 +610,7 @@ and logging.
                 raise RuntimeError(f"spell_id collision for spell_id_pool spell_id={spell_id}")
             self._spell_id_pool[spell_id] = spell
 
-    def _update_owned_spell_id(self, old_id: str, new_id: str, spell: ISpell) -> None:
+    def _update_owned_spell_id(self, old_id: str, new_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -624,7 +623,7 @@ and logging.
         Args:
             old_id (str): Previous version id for the spell index.
             new_id (str): New version id for the spell index.
-            spell (ISpell): Owned spell instance.
+            spell (Spell): Owned spell instance.
 
         Raises:
             RuntimeError: If the map is missing or does not contain the old id.
@@ -680,7 +679,7 @@ and logging.
                 self._spell_versions.add(new_id)
         self._replace_spell_record_in_nexus(old_id, spell)
 
-    def _unregister_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
+    def _unregister_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -695,7 +694,7 @@ and logging.
             - Raises if the spell_id maps to a different spell in either map.
         Args:
             spell_id (str): Current version id for the spell.
-            spell (ISpell): Owned spell instance being removed.
+            spell (Spell): Owned spell instance being removed.
         Raises:
             RuntimeError: If the owned id map is missing.
             RuntimeError: If the spell_id maps to a different spell.
@@ -740,7 +739,7 @@ and logging.
                 self._aetheric_frame,
             )
 
-    def _register_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: ISpell) -> None:
+    def _register_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -756,7 +755,7 @@ and logging.
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
             spell_id (str): Current version id for the spell.
-            spell (ISpell): Contracted spell instance.
+            spell (Spell): Contracted spell instance.
 
         Raises:
             RuntimeError: If the contracted map is missing.
@@ -804,7 +803,7 @@ and logging.
             conduit_id: str,
             old_id: str,
             new_id: str,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
         Internal
@@ -819,7 +818,7 @@ and logging.
             conduit_id (str): Peer conduit id that owns the contract.
             old_id (str): The previous version id for the spell index.
             new_id (str): New version id for the spell index.
-            spell (ISpell): Contracted spell instance.
+            spell (Spell): Contracted spell instance.
 
         Raises:
             RuntimeError: If the map is missing or does not contain the old id.
@@ -890,7 +889,7 @@ and logging.
                     raise RuntimeError(f"Contracted version cache missing for conduit_id={conduit_id}")
                 versions_set.add(new_id)
 
-    def _unregister_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: ISpell) -> None:
+    def _unregister_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -899,7 +898,7 @@ and logging.
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
             spell_id (str): Current version id for the spell.
-            spell (ISpell): Contracted spell instance.
+            spell (Spell): Contracted spell instance.
 
         Raises:
             RuntimeError: If the map is missing or does not contain the id.
@@ -985,7 +984,7 @@ and logging.
         return self._id
 
     @property
-    def spells(self) -> Mapping[SpellIndex, ISpell]:
+    def spells(self) -> Mapping[SpellIndex, Spell]:
         """
         Public API
 
@@ -998,16 +997,16 @@ and logging.
               mutation.
 
         Returns:
-            Mapping[SpellIndex, ISpell]:
+            Mapping[SpellIndex, Spell]:
                 Immutable map of local `SpellIndex` keys to spell
                 objects.
         """
         self.check_cleaned()
-        spells_view: Mapping[SpellIndex, ISpell] = MappingProxyType(self._spells)
+        spells_view: Mapping[SpellIndex, Spell] = MappingProxyType(self._spells)
         return spells_view
 
     @property
-    def contracted_spells(self) -> Mapping[str, Mapping[SpellIndex, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[SpellIndex, Spell]]:
         """
         Public API
 
@@ -1018,16 +1017,16 @@ and logging.
             - Each value is an immutable spell map for that peer conduit.
 
         Returns:
-            Mapping[str, Mapping[SpellIndex, ISpell]]:
+            Mapping[str, Mapping[SpellIndex, Spell]]:
                 Immutable map of peer conduit id to immutable borrowed-spell
                 map.
         """
         self.check_cleaned()
-        contracted_views: Dict[str, Mapping[SpellIndex, ISpell]] = {
+        contracted_views: Dict[str, Mapping[SpellIndex, Spell]] = {
             conduit_id: MappingProxyType(dict(spells))
             for conduit_id, spells in self._contracted_spells.items()
         }
-        contracted_spells_view: Mapping[str, Mapping[SpellIndex, ISpell]] = (
+        contracted_spells_view: Mapping[str, Mapping[SpellIndex, Spell]] = (
             MappingProxyType(contracted_views)
         )
         return contracted_spells_view
@@ -1063,7 +1062,7 @@ and logging.
             lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
             spell_versions = set(self._spell_versions) if self._spell_versions is not None else set()
 
-            contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
+            contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}
             if self._contracted_spells is not None:
                 for conduit_id, spells in self._contracted_spells.items():
                     contracted_spells[conduit_id] = dict(spells)
@@ -1095,7 +1094,7 @@ and logging.
 
     #region Core Methods
     #region General Methods
-    def find_spell_by_id(self, spell_id: str) -> Optional[ISpell]:
+    def find_spell_by_id(self, spell_id: str) -> Optional[Spell]:
         """
         Finds a spell by its unique identifier within the spellbook.
 
@@ -1103,7 +1102,7 @@ and logging.
             spell_id: The identifier of the spell to find.
 
         Returns:
-            Optional[ISpell]: The spell if found, otherwise None.
+            Optional[Spell]: The spell if found, otherwise None.
         """
         self.check_cleaned()
         for spell_index, spell in self._spells.items():
@@ -1143,7 +1142,7 @@ and logging.
         )
         raise RuntimeError(f"Spell with index {spell_index} not found in the spellbook.")
 
-    def _find_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
+    def _find_spell(self, spell_index: SpellIndex) -> Optional[Spell]:
         """
         Internal
 
@@ -1154,14 +1153,14 @@ and logging.
                 The SpellIndex of the spell to find.
 
         Returns:
-            Optional[ISpell]:
+            Optional[Spell]:
                 The spell object if found, else `None`.
         """
         with self._lock:
             spell = self._spells.get(spell_index, None)
         return spell
 
-    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
+    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[Spell]:
         """
         Internal
 
@@ -1171,7 +1170,7 @@ and logging.
             spell_index (SpellIndex): The ID of the contracted spell to find.
 
         Returns:
-            Optional[ISpell]: The spell object if found.
+            Optional[Spell]: The spell object if found.
 
         Raises:
             RuntimeError: If the contracted spell with the given ID is not found.
@@ -1236,7 +1235,7 @@ and logging.
     def get_spell_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[ISpell]:
+    ) -> Optional[Spell]:
         """
         Public API
 
@@ -1258,7 +1257,7 @@ and logging.
                 Stable SpellIndex id (ULID) to resolve.
 
         Returns:
-            Optional[ISpell]:
+            Optional[Spell]:
                 Matching local or contracted spell when found, else "None".
         """
         self.check_cleaned()
@@ -1573,7 +1572,7 @@ and logging.
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[ISpell]:
+    ) -> Optional[Spell]:
         """
         Internal
 
@@ -1587,7 +1586,7 @@ and logging.
                 Spellbook's current frame.
 
         Returns:
-            Optional[ISpell]:
+            Optional[Spell]:
                 Matching spell when found, otherwise "None".
         """
         owner = self._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
@@ -1704,7 +1703,7 @@ and logging.
 
     #endregion General Methods
     #region Contract API
-    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> Optional[ISpell]:
+    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> Optional[Spell]:
         """
         Internal
 
@@ -1717,10 +1716,10 @@ and logging.
             conduit_id (str): The contracting peer conduit ID.
 
         Returns:
-            Optional[ISpell]: The resolved spell, or None if not found.
+            Optional[Spell]: The resolved spell, or None if not found.
         """
 
-        # Pull the map of SpellIndex? ISpell for this conduit
+        # Pull the map of SpellIndex? Spell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
@@ -1816,7 +1815,7 @@ and logging.
                 self._contracted_spells_by_id.pop(conduit_id, None)
 
 
-    def _add_contracted_spell(self, spell: ISpell, conduit_id: str) -> None:
+    def _add_contracted_spell(self, spell: Spell, conduit_id: str) -> None:
         """
         Internal
 
@@ -1831,7 +1830,7 @@ and logging.
         the updated contract scope.
 
         Args:
-            spell (ISpell): The spell object to add.
+            spell (Spell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         Raises:
             RuntimeError: If the contracted spell's binding key collides with existing bindings.
@@ -1860,7 +1859,7 @@ and logging.
             )
             spell_index._attach_contracted(self, conduit_id, spell)
 
-            # Main maps: SpellIndex? ISpell and key? SpellIndex
+            # Main maps: SpellIndex? Spell and key? SpellIndex
             spell_map[spell_index] = spell
             lookup_map[spell_key] = spell_index
 
@@ -1971,7 +1970,7 @@ and logging.
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
         """
 
-        removed_spells: List[ISpell] = []
+        removed_spells: List[Spell] = []
         with self._lock:
             if (
                 conduit_id not in self._contracted_spells
@@ -2546,7 +2545,7 @@ and logging.
             RuntimeError: If no binding transaction is active.
         """
         pending_frame_keys: Set[str] = set()
-        pending_spells: List[ISpell] = []
+        pending_spells: List[Spell] = []
         conjured = False
         with self._lock:
             if not self._binding_transaction_active:
@@ -2620,7 +2619,7 @@ and logging.
         """
         self.check_cleaned()
         request: Optional[ChangeControlTransactionRequest] = None
-        pending_spells: List[ISpell] = []
+        pending_spells: List[Spell] = []
         with self._lock:
             request = self._active_change_request
             if self._pending_structural_spells is not None:
@@ -2966,14 +2965,14 @@ and logging.
         scanner = Scan(self)
         return scanner.scan_module(module)
 
-    def _add_hooks_to_spell(self, spell: ISpell, **kwargs: Any) -> None:
+    def _add_hooks_to_spell(self, spell: Spell, **kwargs: Any) -> None:
         """
         Internal
 
         Attaches validation and lifecycle hooks to the newly bound spell object.
 
         Args:
-            spell (ISpell): The newly created spell object.
+            spell (Spell): The newly created spell object.
             **kwargs: Contains optional keys for `pre_hooks`, `activation_hooks`, and `post_hooks`.
 
         Raises:
@@ -3225,7 +3224,7 @@ and logging.
                 exc_info=True,
             )
 
-    def _register_spell_with_risk_manager(self, conduit_id: str, spell: ISpell) -> None:
+    def _register_spell_with_risk_manager(self, conduit_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -3245,7 +3244,7 @@ and logging.
                 exc_info=True,
             )
 
-    def _unregister_spell_with_risk_manager(self, conduit_id: str, spell: ISpell) -> None:
+    def _unregister_spell_with_risk_manager(self, conduit_id: str, spell: Spell) -> None:
         """
         Internal
 
@@ -3461,7 +3460,7 @@ and logging.
         for spell in self._spells.values():
             self._nexus._publish_spell_record(self, spell, conduit._id)
 
-    def _publish_spell_record_to_nexus(self, spell: ISpell) -> None:
+    def _publish_spell_record_to_nexus(self, spell: Spell) -> None:
         """
         Internal
 
@@ -3486,7 +3485,7 @@ and logging.
     def _replace_spell_record_in_nexus(
             self,
             old_spell_id: str,
-            spell: ISpell,
+            spell: Spell,
     ) -> None:
         """
         Internal
@@ -3763,7 +3762,7 @@ and logging.
             phase_scheduler_cls=PhaseScheduler,
         )
 
-    def _run_post_conjure_structural_phases(self, spells: Sequence[ISpell]) -> None:
+    def _run_post_conjure_structural_phases(self, spells: Sequence[Spell]) -> None:
         """
         Internal
 
@@ -3820,7 +3819,7 @@ and logging.
     def _run_resolution_phases_for_target_spell(
             self,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: Spell,
     ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal
@@ -3852,7 +3851,7 @@ and logging.
     def _run_deferred_resolution_phases_for_target_spell(
             self,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: Spell,
     ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
         Internal

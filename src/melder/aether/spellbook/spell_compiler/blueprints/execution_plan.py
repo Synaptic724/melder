@@ -5,9 +5,8 @@ from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
-
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
         InjectionPlan,
         InjectionSpec,
@@ -126,7 +125,7 @@ class ExecutionPlanStep:
             *,
             instance_key: InstanceKey,
             occurrence: OccurrenceKey,
-            spell: ISpell,
+            spell: Spell,
             existence: Existence,
             creations_target_kind: int,
             shared_instance: bool,
@@ -210,7 +209,7 @@ class ExecutionPlanStep:
 
         self._instance_key: InstanceKey = instance_key
         self._occurrence: OccurrenceKey = occurrence
-        self._spell: ISpell = spell
+        self._spell: Spell = spell
         self._existence: Existence = existence
         self._creations_target_kind: int = creations_target_kind
         self._shared_instance: bool = shared_instance
@@ -246,7 +245,7 @@ class ExecutionPlanStep:
         return self._occurrence
 
     @property
-    def spell(self) -> ISpell:
+    def spell(self) -> Spell:
         """Return the spell object this step executes."""
         return self._spell
 
@@ -484,7 +483,7 @@ class ExecutionPlan(Cleanable):
             fast_existence: Optional[List[Existence]] = None,
             fast_must_register: Optional[List[bool]] = None,
             fast_set_result_flags: Optional[List[bool]] = None,
-            fast_spells: Optional[List[ISpell]] = None,
+            fast_spells: Optional[List[Spell]] = None,
             fast_call_targets: Optional[List[Any]] = None,
             fast_existing_objects: Optional[List[Any]] = None,
             fast_is_existing_creation: Optional[List[bool]] = None,
@@ -1060,7 +1059,7 @@ class ExecutionPlanBuilder:
             *,
             occurrence_plan: "OccurrencePlan",
             injection_plan: Optional["InjectionPlan"],
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
             plan_variant: str,
     ) -> None:
         """
@@ -1380,7 +1379,7 @@ class ExecutionPlanBuilder:
         ]
         fast_must_register: List[bool] = [False] * step_count
         fast_set_result_flags: List[bool] = [False] * step_count
-        fast_spells: List[ISpell] = [
+        fast_spells: List[Spell] = [
             step.spell
             for step in steps
         ]
@@ -1992,7 +1991,7 @@ class ExecutionPlanBuilder:
         return "creations_lock"
 
     @staticmethod
-    def _should_register(spell: ISpell) -> bool:
+    def _should_register(spell: Spell) -> bool:
         """
         Decide whether a spell's result must be registered in creations.
 

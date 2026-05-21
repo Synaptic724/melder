@@ -1,6 +1,7 @@
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-from melder.utilities.interfaces.ispell import ISpell
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -32,7 +33,7 @@ class SpellbookValidationError(RuntimeError):
           cleaned while the error is being rendered.
     """
 
-    def __init__(self, broken_spells: list[ISpell]) -> None:
+    def __init__(self, broken_spells: list[Spell]) -> None:
         """
         Purpose:
             Build a validation error with a readable diagnostic summary.
@@ -57,7 +58,7 @@ class SpellbookValidationError(RuntimeError):
             super().__init__(msg)
             return
 
-        spell_contexts: list[tuple[ISpell, str, str, Any]] = []
+        spell_contexts: list[tuple[Spell, str, str, Any]] = []
         summary_parts = []
         for spell in broken_spells:
             try:

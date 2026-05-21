@@ -8,9 +8,8 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionPlanBuilder,
 )
-from melder.utilities.interfaces.ispell import ISpell
-
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
         OccurrencePlan,
     )
@@ -104,7 +103,7 @@ class CompilerPhase9:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """

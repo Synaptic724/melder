@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -14,8 +15,6 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanCallMode,
     ExecutionPlanVariant,
 )
-
-from melder.utilities.interfaces.ispell import ISpell
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
@@ -228,7 +227,7 @@ class CompilerPhase11:
 
     def _build_phase11_spell_signature_row(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> Tuple[Any, ...]:
         """
         Build a deterministic spell metadata row for Phase 11 no-overrides inputs.
@@ -284,7 +283,7 @@ class CompilerPhase11:
             *,
             occurrence_plan: "OccurrencePlan",
             injection_plan: Optional["InjectionPlan"],
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
     ) -> Optional[str]:
         """
         Build a deterministic no-overrides input signature for Phase 11 reuse.
@@ -470,7 +469,7 @@ class CompilerPhase11:
 
     def _cache_execution_plan_metrics(
             self,
-            spell: ISpell,
+            spell: Spell,
             *,
             occurrence_plan: "OccurrencePlan",
             plan: ExecutionPlan,
@@ -552,7 +551,7 @@ class CompilerPhase11:
             *,
             occurrence_plan: "OccurrencePlan",
             injection_plan: Optional["InjectionPlan"],
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
             plan_variant: str,
     ) -> ExecutionPlan:
         """
@@ -587,7 +586,7 @@ class CompilerPhase11:
 
     def _store_phase11_to_phase12_handoff(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             plan: Optional[ExecutionPlan],
     ) -> None:
@@ -660,7 +659,7 @@ class CompilerPhase11:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
     ) -> None:
@@ -679,7 +678,7 @@ class CompilerPhase11:
             - Requires Phase 8 artifacts to be available.
             - Uses Phase 9 injection plan when available.
             - Replaces existing ExecutionPlan references for this spell.
-            - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
+            - Uses the Spellbook-managed spell_id_pool (spell_id -> Spell) as the
               spell lookup map without rebuilding it per phase.
             - Reuses cached no-overrides plan when the deterministic Phase11
               no-overrides input signature is unchanged.

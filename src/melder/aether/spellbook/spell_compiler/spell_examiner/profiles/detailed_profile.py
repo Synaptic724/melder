@@ -32,8 +32,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_prof
     SpellBindingProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
-
 @mypyc_attr(native_class=True)
 class SpellDetailedProfile(SpellGeneralProfile):
     """
@@ -200,7 +198,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
             profile.complete_with_spell(target)
         return profile
 
-    def complete_with_spell(self, spell: ISpell) -> None:
+    def complete_with_spell(self, spell: Spell) -> None:
         """
         Complete phase 2 of the detailed profile lifecycle.
 
@@ -284,7 +282,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
             dynamic_access=self.dynamic_access,
         )
 
-    def _inspect_class(self, spell: ISpell) -> ClassProfile:
+    def _inspect_class(self, spell: Spell) -> ClassProfile:
         """
         Inspect a class-backed spell and build a `ClassProfile`.
 
@@ -376,7 +374,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
             dynamic_access=data.get("dynamic_access", {}),
         )
 
-    def _inspect_callable(self, spell: ISpell) -> MethodProfile:
+    def _inspect_callable(self, spell: Spell) -> MethodProfile:
         """
         Inspect a callable-backed spell and build a `MethodProfile`.
 

@@ -16,8 +16,12 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
-from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
-from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 
 @mypyc_attr(native_class=True)
 class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
@@ -77,7 +81,7 @@ class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
 
         profile = spell.profile
         binding_profile = profile
-        if isinstance(profile, (ISpellGeneralProfile, ISpellDetailedProfile)):
+        if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
             binding_profile = profile.binding_profile
         if binding_profile is None or not isinstance(
                 binding_profile,

@@ -1,4 +1,10 @@
-from typing import Dict, List, Mapping, Optional, Set
+﻿from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -11,9 +17,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
@@ -32,11 +36,11 @@ class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
             self,
             *,
             index: SpellSystemIndex,
-            blueprints: Dict[str, IRootResolutionBlueprint],
+            blueprints: Dict[str, RootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: SpellSystemStates,
-            spell_lookup: Mapping[str, ISpell],
+            spell_lookup: Mapping[str, Spell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],
     ) -> None:
@@ -104,4 +108,5 @@ class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
                     },
                 )
             )
+
 

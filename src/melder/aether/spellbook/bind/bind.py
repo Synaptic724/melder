@@ -11,7 +11,6 @@ from mypy_extensions import mypyc_attr
 # Melder Imports
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell import Spell
@@ -117,7 +116,7 @@ class Bind(Cleanable):
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
-    ) -> Union[ISpell, Any]:
+    ) -> Union[Spell, Any]:
         """
         Register a class, function, or existing object as a `Spell`.
 
@@ -153,7 +152,7 @@ class Bind(Cleanable):
         self.check_cleaned()
         if spell is None:
             # Decorator usage
-            def decorator(obj: Any) -> ISpell:
+            def decorator(obj: Any) -> Spell:
                 """
                 Bind the target object with the specified policy and lifecycle settings.
                 """
@@ -190,7 +189,7 @@ class Bind(Cleanable):
             permissions: Permissions,
             aetheric_frame: str,
             profile: str = "general",
-    ) -> ISpell:
+    ) -> Spell:
         """
         Internal logic for processing the binding of a spell object.
 

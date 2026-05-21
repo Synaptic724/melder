@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional, List
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -19,7 +20,6 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
     SpellValidationIssue,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
@@ -71,7 +71,7 @@ class SpellValidationContext(Cleanable):
 
     def __init__(
             self,
-            spell: 'ISpell',
+            spell: 'Spell',
             spellbook: Optional['Spellbook'],
             requirements: Optional['SpellRequirements'],
             symbolic_graph: Optional['SpellSymbolicGraph'],
@@ -107,7 +107,7 @@ class SpellValidationContext(Cleanable):
         if issues is None:
             raise ValueError("issues list cannot be None.")
 
-        self.spell: 'ISpell' = spell
+        self.spell: 'Spell' = spell
         self.spellbook: Optional['Spellbook'] = spellbook
         self.requirements: Optional['SpellRequirements'] = requirements
         self.symbolic_graph: Optional['SpellSymbolicGraph'] = symbolic_graph

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -47,7 +48,6 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ class SpellCompiler:
 
     def run_phase_requirements(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -149,7 +149,7 @@ class SpellCompiler:
 
     def run_phase_symbolic_graph(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -184,7 +184,7 @@ class SpellCompiler:
 
     def run_phase_local_frame(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -242,7 +242,7 @@ class SpellCompiler:
 
     def run_phase_validation(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spell_validator: "SpellValidationSystem",
             spell_system_states: Optional[SpellSystemStates],
@@ -284,7 +284,7 @@ class SpellCompiler:
 
     def run_phase_root_blueprints(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -332,7 +332,7 @@ class SpellCompiler:
 
     def run_phase_root_blueprints_local(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -425,7 +425,7 @@ class SpellCompiler:
 
     def run_phase_system_validation_local(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -550,7 +550,7 @@ class SpellCompiler:
 
     def run_phase_occurrence_plan(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: Optional[SpellSystemStates],
@@ -590,7 +590,7 @@ class SpellCompiler:
 
     def run_phase_injection_plan(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
@@ -641,7 +641,7 @@ class SpellCompiler:
 
     def run_phase_patch_maps(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
@@ -692,7 +692,7 @@ class SpellCompiler:
 
     def run_phase_execution_plan(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
     ) -> None:
@@ -740,7 +740,7 @@ class SpellCompiler:
     def compile_phase12_no_overrides_executor(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
@@ -775,7 +775,7 @@ class SpellCompiler:
 
     def compile_phase12_no_overrides_executor_from_plan(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             execution_plan: ExecutionPlan,
     ) -> None:
@@ -812,7 +812,7 @@ class SpellCompiler:
     def compile_phase12_no_overrides_executor_from_payload(
             self,
             spellbook: Spellbook,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             no_overrides_payload: Dict[str, Any],
     ) -> None:

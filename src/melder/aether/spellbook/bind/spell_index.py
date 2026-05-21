@@ -1,7 +1,10 @@
 import threading
 import ulid
 from types import TracebackType
-from typing import Any, Optional, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Dict, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -180,7 +183,7 @@ class SpellIndex(Cleanable):
 
         Args:
             spellbook (ISpellbook): Owning Spellbook for this index.
-            spell (ISpell): The owned spell instance for this SpellIndex.
+            spell (Spell): The owned spell instance for this SpellIndex.
 
         Raises:
             RuntimeError: If a different owner is already attached.
@@ -238,7 +241,7 @@ class SpellIndex(Cleanable):
         Args:
             spellbook (ISpellbook): The Spellbook receiving the contracted spell.
             conduit_id (str): The peer conduit id for the contract.
-            spell (ISpell): The contracted spell instance.
+            spell (Spell): The contracted spell instance.
 
         Raises:
             RuntimeError: If the same contract attachment already exists with a different spell.

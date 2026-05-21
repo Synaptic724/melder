@@ -1,13 +1,17 @@
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, List, Set
+﻿from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, TYPE_CHECKING, Dict, Mapping, Optional, List, Set
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
-from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
@@ -40,11 +44,11 @@ class SpellSystemValidationStrategy(ABC):
             self,
             *,
             index: SpellSystemIndex,
-            blueprints: Dict[str, IRootResolutionBlueprint],
+            blueprints: Dict[str, RootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
             spell_system_states: SpellSystemStates,
-            spell_lookup: Mapping[str, ISpell],
+            spell_lookup: Mapping[str, Spell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],
     ) -> None:
@@ -73,3 +77,4 @@ class SpellSystemValidationStrategy(ABC):
                 longer scans.
         """
         ...
+

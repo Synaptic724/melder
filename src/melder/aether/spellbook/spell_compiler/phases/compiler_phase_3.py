@@ -4,6 +4,7 @@ import typing
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -39,8 +40,6 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.ispell import ISpell
-
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
@@ -70,7 +69,7 @@ class CompilerPhase3:
 
     def _get_required_current_spell_id(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> str:
         """
         Return the current bound spell version id or raise.
@@ -130,7 +129,7 @@ class CompilerPhase3:
                 - Uses the Spellbook's live "_spell_id_pool" directly; no copies
                   or snapshots are created.
             Returns:
-                Iterator[Tuple[SpellIndex, ISpell]]: Live iteration stream.
+                Iterator[Tuple[SpellIndex, Spell]]: Live iteration stream.
         """
         for spell_instance in spellbook._spell_id_pool.values():
             yield spell_instance.spell_index, spell_instance
@@ -177,7 +176,7 @@ class CompilerPhase3:
             self,
             annotation: Any,
             binding_name: Optional[str],
-            spell_obj: ISpell,
+            spell_obj: Spell,
             *,
             require_class_spell: bool,
     ) -> bool:
@@ -250,10 +249,10 @@ class CompilerPhase3:
 
     def _resolve_single_by_annotation(
             self,
-            spell: ISpell,
+            spell: Spell,
             spellbook: Spellbook,
             dep: SpellSymbolicDependency,
-    ) -> Dict[Any, ISpell]:
+    ) -> Dict[Any, Spell]:
         """
         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
         spell.
@@ -267,7 +266,7 @@ class CompilerPhase3:
                 Dependency metadata for this constructor parameter.
 
         Returns:
-            Dict[Any, ISpell]:
+            Dict[Any, Spell]:
                 Mapping from matched `spell_index` to spell.
 
         Raises:
@@ -277,7 +276,7 @@ class CompilerPhase3:
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
 
-        candidates: Dict[Any, ISpell] = {}
+        candidates: Dict[Any, Spell] = {}
 
         for index, spell_obj in self._iter_all_spells(spellbook):
             if self._matches_annotation(
@@ -315,7 +314,7 @@ class CompilerPhase3:
             self,
             spellbook: Spellbook,
             dep: SpellSymbolicDependency,
-    ) -> Dict[Any, ISpell]:
+    ) -> Dict[Any, Spell]:
         """
             Resolve a COLLECTION_BY_ANNOTATION dependency to **all** matching
             spells (classes, methods, lambdas) bound under the given frame/type.
@@ -330,7 +329,7 @@ class CompilerPhase3:
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
 
-        candidates: Dict[Any, ISpell] = {}
+        candidates: Dict[Any, Spell] = {}
 
         for index, spell_obj in self._iter_all_spells(spellbook):
             if self._matches_annotation(
@@ -369,10 +368,10 @@ class CompilerPhase3:
 
     def _resolve_spellmap_default(
             self,
-            spell: ISpell,
+            spell: Spell,
             spellbook: Spellbook,
             dep: SpellSymbolicDependency,
-    ) -> Dict[Any, ISpell]:
+    ) -> Dict[Any, Spell]:
         """
         Resolve a SPELLMAP_DEFAULT dependency using the original SpellMap
         default attached to the parameter.
@@ -386,7 +385,7 @@ class CompilerPhase3:
                 Dependency metadata containing spellmap defaults.
 
         Returns:
-            Dict[Any, ISpell]:
+            Dict[Any, Spell]:
                 Mapping with exactly one resolved spell for the default.
 
         Raises:
@@ -397,7 +396,7 @@ class CompilerPhase3:
         if spellmap is None:
             return {}
 
-        candidates: Dict[Any, ISpell] = {}
+        candidates: Dict[Any, Spell] = {}
         explicit_spell = spellmap.spell
         frame = spellmap.spellframe
         binding_name = spellmap.binding_name
@@ -488,7 +487,7 @@ class CompilerPhase3:
 
     def _build_local_topology(
             self,
-            spell: ISpell,
+            spell: Spell,
             graph: SpellSymbolicGraph,
             socket_targets: Dict[tuple[str, int], List[str]],
     ) -> SpellLocalTopology:
@@ -555,7 +554,7 @@ class CompilerPhase3:
 
     def _build_local_frame_dag(
             self,
-            spell: ISpell,
+            spell: Spell,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             requirements: "SpellRequirements",
@@ -676,7 +675,7 @@ class CompilerPhase3:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,

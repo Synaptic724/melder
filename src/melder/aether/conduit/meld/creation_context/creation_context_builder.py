@@ -1,4 +1,7 @@
-from typing import Optional, Any, Callable
+from typing import TYPE_CHECKING, Optional, Any, Callable
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -10,7 +13,6 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
     SharedCompilerExecutions,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 
 @mypyc_attr(native_class=True)
@@ -32,7 +34,7 @@ class CreationContextBuilder:
 
     @staticmethod
     def build(
-            spell: ISpell,
+            spell: Spell,
             *,
             dynamic_environment: bool = False,
             creation_gate: Optional[CreationGate] = None,
@@ -110,7 +112,7 @@ class CreationContextBuilder:
         )
 
     @staticmethod
-    def _resolve_route_key(spell: ISpell) -> str:
+    def _resolve_route_key(spell: Spell) -> str:
         """
         Select the runtime execution route for the spell's existence model.
 
@@ -149,7 +151,7 @@ class CreationContextBuilder:
         return resolve_route_key == CreationContext.ROUTE_MANY
 
     @staticmethod
-    def _resolve_fast_transient_no_overrides_enabled(spell: ISpell) -> bool:
+    def _resolve_fast_transient_no_overrides_enabled(spell: Spell) -> bool:
         """
         Decide whether no-override calls may use the fast transient lane.
 
@@ -172,7 +174,7 @@ class CreationContextBuilder:
 
     @staticmethod
     def _resolve_no_overrides_executor(
-            spell: ISpell,
+            spell: Spell,
     ) -> Optional[Callable[..., Any]]:
         """
         Return the spell's precompiled no-overrides Phase 12 executor.
@@ -187,7 +189,7 @@ class CreationContextBuilder:
         return executor
 
     @staticmethod
-    def _resolve_override_patch_map_phase10(spell: ISpell) -> Optional[Any]:
+    def _resolve_override_patch_map_phase10(spell: Spell) -> Optional[Any]:
         """
         Return the spell's compiled Phase 10 override patch map artifact.
 
@@ -204,7 +206,7 @@ class CreationContextBuilder:
     @staticmethod
     def _build_mutation_override_route_config(
             *,
-            spell: ISpell,
+            spell: Spell,
     ) -> Optional[OverrideRouteConfig]:
         """
         Build mutation-lane route config only when the mutation overlay is active.
@@ -225,7 +227,7 @@ class CreationContextBuilder:
     @staticmethod
     def _build_override_route_config(
             *,
-            spell: ISpell,
+            spell: Spell,
             execution_ir_key: str,
     ) -> Optional[OverrideRouteConfig]:
         """

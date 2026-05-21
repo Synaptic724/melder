@@ -21,10 +21,10 @@ from melder.aether.spellbook.spell_compiler.phases.utility import (
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.validation.validation_system import (
         SpellValidationSystem,
     )
@@ -51,7 +51,7 @@ class CompilerPhase4:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spell_validator: "SpellValidationSystem",
             spell_system_states: Optional[SpellSystemStates],

@@ -4,13 +4,13 @@ from threading import RLock
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, List, Tuple, Sequence
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -114,13 +114,13 @@ class Meld(Cleanable):
         self._spellbook: Spellbook = spellbook
 
         # Spellbook references (used for resolution)
-        self._owned_spells: Dict[SpellIndex, ISpell] = spellbook._spells
-        self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = (
+        self._owned_spells: Dict[SpellIndex, Spell] = spellbook._spells
+        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = (
             spellbook._contracted_spells
         )
-        self._spells_by_id: Dict[str, ISpell] = spellbook._spells_by_id
-        self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = spellbook._contracted_spells_by_id
-        self._spell_id_pool: Dict[str, ISpell] = spellbook._spell_id_pool
+        self._spells_by_id: Dict[str, Spell] = spellbook._spells_by_id
+        self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = spellbook._contracted_spells_by_id
+        self._spell_id_pool: Dict[str, Spell] = spellbook._spell_id_pool
 
         self._lookup_owned_spells: Dict[tuple, SpellIndex] = spellbook._lookup_spells
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = (
@@ -132,8 +132,8 @@ class Meld(Cleanable):
         self._creations: Creations = creations
 
         # Front-door resolution caches.
-        self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
-        self._spell_id_resolution_cache: Dict[str, ISpell] = {}
+        self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], Spell] = {}
+        self._spell_id_resolution_cache: Dict[str, Spell] = {}
         self._max_resolution_cache_size: int = 2048
         self._change_control_manager_by_frame: Dict[str, ChangeControlManager] = {}
 
@@ -305,7 +305,7 @@ class Meld(Cleanable):
                 that has overrides disabled).
         """
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
-        target_spell: Optional[ISpell] = None
+        target_spell: Optional[Spell] = None
         if isinstance(spell, str):
             spell_id_resolution_cache = self._spell_id_resolution_cache
             target_spell = spell_id_resolution_cache.get(spell)
@@ -465,7 +465,7 @@ class Meld(Cleanable):
                 If the spell lifecycle does not support unambiguous
                 existing-object retrieval.
         """
-        target_spell: Optional[ISpell] = None
+        target_spell: Optional[Spell] = None
         if isinstance(spell, str):
             spell_id_resolution_cache = self._spell_id_resolution_cache
             target_spell = spell_id_resolution_cache.get(spell)
@@ -681,7 +681,7 @@ class Meld(Cleanable):
         )
         return self._describe_spell_live_creation_status(target_spell)
 
-    def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
+    def _ensure_lineage_resolvable(self, spell: Spell) -> None:
         """
         Ensure the spell is structurally valid enough to continue toward
         resolution.
@@ -738,7 +738,7 @@ class Meld(Cleanable):
             spell: str | object | None,
             spellframe: str | object | None,
             binding_name: str | None,
-    ) -> ISpell:
+    ) -> Spell:
         """
         Resolve one spell for the live-creation probe using meld semantics.
 
@@ -757,9 +757,9 @@ class Meld(Cleanable):
                 Optional binding name used for lookup-key resolution.
 
         Returns:
-            ISpell: Resolved spell object for the probe.
+            Spell: Resolved spell object for the probe.
         """
-        target_spell: Optional[ISpell] = None
+        target_spell: Optional[Spell] = None
         if isinstance(spell, str):
             spell_id_resolution_cache = self._spell_id_resolution_cache
             target_spell = spell_id_resolution_cache.get(spell)
@@ -800,7 +800,7 @@ class Meld(Cleanable):
             input_resolution_cache[cache_key] = target_spell
         return target_spell
 
-    def _describe_spell_live_creation_status(self, spell: ISpell) -> Dict[str, object]:
+    def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
         """
         Return structured live-creation status for one resolved spell.
 
@@ -940,7 +940,7 @@ class Meld(Cleanable):
             )
         )
 
-    def _ensure_runtime_resolution_ready(self, spell: ISpell) -> None:
+    def _ensure_runtime_resolution_ready(self, spell: Spell) -> None:
         """
         Ensure deferred runtime resolution is complete before context build.
 
@@ -1037,7 +1037,7 @@ class Meld(Cleanable):
 
         return manager
 
-    def _gated_validation_required(self, spell: ISpell) -> bool:
+    def _gated_validation_required(self, spell: Spell) -> bool:
         """
         Decide whether structural revalidation must run before meld continues.
 
@@ -1112,7 +1112,7 @@ class Meld(Cleanable):
 
 
 
-    def _ensure_resolution_resolvable(self, spell: ISpell) -> None:
+    def _ensure_resolution_resolvable(self, spell: Spell) -> None:
         """
         Ensure the spell is resolution-valid for the active conduit.
 
@@ -1172,7 +1172,7 @@ class Meld(Cleanable):
             raise SpellbookValidationError([spell])
         raise SpellbookValidationError([spell])
 
-    def _check_contracts_and_force_revalidation(self, spell: ISpell) -> None:
+    def _check_contracts_and_force_revalidation(self, spell: Spell) -> None:
         """
         Validate SpellContract sockets and force resolution revalidation.
 
@@ -1244,7 +1244,7 @@ class Meld(Cleanable):
 
     @staticmethod
     def _iter_spell_contract_defaults(
-            spell: ISpell,
+            spell: Spell,
     ) -> List[Tuple[str, SpellContract]]:
         """
         Return SpellContract defaults discovered in the spell's call signature.
@@ -1287,7 +1287,7 @@ class Meld(Cleanable):
 
         return contracts
 
-    def _force_resolution_revalidation(self, spell: ISpell) -> None:
+    def _force_resolution_revalidation(self, spell: Spell) -> None:
         """
         Force resolution validity to gated so revalidation runs in this conduit.
 
@@ -1330,7 +1330,7 @@ class Meld(Cleanable):
 
     def _get_resolution_validity(
             self,
-            spell: ISpell,
+            spell: Spell,
             resolution_state: Optional[ConduitResolutionState],
     ) -> Optional[SpellValidity]:
         """
@@ -1496,11 +1496,11 @@ class Meld(Cleanable):
             spell_name: str | None,
             spellframe: Any | None,
             binding_name: str | None,
-    ) -> ISpell:
+    ) -> Spell:
         """
         Internal
 
-        Resolve an ISpell using either:
+        Resolve an Spell using either:
 
         1. A direct spell_id string (SHA256 fingerprint), or
         2. A logical identity tuple derived from
@@ -1528,7 +1528,7 @@ class Meld(Cleanable):
                 registered under the same spellframe.
 
         Returns:
-            ISpell:
+            Spell:
                 The resolved spell configuration object.
 
         Raises:
@@ -1573,7 +1573,7 @@ class Meld(Cleanable):
         resolved = self._resolve_spell_by_lookup_key(lookup_key)
         return resolved
 
-    def _resolve_spell_by_id(self, spell_id: str) -> ISpell:
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
         """
         Resolve a spell by its current canonical spell id.
 
@@ -1586,7 +1586,7 @@ class Meld(Cleanable):
                 The SHA256 fingerprint associated with the spell.
 
         Returns:
-            ISpell:
+            Spell:
                 The resolved spell configuration object.
 
         Raises:
@@ -1613,7 +1613,7 @@ class Meld(Cleanable):
     def _resolve_spell_by_lookup_key(
             self,
             lookup_key: tuple[str, str],
-    ) -> ISpell:
+    ) -> Spell:
         """
         Resolve a spell by normalized logical identity key.
 
@@ -1633,7 +1633,7 @@ class Meld(Cleanable):
                 SpellInputUtils.make_spell_key_from_parts.
 
         Returns:
-            ISpell:
+            Spell:
                 The resolved spell configuration object.
 
         Raises:
@@ -1664,7 +1664,7 @@ class Meld(Cleanable):
     def _resolve_local_by_lookup_key(
             self,
             lookup_key: tuple[str, str],
-    ) -> Optional[ISpell]:
+    ) -> Optional[Spell]:
         """
         Attempt local Spellbook resolution for one logical lookup key.
 
@@ -1673,7 +1673,7 @@ class Meld(Cleanable):
                 The logical identity key (frame_key, binding_name).
 
         Returns:
-            Optional[ISpell]:
+            Optional[Spell]:
                 The resolved spell object if found locally, otherwise
                 None.
 
@@ -1699,7 +1699,7 @@ class Meld(Cleanable):
     def _resolve_contracted_by_lookup_key(
             self,
             lookup_key: tuple[str, str],
-    ) -> Optional[ISpell]:
+    ) -> Optional[Spell]:
         """
         Attempt contracted-conduit resolution for one logical lookup key.
 
@@ -1712,7 +1712,7 @@ class Meld(Cleanable):
                 The logical identity key (frame_key, binding_name).
 
         Returns:
-            Optional[ISpell]:
+            Optional[Spell]:
                 The resolved spell object if found among contracted
                 spells, otherwise None.
 

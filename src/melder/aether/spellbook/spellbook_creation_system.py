@@ -2,6 +2,7 @@ import threading
 from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -25,9 +26,12 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
-from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
@@ -514,7 +518,7 @@ class SpellbookCreationSystem(Cleanable):
             matched: List[str] = []
             profile = spell.profile
             binding_profile = profile
-            if isinstance(profile, (ISpellGeneralProfile, ISpellDetailedProfile)):
+            if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
                 binding_profile = profile.binding_profile
             if isinstance(binding_profile, ClassBindingProfile):
                 method_names = set(binding_profile.method_names)
@@ -789,7 +793,7 @@ class SpellbookCreationSystem(Cleanable):
             compiler_system.cleanup()
 
     @staticmethod
-    def run_post_conjure_structural_phases(spellbook: Any, spells: Sequence[ISpell]) -> None:
+    def run_post_conjure_structural_phases(spellbook: Any, spells: Sequence[Spell]) -> None:
         """
         Purpose:
             Run structural phases for spells bound after a conduit is already conjured.
@@ -923,7 +927,7 @@ class SpellbookCreationSystem(Cleanable):
     def run_resolution_phases_for_target_spell(
             spellbook: Any,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: Spell,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
     ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
@@ -1013,7 +1017,7 @@ class SpellbookCreationSystem(Cleanable):
     def run_deferred_resolution_phases_for_target_spell(
             spellbook: Any,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: Spell,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
     ) -> Dict[str, Sequence[IUnitOfWork]]:
         """
@@ -1308,7 +1312,7 @@ class SpellbookCreationSystem(Cleanable):
         )
 
     @staticmethod
-    def _collect_broken_spells(spells: Sequence[ISpell]) -> List[ISpell]:
+    def _collect_broken_spells(spells: Sequence[Spell]) -> List[Spell]:
         """
         Purpose:
             Collect spells that resolve as broken from a spell sequence.
@@ -1317,9 +1321,9 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spells: Sequence of spells to inspect.
         Returns:
-            List[ISpell]: Spells considered broken.
+            List[Spell]: Spells considered broken.
         """
-        broken_spells: List[ISpell] = []
+        broken_spells: List[Spell] = []
         for spell in spells:
             try:
                 if spell.is_broken:
@@ -1332,7 +1336,7 @@ class SpellbookCreationSystem(Cleanable):
     def _raise_structural_validation_error(
             *,
             spellbook: Any,
-            broken_spells: List[ISpell],
+            broken_spells: List[Spell],
             context_name: str,
             message_prefix: str,
     ) -> None:
@@ -1507,7 +1511,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Any,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: Spell,
             target_spell_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> Dict[str, Sequence[IUnitOfWork]]:
@@ -1564,7 +1568,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _collect_target_resolution_scope(
             *,
-            target_spell: ISpell,
+            target_spell: Spell,
             target_spell_id: str,
     ) -> Tuple[Set[str], Collection[str]]:
         """
@@ -1601,7 +1605,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Any,
             conduit_id: str,
-            target_spell: ISpell,
+            target_spell: Spell,
             target_spell_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> Dict[str, Sequence[IUnitOfWork]]:
@@ -1794,7 +1798,7 @@ class SpellbookCreationSystem(Cleanable):
             compiler_system: SpellCompilerSystem,
             phase_name: str,
             phase_callable_attr: str,
-            args_factory: Callable[[ISpell, Any], Tuple[Any, ...]],
+            args_factory: Callable[[Spell, Any], Tuple[Any, ...]],
     ) -> Sequence[IUnitOfWork]:
         """
         Purpose:

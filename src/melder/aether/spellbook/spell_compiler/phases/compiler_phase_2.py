@@ -1,4 +1,7 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -22,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_depend
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -45,7 +47,7 @@ class CompilerPhase2:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:

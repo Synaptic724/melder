@@ -1,5 +1,8 @@
 import threading
-from typing import Any, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -9,8 +12,6 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
-from melder.utilities.interfaces.ispell import ISpell
-
 @mypyc_attr(native_class=True)
 class MutationContract(Cleanable):
     """
@@ -121,7 +122,7 @@ class MutationContract(Cleanable):
             )
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
-        self._spell: ISpell | None = spell
+        self._spell: Spell | None = spell
         self._spellframe: Optional[Any] = spellframe
         self._binding_name: Optional[str] = (
             SpellInputUtils.normalize_binding_name(binding_name)

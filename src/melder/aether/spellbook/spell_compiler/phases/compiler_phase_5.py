@@ -1,6 +1,10 @@
-from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
+﻿from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -29,9 +33,10 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_b
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
 )
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
-from melder.utilities.interfaces.ispell import ISpell
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -76,7 +81,7 @@ class CompilerPhase5:
             raise RuntimeError("SpellCrafter requires a concrete owning frame name.")
         return frame_name
 
-    def _get_required_current_spell_id(self, spell: ISpell) -> str:
+    def _get_required_current_spell_id(self, spell: Spell) -> str:
         """
         Resolve the current spell version id for the bound spell.
 
@@ -153,9 +158,9 @@ class CompilerPhase5:
 
     def _set_root_blueprint_phase5(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
-            blueprint: IRootResolutionBlueprint,
+            blueprint: RootResolutionBlueprint,
     ) -> None:
         """
         Attach the Phase 5 root blueprint for this spell.
@@ -176,7 +181,7 @@ class CompilerPhase5:
 
     def _set_spell_system_index_phase5(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             index: SpellSystemIndex,
     ) -> None:
@@ -244,7 +249,7 @@ class CompilerPhase5:
             self,
             *,
             snapshot: SpellSystemAdjacencySnapshot,
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
             spell_system_states: SpellSystemStates,
     ) -> SpellSystemIndex:
         """
@@ -293,9 +298,9 @@ class CompilerPhase5:
             self,
             *,
             snapshot: SpellSystemAdjacencySnapshot,
-            root_blueprints: Mapping[str, IRootResolutionBlueprint],
+            root_blueprints: Mapping[str, RootResolutionBlueprint],
             system_index: SpellSystemIndex,
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
             root_builder: SpellSystemRootBlueprintBuilder,
     ) -> None:
         """
@@ -403,8 +408,8 @@ class CompilerPhase5:
     def _filter_root_blueprints_to_owned(
             self,
             spellbook: Spellbook,
-            root_blueprints: Mapping[str, IRootResolutionBlueprint],
-    ) -> Dict[str, IRootResolutionBlueprint]:
+            root_blueprints: Mapping[str, RootResolutionBlueprint],
+    ) -> Dict[str, RootResolutionBlueprint]:
         """
             Internal
             
@@ -434,7 +439,7 @@ class CompilerPhase5:
 
     def run_frame_wide(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -533,7 +538,7 @@ class CompilerPhase5:
 
             Contract:
                 - Resolves each root spell from the live spellbook `_spell_id_pool`.
-                - Reuses the compiler-system front façade for each root.
+                - Reuses the compiler-system front faÃ§ade for each root.
                 - Re-runs foundational phases via `run_all_phases(...)` using
                   explicit `spellbook` and `spell` inputs instead of reaching
                   back through the spell-owned `SpellCrafter`.
@@ -571,7 +576,7 @@ class CompilerPhase5:
 
     def run_local(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -657,3 +662,4 @@ class CompilerPhase5:
         }
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
         SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
+

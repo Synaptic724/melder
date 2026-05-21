@@ -16,7 +16,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellSocketDescriptor,
 )
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.utilities.interfaces.ispell import ISpell
+from melder.aether.spellbook.spell import Spell
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -39,24 +39,24 @@ def mock_spell_index():
 
 @pytest.fixture
 def mock_spell():
-    return MagicMock(spec=ISpell)
+    return MagicMock(spec=Spell)
 
 
-def _build_owned_spell(spellbook_id: str = "book-1") -> ISpell:
+def _build_owned_spell(spellbook_id: str = "book-1") -> Spell:
     """
     Create a spell double whose `_spellbook` carries a concrete owner id.
 
     Contract:
     - `SpellSystemStates._resolve_spellbook_id(...)` can read `_spellbook._id`.
-    - The returned mock still behaves like an `ISpell` boundary object.
+    - The returned mock still behaves like a `Spell` boundary object.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._spellbook = MagicMock()
     spell._spellbook._id = spellbook_id
     return spell
 
 
-def _attach_index_owner(index: SpellIndex, spell: ISpell) -> SpellIndex:
+def _attach_index_owner(index: SpellIndex, spell: Spell) -> SpellIndex:
     """
     Mirror the live Spellbook bind path by stamping owner references onto the index.
     """
@@ -164,7 +164,7 @@ def test_register_validation(states_manager, mock_spell):
 def test_unregister_index_triggers_risk_manager(
     states_manager: SpellSystemStates,
     mock_spell_index: SpellIndex,
-    mock_spell: ISpell,
+    mock_spell: Spell,
 ) -> None:
     """
     Verify unregister_index notifies RiskManager.
@@ -186,7 +186,7 @@ def test_unregister_index_triggers_risk_manager(
 
 def test_unregister_index_marks_dependents_gated(
     states_manager: SpellSystemStates,
-    mock_spell: ISpell,
+    mock_spell: Spell,
 ) -> None:
     """
     Verify unregister_index gates dependent lineages.
@@ -1046,5 +1046,4 @@ def test_unregister_index_missing_state_clears_stale_spell_id_mapping(
 
     assert removed_state is None
     assert states_manager.get_by_spell_id(index.current) is None
-
 

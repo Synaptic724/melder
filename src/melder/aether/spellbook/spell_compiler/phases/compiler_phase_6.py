@@ -1,6 +1,10 @@
-from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Set, Tuple
+﻿from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -93,10 +97,6 @@ from melder.aether.spellbook.spell_compiler.system.validation.topology_dependenc
 from melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy import (
     VisibilityGapStrategy,
 )
-from melder.utilities.interfaces.irootresolutionblueprint import (
-    IRootResolutionBlueprint,
-)
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
@@ -122,12 +122,12 @@ class CompilerPhase6:
     def _get_required_entire_dag_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
-    ) -> Dict[str, IRootResolutionBlueprint]:
+    ) -> Dict[str, RootResolutionBlueprint]:
         """
             Return the Phase 5 root-blueprint map or raise.
             
             Returns:
-                Dict[str, IRootResolutionBlueprint]: Root blueprint map keyed by
+                Dict[str, RootResolutionBlueprint]: Root blueprint map keyed by
                 root spell id.
         """
         root_blueprints = artifact._entire_dag_blueprint_phase5
@@ -155,10 +155,10 @@ class CompilerPhase6:
     def _collect_local_visibility_gap_diagnostics(
             self,
             *,
-            spell: ISpell,
+            spell: Spell,
             spell_system_states: SpellSystemStates,
             scoped_spell_ids: Collection[str],
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
             root_ids: Collection[str],
     ) -> List[SystemDiagnostic]:
         """
@@ -227,8 +227,8 @@ class CompilerPhase6:
     def _collect_local_blueprint_visibility_gap_diagnostics(
             self,
             *,
-            blueprints: Dict[str, IRootResolutionBlueprint],
-            spell_lookup: Dict[str, ISpell],
+            blueprints: Dict[str, RootResolutionBlueprint],
+            spell_lookup: Dict[str, Spell],
     ) -> List[SystemDiagnostic]:
         """
         Collect visibility-gap diagnostics from local Phase 5 root blueprints.
@@ -353,7 +353,7 @@ class CompilerPhase6:
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
 
-        spell_lookup: Dict[str, ISpell] = spellbook._spell_id_pool
+        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool
         for spell_id, spell_instance in spell_lookup.items():
             phase4_results[spell_id] = spell_instance._compiler_artifact._validation_result_phase4
             if spell_instance._compiler_artifact._is_broken:
@@ -382,7 +382,7 @@ class CompilerPhase6:
 
     def run_local(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
@@ -424,7 +424,7 @@ class CompilerPhase6:
 
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
-        scoped_spell_lookup: Dict[str, ISpell] = {}
+        scoped_spell_lookup: Dict[str, Spell] = {}
 
         for spell_id in index.nodes.keys():
             spell_instance = spell_lookup_pool[spell_id]
@@ -498,3 +498,4 @@ class CompilerPhase6:
             target_artifact = spell_instance._compiler_artifact
             target_artifact._validation_result_phase6 = validation_state
             target_artifact._validated_phase6 = True
+

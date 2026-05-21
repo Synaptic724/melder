@@ -2,7 +2,10 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 import heapq
 import inspect
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -19,8 +22,6 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.interfaces.ispell import ISpell
-
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
 
@@ -430,9 +431,9 @@ class OccurrencePlanBuilder(object):
     def __init__(
             self,
             *,
-            root_spell: ISpell,
+            root_spell: Spell,
             blueprint: Any,
-            spell_lookup: Dict[str, ISpell],
+            spell_lookup: Dict[str, Spell],
             system_states: Any,
     ) -> None:
         """
@@ -444,7 +445,7 @@ class OccurrencePlanBuilder(object):
             blueprint:
                 RootResolutionBlueprint providing DAG, ordered nodes, and dag index.
             spell_lookup:
-                Mapping of spell_id to ISpell for all reachable nodes.
+                Mapping of spell_id to Spell for all reachable nodes.
             system_states:
                 SpellSystemStates used to query local topologies.
 
@@ -457,9 +458,9 @@ class OccurrencePlanBuilder(object):
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
         self._cleaned: bool = False
-        self._root_spell: ISpell = root_spell
+        self._root_spell: Spell = root_spell
         self._blueprint: Any = blueprint
-        self._spell_lookup: Dict[str, ISpell] = spell_lookup
+        self._spell_lookup: Dict[str, Spell] = spell_lookup
         self._system_states: Any = system_states
         self._path_registry: Any = blueprint.path_registry
 
@@ -1056,7 +1057,7 @@ class OccurrencePlanBuilder(object):
 
     def _iter_spell_contract_defaults(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's call signature.
@@ -1135,7 +1136,7 @@ class OccurrencePlanBuilder(object):
             self,
             *,
             contract: SpellContract,
-            consumer_spell: ISpell,
+            consumer_spell: Spell,
             param_name: str,
             allow_missing: bool = False,
     ) -> Optional[str]:
@@ -1198,9 +1199,9 @@ class OccurrencePlanBuilder(object):
             self,
             *,
             contract_key: Tuple[str, str],
-            consumer_spell: ISpell,
+            consumer_spell: Spell,
             param_name: str,
-    ) -> List[ISpell]:
+    ) -> List[Spell]:
         """
         Collect contracted spell candidates that satisfy the contract key.
 
@@ -1210,7 +1211,7 @@ class OccurrencePlanBuilder(object):
             param_name: Parameter name for diagnostics.
 
         Returns:
-            List[ISpell]: Contracted spell candidates.
+            List[Spell]: Contracted spell candidates.
             Missing contract keys yield an empty list.
         """
         spellbook = self._root_spell._spellbook
@@ -1219,7 +1220,7 @@ class OccurrencePlanBuilder(object):
         contracted_lookup = spellbook._lookup_contracted_spells
         contracted_maps = spellbook._contracted_spells
 
-        contracted_candidates: List[ISpell] = []
+        contracted_candidates: List[Spell] = []
         for conduit_id in sorted(contracted_lookup.keys()):
             lookup_map = contracted_lookup[conduit_id]
             spell_index = lookup_map.get(contract_key)
@@ -1803,7 +1804,7 @@ class OccurrencePlanBuilder(object):
     def _resolve_occurrence_spell(
             self,
             occurrence: OccurrenceKey,
-    ) -> Optional[ISpell]:
+    ) -> Optional[Spell]:
         """
         Resolve the spell object for a plan occurrence.
 
@@ -1815,7 +1816,7 @@ class OccurrencePlanBuilder(object):
             occurrence: (spell_id, path_id) tuple from the occurrence graph.
 
         Returns:
-            Optional[ISpell]: The spell object, or None if missing.
+            Optional[Spell]: The spell object, or None if missing.
         """
         spell_id, _ = occurrence
         return self._spell_lookup[spell_id]

@@ -1,6 +1,9 @@
-from typing import TYPE_CHECKING, Optional, Set
+﻿from typing import TYPE_CHECKING, Optional, Set
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
     from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
@@ -40,7 +43,7 @@ class CompilerPhase7:
             Return the Phase 5 root-blueprint map or raise.
             
             Returns:
-                Dict[str, IRootResolutionBlueprint]: Root blueprint map keyed by
+                Dict[str, RootResolutionBlueprint]: Root blueprint map keyed by
                 root spell id.
         """
         root_blueprints = artifact._entire_dag_blueprint_phase5
@@ -258,5 +261,6 @@ class CompilerPhase7:
                 conduit_id,
                 _revalidate_dirty_roots,
             )
+
 
 

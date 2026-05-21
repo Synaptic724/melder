@@ -1,4 +1,7 @@
-﻿from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING, TYPE_CHECKING, Optional, Set
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -7,8 +10,6 @@ from melder.aether.conduit.meld.creation_context.creation_context_builder import
     CreationContextBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
-
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -107,7 +108,7 @@ class CreationContextFactory(Cleanable):
             pass
 
 
-    def _index_id_for_spell(self, spell: ISpell) -> str:
+    def _index_id_for_spell(self, spell: Spell) -> str:
         """
         Return the stable spell-index id used for gate-controller operations.
 
@@ -149,7 +150,7 @@ class CreationContextFactory(Cleanable):
 
     def _resolve_runtime_gate_for_spell(
             self,
-            spell: ISpell,
+            spell: Spell,
     ) -> tuple[Optional[CreationGate], Optional[str]]:
         """
         Resolve the gate metadata that should be injected into the built
@@ -174,7 +175,7 @@ class CreationContextFactory(Cleanable):
         gate = self._resolve_or_create_spell_index_gate(index_id)
         return gate, index_id
 
-    def build_for_spell(self, spell: ISpell) -> CreationContext:
+    def build_for_spell(self, spell: Spell) -> CreationContext:
         """
         Build one fresh context for the spell without publishing it back onto
         the spell.
@@ -193,7 +194,7 @@ class CreationContextFactory(Cleanable):
             creation_gate_index_id=index_id,
         )
 
-    def build_and_bind_for_spell(self, spell: ISpell) -> CreationContext:
+    def build_and_bind_for_spell(self, spell: Spell) -> CreationContext:
         """
         Build one CreationContext and bind it onto the target spell.
 
@@ -217,7 +218,7 @@ class CreationContextFactory(Cleanable):
         self._cleanup_creation_context(previous_creation_context)
         return built_creation_context
 
-    def get_or_build_for_spell(self, spell: ISpell) -> CreationContext:
+    def get_or_build_for_spell(self, spell: Spell) -> CreationContext:
         """
         Resolve one spell-owned context via spell-level CounterSwitch election.
 
@@ -264,7 +265,7 @@ class CreationContextFactory(Cleanable):
         return creation_context
 
     @staticmethod
-    def _set_creation_context_switch_open(spell: ISpell) -> None:
+    def _set_creation_context_switch_open(spell: Spell) -> None:
         """
         Force a spell-owned CounterSwitch into an open latch state (`2`).
 
@@ -290,7 +291,7 @@ class CreationContextFactory(Cleanable):
         elif current_state > 2:
             spell._creation_context_switch.advance(-(current_state - 2))
 
-    def rebuild_for_spell(self, spell: ISpell) -> CreationContext:
+    def rebuild_for_spell(self, spell: Spell) -> CreationContext:
         """
         Force rebuild and replace the spell-owned CreationContext.
 

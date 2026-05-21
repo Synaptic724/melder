@@ -1,5 +1,8 @@
 import threading
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.crystallizer.configuration.crystallizer_configuration import (
@@ -9,9 +12,6 @@ from melder.crystallizer.spell_crystal import SpellCrystal
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaether import IAether
-from melder.utilities.interfaces.ispell import ISpell
-
-
 class Crystallizer(Cleanable):
     """
     Singleton policy and activation root for crystallizer behavior.
@@ -297,7 +297,7 @@ class Crystallizer(Cleanable):
         with self._lock:
             self._activated = False
 
-    def create_spell_crystal(self, spell: ISpell) -> SpellCrystal:
+    def create_spell_crystal(self, spell: Spell) -> SpellCrystal:
         """
         Build one `SpellCrystal` using the installed crystallizer policy.
 

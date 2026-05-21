@@ -1,4 +1,10 @@
-from typing import Optional, Tuple
+﻿from typing import TYPE_CHECKING, Optional, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -8,10 +14,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import (
     PatchMapBuilder,
 )
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
-from melder.utilities.interfaces.ispell import ISpell
-
-
 @mypyc_attr(native_class=True)
 class CompilerPhase10:
     """
@@ -32,12 +34,12 @@ class CompilerPhase10:
     def _get_required_root_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
-    ) -> IRootResolutionBlueprint:
+    ) -> RootResolutionBlueprint:
         """
         Return the Phase 5 root blueprint or raise.
 
         Returns:
-            IRootResolutionBlueprint: Attached Phase 5 root blueprint.
+            RootResolutionBlueprint: Attached Phase 5 root blueprint.
         """
         root_blueprint = artifact._root_blueprint_phase5
         if root_blueprint is None:
@@ -46,7 +48,7 @@ class CompilerPhase10:
 
     def _build_phase10_patch_maps_input_signature(
             self,
-            root_blueprint: Optional[IRootResolutionBlueprint],
+            root_blueprint: Optional[RootResolutionBlueprint],
     ) -> Optional[Tuple[object, ...]]:
         """
         Build a deterministic phase10 input signature for patch-map reuse.
@@ -102,7 +104,7 @@ class CompilerPhase10:
 
     def run(
             self,
-            spell: ISpell,
+            spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         # ------------------------------------------------------------------
@@ -168,3 +170,4 @@ class CompilerPhase10:
         artifact._mutation_patch_map_phase10 = mutation_patch_map
         artifact._phase10_patch_maps_input_signature = patch_maps_input_signature
         self._mark_phase8_11_codegen_ir_dirty(artifact)
+

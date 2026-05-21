@@ -1,4 +1,7 @@
-from typing import Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 from mypy_extensions import mypyc_attr
 
@@ -21,7 +24,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
     SpellValidationStrategy,
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
@@ -207,7 +209,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
         return None
 
-    def _spell_key(self, spell: ISpell) -> Tuple[str, str]:
+    def _spell_key(self, spell: Spell) -> Tuple[str, str]:
         """
         Resolve the canonical binding key for a spell-like object.
 

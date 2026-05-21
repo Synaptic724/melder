@@ -18,7 +18,6 @@ from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.spellbook.spell import Spell
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -1182,26 +1181,26 @@ class ConduitWard(Cleanable):
     #region Spellbinding API
     def _check_spell_id_and_spell(
             self,
-            spell: Optional[ISpell] = None,
+            spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
             aetheric_frame: str = "default"
-    ) -> Tuple[str, ISpell]:
+    ) -> Tuple[str, Spell]:
         """
         Internal
 
         Validation and resolution helper: ensures both a spell ID and its corresponding spell object are available.
 
         Contract:
-            - If `spell` is an ISpell instance, this uses `spell.spell_id` directly.
+            - If `spell` is an Spell instance, this uses `spell.spell_id` directly.
             - If `spell` is a raw object, the ID is resolved via `inspect_spell`.
 
         Args:
-            spell (ISpell, optional): The spell object.
+            spell (Spell, optional): The spell object.
             spell_id (str, optional): The unique ID of the spell.
             aetheric_frame (str): The Aetheric Frame to search within.
 
         Returns:
-            Tuple[str, ISpell]: The resolved (spell_id, spell) pair.
+            Tuple[str, Spell]: The resolved (spell_id, spell) pair.
 
         Raises:
             ValueError: If neither `spell` nor `spell_id` is provided.
@@ -1364,7 +1363,7 @@ class ConduitWard(Cleanable):
 
     def _create_detail(
             self,
-            spell: ISpell,
+            spell: Spell,
             permissions: Permissions,
             contract_type: ContractTypes,
             *,
@@ -1377,7 +1376,7 @@ class ConduitWard(Cleanable):
         Factory for a lineage-aware Detail entry.
 
         Args:
-            spell (ISpell): The spell being granted/received.
+            spell (Spell): The spell being granted/received.
             permissions (Permissions): The permissions applied to this lineage.
             contract_type (ContractTypes): Role of this Detail from the
                 perspective of the ward that will own it.
@@ -1487,14 +1486,14 @@ class ConduitWard(Cleanable):
         )
         contract._add(ward, restored_detail)
 
-    def _check_spell_if_eligible(self, spell: ISpell, conduit: IConduit, permissions: Permissions) -> None:
+    def _check_spell_if_eligible(self, spell: Spell, conduit: IConduit, permissions: Permissions) -> None:
         """
         Internal
 
         Checks if the provided spell is eligible for contracting based on policy and spell permissions.
 
         Args:
-            spell (ISpell): The spell to check.
+            spell (Spell): The spell to check.
             conduit (IConduit): The conduit proposing the contract.
             permissions (Permissions): The permissions requested for the contract.
 
@@ -1555,7 +1554,7 @@ class ConduitWard(Cleanable):
     def _add_spell_to_contract(
             self,
             *,
-            spell: Optional[ISpell] = None,
+            spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
             conduit: Optional[IConduit] = None,
             conduit_id: Optional[str] = None,
@@ -1578,7 +1577,7 @@ class ConduitWard(Cleanable):
         re-resolve dependencies.
 
         Args:
-            spell (ISpell, optional): The spell object to contract.
+            spell (Spell, optional): The spell object to contract.
             spell_id (str, optional): The unique version ID of the spell.
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
@@ -1773,7 +1772,7 @@ class ConduitWard(Cleanable):
                 raise
         return True
 
-    def _get_spell_permissions(self, spell: ISpell) -> Permissions:
+    def _get_spell_permissions(self, spell: Spell) -> Permissions:
         """
         Internal helper to normalize spell permissions from `spell.permissions`.
         """
@@ -1786,7 +1785,7 @@ class ConduitWard(Cleanable):
         )
         return permissions_enum
 
-    def _get_spell_contract_keys(self, spell: ISpell) -> set[tuple[str, str]]:
+    def _get_spell_contract_keys(self, spell: Spell) -> set[tuple[str, str]]:
         """
         Internal
 
@@ -1796,7 +1795,7 @@ class ConduitWard(Cleanable):
         their canonical `(frame_key, binding_key)` tuples for matching.
 
         Args:
-            spell (ISpell): Spell to inspect for SpellContract defaults.
+            spell (Spell): Spell to inspect for SpellContract defaults.
 
         Returns:
             set[tuple[str, str]]: Canonical keys for SpellContract defaults. Returns
@@ -2051,7 +2050,7 @@ class ConduitWard(Cleanable):
     def _link_spell_dependencies(
             self,
             *,
-            root_spell: ISpell,
+            root_spell: Spell,
             root_spell_id: str,
             requested_permissions: Permissions,
             aetheric_frame: str = "default",
@@ -2139,7 +2138,7 @@ class ConduitWard(Cleanable):
     def _preflight_contract_dependency_collisions(
             self,
             *,
-            root_spell: ISpell,
+            root_spell: Spell,
             root_spell_id: str,
             requested_permissions: Permissions,
             aetheric_frame: str = "default",
@@ -2180,9 +2179,9 @@ class ConduitWard(Cleanable):
             return
 
         visited: set[str] = set()
-        batch_keys: dict[tuple[str, str], ISpell] = {}
+        batch_keys: dict[tuple[str, str], Spell] = {}
 
-        def record_spell(spell: ISpell, spell_id: str) -> None:
+        def record_spell(spell: Spell, spell_id: str) -> None:
             """
             Record one spell's binding key into the preflight collision set.
 
@@ -2338,7 +2337,7 @@ class ConduitWard(Cleanable):
             "failed": failed_spell_ids,
         }
 
-    def _remove_spell_from_contract(self, *, spell: Optional[ISpell] = None, spell_id: Optional[str] = None, conduit: Optional[IConduit] = None,
+    def _remove_spell_from_contract(self, *, spell: Optional[Spell] = None, spell_id: Optional[str] = None, conduit: Optional[IConduit] = None,
                                     conduit_id: Optional[str] = None, root_spell_id: str | None = None, aetheric_frame: str = "default") -> bool | None:
         """
         Internal
@@ -2350,7 +2349,7 @@ class ConduitWard(Cleanable):
         re-resolve dependencies.
 
         Args:
-            spell (ISpell, optional): The spell object to remove.
+            spell (Spell, optional): The spell object to remove.
             spell_id (str, optional): The unique ID of the spell to remove.
             conduit (IConduit, optional): The target peer conduit.
             conduit_id (str, optional): The id of the target peer conduit.
@@ -2589,14 +2588,14 @@ class ConduitWard(Cleanable):
     def _get_all_spells_in_contracts(
             self,
             validate: bool = True,
-    ) -> Optional[dict[str, list[Tuple[str, ISpell]]]]:
+    ) -> Optional[dict[str, list[Tuple[str, Spell]]]]:
         """
         Internal
 
         Gather every spell this conduit can currently consume via contracts.
 
         For each peer conduit, this returns a list of:
-            (current_spell_version_id, ISpell)
+            (current_spell_version_id, Spell)
 
         Semantics:
             * Contracts are anchored on SpellIndex (via Detail.spell_index).
@@ -2628,7 +2627,7 @@ class ConduitWard(Cleanable):
                     "One or more contracts are invalid. Please validate contracts before retrieving spells."
                 )
 
-        spells_in_contracts: dict[str, list[Tuple[str, ISpell]]] = {}
+        spells_in_contracts: dict[str, list[Tuple[str, Spell]]] = {}
 
         with self._lock:
             for contract_id, contract in self._contracts.items():
@@ -2641,7 +2640,7 @@ class ConduitWard(Cleanable):
                     if not detail_map:
                         continue
 
-                    spells: list[Tuple[str, ISpell]] = []
+                    spells: list[Tuple[str, Spell]] = []
 
                     for detail in detail_map.values():
                         # lineage-based resolution
@@ -2696,7 +2695,7 @@ class ConduitWard(Cleanable):
 
 
 
-    def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, ISpell]]:
+    def _get_spell_in_contracts(self, spell_id: str) -> Optional[tuple[str, Spell]]:
         """
         Internal
 
@@ -2713,7 +2712,7 @@ class ConduitWard(Cleanable):
             spell_id (str): The version ID (SHA) to search for.
 
         Returns:
-            Optional[tuple[str, ISpell]]: (peer_conduit_id, ISpell) if found, else None.
+            Optional[tuple[str, Spell]]: (peer_conduit_id, Spell) if found, else None.
 
         Contract:
             The returned spell object is the current head for the matched
@@ -2759,7 +2758,7 @@ class ConduitWard(Cleanable):
 
 
 
-    def _get_spells_in_contract_by_conduit(self, conduit_id: str) -> dict[str, list[tuple[str, ISpell]]] | None:
+    def _get_spells_in_contract_by_conduit(self, conduit_id: str) -> dict[str, list[tuple[str, Spell]]] | None:
         """
         Internal
 
@@ -2772,8 +2771,8 @@ class ConduitWard(Cleanable):
             conduit_id (str): The id of the target conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: A dictionary mapping roles
-            ("inbound", "outbound") to lists of (spell_id, ISpell) tuples, or None
+            dict[str, list[tuple[str, Spell]]] | None: A dictionary mapping roles
+            ("inbound", "outbound") to lists of (spell_id, Spell) tuples, or None
             if no such conduit is linked. If a contract exists but has no spells,
             the lists are empty.
 
@@ -2786,7 +2785,7 @@ class ConduitWard(Cleanable):
             if not contract:
                 return None
 
-            spells_result: dict[str, list[tuple[str, ISpell]]] = {"inbound": [], "outbound": []}
+            spells_result: dict[str, list[tuple[str, Spell]]] = {"inbound": [], "outbound": []}
 
             peer_ward = contract._get_peer(self)
 
@@ -2800,7 +2799,7 @@ class ConduitWard(Cleanable):
             # Outbound: spells we have granted to the peer (live in our detail map).
             our_map = contract._get_detail_map(self)
             for sid, detail in our_map.items():
-                owned_spell: Optional[ISpell] = None
+                owned_spell: Optional[Spell] = None
                 try:
                     # This is a local spell we own; resolve via SpellIndex-aware get_spell_by_id.
                     owned_spell = self._conduit.get_spell_by_id(sid)
@@ -2813,7 +2812,7 @@ class ConduitWard(Cleanable):
         return spells_result
 
 
-    def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, ISpell]]] | None:
+    def _get_spells_in_contract_by_conduit_name(self, conduit_name: str) -> dict[str, list[tuple[str, Spell]]] | None:
         """
         Internal
 
@@ -2825,7 +2824,7 @@ class ConduitWard(Cleanable):
             conduit_name (str): The name identifier of the target conduit.
 
         Returns:
-            dict[str, list[tuple[str, ISpell]]] | None: A dictionary of spells exchanged (inbound/outbound), or None if not found.
+            dict[str, list[tuple[str, Spell]]] | None: A dictionary of spells exchanged (inbound/outbound), or None if not found.
             When a contract exists but contains no spells, inbound/outbound lists are empty.
 
         Raises:
@@ -2880,7 +2879,7 @@ class ConduitWard(Cleanable):
     def _transfer_spell_ownership(
             self,
             *,
-            spell: ISpell | str | SpellIndex,
+            spell: Spell | str | SpellIndex,
             target_conduit: IConduit,
             move_creations: bool = False,
             include_dependencies: bool = False,
@@ -2912,7 +2911,7 @@ class ConduitWard(Cleanable):
         if not self._dynamic:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
 
-        resolved_spell: Optional[ISpell]
+        resolved_spell: Optional[Spell]
         if isinstance(spell, Spell):
             resolved_spell = spell
         elif isinstance(spell, SpellIndex):
