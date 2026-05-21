@@ -19,7 +19,7 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
 )
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.utilities.interfaces.iframelink import IFrameLink
 
 
@@ -1249,7 +1249,7 @@ class ViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> IConduitRecord:
+    ) -> ConduitRecord:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -1261,7 +1261,7 @@ class ViewConduit(Cleanable):
                 frame helper.
 
         Returns:
-            IConduitRecord: Descriptor-owned conduit record.
+            ConduitRecord: Descriptor-owned conduit record.
         """
         self.get_required_conduit(conduit_id, frame_name=frame_name)
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
@@ -1331,4 +1331,5 @@ class ViewConduit(Cleanable):
                 getattr(payload, current_section)
             )
         return filtered_payload
+
 

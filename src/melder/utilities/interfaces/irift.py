@@ -1,9 +1,9 @@
-﻿from typing import TYPE_CHECKING, Dict, Optional, Protocol, Tuple, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Dict, Optional, Protocol, Tuple, Sequence, runtime_checkable
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 
@@ -205,7 +205,7 @@ class IRift(ICleanable, Protocol):
             self,
             *,
             frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, IFrameProjectionSet]:
+    ) -> Dict[str, "FrameProjectionSet"]:
         """
         Refresh the Rift-owned projection registry for the supplied frames or
         for all currently assigned frames when omitted.
@@ -343,5 +343,6 @@ class IRift(ICleanable, Protocol):
             None.
         """
         ...
+
 
 

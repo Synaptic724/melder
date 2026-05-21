@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Callable, Dict, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer

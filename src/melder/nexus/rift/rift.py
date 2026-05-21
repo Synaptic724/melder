@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Any, Dict, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -15,7 +15,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.irift import IRift
@@ -159,7 +159,7 @@ class Rift(Cleanable, IRift):
         self._configuration: IRiftConfiguration = configuration
         self._rift_gate: RiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
-        self._projection_sets_by_frame_name: Dict[str, IFrameProjectionSet] = {}
+        self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
         self._space: Optional[IRiftSpace] = None
         self._is_registered: bool = False
         self._is_active: bool = False
@@ -504,7 +504,7 @@ class Rift(Cleanable, IRift):
             self,
             *,
             frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, IFrameProjectionSet]:
+    ) -> Dict[str, FrameProjectionSet]:
         """
         Build fresh runtime projections and sync the hosted room assets.
 
@@ -548,7 +548,7 @@ class Rift(Cleanable, IRift):
 
     def _apply_projection_sets(
             self,
-            projection_sets_by_frame_name: Dict[str, IFrameProjectionSet],
+            projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
             *,
             merge: bool = False,
     ) -> None:
@@ -594,7 +594,7 @@ class Rift(Cleanable, IRift):
                 projection_set.cleanup()
             self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
 
-    def _get_required_frame_projection_set(self, frame_name: str) -> IFrameProjectionSet:
+    def _get_required_frame_projection_set(self, frame_name: str) -> FrameProjectionSet:
         """
         Return one required projection set by frame name.
 
@@ -603,7 +603,7 @@ class Rift(Cleanable, IRift):
                 Target frame name.
 
         Returns:
-            IFrameProjectionSet: Required projection set.
+            FrameProjectionSet: Required projection set.
         """
         self.check_cleaned()
         try:
@@ -1045,5 +1045,6 @@ class Rift(Cleanable, IRift):
             "on_nexus_frame_disposed",
         )
         return
+
 
 

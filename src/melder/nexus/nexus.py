@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -44,8 +44,8 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
-from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
-from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+
+
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.irift import IRift
@@ -1732,7 +1732,7 @@ class Nexus(Cleanable, INexus):
             contract_names_by_frame_name: Optional[
                 Mapping[str, Union[str, Mapping[str, str]]]
             ] = None,
-    ) -> Dict[str, IFrameProjectionSet]:
+    ) -> Dict[str, FrameProjectionSet]:
         """
         Build projection sets for the requested frame names.
 
@@ -1834,7 +1834,7 @@ class Nexus(Cleanable, INexus):
             rift_id: str,
             *,
             frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, IFrameProjectionSet]:
+    ) -> Dict[str, FrameProjectionSet]:
         """
         Build projection sets from one Rift's current frame contracts.
 
@@ -2700,7 +2700,7 @@ class Nexus(Cleanable, INexus):
                 Frame name to resolve.
 
         Returns:
-            IFrameDescriptor: Existing descriptor.
+            FrameDescriptor: Existing descriptor.
         """
         return self._frame_descriptor_manager._get_required_frame_descriptor(frame_name)
 
@@ -2718,7 +2718,7 @@ class Nexus(Cleanable, INexus):
                 Frame name to resolve.
 
         Returns:
-            IFrameDescriptor: Existing or newly created descriptor.
+            FrameDescriptor: Existing or newly created descriptor.
         """
         descriptor = self._frame_descriptor_manager._get_or_create_frame_descriptor(frame_name)
         self._ensure_frame_acl_container(frame_name)
@@ -2770,7 +2770,7 @@ class Nexus(Cleanable, INexus):
             self,
             frame_name: str,
             configuration: IFrameACLConfiguration,
-            descriptor: IFrameDescriptor,
+            descriptor: FrameDescriptor,
     ) -> bool:
         """
         Internal
@@ -2874,4 +2874,5 @@ class Nexus(Cleanable, INexus):
             value = configuration.get_property(key)
             cloned_configuration.set_property(key, value)
         return cloned_configuration
+
 

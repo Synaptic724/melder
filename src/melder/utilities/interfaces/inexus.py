@@ -1,12 +1,12 @@
-﻿from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
-from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
-from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
+
+
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.irift import IRift
@@ -15,6 +15,8 @@ from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 if TYPE_CHECKING:
     from melder.nexus.rift.rift_gate.rift_gate import RiftGate
     from melder.nexus.rift.rift_gate_controller.rift_gate_controller import RiftGateController
+    from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+    from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 
 @runtime_checkable
 class INexus(ICleanable, Protocol):
@@ -291,13 +293,13 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
-    def _get_required_frame_descriptor(self, frame_name: str) -> IFrameDescriptor:
+    def _get_required_frame_descriptor(self, frame_name: str) -> "FrameDescriptor":
         """
         Return the required frame descriptor for the named frame.
         """
         ...
 
-    def _get_or_create_frame_descriptor(self, frame_name: str) -> IFrameDescriptor:
+    def _get_or_create_frame_descriptor(self, frame_name: str) -> "FrameDescriptor":
         """
         Return one existing frame descriptor or create it.
         """
@@ -313,7 +315,7 @@ class INexus(ICleanable, Protocol):
             self,
             frame_name: str,
             configuration: IFrameACLConfiguration,
-            descriptor: IFrameDescriptor,
+            descriptor: "FrameDescriptor",
     ) -> bool:
         """
         Validate one frame ACL configuration against the supplied descriptor.
@@ -371,7 +373,7 @@ class INexus(ICleanable, Protocol):
             rift_id: str,
             *,
             frame_names: Optional[Tuple[str, ...]] = None,
-    ) -> Dict[str, IFrameProjectionSet]:
+    ) -> Dict[str, "FrameProjectionSet"]:
         """
         Build projection sets for the selected frames currently assigned to one Rift.
         """
@@ -480,4 +482,5 @@ class INexus(ICleanable, Protocol):
             None.
         """
         ...
+
 

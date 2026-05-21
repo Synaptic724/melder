@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import time
 from collections import deque
 from typing import Deque, Optional

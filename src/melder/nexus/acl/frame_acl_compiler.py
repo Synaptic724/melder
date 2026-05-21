@@ -15,7 +15,7 @@ from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfigur
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
@@ -85,7 +85,7 @@ class FrameACLCompiler(Cleanable):
 
     def compile_frame_access_surface(
             self,
-            frame_descriptor: IFrameDescriptor,
+            frame_descriptor: FrameDescriptor,
             configuration: IFrameACLConfiguration,
     ) -> CompiledFrameACLAccessSurface:
         """
@@ -1052,3 +1052,4 @@ class FrameACLCompiler(Cleanable):
                 elif rule.effect == "deny":
                     deny_operations.add(rule.operation)
         return allow_operations, deny_operations
+

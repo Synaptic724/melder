@@ -38,7 +38,7 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.irift import IRift
@@ -1553,7 +1553,7 @@ class FrameViewer(Cleanable, IFrameViewer):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[IConduitRecord]:
+    ) -> Iterator[ConduitRecord]:
         """
         Yield descriptor-owned conduit records for the selected frame scope.
 
@@ -1562,7 +1562,7 @@ class FrameViewer(Cleanable, IFrameViewer):
                 Optional hosted frame name filter.
 
         Yields:
-            IConduitRecord: Descriptor-owned conduit records.
+            ConduitRecord: Descriptor-owned conduit records.
         """
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
@@ -1709,7 +1709,7 @@ class FrameViewer(Cleanable, IFrameViewer):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> IConduitRecord:
+    ) -> ConduitRecord:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -1720,11 +1720,11 @@ class FrameViewer(Cleanable, IFrameViewer):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            IConduitRecord: Descriptor-owned conduit record.
+            ConduitRecord: Descriptor-owned conduit record.
         """
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
-        matching_records: List[IConduitRecord] = []
+        matching_records: List[ConduitRecord] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
             conduit_record = descriptor.conduit_records_by_id.get(conduit_id)
@@ -4056,3 +4056,4 @@ class FrameViewer(Cleanable, IFrameViewer):
             )
         with action_scope:
             yield
+

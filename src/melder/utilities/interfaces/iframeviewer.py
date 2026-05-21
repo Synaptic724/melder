@@ -1,9 +1,9 @@
-﻿from contextlib import contextmanager
+from contextlib import contextmanager
 from typing import Any, Iterator, List, Optional, Protocol, Tuple, runtime_checkable
 import threading
 
 from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -67,7 +67,7 @@ class IFrameViewer(ICleanable, Protocol):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[IConduitRecord]:
+    ) -> Iterator[ConduitRecord]:
         """
         Yield descriptor-owned conduit records for the selected frame scope.
         """
@@ -105,4 +105,5 @@ class IFrameViewer(ICleanable, Protocol):
         Return the resolved frame name plus one required spell record.
         """
         ...
+
 

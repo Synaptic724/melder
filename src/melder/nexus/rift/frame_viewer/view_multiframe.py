@@ -15,7 +15,7 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iconduitrecord import IConduitRecord
+from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
@@ -136,7 +136,7 @@ class ViewMultiFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[IConduitRecord]:
+    ) -> Iterator[ConduitRecord]:
         """
         Yield descriptor-owned conduit records for the selected frame scope.
 
@@ -145,7 +145,7 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            IConduitRecord: Descriptor-owned conduit records.
+            ConduitRecord: Descriptor-owned conduit records.
         """
         for conduit_record in self._viewer._iter_conduit_records(
                 frame_name=frame_name,
@@ -228,7 +228,7 @@ class ViewMultiFrame(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[str, IConduitRecord]:
+    ) -> Tuple[str, ConduitRecord]:
         """
         Return one descriptor-owned conduit record or raise.
 
@@ -239,12 +239,12 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, IConduitRecord]: `(frame_name, conduit_record)` for the
+            Tuple[str, ConduitRecord]: `(frame_name, conduit_record)` for the
             resolved record.
         """
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
-        matching_records: List[Tuple[str, IConduitRecord]] = []
+        matching_records: List[Tuple[str, ConduitRecord]] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
             record = descriptor.conduit_records_by_id.get(conduit_id)
@@ -2129,3 +2129,4 @@ class ViewMultiFrame(Cleanable):
             if normalized_spellframe == spellframe_name:
                 matching_source_ids.append(self._build_spell_source_id(spell_record))
         return matching_source_ids
+

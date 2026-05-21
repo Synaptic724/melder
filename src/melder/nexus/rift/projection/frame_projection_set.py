@@ -6,10 +6,10 @@ from melder.nexus.rift.projection.command_projection import CommandProjection
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 
 
-class FrameProjectionSet(Cleanable, IFrameProjectionSet):
+
+class FrameProjectionSet(Cleanable):
     """
     Owned set of consumer-shaped projections for one targeted frame.
 
@@ -107,3 +107,4 @@ class FrameProjectionSet(Cleanable, IFrameProjectionSet):
         """Return a detached metadata copy."""
         self.check_cleaned()
         return dict(self._metadata)
+

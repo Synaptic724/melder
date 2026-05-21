@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -6,15 +6,15 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
-from melder.utilities.interfaces.iconduitrecord import IConduitRecord
-from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
+
+
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 if TYPE_CHECKING:
     from melder.nexus.frame_descriptor.frame_record import FrameRecord
 
 
-class FrameDescriptor(Cleanable, IFrameDescriptor):
+class FrameDescriptor(Cleanable):
     """
     Purpose:
         Aggregate the Nexus-owned metadata and indexes for one frame-scoped
@@ -81,7 +81,7 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
         self._frame_handle: Optional[IAethericFrame] = None
         self._frame_configuration: Optional[IAethericFrameConfiguration] = None
         self._frame_overview: Optional["FrameRecord"] = None
-        self._conduit_records_by_id: Dict[str, IConduitRecord] = {}
+        self._conduit_records_by_id: Dict[str, "ConduitRecord"] = {}
         self._spell_records_by_key: Dict[Tuple[str, str], ISpellRecord] = {}
         self._spell_keys_by_conduit_id: Dict[str, Set[Tuple[str, str]]] = {}
         self._spell_keys_by_spellbook_id: Dict[str, Set[Tuple[str, str]]] = {}
@@ -197,7 +197,7 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
             return self._frame_overview
 
     @property
-    def conduit_records_by_id(self) -> Dict[str, IConduitRecord]:
+    def conduit_records_by_id(self) -> Dict[str, "ConduitRecord"]:
         """
         Return a snapshot of the descriptor-owned conduit record map.
 
@@ -373,7 +373,7 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
             self._spell_keys_by_conduit_id.clear()
             self._spell_keys_by_spellbook_id.clear()
 
-    def upsert_conduit_record(self, conduit_record: IConduitRecord) -> None:
+    def upsert_conduit_record(self, conduit_record: "ConduitRecord") -> None:
         """
         Upsert one conduit record owned by this descriptor.
 
@@ -580,4 +580,5 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
                         spell_record.owner_conduit_id,
                         None,
                     )
+
 
