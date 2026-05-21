@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Collection, Deque, Dict, List, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Collection, Deque, Dict, List, Optional, Sequence, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -10,13 +10,14 @@ from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, Socke
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
-    SpellSystemAdjacencySnapshot,
-)
-from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
-    SpellLocalTopology,
-)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
+        SpellSystemAdjacencySnapshot,
+    )
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+        SpellLocalTopology,
+    )
 @mypyc_attr(native_class=True)
 class SpellSystemRootBlueprintBuilder:
     """

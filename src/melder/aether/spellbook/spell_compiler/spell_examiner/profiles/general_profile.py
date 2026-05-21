@@ -1,16 +1,10 @@
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar, TYPE_CHECKING
 
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
-)
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
-    SpellBindingProfile,
-)
-from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
-    SpellResolutionProfile,
 )
 from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
@@ -20,6 +14,13 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell import Spell
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+        SpellBindingProfile,
+    )
+    from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
+        SpellResolutionProfile,
+    )
 
 
 GeneralProfileT = TypeVar("GeneralProfileT", bound="SpellGeneralProfile")

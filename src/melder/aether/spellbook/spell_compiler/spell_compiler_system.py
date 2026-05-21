@@ -3,6 +3,9 @@ from typing import TYPE_CHECKING, Optional, Set, Tuple
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
@@ -13,9 +16,6 @@ from melder.aether.spellbook.spell_compiler.validation.validation_system import 
     SpellValidationSystem,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.synchronization.cancellation_event_signal import (
-    CancellationEvent,
-)
 
 
 @mypyc_attr(native_class=True)

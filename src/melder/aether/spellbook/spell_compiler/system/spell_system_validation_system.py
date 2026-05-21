@@ -5,6 +5,21 @@ if TYPE_CHECKING:
         RootResolutionBlueprint,
     )
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
+        SpellSystemIndex,
+    )
+    from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+        SystemDiagnostic,
+    )
+    from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
+        SpellSystemValidationStrategy,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
@@ -13,20 +28,13 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
 from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
     SpellSystemValidationState,
 )
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
-    SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
-    SpellSystemValidationStrategy,
-)
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
 class SpellSystemValidationSystem(Cleanable):

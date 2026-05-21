@@ -1,6 +1,6 @@
 import inspect
 import threading
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from mypy_extensions import mypyc_attr
 
@@ -8,9 +8,10 @@ from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 @mypyc_attr(native_class=True)
 class SpellParameterRequirement(Cleanable):
     """

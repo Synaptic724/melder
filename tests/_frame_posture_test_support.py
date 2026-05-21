@@ -6,7 +6,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.configuration.system_state import SystemState
 
 
-_TEST_FRAME_POSTURES: dict[int, AethericFrameConfiguration] = {}
+_TEST_FRAME_POSTURES: dict[str, AethericFrameConfiguration] = {}
 
 
 def _get_or_create_detached_frame_posture(
@@ -15,7 +15,7 @@ def _get_or_create_detached_frame_posture(
     """
     Return one detached frame-posture copy for the given SpellbookConfiguration.
     """
-    configuration_id = id(configuration)
+    configuration_id = configuration._id
     frame_configuration = _TEST_FRAME_POSTURES.get(configuration_id)
     if frame_configuration is None:
         frame_configuration = AethericFrameConfiguration(

@@ -463,7 +463,13 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: On policy/state contract violations.
         """
         policy_enum = EnumHelpers.convert_enum_and_check(policy, Policies)
-        system_state = spellbook._aetheric_frame_configuration.system_state
+        aetheric_frame_configuration = spellbook._aetheric_frame_configuration
+        if aetheric_frame_configuration is None:
+            raise RuntimeError(
+                "Cannot check system state without an AethericFrameConfiguration. "
+                f"(policy={policy}, automatic={automatic})"
+            )
+        system_state = aetheric_frame_configuration.system_state
 
         if automatic:
             if policy_enum != Policies.default:

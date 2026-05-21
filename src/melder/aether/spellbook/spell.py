@@ -335,7 +335,7 @@ class Spell(Cleanable):
         self.permissions: Permissions = permissions
 
         # Spellbook
-        self._spellbook: "Spellbook" = spellbook
+        self._spellbook: Spellbook = spellbook
 
         # Spell Metadata
         self.tags = list(args) if args else []

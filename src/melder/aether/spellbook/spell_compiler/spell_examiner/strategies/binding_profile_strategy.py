@@ -1,14 +1,18 @@
 import inspect
-from typing import Any, List
+from typing import TYPE_CHECKING, Any, List
 
 from mypy_extensions import mypyc_attr
 
 # Melder Imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import SpellBindingProfile, \
-    ClassBindingProfile, SpellBindingKind, CallableBindingProfile, CallableParameterBindingSummary, \
+from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import ClassBindingProfile, \
+    SpellBindingKind, CallableBindingProfile, CallableParameterBindingSummary, \
     InstanceBindingProfile, OtherBindingProfile
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+        SpellBindingProfile,
+    )
 @mypyc_attr(native_class=True)
 class BindingProfileStrategy:
     """

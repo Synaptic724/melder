@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from types import MappingProxyType
 
 from mypy_extensions import mypyc_attr
@@ -25,13 +25,16 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.m
 )
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
-    SpellResolutionProfile,
 )
 from melder.aether.spellbook.spell import Spell
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
-    SpellBindingProfile,
-)
 from melder.utilities.general_base.cleanable import Cleanable
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
+        SpellResolutionProfile,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+        SpellBindingProfile,
+    )
 @mypyc_attr(native_class=True)
 class SpellDetailedProfile(SpellGeneralProfile):
     """
