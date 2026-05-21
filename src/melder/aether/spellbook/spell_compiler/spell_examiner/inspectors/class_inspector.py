@@ -1,6 +1,6 @@
 import inspect
 from inspect import Parameter
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -36,9 +36,15 @@ class ClassInspector(Cleanable):
     Raises:
         TypeError: If cls is not a class object.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object]  = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["cls", "dunders", "max_repr", "data"]
-    utility = InspectorUtility
+    __deletable__ = [
+        "cls",
+        "dunders",
+        "max_repr",
+        "data",
+    ]
+    utility: type[InspectorUtility] = InspectorUtility
     def __init__(
             self,
             cls: Type, # The class object to inspect

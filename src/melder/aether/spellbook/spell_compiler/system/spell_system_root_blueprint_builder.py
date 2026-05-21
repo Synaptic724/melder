@@ -1,5 +1,16 @@
 from collections import deque
-from typing import TYPE_CHECKING, Collection, Deque, Dict, List, Optional, Sequence, Set, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Collection,
+    Deque,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -36,7 +47,7 @@ class SpellSystemRootBlueprintBuilder:
               - param_name and socket_kind on edges are left unset (None).
           Socket metadata and DagIndex are overlaid in later Phase-5 steps.
     """
-    # __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__: list[str] = []
 
     def build_root_blueprints(

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Mapping, Optional
+from typing import TYPE_CHECKING, List, Mapping, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -13,7 +13,7 @@ class SpellSystemValidationState(Cleanable):
     """
     Frame-level system validation verdict.
     """
-    # __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_is_valid",
         "_errors",

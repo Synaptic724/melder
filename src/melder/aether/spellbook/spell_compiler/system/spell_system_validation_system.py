@@ -1,4 +1,14 @@
-﻿from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Set, Sequence
+﻿from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Sequence,
+    ClassVar,
+)
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
@@ -56,7 +66,7 @@ class SpellSystemValidationSystem(Cleanable):
         Callers are responsible for external synchronization when sharing inputs
         across threads. This class does not introduce additional locking.
     """
-    # __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_strategies",
     ]

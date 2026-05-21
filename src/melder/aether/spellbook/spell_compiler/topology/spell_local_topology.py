@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Sequence, Tuple, Dict, List, Optional
+from typing import Sequence, Tuple, Dict, List, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -66,7 +66,7 @@ class SpellSocketDescriptor:
             For MUTATION_CONTRACT sockets, indicates whether the contract is
             declared late-binding. This is None for non-mutation sockets.
     """
-    # __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     spell_id: str
     param_name: str
     position: int
@@ -93,7 +93,7 @@ class SpellLocalTopology(Cleanable):
     - Is effectively immutable after construction; callers read from it but do
       not mutate it in place.
     """
-    # __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_sockets",

@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Mapping, Optional
+from typing import Dict, Iterable, Mapping, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -24,7 +24,7 @@ class SpellSystemIndex(Cleanable):
     Phase 6 consumes it for system-level validation.
     Phase 7 uses it for change-control / impact analysis.
     """
-    # __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_nodes"]
     __deletable__ = ["_nodes"]
 

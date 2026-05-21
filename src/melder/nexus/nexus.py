@@ -4,25 +4,30 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
-    from melder.aether.conduit.conduit import Conduit
     from melder.aether.aether import Aether
+    from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
+    from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+    from melder.nexus.acl.configurations.frame_acl_command_configuration import (
+        FrameACLCommandConfiguration,
+    )
+    from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
+        FrameACLCodegenConfiguration,
+    )
+    from melder.nexus.acl.configurations.frame_acl_view_configuration import (
+        FrameACLViewConfiguration,
+    )
+    from melder.nexus.acl.configurations.profiles.frame_acl_profile import (
+        FrameACLProfile,
+    )
 
 from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
-from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.nexus.acl.configurations.frame_acl_command_configuration import (
-    FrameACLCommandConfiguration,
-)
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
-    FrameACLCodegenConfiguration,
-)
-from melder.nexus.acl.configurations.frame_acl_view_configuration import (
-    FrameACLViewConfiguration,
-)
-from melder.nexus.acl.configurations.profiles.frame_acl_profile import FrameACLProfile
 from melder.nexus.frame_acl_manager import FrameACLManager
 from melder.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.nexus.nexus_frame_manager import NexusFrameManager
@@ -45,14 +50,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-
-
-
-if TYPE_CHECKING:
-    from melder.aether.conduit.conduit import Conduit
-    from melder.aether.spellbook.configuration.spellbook_configuration import (
-        SpellbookConfiguration,
-    )
 
 class Nexus(Cleanable):
     """
