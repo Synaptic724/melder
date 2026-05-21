@@ -5,7 +5,6 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcluster import IConduitCluster
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -14,7 +13,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
-class ConduitCluster(Cleanable, IConduitCluster):
+class ConduitCluster(Cleanable):
     """
     Cluster-local registry for conduit membership and shared-root policy.
 

@@ -1,14 +1,14 @@
 from threading import RLock
-from typing import Dict, Optional, Set, List
-
+from typing import Dict, Optional, Set, List, TYPE_CHECKING
 from mypy_extensions import mypyc_attr
-
+# Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+if TYPE_CHECKING:
+    from melder.utilities.interfaces.ispell import ISpell
+    from melder.utilities.interfaces.ispellbook import ISpellbook
+    from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @mypyc_attr(native_class=True)
 class _ConduitRiskState:

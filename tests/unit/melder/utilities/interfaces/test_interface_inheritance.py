@@ -31,7 +31,6 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.icontract import IContract
@@ -54,7 +53,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     IAethericFrame: AethericFrame,
     IChangeControlManager: ChangeControlManager,
     IConduit: Conduit,
-    IConduitCloud: ConduitCloud,
     IConduitResolutionState: ConduitResolutionState,
     IConduitWard: ConduitWard,
     IContract: Contract,

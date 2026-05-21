@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
 
 from mypy_extensions import mypyc_attr
 
@@ -26,7 +26,6 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
@@ -34,6 +33,9 @@ from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 
 @mypyc_attr(native_class=True)
 class SpellbookCreationSystem(Cleanable):
@@ -306,7 +308,7 @@ class SpellbookCreationSystem(Cleanable):
             automatic: bool,
             policy: Policies,
             conduit_id: str,
-            dev_ops_manager: IDevOpsManager,
+            dev_ops_manager: DevOpsManager,
             aetheric_frame: IAethericFrame,
     ) -> Conduit:
         """
@@ -348,7 +350,7 @@ class SpellbookCreationSystem(Cleanable):
     def _resolve_frame_dev_ops_manager(
             *,
             spellbook: ISpellbook,
-    ) -> IDevOpsManager:
+    ) -> DevOpsManager:
         """
         Purpose:
             Resolve the frame-owned DevOpsManager required for root conduit creation.
@@ -361,9 +363,9 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook for this conjure run.
 
         Returns:
-            IDevOpsManager: Frame-owned DevOpsManager for the target frame.
+            DevOpsManager: Frame-owned DevOpsManager for the target frame.
         """
-        manager: IDevOpsManager = spellbook._aether._get_devops_manager(
+        manager: DevOpsManager = spellbook._aether._get_devops_manager(
             spellbook._aetheric_frame
         )
         return manager

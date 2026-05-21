@@ -1,12 +1,9 @@
 import threading
-from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
-    SpellStateChangeReason,
-)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -14,6 +11,10 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+        SpellStateChangeReason,
+    )
 
 
 def _get_resolution_risk_manager_callback(
@@ -126,7 +127,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         self._diagnostics: List[SystemDiagnostic] = []
         self._dirty: bool = False
         self._last_validated_at: Optional[float] = None
-        self._last_change_reason: Optional[SpellStateChangeReason] = None
+        self._last_change_reason: Optional["SpellStateChangeReason"] = None
         self._initial_validity: SpellValidity = initial_validity
         self._risk_manager: Optional[object] = None
 
@@ -179,7 +180,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             spell_id: str,
             validity: SpellValidity,
             *,
-            change_reason: Optional[SpellStateChangeReason] = None,
+            change_reason: Optional["SpellStateChangeReason"] = None,
     ) -> None:
         """
         Publish one spell-level resolution verdict for this conduit.
@@ -231,7 +232,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             self,
             validity_map: Mapping[str, SpellValidity],
             *,
-            change_reason: Optional[SpellStateChangeReason] = None,
+            change_reason: Optional["SpellStateChangeReason"] = None,
     ) -> None:
         """
         Publish a batch of spell-level resolution verdicts.
@@ -330,7 +331,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             root_id: str,
             validity: SpellValidity,
             *,
-            change_reason: Optional[SpellStateChangeReason] = None,
+            change_reason: Optional["SpellStateChangeReason"] = None,
     ) -> None:
         """
         Publish one root-level resolution verdict for this conduit.
@@ -383,7 +384,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             self,
             validity_map: Mapping[str, SpellValidity],
             *,
-            change_reason: Optional[SpellStateChangeReason] = None,
+            change_reason: Optional["SpellStateChangeReason"] = None,
     ) -> None:
         """
         Publish a batch of root-level resolution verdicts.
@@ -556,7 +557,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     # ------------------------------------------------------------------ #
     def mark_dirty(
             self,
-            change_reason: Optional[SpellStateChangeReason] = None,
+            change_reason: Optional["SpellStateChangeReason"] = None,
     ) -> None:
         """
         Mark this resolution state as dirty.

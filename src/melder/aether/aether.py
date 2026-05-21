@@ -15,11 +15,8 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -1103,7 +1100,7 @@ class Aether(Cleanable, IAether):
     def get_conduit_cloud(
             self,
             aetheric_frame_name: str = "default",
-    ) -> IConduitCloud:
+    ) -> ConduitCloud:
         """
         Return the frame-local conduit and cluster service for one frame.
 
@@ -1117,7 +1114,7 @@ class Aether(Cleanable, IAether):
                 Name of the target frame.
 
         Returns:
-            IConduitCloud: The frame-local conduit cloud for the requested frame.
+            ConduitCloud: The frame-local conduit cloud for the requested frame.
 
         Raises:
             ValueError: If the requested frame does not exist.
@@ -1512,7 +1509,7 @@ class Aether(Cleanable, IAether):
 
     #endregion Mutation Research
     #region DevOps Management
-    def _get_devops_manager(self, aetheric_frame_name: str = "default") -> IDevOpsManager:
+    def _get_devops_manager(self, aetheric_frame_name: str = "default") -> DevOpsManager:
         """
         Retrieves the DevOpsManager associated with a specific Aetheric Frame.
 
@@ -1563,7 +1560,7 @@ class Aether(Cleanable, IAether):
         self.check_cleaned()
         return self._get_devops_manager(aetheric_frame_name).spell_system_states
 
-    def _get_incident_manager(self, aetheric_frame_name: str = "default") -> IIncidentManager:
+    def _get_incident_manager(self, aetheric_frame_name: str = "default") -> IncidentManager:
         """
         Retrieves the IncidentManager from the DevOpsManager of a specific frame.
 

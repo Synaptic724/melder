@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import time
 from contextvars import ContextVar
 from contextlib import contextmanager
@@ -17,7 +17,6 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -38,6 +37,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.mutation_research.mutation_research import MutationResearch
 
 #region Conduit
@@ -110,7 +110,7 @@ class Conduit(Cleanable, IConduit):
             aetheric_frame_name: str,
             aetheric_frame: IAethericFrame,
             policy: Policies,
-            dev_ops_manager: IDevOpsManager,
+            dev_ops_manager: DevOpsManager,
             automatic: bool = True,
             name: Optional[str] = None,
             logger: Any | None = None,
@@ -148,7 +148,7 @@ class Conduit(Cleanable, IConduit):
                 via IDBuilder.create_id().
             root_conduit_id (str | None, optional):
                 Root conduit id for this lineage. Required for lesser conduits.
-            dev_ops_manager (IDevOpsManager):
+            dev_ops_manager (DevOpsManager):
                 Frame-owned DevOpsManager injected into this conduit at
                 construction time.
             creation_gate (CreationGate | None, optional):
@@ -191,7 +191,7 @@ class Conduit(Cleanable, IConduit):
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._spellbook: ISpellbook = spellbook
         self._nexus: INexus = spellbook._nexus
-        self._dev_ops_manager: IDevOpsManager = dev_ops_manager
+        self._dev_ops_manager: DevOpsManager = dev_ops_manager
         self._logger: ISafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()

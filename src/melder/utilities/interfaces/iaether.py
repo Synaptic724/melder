@@ -1,8 +1,7 @@
-﻿import logging
+import logging
 from typing import TYPE_CHECKING, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
@@ -11,14 +10,15 @@ from melder.utilities.interfaces.iaethericframeconfiguration import (
 )
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
+    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
     from melder.mutation_research.mutation_research import MutationResearch
 
 @runtime_checkable
@@ -169,7 +169,7 @@ class IAether(ICleanable, Protocol):
     def _get_incident_manager(
             self,
             aetheric_frame_name: str = "default",
-    ) -> IIncidentManager:
+    ) -> IncidentManager:
         """
         Return the frame-owned incident manager for one frame.
         """
@@ -218,7 +218,7 @@ class IAether(ICleanable, Protocol):
     def _get_devops_manager(
             self,
             aetheric_frame_name: str = "default",
-    ) -> IDevOpsManager:
+    ) -> DevOpsManager:
         """
         Return the frame-owned DevOps manager for one frame.
         """
@@ -353,7 +353,7 @@ class IAether(ICleanable, Protocol):
     def get_conduit_cloud(
             self,
             aetheric_frame_name: str = "default",
-    ) -> IConduitCloud:
+    ) -> ConduitCloud:
         """
         Return the frame-local conduit and cluster service for one frame.
 
@@ -362,7 +362,7 @@ class IAether(ICleanable, Protocol):
                 Name of the target frame.
 
         Returns:
-            IConduitCloud: The frame-local conduit cloud.
+            ConduitCloud: The frame-local conduit cloud.
         """
         ...
 

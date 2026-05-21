@@ -1,12 +1,14 @@
-﻿from typing import Dict, Optional, Protocol, Set, runtime_checkable
+from typing import TYPE_CHECKING, Dict, Optional, Protocol, Set, runtime_checkable
 from types import TracebackType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
-from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 
 @runtime_checkable
 class IAethericFrame(ICleanable, Protocol):
@@ -36,7 +38,7 @@ class IAethericFrame(ICleanable, Protocol):
     """
     _id: str
     _conduits: Dict[str, IConduit]
-    _conduit_cloud: IConduitCloud
+    _conduit_cloud: ConduitCloud
     _spell_registry: Dict[str, Set[ISpellIndex]]
     name: str
 
@@ -60,7 +62,7 @@ class IAethericFrame(ICleanable, Protocol):
         ...
 
     @property
-    def dev_ops_manager(self) -> IDevOpsManager:
+    def dev_ops_manager(self) -> DevOpsManager:
         """
         Return the frame-owned DevOps hub.
         """

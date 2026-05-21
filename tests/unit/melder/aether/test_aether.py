@@ -8,11 +8,11 @@ from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -705,7 +705,7 @@ def test_get_existing_frame_returns_frame_with_cloud(aether_with_mocks):
 def test_get_conduit_cloud_returns_frame_owned_cloud(aether_with_mocks) -> None:
     """get_conduit_cloud should return the cloud owned by the requested frame."""
     a = aether_with_mocks
-    cloud = MagicMock(spec=IConduitCloud)
+    cloud = MagicMock(spec=ConduitCloud)
     a._default_frame._conduit_cloud = cloud
 
     assert a.get_conduit_cloud() is cloud
@@ -745,7 +745,7 @@ def test_aether_conduit_discovery_helpers_expose_frame_inventory(
     conduit_b._id = "c2"
     a._default_frame._conduits = {"c1": conduit_a, "c2": conduit_b}
     a._default_frame._conduit_ids_by_name = {"alpha": "c1", "beta": "c2"}
-    cloud = MagicMock(spec=IConduitCloud)
+    cloud = MagicMock(spec=ConduitCloud)
     a._default_frame._conduit_cloud = cloud
 
     assert a.list_conduit_ids() == ("c1", "c2")

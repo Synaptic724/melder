@@ -2,7 +2,7 @@ import inspect
 import threading
 from contextlib import contextmanager
 from types import TracebackType
-from typing import List, Any, Tuple, Dict, Iterable, Generator, Type, Optional
+from typing import TYPE_CHECKING, List, Any, Tuple, Dict, Iterable, Generator, Type, Optional
 
 from mypy_extensions import mypyc_attr
 
@@ -15,7 +15,8 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.interfaces.ispell import ISpell
@@ -125,7 +126,7 @@ class ConduitWard(Cleanable, IConduitWard):
 
         ## Conduit Ward properties
         self._conduit: IConduit = conduit
-        self._conduit_cloud: IConduitCloud = aetheric_frame._conduit_cloud
+        self._conduit_cloud: ConduitCloud = aetheric_frame._conduit_cloud
         self._logger: ISafeLogger = conduit._logger
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type

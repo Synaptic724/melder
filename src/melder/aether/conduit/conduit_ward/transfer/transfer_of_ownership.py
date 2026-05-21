@@ -1,7 +1,7 @@
 import threading
 import ulid
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Set, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, cast
 
 from mypy_extensions import mypyc_attr
 
@@ -11,10 +11,11 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaether import IAether
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
-from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellbook import ISpellbook
@@ -120,7 +121,7 @@ class TransferOfOwnership(Cleanable):
                 "Aether did not provide a ChangeControlManager for ownership transfer."
             )
         self._change_control_manager: IChangeControlManager = change_control_manager
-        self._incident_manager: IIncidentManager = self._aether._get_incident_manager(self._frame_name)
+        self._incident_manager: IncidentManager = self._aether._get_incident_manager(self._frame_name)
         self._rollback_actions: List[Callable[[], object]] = []
         self._op_id: str = str(ulid.ULID())
 
@@ -430,17 +431,17 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         return {"existence": spell_obj.existence}
 
-    def _get_source_conduit_cloud(self) -> IConduitCloud:
+    def _get_source_conduit_cloud(self) -> ConduitCloud:
         """
         Return the source conduit's frame-local cloud service.
 
         Returns:
-            IConduitCloud: The source conduit's cloud service.
+            ConduitCloud: The source conduit's cloud service.
 
         Raises:
             RuntimeError: If the source conduit does not expose a valid cloud.
         """
-        conduit_cloud: IConduitCloud = self._aether.get_conduit_cloud(
+        conduit_cloud: ConduitCloud = self._aether.get_conduit_cloud(
             self.source_conduit._aetheric_frame_name
         )
         if conduit_cloud is None:

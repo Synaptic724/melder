@@ -7,13 +7,11 @@ from types import TracebackType
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitcluster import IConduitCluster
-from melder.utilities.interfaces.iconduitcloud import IConduitCloud
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @mypyc_attr(native_class=True)
-class ConduitCloud(Cleanable, IConduitCloud):
+class ConduitCloud(Cleanable):
     """
     Frame-scoped conduit and cluster service facade.
 
@@ -63,7 +61,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._name: str = name
         self._conduits: Dict[str, IConduit] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
-        self._conduit_clusters: Dict[str, IConduitCluster] = {}
+        self._conduit_clusters: Dict[str, ConduitCluster] = {}
         self._id: str = str(ulid.ULID())
 
     def cleanup(self) -> None:
@@ -399,7 +397,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
             cluster = self._get_cluster(cluster_name)
             cluster.refresh_member_shares(conduit)
 
-    def get_cluster(self, cluster_name: str) -> IConduitCluster:
+    def get_cluster(self, cluster_name: str) -> ConduitCluster:
         """
         Return one frame-local cluster by name.
 
@@ -407,7 +405,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
             cluster_name (str): Target cluster name.
 
         Returns:
-            IConduitCluster: Matching cluster.
+            ConduitCluster: Matching cluster.
 
         Raises:
             ValueError: If the cluster does not exist.
@@ -425,7 +423,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         with self._lock:
             return tuple(self._conduit_clusters.keys())
 
-    def _get_cluster(self, cluster_name: str) -> IConduitCluster:
+    def _get_cluster(self, cluster_name: str) -> ConduitCluster:
         """
         Resolve one frame-local cluster by name.
 
@@ -433,7 +431,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
             cluster_name (str): Target cluster name.
 
         Returns:
-            IConduitCluster: Matching cluster.
+            ConduitCluster: Matching cluster.
 
         Raises:
             ValueError: If the cluster does not exist.
