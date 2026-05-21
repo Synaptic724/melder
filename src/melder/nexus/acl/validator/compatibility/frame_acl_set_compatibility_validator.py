@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 from typing import Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -16,9 +16,6 @@ from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframeaclsetcompatibilityreport import (
-    IFrameACLSetCompatibilityReport,
-)
 from melder.utilities.interfaces.iframeaclviewconfiguration import (
     IFrameACLViewConfiguration,
 )
@@ -122,12 +119,12 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             return self._frame_name
 
     @property
-    def last_report(self) -> Optional[IFrameACLSetCompatibilityReport]:
+    def last_report(self) -> Optional[FrameACLSetCompatibilityReport]:
         """
         Return the most recent compatibility report when one exists.
 
         Returns:
-            Optional[IFrameACLSetCompatibilityReport]: Last report snapshot.
+            Optional[FrameACLSetCompatibilityReport]: Last report snapshot.
         """
         self.check_cleaned()
         with self._lock:
@@ -610,3 +607,5 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
         return allow_operations, deny_operations
+
+

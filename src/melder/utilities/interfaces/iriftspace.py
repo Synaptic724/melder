@@ -1,10 +1,12 @@
-﻿from typing import Callable, Dict, Optional, Protocol, runtime_checkable
+﻿from typing import TYPE_CHECKING, Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
-from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
 from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 from melder.utilities.interfaces.iworkstation import IWorkstation
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_space.event_system.rift_event_system import RiftEventSystem
 
 @runtime_checkable
 class IRiftSpace(ICleanable, Protocol):
@@ -48,7 +50,7 @@ class IRiftSpace(ICleanable, Protocol):
         ...
 
     @property
-    def event_system(self) -> IRiftEventSystem:
+    def event_system(self) -> "RiftEventSystem":
         """
         Return the room-local event system.
         """
@@ -109,4 +111,5 @@ class IRiftSpace(ICleanable, Protocol):
         Unregister one action-hook subscription by id.
         """
         ...
+
 

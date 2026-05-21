@@ -1,5 +1,5 @@
-import threading
-from typing import Dict, Optional, Set, Tuple
+﻿import threading
+from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
@@ -8,8 +8,10 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.iconduitrecord import IConduitRecord
 from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
-from melder.utilities.interfaces.iframerecord import IFrameRecord
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.frame_record import FrameRecord
 
 
 class FrameDescriptor(Cleanable, IFrameDescriptor):
@@ -78,7 +80,7 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
         self._frame_name: str = frame_name
         self._frame_handle: Optional[IAethericFrame] = None
         self._frame_configuration: Optional[IAethericFrameConfiguration] = None
-        self._frame_overview: Optional[IFrameRecord] = None
+        self._frame_overview: Optional["FrameRecord"] = None
         self._conduit_records_by_id: Dict[str, IConduitRecord] = {}
         self._spell_records_by_key: Dict[Tuple[str, str], ISpellRecord] = {}
         self._spell_keys_by_conduit_id: Dict[str, Set[Tuple[str, str]]] = {}
@@ -179,7 +181,7 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
             return self._frame_configuration
 
     @property
-    def frame_overview(self) -> Optional[IFrameRecord]:
+    def frame_overview(self) -> Optional["FrameRecord"]:
         """
         Return the owned frame overview record when published.
 
@@ -310,7 +312,7 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
         with self._lock:
             self._frame_configuration = frame_configuration
 
-    def set_frame_overview(self, frame_overview: IFrameRecord) -> None:
+    def set_frame_overview(self, frame_overview: "FrameRecord") -> None:
         """
         Replace the owned frame overview record.
 
@@ -578,3 +580,4 @@ class FrameDescriptor(Cleanable, IFrameDescriptor):
                         spell_record.owner_conduit_id,
                         None,
                     )
+

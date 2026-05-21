@@ -1,12 +1,21 @@
-﻿from typing import Mapping, Protocol, Sequence, runtime_checkable
+﻿from typing import TYPE_CHECKING, Mapping, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
 from melder.utilities.interfaces.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
-from melder.utilities.interfaces.iframeaclsetcompatibilityvalidator import IFrameACLSetCompatibilityValidator
 from melder.utilities.interfaces.iframeaclviewconfiguration import IFrameACLViewConfiguration
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
+        FrameACLSetCompatibilityValidator,
+    )
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
+        FrameACLSetCompatibilityValidator,
+    )
 
 @runtime_checkable
 class IFrameACLContainer(ICleanable, Protocol):
@@ -52,7 +61,7 @@ class IFrameACLContainer(ICleanable, Protocol):
     @property
     def frame_acl_set_compatibility_validator(
             self,
-    ) -> IFrameACLSetCompatibilityValidator:
+    ) -> "FrameACLSetCompatibilityValidator":
         """
         Return the frame-scoped ACL set compatibility validator.
         """
@@ -296,4 +305,6 @@ class IFrameACLContainer(ICleanable, Protocol):
         Roll current codegen selection back to one historical revision.
         """
         ...
+
+
 

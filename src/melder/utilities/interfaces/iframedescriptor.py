@@ -1,10 +1,12 @@
-﻿from typing import Protocol, runtime_checkable
+﻿from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaethericframeconfiguration import (
     IAethericFrameConfiguration,
 )
-from melder.utilities.interfaces.iframerecord import IFrameRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.frame_record import FrameRecord
 
 
 @runtime_checkable
@@ -39,7 +41,7 @@ class IFrameDescriptor(Protocol):
         """
         ...
 
-    def set_frame_overview(self, frame_record: IFrameRecord) -> None:
+    def set_frame_overview(self, frame_record: "FrameRecord") -> None:
         """
         Publish one detached frame overview record into the descriptor.
         """
@@ -50,4 +52,5 @@ class IFrameDescriptor(Protocol):
         Clear runtime-owned publication data from the descriptor.
         """
         ...
+
 

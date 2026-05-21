@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+﻿from contextlib import contextmanager
 import threading
 from typing import Any, Callable, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -19,7 +19,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
-from melder.utilities.interfaces.irifteventsystem import IRiftEventSystem
 from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
@@ -170,7 +169,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
         )
-        self._event_system: IRiftEventSystem = RiftEventSystem(
+        self._event_system: RiftEventSystem = RiftEventSystem(
             rift_id=self._owner_rift_id,
             space_id=self._id,
             space_kind=self._space_kind,
@@ -486,7 +485,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         )
 
     @property
-    def event_system(self) -> IRiftEventSystem:
+    def event_system(self) -> RiftEventSystem:
         """
         Purpose:
             Return the room-local event system.
@@ -496,7 +495,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             - The returned object is cleaned with the room.
 
         Returns:
-            IRiftEventSystem: Room-local event system.
+            RiftEventSystem: Room-local event system.
         """
         self.check_cleaned()
         with self._lock:
@@ -870,3 +869,4 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise ValueError(
                 "Unsupported action hook category '{0}'.".format(category)
             )
+

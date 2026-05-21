@@ -1,13 +1,11 @@
 import threading
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
-from melder.utilities.interfaces.imutationpatchmap import IMutationPatchMap
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
-from melder.utilities.interfaces.ioverridepatchmap import IOverridePatchMap
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
 from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
@@ -28,6 +26,9 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
     SpellValidationResult,
 )
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationPatchMap, OverridePatchMap
 
 
 @mypyc_attr(native_class=True)
@@ -119,8 +120,8 @@ class SpellCompilerArtifact(Cleanable):
         self._occurrence_plan_phase8: Optional[IOccurrencePlan] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
         self._injection_plan_phase9: Optional[IInjectionPlan] = None
-        self._override_patch_map_phase10: Optional[IOverridePatchMap] = None
-        self._mutation_patch_map_phase10: Optional[IMutationPatchMap] = None
+        self._override_patch_map_phase10: Optional["OverridePatchMap"] = None
+        self._mutation_patch_map_phase10: Optional["MutationPatchMap"] = None
         self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
