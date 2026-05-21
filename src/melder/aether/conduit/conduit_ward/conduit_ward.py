@@ -297,7 +297,7 @@ class ConduitWard(Cleanable):
     #endregion Cleanup
 
     #region Context Manager
-    def __enter__(self) -> ConduitWard:
+    def __enter__(self) -> "ConduitWard":
         """
         Acquire the ward lock and return this ward.
 
@@ -445,7 +445,7 @@ class ConduitWard(Cleanable):
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
             metadata: Optional[Dict[str, Any]] = None,
-    ) -> Generator[ConduitWard, Any, None]:
+    ) -> Generator["ConduitWard", Any, None]:
         """
         Public API
 
@@ -1471,7 +1471,7 @@ class ConduitWard(Cleanable):
     def _restore_detail_snapshot(
             self,
             contract: Contract,
-            ward: ConduitWard,
+            ward: "ConduitWard",
             snapshot: Dict[str, Any],
     ) -> None:
         """
