@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 def _get_structural_risk_manager_callback(
-        risk_manager: Optional[object],
+        risk_manager: Optional[RiskManager],
 ) -> Optional[Callable[[str, Optional[SpellValidity]], None]]:
     """
     Return the structural-validity callback when the collaborator exposes it.
