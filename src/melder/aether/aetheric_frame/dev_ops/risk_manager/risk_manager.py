@@ -89,6 +89,12 @@ class RiskManager(Cleanable):
         "_conduit_states",
         "_lineage_conduits",
     ]
+    __deletable__ = [
+        "_lock",
+        "_spell_system_states",
+        "_conduit_states",
+        "_lineage_conduits",
+    ]
 
     def __init__(self, spell_system_states: SpellSystemStates) -> None:
         """

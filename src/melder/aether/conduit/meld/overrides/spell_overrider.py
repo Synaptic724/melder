@@ -2,7 +2,7 @@ from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
@@ -38,8 +38,11 @@ class SpellOverrider(Cleanable):
       * UNIQUE: *param (exactly one match required)
       * BROADCAST: **param (one or more matches required)
     """
-    __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__: ClassVar[list[str]] = Cleanable.__slots__ + ["_blueprint", "_engine"]
+    __deletable__ = [
+        "_blueprint", "_engine"
+    ]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:
         """

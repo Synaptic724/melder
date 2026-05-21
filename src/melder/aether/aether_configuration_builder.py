@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -20,8 +20,14 @@ class AetherConfigurationBuilder(Cleanable):
         making ownership explicit for the wrapped `AetherConfiguration`.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_lock",
+        "_configuration",
+        "_finalized",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_id",
         "_lock",
         "_configuration",

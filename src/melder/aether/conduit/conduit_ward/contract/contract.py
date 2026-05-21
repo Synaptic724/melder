@@ -36,6 +36,22 @@ class Contract(Cleanable):
         _id: Unique identifier for this contract instance.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_id",
+        "_ward_a",
+        "_ward_b",
+        "_details_a",
+        "_details_b",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_lock",
+        "_id",
+        "_ward_a",
+        "_ward_b",
+        "_details_a",
+        "_details_b",
+    ]
 
     def __init__(self, ward_a: ConduitWard, ward_b: ConduitWard):
         """
