@@ -1,6 +1,16 @@
 ﻿import threading
 from concurrent.futures import FIRST_EXCEPTION, Future, wait
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    ClassVar,
+)
 from queue import SimpleQueue, Empty as QueueEmpty
 
 from mypy_extensions import mypyc_attr
@@ -74,8 +84,23 @@ class PhaseScheduler(Cleanable):
       * Creating appropriately labelled UnitOfWork instances via: meth:`create_unit_of_work` so that all work items share the
         scheduler's CancellationEvent.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_configuration",
+        "_workers",
+        "_barrier_timeout_ms",
+        "_cancel_signal",
+        "_cancel_event",
+        "_queue",
+        "_threads",
+        "_lock",
+        "_workers_started",
+        "_shutdown",
+        "_phase_factories",
+        "_phase_order",
+        "_sentinel",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_configuration",
         "_workers",
         "_barrier_timeout_ms",

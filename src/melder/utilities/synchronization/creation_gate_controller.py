@@ -1,9 +1,9 @@
 import threading
-from typing import Dict, Optional
+from typing import Dict, Optional, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.creation_gate import CreationGate
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
 class CreationGateController(Cleanable):
     """
@@ -33,14 +33,21 @@ class CreationGateController(Cleanable):
           deterministic under concurrent access.
         - Callers should still serialize concurrent registry mutations.
     """
-
-    __slots__ = (
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_conduit_creation_gates",
         "_conduit_creation_gates_by_root",
         "_conduit_root_by_conduit",
         "_spell_index_creation_gates",
-    )
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_lock",
+        "_conduit_creation_gates",
+        "_conduit_creation_gates_by_root",
+        "_conduit_root_by_conduit",
+        "_spell_index_creation_gates",
+    ]
 
     def __init__(self) -> None:
         """

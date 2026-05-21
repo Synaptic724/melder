@@ -1,6 +1,6 @@
 import threading
 from types import TracebackType
-from typing import Iterable, Optional, Sequence, Any, Literal
+from typing import Iterable, Optional, Sequence, Any, Literal, ClassVar
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -27,8 +27,9 @@ class SafeGuard(Cleanable):
         - Re-entrant usage remains valid when the underlying lock type supports
           it, such as `RLock`.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
+    __deletable__: ClassVar[list[str]] = ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
 
     def __init__(self, *locks: Any, timeout: Optional[float] = None, one_time_use: bool = True):
         """

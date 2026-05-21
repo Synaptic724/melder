@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Iterable, Dict, Any, Union
+from typing import Optional, Iterable, Dict, Any, Union, ClassVar, List
 
 from mypy_extensions import mypyc_attr
 
@@ -25,9 +25,9 @@ class SafeLogger(Cleanable):
     - Ignores channel-only masking semantics on stdlib logger paths.
     - Falls back to a no-op surface when no logger is configured.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_logger", "_id", "_level", "_level_name", "_is_channel"]
-    _LEVELS: Dict[str, int] = {
+    _LEVELS: ClassVar[Dict[str, int]] = {
         "notset": logging.NOTSET,
         "debug": logging.DEBUG,
         "info": logging.INFO,
@@ -35,6 +35,9 @@ class SafeLogger(Cleanable):
         "error": logging.ERROR,
         "critical": logging.CRITICAL,
     }
+    __deletable__: ClassVar[List[str]] = [
+        "_logger", "_id", "_level", "_level_name", "_is_channel",
+    ]
     def __init__(self, logger: logging.Logger | IChannelLogger | None, level_name: str = "INFO"):
         """
         Initialize the logger adapter around one concrete logger or null target.

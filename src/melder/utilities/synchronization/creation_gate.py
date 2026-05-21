@@ -1,9 +1,11 @@
 import threading
 import time
 from collections import deque
+from typing import ClassVar
+
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
-
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
 class CreationGate(Cleanable):
     """
@@ -36,8 +38,9 @@ class CreationGate(Cleanable):
           protected by an internal "RLock".
         - "enabled" is intentionally readable without a lock on hot paths.
     """
-
-    __slots__ = ("_lock", "enabled", "_event", "_tickets", "_closed")
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + ["_lock", "enabled", "_event", "_tickets", "_closed"]
+    __deletable__: ClassVar[list[str]] = ["_lock", "_event", "_tickets", "_closed", "enabled"]
 
     def __init__(self, enabled: bool = True) -> None:
         """

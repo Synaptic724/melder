@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence, ClassVar
 import ulid
 from threading import RLock
 from types import TracebackType
@@ -186,8 +186,63 @@ class Spell(Cleanable):
           by the Resolution / Meld layer; `Spell` itself does not execute resolution.
 
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_activation_hooks",
+        "_creation_context",
+        "_creation_context_factory",
+        "_creation_context_switch",
+        "_compiler_artifact",
+        "_dynamic_environment",
+        "_hooks_enabled",
+        "_id",
+        "_is_class_spell",
+        "_is_existing_creation",
+        "_is_lambda_spell",
+        "_is_method_spell",
+        "_key",
+        "_lock",
+        "_mutation_override",
+        "_owner_conduit_id",
+        "_owner_conduit_name",
+        "_owner_creations",
+        "_post_hooks",
+        "_pre_hooks",
+        "_spell_system_states",
+        "_spellbook",
+        "aetheric_frame",
+        "binding_name",
+        "dependencies",
+        "dependency_graph",
+        "disposal_method_names",
+        "existence",
+        "has_disposal_methods",
+        "metadata",
+        "owned_spell",
+        "permissions",
+        "profile",
+        "resolution_required",
+        "resolution_complete",
+        "execution_plan_step_count",
+        "execution_plan_unique_spell_count",
+        "execution_plan_max_occurrence_depth",
+        "execution_plan_max_dependency_count",
+        "execution_plan_has_calln",
+        "execution_plan_has_contract_payloads",
+        "execution_plan_has_existing_creations",
+        "execution_plan_dispatch_route",
+        "retries",
+        "spell",
+        "spell_id",
+        "spell_index",
+        "spell_name",
+        "spell_type",
+        "spellframe",
+        "tags",
+        "timeout",
+        "user_created_object",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_activation_hooks",
         "_creation_context",
         "_creation_context_factory",

@@ -1,4 +1,4 @@
-from typing import Dict, Mapping, Tuple
+from typing import Dict, Mapping, Tuple, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
@@ -72,15 +72,15 @@ class ResolutionStyleMatrix:
         - Enum row count does not imply "most binding kinds" are unique-only.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
-    OWNER: str = "melder-runtime-maintainers"
-    LAST_UPDATED_ISO: str = "2026-02-13"
-    EXPECTED_SPELL_TYPE_COUNT: int = 14
-    EXPECTED_EXISTENCE_COUNT: int = 6
-    EXPECTED_CONTRACT_ITEM_COUNT: int = 21
+    OWNER: ClassVar[str] = "melder-runtime-maintainers"
+    LAST_UPDATED_ISO: ClassVar[str] = "2026-02-13"
+    EXPECTED_SPELL_TYPE_COUNT: ClassVar[int] = 14
+    EXPECTED_EXISTENCE_COUNT: ClassVar[int] = 6
+    EXPECTED_CONTRACT_ITEM_COUNT: ClassVar[int] = 21
 
-    ALL_EXISTENCE_NAMES: Tuple[str, ...] = (
+    ALL_EXISTENCE_NAMES: ClassVar[Tuple[str, ...]] = (
         "unique",
         "unique_per_conduit",
         "many",
@@ -88,7 +88,7 @@ class ResolutionStyleMatrix:
         "unique_per_conduit_lineage",
         "unique_per_spell_space",
     )
-    NON_UNIQUE_EXISTENCE_NAMES: Tuple[str, ...] = (
+    NON_UNIQUE_EXISTENCE_NAMES: ClassVar[Tuple[str, ...]] = (
         "unique_per_conduit",
         "many",
         "unique_per_conduit_cluster",
@@ -96,7 +96,7 @@ class ResolutionStyleMatrix:
         "unique_per_spell_space",
     )
 
-    BINDING_FAMILY_POLICY: Dict[str, Dict[str, Tuple[str, ...]]] = {
+    BINDING_FAMILY_POLICY: ClassVar[Dict[str, Dict[str, Tuple[str, ...]]]] = {
         "class_based": {
             "spell_types": (
                 "SPELL",
@@ -131,7 +131,7 @@ class ResolutionStyleMatrix:
         },
     }
 
-    SPELL_TYPE_TO_BINDING_FAMILY: Dict[str, str] = {
+    SPELL_TYPE_TO_BINDING_FAMILY: ClassVar[Dict[str, str]] = {
         "SPELL": "class_based",
         "SPELL_WITH_SPELLFRAME": "class_based",
         "SPELL_WITH_BINDING_NAME": "class_based",
