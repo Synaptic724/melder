@@ -509,9 +509,12 @@ class InjectionPlanBuilder(object):
     Lifecycle:
         - Builder does not own the OccurrencePlan and performs no cleanup.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_occurrence_plan",
+    ]
+    __deletable__: ClassVar[List[str]] = [
+        "_occurrence_plan"
     ]
 
     @staticmethod

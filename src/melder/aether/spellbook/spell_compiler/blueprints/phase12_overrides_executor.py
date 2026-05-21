@@ -637,9 +637,12 @@ def _build_shape_source_step_metadata(
         raise ValueError("plan_rows must not be None.")
     targeted_spell_ids = set(override_targeted_spell_ids or ())
     target_counts_by_spell_id = dict(override_target_counts_by_spell_id or ())
-    step_counts_by_spell_id = Counter(
-        row["spell_id"] for row in plan_rows if "spell_id" in row
-    )
+    step_spell_ids = [
+        row["spell_id"]
+        for row in plan_rows
+        if "spell_id" in row
+    ]
+    step_counts_by_spell_id = Counter(step_spell_ids)
     has_step_target_counts = (
             override_target_counts_by_step is not None
             and len(override_target_counts_by_step) == len(plan_rows)

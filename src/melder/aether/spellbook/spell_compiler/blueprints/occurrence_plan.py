@@ -457,7 +457,7 @@ class OccurrencePlanBuilder(object):
         "_path_registry",
     ]
     __deletable__: ClassVar[List[str]] = [
-        "_cleaned"
+        "_cleaned",
         "_root_spell",
         "_blueprint",
         "_spell_lookup",

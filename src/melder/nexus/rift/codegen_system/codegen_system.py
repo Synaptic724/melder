@@ -38,11 +38,6 @@ from melder.nexus.rift.codegen_system.validation.codegen_validator import (
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
-from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
-from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift

@@ -65,7 +65,7 @@ class MutationEdgePatch:
         new_parent_id (Optional[str]):
             Replacement parent id to apply; None until resolved.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     child_spell_id: str
     param_name: str
     param_path_id: int
@@ -95,8 +95,21 @@ class OverridePatchMap(Cleanable):
     Lifecycle:
         - cleanup() is idempotent and clears owned collections.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_root_spell_id",
+        "_targets_by_spec",
+        "_specificity_by_spec",
+        "_resolved_targets_by_raw_key",
+        "_last_single_raw_key",
+        "_last_single_value",
+        "_last_single_override_map",
+        "_last_single_socket_shape",
+        "_last_multi_signature",
+        "_last_multi_override_map",
+        "_last_multi_socket_shape",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_root_spell_id",
         "_targets_by_spec",
         "_specificity_by_spec",
@@ -557,10 +570,15 @@ class MutationPatchMap(Cleanable):
     Lifecycle:
         - cleanup() is idempotent and clears owned collections.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_root_spell_id",
         "_targets_by_spec",
+    ]
+
+    __deletable__: ClassVar[List[str]] = [
+        "_root_spell_id",
+        "_targets_by_spec"
     ]
 
     def __init__(
