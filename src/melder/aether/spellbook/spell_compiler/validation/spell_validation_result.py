@@ -57,7 +57,6 @@ class SpellValidationResult(Cleanable):
             ValueError: If `spell_id` or `spell_name` is empty.
         """
         super().__init__()
-
         if not spell_id:
             raise ValueError("spell_id cannot be empty.")
         if not spell_name:
