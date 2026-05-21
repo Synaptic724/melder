@@ -11,8 +11,14 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 if TYPE_CHECKING:
     from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
+    from melder.mutation_research.mutation_research import MutationResearch
+    from melder.utilities.logger.safe_logger import SafeLogger
+    from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -22,12 +28,9 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-from melder.utilities.logger.safe_logger import SafeLogger
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
 from melder.utilities.synchronization.creation_gate import CreationGate
-from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
@@ -36,11 +39,6 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
-if TYPE_CHECKING:
-    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
-    from melder.mutation_research.mutation_research import MutationResearch
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 
 #region Conduit
 @mypyc_attr(native_class=True)
@@ -2233,7 +2231,7 @@ class Conduit(Cleanable):
         self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
-    def get_mutation_research(self) -> "MutationResearch":
+    def get_mutation_research(self) -> MutationResearch:
         """
         Public API
 

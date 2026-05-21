@@ -150,7 +150,12 @@ class ResolutionStyleMatrix:
 
     # SpellType view is a derived projection from family policy.
     # It is not an independent policy table.
-    MATRIX_BY_SPELL_TYPE: Dict[str, Dict[str, Tuple[str, ...]]] = {}
+    MATRIX_BY_SPELL_TYPE: Dict[str, Dict[str, Tuple[str, ...]]] = (
+        _expand_spell_type_matrix(
+            SPELL_TYPE_TO_BINDING_FAMILY,
+            BINDING_FAMILY_POLICY,
+        )
+    )
 
     # Resolution contract status map anchored to the ticket item IDs.
     # This intentionally captures supported runtime behavior and explicit
@@ -454,6 +459,3 @@ class ResolutionStyleMatrix:
                 )
 
         return tuple(errors)
-
-
-ResolutionStyleMatrix.MATRIX_BY_SPELL_TYPE = ResolutionStyleMatrix.get_matrix_by_spell_type()
