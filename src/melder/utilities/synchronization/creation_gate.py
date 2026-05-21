@@ -40,7 +40,6 @@ class CreationGate(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_lock", "enabled", "_event", "_tickets", "_closed"]
-    __deletable__: ClassVar[list[str]] = ["_lock", "_event", "_tickets", "_closed", "enabled"]
 
     def __init__(self, enabled: bool = True) -> None:
         """

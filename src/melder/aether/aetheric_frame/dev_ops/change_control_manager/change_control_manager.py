@@ -1,4 +1,4 @@
-﻿from threading import RLock
+from threading import RLock
 from typing import (
     Any,
     Callable,
@@ -82,26 +82,6 @@ class ChangeControlManager(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
-        "_spell_system_states",
-        "_pending_changes",
-        "_component_of_by_conduit",
-        "_dirty_spells_by_conduit",
-        "_dirty_roots_by_conduit",
-        "_monitor_active_by_conduit",
-        "_revalidate_fn_by_conduit",
-        "_change_control_enabled",
-        "_transaction_manager",
-        "_conflict_manager",
-        "_embargo_manager",
-        "_orchestrator",
-        "_commit_validator",
-        "_commit_hook",
-        "_abort_hook",
-        "_structural_validator",
-        "_dirty_marker",
-    ]
-    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_spell_system_states",
         "_pending_changes",

@@ -65,16 +65,6 @@ class SpellDetailedProfile(SpellGeneralProfile):
         "instance_members",
         "dynamic_access",
     ]
-    __deletable__ = [
-        "_show_dunders",
-        "_max_repr",
-        "_detail_complete",
-        "class_profile",
-        "callable_profile",
-        "metadata",
-        "instance_members",
-        "dynamic_access",
-    ]
 
     def __init__(
             self,

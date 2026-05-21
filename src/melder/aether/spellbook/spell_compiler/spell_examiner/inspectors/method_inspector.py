@@ -36,7 +36,6 @@ class MethodInspector(Cleanable):
     utility: ClassVar[type[InspectorUtility]] = InspectorUtility
     max_repr: ClassVar[int] = 120
     __slots__ = Cleanable.__slots__ +  ["fn", "_max_repr", "data"]
-    __deletable__ = ["fn", "_max_repr", "data"]
     def __init__(self, fn: Callable[..., Any], *, max_repr: int = 120):
         """
         Initializes the MethodInspector.

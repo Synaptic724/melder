@@ -44,10 +44,6 @@ class SpellExaminer(Cleanable):
         "_id",
         "_profile_builders_by_name",
     ]
-    __deletable__ = [
-        "_id",
-        "_profile_builders_by_name",
-    ]
 
     def __init__(self) -> None:
         """

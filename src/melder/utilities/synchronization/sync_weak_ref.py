@@ -80,14 +80,6 @@ class SyncWeakRef(Sync, Generic[T]):
             "_phantom_fired",
     ]
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __deletable__ = [
-        "_weak",
-        "_lock",
-        "_id",
-        "_on_collect",
-        "_auto_cleanup",
-        "_phantom_fired",
-    ]
 
     # ------------------------------------------------------------------
     # Construction

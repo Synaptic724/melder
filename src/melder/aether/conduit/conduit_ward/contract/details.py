@@ -43,16 +43,6 @@ class Detail(Cleanable):
         "reason",
         "sources",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_id",
-        "spell_index",
-        "spell_id",
-        "permissions",
-        "contract_type",
-        "reason",
-        "sources",
-    ]
 
     def __init__(
             self,

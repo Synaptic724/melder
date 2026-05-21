@@ -26,7 +26,6 @@ class SpellSystemIndex(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_nodes"]
-    __deletable__ = ["_nodes"]
 
     def __init__(self) -> None:
         """

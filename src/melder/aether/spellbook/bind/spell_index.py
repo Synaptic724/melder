@@ -40,17 +40,6 @@ class SpellIndex(Cleanable):
         "_owner_conduit_id",
         "_contracted_spellbooks",
     )
-    __deletable__: ClassVar[list[str]] = [
-        "_id",
-        "_current_id",
-        "_lock",
-        "_cleaned",
-        "_versions",
-        "_owner_spellbook",
-        "_owner_spell",
-        "_owner_conduit_id",
-        "_contracted_spellbooks",
-    ]
 
     def __init__(self, initial_id: str):
         """

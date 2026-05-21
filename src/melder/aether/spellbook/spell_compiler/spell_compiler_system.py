@@ -43,10 +43,6 @@ class SpellCompilerSystem(Cleanable):
         "_spell_compiler",
         "_spell_validator",
     ]
-    __deletable__ = [
-        "_spell_compiler",
-        "_spell_validator",
-    ]
     def __init__(self) -> None:
         """
             Create a new SpellCrafter for one bound: class: 'Spell`.

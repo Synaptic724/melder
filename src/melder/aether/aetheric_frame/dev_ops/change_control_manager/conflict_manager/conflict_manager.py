@@ -29,9 +29,6 @@ class ChangeControlConflictManager(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]
-    __deletable__ = [
-        "_lock",
-    ]
 
     def __init__(self) -> None:
         """

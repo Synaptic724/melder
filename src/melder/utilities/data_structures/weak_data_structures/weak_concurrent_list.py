@@ -41,7 +41,6 @@ class WeakConcurrentList(Generic[_T], Cleanable):
             Cleanable.__slots__
             + ["_lock", "_list", "_freeze", "_id", "_auto_prune"]
     )
-    __deletable__: ClassVar[list[str]] = ["_lock", "_list", "_freeze", "_id", "_auto_prune"]
 
     def __init__(
             self,

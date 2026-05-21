@@ -46,30 +46,6 @@ class ClassProfile(Cleanable):
         "tags",
         "dynamic_access",
     ]
-    __deletable__ = [
-        "name",
-        "qualname",
-        "module",
-        "mro",
-        "bases",
-        "annotations",
-        "protocols",
-        "slots",
-        "origin_file",
-        "origin_line",
-        "origin_end_line",
-        "source_preview",
-        "source_text",
-        "members",
-        "methods",
-        "is_dataclass",
-        "decorated",
-        "docstring_raw",
-        "docstring_summary",
-        "behavior_summary",
-        "tags",
-        "dynamic_access",
-    ]
 
     def __init__(
             self,

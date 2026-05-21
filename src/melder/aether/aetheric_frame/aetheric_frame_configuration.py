@@ -49,16 +49,6 @@ class AethericFrameConfiguration(Cleanable):
         "_rift_enabled",
         "_shared_framewide_spellbook_configuration",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_id",
-        "_lock",
-        "_frozen",
-        "_origin_spellbook_id",
-        "_system_state",
-        "_ai_native_enabled",
-        "_rift_enabled",
-        "_shared_framewide_spellbook_configuration",
-    ]
 
     def __init__(
             self,

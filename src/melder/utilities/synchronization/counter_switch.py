@@ -36,7 +36,6 @@ class CounterSwitch(Cleanable):
     """
 
     __slots__ = ("_lock", "_event", "_tickets")
-    __deletable__: ClassVar[list[str]] = ["_lock", "_event", "_tickets"]
     def __init__(self, state: int = 2) -> None:
         """
         Public API

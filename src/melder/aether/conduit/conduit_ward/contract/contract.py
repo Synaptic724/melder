@@ -1,4 +1,4 @@
-﻿from typing import Optional, Any, Dict, ClassVar
+from typing import Optional, Any, Dict, ClassVar
 from threading import RLock
 from types import TracebackType
 
@@ -37,14 +37,6 @@ class Contract(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
-        "_id",
-        "_ward_a",
-        "_ward_b",
-        "_details_a",
-        "_details_b",
-    ]
-    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_id",
         "_ward_a",

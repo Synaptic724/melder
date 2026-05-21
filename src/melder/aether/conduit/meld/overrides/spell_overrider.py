@@ -40,9 +40,6 @@ class SpellOverrider(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
-    __deletable__ = [
-        "_blueprint", "_engine"
-    ]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:
         """

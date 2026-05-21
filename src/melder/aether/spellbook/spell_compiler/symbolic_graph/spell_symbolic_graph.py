@@ -47,11 +47,6 @@ class SpellSymbolicGraph(Cleanable):
         "_spell_id",
         "_dependencies",
     ]
-    __deletable__ = [
-        "_lock",
-        "_spell_id",
-        "_dependencies",
-    ]
 
     def __init__(
             self,

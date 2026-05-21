@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, ClassVar
 
 if TYPE_CHECKING:
@@ -33,14 +33,6 @@ class ConduitCloud(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
-        "_name",
-        "_conduits",
-        "_conduit_ids_by_name",
-        "_conduit_clusters",
-        "_id",
-    ]
-    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_name",
         "_conduits",

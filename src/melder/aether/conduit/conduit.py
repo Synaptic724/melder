@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import time
 from contextvars import ContextVar
 from contextlib import contextmanager
@@ -132,33 +132,6 @@ class Conduit(Cleanable):
        "_local_conduit_hooks",
        "_meld",
        "_conduit_ward",
-    ]
-    __deletable__: ClassVar[list[str]] = [
-        "_id",
-        "_lock",
-        "_name",
-        "__dynamic_environment__",
-        "_nexus_publish_enabled",
-        "_automatic",
-        "_aetheric_frame_name",
-        "_aetheric_frame",
-        "_configuration",
-        "_conduit_state",
-        "_spellbook",
-        "_nexus",
-        "_dev_ops_manager",
-        "_logger",
-        "_root_conduit_id",
-        "_spellspace_stack",
-        "_spellspace_registry",
-        "_creations",
-        "_creation_gate_controller",
-        "_creation_gate",
-        "_conduit_hooks",
-        "_meld_hooks",
-        "_local_conduit_hooks",
-        "_meld",
-        "_conduit_ward",
     ]
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __melder_internal__: ClassVar[object] = _mrg.sentinel

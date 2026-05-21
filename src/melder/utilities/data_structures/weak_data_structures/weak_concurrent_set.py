@@ -69,7 +69,6 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             Cleanable.__slots__
             + ["_lock", "_set", "_freeze", "_id", "_auto_prune"]
     )
-    __deletable__: ClassVar[list[str]] = ["_lock", "_set", "_freeze", "_id", "_auto_prune"]
 
     # -------------------------------------------------------------------------
     # Construction

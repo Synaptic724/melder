@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.existence.existence import Existence
@@ -39,17 +39,6 @@ class ConduitCluster(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
-        "_name",
-        "_registry",
-        "_aetheric_frame_name",
-        "members",
-        "shared_spells",
-        "auto_link_dependencies",
-        "_cleaned",
-        "_id",
-    ]
-    __deletable__: ClassVar[list[str]] =  [
         "_lock",
         "_name",
         "_registry",

@@ -52,12 +52,6 @@ class SpellGeneralProfile(Cleanable):
         "binding_profile",
         "resolution_profile",
     ]
-    __deletable__ = [
-        "profile_name",
-        "profile_version",
-        "binding_profile",
-        "resolution_profile",
-    ]
 
     def __init__(
             self,

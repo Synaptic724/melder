@@ -29,7 +29,6 @@ class SafeGuard(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
-    __deletable__: ClassVar[list[str]] = ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
 
     def __init__(self, *locks: Any, timeout: Optional[float] = None, one_time_use: bool = True):
         """

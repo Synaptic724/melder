@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, ClassVar
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -42,8 +42,6 @@ class ParamSource:
         "_override_key",
         "_contract_key",
     ]
-    
-    __deletable__: ClassVar[List[str]] = ["_kind", "_dependency_keys", "_override_key", "_contract_key"]
 
     def __init__(
             self,
@@ -163,8 +161,6 @@ class InjectionSpec:
         "_uses_positional_override",
         "_contract_payload",
     ]
-
-    __deletable__: ClassVar[List[str]] = ["_param_sources", "_allow_list_aggregation", "_uses_positional_override", "_contract_payload"]
 
     def __init__(
             self,
@@ -377,8 +373,6 @@ class InjectionPlan(Cleanable):
         "_instance_injections",
     ]
 
-    __deletable__: ClassVar[List[str]] = ["_root_spell_id", "_instance_injections"]
-
     def __init__(
             self,
             *,
@@ -512,9 +506,6 @@ class InjectionPlanBuilder(object):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_occurrence_plan",
-    ]
-    __deletable__: ClassVar[List[str]] = [
-        "_occurrence_plan"
     ]
 
     @staticmethod

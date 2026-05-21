@@ -91,18 +91,6 @@ class ConduitResolutionState(Cleanable):
         "_initial_validity",
         "_risk_manager",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_conduit_id",
-        "_lock",
-        "_spell_validity",
-        "_root_validity",
-        "_diagnostics",
-        "_dirty",
-        "_last_validated_at",
-        "_last_change_reason",
-        "_initial_validity",
-        "_risk_manager",
-    ]
 
     def __init__(
             self,

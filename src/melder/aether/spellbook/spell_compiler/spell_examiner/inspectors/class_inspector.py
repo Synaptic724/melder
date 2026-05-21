@@ -38,12 +38,6 @@ class ClassInspector(Cleanable):
     """
     __melder_internal__: ClassVar[object]  = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["cls", "dunders", "max_repr", "data"]
-    __deletable__ = [
-        "cls",
-        "dunders",
-        "max_repr",
-        "data",
-    ]
     utility: ClassVar[type[InspectorUtility]] = InspectorUtility
     def __init__(
             self,

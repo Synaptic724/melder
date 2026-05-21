@@ -36,15 +36,6 @@ class DagNode(Cleanable):
         "_payload",
         "_tasks",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_children_by_param",
-        "_dependencies",
-        "_dependents",
-        "_incoming_params",
-        "_payload",
-        "_tasks",
-        "_id"
-    ]
     def __init__(self, key: str, payload: Any | None = None) -> None:
         """
         Initializes a new DagNode.

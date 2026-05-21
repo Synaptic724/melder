@@ -76,11 +76,6 @@ class SpellRequirementsFinder(Cleanable):
         "_requirements",
         "_lock",
     ]
-    __deletable__ = [
-        "_spell",
-        "_requirements",
-        "_lock",
-    ]
 
     _TYPING_ALIASES: ClassVar[Dict[str, object]] = {
         "Optional": typing.Optional,

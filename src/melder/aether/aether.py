@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from threading import RLock
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
@@ -77,21 +77,6 @@ class Aether:
         "_nexus",
     ]
     _cleaned: bool
-    __deletable__ = [
-        "_id",
-        "_configuration",
-        "_configured",
-        "_activated",
-        "_logger",
-        "_aetheric_frames",
-        "_default_frame",
-        "_aether_utility_system",
-        "_aetheric_frames",
-        "_default_frame",
-        "_crystallizer",
-        "_mutation_research",
-        "_nexus",
-    ]
 
     def __new__(cls, *args: object, **kwargs: object) -> "Aether":
         """

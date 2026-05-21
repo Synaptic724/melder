@@ -39,12 +39,6 @@ class DirectedAcyclicWorkGraph(Cleanable):
         "_nodes",
         "_socket_kinds",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_lock",
-        "_nodes",
-        "_socket_kinds",
-        "_id"
-    ]
     def __init__(self) -> None:
         """
         Initialize an empty DAG with its own identity and lock.

@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, Tuple, Type
 
 import ulid
@@ -63,16 +63,6 @@ class SpellbookConfiguration(Cleanable):
         "on_contract_created",
         "on_contract_removed",
     )
-    __deletable__: ClassVar[List[str]] = [
-        "_id",
-        "_lock",
-        "_aether_frame",
-        "_frozen",
-        "_properties",
-        "available_properties",
-        "_idempotent_keys",
-        "_hooks",
-    ]
     def __init__(self, aether_frame: str = "default"):
         """
         Initialize one configuration manager.

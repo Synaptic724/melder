@@ -103,7 +103,6 @@ class Package(Generic[P, R]):
     """
 
     __slots__ = ["_cleaned", "_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
-    __deletable__: ClassVar[list[str]] = ["_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
 
     def __init__(self, func: Callable[..., R], *args: Any, **kwargs: Any):
         """

@@ -44,11 +44,6 @@ class SpellValidationResult(Cleanable):
         "spell_name",
         "issues",
     ]
-    __deletable__ = [
-        "spell_id",
-        "spell_name",
-        "issues",
-    ]
 
     def __init__(
             self,

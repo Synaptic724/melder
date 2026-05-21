@@ -55,7 +55,6 @@ class ProtocolCrafter(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __deletable__: ClassVar[list[str]] = ["_id", "_lock"]
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

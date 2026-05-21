@@ -29,7 +29,6 @@ class TicketFlag(Cleanable):
     """
 
     __slots__ = ("_tickets",)
-    __deletable__: ClassVar[list[str]] = ["_tickets"]
 
     def __init__(self, value: bool = False) -> None:
         """

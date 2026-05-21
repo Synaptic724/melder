@@ -39,11 +39,6 @@ class IncidentManager(Cleanable):
         "_incidents_by_id",
         "_next_numeric_id",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_incidents_by_id",
-        "_next_numeric_id"
-    ]
 
     def __init__(self) -> None:
         """

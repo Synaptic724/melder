@@ -38,11 +38,6 @@ class CreationContextFactory(Cleanable):
         "_creation_gate_controller",
         "_created_spell_index_ids",
     ]
-    __deletable__: ClassVar[list[str]] =  [
-        "_dynamic_environment",
-        "_creation_gate_controller",
-        "_created_spell_index_ids",
-    ]
 
     def __init__(
             self,

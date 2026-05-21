@@ -68,15 +68,6 @@ class SpellValidationContext(Cleanable):
         "issues",
         "_cleanup_artifacts",
     ]
-    __deletable__ = [
-        "spell",
-        "spellbook",
-        "requirements",
-        "symbolic_graph",
-        "resolution_frame",
-        "cancel_event",
-        "issues",
-    ]
 
     def __init__(
             self,

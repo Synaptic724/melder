@@ -99,10 +99,6 @@ class SpellLocalTopology(Cleanable):
         "_sockets",
         "_by_param_name",
     ]
-    __deletable__ = [
-        "_by_param_name",
-        "_sockets",
-    ]
 
     def __init__(
             self,

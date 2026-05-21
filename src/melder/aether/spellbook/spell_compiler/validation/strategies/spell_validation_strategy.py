@@ -26,10 +26,6 @@ class SpellValidationStrategy(Cleanable):
         "_name",
         "_description",
     ]
-    __deletable__ = [
-        "_name",
-        "_description",
-    ]
 
     def __init__(self, name: str, description: str = "") -> None:
         """

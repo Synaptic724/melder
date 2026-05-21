@@ -73,9 +73,6 @@ class SpellContract(Cleanable):
         "binding_name",
         "spell_override",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "spell", "spellframe", "binding_name", "spell_override"
-    ]
 
     def __init__(
         self,

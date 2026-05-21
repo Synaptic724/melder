@@ -271,9 +271,6 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             Cleanable.__slots__
             + ["_dict", "_lock", "_freeze", "_id", "_auto_prune"]
     )
-    __deletable__: ClassVar[list[str]] = [
-            "_dict", "_lock", "_freeze", "_id", "_auto_prune"
-    ]
 
     # -------------------------------------------------------------------------
     # Construction

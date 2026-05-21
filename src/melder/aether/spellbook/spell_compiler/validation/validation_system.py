@@ -81,10 +81,6 @@ class SpellValidationSystem(Cleanable):
         "_lock",
         "_strategies",
     ]
-    __deletable__ = [
-        "_lock",
-        "_strategies",
-    ]
 
     def __init__(self) -> None:
         """

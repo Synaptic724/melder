@@ -36,9 +36,6 @@ class SafeLogger(Cleanable):
         "error": logging.ERROR,
         "critical": logging.CRITICAL,
     }
-    __deletable__: ClassVar[List[str]] = [
-        "_logger", "_id", "_level", "_level_name", "_is_channel",
-    ]
 
     def __init__(self, logger: logging.Logger | IChannelLogger | None, level_name: str = "INFO"):
         """

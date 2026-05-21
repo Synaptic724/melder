@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Set, Dict, Type, ClassVar
 import ulid
@@ -45,21 +45,6 @@ class AethericFrame(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_aether",
-        "name",
-        "_id",
-        "_lock",
-        "_conduits",
-        "_conduit_ids_by_name",
-        "_spell_registry",
-        "_version_registry",
-        "_conduit_cloud",
-        "_spell_system_states",
-        "_dev_ops_manager",
-        "_configuration",
-        "_frame_configuration",
-    ]
-    __deletable__ = [
         "_aether",
         "name",
         "_id",

@@ -59,11 +59,6 @@ class ChangeControlEmbargoManager(Cleanable):
         "_embargoes_by_scope",
         "_embargoes_by_owner",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_embargoes_by_scope",
-        "_embargoes_by_owner",
-    ]
 
     def __init__(self) -> None:
         """

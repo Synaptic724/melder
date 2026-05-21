@@ -32,7 +32,6 @@ class SpellBindingProfile(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["kind", "original_object"]
-    __deletable__ = ["kind", "original_object"]
 
     def __init__(self, kind: SpellBindingKind, original_object: Any) -> None:
         """
@@ -76,20 +75,6 @@ class ClassBindingProfile(SpellBindingProfile):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
-        "name",
-        "qualname",
-        "module",
-        "bases",
-        "mro",
-        "annotations",
-        "origin_file",
-        "origin_line",
-        "source_preview",
-        "is_dataclass",
-        "decorated",
-        "method_names",
-    ]
-    __deletable__ = [
         "name",
         "qualname",
         "module",
@@ -263,20 +248,6 @@ class CallableBindingProfile(SpellBindingProfile):
         "lambda_function",
         "abstract",
     ]
-    __deletable__ = [
-        "name",
-        "qualname",
-        "module",
-        "object_id",
-        "type_name",
-        "repr_string",
-        "signature",
-        "parameters",
-        "builtin_module",
-        "extension_module",
-        "lambda_function",
-        "abstract",
-    ]
 
     def __init__(
             self,
@@ -384,11 +355,6 @@ class InstanceBindingProfile(SpellBindingProfile):
         "module",
         "repr_string",
     ]
-    __deletable__ = [
-        "type_name",
-        "module",
-        "repr_string",
-    ]
 
     def __init__(
             self,
@@ -449,11 +415,6 @@ class OtherBindingProfile(SpellBindingProfile):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
-        "type_name",
-        "module",
-        "repr_string",
-    ]
-    __deletable__ = [
         "type_name",
         "module",
         "repr_string",

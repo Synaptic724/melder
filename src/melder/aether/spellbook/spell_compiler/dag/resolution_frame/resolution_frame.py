@@ -35,13 +35,6 @@ class ResolutionFrame(Cleanable):
         "_overrides",
         "_results",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_errors",
-        "_lock",
-        "_overrides",
-        "_results",
-        "_id"
-    ]
     def __init__(self, overrides: Optional[Dict[str, Any]] = None) -> None:
         """
         Initialize a new per-meld resolution frame.

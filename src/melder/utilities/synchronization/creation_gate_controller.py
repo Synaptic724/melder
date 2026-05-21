@@ -41,13 +41,6 @@ class CreationGateController(Cleanable):
         "_conduit_root_by_conduit",
         "_spell_index_creation_gates",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_conduit_creation_gates",
-        "_conduit_creation_gates_by_root",
-        "_conduit_root_by_conduit",
-        "_spell_index_creation_gates",
-    ]
 
     def __init__(self) -> None:
         """

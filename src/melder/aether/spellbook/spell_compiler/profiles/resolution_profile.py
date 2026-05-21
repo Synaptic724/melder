@@ -22,7 +22,6 @@ class SpellSymbolicNode(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["node_id", "kind", "metadata"]
-    __deletable__: ClassVar[List[str]] = ["node_id", "kind", "metadata"]
 
     def __init__(self, node_id: str, kind: str, metadata: Optional[dict[str, Any]] = None) -> None:
         """
@@ -70,7 +69,6 @@ class SpellSymbolicEdge(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["from_node", "to_node", "via_parameter"]
-    __deletable__: ClassVar[List[str]] = ["from_node", "to_node", "via_parameter"]
 
     def __init__(self, from_node: str, to_node: str, via_parameter: Optional[str] = None) -> None:
         """
@@ -116,7 +114,6 @@ class SpellSymbolicGraph(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell_id", "nodes", "edges"]
-    __deletable__: ClassVar[List[str]] = ["spell_id", "nodes", "edges"]
 
     def __init__(
             self,
@@ -181,7 +178,6 @@ class SpellResolutionFrame(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["spell_id", "ordered_node_ids"]
-    __deletable__: ClassVar[List[str]] = ["spell_id", "ordered_node_ids"]
 
     def __init__(self, spell_id: str, ordered_node_ids: Optional[List[str]] = None) -> None:
         """
@@ -223,7 +219,6 @@ class SpellValidationIssue(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["code", "message", "details"]
-    __deletable__: ClassVar[List[str]] = ["code", "message", "details"]
 
     def __init__(self, code: str, message: str, details: Optional[dict[str, Any]] = None) -> None:
         """
@@ -269,7 +264,6 @@ class SpellValidationResult(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["is_valid", "errors", "warnings"]
-    __deletable__: ClassVar[List[str]] = ["is_valid", "errors", "warnings"]
 
     def __init__(
             self,
@@ -354,8 +348,6 @@ class SpellResolutionProfile(Cleanable):
         "resolution_frame",
         "validation",
     ]
-    __deletable__: ClassVar[List[str]] = ["spell_id", "existence", "spellframe", "binding_name",
-                                          "requirements", "symbolic_graph", "resolution_frame", "validation"]
 
 
     def __init__(
