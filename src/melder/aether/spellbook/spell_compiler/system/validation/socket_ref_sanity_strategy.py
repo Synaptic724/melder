@@ -5,11 +5,11 @@ if TYPE_CHECKING:
         RootResolutionBlueprint,
     )
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.dag.dag_index import SocketRef
             
 from mypy_extensions import mypyc_attr
 
 # Melder imports
-from melder.aether.spellbook.spell_compiler.dag.dag_index import SocketRef
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,

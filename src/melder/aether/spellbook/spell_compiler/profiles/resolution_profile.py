@@ -1,12 +1,13 @@
-from typing import Any, Optional, List
+from typing import TYPE_CHECKING, Any, Optional, List
 
 from mypy_extensions import mypyc_attr
 
 # Melder imports
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
 @mypyc_attr(native_class=True)
 class SpellSymbolicNode(Cleanable):
     """

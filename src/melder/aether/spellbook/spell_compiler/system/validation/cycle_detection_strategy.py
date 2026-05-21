@@ -1,13 +1,6 @@
 ﻿from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
 
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
-        RootResolutionBlueprint,
-    )
-    from melder.aether.spellbook.spell import Spell
-            
 from mypy_extensions import mypyc_attr
-
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -16,6 +9,14 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+        RootResolutionBlueprint,
+    )
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+    from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+
 @mypyc_attr(native_class=True)
 class CycleDetectionStrategy(SpellSystemValidationStrategy):
     """

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_a
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 from mypy_extensions import mypyc_attr
 
@@ -25,7 +26,6 @@ from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)

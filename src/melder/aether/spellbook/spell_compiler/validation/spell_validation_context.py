@@ -3,26 +3,26 @@ from typing import TYPE_CHECKING, Optional, List
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
+        SpellResolutionFrame,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
+    from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
+        SpellSymbolicGraph,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
 # Melder imports
-from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
-    SpellResolutionFrame,
-)
-from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
-    SpellRequirements,
-)
-from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
-    SpellSymbolicGraph,
-)
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.synchronization.cancellation_event_signal import (
-    CancellationEvent,
-)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
 class SpellValidationContext(Cleanable):
@@ -71,12 +71,12 @@ class SpellValidationContext(Cleanable):
 
     def __init__(
             self,
-            spell: 'Spell',
-            spellbook: Optional['Spellbook'],
-            requirements: Optional['SpellRequirements'],
-            symbolic_graph: Optional['SpellSymbolicGraph'],
-            resolution_frame: Optional['SpellResolutionFrame'],
-            cancel_event: Optional['CancellationEvent'],
+            spell: Spell,
+            spellbook: Optional[Spellbook],
+            requirements: Optional[SpellRequirements],
+            symbolic_graph: Optional[SpellSymbolicGraph],
+            resolution_frame: Optional[SpellResolutionFrame],
+            cancel_event: Optional[CancellationEvent],
             issues: List['SpellValidationIssue'],
             cleanup_artifacts: bool = True,
     ) -> None:
@@ -107,12 +107,12 @@ class SpellValidationContext(Cleanable):
         if issues is None:
             raise ValueError("issues list cannot be None.")
 
-        self.spell: 'Spell' = spell
-        self.spellbook: Optional['Spellbook'] = spellbook
-        self.requirements: Optional['SpellRequirements'] = requirements
-        self.symbolic_graph: Optional['SpellSymbolicGraph'] = symbolic_graph
-        self.resolution_frame: Optional['SpellResolutionFrame'] = resolution_frame
-        self.cancel_event: Optional['CancellationEvent'] = cancel_event
+        self.spell: Spell = spell
+        self.spellbook: Optional[Spellbook] = spellbook
+        self.requirements: Optional[SpellRequirements] = requirements
+        self.symbolic_graph: Optional[SpellSymbolicGraph] = symbolic_graph
+        self.resolution_frame: Optional[SpellResolutionFrame] = resolution_frame
+        self.cancel_event: Optional[CancellationEvent] = cancel_event
 
         # NOTE: this list is shared with the caller (SpellValidationSystem);
         # cleanup must not mutate the underlying list contents.
