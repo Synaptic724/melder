@@ -89,8 +89,8 @@ class SpellSystemState(Cleanable):
             raise ValueError("current_spell_id cannot be empty")
 
         self._lock: threading.RLock = threading.RLock()
-        self._spell_index_id: Optional[str] = spell_index_id
-        self._current_spell_id: Optional[str] = current_spell_id
+        self._spell_index_id: str = spell_index_id
+        self._current_spell_id: str = current_spell_id
 
         # Concurrent topology sets
         self._direct_dependencies: Set[str] = set()
@@ -588,7 +588,7 @@ class SpellSystemState(Cleanable):
             except Exception:
                 pass
 
-    def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
+    def _set_risk_manager(self, risk_manager: Optional[RiskManager]) -> None:
         """
         Attach or detach the `RiskManager` callback reference.
 

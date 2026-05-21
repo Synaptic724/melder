@@ -486,12 +486,11 @@ class TransferOfOwnership(Cleanable):
             spell_index: Lineage whose spell-system state should be marked dirty.
         """
         self.check_cleaned()
-        owner_spellbook = spell_index._owner_spellbook
-        if owner_spellbook is None:
+        spellbook = spell_index._owner_spellbook
+        if spellbook is None:
             raise RuntimeError(
                 "Cannot use a SpellIndex without an attached owner Spellbook."
             )
-        spellbook = cast(Spellbook, owner_spellbook)
         spell_states = spellbook._spell_system_states
         if spell_states is None:
             raise RuntimeError("Owner Spellbook has no SpellSystemStates.")

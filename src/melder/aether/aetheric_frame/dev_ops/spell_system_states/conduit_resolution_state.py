@@ -21,20 +21,16 @@ def _get_resolution_risk_manager_callback(
         risk_manager: Optional[RiskManager],
 ) -> Optional[Callable[[str, str, Optional[SpellValidity]], None]]:
     """
-    Return the resolution-validity callback when the collaborator exposes it.
+    Return the typed resolution-validity callback for a live `RiskManager`.
 
     Contract:
-        - Accepts the current loose collaborator surface (`RiskManager | None`).
-        - Returns a callable only when the collaborator exposes a callable
-          `on_resolution_validity_change(...)` attribute.
-        - Leaves plain objects and missing callbacks as `None`.
+        - Returns `None` only when no collaborator is attached.
+        - Otherwise returns the concrete
+          `RiskManager.on_resolution_validity_change(...)` callback.
     """
     if risk_manager is None:
         return None
-    callback = getattr(risk_manager, "on_resolution_validity_change", None)
-    if not callable(callback):
-        return None
-    return callback
+    return risk_manager.on_resolution_validity_change
 
 @mypyc_attr(native_class=True)
 class ConduitResolutionState(Cleanable):

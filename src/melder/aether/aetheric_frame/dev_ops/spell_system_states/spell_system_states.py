@@ -27,20 +27,16 @@ def _get_structural_risk_manager_callback(
         risk_manager: Optional[RiskManager],
 ) -> Optional[Callable[[str, Optional[SpellValidity]], None]]:
     """
-    Return the structural-validity callback when the collaborator exposes it.
+    Return the typed structural-validity callback for a live `RiskManager`.
 
     Contract:
-        - Accepts the current loose collaborator surface (`object | None`).
-        - Returns a callable only when the collaborator exposes a callable
-          `on_structural_validity_change(...)` attribute.
-        - Leaves plain objects and missing callbacks as `None`.
+        - Returns `None` only when no collaborator is attached.
+        - Otherwise returns the concrete
+          `RiskManager.on_structural_validity_change(...)` callback.
     """
     if risk_manager is None:
         return None
-    callback = getattr(risk_manager, "on_structural_validity_change", None)
-    if not callable(callback):
-        return None
-    return callback
+    return risk_manager.on_structural_validity_change
 @mypyc_attr(native_class=True)
 class SpellSystemStates(Cleanable):
     """
@@ -119,7 +115,7 @@ class SpellSystemStates(Cleanable):
         self._contract_dependents_by_spellbook: Optional[
             Dict[str, Dict[Tuple[str, str], Set[str]]]
         ] = {}
-        self._risk_manager: Optional[object] = None
+        self._risk_manager: Optional[RiskManager] = None
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -351,16 +347,10 @@ class SpellSystemStates(Cleanable):
         """
         if spell_index is None:
             return None
-        try:
-            spellbook = spell_index._owner_spellbook
-        except AttributeError:
-            return None
+        spellbook = spell_index._owner_spellbook
         if spellbook is None:
             return None
-        try:
-            return spellbook._id
-        except AttributeError:
-            return None
+        return spellbook._id
 
     def _remove_index_from_collection_index(
             self,
@@ -801,11 +791,7 @@ class SpellSystemStates(Cleanable):
                 if dep_state is not None:
                     dep_state.remove_dependent(index_id)
 
-            callback = (
-                self._risk_manager.on_structural_validity_change
-                if self._risk_manager is not None
-                else None
-            )
+            callback = _get_structural_risk_manager_callback(self._risk_manager)
 
         if removed_state is None:
             return None

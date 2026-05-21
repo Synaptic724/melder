@@ -1,10 +1,11 @@
 import threading
 import ulid
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Optional, Dict, Tuple
+from typing import TYPE_CHECKING, Optional, Dict, Tuple
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
 
@@ -70,10 +71,10 @@ class SpellIndex(Cleanable):
         # The dynamic pointer to the version, which can be updated.
         self._current_id: str = initial_id
         self._versions: set = {initial_id}  # Optional: Track all versions seen.
-        self._owner_spellbook: Optional[Any] = None
-        self._owner_spell: Optional[Any] = None
+        self._owner_spellbook: Optional[Spellbook] = None
+        self._owner_spell: Optional[Spell] = None
         self._owner_conduit_id: Optional[str] = None
-        self._contracted_spellbooks: Dict[Tuple[Any, str], Any] = {}
+        self._contracted_spellbooks: Dict[Tuple[Spellbook, str], Spell] = {}
 
     # ------------------------------------------------------------
     # Cleanup
@@ -170,7 +171,7 @@ class SpellIndex(Cleanable):
             spellbook._update_contracted_spell_id(conduit_id, old_id, new_id, spell)
 
 
-    def _attach_owner(self, spellbook: Any, spell: Any) -> None:
+    def _attach_owner(self, spellbook: Spellbook, spell: Spell) -> None:
         """
         Attach this SpellIndex to an owning Spellbook and register the current
         spell_id in the Spellbook's owned id map.
@@ -227,7 +228,7 @@ class SpellIndex(Cleanable):
             self._owner_conduit_id = conduit_id
 
 
-    def _attach_contracted(self, spellbook: Any, conduit_id: str, spell: Any) -> None:
+    def _attach_contracted(self, spellbook: Spellbook, conduit_id: str, spell: Spell) -> None:
         """
         Attach this SpellIndex to a contracted Spellbook and register the
         current spell_id in the contracted id map for the given conduit.
@@ -259,7 +260,7 @@ class SpellIndex(Cleanable):
         spellbook._register_contracted_spell_id(conduit_id, spell_id, spell)
 
 
-    def _detach_contracted(self, spellbook: Any, conduit_id: str) -> None:
+    def _detach_contracted(self, spellbook: Spellbook, conduit_id: str) -> None:
         """
         Detach this SpellIndex from a contracted Spellbook and remove the
         current spell_id mapping for the given conduit.
