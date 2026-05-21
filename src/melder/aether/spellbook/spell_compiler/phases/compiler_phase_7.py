@@ -33,7 +33,7 @@ class CompilerPhase7:
     def _get_required_entire_dag_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
-    ):
+    ) :
         """
             Return the Phase 5 root-blueprint map or raise.
             

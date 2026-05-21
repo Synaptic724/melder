@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
     )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import SpellCompilerArtifact
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
@@ -97,7 +98,7 @@ class ISpell(ICleanable, Protocol):
     # Profile type broadened to Any to support Binding/Resolution/AI profiles
     profile: Optional[Any]
     aetheric_frame: str
-    _compiler_artifact: "SpellCompilerArtifact"
+    _compiler_artifact: SpellCompilerArtifact
     # Execution policy
     timeout: Optional[int]
     retries: int

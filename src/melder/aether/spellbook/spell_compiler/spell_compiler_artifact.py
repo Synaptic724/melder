@@ -113,7 +113,7 @@ class SpellCompilerArtifact(Cleanable):
             raise ValueError("spell_id cannot be empty.")
         self._lock: threading.RLock = threading.RLock()
         self.spell_id: str = spell_id
-        self._requirements: Optional["SpellRequirements"] = None
+        self._requirements: Optional[SpellRequirements] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         self._resolution_frame: Optional[SpellResolutionFrame] = None
         self._validation_result_phase4: Optional[SpellValidationResult] = None
@@ -124,11 +124,11 @@ class SpellCompilerArtifact(Cleanable):
         self._root_blueprint_phase5: Optional[IRootResolutionBlueprint] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
-        self._occurrence_plan_phase8: Optional["OccurrencePlan"] = None
+        self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
-        self._injection_plan_phase9: Optional["InjectionPlan"] = None
-        self._override_patch_map_phase10: Optional["OverridePatchMap"] = None
-        self._mutation_patch_map_phase10: Optional["MutationPatchMap"] = None
+        self._injection_plan_phase9: Optional[InjectionPlan] = None
+        self._override_patch_map_phase10: Optional[OverridePatchMap] = None
+        self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
         self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
