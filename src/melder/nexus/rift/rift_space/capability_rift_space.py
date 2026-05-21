@@ -1,11 +1,13 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.command_system.command_system import (
+        CommandSystem,
+    )
 
 from melder.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
-)
-from melder.nexus.rift.command_system.command_system import (
-    CommandSystem,
 )
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate

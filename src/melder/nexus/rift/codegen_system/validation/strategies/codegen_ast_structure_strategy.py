@@ -1,13 +1,17 @@
 import ast
 import threading
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.codegen_transaction_context import (
+        CodegenTransactionContext,
+    )
 
 
 class CodegenAstStructureStrategy(Cleanable):

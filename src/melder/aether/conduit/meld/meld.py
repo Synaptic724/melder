@@ -1,11 +1,17 @@
 import inspect
 from types import TracebackType
 from threading import RLock
-from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, List, Tuple, Sequence
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
-    from melder.aether.spellbook.spellbook import Spellbook
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Dict,
+    Any,
+    Callable,
+    List,
+    Tuple,
+    Sequence,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
@@ -27,6 +33,8 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
@@ -35,7 +43,7 @@ if TYPE_CHECKING:
 @mypyc_attr(native_class=True)
 class Meld(Cleanable):
     """
-    ## Ã°Å¸Âªâ€ž Meld: Spell Activation and Dependency Resolution
+    ## Meld: Spell Activation and Dependency Resolution
 
     Meld is the **conduit-level entry point** for *activating* spells (components/dependencies)
     within a specific `Conduit`. It handles the full lifecycle of spell resolution,
@@ -66,7 +74,49 @@ class Meld(Cleanable):
     5. Fire activation and meld-level hooks when the route requires them.
     6. Return the final resolved instance.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = [
+        "_lock",
+        "_conduit_id",
+        "_resolution_conduit_id",
+        "_dynamic_environment",
+        "_spellbook",
+        "_owned_spells",
+        "_contracted_spells",
+        "_spells_by_id",
+        "_contracted_spells_by_id",
+        "_spell_id_pool",
+        "_lookup_owned_spells",
+        "_lookup_contracted_spells",
+        "_creations",
+        "_input_resolution_cache",
+        "_spell_id_resolution_cache",
+        "_max_resolution_cache_size",
+        "_change_control_manager_by_frame",
+        "_meld_hooks",
+        "_spell_compiler_system",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_lock",
+        "_conduit_id",
+        "_resolution_conduit_id",
+        "_dynamic_environment",
+        "_spellbook",
+        "_owned_spells",
+        "_contracted_spells",
+        "_spells_by_id",
+        "_contracted_spells_by_id",
+        "_spell_id_pool",
+        "_lookup_owned_spells",
+        "_lookup_contracted_spells",
+        "_creations",
+        "_input_resolution_cache",
+        "_spell_id_resolution_cache",
+        "_max_resolution_cache_size",
+        "_change_control_manager_by_frame",
+        "_meld_hooks",
+        "_spell_compiler_system",
+    ]
     def __init__(
             self,
             creations: Creations,
@@ -105,7 +155,6 @@ class Meld(Cleanable):
         super().__init__()
 
         self._lock = RLock()
-        self._cleaned: bool = False
         self._conduit_id: Optional[str] = conduit_id
         self._resolution_conduit_id: Optional[str] = (
             resolution_conduit_id if resolution_conduit_id is not None else conduit_id

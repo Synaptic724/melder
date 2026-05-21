@@ -8,20 +8,22 @@ summaries.
 
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.nexus.acl.frame_acl_compiled_access_surface import (
-    CompiledFrameACLAccessSurface,
-)
-from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.nexus.rift.frame_link.frame_link import FrameLink
 from melder.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.frame_descriptor.spell_record import SpellRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.frame_acl_compiled_access_surface import (
+        CompiledFrameACLAccessSurface,
+    )
+    from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+    from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+    from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 @decorate_public_view_actions

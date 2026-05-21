@@ -1,11 +1,13 @@
 import threading
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
-    CodegenNamespaceConfiguration,
-)
 from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+        CodegenNamespaceConfiguration,
+    )
 
 
 

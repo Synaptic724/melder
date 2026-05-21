@@ -7,10 +7,9 @@ navigation over the currently selected frame helper.
 
 from contextlib import contextmanager
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.nexus.rift.frame_link.frame_link import FrameLink
 from melder.nexus.rift.frame_viewer.view_frame import (
     ViewFrame,
 )
@@ -19,7 +18,10 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
 )
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
+    from melder.nexus.rift.frame_link.frame_link import FrameLink
 
 
 @decorate_public_view_actions

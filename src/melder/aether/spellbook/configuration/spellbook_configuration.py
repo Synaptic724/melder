@@ -1,10 +1,14 @@
 ﻿import threading
-from typing import Any, Dict, Type, Callable, Iterator
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, Tuple, Type
+
 import ulid
 from mypy_extensions import mypyc_attr
+
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 
 @mypyc_attr(native_class=True)
 class SpellbookConfiguration(Cleanable):
@@ -28,7 +32,7 @@ class SpellbookConfiguration(Cleanable):
     - Validation is explicit and freeze/finalize enforce it.
     - Thread-safe operations are serialized with the instance `RLock`.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
@@ -39,7 +43,7 @@ class SpellbookConfiguration(Cleanable):
         "_idempotent_keys",
         "_hooks",
     ]
-    _ALLOWED_HOOKS = (
+    _ALLOWED_HOOKS: ClassVar[Tuple[str, ...]] = (
         # Meld pipeline hooks
         "on_meld_pre_resolve",
         "on_meld_post_resolve",
@@ -59,6 +63,16 @@ class SpellbookConfiguration(Cleanable):
         "on_contract_created",
         "on_contract_removed",
     )
+    __deletable__: ClassVar[List[str]] = [
+        "_id",
+        "_lock",
+        "_aether_frame",
+        "_frozen",
+        "_properties",
+        "available_properties",
+        "_idempotent_keys",
+        "_hooks",
+    ]
     def __init__(self, aether_frame: str = "default"):
         """
         Initialize one configuration manager.
@@ -514,7 +528,7 @@ class SpellbookConfiguration(Cleanable):
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
-    def with_phase_scheduler_workers(self, workers: int) -> SpellbookConfiguration:
+    def with_phase_scheduler_workers(self, workers: int) -> "SpellbookConfiguration":
         """
         Set the number of worker threads used by the Resolution Phase Scheduler.
         Must be >= 1.
@@ -535,7 +549,7 @@ class SpellbookConfiguration(Cleanable):
         return self
 
 
-    def with_phase_scheduler_barrier_timeout(self, timeout_milliseconds: int) -> SpellbookConfiguration:
+    def with_phase_scheduler_barrier_timeout(self, timeout_milliseconds: int) -> "SpellbookConfiguration":
         """
         Set the barrier timeout in milliseconds used by the Resolution Phase Scheduler.
         Must be >= 0.
@@ -562,7 +576,7 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("phase_scheduler_barrier_timeout_milliseconds", timeout_milliseconds)
         return self
 
-    def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> SpellbookConfiguration:
+    def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> "SpellbookConfiguration":
         """
         Fluent
 
@@ -587,7 +601,7 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("full_ahead_of_time_compilation", enabled)
         return self
 
-    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> SpellbookConfiguration:
+    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> "SpellbookConfiguration":
         """
         Fluent
 
@@ -606,7 +620,7 @@ class SpellbookConfiguration(Cleanable):
         self.add_hook(spellbook_id, hook_name, hook)
         return self
 
-    def with_hooks(self, spellbook_id: str, **hooks: Any) -> SpellbookConfiguration:
+    def with_hooks(self, spellbook_id: str, **hooks: Any) -> "SpellbookConfiguration":
         """
         Fluent
 
@@ -630,7 +644,7 @@ class SpellbookConfiguration(Cleanable):
         self.add_hooks(spellbook_id, **hooks)
         return self
 
-    def with_defaults(self) -> SpellbookConfiguration:
+    def with_defaults(self) -> "SpellbookConfiguration":
         """
         Fluent
 
@@ -649,7 +663,7 @@ class SpellbookConfiguration(Cleanable):
         self.load_default_dictionary()
         return self
 
-    def with_disposal(self, enabled: bool = True) -> SpellbookConfiguration:
+    def with_disposal(self, enabled: bool = True) -> "SpellbookConfiguration":
         """
         Enable or disable disposal features and return `self`.
 
@@ -666,7 +680,7 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("disposal", enabled)
         return self
 
-    def with_disposal_method_names(self, names: list[str]) -> SpellbookConfiguration:
+    def with_disposal_method_names(self, names: list[str]) -> "SpellbookConfiguration":
         """
         Replace the entire list of disposal method names and return `self`.
 
@@ -688,7 +702,7 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("disposal_method_names", names)
         return self
 
-    def add_disposal_methods(self, *names: str) -> SpellbookConfiguration:
+    def add_disposal_methods(self, *names: str) -> "SpellbookConfiguration":
         """
         Append one or more disposal method names (deduplicated, order-preserving)
         and return `self`.
@@ -721,7 +735,7 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("disposal_method_names", extended)
         return self
 
-    def finalize(self) -> SpellbookConfiguration:
+    def finalize(self) -> "SpellbookConfiguration":
         """
         Validate and freeze, returning `self`.
 
@@ -736,7 +750,7 @@ class SpellbookConfiguration(Cleanable):
         self.freeze()
         return self
 
-    def build(self) -> SpellbookConfiguration:
+    def build(self) -> "SpellbookConfiguration":
         """
         Fluent alias for `finalize()`.
 

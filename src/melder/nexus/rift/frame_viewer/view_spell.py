@@ -8,10 +8,9 @@ helper.
 
 from contextlib import contextmanager
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.nexus.rift.frame_link.frame_link import FrameLink
 from melder.nexus.rift.frame_viewer.view_frame import (
     ViewFrame,
 )
@@ -25,7 +24,10 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.m
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.frame_descriptor.spell_record import SpellRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.spell_record import SpellRecord
+    from melder.nexus.rift.frame_link.frame_link import FrameLink
 
 
 @decorate_public_view_actions
