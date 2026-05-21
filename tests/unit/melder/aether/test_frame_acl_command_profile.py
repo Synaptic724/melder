@@ -76,7 +76,7 @@ def test_frame_acl_command_profile_coerce_ruleset_rejects_wrong_type() -> None:
     Returns:
         None.
     """
-    with pytest.raises(TypeError, match="ruleset must satisfy IFrameACLRuleSet"):
+    with pytest.raises(TypeError, match="ruleset must be a FrameACLRuleSet instance."):
         FrameACLCommandProfile.coerce_ruleset("bad", "safe_spell")
 
 

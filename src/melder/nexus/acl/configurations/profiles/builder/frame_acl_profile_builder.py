@@ -25,10 +25,6 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
-from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
 class _NamedCleanableProfile(Protocol):
@@ -265,7 +261,7 @@ class FrameACLProfileBuilder(Cleanable):
         with self._lock:
             return dict(self._codegen_precision_profiles_by_name)
 
-    def register_view_profile(self, view_profile: IFrameACLViewProfile) -> None:
+    def register_view_profile(self, view_profile: FrameACLViewProfile) -> None:
         """
         Register or replace one reusable view-family profile.
 
@@ -287,7 +283,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_command_profile(
             self,
-            command_profile: IFrameACLCommandProfile,
+            command_profile: FrameACLCommandProfile,
     ) -> None:
         """
         Register or replace one reusable command-family profile.
@@ -310,7 +306,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_codegen_profile(
             self,
-            codegen_profile: IFrameACLCodegenProfile,
+            codegen_profile: FrameACLCodegenProfile,
     ) -> None:
         """
         Register or replace one reusable codegen-family profile.
@@ -333,7 +329,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_view_precision_profile(
             self,
-            precision_profile: IFrameACLViewProfile,
+            precision_profile: FrameACLViewProfile,
     ) -> None:
         """
         Register or replace one reusable view precision profile.
@@ -356,7 +352,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_command_precision_profile(
             self,
-            precision_profile: IFrameACLCommandProfile,
+            precision_profile: FrameACLCommandProfile,
     ) -> None:
         """
         Register or replace one reusable command precision profile.
@@ -379,7 +375,7 @@ class FrameACLProfileBuilder(Cleanable):
 
     def register_codegen_precision_profile(
             self,
-            precision_profile: IFrameACLCodegenProfile,
+            precision_profile: FrameACLCodegenProfile,
     ) -> None:
         """
         Register or replace one reusable codegen precision profile.
@@ -603,9 +599,9 @@ class FrameACLProfileBuilder(Cleanable):
             view_profile_name: str = _DEFAULT_PROFILE_NAME,
             command_profile_name: str = _DEFAULT_PROFILE_NAME,
             codegen_profile_name: str = _DEFAULT_PROFILE_NAME,
-            view_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            command_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            view_override_ruleset: Optional[FrameACLRuleSet] = None,
+            command_override_ruleset: Optional[FrameACLRuleSet] = None,
+            codegen_override_ruleset: Optional[FrameACLRuleSet] = None,
     ) -> FrameACLProfile:
         """
         Compose one reusable view/command/codegen trio into a frame ACL profile.

@@ -6,7 +6,7 @@ from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile 
 from melder.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 _SAFE_COMMAND_FORBIDDEN_MEMBER_OVERRIDES: Set[str] = {
@@ -35,7 +35,7 @@ def validate_profile_configuration(
 
 
 def _assert_forbidden_operations_are_not_allowed(
-        ruleset: IFrameACLRuleSet,
+        ruleset: FrameACLRuleSet,
         forbidden_operations: Set[str],
         label: str,
 ) -> None:

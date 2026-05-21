@@ -52,8 +52,8 @@ from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
@@ -688,7 +688,7 @@ class FrameACLValidator(Cleanable):
     def _validate_spell_rule_selectors(
             self,
             frame_descriptor: FrameDescriptor,
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
             label: str,
     ) -> None:
         """
@@ -1136,7 +1136,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_ruleset_family(
             self,
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
             allowed_operations: Set[str],
             label: str,
             *,
@@ -1159,9 +1159,9 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        if not isinstance(ruleset, IFrameACLRuleSet):
+        if not isinstance(ruleset, FrameACLRuleSet):
             raise TypeError(
-                "{0} ruleset must satisfy IFrameACLRuleSet.".format(label)
+                "{0} ruleset must be a FrameACLRuleSet instance..".format(label)
             )
         for rule in ruleset.rules_by_name.values():
             if rule.operation not in allowed_operations:
@@ -1186,7 +1186,7 @@ class FrameACLValidator(Cleanable):
 
     @staticmethod
     def _validate_import_module_rule_conditions(
-            rule: IFrameACLRule,
+            rule: FrameACLRule,
             label: str,
     ) -> None:
         """
@@ -1218,7 +1218,7 @@ class FrameACLValidator(Cleanable):
 
     @staticmethod
     def _validate_builtin_names_rule_conditions(
-            rule: IFrameACLRule,
+            rule: FrameACLRule,
             label: str,
     ) -> None:
         """
@@ -1306,7 +1306,7 @@ class FrameACLValidator(Cleanable):
 
     @staticmethod
     def _assert_forbidden_operations_are_not_allowed(
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
             forbidden_operations: Set[str],
             label: str,
     ) -> None:

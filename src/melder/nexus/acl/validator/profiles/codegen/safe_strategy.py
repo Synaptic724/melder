@@ -6,7 +6,7 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
 from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 _SAFE_CODEGEN_FORBIDDEN_OVERRIDES = {
@@ -65,7 +65,7 @@ def validate_profile_configuration(
 
 
 def _assert_forbidden_operations_are_not_allowed(
-        ruleset: IFrameACLRuleSet,
+        ruleset: FrameACLRuleSet,
         forbidden_operations: Set[str],
         label: str,
 ) -> None:
@@ -80,7 +80,7 @@ def _assert_forbidden_operations_are_not_allowed(
 
 
 def _assert_safe_builtins_not_reallowed(
-        ruleset: IFrameACLRuleSet,
+        ruleset: FrameACLRuleSet,
 ) -> None:
     """
     Validate that safe overrides do not re-allow dangerous builtin names.

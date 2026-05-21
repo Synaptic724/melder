@@ -163,7 +163,7 @@ def test_frame_acl_ruleset_rejects_invalid_inputs() -> None:
 
     ruleset = FrameACLRuleSet("spell_rules")
 
-    with pytest.raises(TypeError, match="rule must satisfy IFrameACLRule"):
+    with pytest.raises(TypeError, match="rule must be a FrameACLRule instance."):
         ruleset.register_rule(None)
 
     with pytest.raises(TypeError, match="payload must be a dict"):
@@ -648,7 +648,7 @@ def test_frame_acl_view_profile_coerce_ruleset_rejects_invalid_type() -> None:
     Returns:
         None.
     """
-    with pytest.raises(TypeError, match="ruleset must satisfy IFrameACLRuleSet"):
+    with pytest.raises(TypeError, match="ruleset must be a FrameACLRuleSet instance."):
         FrameACLViewProfile.coerce_ruleset("bad_ruleset", "default_name")
 
 

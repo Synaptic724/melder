@@ -3,7 +3,7 @@ from typing import Set
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
@@ -57,7 +57,7 @@ def validate_profile_configuration(
 
 
 def _assert_forbidden_operations_are_not_allowed(
-        ruleset: IFrameACLRuleSet,
+        ruleset: FrameACLRuleSet,
         forbidden_operations: Set[str],
         label: str,
 ) -> None:

@@ -8,7 +8,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.acl.configurations.frame_acl_command_configuration import FrameACLCommandConfiguration
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 if TYPE_CHECKING:
     from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
@@ -482,7 +482,7 @@ class FrameACLCommandBuilder(Cleanable):
 
     def _set_ruleset_operation(
             self,
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
             *,
             operation_name: str,
             allow: bool,
@@ -532,7 +532,7 @@ class FrameACLCommandBuilder(Cleanable):
 
     def _remove_ruleset_rule(
             self,
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
             rule_name: str,
     ) -> FrameACLCommandBuilder:
         """

@@ -87,7 +87,7 @@ class SpellSystemStates(Cleanable):
         "_risk_manager",
     ]
 
-    def __init__(self, frame: AethericFrame) -> None:
+    def __init__(self, frame: "AethericFrame") -> None:
         """
         Initialize the SpellSystemStates registry for a given AethericFrame.
 
@@ -101,7 +101,7 @@ class SpellSystemStates(Cleanable):
             raise ValueError("frame cannot be None")
 
         self._lock: threading.RLock = threading.RLock()
-        self._frame: Optional[AethericFrame] = frame
+        self._frame: Optional["AethericFrame"] = frame
 
         self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
         self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}

@@ -16,10 +16,6 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
-from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
 class FrameACLProfile(Cleanable):
@@ -58,12 +54,12 @@ class FrameACLProfile(Cleanable):
             self,
             name: str,
             *,
-            view_profile: IFrameACLViewProfile,
-            command_profile: Optional[IFrameACLCommandProfile] = None,
-            codegen_profile: IFrameACLCodegenProfile,
-            view_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            command_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            view_profile: FrameACLViewProfile,
+            command_profile: Optional[FrameACLCommandProfile] = None,
+            codegen_profile: FrameACLCodegenProfile,
+            view_override_ruleset: Optional[FrameACLRuleSet] = None,
+            command_override_ruleset: Optional[FrameACLRuleSet] = None,
+            codegen_override_ruleset: Optional[FrameACLRuleSet] = None,
             version: str = "0.0.1",
     ) -> None:
         """

@@ -14,7 +14,6 @@ from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
@@ -420,10 +419,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             report: FrameACLSetCompatibilityReport,
             *,
             family_label: str,
-            view_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
-            view_override_ruleset: IFrameACLRuleSet,
-            command_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
-            command_override_ruleset: IFrameACLRuleSet,
+            view_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
+            view_override_ruleset: FrameACLRuleSet,
+            command_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
+            command_override_ruleset: FrameACLRuleSet,
             view_operation: str,
             command_operation: str,
     ) -> None:
@@ -485,10 +484,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             self,
             report: FrameACLSetCompatibilityReport,
             *,
-            view_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
-            view_override_ruleset: IFrameACLRuleSet,
-            command_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
-            command_override_ruleset: IFrameACLRuleSet,
+            view_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
+            view_override_ruleset: FrameACLRuleSet,
+            command_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
+            command_override_ruleset: FrameACLRuleSet,
     ) -> None:
         """
         Compare member-level view exposure to member-level command actions.
@@ -535,7 +534,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     @staticmethod
     def _collect_operation_effects(
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect allow/deny operations from one ruleset.
@@ -558,8 +557,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects(
-            base_ruleset: IFrameACLRuleSet,
-            override_ruleset: IFrameACLRuleSet,
+            base_ruleset: FrameACLRuleSet,
+            override_ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect effective allow/deny operations from base plus override rules.
@@ -590,7 +589,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects_from_rulesets(
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge an ordered list of base/precision/override rulesets into one effect set.

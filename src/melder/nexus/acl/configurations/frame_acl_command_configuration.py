@@ -10,8 +10,8 @@ from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile 
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import FrameACLCommandProfile
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 class FrameACLCommandConfiguration(Cleanable):
@@ -55,10 +55,10 @@ class FrameACLCommandConfiguration(Cleanable):
             profile_version: str,
             precision_profile_name: Optional[str] = None,
             precision_profile_version: Optional[str] = None,
-            frame_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            conduit_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            spell_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            member_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            frame_override_ruleset: Optional[FrameACLRuleSet] = None,
+            conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
+            spell_override_ruleset: Optional[FrameACLRuleSet] = None,
+            member_override_ruleset: Optional[FrameACLRuleSet] = None,
             source_configuration_id: Optional[str] = None,
             previous_configuration_id: Optional[str] = None,
             reason: str = "direct",
@@ -164,13 +164,13 @@ class FrameACLCommandConfiguration(Cleanable):
     @classmethod
     def from_profile(
             cls,
-            profile: IFrameACLCommandProfile,
+            profile: FrameACLCommandProfile,
             *,
-            precision_profile: Optional[IFrameACLCommandProfile] = None,
-            frame_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            conduit_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            spell_override_ruleset: Optional[IFrameACLRuleSet] = None,
-            member_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            precision_profile: Optional[FrameACLCommandProfile] = None,
+            frame_override_ruleset: Optional[FrameACLRuleSet] = None,
+            conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
+            spell_override_ruleset: Optional[FrameACLRuleSet] = None,
+            member_override_ruleset: Optional[FrameACLRuleSet] = None,
             source_configuration_id: Optional[str] = None,
             previous_configuration_id: Optional[str] = None,
             reason: str = "from_profile",
@@ -182,13 +182,13 @@ class FrameACLCommandConfiguration(Cleanable):
         Returns:
             FrameACLCommandConfiguration: Applied command configuration.
         """
-        if not isinstance(profile, IFrameACLCommandProfile):
-            raise TypeError("profile must satisfy IFrameACLCommandProfile.")
+        if not isinstance(profile, FrameACLCommandProfile):
+            raise TypeError("profile must be a FrameACLCommandProfile instance.")
         if (
                 precision_profile is not None
-                and not isinstance(precision_profile, IFrameACLCommandProfile)
+                and not isinstance(precision_profile, FrameACLCommandProfile)
         ):
-            raise TypeError("precision_profile must satisfy IFrameACLCommandProfile.")
+            raise TypeError("precision_profile must be a FrameACLCommandProfile instance.")
         return cls(
             profile_name=profile.name,
             profile_version=profile.version,
@@ -441,48 +441,48 @@ class FrameACLCommandConfiguration(Cleanable):
             return self._precision_profile_version
 
     @property
-    def frame_override_ruleset(self) -> IFrameACLRuleSet:
+    def frame_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the frame-level command override ruleset.
 
         Returns:
-            IFrameACLRuleSet: Frame-level command override ruleset.
+            FrameACLRuleSet: Frame-level command override ruleset.
         """
         self.check_cleaned()
         with self._lock:
             return self._frame_override_ruleset
 
     @property
-    def conduit_override_ruleset(self) -> IFrameACLRuleSet:
+    def conduit_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the conduit-level command override ruleset.
 
         Returns:
-            IFrameACLRuleSet: Conduit-level command override ruleset.
+            FrameACLRuleSet: Conduit-level command override ruleset.
         """
         self.check_cleaned()
         with self._lock:
             return self._conduit_override_ruleset
 
     @property
-    def spell_override_ruleset(self) -> IFrameACLRuleSet:
+    def spell_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the spell-level command override ruleset.
 
         Returns:
-            IFrameACLRuleSet: Spell-level command override ruleset.
+            FrameACLRuleSet: Spell-level command override ruleset.
         """
         self.check_cleaned()
         with self._lock:
             return self._spell_override_ruleset
 
     @property
-    def member_override_ruleset(self) -> IFrameACLRuleSet:
+    def member_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the member-level command override ruleset.
 
         Returns:
-            IFrameACLRuleSet: Member-level command override ruleset.
+            FrameACLRuleSet: Member-level command override ruleset.
         """
         self.check_cleaned()
         with self._lock:
@@ -571,9 +571,9 @@ class FrameACLCommandConfiguration(Cleanable):
 
     def set_profiles(
             self,
-            profile: IFrameACLCommandProfile,
+            profile: FrameACLCommandProfile,
             *,
-            precision_profile: Optional[IFrameACLCommandProfile] = None,
+            precision_profile: Optional[FrameACLCommandProfile] = None,
     ) -> None:
         """
         Replace the base and precision profile identity while the config is mutable.
@@ -588,14 +588,14 @@ class FrameACLCommandConfiguration(Cleanable):
             None.
         """
         self.check_cleaned()
-        if not isinstance(profile, IFrameACLCommandProfile):
-            raise TypeError("profile must satisfy IFrameACLCommandProfile.")
+        if not isinstance(profile, FrameACLCommandProfile):
+            raise TypeError("profile must be a FrameACLCommandProfile instance.")
         if (
                 precision_profile is not None
-                and not isinstance(precision_profile, IFrameACLCommandProfile)
+                and not isinstance(precision_profile, FrameACLCommandProfile)
         ):
             raise TypeError(
-                "precision_profile must satisfy IFrameACLCommandProfile."
+                "precision_profile must be a FrameACLCommandProfile instance.."
             )
         with self._lock:
             if self._locked:
@@ -613,17 +613,17 @@ class FrameACLCommandConfiguration(Cleanable):
 
     @staticmethod
     def _coerce_ruleset(
-            ruleset: Optional[IFrameACLRuleSet],
+            ruleset: Optional[FrameACLRuleSet],
             default_name: str,
-    ) -> IFrameACLRuleSet:
+    ) -> FrameACLRuleSet:
         """
         Normalize one optional override ruleset input.
 
         Returns:
-            IFrameACLRuleSet: Detached existing ruleset clone or a new default.
+            FrameACLRuleSet: Detached existing ruleset clone or a new default.
         """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
-        if not isinstance(ruleset, IFrameACLRuleSet):
-            raise TypeError("ruleset must satisfy IFrameACLRuleSet.")
+        if not isinstance(ruleset, FrameACLRuleSet):
+            raise TypeError("ruleset must be a FrameACLRuleSet instance.")
         return ruleset.clone()

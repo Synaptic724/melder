@@ -10,13 +10,11 @@ from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import FrameACLCodegenProfile
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import FrameACLCommandProfile
 
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 if TYPE_CHECKING:
     from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
@@ -272,8 +270,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_frame_payload_fields(
-            view_profile: IFrameACLViewProfile,
-            precision_profile: Optional[IFrameACLViewProfile],
+            view_profile: FrameACLViewProfile,
+            precision_profile: Optional[FrameACLViewProfile],
             configuration: FrameACLConfiguration,
     ) -> Set[str]:
         """
@@ -315,8 +313,8 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _compile_conduit_access(
             frame_descriptor: FrameDescriptor,
-            view_profile: IFrameACLViewProfile,
-            precision_profile: Optional[IFrameACLViewProfile],
+            view_profile: FrameACLViewProfile,
+            precision_profile: Optional[FrameACLViewProfile],
             configuration: FrameACLConfiguration,
     ) -> Tuple[Set[str], Dict[str, Tuple[str, ...]]]:
         """
@@ -359,8 +357,8 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _compile_spell_access(
             frame_descriptor: FrameDescriptor,
-            view_profile: IFrameACLViewProfile,
-            precision_profile: Optional[IFrameACLViewProfile],
+            view_profile: FrameACLViewProfile,
+            precision_profile: Optional[FrameACLViewProfile],
             configuration: FrameACLConfiguration,
     ) -> Tuple[
         Set[Tuple[str, str]],
@@ -467,8 +465,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_allowed_commands(
-            codegen_profile: IFrameACLCodegenProfile,
-            precision_profile: Optional[IFrameACLCodegenProfile],
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: Optional[FrameACLCodegenProfile],
             configuration: FrameACLConfiguration,
     ) -> Set[str]:
         """
@@ -526,8 +524,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_codegen_import_controls(
-            codegen_profile: IFrameACLCodegenProfile,
-            precision_profile: Optional[IFrameACLCodegenProfile],
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: Optional[FrameACLCodegenProfile],
             configuration: FrameACLConfiguration,
     ) -> Tuple[bool, Set[str], Set[str]]:
         """
@@ -567,8 +565,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_codegen_builtin_controls(
-            codegen_profile: IFrameACLCodegenProfile,
-            precision_profile: Optional[IFrameACLCodegenProfile],
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: Optional[FrameACLCodegenProfile],
             configuration: FrameACLConfiguration,
             *,
             imports_enabled: bool,
@@ -600,8 +598,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_codegen_meta_controls(
-            codegen_profile: IFrameACLCodegenProfile,
-            precision_profile: Optional[IFrameACLCodegenProfile],
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: Optional[FrameACLCodegenProfile],
             configuration: FrameACLConfiguration,
     ) -> Tuple[bool, bool]:
         """
@@ -632,8 +630,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _compile_codegen_recursive_control(
-            codegen_profile: IFrameACLCodegenProfile,
-            precision_profile: Optional[IFrameACLCodegenProfile],
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: Optional[FrameACLCodegenProfile],
             configuration: FrameACLConfiguration,
     ) -> bool:
         """
@@ -662,8 +660,8 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _compile_command_enablement(
             frame_descriptor: FrameDescriptor,
-            command_profile: IFrameACLCommandProfile,
-            precision_profile: Optional[IFrameACLCommandProfile],
+            command_profile: FrameACLCommandProfile,
+            precision_profile: Optional[FrameACLCommandProfile],
             configuration: FrameACLConfiguration,
     ) -> Tuple[bool, Set[str], Set[str]]:
         """
@@ -744,7 +742,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_operation_effects(
-            ruleset: IFrameACLRuleSet,
+            ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Split one ruleset into allowed and denied operation sets.
@@ -764,8 +762,8 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects(
-            base_ruleset: IFrameACLRuleSet,
-            override_ruleset: IFrameACLRuleSet,
+            base_ruleset: FrameACLRuleSet,
+            override_ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge base and override rulesets into effective allow/deny sets.
@@ -788,7 +786,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_operation_effects_from_rulesets(
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge an ordered list of base/precision/override rulesets into one effect set.
@@ -814,7 +812,7 @@ class FrameACLCompiler(Cleanable):
     def _collect_condition_string_values_from_rulesets(
             operation_name: str,
             condition_key: str,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect string condition values for one operation across rulesets.
@@ -848,7 +846,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_import_module_roots_from_rulesets(
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect import-module roots using narrowing intersection semantics.
@@ -887,7 +885,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _collect_effective_spell_operation_effects_for_record(
             spell_record: SpellRecord,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Merge spell operations for one record using selector-aware spell rules.
@@ -914,7 +912,7 @@ class FrameACLCompiler(Cleanable):
         return allow_operations, deny_operations
 
     @staticmethod
-    def _as_frame_acl_ruleset(ruleset: IFrameACLRuleSet) -> IFrameACLRuleSet:
+    def _as_frame_acl_ruleset(ruleset: FrameACLRuleSet) -> FrameACLRuleSet:
         """
         Preserve the shared ruleset interface surface at existing call sites.
 
@@ -923,7 +921,7 @@ class FrameACLCompiler(Cleanable):
                 Interface-typed ACL ruleset.
 
         Returns:
-            IFrameACLRuleSet: The same ruleset object.
+            FrameACLRuleSet: The same ruleset object.
         """
         return ruleset
 
@@ -1004,7 +1002,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _spell_selector_rules_present_for_operation(
             operation: str,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> bool:
         """
         Return whether any selector-aware rule exists for one spell operation.
@@ -1027,7 +1025,7 @@ class FrameACLCompiler(Cleanable):
     def _collect_selector_spell_operation_effects_for_record(
             operation: str,
             spell_record: SpellRecord,
-            *rulesets: Optional[IFrameACLRuleSet],
+            *rulesets: Optional[FrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
         Collect selector-aware effects for one operation and spell record only.

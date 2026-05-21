@@ -690,7 +690,7 @@ def test_frame_acl_validator_rejects_invalid_ruleset_family_input() -> None:
     Returns:
         None.
     """
-    with pytest.raises(TypeError, match="view.frame ruleset must satisfy IFrameACLRuleSet"):
+    with pytest.raises(TypeError, match="view.frame ruleset must be a FrameACLRuleSet instance."):
         FrameACLValidator("ops")._validate_ruleset_family(
             None,
             {"visible"},

@@ -5,7 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import FrameACLViewProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 class FrameACLCodegenProfile(Cleanable):
@@ -39,10 +39,10 @@ class FrameACLCodegenProfile(Cleanable):
             self,
             name: str,
             *,
-            frame_ruleset: Optional[IFrameACLRuleSet] = None,
-            conduit_ruleset: Optional[IFrameACLRuleSet] = None,
-            spell_ruleset: Optional[IFrameACLRuleSet] = None,
-            capability_ruleset: Optional[IFrameACLRuleSet] = None,
+            frame_ruleset: Optional[FrameACLRuleSet] = None,
+            conduit_ruleset: Optional[FrameACLRuleSet] = None,
+            spell_ruleset: Optional[FrameACLRuleSet] = None,
+            capability_ruleset: Optional[FrameACLRuleSet] = None,
             validation_strategy_name: str = "generic",
             version: str = "0.0.1",
     ) -> None:
@@ -258,25 +258,25 @@ class FrameACLCodegenProfile(Cleanable):
         return self._validation_strategy_name
 
     @property
-    def frame_ruleset(self) -> IFrameACLRuleSet:
+    def frame_ruleset(self) -> FrameACLRuleSet:
         """Return the owned frame-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._frame_ruleset
 
     @property
-    def conduit_ruleset(self) -> IFrameACLRuleSet:
+    def conduit_ruleset(self) -> FrameACLRuleSet:
         """Return the owned conduit-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._conduit_ruleset
 
     @property
-    def spell_ruleset(self) -> IFrameACLRuleSet:
+    def spell_ruleset(self) -> FrameACLRuleSet:
         """Return the owned spell-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._spell_ruleset
 
     @property
-    def capability_ruleset(self) -> IFrameACLRuleSet:
+    def capability_ruleset(self) -> FrameACLRuleSet:
         """Return the owned capability-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._capability_ruleset

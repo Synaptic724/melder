@@ -691,7 +691,7 @@ def test_nexus_repeated_init_with_logger_override_reuses_singleton_and_replaces_
     nexus = Nexus(aether=Aether())
     cleanup_calls = []
     original_logger = nexus._logger
-    monkeypatch.setattr(original_logger, "cleanup", lambda: cleanup_calls.append("cleanup"))
+    monkeypatch.setattr(type(original_logger), "cleanup", lambda _self: cleanup_calls.append("cleanup"))
 
     same_nexus = Nexus(logger=logging.getLogger("override"))
 
