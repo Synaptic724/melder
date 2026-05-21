@@ -1,10 +1,9 @@
-import threading
+﻿import threading
 from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iriftgate import IRiftGate
 
 
 class RiftGateController(Cleanable):
@@ -42,7 +41,7 @@ class RiftGateController(Cleanable):
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
-        self._rift_gates_by_rift_id: Dict[str, IRiftGate] = {}
+        self._rift_gates_by_rift_id: Dict[str, RiftGate] = {}
 
     def cleanup(self) -> None:
         """
@@ -81,7 +80,7 @@ class RiftGateController(Cleanable):
             raise ValueError("rift_id cannot be empty.")
 
     @staticmethod
-    def _ensure_absent(registry: Dict[str, IRiftGate], rift_id: str) -> None:
+    def _ensure_absent(registry: Dict[str, RiftGate], rift_id: str) -> None:
         """
         Ensure a Rift id is not already registered.
 
@@ -118,7 +117,7 @@ class RiftGateController(Cleanable):
             self._rift_gates_by_rift_id[rift_id] = gate
             return gate
 
-    def register_rift_gate(self, rift_id: str, gate: IRiftGate) -> None:
+    def register_rift_gate(self, rift_id: str, gate: RiftGate) -> None:
         """
         Register an existing Rift-scoped gate.
 
@@ -152,7 +151,7 @@ class RiftGateController(Cleanable):
         with self._lock:
             self._rift_gates_by_rift_id.pop(rift_id, None)
 
-    def get_rift_gate(self, rift_id: str) -> Optional[IRiftGate]:
+    def get_rift_gate(self, rift_id: str) -> Optional[RiftGate]:
         """
         Return the registered Rift gate for one Rift id.
 
@@ -305,3 +304,4 @@ class RiftGateController(Cleanable):
         with self._lock:
             for gate in self._rift_gates_by_rift_id.values():
                 gate.set_entry_mode(entry_mode)
+

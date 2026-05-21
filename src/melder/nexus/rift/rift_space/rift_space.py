@@ -15,13 +15,12 @@ from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.nexus.rift.rift_space.workstation import Workstation
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
-from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftspace import IRiftSpace
-from melder.utilities.interfaces.iworkstation import IWorkstation
 
 
 class RiftSpace(Cleanable, IRiftSpace):
@@ -116,7 +115,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             space_name: Optional[str] = None,
             space_kind: str = "base",
             metadata: Optional[Dict[str, object]] = None,
-            rift_gate: Optional[IRiftGate] = None,
+            rift_gate: Optional[RiftGate] = None,
             space_id: Optional[str] = None,
     ) -> None:
         """
@@ -163,7 +162,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._lock: threading.RLock = threading.RLock()
         self._space_kind: str = space_kind
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
-        self._rift_gate: Optional[IRiftGate] = rift_gate
+        self._rift_gate: Optional[RiftGate] = rift_gate
         self._memory_system: RiftMemorySystem = RiftMemorySystem(
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
@@ -415,20 +414,20 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._frame_viewer
 
     @property
-    def rift_gate(self) -> Optional[IRiftGate]:
+    def rift_gate(self) -> Optional[RiftGate]:
         """
         Purpose:
             Return the optional Rift-owned gate bound to this room.
 
         Returns:
-            Optional[IRiftGate]: Bound Rift gate when present.
+            Optional[RiftGate]: Bound Rift gate when present.
         """
         self.check_cleaned()
         with self._lock:
             return self._rift_gate
 
     @property
-    def workstation(self) -> IWorkstation:
+    def workstation(self) -> Workstation:
         """
         Purpose:
             Return the room-local workstation canvas.
@@ -868,5 +867,6 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise ValueError(
                 "Unsupported action hook category '{0}'.".format(category)
             )
+
 
 

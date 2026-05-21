@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+﻿from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
@@ -9,9 +9,9 @@ from melder.nexus.rift.command_system.codegen_command_system import (
 )
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.iriftgate import IRiftGate
 
 
 class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
@@ -45,7 +45,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             rift: IRift,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
-            rift_gate: Optional[IRiftGate] = None,
+            rift_gate: Optional[RiftGate] = None,
             space_id: Optional[str] = None,
     ) -> None:
         """
@@ -141,3 +141,4 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             self._codegen_system.cleanup()
             del self._codegen_system
         super().cleanup()
+

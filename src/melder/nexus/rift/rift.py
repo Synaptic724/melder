@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 from typing import Any, Dict, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -7,6 +7,7 @@ from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.nexus.rift.projection.command_projection import CommandProjection
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
@@ -14,11 +15,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
 from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.inexus import INexus
-from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.iriftspace import IRiftSpace
@@ -97,7 +96,7 @@ class Rift(Cleanable, IRift):
             nexus: INexus,
             *,
             configuration: IRiftConfiguration,
-            rift_gate: Optional[IRiftGate] = None,
+            rift_gate: Optional[RiftGate] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
             space_id: Optional[str] = None,
@@ -158,8 +157,8 @@ class Rift(Cleanable, IRift):
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
         self._nexus: INexus = nexus
         self._configuration: IRiftConfiguration = configuration
-        self._rift_gate: IRiftGate = rift_gate if rift_gate is not None else RiftGate()
-        self._frame_link_contracts_by_frame_name: Dict[str, IFrameLinkContract] = {}
+        self._rift_gate: RiftGate = rift_gate if rift_gate is not None else RiftGate()
+        self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
         self._projection_sets_by_frame_name: Dict[str, IFrameProjectionSet] = {}
         self._space: Optional[IRiftSpace] = None
         self._is_registered: bool = False
@@ -298,13 +297,13 @@ class Rift(Cleanable, IRift):
         return self._configuration
 
     @property
-    def rift_gate(self) -> IRiftGate:
+    def rift_gate(self) -> RiftGate:
         """
         Purpose:
             Return the Rift-owned gate for this runtime instance.
 
         Returns:
-            IRiftGate: Rift-scoped gate.
+            RiftGate: Rift-scoped gate.
         """
         self.check_cleaned()
         return self._rift_gate
@@ -321,7 +320,7 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         return tuple(self._frame_link_contracts_by_frame_name.keys())
 
-    def get_frame_link_contract(self, frame_name: str) -> IFrameLinkContract:
+    def get_frame_link_contract(self, frame_name: str) -> FrameLinkContract:
         """
         Return the per-frame contract for one engaged frame.
 
@@ -330,7 +329,7 @@ class Rift(Cleanable, IRift):
                 Engaged target frame name.
 
         Returns:
-            IFrameLinkContract: Per-frame contract object.
+            FrameLinkContract: Per-frame contract object.
 
         Raises:
             ValueError:
@@ -1046,3 +1045,5 @@ class Rift(Cleanable, IRift):
             "on_nexus_frame_disposed",
         )
         return
+
+

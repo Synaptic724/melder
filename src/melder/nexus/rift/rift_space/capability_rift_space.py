@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+﻿from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.capability_command_system import (
@@ -8,7 +8,7 @@ from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.iriftgate import IRiftGate
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 
 
 class CapabilityRiftSpace(RiftSpace):
@@ -41,7 +41,7 @@ class CapabilityRiftSpace(RiftSpace):
             rift: object,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
-            rift_gate: Optional[IRiftGate] = None,
+            rift_gate: Optional[RiftGate] = None,
             space_id: Optional[str] = None,
     ) -> None:
         """
@@ -113,3 +113,5 @@ class CapabilityRiftSpace(RiftSpace):
         self.check_cleaned()
         with self._lock:
             return self._command_system
+
+

@@ -1,4 +1,4 @@
-﻿from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.utilities.interfaces.iaether import IAether
@@ -11,8 +11,10 @@ from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
-from melder.utilities.interfaces.iriftgate import IRiftGate
-from melder.utilities.interfaces.iriftgatecontroller import IRiftGateController
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+    from melder.nexus.rift.rift_gate_controller.rift_gate_controller import RiftGateController
 
 @runtime_checkable
 class INexus(ICleanable, Protocol):
@@ -50,7 +52,7 @@ class INexus(ICleanable, Protocol):
         ...
 
     @property
-    def rift_gate_controller(self) -> IRiftGateController:
+    def rift_gate_controller(self) -> "RiftGateController":
         """
         Return the Nexus-owned Rift gate controller.
         """
@@ -178,7 +180,7 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
-    def get_rift_gate(self, rift_id: str) -> Optional[IRiftGate]:
+    def get_rift_gate(self, rift_id: str) -> Optional["RiftGate"]:
         """
         Return the registered Rift gate for one Rift id, if present.
         """
@@ -478,3 +480,4 @@ class INexus(ICleanable, Protocol):
             None.
         """
         ...
+

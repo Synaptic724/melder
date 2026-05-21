@@ -1,13 +1,15 @@
-﻿from typing import Dict, Optional, Protocol, Tuple, Sequence, runtime_checkable
+﻿from typing import TYPE_CHECKING, Dict, Optional, Protocol, Tuple, Sequence, runtime_checkable
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iframelinkcontract import IFrameLinkContract
 from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
-from melder.utilities.interfaces.iriftgate import IRiftGate
 from melder.utilities.interfaces.iriftspace import IRiftSpace
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
+    from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 
 @runtime_checkable
 class IRift(ICleanable, Protocol):
@@ -74,7 +76,7 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    def get_frame_link_contract(self, frame_name: str) -> IFrameLinkContract:
+    def get_frame_link_contract(self, frame_name: str) -> "FrameLinkContract":
         """
         Return the per-frame contract object for one engaged target frame.
 
@@ -83,7 +85,7 @@ class IRift(ICleanable, Protocol):
                 Engaged target frame name.
 
         Returns:
-            IFrameLinkContract: Rift-local contract object for the selected
+            FrameLinkContract: Rift-local contract object for the selected
             frame.
 
         Raises:
@@ -155,7 +157,7 @@ class IRift(ICleanable, Protocol):
         ...
 
     @property
-    def rift_gate(self) -> IRiftGate:
+    def rift_gate(self) -> "RiftGate":
         """
         Return the Rift-owned gate for this runtime instance.
 
@@ -341,4 +343,5 @@ class IRift(ICleanable, Protocol):
             None.
         """
         ...
+
 

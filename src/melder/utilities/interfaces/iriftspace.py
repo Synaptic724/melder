@@ -3,7 +3,7 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.nexus.rift.rift_space.memory_system.rift_memory_system import RiftMemorySystem
-from melder.utilities.interfaces.iworkstation import IWorkstation
+from melder.nexus.rift.rift_space.workstation import Workstation
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift_space.event_system.rift_event_system import RiftEventSystem
@@ -71,7 +71,7 @@ class IRiftSpace(ICleanable, Protocol):
         ...
 
     @property
-    def workstation(self) -> IWorkstation:
+    def workstation(self) -> Workstation:
         """
         Return the room-local workstation canvas owned by this space.
         """
@@ -111,6 +111,7 @@ class IRiftSpace(ICleanable, Protocol):
         Unregister one action-hook subscription by id.
         """
         ...
+
 
 
 

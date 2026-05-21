@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+﻿from typing import Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
@@ -11,7 +11,7 @@ from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
 from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.iworkstation import IWorkstation
+from melder.nexus.rift.rift_space.workstation import Workstation
 
 
 class CodegenCommandSystem(CommandSystem):
@@ -72,7 +72,7 @@ class CodegenCommandSystem(CommandSystem):
             *,
             rift: IRift,
             space: ICodegenRiftSpace,
-            workstation: IWorkstation,
+            workstation: Workstation,
             codegen_system: Optional[ICodegenSystem] = None,
     ) -> None:
         """
@@ -761,3 +761,4 @@ class CodegenCommandSystem(CommandSystem):
                 + self._CODEGEN_RUNTIME_HELPER_METHOD_NAMES
                 + self._CODEGEN_COMMAND_METHOD_NAMES
             )
+

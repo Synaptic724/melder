@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -35,6 +35,7 @@ from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -47,8 +48,6 @@ from melder.utilities.interfaces.iframedescriptor import IFrameDescriptor
 from melder.utilities.interfaces.iframeprojectionset import IFrameProjectionSet
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
-from melder.utilities.interfaces.iriftgate import IRiftGate
-from melder.utilities.interfaces.iriftgatecontroller import IRiftGateController
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 
@@ -493,12 +492,12 @@ class Nexus(Cleanable, INexus):
         return self._enabled
 
     @property
-    def rift_gate_controller(self) -> IRiftGateController:
+    def rift_gate_controller(self) -> RiftGateController:
         """
         Return the Nexus-owned Rift gate controller.
 
         Returns:
-            IRiftGateController: Controller for registered Rift gates.
+            RiftGateController: Controller for registered Rift gates.
         """
         self.check_cleaned()
         return self._rift_gate_controller
@@ -1105,7 +1104,7 @@ class Nexus(Cleanable, INexus):
         self._require_enabled()
         return list(self._rifts_by_id.keys())
 
-    def get_rift_gate(self, rift_id: str) -> Optional[IRiftGate]:
+    def get_rift_gate(self, rift_id: str) -> Optional[RiftGate]:
         """
         Return the registered Rift gate for one Rift id, if present.
 
@@ -1114,7 +1113,7 @@ class Nexus(Cleanable, INexus):
                 Canonical Rift id.
 
         Returns:
-            Optional[IRiftGate]: Registered Rift gate when present.
+            Optional[RiftGate]: Registered Rift gate when present.
         """
         self.check_cleaned()
         return self._rift_gate_controller.get_rift_gate(rift_id)
@@ -2875,3 +2874,4 @@ class Nexus(Cleanable, INexus):
             value = configuration.get_property(key)
             cloned_configuration.set_property(key, value)
         return cloned_configuration
+
