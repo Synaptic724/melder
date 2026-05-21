@@ -1,14 +1,14 @@
-import threading
+﻿import threading
 from typing import Callable, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.rift_space.memory_system.rift_memory import RiftMemory
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 
 
-class RiftMemorySystem(Cleanable, IRiftMemorySystem):
+
+class RiftMemorySystem(Cleanable):
     """
     Internal
 
@@ -387,3 +387,4 @@ class RiftMemorySystem(Cleanable, IRiftMemorySystem):
         )
         self.emit_memory(memory)
         return memory
+

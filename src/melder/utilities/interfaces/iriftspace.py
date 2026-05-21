@@ -2,7 +2,7 @@
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
-from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
+from melder.nexus.rift.rift_space.memory_system.rift_memory_system import RiftMemorySystem
 from melder.utilities.interfaces.iworkstation import IWorkstation
 
 if TYPE_CHECKING:
@@ -57,7 +57,7 @@ class IRiftSpace(ICleanable, Protocol):
         ...
 
     @property
-    def memory_system(self) -> IRiftMemorySystem:
+    def memory_system(self) -> RiftMemorySystem:
         """
         Return the room-local memory sequencing system.
         """
@@ -111,5 +111,6 @@ class IRiftSpace(ICleanable, Protocol):
         Unregister one action-hook subscription by id.
         """
         ...
+
 
 

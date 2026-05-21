@@ -20,7 +20,6 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.iriftgate import IRiftGate
-from melder.utilities.interfaces.iriftmemorysystem import IRiftMemorySystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 from melder.utilities.interfaces.iworkstation import IWorkstation
 
@@ -165,7 +164,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._space_kind: str = space_kind
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
         self._rift_gate: Optional[IRiftGate] = rift_gate
-        self._memory_system: IRiftMemorySystem = RiftMemorySystem(
+        self._memory_system: RiftMemorySystem = RiftMemorySystem(
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
         )
@@ -502,7 +501,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._event_system
 
     @property
-    def memory_system(self) -> IRiftMemorySystem:
+    def memory_system(self) -> RiftMemorySystem:
         """
         Purpose:
             Return the room-local memory sequencing system.
@@ -512,7 +511,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             - The returned object is cleaned with the room.
 
         Returns:
-            IRiftMemorySystem: Room-local memory system.
+            RiftMemorySystem: Room-local memory system.
         """
         self.check_cleaned()
         with self._lock:
@@ -869,4 +868,5 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise ValueError(
                 "Unsupported action hook category '{0}'.".format(category)
             )
+
 
