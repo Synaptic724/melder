@@ -12,10 +12,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 class CleanupTracker(Cleanable):
     """Track cleanup calls for artifact-owned child objects."""
 
-    __slots__ = Cleanable.__slots__ + [
-        "cleanup_calls",
-    ]
-
     def __init__(self) -> None:
         """Initialize cleanup call tracking."""
         super().__init__()
