@@ -242,7 +242,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _prepare_resolution_for_conjure(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> str:
         """
@@ -305,7 +305,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _build_conduit(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             name: Optional[str],
             conduit_logger: Optional[Any],
             automatic: bool,
@@ -397,7 +397,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _activate_conjured_conduit(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit: Conduit,
             hook_map: Optional[Mapping[str, List[Callable]]],
     ) -> None:
@@ -442,7 +442,7 @@ class SpellbookCreationSystem(Cleanable):
         )
 
     @staticmethod
-    def check_system_state(spellbook: Any, policy: str, automatic: bool) -> None:
+    def check_system_state(spellbook: Spellbook, policy: str, automatic: bool) -> None:
         """
         Purpose:
             Validate requested policy compatibility with the current system state.
@@ -492,7 +492,7 @@ class SpellbookCreationSystem(Cleanable):
             )
 
     @staticmethod
-    def define_disposal_metadata_on_spells(spellbook: Any) -> None:
+    def define_disposal_metadata_on_spells(spellbook: Spellbook) -> None:
         """
         Purpose:
             Precompute spell disposal metadata from configured method names.
@@ -526,7 +526,7 @@ class SpellbookCreationSystem(Cleanable):
             spell.has_disposal_methods = bool(matched)
 
     @staticmethod
-    def define_conduit_into_spells(spellbook: Any, conduit: Conduit) -> None:
+    def define_conduit_into_spells(spellbook: Spellbook, conduit: Conduit) -> None:
         """
         Purpose:
             Stamp conduit ownership metadata and existing-object registrations.
@@ -583,7 +583,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _read_full_ahead_of_time_compilation(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             context_name: str,
     ) -> bool:
         """
@@ -666,7 +666,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def fire_conjure_hooks(
-            spellbook: Any,
+            spellbook: Spellbook,
             hook_map: Optional[Mapping[str, List[Callable]]],
             hook_name: str,
             *args: Any,
@@ -705,7 +705,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def run_resolution_phases(
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
     ) -> Dict[str, Sequence[UnitOfWork]]:
@@ -745,7 +745,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def run_structural_phases(
-            spellbook: Any,
+            spellbook: Spellbook,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
     ) -> Dict[str, Sequence[UnitOfWork]]:
         """
@@ -790,7 +790,7 @@ class SpellbookCreationSystem(Cleanable):
             compiler_system.cleanup()
 
     @staticmethod
-    def run_post_conjure_structural_phases(spellbook: Any, spells: Sequence[Spell]) -> None:
+    def run_post_conjure_structural_phases(spellbook: Spellbook, spells: Sequence[Spell]) -> None:
         """
         Purpose:
             Run structural phases for spells bound after a conduit is already conjured.
@@ -861,7 +861,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def run_resolution_phases_for_conduit(
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
     ) -> Dict[str, Sequence[UnitOfWork]]:
@@ -922,7 +922,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def run_resolution_phases_for_target_spell(
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             target_spell: Spell,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
@@ -1012,7 +1012,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def run_deferred_resolution_phases_for_target_spell(
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             target_spell: Spell,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
@@ -1084,7 +1084,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _register_conduit_resolution_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -1176,7 +1176,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def _new_phase_scheduler(
-            spellbook: Any,
+            spellbook: Spellbook,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> PhaseScheduler:
         """
@@ -1199,7 +1199,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def _cleanup_phase_scheduler(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             context_name: str,
     ) -> None:
@@ -1230,7 +1230,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _run_scheduler_with_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             phase_scheduler_cls: Type[PhaseScheduler],
             context_name: str,
             register_phases: Callable[[PhaseScheduler], None],
@@ -1268,7 +1268,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _register_structural_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
     ) -> None:
@@ -1332,7 +1332,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _raise_structural_validation_error(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             broken_spells: List[Spell],
             context_name: str,
             message_prefix: str,
@@ -1367,7 +1367,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _conduit_resolution_has_errors(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> bool:
         """
@@ -1389,7 +1389,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _run_conduit_foundational_resolution_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> Dict[str, Sequence[UnitOfWork]]:
@@ -1428,7 +1428,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _run_conduit_plan_resolution_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> Dict[str, Sequence[UnitOfWork]]:
@@ -1506,7 +1506,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _run_target_foundational_resolution_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             target_spell: Spell,
             target_spell_id: str,
@@ -1600,7 +1600,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _run_target_plan_resolution_phases(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             target_spell: Spell,
             target_spell_id: str,
@@ -1687,7 +1687,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def record_local_resolution_visibility_failure(
-            spellbook: Any,
+            spellbook: Spellbook,
             conduit_id: str,
             scoped_spell_ids: Collection[str],
             scoped_root_ids: Collection[str],
@@ -1749,7 +1749,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def cleanup_phase_artifacts_after_resolution(
-            spellbook: Any,
+            spellbook: Spellbook,
             spell_ids: Optional[Collection[str]] = None,
     ) -> None:
         """
@@ -1790,7 +1790,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _build_per_spell_phase_units(
             *,
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             phase_name: str,
@@ -1846,7 +1846,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_requirements_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
     ) -> Sequence[UnitOfWork]:
@@ -1858,6 +1858,7 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Requirements phase units.
         Raises:
@@ -1874,7 +1875,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_symbolic_graph_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
     ) -> Sequence[UnitOfWork]:
@@ -1886,6 +1887,7 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Symbolic graph phase units.
         Raises:
@@ -1902,7 +1904,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_local_frame_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
     ) -> Sequence[UnitOfWork]:
@@ -1914,6 +1916,7 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Local frame phase units.
         Raises:
@@ -1934,7 +1937,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_validation_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
     ) -> Sequence[UnitOfWork]:
@@ -1946,6 +1949,7 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Validation phase units.
         Raises:
@@ -1966,7 +1970,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_root_blueprints_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -1980,7 +1984,9 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
             conduit_id: Conduit scope id.
+
         Returns:
             Sequence[UnitOfWork]: Root-blueprints phase units.
         Raises:
@@ -2006,7 +2012,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_occurrence_plan_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -2037,7 +2043,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_injection_plan_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -2052,6 +2058,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Injection-plan phase units.
         Raises:
@@ -2068,7 +2075,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_patch_maps_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -2083,6 +2090,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Patch-maps phase units.
         Raises:
@@ -2099,7 +2107,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_execution_plan_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -2114,6 +2122,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Execution-plan phase units.
         Raises:
@@ -2130,7 +2139,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_system_validation_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -2145,6 +2154,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: System-validation phase units.
         Raises:
@@ -2170,7 +2180,7 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def phase_change_control_factory(
-            spellbook: Any,
+            spellbook: Spellbook,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
@@ -2185,6 +2195,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
+            compiler_system: Compiler-system instance used for this run.
         Returns:
             Sequence[UnitOfWork]: Change-control phase units.
         Raises:

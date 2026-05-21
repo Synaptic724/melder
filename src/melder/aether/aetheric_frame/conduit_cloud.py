@@ -35,7 +35,7 @@ class ConduitCloud(Cleanable):
     def __init__(
             self,
             name: str,
-            conduits: Dict[str, Conduit],
+            conduits: Dict[str, "Conduit"],
             conduit_ids_by_name: Dict[str, str],
     ) -> None:
         """
@@ -60,7 +60,7 @@ class ConduitCloud(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
-        self._conduits: Dict[str, Conduit] = conduits
+        self._conduits: Dict[str, "Conduit"] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
         self._id: str = str(ulid.ULID())
