@@ -1,9 +1,9 @@
-import threading
+﻿import threading
 import time
 from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType, TracebackType
-from typing import Optional, Any, Tuple, Callable, Iterable, Dict, Generator
+from typing import TYPE_CHECKING, Optional, Any, Tuple, Callable, Iterable, Dict, Generator
 from mypy_extensions import mypyc_attr
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -18,7 +18,6 @@ from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -37,6 +36,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.mutation_research.mutation_research import MutationResearch
 
 #region Conduit
 @mypyc_attr(native_class=True)
@@ -2186,7 +2188,7 @@ class Conduit(Cleanable, IConduit):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduit’s own spellbook**.
+        conduitâ€™s own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -2217,7 +2219,7 @@ class Conduit(Cleanable, IConduit):
         self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
-    def get_mutation_research(self) -> IMutationResearch:
+    def get_mutation_research(self) -> "MutationResearch":
         """
         Public API
 
@@ -2225,11 +2227,11 @@ class Conduit(Cleanable, IConduit):
 
         Purpose:
             Expose the process-wide mutation-research root through the conduit
-            façade so callers do not need to reach through private conduit
+            faÃ§ade so callers do not need to reach through private conduit
             state to access the Aether-owned runtime surface.
 
         Returns:
-            IMutationResearch: Process-wide mutation-research root.
+            MutationResearch: Process-wide mutation-research root.
 
         Raises:
             RuntimeError:
@@ -2242,7 +2244,7 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError(
                 "Dynamic environment is not enabled. Cannot access MutationResearch."
             )
-        mutation_research: IMutationResearch | None = (
+        mutation_research: Optional["MutationResearch"] = (
             self._spellbook._aether.mutation_research
         )
         if mutation_research is None:
@@ -3772,7 +3774,7 @@ class Conduit(Cleanable, IConduit):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduit’s name, the number of active spells involved, and permission levels.
+        including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:
@@ -3931,3 +3933,4 @@ class Conduit(Cleanable, IConduit):
 
 #endregion Hooks
 #endregion Conduit
+

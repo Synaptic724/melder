@@ -1,5 +1,5 @@
-import threading
-from typing import Optional
+﻿import threading
+from typing import TYPE_CHECKING, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -7,11 +7,12 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.interfaces.imutationconduit import IMutationConduit
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
+
+if TYPE_CHECKING:
+    from melder.mutation_research.mutation_research import MutationResearch
 
 
-class MutationConduit(Cleanable, IMutationConduit):
+class MutationConduit(Cleanable):
     """
     Placeholder conduit-scoped mutation facade.
 
@@ -40,7 +41,7 @@ class MutationConduit(Cleanable, IMutationConduit):
             self,
             *,
             conduit: IConduit,
-            mutation_research: IMutationResearch,
+            mutation_research: "MutationResearch",
             spell_system_states: ISpellSystemStates,
             change_control_manager: IChangeControlManager,
     ) -> None:
@@ -109,7 +110,7 @@ class MutationConduit(Cleanable, IMutationConduit):
         return self._conduit
 
     @property
-    def mutation_research(self) -> IMutationResearch:
+    def mutation_research(self) -> "MutationResearch":
         """
         Return the owning mutation-research root.
 
@@ -140,3 +141,4 @@ class MutationConduit(Cleanable, IMutationConduit):
         """
         self.check_cleaned()
         return self._change_control_manager
+

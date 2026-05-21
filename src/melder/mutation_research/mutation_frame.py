@@ -1,16 +1,17 @@
-import threading
-from typing import Optional
+﻿import threading
+from typing import TYPE_CHECKING, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.interfaces.imutationframe import IMutationFrame
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
+
+if TYPE_CHECKING:
+    from melder.mutation_research.mutation_research import MutationResearch
 
 
-class MutationFrame(Cleanable, IMutationFrame):
+class MutationFrame(Cleanable):
     """
     Placeholder frame-scoped mutation facade.
 
@@ -40,7 +41,7 @@ class MutationFrame(Cleanable, IMutationFrame):
             self,
             *,
             aetheric_frame_name: str,
-            mutation_research: IMutationResearch,
+            mutation_research: "MutationResearch",
             spell_system_states: ISpellSystemStates,
             change_control_manager: IChangeControlManager,
     ) -> None:
@@ -109,7 +110,7 @@ class MutationFrame(Cleanable, IMutationFrame):
         return self._aetheric_frame_name
 
     @property
-    def mutation_research(self) -> IMutationResearch:
+    def mutation_research(self) -> "MutationResearch":
         """
         Return the owning mutation-research root.
 
@@ -140,3 +141,4 @@ class MutationFrame(Cleanable, IMutationFrame):
         """
         self.check_cleaned()
         return self._change_control_manager
+

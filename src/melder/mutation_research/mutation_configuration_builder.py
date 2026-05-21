@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -10,12 +10,9 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.imutationresearchconfiguration import (
     IMutationResearchConfiguration,
 )
-from melder.utilities.interfaces.imutationresearchconfigurationbuilder import (
-    IMutationResearchConfigurationBuilder,
-)
 
 
-class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigurationBuilder):
+class MutationResearchConfigurationBuilder(Cleanable):
     """
     One-shot builder for mutation-research configuration assembly.
 
@@ -75,7 +72,7 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
         self.check_cleaned()
         return self._id
 
-    def with_defaults(self) -> IMutationResearchConfigurationBuilder:
+    def with_defaults(self) -> "MutationResearchConfigurationBuilder":
         """
         Apply the default mutation-research configuration.
 
@@ -89,7 +86,7 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,
-    ) -> IMutationResearchConfigurationBuilder:
+    ) -> "MutationResearchConfigurationBuilder":
         """
         Set the unrestricted-module-mutations posture on the wrapped config.
 
@@ -152,3 +149,4 @@ class MutationResearchConfigurationBuilder(Cleanable, IMutationResearchConfigura
             self._configuration = None
             self.cleanup()
         return configuration
+

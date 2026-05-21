@@ -1,5 +1,5 @@
 ﻿import logging
-from typing import Optional, Protocol, Set, Tuple, Union, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iincidentmanager import IIncidentManager
@@ -12,12 +12,14 @@ from melder.utilities.interfaces.iaethericframeconfiguration import (
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitcloud import IConduitCloud
+
+if TYPE_CHECKING:
+    from melder.mutation_research.mutation_research import MutationResearch
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -145,7 +147,7 @@ class IAether(ICleanable, Protocol):
     _logger: ISafeLogger
 
     @property
-    def mutation_research(self) -> IMutationResearch:
+    def mutation_research(self) -> "MutationResearch":
         """
         Return the Aether-owned mutation-research root.
         """
@@ -431,3 +433,4 @@ class IAether(ICleanable, Protocol):
         Return one existing frame without creating new custom frames.
         """
         ...
+

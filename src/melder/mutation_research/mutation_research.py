@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -22,18 +22,12 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.imutationconduit import IMutationConduit
-from melder.utilities.interfaces.imutationframe import IMutationFrame
-from melder.utilities.interfaces.imutationresearch import IMutationResearch
 from melder.utilities.interfaces.imutationresearchconfiguration import (
     IMutationResearchConfiguration,
 )
-from melder.utilities.interfaces.imutationresearchconfigurationbuilder import (
-    IMutationResearchConfigurationBuilder,
-)
 
 
-class MutationResearch(Cleanable, IMutationResearch):
+class MutationResearch(Cleanable):
     """
     Singleton mutation-research root hosted by `Aether`.
 
@@ -244,7 +238,7 @@ class MutationResearch(Cleanable, IMutationResearch):
         self.check_cleaned()
         return MutationResearchConfiguration()
 
-    def create_configuration_builder(self) -> IMutationResearchConfigurationBuilder:
+    def create_configuration_builder(self) -> MutationResearchConfigurationBuilder:
         """
         Create a fresh fluent builder for mutation-research configuration assembly.
 
@@ -327,7 +321,7 @@ class MutationResearch(Cleanable, IMutationResearch):
         with self._lock:
             self._activated = False
 
-    def create_mutation_conduit(self, conduit: IConduit) -> IMutationConduit:
+    def create_mutation_conduit(self, conduit: IConduit) -> MutationConduit:
         """
         Create one placeholder mutation-conduit facade for a live conduit.
 
@@ -353,7 +347,7 @@ class MutationResearch(Cleanable, IMutationResearch):
             change_control_manager=change_control,
         )
 
-    def create_mutation_frame(self, aetheric_frame_name: str = "default") -> IMutationFrame:
+    def create_mutation_frame(self, aetheric_frame_name: str = "default") -> MutationFrame:
         """
         Create one placeholder mutation-frame facade for a named frame.
 
@@ -622,3 +616,4 @@ class MutationResearch(Cleanable, IMutationResearch):
             raise RuntimeError(
                 "MutationResearchConfiguration must be configured before this operation."
             )
+
