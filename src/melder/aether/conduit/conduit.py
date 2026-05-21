@@ -829,7 +829,7 @@ class Conduit(Cleanable):
 
 
     #region Context Management
-    def __enter__(self) -> Conduit:
+    def __enter__(self) -> "Conduit":
         """
         Public API
 
@@ -1399,7 +1399,7 @@ class Conduit(Cleanable):
 
         self._publish_conduit_record_to_nexus()
 
-    def create_lesser_conduit(self, logger: Any | None = None) -> Conduit:
+    def create_lesser_conduit(self, logger: Any | None = None) -> "Conduit":
         """
         Public API
 
@@ -1442,7 +1442,7 @@ class Conduit(Cleanable):
         self.check_cleaned()
 
         with self._lock:
-            root_conduit: Optional[Conduit]
+            root_conduit: Optional["Conduit"]
             if self._conduit_state == ConduitState.normal:
                 root_conduit = self
             else:
@@ -1522,7 +1522,7 @@ class Conduit(Cleanable):
 
 
 
-    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Conduit]:
+    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional["Conduit"]:
         """
         Public API
 
@@ -1762,7 +1762,7 @@ class Conduit(Cleanable):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[Conduit]] = None,
+            conduits: Optional[Iterable["Conduit"]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -1945,7 +1945,7 @@ class Conduit(Cleanable):
             transaction_type: ChangeTransactionType | str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[Conduit]] = None,
+            conduits: Optional[Iterable["Conduit"]] = None,
             scope_keys: Optional[Iterable[str]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
@@ -2274,7 +2274,7 @@ class Conduit(Cleanable):
             self,
             *,
             spell: Spell | str | SpellIndex,
-            target_conduit: Conduit,
+            target_conduit: "Conduit",
             move_creations: bool = False,
             include_dependencies: bool = False,
             force_unshare: bool = True,
@@ -2705,7 +2705,7 @@ class Conduit(Cleanable):
 
     #endregion Meld
     #region Conduit Ward API
-    def link(self, target_conduit: Conduit) -> bool:
+    def link(self, target_conduit: "Conduit") -> bool:
         """
         Public API
 
@@ -2761,7 +2761,7 @@ class Conduit(Cleanable):
 
         return linked
 
-    def sever_link(self, target_conduit: Conduit) -> bool:
+    def sever_link(self, target_conduit: "Conduit") -> bool:
         """
         Public API
 
@@ -2808,7 +2808,7 @@ class Conduit(Cleanable):
 
         return unlinked
 
-    def get_links(self) -> list[Conduit]:
+    def get_links(self) -> list["Conduit"]:
         """
         Public API
 
@@ -2830,7 +2830,7 @@ class Conduit(Cleanable):
         with self._lock:
             return self._conduit_ward._get_links()
 
-    def get_lesser_conduit(self, conduit_id: str) -> Optional[Conduit]:
+    def get_lesser_conduit(self, conduit_id: str) -> Optional["Conduit"]:
         """
         Internal
 
@@ -2840,7 +2840,7 @@ class Conduit(Cleanable):
             conduit_id (str): The ID of the lesser conduit to retrieve.
 
         Returns:
-            Optional[Conduit]: The linked lesser conduit if found, otherwise None.
+            Optional["Conduit"]: The linked lesser conduit if found, otherwise None.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2850,7 +2850,7 @@ class Conduit(Cleanable):
             return self._conduit_ward._get_lesser_conduit(conduit_id)
 
 
-    def get_initiated_conduit(self, conduit_id: str) -> Optional[Conduit]:
+    def get_initiated_conduit(self, conduit_id: str) -> Optional["Conduit"]:
         """
         Public API
 
@@ -2873,7 +2873,7 @@ class Conduit(Cleanable):
             return self._conduit_ward._get_initiated_conduit(conduit_id)
 
 
-    def get_provider_conduit(self, conduit_id: str) -> Optional[Conduit]:
+    def get_provider_conduit(self, conduit_id: str) -> Optional["Conduit"]:
         """
         Public API
 
@@ -2896,7 +2896,7 @@ class Conduit(Cleanable):
             return self._conduit_ward._get_provider_conduit(conduit_id)
 
 
-    def get_initiated_conduits(self) -> list[Conduit]:
+    def get_initiated_conduits(self) -> list["Conduit"]:
         """
         Public API
 
@@ -2914,7 +2914,7 @@ class Conduit(Cleanable):
         with self._lock:
             return self._conduit_ward._get_initiated_conduits()
 
-    def get_provider_conduits(self) -> list[Conduit]:
+    def get_provider_conduits(self) -> list["Conduit"]:
         """
         Public API
 
@@ -3095,7 +3095,7 @@ class Conduit(Cleanable):
     def _resolve_contract_peer_ids(
             self,
             *,
-            conduit: Optional[Conduit],
+            conduit: Optional["Conduit"],
             conduit_id: Optional[str],
             allow_all_links: bool,
     ) -> Tuple[str, ...]:
@@ -3142,7 +3142,7 @@ class Conduit(Cleanable):
     def _require_link_transaction_for_contract(
             self,
             *,
-            conduit: Optional[Conduit],
+            conduit: Optional["Conduit"],
             conduit_id: Optional[str],
             allow_all_links: bool,
     ) -> None:
@@ -3237,7 +3237,7 @@ class Conduit(Cleanable):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[Conduit] = None,
+            conduit: Optional["Conduit"] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -3310,7 +3310,7 @@ class Conduit(Cleanable):
     def add_spells_to_contract(
             self,
             spell_ids: list[str],
-            conduit: Optional[Conduit] = None,
+            conduit: Optional["Conduit"] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -3388,7 +3388,7 @@ class Conduit(Cleanable):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[Conduit] = None,
+            conduit: Optional["Conduit"] = None,
             conduit_id: Optional[str] = None,
             root_spell_id: Optional[str] = None,
             aetheric_frame: str = "default",
@@ -3446,7 +3446,7 @@ class Conduit(Cleanable):
             self,
             *,
             spell_ids: Optional[list[str]] = None,
-            conduit: Optional[Conduit] = None,
+            conduit: Optional["Conduit"] = None,
             conduit_id: Optional[str] = None,
             root_spell_id: Optional[str] = None,
             aetheric_frame: str = "default",
@@ -3510,7 +3510,7 @@ class Conduit(Cleanable):
 
         return normalized
 
-    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: Optional[Conduit] = None,
+    def remove_root_from_contracts(self, *, root_spell_id: str, conduit: Optional["Conduit"] = None,
                                    conduit_id: Optional[str] = None, aetheric_frame: str = "default") -> dict:
         """
         Public API
@@ -3540,7 +3540,7 @@ class Conduit(Cleanable):
             *,
             spell: Optional[Spell] = None,
             spell_id: Optional[str] = None,
-            conduit: Optional[Conduit] = None,
+            conduit: Optional["Conduit"] = None,
             conduit_id: Optional[str] = None,
             permissions: str = "create",
             aetheric_frame: str = "default",
@@ -3567,7 +3567,7 @@ class Conduit(Cleanable):
     def _remove_all_spells_from_contract(
             self,
             *,
-            conduit: Optional[Conduit] = None,
+            conduit: Optional["Conduit"] = None,
             conduit_id: Optional[str] = None,
             aetheric_frame: str = "default",
     ) -> bool | None:
@@ -3717,7 +3717,7 @@ class Conduit(Cleanable):
         return self._conduit_ward._get_spells_in_contract_by_conduit_name(conduit_name)
 
 
-    def get_contracted_conduits(self) -> list[Tuple[str, Conduit]] | None:
+    def get_contracted_conduits(self) -> list[Tuple[str, "Conduit"]] | None:
         """
         Public API
 
@@ -3850,10 +3850,10 @@ class Conduit(Cleanable):
     #region Hooks
     def _resolve_peer_conduit_for_contract_hooks(
             self,
-            conduit: Conduit | None,
+            conduit: "Conduit" | None,
             conduit_id: str | None,
             aetheric_frame: str,
-    ) -> Optional[Conduit]:
+    ) -> Optional["Conduit"]:
         """
         Internal
 
@@ -3898,7 +3898,7 @@ class Conduit(Cleanable):
             return None
 
 
-    def _fire_conduit_hooks(self, hook_name: str, *conduits: Conduit) -> None:
+    def _fire_conduit_hooks(self, hook_name: str, *conduits: "Conduit") -> None:
         """
         Internal
 
@@ -3948,12 +3948,3 @@ class Conduit(Cleanable):
 
 #endregion Hooks
 #endregion Conduit
-
-
-from melder.aether.conduit.conduit_ward import conduit_ward as _conduit_ward_module
-
-_conduit_ward_module.Conduit = Conduit
-
-
-
-

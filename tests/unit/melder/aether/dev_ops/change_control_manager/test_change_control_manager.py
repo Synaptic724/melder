@@ -24,7 +24,7 @@ CONDUIT_ID = "conduit-1"
 
 @pytest.fixture
 def mock_sss():
-    return MagicMock(spec=SpellSystemStates)
+    return MagicMock()
 
 @pytest.fixture
 def manager(mock_sss):

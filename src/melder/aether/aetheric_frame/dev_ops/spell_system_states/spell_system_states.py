@@ -11,16 +11,16 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
-from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
-    SpellLocalTopology,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
+    from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+        SpellLocalTopology,
+    )
 
 
 def _get_structural_risk_manager_callback(
@@ -87,7 +87,7 @@ class SpellSystemStates(Cleanable):
         "_risk_manager",
     ]
 
-    def __init__(self, frame: "AethericFrame") -> None:
+    def __init__(self, frame: AethericFrame) -> None:
         """
         Initialize the SpellSystemStates registry for a given AethericFrame.
 
@@ -101,13 +101,13 @@ class SpellSystemStates(Cleanable):
             raise ValueError("frame cannot be None")
 
         self._lock: threading.RLock = threading.RLock()
-        self._frame: Optional["AethericFrame"] = frame
+        self._frame: Optional[AethericFrame] = frame
 
         self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
         self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}
         self._dirty_indexes: Optional[Set[str]] = set()
         # Version-id keyed topologies captured during Phase 3.
-        self._local_topologies: Dict[str, 'SpellLocalTopology'] = {}
+        self._local_topologies: Dict[str, SpellLocalTopology] = {}
         # Per-conduit resolution state for Phases 5-7.
         self._resolution_by_conduit_id: Optional[Dict[str, ConduitResolutionState]] = {}
         # Spellbook-scoped indices for collection dependencies (list[Frame]).
@@ -1226,7 +1226,7 @@ class SpellSystemStates(Cleanable):
     def register_local_topology(
             self,
             spell_index: SpellIndex,
-            topology: 'SpellLocalTopology',
+            topology: SpellLocalTopology,
     ) -> None:
         """
         Register or replace the local constructor topology for the given spell.
@@ -1287,7 +1287,7 @@ class SpellSystemStates(Cleanable):
     def get_local_topology(
             self,
             spell_index: SpellIndex,
-    ) -> Optional['SpellLocalTopology']:
+    ) -> Optional[SpellLocalTopology]:
         """
         Return the local constructor topology for the given spell, if any.
 
@@ -1314,7 +1314,7 @@ class SpellSystemStates(Cleanable):
     def get_local_topology_by_id(
             self,
             spell_id: str,
-    ) -> Optional['SpellLocalTopology']:
+    ) -> Optional[SpellLocalTopology]:
         """
         Return the local constructor topology using a version-id key.
 
@@ -1336,7 +1336,7 @@ class SpellSystemStates(Cleanable):
 
     def _extract_collection_frame_keys(
             self,
-            topology: 'SpellLocalTopology',
+            topology: SpellLocalTopology,
     ) -> Set[str]:
         """
         Extract collection frame keys from a local topology.
@@ -1364,7 +1364,7 @@ class SpellSystemStates(Cleanable):
 
     def _extract_contract_keys(
             self,
-            topology: 'SpellLocalTopology',
+            topology: SpellLocalTopology,
     ) -> Set[Tuple[str, str]]:
         """
         Extract `SpellContract` keys from a local topology.

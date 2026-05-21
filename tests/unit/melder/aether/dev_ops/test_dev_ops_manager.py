@@ -32,7 +32,7 @@ def mock_dependencies():
 @pytest.fixture
 def mock_sss():
     """Returns a mock SpellSystemStates."""
-    return MagicMock(spec=SpellSystemStates)
+    return MagicMock()
 
 @pytest.fixture
 def manager(mock_dependencies, mock_sss):

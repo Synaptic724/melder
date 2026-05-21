@@ -1,11 +1,10 @@
-from typing import Collection, Dict, Optional, Set
-
+from typing import Collection, Dict, Optional, Set, TYPE_CHECKING
 from mypy_extensions import mypyc_attr
-
 # Melder imports
-from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
 
 @mypyc_attr(native_class=True)
 class SpellSystemAdjacencySnapshot(Cleanable):
@@ -40,7 +39,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
             reverse_dependencies: Dict[str, Set[str]],
             all_spell_ids: Collection[str],
             root_spell_ids: Set[str],
-            topologies: Optional[Dict[str, 'SpellLocalTopology']] = None,
+            topologies: Optional[Dict[str, SpellLocalTopology]] = None,
     ) -> None:
         """
         Initialize a frame-wide adjacency snapshot.
@@ -57,7 +56,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         self._all_spell_ids: Collection[str] = all_spell_ids
         self._root_spell_ids: Set[str] = root_spell_ids
         # SpellLocalTopology references (owned by SpellSystemStates).
-        self._topologies: Optional[Dict[str, 'SpellLocalTopology']] = topologies
+        self._topologies: Optional[Dict[str, SpellLocalTopology]] = topologies
 
 
     def cleanup(self) -> None:
@@ -131,7 +130,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         return self._root_spell_ids
 
     @property
-    def topologies(self) -> Dict[str, 'SpellLocalTopology']:
+    def topologies(self) -> dict[str, SpellLocalTopology] | None:
         """
         Snapshot of local constructor topologies keyed by spell_id.
 

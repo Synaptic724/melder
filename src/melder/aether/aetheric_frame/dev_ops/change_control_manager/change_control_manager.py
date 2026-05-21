@@ -31,10 +31,10 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
         RootResolutionBlueprint,
     )
@@ -45,8 +45,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
         ChangeControlTransactionRequest,
     )
-
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+    from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
 class ChangeControlManager(Cleanable):
