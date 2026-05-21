@@ -57,7 +57,7 @@ class SpellValidationContext(Cleanable):
     - Optional artifact cleanup is controlled by `cleanup_artifacts`; the
       caller decides whether the context owns those artifacts for teardown.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellbook",
@@ -67,6 +67,15 @@ class SpellValidationContext(Cleanable):
         "cancel_event",
         "issues",
         "_cleanup_artifacts",
+    ]
+    __deletable__ = [
+        "spell",
+        "spellbook",
+        "requirements",
+        "symbolic_graph",
+        "resolution_frame",
+        "cancel_event",
+        "issues",
     ]
 
     def __init__(

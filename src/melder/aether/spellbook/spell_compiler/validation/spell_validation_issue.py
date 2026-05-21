@@ -29,8 +29,15 @@ class SpellValidationIssue(Cleanable):
     details:
         Optional extra context for tooling (parameter name, cycle, etc.).
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "severity",
+        "code",
+        "message",
+        "source",
+        "details",
+    ]
+    __deletable__ = [
         "severity",
         "code",
         "message",

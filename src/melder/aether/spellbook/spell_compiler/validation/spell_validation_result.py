@@ -20,12 +20,12 @@ class SpellValidationResult(Cleanable):
     spell_name:
         Human-readable spell name (usually the underlying callable's __name__).
     issues:
-        All issues (errors + warnings) discovered by the validation strategies.
+        All issues (errors + warnings) are discovered by the validation strategies.
     errors:
-        Read-only filtered view of ``issues`` containing only error-severity
+        Read-only filtered view of "issues" containing only error-severity
         entries.
     warnings:
-        Read-only filtered view of ``issues`` containing only warning-severity
+        Read-only filtered view of "issues" containing only warning-severity
         entries.
 
     Contract:
@@ -34,12 +34,17 @@ class SpellValidationResult(Cleanable):
     - Preserves both error and warning issues in one ordered list.
     - Exposes filtered `errors` and `warnings` views derived from the canonical
       issue list so downstream code can consume split severities without
-      duplicating stored state.
+      duplicating the stored state.
     - Convenience properties expose whether any error/warning class is present
       without forcing callers to rescan the issue list manually.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "spell_id",
+        "spell_name",
+        "issues",
+    ]
+    __deletable__ = [
         "spell_id",
         "spell_name",
         "issues",
@@ -134,7 +139,7 @@ class SpellValidationResult(Cleanable):
         Deterministically tear down this result and its issues.
 
         This:
-        - Calls ``cleanup()`` on each issue that supports it.
+        - Calls "cleanup()" on each issue that supports it.
         - Clears the issues list.
         """
         if self._cleaned:

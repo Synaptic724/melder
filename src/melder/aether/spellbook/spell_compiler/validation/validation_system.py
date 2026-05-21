@@ -76,8 +76,12 @@ class SpellValidationSystem(Cleanable):
     and cleaned up afterwards. Strategies are owned by the system and are
     also cleaned when the system is cleaned.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_strategies",
+    ]
+    __deletable__ = [
         "_lock",
         "_strategies",
     ]

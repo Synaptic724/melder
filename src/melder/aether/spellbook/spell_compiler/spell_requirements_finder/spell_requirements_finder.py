@@ -27,16 +27,15 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
 class SpellRequirementsFinder(Cleanable):
     """
-    Build the Phase 1 requirement artifact for one bound :class:`Spell`.
+    Build the Phase 1 requirement artifact for one bound: class: 'Spell`.
 
     This finder is the boundary between raw Python callable inspection and the
     later SpellCrafter phases that plan or resolve dependencies. Its job is to
     examine the spell's callable surface, decide which parameters look like DI
-    sockets, and emit a :class:`SpellRequirements` artifact that downstream
+    sockets, and emit a: class:`SpellRequirements` artifact that downstream
     planning code can trust without re-inspecting the original callable.
 
     In practical terms, this object answers four questions for one spell:
@@ -58,21 +57,25 @@ class SpellRequirementsFinder(Cleanable):
     Lifecycle
     ---------
     * Constructed for one spell and typically used for one Phase 1 pass.
-    * :meth:`build_requirements` caches the resulting
-      :class:`SpellRequirements` object for repeat callers.
+    *: meth:`build_requirements 'caches the resulting: class:`SpellRequirements` object for repeat callers.
     * After cleanup, the finder is unusable and releases both the spell
       reference and any cached requirements artifact.
 
     Identity model
     --------------
     The emitted :class:`SpellRequirements` is keyed by
-    ``spell.spell_index.current``. That versioned spell identifier is the
+    "spell.spell_index.current". That versioned spell identifier is the
     canonical Phase 1 identity used by later planning artifacts, so this finder
     intentionally anchors its output to the current spell version rather than
     any legacy unversioned spell id.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_spell",
+        "_requirements",
+        "_lock",
+    ]
+    __deletable__ = [
         "_spell",
         "_requirements",
         "_lock",
@@ -93,11 +96,11 @@ class SpellRequirementsFinder(Cleanable):
 
     def __init__(self, spell: Spell) -> None:
         """
-        Initialize a new requirements finder for the given :class:`Spell`.
+        Initialize a new requirements finder for the given: class: 'Spell`.
 
         Args:
             spell:
-                The :class:`Spell` whose call target should be analysed. The Spell is
+                The :class: 'Spell` whose call target should be analyzed. The Spell is
                 treated as read-only; this finder never mutates the Spell.
         """
         Cleanable.__init__(self)
@@ -117,12 +120,12 @@ class SpellRequirementsFinder(Cleanable):
         """
         Deterministically tear down this finder.
 
-        Behavior:
+        Behaviour:
             * Idempotent - safe to call multiple times.
-            * If a :class:`SpellRequirements` instance is attached, it is cleaned up.
-            * Internal references to the :class:`Spell` and requirements are nulled.
+            * If a: class:`SpellRequirements` instance is attached, it is cleaned up.
+            * Internal references to the: class: 'Spell` and requirements are nulled.
 
-        This is intended to help GC and clearly signal that the finder is no longer
+        This is intended to help GC and clearly signals that the finder is no longer
         usable after a resolution cycle.
         """
         if self._cleaned:
@@ -150,7 +153,7 @@ class SpellRequirementsFinder(Cleanable):
     @property
     def spell(self) -> Spell:
         """
-        The underlying :class:`Spell` being analysed.
+        The underlying: class: 'Spell` being analyzed.
 
         Returns:
             Spell: The spell instance this finder was constructed with.
@@ -171,7 +174,7 @@ class SpellRequirementsFinder(Cleanable):
 
         This is the public entrypoint for the finder. On the first call it
         chooses the spell's inspection target, classifies the visible
-        parameters, and builds a :class:`SpellRequirements` object that later
+        parameters, and builds a: class:`SpellRequirements` object that later
         phases can consume without touching the original callable again. On
         later calls it returns the cached artifact.
 
@@ -180,8 +183,8 @@ class SpellRequirementsFinder(Cleanable):
             * Preserves signature order in the emitted parameter list.
             * Copies spell identity, spell type, existence mode, spellframe, and
               binding name into the result.
-            * Uses ``spell.spell_index.current`` as the result's canonical
-              ``spell_id``.
+            * Uses "spell.spell_index.current" as the result's canonical
+              "spell_id".
 
         Special case:
             Existing-creation spell variants intentionally yield an empty
@@ -190,8 +193,8 @@ class SpellRequirementsFinder(Cleanable):
             constructor requirements that no longer participate in DI.
 
         Cancellation:
-            If ``cancel_event`` is provided and becomes set during processing,
-            this method delegates to ``cancel_event.throw_if_set()`` and aborts
+            If "cancel_event" is provided and becomes set during processing,
+            this method delegates to "cancel_event.throw_if_set()" and aborts
             without finishing a new artifact.
 
         Returns:
@@ -262,7 +265,7 @@ class SpellRequirementsFinder(Cleanable):
 
         Raises:
             OperationCancelledError:
-                If ``cancel_event`` is provided and set.
+                If "cancel_event" is provided and set.
         """
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
@@ -275,17 +278,17 @@ class SpellRequirementsFinder(Cleanable):
         -----
         * Class spells
             -> The class object itself (``inspect.signature`` handles mapping to
-              ``__init__`` internally).
+              "__init__" internally).
         * Method / lambda spells
-            -> The underlying callable stored on ``spell.spell``.
+            -> The underlying callable stored on "spell.spell".
         * Everything else
-            -> Still returns ``spell.spell``; later phases can decide how to treat it.
+            -> Still returns "spell.spell"; later phases can decide how to treat it.
 
         This method does **not** call or mutate the target.
 
         Args:
             spell:
-                The owning :class:`Spell`.
+                The owning: class: 'Spell`.
 
         Returns:
             Any: The object to use as the call target for signature introspection.
@@ -387,9 +390,9 @@ class SpellRequirementsFinder(Cleanable):
         objects when possible so the classifier can make truthful DI decisions.
 
         Resolution strategy:
-            * For class targets, inspect ``__init__`` annotations because that
+            * For class targets, inspect "__init__" annotations because that
               is the callable surface DI will satisfy.
-            * Prefer ``inspect.get_annotations(..., eval_str=True)`` so string
+            * Prefer "inspect.get_annotations(..., eval_str=True)" so string
               annotations and forward refs resolve through the target's module
               and local namespace.
             * Fall back to non-evaluated annotations when full evaluation fails.
@@ -410,7 +413,7 @@ class SpellRequirementsFinder(Cleanable):
 
         Returns:
             Dict[str, Any]:
-                Mapping of parameter name to the best normalized annotation value
+                Mapping of a parameter name to the best normalized annotation value
                 Phase 1 could derive for that parameter.
         """
         if call_target is None:
@@ -544,7 +547,7 @@ class SpellRequirementsFinder(Cleanable):
 
         Returns:
             Optional[Any]:
-                The resolved object if found, otherwise ``None``.
+                The resolved object if found, otherwise "None".
         """
         if name in localns:
             return localns[name]
@@ -585,7 +588,7 @@ class SpellRequirementsFinder(Cleanable):
         This supports a safe subset of expression forms:
             - Name and attribute references (``Foo``, ``typing.List``).
             - Subscripted generics (``list[Foo]``, ``Optional[Foo]``).
-            - Union via ``|`` (``Foo | None``).
+            - Union via "|" (``Foo | None``).
 
         Args:
             text:
@@ -795,8 +798,8 @@ class SpellRequirementsFinder(Cleanable):
 
         This resolves:
             - String tokens that map to known globals/locals.
-            - ``typing.ForwardRef`` objects to their underlying names or types.
-            - Nested generic arguments where possible (e.g. list["Foo"]).
+            - "typing.ForwardRef" objects to their underlying names or types.
+            - Nested generic arguments where possible (e.g. list[ "Foo"]).
 
         Args:
             annotation:
@@ -883,7 +886,7 @@ class SpellRequirementsFinder(Cleanable):
             annotation:
                 The original annotation object.
             origin:
-                The origin type from :func:`typing.get_origin`.
+                The origin type from: func:`typing.get_origin`.
             args:
                 Normalized argument tuple.
 
@@ -926,8 +929,7 @@ class SpellRequirementsFinder(Cleanable):
         Convert the inspected callable signature into ordered requirement records.
 
         This is the core Phase 1 transformation for a normal spell. It walks the
-        chosen call target once, preserves Python signature order, and emits one
-        :class:`SpellParameterRequirement` per visible parameter so later phases
+        chosen call target once, preserves Python signature order, and emits one: class:`SpellParameterRequirement` per visible parameter so later phases
         can reason about sockets without re-inspecting the callable.
 
         The emitted records intentionally preserve both Python-level facts and
@@ -938,11 +940,11 @@ class SpellRequirementsFinder(Cleanable):
             * Melder-level facts: whether the parameter is optional for DI,
               whether it should be ignored by DI, whether it requests a single
               dependency, a collection, or an explicit contract object, and any
-              carried ``SpellMap`` default.
+              carried "SpellMap" default.
 
-        Non-DI boilerplate parameters such as ``self``, ``cls``, ``*args``, and
-        ``**kwargs`` still produce requirement rows, but they are explicitly
-        marked with :data:`ParameterDIShape.IGNORE` so later phases can keep the
+        Non-DI boilerplate parameters such as "self", "cls", "*args", and
+        "**kwargs" still produce requirement rows, but they are explicitly
+        marked with: data:`ParameterDIShape.IGNORE` so later phases can keep the
         original callable shape without trying to satisfy those parameters from
         DI.
 
@@ -993,7 +995,7 @@ class SpellRequirementsFinder(Cleanable):
             # Non-DI shapes and boilerplate parameters.
             if param_name in ("self", "cls") or is_var_positional or is_var_keyword:
                 di_shape = ParameterDIShape.IGNORE
-                is_optional = True  # These are never satisfied by DI.
+                is_optional = True  # DI never satisfies these.
                 collection_element_annotation = None
                 spellmap_default = None
             else:
@@ -1048,25 +1050,21 @@ class SpellRequirementsFinder(Cleanable):
         annotation-based inference.
 
         Precedence order:
-            1. ``MutationContract`` defaults win first because they describe a
+            1. "MutationContract" defaults win first because they describe a
                dedicated mutation socket rather than a normal dependency.
-            2. ``SpellContract`` defaults win next for the same reason: the
+            2. "SpellContract" defaults win next for the same reason: the
                parameter is explicitly asking for a spell contract object.
-            3. ``SpellMap`` defaults win over annotations because an explicit
+            3. "SpellMap" defaults win over annotations because an explicit
                map is a stronger statement than an inferred type-based lookup.
-            4. Missing annotations fall back to
-               :data:`ParameterDIShape.PLAIN`.
+            4. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
             5. Optional wrappers are removed only far enough to inspect the
                underlying dependency shape.
-            6. ``list[T]`` becomes
-               :data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when ``T``
+            6. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
                looks like a DI candidate.
-            7. A remaining DI-eligible annotation becomes
-               :data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-            8. Everything else stays
-               :data:`ParameterDIShape.PLAIN`.
+            7. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            8. Everything else stays: data:`ParameterDIShape.PLAIN`.
 
-        The returned ``is_optional`` flag answers a Melder-specific question:
+        The returned "is_optional" flag answers a Melder-specific question:
         can Phase 1 treat failure to supply this dependency as acceptable
         because the signature or explicit default already provides a fallback?
 
@@ -1084,8 +1082,8 @@ class SpellRequirementsFinder(Cleanable):
 
         Returns:
             tuple:
-                ``(di_shape, is_optional, collection_element_annotation,
-                spellmap_default)`` where the extra values carry the additional
+                "(di_shape, is_optional, collection_element_annotation,
+                spellmap_default)" where the extra values carry the additional
                 metadata later phases need for collection resolution or explicit
                 SpellMap fallback handling.
         """
@@ -1166,23 +1164,23 @@ class SpellRequirementsFinder(Cleanable):
             args: Tuple[Any, ...],
     ) -> Tuple[Any, bool, Any, Tuple[Any, ...]]:
         """
-        Strip the ``None`` wrapper from optional annotations for classification.
+        Strip the "None" wrapper from optional annotations for classification.
 
         Phase 1 cares about two separate facts:
 
             * whether the parameter is optional for DI purposes
-            * what the underlying dependency shape looks like once ``None`` is
+            * what the underlying dependency shape looks like once "None" is
               removed from the type expression
 
         This helper splits those concerns. For simple optional shapes it returns
-        the inner dependency annotation plus ``is_optional=True``. For broader
-        multi-type unions it still records the parameter as optional, but keeps
+        the inner dependency annotation plus "is_optional=True". For broader
+        multi-type unions it still records the parameter as optional but keeps
         the original union intact so the classifier does not pretend it can
         fully understand or simplify the remaining alternatives.
 
         Returns:
             Tuple[Any, bool, Any, Tuple[Any, ...]]:
-                ``(base_annotation, is_optional, base_origin, base_args)`` for
+                "(base_annotation, is_optional, base_origin, base_args)" for
                 the classifier's next stage.
         """
         base_annotation = annotation
@@ -1221,14 +1219,14 @@ class SpellRequirementsFinder(Cleanable):
         """
         Apply a conservative heuristic for "does this annotation look injectable?"
 
-        This is intentionally a Phase 1 heuristic, not a full resolution engine.
+        This is intentionally a Phase 1 heuristic, not a full-resolution engine.
         The method leans conservative for builtin scalar values and permissive
         for user-defined interfaces or classes because later phases can still
         reject an unsatisfied dependency, but a false negative here would erase
         a socket from the requirements artifact entirely.
 
         Current policy:
-            * ``typing.Any`` and builtin scalar or object shapes are not treated
+            * "typing.Any" and builtin scalar or object shapes are not treated
               as DI targets.
             * Forward refs and unresolved strings remain eligible because the
               annotation-normalization step may resolve them into user types.

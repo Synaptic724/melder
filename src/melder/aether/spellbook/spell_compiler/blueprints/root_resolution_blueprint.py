@@ -1,21 +1,15 @@
 import threading
-from typing import TYPE_CHECKING, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from mypy_extensions import mypyc_attr
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex
+from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
+    DirectedAcyclicWorkGraph,
+)
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.dag.dag_index import (
-        PathRegistry,
-        SocketRef,
-    )
-    from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
-        DirectedAcyclicWorkGraph,
-    )
 @mypyc_attr(native_class=True)
 class RootResolutionBlueprint(Cleanable):
     """

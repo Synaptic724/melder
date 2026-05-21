@@ -21,8 +21,12 @@ class SpellValidationStrategy(Cleanable):
     * Prefer appending issues instead of raising; raising is reserved for
       truly unrecoverable situations.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_name",
+        "_description",
+    ]
+    __deletable__ = [
         "_name",
         "_description",
     ]
