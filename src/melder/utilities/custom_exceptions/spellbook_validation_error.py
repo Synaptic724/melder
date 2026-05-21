@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING, Any, Optional
 
+from mypy_extensions import mypyc_attr
+
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
-
+@mypyc_attr(native_class=False)
 class SpellbookValidationError(RuntimeError):
     """
     Raised when the Spellbook resolution pipeline (requirements -> symbolic

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from mypy_extensions import mypyc_attr
-
+@mypyc_attr(native_class=False)
 class MeldExecutionError(RuntimeError):
     """
     Raised when DAG-based meld execution fails inside the Meld runtime.
