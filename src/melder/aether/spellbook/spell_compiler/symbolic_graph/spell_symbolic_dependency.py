@@ -68,8 +68,21 @@ class SpellSymbolicDependency(Cleanable):
         For MUTATION_CONTRACT shapes, whether the contract declares
         late binding semantics. For all other shapes, this is None.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_id",
+        "_param_name",
+        "_position",
+        "_di_shape",
+        "_is_optional",
+        "_target_annotation",
+        "_is_collection",
+        "_spellmap_default",
+        "_contract_key",
+        "_contract_late_binding",
+    ]
+    __deletable__ = [
         "_lock",
         "_spell_id",
         "_param_name",

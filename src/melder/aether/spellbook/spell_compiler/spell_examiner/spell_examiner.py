@@ -39,8 +39,12 @@ class SpellExaminer(Cleanable):
         idempotent, clears the registry, and leaves the object unusable.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_profile_builders_by_name",
+    ]
+    __deletable__ = [
         "_id",
         "_profile_builders_by_name",
     ]

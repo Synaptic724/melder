@@ -26,7 +26,7 @@ class SpellSystemAdjacencyBuilder:
     All higher-level semantics (RootResolutionBlueprints, Phase 6
     validation, etc.) sit on top of this structural view.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = []
 
     @staticmethod

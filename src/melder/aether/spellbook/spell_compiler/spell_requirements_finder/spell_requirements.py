@@ -36,9 +36,17 @@ class SpellRequirements(Cleanable):
 
     Those concerns are reserved for later phases.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
+        "_spell_id",
+        "_spell_type",
+        "_existence",
+        "_spellframe",
+        "_binding_name",
+        "_parameters",
+    ]
+    __deletable__ = [
         "_spell_id",
         "_spell_type",
         "_existence",

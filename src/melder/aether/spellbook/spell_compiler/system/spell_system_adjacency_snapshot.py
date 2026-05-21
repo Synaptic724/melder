@@ -24,8 +24,15 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     * This view holds live references to SpellSystemStates data and does not
       copy or own the underlying collections.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_dependencies",
+        "_reverse_dependencies",
+        "_all_spell_ids",
+        "_root_spell_ids",
+        "_topologies",
+    ]
+    __deletable__ = [
         "_dependencies",
         "_reverse_dependencies",
         "_all_spell_ids",

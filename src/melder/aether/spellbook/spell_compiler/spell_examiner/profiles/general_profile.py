@@ -45,8 +45,14 @@ class SpellGeneralProfile(Cleanable):
         spell-owned `.profile` payload.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "profile_name",
+        "profile_version",
+        "binding_profile",
+        "resolution_profile",
+    ]
+    __deletable__ = [
         "profile_name",
         "profile_version",
         "binding_profile",

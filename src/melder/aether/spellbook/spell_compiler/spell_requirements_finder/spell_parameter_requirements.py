@@ -33,9 +33,24 @@ class SpellParameterRequirement(Cleanable):
         * How DI *might* satisfy it (via type-hint, SpellMap, collection).
         * Optionality and element type info for collections.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
+        "_name",
+        "_position",
+        "_kind",
+        "_annotation",
+        "_default_value",
+        "_has_default",
+        "_is_var_positional",
+        "_is_var_keyword",
+        "_is_keyword_only",
+        "_is_optional",
+        "_di_shape",
+        "_collection_element_annotation",
+        "_spellmap_default",
+    ]
+    __deletable__ = [
         "_name",
         "_position",
         "_kind",

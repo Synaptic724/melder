@@ -30,8 +30,9 @@ class SpellBindingProfile(Cleanable):
         - Leaves subtype-specific detail fields to concrete binding-profile
           variants.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["kind", "original_object"]
+    __deletable__ = ["kind", "original_object"]
 
     def __init__(self, kind: SpellBindingKind, original_object: Any) -> None:
         """
@@ -73,8 +74,22 @@ class ClassBindingProfile(SpellBindingProfile):
     Enough to fingerprint, reason about protocol compatibility, and produce diagnostics.
     Very shallow per-method view (names only), no deep inspection.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
+        "name",
+        "qualname",
+        "module",
+        "bases",
+        "mro",
+        "annotations",
+        "origin_file",
+        "origin_line",
+        "source_preview",
+        "is_dataclass",
+        "decorated",
+        "method_names",
+    ]
+    __deletable__ = [
         "name",
         "qualname",
         "module",
@@ -191,7 +206,7 @@ class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = ["name", "kind", "default_repr", "annotation_repr"]
 
     def __init__(
@@ -233,8 +248,22 @@ class CallableBindingProfile(SpellBindingProfile):
         - Avoids deeper runtime-resolution detail, which belongs to later
           profile phases.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
+        "name",
+        "qualname",
+        "module",
+        "object_id",
+        "type_name",
+        "repr_string",
+        "signature",
+        "parameters",
+        "builtin_module",
+        "extension_module",
+        "lambda_function",
+        "abstract",
+    ]
+    __deletable__ = [
         "name",
         "qualname",
         "module",
@@ -349,8 +378,13 @@ class InstanceBindingProfile(SpellBindingProfile):
     """
     Binding-time view of an existing object instance bound as an EXISTING_CREATION spell.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
+        "type_name",
+        "module",
+        "repr_string",
+    ]
+    __deletable__ = [
         "type_name",
         "module",
         "repr_string",
@@ -413,8 +447,13 @@ class OtherBindingProfile(SpellBindingProfile):
         Stores only the minimum detached identity/representation surface for
         otherwise unsupported candidate types.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = SpellBindingProfile.__slots__ + [
+        "type_name",
+        "module",
+        "repr_string",
+    ]
+    __deletable__ = [
         "type_name",
         "module",
         "repr_string",

@@ -54,8 +54,18 @@ class SpellDetailedProfile(SpellGeneralProfile):
         adds the richer inspector payloads.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = SpellGeneralProfile.__slots__ + [
+        "_show_dunders",
+        "_max_repr",
+        "_detail_complete",
+        "class_profile",
+        "callable_profile",
+        "metadata",
+        "instance_members",
+        "dynamic_access",
+    ]
+    __deletable__ = [
         "_show_dunders",
         "_max_repr",
         "_detail_complete",

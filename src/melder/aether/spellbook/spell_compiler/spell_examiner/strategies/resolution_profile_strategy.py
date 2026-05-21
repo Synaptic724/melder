@@ -20,7 +20,7 @@ class ResolutionProfileStrategy:
     This is where we hook into SpellRequirementsFinder and, later, into
     symbolic graph / frame / validation phases.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     def __init__(self) -> None:
