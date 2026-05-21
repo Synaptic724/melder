@@ -207,6 +207,69 @@ def test_errors_property_filters_only_error_issues() -> None:
     assert errors is not result.issues
 
 
+def test_errors_property_empty_when_no_issues() -> None:
+    """
+    Purpose:
+        Ensure the split error view is empty when no issues exist.
+    Contract:
+        errors returns an empty detached list for an empty result.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the error view is not empty.
+    """
+    result = SpellValidationResult(spell_id="id", spell_name="name")
+
+    errors = result.errors
+
+    assert errors == []
+    assert errors is not result.issues
+
+
+def test_errors_property_empty_when_only_warnings_exist() -> None:
+    """
+    Purpose:
+        Ensure the split error view ignores warning-only issue sets.
+    Contract:
+        errors returns an empty list when every issue is a warning.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If warnings leak into the error view.
+    """
+    issues = [
+        SpellValidationIssue("warning", "W1", "warn-1"),
+        SpellValidationIssue("warning", "W2", "warn-2"),
+    ]
+    result = SpellValidationResult(spell_id="id", spell_name="name", issues=issues)
+
+    assert result.errors == []
+
+
+def test_errors_property_preserves_issue_order() -> None:
+    """
+    Purpose:
+        Ensure the split error view preserves canonical issue ordering.
+    Contract:
+        errors preserves the left-to-right order of error-severity issues from
+        the canonical issues list.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ordering changes.
+    """
+    error_one = SpellValidationIssue("error", "E1", "err-1")
+    warning = SpellValidationIssue("warning", "W1", "warn-1")
+    error_two = SpellValidationIssue("error", "E2", "err-2")
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[error_one, warning, error_two],
+    )
+
+    assert result.errors == [error_one, error_two]
+
+
 def test_warnings_property_filters_only_warning_issues() -> None:
     """
     Purpose:
@@ -233,6 +296,86 @@ def test_warnings_property_filters_only_warning_issues() -> None:
     assert warnings is not result.issues
 
 
+def test_warnings_property_empty_when_no_issues() -> None:
+    """
+    Purpose:
+        Ensure the split warning view is empty when no issues exist.
+    Contract:
+        warnings returns an empty detached list for an empty result.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the warning view is not empty.
+    """
+    result = SpellValidationResult(spell_id="id", spell_name="name")
+
+    warnings = result.warnings
+
+    assert warnings == []
+    assert warnings is not result.issues
+
+
+def test_warnings_property_empty_when_only_errors_exist() -> None:
+    """
+    Purpose:
+        Ensure the split warning view ignores error-only issue sets.
+    Contract:
+        warnings returns an empty list when every issue is an error.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If errors leak into the warning view.
+    """
+    issues = [
+        SpellValidationIssue("error", "E1", "err-1"),
+        SpellValidationIssue("error", "E2", "err-2"),
+    ]
+    result = SpellValidationResult(spell_id="id", spell_name="name", issues=issues)
+
+    assert result.warnings == []
+
+
+def test_warnings_property_preserves_issue_order() -> None:
+    """
+    Purpose:
+        Ensure the split warning view preserves canonical issue ordering.
+    Contract:
+        warnings preserves the left-to-right order of warning-severity issues
+        from the canonical issues list.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ordering changes.
+    """
+    warning_one = SpellValidationIssue("warning", "W1", "warn-1")
+    error = SpellValidationIssue("error", "E1", "err-1")
+    warning_two = SpellValidationIssue("warning", "W2", "warn-2")
+    result = SpellValidationResult(
+        spell_id="id",
+        spell_name="name",
+        issues=[warning_one, error, warning_two],
+    )
+
+    assert result.warnings == [warning_one, warning_two]
+
+
+def test_has_errors_false_for_warning_only_issue_set() -> None:
+    """
+    Purpose:
+        Ensure has_errors stays false when only warnings exist.
+    Contract:
+        has_errors reflects the filtered error view, not overall issue count.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If warnings trip the error flag.
+    """
+    issues = [SpellValidationIssue("warning", "W", "warn")]
+    result = SpellValidationResult(spell_id="id", spell_name="name", issues=issues)
+
+    assert result.has_errors is False
+
+
 def test_has_warnings_false_when_no_warnings() -> None:
     """
     Purpose:
@@ -247,6 +390,46 @@ def test_has_warnings_false_when_no_warnings() -> None:
     issues = [SpellValidationIssue("error", "E", "err")]
     result = SpellValidationResult(spell_id="id", spell_name="name", issues=issues)
     assert result.has_warnings is False
+
+
+def test_has_errors_and_has_warnings_false_when_empty() -> None:
+    """
+    Purpose:
+        Ensure both summary flags are false for an empty issue list.
+    Contract:
+        Empty validation results report neither errors nor warnings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If either flag is unexpectedly true.
+    """
+    result = SpellValidationResult(spell_id="id", spell_name="name")
+
+    assert result.has_errors is False
+    assert result.has_warnings is False
+
+
+def test_errors_and_warnings_reflect_late_issue_mutation() -> None:
+    """
+    Purpose:
+        Ensure split severity views reflect later mutation of the canonical list.
+    Contract:
+        Because errors and warnings are derived views, appending to issues after
+        construction changes both filtered views and summary flags.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If derived views go stale.
+    """
+    issues = [SpellValidationIssue("warning", "W1", "warn-1")]
+    result = SpellValidationResult(spell_id="id", spell_name="name", issues=issues)
+
+    issues.append(SpellValidationIssue("error", "E1", "err-1"))
+
+    assert [issue.code for issue in result.warnings] == ["W1"]
+    assert [issue.code for issue in result.errors] == ["E1"]
+    assert result.has_errors is True
+    assert result.has_warnings is True
 
 
 def test_cleanup_clears_issues_and_marks_cleaned() -> None:

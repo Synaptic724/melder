@@ -6,14 +6,23 @@ if TYPE_CHECKING:
     )
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
+        SpellSystemState,
+    )
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
-)
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
     SpellSystemAdjacencyBuilder,
@@ -33,13 +42,6 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_b
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
 )
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
-        RootResolutionBlueprint,
-    )
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 @mypyc_attr(native_class=True)

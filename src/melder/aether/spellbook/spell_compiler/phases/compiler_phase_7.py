@@ -4,15 +4,17 @@ from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_5 import (
     CompilerPhase5,
 )
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
         RootResolutionBlueprint,
     )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 @mypyc_attr(native_class=True)
 class CompilerPhase7:

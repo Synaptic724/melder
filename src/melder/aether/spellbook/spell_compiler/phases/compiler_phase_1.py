@@ -2,19 +2,21 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 @mypyc_attr(native_class=True)

@@ -6,6 +6,18 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, U
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
@@ -14,9 +26,6 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 )
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
-)
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
@@ -40,13 +49,6 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
-        SpellRequirements,
-    )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 @mypyc_attr(native_class=True)
@@ -557,7 +559,7 @@ class CompilerPhase3:
             spell: Spell,
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
-            requirements: "SpellRequirements",
+            requirements: SpellRequirements,
             graph: SpellSymbolicGraph,
             cancellation_event: Optional[CancellationEvent],
             *,

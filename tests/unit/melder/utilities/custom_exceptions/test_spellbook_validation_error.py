@@ -210,6 +210,86 @@ def test_spellbook_validation_error_accepts_live_phase4_result() -> None:
     assert "LiveStrategy" in message
 
 
+def test_spellbook_validation_error_accepts_live_phase4_warning_view() -> None:
+    """
+    Purpose:
+        Verify the exception renderer accepts a live Phase 4 result whose only
+        issue is a warning.
+    Contract:
+        A real SpellValidationResult warning is rendered without needing a
+        separate stub shape.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the warning content is missing.
+    """
+    issue = SpellValidationIssue(
+        severity="warning",
+        code="LIVE_PHASE4_WARNING",
+        message="Live phase4 warning.",
+        source="LiveWarningStrategy",
+    )
+    phase4_result = SpellValidationResult(
+        spell_id="spell-1",
+        spell_name="RootSpell",
+        issues=[issue],
+    )
+    spell = SimpleNamespace(
+        spell_name="RootSpell",
+        spell_id="spell-1",
+        spellframe="frame-1",
+        validation_result_phase4=phase4_result,
+        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
+    )
+
+    message = str(SpellbookValidationError([cast("Spell", spell)]))
+
+    assert "LIVE_PHASE4_WARNING" in message
+    assert "LiveWarningStrategy" in message
+
+
+def test_spellbook_validation_error_lists_multiple_live_phase4_issues_in_order() -> None:
+    """
+    Purpose:
+        Ensure the renderer preserves the live Phase 4 issue ordering.
+    Contract:
+        Multiple issues from a real SpellValidationResult are rendered in the
+        same order they appear in the canonical issues list.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ordering changes.
+    """
+    first_issue = SpellValidationIssue(
+        severity="warning",
+        code="FIRST_WARNING",
+        message="First warning.",
+        source="WarnStrategy",
+    )
+    second_issue = SpellValidationIssue(
+        severity="error",
+        code="SECOND_ERROR",
+        message="Second error.",
+        source="ErrorStrategy",
+    )
+    phase4_result = SpellValidationResult(
+        spell_id="spell-1",
+        spell_name="RootSpell",
+        issues=[first_issue, second_issue],
+    )
+    spell = SimpleNamespace(
+        spell_name="RootSpell",
+        spell_id="spell-1",
+        spellframe="frame-1",
+        validation_result_phase4=phase4_result,
+        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
+    )
+
+    message = str(SpellbookValidationError([cast("Spell", spell)]))
+
+    assert message.index("FIRST_WARNING") < message.index("SECOND_ERROR")
+
+
 def test_spellbook_validation_error_message_example_without_diagnostics() -> None:
     """
     Purpose:

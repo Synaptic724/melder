@@ -18,17 +18,21 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
     from melder.aether.spellbook.spell_compiler.validation.validation_system import (
         SpellValidationSystem,
     )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 
 @mypyc_attr(native_class=True)
@@ -53,7 +57,7 @@ class CompilerPhase4:
             self,
             spell: Spell,
             artifact: SpellCompilerArtifact,
-            spell_validator: "SpellValidationSystem",
+            spell_validator: SpellValidationSystem,
             spell_system_states: Optional[SpellSystemStates],
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
