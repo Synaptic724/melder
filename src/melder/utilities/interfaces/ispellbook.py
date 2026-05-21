@@ -10,7 +10,6 @@ from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFra
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
@@ -62,7 +61,8 @@ class ISpellbook(ICleanable, Protocol):
     _logger: ISafeLogger
     _spell_id_pool: Dict[str, ISpell]
     _spellbook_validation_required: bool
-    _spell_validator: ""SpellValidationSystem""    _nexus: Any
+    _spell_validator: SpellValidationSystem
+    _nexus: Any
     _active_change_request: Optional[ChangeControlTransactionRequest]
 
     _spell_system_states: "ISpellSystemStates"
