@@ -3,7 +3,19 @@ import inspect
 import re
 import threading
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args, get_origin
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    get_args,
+    get_origin,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -42,12 +54,13 @@ class ProtocolCrafter(Cleanable):
         Cleanup is idempotent and only releases the crafter's local state.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __deletable__: ClassVar[list[str]] = ["_id", "_lock"]
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
     ]
-    _TYPING_FAMILY_NAMES = {
+    _TYPING_FAMILY_NAMES: ClassVar[set[str]] = {
         "Any",
         "Optional",
         "Union",
@@ -65,7 +78,7 @@ class ProtocolCrafter(Cleanable):
         "Type",
         "ClassVar",
     }
-    _PROTOCOL_MODULE_IMPORT_NAMES = (
+    _PROTOCOL_MODULE_IMPORT_NAMES: ClassVar[tuple[str, ...]] = (
         "Any",
         "Callable",
         "ClassVar",

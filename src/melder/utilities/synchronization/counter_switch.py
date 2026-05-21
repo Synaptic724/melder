@@ -1,6 +1,6 @@
 import threading
 from collections import deque
-from typing import Deque, Optional
+from typing import Deque, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 from mypy_extensions import mypyc_attr
@@ -36,7 +36,7 @@ class CounterSwitch(Cleanable):
     """
 
     __slots__ = ("_lock", "_event", "_tickets")
-
+    __deletable__: ClassVar[list[str]] = ["_lock", "_event", "_tickets"]
     def __init__(self, state: int = 2) -> None:
         """
         Public API

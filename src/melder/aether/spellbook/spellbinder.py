@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Any, Optional, Callable
+from typing import TYPE_CHECKING, Any, Optional, Callable, ClassVar
 from mypy_extensions import mypyc_attr
 
 if TYPE_CHECKING:
@@ -41,8 +41,8 @@ class SpellBinder(Cleanable):
     - `cleanup()` is idempotent but permanently invalidates the binder for further use.
 
     """
-    __melder_internal__ = _mrg.sentinel
-    __slots__ = (
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
         "_weak_spellbook",
         "_lock",
         "_default_existence",
@@ -55,7 +55,21 @@ class SpellBinder(Cleanable):
         "_spellframe",
         "_binding_name",
         "_kwargs",
-    )
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_weak_spellbook",
+        "_lock",
+        "_default_existence",
+        "_default_permissions",
+        "_default_profile",
+        "_spell",
+        "_existence",
+        "_permissions",
+        "_profile",
+        "_spellframe",
+        "_binding_name",
+        "_kwargs",
+    ]
 
     def __init__(
             self,

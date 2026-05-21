@@ -8,7 +8,6 @@ from melder.nexus.rift.codegen_system.validation.codegen_validation_result impor
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
-from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenAstStructureStrategy(Cleanable):

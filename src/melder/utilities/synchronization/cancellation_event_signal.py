@@ -1,4 +1,5 @@
 import threading
+from typing import ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -39,7 +40,8 @@ class CancellationEvent(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + ["_flag",]
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __deletable__: ClassVar[list[str]] = ["_flag",]
 
     def __init__(self, flag: threading.Event) -> None:
         """
@@ -134,7 +136,8 @@ class CancellationEventSignal(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + ["_lock", "_flag", "_event"]
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __deletable__: ClassVar[list[str]] = ["_lock", "_flag", "_event"]
 
     def __init__(self) -> None:
         """

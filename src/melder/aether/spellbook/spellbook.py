@@ -1,6 +1,7 @@
 ﻿from contextlib import contextmanager
 from types import MappingProxyType, ModuleType, TracebackType
-from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union
+from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union, \
+    ClassVar
 import threading
 import time
 
@@ -107,9 +108,42 @@ and logging.
           occurs when the frame posture permits it and a shared rich config
           object already exists on the frame.
     """
-    __melder_internal__ = _mrg.sentinel
-    _aether: Aether = Aether()
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _aether: ClassVar[Aether] = Aether()
     __slots__ = Cleanable.__slots__ + [
+        "__dict__",
+        "__weakref__",
+        "_active_change_request",
+        "_aetheric_frame",
+        "_aetheric_frame_configuration",
+        "_bind",
+        "_binding_transaction_active",
+        "_block_all_spells",
+        "_conduit",
+        "_configuration",
+        "_configuration_locked",
+        "_conjured",
+        "_contracted_spells",
+        "_contracted_spells_by_id",
+        "_contracted_versions",
+        "_id",
+        "_lock",
+        "_logger",
+        "_lookup_contracted_spells",
+        "_nexus",
+        "_nexus_publish_enabled",
+        "_lookup_spells",
+        "_pending_binding_frame_keys",
+        "_pending_structural_spells",
+        "_spell_id_pool",
+        "_spell_system_states",
+        "_spell_versions",
+        "_spellbook_validation_required",
+        "_spells",
+        "_spells_by_id",
+        "_whitelist_all_spells",
+    ]
+    __deletable__: ClassVar[List[str]]= [
         "__dict__",
         "__weakref__",
         "_active_change_request",

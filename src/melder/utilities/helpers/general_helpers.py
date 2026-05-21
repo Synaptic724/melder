@@ -1,7 +1,7 @@
 from enum import Enum
 import inspect
 from functools import lru_cache
-from typing import Any, Optional, Tuple, Union, TypeVar, Type
+from typing import Any, Optional, Tuple, Union, TypeVar, Type, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -119,7 +119,7 @@ class SpellInputUtils:
     """
 
     # Public constant so everyone uses the same default
-    DEFAULT_BINDING_NAME: str = "__default__"
+    DEFAULT_BINDING_NAME: ClassVar[str] = "__default__"
 
     # ------------------------------------------------------------------
     # Frame / name normalization

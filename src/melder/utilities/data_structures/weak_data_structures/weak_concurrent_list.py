@@ -1,7 +1,7 @@
 import threading
 import ulid
 from types import TracebackType
-from typing import Any, Callable, Optional, List, TypeVar, Generic, cast
+from typing import Any, Callable, Optional, List, TypeVar, Generic, cast, ClassVar
 from collections.abc import Iterable, Iterator
 from functools import reduce as _reduce
 
@@ -41,6 +41,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
             Cleanable.__slots__
             + ["_lock", "_list", "_freeze", "_id", "_auto_prune"]
     )
+    __deletable__: ClassVar[list[str]] = ["_lock", "_list", "_freeze", "_id", "_auto_prune"]
 
     def __init__(
             self,

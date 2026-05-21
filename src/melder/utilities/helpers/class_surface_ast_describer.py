@@ -6,7 +6,7 @@ import ast
 import inspect
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -77,7 +77,7 @@ class ClassSurfaceAstDescriber:
         allocates no per-object describer instances.
     """
 
-    _SYSTEM_DOC_OBJECT_NAMES: Tuple[str, ...] = (
+    _SYSTEM_DOC_OBJECT_NAMES: ClassVar[Tuple[str, ...]] = (
         "__architecture__",
         "__components__",
         "__graph_network__",
