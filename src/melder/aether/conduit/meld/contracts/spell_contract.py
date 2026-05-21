@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union, Tuple
+from typing import Any, Optional, Union, Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -72,6 +72,9 @@ class SpellContract(Cleanable):
         "spellframe",
         "binding_name",
         "spell_override",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "spell", "spellframe", "binding_name", "spell_override"
     ]
 
     def __init__(

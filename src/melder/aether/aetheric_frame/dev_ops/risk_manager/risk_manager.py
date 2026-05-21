@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Dict, Optional, Set, List, TYPE_CHECKING
+from typing import Dict, Optional, Set, List, TYPE_CHECKING, ClassVar
 from mypy_extensions import mypyc_attr
 
 # Melder imports
