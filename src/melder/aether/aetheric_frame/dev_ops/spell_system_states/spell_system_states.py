@@ -17,9 +17,9 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellLocalTopology,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 

@@ -386,7 +386,7 @@ def test_component_spellbook_initialize_configuration_propagates_aether_errors(
         raise RuntimeError("aether-lookup-failed")
 
     try:
-        monkeypatch.setattr(spellbook, "_get_configuration_from_aether", _raise_get_configuration)
+        monkeypatch.setattr(Spellbook, "_get_configuration_from_aether", _raise_get_configuration)
         spellbook._configuration = None
         spellbook._configuration_locked = False
         with pytest.raises(RuntimeError, match="aether-lookup-failed"):

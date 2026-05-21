@@ -14,12 +14,11 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iaethericframe import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
-from melder.utilities.interfaces.iconduitward import ConduitWard
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.isafelogger import SafeLogger
+from melder.utilities.logger.safe_logger import SafeLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract

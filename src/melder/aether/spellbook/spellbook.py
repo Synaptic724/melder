@@ -106,6 +106,7 @@ and logging.
     __melder_internal__ = _mrg.sentinel
     _aether: IAether = Aether()
     __slots__ = Cleanable.__slots__ + [
+        "__weakref__",
         "_active_change_request",
         "_aetheric_frame",
         "_aetheric_frame_configuration",

@@ -1123,8 +1123,6 @@ def test_component_spell_crafter_validation_caches_result() -> None:
     """
     spellbook = _make_spellbook()
     validator = _SpellValidationSystemStub(_ValidationResultStub(has_errors=False))
-    spellbook._spell_validator = validator
-
     class Leaf:
         """
         Purpose:
@@ -1167,8 +1165,6 @@ def test_component_spell_crafter_validation_marks_broken_on_error() -> None:
     """
     spellbook = _make_spellbook()
     validator = _SpellValidationSystemStub(_ValidationResultStub(has_errors=True))
-    spellbook._spell_validator = validator
-
     class Leaf:
         """
         Purpose:
