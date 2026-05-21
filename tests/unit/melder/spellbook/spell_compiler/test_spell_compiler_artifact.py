@@ -104,6 +104,33 @@ def test_cleanup_calls_cleanup_on_entire_dag_blueprint_map_values() -> None:
     assert root_b.cleanup_calls == 1
 
 
+def test_cleanup_swallows_child_cleanup_exceptions() -> None:
+    """Cleanup should continue even when owned child cleanup raises."""
+    artifact = SpellCompilerArtifact("spell-1")
+
+    class _FailingCleanupTracker(CleanupTracker):
+        """Cleanup tracker that raises after recording cleanup."""
+
+        def cleanup(self) -> None:
+            self.cleanup_calls += 1
+            self._cleaned = True
+            raise RuntimeError("cleanup boom")
+
+    requirements = _FailingCleanupTracker()
+    root_blueprint = _FailingCleanupTracker()
+    dag_blueprint = _FailingCleanupTracker()
+    artifact._requirements = requirements
+    artifact._root_blueprint_phase5 = root_blueprint
+    artifact._entire_dag_blueprint_phase5 = {"root": dag_blueprint}
+
+    artifact.cleanup()
+
+    assert artifact._cleaned is True
+    assert requirements.cleanup_calls == 1
+    assert root_blueprint.cleanup_calls == 1
+    assert dag_blueprint.cleanup_calls == 1
+
+
 def test_cleanup_deletes_spell_identity_and_later_phase_fields() -> None:
     """Cleanup should delete identity and later-phase owned fields."""
     artifact = SpellCompilerArtifact("spell-1")

@@ -29,9 +29,6 @@ from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
-from melder.utilities.synchronization.cancellation_event_signal import (
-    CancellationEvent,
-)
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )

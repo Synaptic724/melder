@@ -2151,35 +2151,6 @@ class Conduit(Cleanable, IConduit):
                 **kwargs,
             )
 
-    def scan(self, module: ModuleType) -> list[str]:
-        """
-        Public API
-
-        Scan a module for `scan_bind`-decorated objects and bind them into this
-        Conduit's Spellbook.
-
-        This is a module-only scan: it does not traverse packages or import
-        submodules. Any object marked with `scan_bind` must originate from the
-        scanned module, otherwise the scan fails.
-
-        Args:
-            module (ModuleType): The module to scan for decorated spell targets.
-        Returns:
-            list[str]: Spell IDs bound during the scan, in module dict order.
-        Raises:
-            RuntimeError: If the Conduit is cleaned or not normal.
-            RuntimeError: If no binding transaction is active for this Spellbook.
-            TypeError: If `module` is not a module or metadata is invalid.
-            ValueError: If a decorated object is not owned by the module.
-            RuntimeError: Propagated from Spellbook.bind on binding errors.
-        """
-        self.check_cleaned()
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("scan called when conduit not normal", "scan")
-            raise RuntimeError("Only normal conduits can scan modules.")
-        with self._lock:
-            return self._spellbook.scan(module)
-
 
     def get_spell_permissions(self, spell_id: str) -> Optional[str]:
         """

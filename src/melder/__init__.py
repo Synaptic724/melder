@@ -22,6 +22,7 @@ from melder.aether.aether_configuration_builder import AetherConfigurationBuilde
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.spellbook.bind.scan import Scan
 from melder.nexus.nexus import Nexus
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
@@ -101,5 +102,6 @@ __all__ = [
     "Permissions",
     "SystemState",
     "ProtocolCrafter",
+    "Scan"
 ]
 

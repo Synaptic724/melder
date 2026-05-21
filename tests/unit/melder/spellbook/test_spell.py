@@ -1004,6 +1004,43 @@ def test_resolution_properties_delegate_to_crafter(prop_name, expected):
     assert getattr(spell, prop_name) == expected
 
 
+def test_validated_property_reads_phase4_flag_only() -> None:
+    """validated should reflect the phase-4 flag, not phase-6 or broken state."""
+    spell = _make_spell()
+    spell._compiler_artifact._validated_phase4 = False
+    spell._compiler_artifact._validated_phase6 = True
+    spell._compiler_artifact._is_broken = True
+
+    assert spell.validated is False
+
+    spell._compiler_artifact._validated_phase4 = True
+    spell._compiler_artifact._validated_phase6 = False
+    spell._compiler_artifact._is_broken = True
+
+    assert spell.validated is True
+
+
+@pytest.mark.parametrize(
+    "prop_name",
+    [
+        "requirements",
+        "symbolic_graph",
+        "resolution_frame",
+        "validation_result_phase4",
+        "validation_result_phase6",
+        "validated",
+        "is_broken",
+    ],
+)
+def test_resolution_properties_fail_after_cleanup(prop_name) -> None:
+    """Resolution/introspection properties should stop working after cleanup."""
+    spell = _make_spell()
+    spell.cleanup()
+
+    with pytest.raises(AttributeError):
+        getattr(spell, prop_name)
+
+
 def test_spell_does_not_expose_run_all_phases_facade():
     spell = _make_spell()
     assert not hasattr(spell, "run_all_phases")

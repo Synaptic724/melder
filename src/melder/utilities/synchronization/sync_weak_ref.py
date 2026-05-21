@@ -24,7 +24,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
     A thread-safe, non-owning weak reference wrapper with
     phantom-style notification and optional auto-cleanup.
 
-    Core behavior:
+    Core behaviour:
     --------------
     - Non-owning:
         * Uses `weakref.ref(target)` internally.
@@ -33,20 +33,20 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         * Synchronizes access to the weak reference itself.
         * Does NOT make the target object thread-safe.
     - Lifetime inspection:
-        * `is_alive()`   -> bool
-        * `try_get()`    -> Optional[T]
-        * `get()`        -> T or raises ReferenceError
+        * `is_alive()` -> bool
+        * `try_get()` -> Optional[T]
+        * `get()` -> T or raises ReferenceError
     - Update operations:
-        * `set(obj)`     -> replace the target reference
+        * `set(obj)` -> replace the target reference
         * `cas(expected, new)` -> compare-and-swap by identity
-        * `swap(new)`    -> swap and return previous target (if alive)
+        * `swap(new)` -> swap and return the previous target (if alive)
 
     Phantom-style features:
     -----------------------
     - Optional GC callback:
         * `on_collect`: Callable[[SyncWeakRef[T]], None]
         * Invoked when the target is about to be finalized.
-        * Called exactly once per referent lifetime.
+        * Called exactly once per different lifetime.
     - Phantom flag:
         * `has_fired` property indicates whether the GC callback fired.
     - Optional auto-cleanup:
@@ -68,7 +68,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
     SyncWeakRef does NOT provide thread safety for the target object.
     The target MUST be internally thread-safe if accessed concurrently.
     This class only synchronizes the weak-reference wrapper and its
-    phantom/cleanup behavior.
+    phantom/cleanup behaviour.
     """
 
     __slots__ = (
@@ -96,9 +96,9 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         Parameters:
         -----------
         target:
-            The object to weakly reference. Must be weak-referenceable.
+            The object is weakly referenced. Must be weak-referenceable.
         on_collect:
-            Optional callback invoked when the referent is about to be
+            Optional callback is invoked when the referent is about to be
             finalized. Signature: (ref: SyncWeakRef[T]) -> None.
         auto_cleanup:
             If True, `cleanup()` is automatically invoked when the
@@ -116,12 +116,39 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         self._weak: weakref.ref[T] = weakref.ref(target, self._weakref_callback)
         self._lock: threading.RLock = threading.RLock()
 
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+    def cleanup(self) -> None:
+        """
+        Clean up this wrapper (NOT the target).
+
+        After cleanup:
+        - Wrapper is marked cleaned.
+        - Underlying weak reference and callback are removed.
+        - All operations raise RuntimeError via check_cleaned().
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+
+            # Drop weakref and callback.
+            del self._weak
+            del self._on_collect
+
+        del self._lock
+
+
     # ------------------------------------------------------------------
     # Weakref callback (phantom signal)
     # ------------------------------------------------------------------
     def _weakref_callback(self, _wr: weakref.ref[T]) -> None:
         """
-        Internal weakref callback.
+        Internal weakener callback.
 
         This is invoked by Python's GC machinery when the referent is
         about to be finalized. It:
@@ -154,38 +181,13 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
                 # Swallow exceptions to avoid interfering with GC.
                 pass
 
-        # Optionally clean up the wrapper itself.
+        # Optionally, clean up the wrapper itself.
         if auto:
             try:
                 self.cleanup()
             except Exception:
                 # Best-effort: ignore failures from cleanup in this path.
                 pass
-
-    # ------------------------------------------------------------------
-    # Cleanup
-    # ------------------------------------------------------------------
-    def cleanup(self) -> None:
-        """
-        Clean up this wrapper (NOT the target).
-
-        After cleanup:
-        - Wrapper is marked cleaned.
-        - Underlying weak reference and callback are removed.
-        - All operations raise RuntimeError via check_cleaned().
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-
-            # Drop weakref and callback.
-            del self._weak
-            del self._on_collect
-
-        del self._lock
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -260,10 +262,10 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
 
     def enable_auto_cleanup(self) -> None:
         """
-        Enable auto-cleanup behavior.
+        Enable auto-cleanup behaviour.
 
         When the referent is collected, this SyncWeakRef will call
-        `cleanup()` automatically (in the weakref callback).
+        `cleanup()` automatically (in the weakener callback).
         """
         self.check_cleaned()
         with self._lock:
@@ -315,7 +317,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         Get the referenced object.
 
         Raises:
-            ReferenceError: if the weakref is dead.
+            ReferenceError: if the weakener is dead.
             RuntimeError:   if this SyncWeakRef has been cleaned.
         """
         self.check_cleaned()
@@ -339,7 +341,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         """
         Forcefully update the weak reference target.
 
-        This replaces the underlying weakref with a new one pointing
+        This replaces the underlying weakener with a new one pointing
         at the given object.
 
         Args:
@@ -421,7 +423,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         Example:
         --------
         >>> with ref.locked() as obj:
-        ...     obj.do_something()
+        ... obj.do_something()
 
         Yields:
             T: Live referent while the wrapper lock is held.
@@ -436,7 +438,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
     # Dunder & repr
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
-        """Return a debug-oriented representation of wrapper liveness state."""
+        """Return a debug-oriented representation of the wrapper liveness state."""
         if self._cleaned:
             return "SyncWeakRef(cleaned)"
 
