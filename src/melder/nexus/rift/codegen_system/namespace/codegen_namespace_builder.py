@@ -24,8 +24,8 @@ from melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_s
     CodegenWorkstationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
-from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.irift import IRift
 
@@ -111,11 +111,11 @@ class CodegenNamespaceBuilder(Cleanable):
 
     def build(
             self,
-            configuration: ICodegenNamespaceConfiguration,
+            configuration: CodegenNamespaceConfiguration,
             *,
             rift: IRift,
             space: ICodegenRiftSpace,
-    ) -> ICodegenNamespace:
+    ) -> CodegenNamespace:
         """
         Build one live namespace from config and room/runtime state.
 

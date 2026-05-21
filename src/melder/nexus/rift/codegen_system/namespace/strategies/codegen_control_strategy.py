@@ -6,7 +6,7 @@ from melder.nexus.rift.codegen_system.namespace.codegen_control_surface import (
     CodegenControlSurface,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 
 
@@ -53,7 +53,7 @@ class CodegenControlStrategy(Cleanable):
 
     def build_namespace_entries(
             self,
-            configuration: ICodegenNamespaceConfiguration,
+            configuration: CodegenNamespaceConfiguration,
             *,
             space: ICodegenRiftSpace,
     ) -> Dict[str, object]:

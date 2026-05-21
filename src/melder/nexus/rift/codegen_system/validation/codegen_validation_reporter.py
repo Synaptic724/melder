@@ -3,7 +3,7 @@ from typing import Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenValidationReporter(Cleanable):
@@ -53,7 +53,7 @@ class CodegenValidationReporter(Cleanable):
 
     def report(
             self,
-            validation_result: ICodegenValidationResult,
+            validation_result: CodegenValidationResult,
     ) -> Dict[str, object]:
         """
         Convert one validation result into the public payload shape.

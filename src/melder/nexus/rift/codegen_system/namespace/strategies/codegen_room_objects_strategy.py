@@ -3,7 +3,7 @@ from typing import Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.irift import IRift
 
@@ -56,7 +56,7 @@ class CodegenRoomObjectsStrategy(Cleanable):
 
     def build_namespace_entries(
             self,
-            configuration: ICodegenNamespaceConfiguration,
+            configuration: CodegenNamespaceConfiguration,
             *,
             rift: IRift,
             space: ICodegenRiftSpace,

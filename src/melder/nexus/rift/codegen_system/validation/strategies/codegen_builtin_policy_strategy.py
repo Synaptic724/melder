@@ -7,8 +7,8 @@ from melder.nexus.rift.codegen_system.validation.codegen_validation_result impor
     CodegenValidationResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenBuiltinPolicyStrategy(Cleanable):
@@ -52,9 +52,9 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
 
     def validate(
             self,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
             syntax_tree: ast.AST,
-    ) -> Optional[ICodegenValidationResult]:
+    ) -> Optional[CodegenValidationResult]:
         """
         Validate builtin-policy rules for one codegen request.
 
@@ -96,9 +96,9 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
 
     @staticmethod
     def _reject(
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
             message: str,
-    ) -> ICodegenValidationResult:
+    ) -> CodegenValidationResult:
         """
         Build one builtins-policy validation failure result.
 

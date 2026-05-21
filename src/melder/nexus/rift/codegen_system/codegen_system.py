@@ -38,13 +38,13 @@ from melder.nexus.rift.codegen_system.validation.codegen_validator import (
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
-from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
-from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.icodegensystem import ICodegenSystem
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
 
 
@@ -177,7 +177,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             code: str,
             *,
             frame_name: str,
-    ) -> ICodegenValidationResult:
+    ) -> CodegenValidationResult:
         """
         Validate one codegen request through the internal engine.
 
@@ -207,7 +207,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             code: str,
             *,
             frame_name: str,
-    ) -> ICodegenExecutionResult:
+    ) -> CodegenExecutionResult:
         """
         Execute one codegen request through the internal engine.
 
@@ -237,7 +237,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             code: str,
             *,
             frame_name: str,
-    ) -> Tuple[ICodegenTransactionContext, ICodegenValidationResult]:
+    ) -> Tuple[CodegenTransactionContext, CodegenValidationResult]:
         """
         Validate one codegen request and return both context and result.
 
@@ -272,7 +272,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             code: str,
             *,
             frame_name: str,
-    ) -> Tuple[ICodegenTransactionContext, ICodegenExecutionResult]:
+    ) -> Tuple[CodegenTransactionContext, CodegenExecutionResult]:
         """
         Execute one codegen request and return both context and result.
 
@@ -318,7 +318,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
 
     def report_validation_result(
             self,
-            validation_result: ICodegenValidationResult,
+            validation_result: CodegenValidationResult,
     ) -> Dict[str, object]:
         """
         Convert one validation result into the public payload shape.
@@ -339,7 +339,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             code: str,
             *,
             frame_name: str,
-    ) -> ICodegenTransactionContext:
+    ) -> CodegenTransactionContext:
         """
         Build one per-call transaction context for the root slice.
 
@@ -381,7 +381,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             *,
             frame_name: str,
             projection: Optional[CodegenProjection],
-    ) -> ICodegenNamespaceConfiguration:
+    ) -> CodegenNamespaceConfiguration:
         """
         Build the current stable default namespace configuration.
 
@@ -452,7 +452,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
     def _build_namespace(
             self,
             transaction_context: CodegenTransactionContext,
-    ) -> ICodegenNamespace:
+    ) -> CodegenNamespace:
         """
         Build one live namespace for the current transaction context.
 

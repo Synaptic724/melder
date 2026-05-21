@@ -6,10 +6,10 @@ from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration 
     CodegenNamespaceConfiguration,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegennamespace import ICodegenNamespace
 
 
-class CodegenNamespace(Cleanable, ICodegenNamespace):
+
+class CodegenNamespace(Cleanable):
     """
     Internal
 

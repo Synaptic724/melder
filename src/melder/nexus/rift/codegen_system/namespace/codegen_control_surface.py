@@ -1,9 +1,9 @@
 from typing import Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
 from melder.utilities.interfaces.icodegensystem import ICodegenSystem
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenControlSurface:
@@ -82,7 +82,7 @@ class CodegenControlSurface:
         resolved_frame_name = (
             frame_name if frame_name is not None else self._default_frame_name
         )
-        validation_result: ICodegenValidationResult = (
+        validation_result: CodegenValidationResult = (
             self._codegen_system.validate_codegen(
                 code,
                 frame_name=resolved_frame_name,
@@ -116,7 +116,7 @@ class CodegenControlSurface:
         resolved_frame_name = (
             frame_name if frame_name is not None else self._default_frame_name
         )
-        execution_result: ICodegenExecutionResult = (
+        execution_result: CodegenExecutionResult = (
             self._codegen_system.execute_codegen(
                 code,
                 frame_name=resolved_frame_name,

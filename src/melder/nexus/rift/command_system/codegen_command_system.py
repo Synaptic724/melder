@@ -1,15 +1,15 @@
-﻿from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.icodegensystem import ICodegenSystem
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
 from melder.nexus.rift.rift_space.workstation import Workstation
 
@@ -562,8 +562,8 @@ class CodegenCommandSystem(CommandSystem):
                 action_name="validate_codegen",
         ):
             rift_gate = self._begin_command_action()
-            transaction_context: Optional[ICodegenTransactionContext] = None
-            validation_result: Optional[ICodegenValidationResult] = None
+            transaction_context: Optional[CodegenTransactionContext] = None
+            validation_result: Optional[CodegenValidationResult] = None
             try:
                 with self._lock:
                     codegen_system = self._require_codegen_system()
@@ -632,8 +632,8 @@ class CodegenCommandSystem(CommandSystem):
                 action_name="execute_codegen",
         ):
             rift_gate = self._begin_command_action()
-            transaction_context: Optional[ICodegenTransactionContext] = None
-            execution_result: Optional[ICodegenExecutionResult] = None
+            transaction_context: Optional[CodegenTransactionContext] = None
+            execution_result: Optional[CodegenExecutionResult] = None
             try:
                 with self._lock:
                     codegen_system = self._require_codegen_system()
@@ -661,9 +661,9 @@ class CodegenCommandSystem(CommandSystem):
             self,
             *,
             action_name: str,
-            transaction_context: ICodegenTransactionContext,
-            validation_result: Optional[ICodegenValidationResult] = None,
-            execution_result: Optional[ICodegenExecutionResult] = None,
+            transaction_context: CodegenTransactionContext,
+            validation_result: Optional[CodegenValidationResult] = None,
+            execution_result: Optional[CodegenExecutionResult] = None,
     ) -> None:
         """
         Emit one full-source codegen memory record when room memory is enabled.

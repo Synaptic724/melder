@@ -24,12 +24,10 @@ from melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_co
 from melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy import (
     CodegenReflectionPolicyStrategy,
 )
-from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
-    CodegenValidationResult,
-)
+
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenValidator(Cleanable):
@@ -124,8 +122,8 @@ class CodegenValidator(Cleanable):
 
     def validate(
             self,
-            transaction_context: ICodegenTransactionContext,
-    ) -> ICodegenValidationResult:
+            transaction_context: CodegenTransactionContext,
+    ) -> CodegenValidationResult:
         """
         Validate one codegen transaction context.
 
@@ -231,9 +229,9 @@ class CodegenValidator(Cleanable):
     @staticmethod
     def _run_strategy(
             strategy: object,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
             syntax_tree: ast.AST,
-    ) -> Optional[ICodegenValidationResult]:
+    ) -> Optional[CodegenValidationResult]:
         """
         Execute one validation strategy and return its optional failure result.
 

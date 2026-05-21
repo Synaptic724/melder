@@ -5,9 +5,9 @@ from melder.nexus.rift.codegen_system.observability.codegen_event_publisher impo
     CodegenEventPublisher,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenMonitor(Cleanable):
@@ -70,7 +70,7 @@ class CodegenMonitor(Cleanable):
 
     def on_validation_started(
             self,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
     ) -> None:
         """
         Publish one validation-started lifecycle signal.
@@ -88,8 +88,8 @@ class CodegenMonitor(Cleanable):
 
     def on_validation_finished(
             self,
-            transaction_context: ICodegenTransactionContext,
-            validation_result: ICodegenValidationResult,
+            transaction_context: CodegenTransactionContext,
+            validation_result: CodegenValidationResult,
     ) -> None:
         """
         Publish one validation-finished lifecycle signal.
@@ -112,7 +112,7 @@ class CodegenMonitor(Cleanable):
 
     def on_execution_started(
             self,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
     ) -> None:
         """
         Publish one execution-started lifecycle signal.
@@ -130,8 +130,8 @@ class CodegenMonitor(Cleanable):
 
     def on_execution_finished(
             self,
-            transaction_context: ICodegenTransactionContext,
-            execution_result: ICodegenExecutionResult,
+            transaction_context: CodegenTransactionContext,
+            execution_result: CodegenExecutionResult,
     ) -> None:
         """
         Publish one execution-finished lifecycle signal.

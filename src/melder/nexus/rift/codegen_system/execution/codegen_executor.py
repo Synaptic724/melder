@@ -6,8 +6,8 @@ from melder.nexus.rift.codegen_system.execution.codegen_execution_result import 
     CodegenExecutionResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 
 
 class CodegenExecutor(Cleanable):
@@ -54,8 +54,8 @@ class CodegenExecutor(Cleanable):
     def execute(
             self,
             compiled_code: CodeType,
-            transaction_context: ICodegenTransactionContext,
-    ) -> ICodegenExecutionResult:
+            transaction_context: CodegenTransactionContext,
+    ) -> CodegenExecutionResult:
         """
         Execute one compiled code object against the transaction namespace.
 

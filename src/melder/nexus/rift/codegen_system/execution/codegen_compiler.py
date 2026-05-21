@@ -3,7 +3,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from types import CodeType
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 
 
 class CodegenCompiler(Cleanable):
@@ -49,7 +49,7 @@ class CodegenCompiler(Cleanable):
 
     def compile(
             self,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
     ) -> CodeType:
         """
         Compile one codegen transaction into an executable code object.

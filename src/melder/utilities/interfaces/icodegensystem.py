@@ -1,8 +1,5 @@
-﻿from typing import Dict, Protocol, Tuple, runtime_checkable
+from typing import TYPE_CHECKING, Dict, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
 
 @runtime_checkable
 class ICodegenSystem(ICleanable, Protocol):
@@ -29,7 +26,7 @@ class ICodegenSystem(ICleanable, Protocol):
             code: str,
             *,
             frame_name: str,
-    ) -> ICodegenValidationResult:
+    ) -> "CodegenValidationResult":
         """
         Validate one codegen request.
         """
@@ -40,7 +37,7 @@ class ICodegenSystem(ICleanable, Protocol):
             code: str,
             *,
             frame_name: str,
-    ) -> ICodegenExecutionResult:
+    ) -> "CodegenExecutionResult":
         """
         Execute one codegen request.
         """
@@ -51,7 +48,7 @@ class ICodegenSystem(ICleanable, Protocol):
             code: str,
             *,
             frame_name: str,
-    ) -> Tuple[ICodegenTransactionContext, ICodegenValidationResult]:
+    ) -> Tuple["CodegenTransactionContext", "CodegenValidationResult"]:
         """
         Validate one codegen request and return context plus validation result.
         """
@@ -62,7 +59,7 @@ class ICodegenSystem(ICleanable, Protocol):
             code: str,
             *,
             frame_name: str,
-    ) -> Tuple[ICodegenTransactionContext, ICodegenExecutionResult]:
+    ) -> Tuple["CodegenTransactionContext", "CodegenExecutionResult"]:
         """
         Execute one codegen request and return context plus execution result.
         """
@@ -70,7 +67,7 @@ class ICodegenSystem(ICleanable, Protocol):
 
     def report_validation_result(
             self,
-            validation_result: ICodegenValidationResult,
+            validation_result: "CodegenValidationResult",
     ) -> Dict[str, object]:
         """
         Convert one validation result into the public payload shape.

@@ -3,10 +3,10 @@ from typing import Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
 from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
-from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
-from melder.utilities.interfaces.icodegenvalidationresult import ICodegenValidationResult
+from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 
 class CodegenEventPublisher(Cleanable):
@@ -73,7 +73,7 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_validation_started(
             self,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
     ) -> None:
         """
         Emit one validation-started event.
@@ -96,8 +96,8 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_validation_finished(
             self,
-            transaction_context: ICodegenTransactionContext,
-            validation_result: ICodegenValidationResult,
+            transaction_context: CodegenTransactionContext,
+            validation_result: CodegenValidationResult,
     ) -> None:
         """
         Emit one validation-finished event.
@@ -127,7 +127,7 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_execution_started(
             self,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
     ) -> None:
         """
         Emit one execution-started event.
@@ -150,8 +150,8 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_execution_finished(
             self,
-            transaction_context: ICodegenTransactionContext,
-            execution_result: ICodegenExecutionResult,
+            transaction_context: CodegenTransactionContext,
+            execution_result: CodegenExecutionResult,
     ) -> None:
         """
         Emit one execution-finished event.
@@ -186,7 +186,7 @@ class CodegenEventPublisher(Cleanable):
             self,
             *,
             event_type: str,
-            transaction_context: ICodegenTransactionContext,
+            transaction_context: CodegenTransactionContext,
             payload: Dict[str, object],
     ) -> None:
         """
