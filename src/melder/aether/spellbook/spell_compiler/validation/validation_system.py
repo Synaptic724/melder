@@ -43,7 +43,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
@@ -59,7 +58,7 @@ from melder.utilities.synchronization.cancellation_event_signal import (
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @mypyc_attr(native_class=True)
-class SpellValidationSystem(Cleanable, ISpellValidationSystem):
+class SpellValidationSystem(Cleanable):
     """
     Central registry + runner for spell validation strategies.
 

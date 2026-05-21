@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -12,9 +12,13 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanVariant,
 )
 
-from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
@@ -45,12 +49,12 @@ class CompilerPhase11:
     def _get_required_occurrence_plan_phase8(
             self,
             artifact: SpellCompilerArtifact,
-    ) -> IOccurrencePlan:
+    ) -> "OccurrencePlan":
         """
         Return the Phase 8 occurrence plan or raise.
 
         Returns:
-            IOccurrencePlan: Attached Phase 8 occurrence plan.
+            OccurrencePlan: Attached Phase 8 occurrence plan.
         """
         occurrence_plan = artifact._occurrence_plan_phase8
         if occurrence_plan is None:
@@ -276,7 +280,7 @@ class CompilerPhase11:
     def _build_phase11_no_overrides_input_signature(
             self,
             *,
-            occurrence_plan: IOccurrencePlan,
+            occurrence_plan: "OccurrencePlan",
             injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, ISpell],
     ) -> Optional[str]:
@@ -466,7 +470,7 @@ class CompilerPhase11:
             self,
             spell: ISpell,
             *,
-            occurrence_plan: IOccurrencePlan,
+            occurrence_plan: "OccurrencePlan",
             plan: ExecutionPlan,
     ) -> None:
         """
@@ -544,7 +548,7 @@ class CompilerPhase11:
     def _build_execution_plan_variant(
             self,
             *,
-            occurrence_plan: IOccurrencePlan,
+            occurrence_plan: "OccurrencePlan",
             injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,

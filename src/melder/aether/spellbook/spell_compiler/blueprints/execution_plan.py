@@ -1,16 +1,20 @@
-﻿from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
+    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
+        InjectionPlan,
+        InjectionSpec,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
 
 
 OccurrenceKey = Tuple[str, int]
@@ -126,7 +130,7 @@ class ExecutionPlanStep:
             existence: Existence,
             creations_target_kind: int,
             shared_instance: bool,
-            inject_spec: Optional[IInjectionSpec],
+            inject_spec: Optional["InjectionSpec"],
             dependency_keys: List[InstanceKey],
             dependency_keys_by_param: Dict[str, List[InstanceKey]],
             dependency_resolution_order: List[tuple[str, List[InstanceKey]]],
@@ -210,7 +214,7 @@ class ExecutionPlanStep:
         self._existence: Existence = existence
         self._creations_target_kind: int = creations_target_kind
         self._shared_instance: bool = shared_instance
-        self._inject_spec: Optional[IInjectionSpec] = inject_spec
+        self._inject_spec: Optional["InjectionSpec"] = inject_spec
         self._dependency_keys: List[InstanceKey] = dependency_keys
         self._dependency_keys_by_param: Dict[str, List[InstanceKey]] = dependency_keys_by_param
         self._dependency_resolution_order: List[tuple[str, List[InstanceKey]]] = dependency_resolution_order
@@ -262,7 +266,7 @@ class ExecutionPlanStep:
         return self._shared_instance
 
     @property
-    def inject_spec(self) -> Optional[IInjectionSpec]:
+    def inject_spec(self) -> Optional["InjectionSpec"]:
         """Return the Phase 9 injection spec attached to this step, if any."""
         return self._inject_spec
 
@@ -1054,7 +1058,7 @@ class ExecutionPlanBuilder:
     def __init__(
             self,
             *,
-            occurrence_plan: IOccurrencePlan,
+            occurrence_plan: "OccurrencePlan",
             injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
@@ -1095,7 +1099,7 @@ class ExecutionPlanBuilder:
             ValueError: If required plan roots are missing or mismatched.
         """
         root_spell_id = self._occurrence_plan.root_spell_id
-        injection_lookup: Optional[Mapping[InstanceKey, IInjectionSpec]] = None
+        injection_lookup: Optional[Mapping[InstanceKey, "InjectionSpec"]] = None
         if self._injection_plan is not None:
             injection_lookup = self._injection_plan.select_for_runtime(
                 root_spell_id=root_spell_id,
@@ -2019,7 +2023,7 @@ class ExecutionPlanBuilder:
 
     @staticmethod
     def _extract_param_keys(
-            inject_spec: Optional[IInjectionSpec],
+            inject_spec: Optional["InjectionSpec"],
     ) -> tuple[List[InstanceKey], Dict[str, List[InstanceKey]], List[str], List[str]]:
         """
         Flatten dependency, override, and contract keys from one injection spec.
@@ -2049,7 +2053,7 @@ class ExecutionPlanBuilder:
 
     @staticmethod
     def _extract_param_keys_no_overrides(
-            inject_spec: Optional[IInjectionSpec],
+            inject_spec: Optional["InjectionSpec"],
     ) -> tuple[List[InstanceKey], Dict[str, List[InstanceKey]]]:
         """
         Flatten only dependency keys for the no-overrides branch.

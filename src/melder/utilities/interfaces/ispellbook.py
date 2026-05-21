@@ -1,4 +1,4 @@
-﻿from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable, \
+from typing import TYPE_CHECKING, Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable, \
     Set
 import threading
 from types import ModuleType
@@ -12,10 +12,14 @@ from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellbinder import ISpellBinder
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispell import ISpell
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.validation_system import (
+        SpellValidationSystem,
+    )
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):
@@ -58,7 +62,7 @@ class ISpellbook(ICleanable, Protocol):
     _logger: ISafeLogger
     _spell_id_pool: Dict[str, ISpell]
     _spellbook_validation_required: bool
-    _nexus: Any
+    _spell_validator: ""SpellValidationSystem""    _nexus: Any
     _active_change_request: Optional[ChangeControlTransactionRequest]
 
     _spell_system_states: "ISpellSystemStates"

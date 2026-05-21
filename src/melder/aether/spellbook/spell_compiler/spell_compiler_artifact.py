@@ -1,12 +1,15 @@
-﻿import threading
+import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
 from melder.utilities.general_base.cleanable import Cleanable
-
-from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
 
 from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
     SpellResolutionFrame,
@@ -121,7 +124,7 @@ class SpellCompilerArtifact(Cleanable):
         self._root_blueprint_phase5: Optional[IRootResolutionBlueprint] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
-        self._occurrence_plan_phase8: Optional[IOccurrencePlan] = None
+        self._occurrence_plan_phase8: Optional["OccurrencePlan"] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
         self._injection_plan_phase9: Optional["InjectionPlan"] = None
         self._override_patch_map_phase10: Optional["OverridePatchMap"] = None

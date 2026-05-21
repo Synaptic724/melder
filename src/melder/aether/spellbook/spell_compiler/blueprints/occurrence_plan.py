@@ -20,7 +20,6 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
@@ -102,7 +101,7 @@ def select_occurrence_plan(
     )
 
 @mypyc_attr(native_class=True)
-class OccurrencePlan(Cleanable, IOccurrencePlan):
+class OccurrencePlan(Cleanable):
     """
     Phase 8 occurrence-expansion artifact for one root blueprint.
 

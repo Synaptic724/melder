@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from mypy_extensions import mypyc_attr
 
@@ -8,8 +8,12 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionPlanBuilder,
 )
-from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.ispell import ISpell
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
 
 
 @mypyc_attr(native_class=True)
@@ -32,7 +36,7 @@ class CompilerPhase9:
     def _get_required_occurrence_plan_phase8(
             self,
             artifact: SpellCompilerArtifact,
-    ) -> IOccurrencePlan:
+    ) -> "OccurrencePlan":
         """
         Return the Phase 8 occurrence plan or raise.
 
@@ -42,7 +46,7 @@ class CompilerPhase9:
             compilation can begin.
 
         Returns:
-            IOccurrencePlan: Attached Phase 8 occurrence plan.
+            OccurrencePlan: Attached Phase 8 occurrence plan.
         """
         occurrence_plan = artifact._occurrence_plan_phase8
         if occurrence_plan is None:
@@ -53,7 +57,7 @@ class CompilerPhase9:
             self,
             artifact: SpellCompilerArtifact,
             *,
-            occurrence_plan: Optional[IOccurrencePlan],
+            occurrence_plan: Optional["OccurrencePlan"],
     ) -> Optional[str]:
         """
         Build a deterministic phase9 input signature for injection-plan reuse.

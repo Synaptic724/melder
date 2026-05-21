@@ -1,12 +1,12 @@
-﻿from typing import Any, Dict, List, Mapping, Optional, Tuple
-
+﻿from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 from mypy_extensions import mypyc_attr
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
-from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
 
 
 
@@ -250,7 +250,7 @@ def build_kwargs_from_injection_spec(
         *,
         instance_key: InstanceKey,
         occurrence: OccurrenceKey,
-        injection_spec: IInjectionSpec,
+        injection_spec: InjectionSpec,
         instance_results: Dict[InstanceKey, Any],
         override_values: Dict[str, Any],
 ) -> Dict[str, Any]:
@@ -530,7 +530,7 @@ class InjectionPlanBuilder(object):
     def __init__(
             self,
             *,
-            occurrence_plan: IOccurrencePlan,
+            occurrence_plan: OccurrencePlan,
     ) -> None:
         """
         Initialize the injection plan builder.

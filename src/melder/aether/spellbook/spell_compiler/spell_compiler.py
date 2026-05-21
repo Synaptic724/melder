@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from mypy_extensions import mypyc_attr
 
@@ -47,7 +47,11 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.interfaces.ispellvalidationsystem import ISpellValidationSystem
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.validation.validation_system import (
+        SpellValidationSystem,
+    )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -238,7 +242,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spell_validator: ISpellValidationSystem,
+            spell_validator: "SpellValidationSystem",
             spell_system_states: Optional[ISpellSystemStates],
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
