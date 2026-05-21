@@ -13,12 +13,12 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
     Mutable build-time configuration surface for one spellbook/runtime context.
 
     `SpellbookConfiguration` is the central staging object for one Spellbook's
-    rich local runtime behavior. It owns the typed property map, idempotent
+    rich local runtime behaviour. It owns the typed property map, idempotent
     keys, and the per-spellbook system hook registry that later runtime systems
     consume.
 
     It governs:
-    * local Spellbook/runtime behavior
+    * local Spellbook/runtime behaviour
     * disposal and phase-scheduler tuning
     * hook registration for Meld / Conduit / Link / Contract events
 
@@ -145,7 +145,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
 
         Args:
             key (str): The name of the property to set.
-            value (Any): The value for the property.
+            value (Any): The value of the property.
 
         Raises:
             RuntimeError: If the configuration is cleaned or frozen.
@@ -388,8 +388,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
                 dynamic environments to register hooks per-Spellbook and later
                 pull the appropriate hook sets when instantiating Conduits.
             hook_name (str):
-                The canonical hook name to register. Must be one of
-                :attr:`_ALLOWED_HOOKS`.
+                The canonical hook name to register. Must be one of: attr:`_ALLOWED_HOOKS`.
             hook (Callable[..., Any]):
                 A callable to be invoked when the corresponding hook event fires.
 
@@ -434,8 +433,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             _hooks[spellbook_id][hook_name] -> list[callables]
 
         Example:
-            cfg.add_hooks(
-                "spellbook-123",
+            cfg.add_hooks("spellbook-123",
                 on_meld_pre_resolve=trace_meld_enter,
                 on_conduit_cleanup_complete=[cleanup_fn_1, cleanup_fn_2],
                 on_contract_created=contract_observer,
@@ -483,7 +481,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         """
         Retrieve the live hook map for a specific Spellbook.
 
-        This returns the internal hook map for ``spellbook_id`` so callers
+        This returns the internal hook map for "spellbook_id" so callers
         (e.g., Conduit / Meld wiring) can share a single hook registry.
 
         Shape:
@@ -569,13 +567,12 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         """
         Fluent
 
-        Set whether spells should be fully ahead-of-time compiled at conjure.
+        Set whether spells should be fully ahead-of-time compiled at conjuring.
 
         Semantics:
-        - ``True``: Full AOT mode. Conjure/runtime behavior follows current eager
-          compilation flow.
-        - ``False``: JIT mode. Downstream runtime gates may defer selected
-          resolution work until first runtime use.
+        - "True": Full AOT mode. Conjure/runtime behaviour follows the current eager compilation flow.
+        - "False": JIT mode. Downstream runtime gates may defer selected
+          resolution work until the first runtime use.
 
         Args:
             enabled (bool): Desired compilation mode flag.
@@ -584,7 +581,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             IConfiguration: This same configuration instance (for chaining).
 
         Raises:
-            TypeError: If ``enabled`` is not a bool.
+            TypeError: If "enabled" is not a bool.
         """
         if not isinstance(enabled, bool):
             raise TypeError("full_ahead_of_time_compilation must be a bool.")
@@ -595,10 +592,10 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         """
         Fluent
 
-        Register a single system hook for a specific Spellbook and return ``self``.
+        Register a single system hook for a specific Spellbook and return "self".
 
-        This is a fluent wrapper over :meth:`add_hook`, supporting all valid
-        hook names defined in :attr:`_ALLOWED_HOOKS`.
+        This is a fluent wrapper over: meth:`add_hook`, supporting all valid
+        hook names defined in: attr:`_ALLOWED_HOOKS`.
 
         Example:
             (SpellbookConfiguration()
@@ -615,7 +612,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         Fluent
 
         Register multiple system hooks for a specific Spellbook in one call
-        and return ``self``.
+        and return "self".
 
         Each keyword argument maps a hook name to either:
             * A single callable, or
@@ -624,8 +621,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         Example:
             (SpellbookConfiguration()
                 .with_defaults()
-                .with_hooks(
-                    "spellbook-123",
+                .with_hooks("spellbook-123",
                     on_meld_pre_resolve=trace_meld_enter,
                     on_conduit_pre_created=log_conduit_construction,
                     on_contract_created=[observer_1, observer_2],
@@ -642,7 +638,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         Load Melderâ€™s standard defaults into this configuration and return `self`
         so you can keep chaining.
 
-        Behavior:
+        Behaviour:
         - Sets local rich-config defaults:
           disposal=False, disposal_method_names=[],
           full_ahead_of_time_compilation=True.
@@ -698,7 +694,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         Append one or more disposal method names (deduplicated, order-preserving)
         and return `self`.
 
-        Behavior:
+        Behaviour:
         - Initializes the list to [] if unset.
         - Preserves existing order; adds new names at the end if not already present.
 
@@ -746,7 +742,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         Fluent alias for `finalize()`.
 
         Contract:
-            - Performs the same validation-and-freeze behavior as `finalize()`.
+            - Performs the same validation-and-freeze behaviour as `finalize()`.
             - Returns `self` for chaining.
         """
         return self.finalize()

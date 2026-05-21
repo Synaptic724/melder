@@ -14,46 +14,46 @@ from mypy_extensions import mypyc_attr
 class UnitOfWork(Cleanable, Future):
     """
     Future-based encapsulation of a single unit of work, with integrated
-    cancellation support via :class:`CancellationEvent` and explicit cleanup.
+    cancellation support via: class:`CancellationEvent` and explicit cleanup.
 
     This class extends both:
 
-        * :class:`Cleanable` – deterministic, idempotent cleanup semantics.
-        * :class:`concurrent.futures.Future` – result(), exception(), callbacks, etc.
+        *: class: 'Cleanable` – deterministic, idempotent cleanup semantics.
+        *: class:`concurrent.futures.Future` – result(), exception(), callbacks, etc.
 
     It **does not** own threads or an executor:
 
         * You construct a UnitOfWork with a callable + args + optional cancel event.
         * You then either:
-            - Call :meth:`run_synchronously` on whatever thread should do the work, or
+            - Call: meth:`run_synchronously` on whatever thread should do the work, or
             - Treat the instance itself as a callable (``threading.Thread(target=uow)``),
               or
             - Use it inside your own worker loop / pipeline.
 
         * The UnitOfWork:
-            - Performs an up-front check of its associated :class:`CancellationEvent`
+            - Performs an up-front check of its associated: class:`CancellationEvent`
               (if provided).
             - Executes the callable.
             - Records `set_result` or `set_exception` on the underlying Future.
 
-    Thread-safety & coordination
+    Thread-safety and coordination
     ----------------------------
 
-    * A per-instance :class:`threading.RLock` (_lock) protects access to internal
+    * A per-instance: class:`threading.RLock` (_lock) protects access to internal
       state that can be cleaned or mutated.
-    * Most public operations call :meth:`check_cleaned` to enforce lifecycle rules.
-    * ``with UnitOfWork(...) as uow:`` acquires the internal lock for the caller,
-      allowing you to safely read/update metadata or coordinate multi-step actions.
+    * Most public operations call: meth:`check_cleaned` to enforce lifecycle rules.
+    * "with UnitOfWork(...) as uow:" acquires the internal lock for the caller,
+      allowing you to safely read/update metadata or coordinate multistep actions.
 
     Cleanup semantics
     -----------------
 
-    * :meth:`cleanup` is idempotent.
+    *: meth: 'cleanup` is idempotent.
     * Once cleaned:
         - All internal references (func, args, kwargs, cancel_event, metadata) are
           nulled out.
         - The internal lock is set to None.
-        - Subsequent guarded operations will fail via :meth:`check_cleaned` or by
+        - Subsequent guarded operations will fail via: meth:`check_cleaned` or by
           detecting that the lock is None.
     """
     __melder_internal__ = _mrg.sentinel
@@ -85,14 +85,14 @@ class UnitOfWork(Cleanable, Future):
                 The callable to execute. This may be a free function or a
                 bound method (e.g. a ResolutionCompiler method).
             args:
-                Optional positional arguments to pass to ``func`` when
+                Optional positional arguments to pass to "func" when
                 executing. Defaults to an empty tuple.
             kwargs:
-                Optional keyword arguments to pass to ``func`` when executing.
+                Optional keyword arguments to pass to "func" when executing.
                 Defaults to an empty dict.
             cancel_event:
                 Optional :class:`CancellationEvent`. If provided, the event is
-                checked for cancellation *before* invoking ``func``.
+                checked for cancellation *before* invoking "func".
             label:
                 Optional human-readable label used for debugging / logging /
                 telemetry (e.g. "scan:spell-01H...", "dag:spell-01K...").
@@ -100,7 +100,7 @@ class UnitOfWork(Cleanable, Future):
                 Optional arbitrary metadata describing this unit of work
                 (spell ID, stage name, ResolutionContext, etc.).
         """
-        # Explicitly init both bases – we don't rely on cooperative super().
+        # Explicitly init both bases – we don't rely on cooperative supper().
         Future.__init__(self)
         Cleanable.__init__(self)
 
@@ -128,7 +128,7 @@ class UnitOfWork(Cleanable, Future):
         Deterministically tear down this UnitOfWork, clearing references and
         disabling further use.
 
-        Behavior:
+        Behaviour:
             * Idempotent – safe to call multiple times.
             * Clears:
                 - The wrapped callable and its bound args/kwargs.
@@ -137,10 +137,10 @@ class UnitOfWork(Cleanable, Future):
             * Marks the object as cleaned and drops the internal lock.
 
         After cleanup:
-            * :meth:`check_cleaned` will cause most operations to raise
-              ``RuntimeError("UnitOfWork has been cleaned.")``.
+            *: meth:`check_cleaned` will cause most operations to raise
+              "RuntimeError("UnitOfWork has been cleaned.")".
             * The underlying Future's internal state (result/exception) is left
-              as-is so any awaiting code can still observe the final outcome.
+              as-is so any awaiting code can still observe the outcome.
         """
         if self._cleaned:
             return
@@ -178,7 +178,7 @@ class UnitOfWork(Cleanable, Future):
         Note:
             This lock is **only** for UnitOfWork's own fields
             (func/args/kwargs/metadata/cancel_event), not the internal
-            lock used by :class:`Future`.
+            lock used by: class: 'Future`.
 
         Returns:
             UnitOfWork: This unit after the internal coordination lock has been
@@ -194,9 +194,9 @@ class UnitOfWork(Cleanable, Future):
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
         """
-        Exit the critical section entered via :meth:`__enter__`.
+        Exit the critical section entered via: meth:`__enter__`.
 
-        The internal lock is always released and exceptions from the with-body
+        The internal lock is always released, and exceptions from the with-body
         are not suppressed.
         """
         self._lock.release()
@@ -209,12 +209,12 @@ class UnitOfWork(Cleanable, Future):
     @property
     def cancel_event(self) -> Optional[CancellationEvent]:
         """
-        The :class:`CancellationEvent` associated with this unit of work, if
+        The: class:`CancellationEvent` associated with this unit of work, if
         any.
 
         Worker code or the underlying callable may use this to perform
         additional cooperative cancellation checks beyond the up-front check
-        done in :meth:`run_synchronously`.
+        done in: meth:`run_synchronously`.
 
         Returns:
             Optional[CancellationEvent]: Shared cancellation view for this unit,
@@ -266,8 +266,7 @@ class UnitOfWork(Cleanable, Future):
         This is the core execution path that:
 
             * Ensures the UnitOfWork has not been cleaned.
-            * Performs an up-front cancellation check using the associated
-              :class:`CancellationEvent`, if any.
+            * Performs an up-front cancellation check using the associated: class:`CancellationEvent`, if any.
             * Invokes the underlying callable with its bound args/kwargs.
             * Records the result or exception on the underlying Future.
 
@@ -275,7 +274,7 @@ class UnitOfWork(Cleanable, Future):
 
             result = uow.run_synchronously()
 
-        Or indirectly by passing the UnitOfWork instance itself as a callable:
+        Or indirectly bypassing the UnitOfWork instance itself as a callable:
 
             thread = threading.Thread(target=uow)
             thread.start()
@@ -285,11 +284,10 @@ class UnitOfWork(Cleanable, Future):
 
         Raises:
             OperationCancelledError:
-                If cancellation was requested via the associated
-                :class:`CancellationEvent` prior to execution.
+                If cancellation was requested via the associated: class:`CancellationEvent` prior to execution.
             Exception:
                 Any exception raised by the underlying callable. It will also
-                be recorded on the underlying Future and re-raised here.
+                be recorded in the underlying Future and re-raised here.
         """
         self.check_cleaned()
         with self._lock:
@@ -321,13 +319,12 @@ class UnitOfWork(Cleanable, Future):
         Convenience alias that executes this unit of work synchronously on
         the caller's thread.
 
-        This is equivalent to :meth:`run_synchronously`. It is mainly
+        This is equivalent to: meth:`run_synchronously`. It is mainly
         provided so that UnitOfWork instances can be passed to APIs that
         expect a plain callable (e.g. ad-hoc thread targets or custom
         worker loops).
 
         Returns:
-            Any: Result of the wrapped callable, exactly as returned by
-            :meth:`run_synchronously`.
+            Any: Result of the wrapped callable, exactly as returned by: meth:`run_synchronously`.
         """
         return self.run_synchronously()

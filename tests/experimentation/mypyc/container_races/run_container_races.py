@@ -17,12 +17,16 @@ from time import perf_counter_ns
 ROOT = Path(__file__).resolve().parent
 
 THREAD_COUNTS = (1, 2, 3, 4, 5)
-ITERATIONS_PER_THREAD = 100_000
 REPEATS = 5
 
 REQUIRE_NOGIL = True
 WRITE_CSV = True
-CSV_NAME = "container_thread_safety_results.csv"
+CSV_NAME = "comprehensive_container_thread_safety_results.csv"
+
+FAST_ITERATIONS = 100_000
+MEDIUM_ITERATIONS = 30_000
+SLOW_ITERATIONS = 3_000
+VERY_SLOW_ITERATIONS = 1_000
 
 
 @dataclass(slots=True)
@@ -36,6 +40,7 @@ class TrialResult:
     expected_final_size: int
     actual_final_size: int
     exception_count: int
+    validation_error_count: int
     elapsed_ns: int
 
     @property
@@ -105,7 +110,7 @@ def build_extension() -> None:
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=240,
+        timeout=600,
     )
 
     print(proc.stdout)
@@ -142,13 +147,27 @@ def import_modules():
     return pure_module, compiled_module
 
 
+def get_validation_error_count(target: object) -> int:
+    validator = getattr(target, "validation_error_count", None)
+
+    if validator is None:
+        return 0
+
+    value = validator()
+
+    if not isinstance(value, int):
+        raise TypeError(f"validation_error_count returned non-int: {value!r}")
+
+    return value
+
+
 def run_trial(
         target_cls: type,
+        use_lock: bool,
         thread_count: int,
         iterations_per_thread: int,
-        expected_final_size: int,
-) -> tuple[int, int, int]:
-    target = target_cls()
+) -> tuple[int, int, int, int]:
+    target = target_cls(use_lock)
     total_operations = thread_count * iterations_per_thread
 
     target.prepare(total_operations)
@@ -186,8 +205,9 @@ def run_trial(
         print("worker exception:", repr(errors.get()))
 
     actual_final_size = target.final_size()
+    validation_error_count = get_validation_error_count(target)
 
-    return elapsed_ns, actual_final_size, exception_count
+    return elapsed_ns, actual_final_size, exception_count, validation_error_count
 
 
 def run_case(
@@ -197,16 +217,18 @@ def run_case(
         lock_mode: str,
         target_cls: type,
         thread_count: int,
+        iterations_per_thread: int,
         expected_final_size: int,
 ) -> list[TrialResult]:
     results: list[TrialResult] = []
+    use_lock = lock_mode == "locked"
 
     for _ in range(REPEATS):
-        elapsed_ns, actual_final_size, exception_count = run_trial(
+        elapsed_ns, actual_final_size, exception_count, validation_error_count = run_trial(
             target_cls,
+            use_lock,
             thread_count,
-            ITERATIONS_PER_THREAD,
-            expected_final_size,
+            iterations_per_thread,
         )
 
         results.append(
@@ -216,10 +238,11 @@ def run_case(
                 operation_name=operation_name,
                 lock_mode=lock_mode,
                 thread_count=thread_count,
-                iterations_per_thread=ITERATIONS_PER_THREAD,
+                iterations_per_thread=iterations_per_thread,
                 expected_final_size=expected_final_size,
                 actual_final_size=actual_final_size,
                 exception_count=exception_count,
+                validation_error_count=validation_error_count,
                 elapsed_ns=elapsed_ns,
             )
         )
@@ -239,6 +262,7 @@ def summarize_group(results: list[TrialResult]) -> dict[str, float | int | str]:
         for result in results
         if result.actual_final_size != result.expected_final_size
         or result.exception_count != 0
+        or result.validation_error_count != 0
     )
 
     return {
@@ -261,6 +285,7 @@ def summarize_group(results: list[TrialResult]) -> dict[str, float | int | str]:
         "min_final_size": min(result.actual_final_size for result in results),
         "max_final_size": max(result.actual_final_size for result in results),
         "max_exceptions": max(result.exception_count for result in results),
+        "max_validation_errors": max(result.validation_error_count for result in results),
         "bad_trials": bad_trials,
     }
 
@@ -270,8 +295,8 @@ def print_summary_table(summary_rows: list[dict[str, float | int | str]]) -> Non
     print("SUMMARY")
     print(
         f"{'runtime':<12} "
-        f"{'container':<8} "
-        f"{'op':<8} "
+        f"{'container':<14} "
+        f"{'op':<14} "
         f"{'mode':<8} "
         f"{'thr':>3} "
         f"{'ops':>10} "
@@ -282,14 +307,15 @@ def print_summary_table(summary_rows: list[dict[str, float | int | str]]) -> Non
         f"{'min size':>8} "
         f"{'max size':>8} "
         f"{'max exc':>8} "
+        f"{'valid err':>9} "
         f"{'bad':>5}"
     )
 
     for row in summary_rows:
         print(
             f"{str(row['runtime']):<12} "
-            f"{str(row['container']):<8} "
-            f"{str(row['operation']):<8} "
+            f"{str(row['container']):<14} "
+            f"{str(row['operation']):<14} "
             f"{str(row['lock_mode']):<8} "
             f"{int(row['threads']):>3} "
             f"{int(row['total_ops']):>10,} "
@@ -300,6 +326,7 @@ def print_summary_table(summary_rows: list[dict[str, float | int | str]]) -> Non
             f"{int(row['min_final_size']):>8} "
             f"{int(row['max_final_size']):>8} "
             f"{int(row['max_exceptions']):>8} "
+            f"{int(row['max_validation_errors']):>9} "
             f"{int(row['bad_trials']):>5}"
         )
 
@@ -327,6 +354,7 @@ def write_csv(summary_rows: list[dict[str, float | int | str]]) -> None:
         "min_final_size",
         "max_final_size",
         "max_exceptions",
+        "max_validation_errors",
         "bad_trials",
     ]
 
@@ -341,38 +369,73 @@ def write_csv(summary_rows: list[dict[str, float | int | str]]) -> None:
     print("wrote csv:", path)
 
 
-def run_benchmark(pure_module, compiled_module) -> None:
-    cases = [
-        ("pure-python", "list", "append", "unlocked", pure_module.UnlockedListAppendOnly, "add"),
-        ("pure-python", "list", "append", "locked", pure_module.LockedListAppendOnly, "add"),
-        ("pure-python", "list", "pop", "unlocked", pure_module.UnlockedListPopOnly, "remove"),
-        ("pure-python", "list", "pop", "locked", pure_module.LockedListPopOnly, "remove"),
+def add_cases_for_module(runtime_name: str, module) -> list[tuple[str, str, str, type, str, int]]:
+    return [
+        (runtime_name, "list", "append", module.ListAppendOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "list", "pop_end", module.ListPopEndOnly, "remove", FAST_ITERATIONS),
+        (runtime_name, "list", "pop_zero", module.ListPopZeroOnly, "remove", SLOW_ITERATIONS),
+        (runtime_name, "list", "insert_zero", module.ListInsertZeroOnly, "add", SLOW_ITERATIONS),
+        (runtime_name, "list", "remove_unique", module.ListRemoveUniqueOnly, "remove", VERY_SLOW_ITERATIONS),
 
-        ("pure-python", "deque", "append", "unlocked", pure_module.UnlockedDequeAppendOnly, "add"),
-        ("pure-python", "deque", "append", "locked", pure_module.LockedDequeAppendOnly, "add"),
-        ("pure-python", "deque", "popleft", "unlocked", pure_module.UnlockedDequePopOnly, "remove"),
-        ("pure-python", "deque", "popleft", "locked", pure_module.LockedDequePopOnly, "remove"),
+        (runtime_name, "deque", "append", module.DequeAppendOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "deque", "appendleft", module.DequeAppendLeftOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "deque", "pop", module.DequePopOnly, "remove", FAST_ITERATIONS),
+        (runtime_name, "deque", "popleft", module.DequePopleftOnly, "remove", FAST_ITERATIONS),
 
-        ("pure-python", "dict", "set", "unlocked", pure_module.UnlockedDictSetOnly, "add"),
-        ("pure-python", "dict", "set", "locked", pure_module.LockedDictSetOnly, "add"),
-        ("pure-python", "dict", "pop", "unlocked", pure_module.UnlockedDictPopOnly, "remove"),
-        ("pure-python", "dict", "pop", "locked", pure_module.LockedDictPopOnly, "remove"),
+        (runtime_name, "dict", "setitem", module.DictSetOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "dict", "pop", module.DictPopOnly, "remove", FAST_ITERATIONS),
+        (runtime_name, "dict", "delitem", module.DictDelOnly, "remove", FAST_ITERATIONS),
 
-        ("mypyc", "list", "append", "unlocked", compiled_module.UnlockedListAppendOnly, "add"),
-        ("mypyc", "list", "append", "locked", compiled_module.LockedListAppendOnly, "add"),
-        ("mypyc", "list", "pop", "unlocked", compiled_module.UnlockedListPopOnly, "remove"),
-        ("mypyc", "list", "pop", "locked", compiled_module.LockedListPopOnly, "remove"),
+        (runtime_name, "OrderedDict", "setitem", module.OrderedDictSetOnly, "add", MEDIUM_ITERATIONS),
+        (runtime_name, "OrderedDict", "pop", module.OrderedDictPopOnly, "remove", MEDIUM_ITERATIONS),
+        (runtime_name, "OrderedDict", "popitem", module.OrderedDictPopItemOnly, "remove", MEDIUM_ITERATIONS),
+        (runtime_name, "OrderedDict", "move_to_end", module.OrderedDictMoveToEndOnly, "stable", MEDIUM_ITERATIONS),
 
-        ("mypyc", "deque", "append", "unlocked", compiled_module.UnlockedDequeAppendOnly, "add"),
-        ("mypyc", "deque", "append", "locked", compiled_module.LockedDequeAppendOnly, "add"),
-        ("mypyc", "deque", "popleft", "unlocked", compiled_module.UnlockedDequePopOnly, "remove"),
-        ("mypyc", "deque", "popleft", "locked", compiled_module.LockedDequePopOnly, "remove"),
+        (runtime_name, "set", "add", module.SetAddOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "set", "remove", module.SetRemoveOnly, "remove", FAST_ITERATIONS),
+        (runtime_name, "set", "discard", module.SetDiscardOnly, "remove", FAST_ITERATIONS),
+        (runtime_name, "set", "pop", module.SetPopOnly, "remove", FAST_ITERATIONS),
 
-        ("mypyc", "dict", "set", "unlocked", compiled_module.UnlockedDictSetOnly, "add"),
-        ("mypyc", "dict", "set", "locked", compiled_module.LockedDictSetOnly, "add"),
-        ("mypyc", "dict", "pop", "unlocked", compiled_module.UnlockedDictPopOnly, "remove"),
-        ("mypyc", "dict", "pop", "locked", compiled_module.LockedDictPopOnly, "remove"),
+        (runtime_name, "heapq", "heappush", module.HeapPushOnly, "add", MEDIUM_ITERATIONS),
+        (runtime_name, "heapq", "heappop", module.HeapPopOnly, "remove", MEDIUM_ITERATIONS),
+
+        (runtime_name, "array", "append", module.ArrayAppendOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "array", "pop", module.ArrayPopOnly, "remove", FAST_ITERATIONS),
+
+        (runtime_name, "bytearray", "append", module.BytearrayAppendOnly, "add", FAST_ITERATIONS),
+        (runtime_name, "bytearray", "pop", module.BytearrayPopOnly, "remove", FAST_ITERATIONS),
+
+        (runtime_name, "SimpleQueue", "put", module.SimpleQueuePutOnly, "add", MEDIUM_ITERATIONS),
+        (runtime_name, "SimpleQueue", "get", module.SimpleQueueGetOnly, "remove", MEDIUM_ITERATIONS),
+
+        (runtime_name, "Queue", "put", module.QueuePutOnly, "add", MEDIUM_ITERATIONS),
+        (runtime_name, "Queue", "get", module.QueueGetOnly, "remove", MEDIUM_ITERATIONS),
+
+        (runtime_name, "LifoQueue", "put", module.LifoQueuePutOnly, "add", MEDIUM_ITERATIONS),
+        (runtime_name, "LifoQueue", "get", module.LifoQueueGetOnly, "remove", MEDIUM_ITERATIONS),
+
+        (runtime_name, "PriorityQueue", "put", module.PriorityQueuePutOnly, "add", SLOW_ITERATIONS),
+        (runtime_name, "PriorityQueue", "get", module.PriorityQueueGetOnly, "remove", SLOW_ITERATIONS),
     ]
+
+
+def expected_size_for_kind(operation_kind: str, total_ops: int) -> int:
+    if operation_kind == "add":
+        return total_ops
+
+    if operation_kind == "remove":
+        return 0
+
+    if operation_kind == "stable":
+        return total_ops
+
+    raise ValueError(f"unknown operation_kind: {operation_kind!r}")
+
+
+def run_benchmark(pure_module, compiled_module) -> None:
+    cases = []
+    cases.extend(add_cases_for_module("pure-python", pure_module))
+    cases.extend(add_cases_for_module("mypyc", compiled_module))
 
     summary_rows: list[dict[str, float | int | str]] = []
 
@@ -382,47 +445,47 @@ def run_benchmark(pure_module, compiled_module) -> None:
     try:
         for thread_count in THREAD_COUNTS:
             print()
-            print("=" * 80)
+            print("=" * 100)
             print(f"THREADS = {thread_count}")
-            print("=" * 80)
+            print("=" * 100)
 
-            total_ops = thread_count * ITERATIONS_PER_THREAD
+            for runtime_name, container_name, operation_name, target_cls, operation_kind, iterations_per_thread in cases:
+                total_ops = thread_count * iterations_per_thread
+                expected_final_size = expected_size_for_kind(operation_kind, total_ops)
 
-            for runtime_name, container_name, operation_name, lock_mode, target_cls, operation_kind in cases:
-                if operation_kind == "add":
-                    expected_final_size = total_ops
-                else:
-                    expected_final_size = 0
+                for lock_mode in ("unlocked", "locked"):
+                    print(
+                        f"running: runtime={runtime_name}, "
+                        f"container={container_name}, "
+                        f"op={operation_name}, "
+                        f"mode={lock_mode}, "
+                        f"threads={thread_count}, "
+                        f"iters/thread={iterations_per_thread}"
+                    )
 
-                print(
-                    f"running: runtime={runtime_name}, "
-                    f"container={container_name}, "
-                    f"op={operation_name}, "
-                    f"mode={lock_mode}, "
-                    f"threads={thread_count}"
-                )
+                    results = run_case(
+                        runtime_name,
+                        container_name,
+                        operation_name,
+                        lock_mode,
+                        target_cls,
+                        thread_count,
+                        iterations_per_thread,
+                        expected_final_size,
+                    )
 
-                results = run_case(
-                    runtime_name,
-                    container_name,
-                    operation_name,
-                    lock_mode,
-                    target_cls,
-                    thread_count,
-                    expected_final_size,
-                )
+                    summary = summarize_group(results)
+                    summary_rows.append(summary)
 
-                summary = summarize_group(results)
-                summary_rows.append(summary)
-
-                print(
-                    f"  median_ms={float(summary['median_ms']):.3f}, "
-                    f"median_ns/op={float(summary['median_ns_per_op']):.1f}, "
-                    f"min_size={int(summary['min_final_size'])}, "
-                    f"max_size={int(summary['max_final_size'])}, "
-                    f"max_exceptions={int(summary['max_exceptions'])}, "
-                    f"bad_trials={int(summary['bad_trials'])}"
-                )
+                    print(
+                        f"  median_ms={float(summary['median_ms']):.3f}, "
+                        f"median_ns/op={float(summary['median_ns_per_op']):.1f}, "
+                        f"min_size={int(summary['min_final_size'])}, "
+                        f"max_size={int(summary['max_final_size'])}, "
+                        f"max_exceptions={int(summary['max_exceptions'])}, "
+                        f"validation_errors={int(summary['max_validation_errors'])}, "
+                        f"bad_trials={int(summary['bad_trials'])}"
+                    )
 
     finally:
         if gc_was_enabled:

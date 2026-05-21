@@ -25,7 +25,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 @mypyc_attr(native_class=True)
 class PhaseScheduler(Cleanable):
     """
-    Coordinated, multi-phase scheduler for Spellbook resolution.
+    Coordinated, multiphase scheduler for Spellbook resolution.
 
     This is a **one-shot**, per-Spellbook pipeline runner that:
 
@@ -37,7 +37,7 @@ class PhaseScheduler(Cleanable):
         * A single ConcurrentQueue feeding all worker threads.
         * A fixed pool of worker threads reused across all phases.
     - Executes phases in **registration order**, enforcing:
-        * Phase barrier: all UoWs for that phase must complete.
+        * Phase barrier: all UoWs for that phase must be complete.
         * Timeout: if the barrier is not reached in time, the phase aborts.
         * Cancellation: any error or timeout cancels the entire pipeline.
 
@@ -59,7 +59,7 @@ class PhaseScheduler(Cleanable):
         scheduler.register_phase("build_dags", phase3_factory)
 
         results = scheduler.run_all_phases()
-        # results["scan_spells"] -> Sequence[IUnitOfWork] (inspect .result())
+        # results[ "scan_spells"] -> Sequence[IUnitOfWork] (inspect .result())
 
         scheduler.cleanup()
 
@@ -69,8 +69,7 @@ class PhaseScheduler(Cleanable):
       It only coordinates UnitOfWork instances.
     - Phase strategies/factories are responsible for:
       * Inspecting the Spellbook.
-      * Creating appropriately labeled UnitOfWork instances via
-        :meth:`create_unit_of_work` so that all work items share the
+      * Creating appropriately labelled UnitOfWork instances via: meth:`create_unit_of_work` so that all work items share the
         scheduler's CancellationEvent.
     """
     __melder_internal__ = _mrg.sentinel
@@ -158,7 +157,7 @@ class PhaseScheduler(Cleanable):
 
     def _get_timeout_ms(self, configuration: IConfiguration) -> int:
         """
-        Read the per-phase barrier timeout from configuration.
+        Read the per-phase barrier timeout from the configuration.
 
         Returns:
             int: Barrier timeout in milliseconds.
@@ -187,7 +186,7 @@ class PhaseScheduler(Cleanable):
         """
         Deterministically tear down the scheduler.
 
-        Behavior:
+        Behaviour:
             - Idempotent.
             - Signals cancellation.
             - Sends a sentinel to each worker thread and lets them exit.
@@ -253,7 +252,7 @@ class PhaseScheduler(Cleanable):
         Shared CancellationEvent used by all Units of Work.
 
         Phase factories should NOT construct their own events; instead they
-        should call :meth:`create_unit_of_work` so this event is wired in
+        should call: meth:`create_unit_of_work` so this event is wired in
         automatically.
 
         Returns:
@@ -265,21 +264,21 @@ class PhaseScheduler(Cleanable):
     @property
     def is_cancelled(self) -> bool:
         """
-        Return whether scheduler-wide cancellation has been signalled.
+        Return whether a scheduler-wide cancellation has been signalled.
         """
         return self._cancel_signal.is_set
 
     @property
     def workers(self) -> int:
         """
-        Return configured worker-thread count for this scheduler instance.
+        Return the configured worker-thread count for this scheduler instance.
         """
         return self._workers
 
     @property
     def barrier_timeout_ms(self) -> int:
         """
-        Return configured per-phase barrier timeout in milliseconds.
+        Return a configured per-phase barrier timeout in milliseconds.
         """
         return self._barrier_timeout_ms
 
@@ -350,8 +349,7 @@ class PhaseScheduler(Cleanable):
                 Logical phase name (e.g. "scan_spells", "build_graphs").
             factory:
                 Callable[[] -> Sequence[IUnitOfWork]] that, when invoked, builds
-                all UnitsOfWork for this phase. Factories should use
-                :meth:`create_unit_of_work` to ensure each unit is bound to
+                all UnitsOfWork for this phase. Factories should use: meth:`create_unit_of_work` to ensure each unit is bound to
                 this scheduler's CancellationEvent.
 
         Raises:
@@ -383,7 +381,7 @@ class PhaseScheduler(Cleanable):
 
         Contract:
             - Returns immediately when workers are already running.
-            - Creates exactly ``self._workers`` daemon threads on first start.
+            - Creates exactly "self._workers" daemon threads on the first start.
         """
         if self._workers_started:
             return
@@ -574,7 +572,7 @@ class PhaseScheduler(Cleanable):
             raise PhaseExecutionError(phase_name, errors)
 
         # If cancelled externally (no unit error yet), treat as cancellation.
-        # NOTE: This will only be observed after wait() returns. If you need immediate response to
+        # NOTE: This will only be observed after wait() returns. If you need an immediate response to
         # external cancel, you must add a cancel-aware wakeup (see notes below).
         if self._cancel_signal.is_set:
             raise PhaseSchedulerError(
@@ -607,7 +605,7 @@ class PhaseScheduler(Cleanable):
 
     def run_all_phases(self, conduit_id: Optional[str] = None) -> Dict[str, Sequence[IUnitOfWork]]:
         """
-        Execute all registered phases in registration order.
+        Execute all registered phases in the registration order.
 
         Args:
             conduit_id:
@@ -627,7 +625,7 @@ class PhaseScheduler(Cleanable):
         """
         self.check_cleaned()
 
-        # Snapshot the phase order to avoid surprises if someone tweaks it
+        # Snapshot the phase in order to avoid surprises if someone tweaks it
         # concurrently (ConcurrentList is safe, but we still want a stable run view).
         phase_names = list(self._phase_order)
 
