@@ -1,13 +1,15 @@
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ispellbook import ISpellbook
 
 _SCAN_BIND_ATTR = "__melder_scan_bind__"
 
@@ -214,12 +216,12 @@ class Scan:
     """
     __slots__ = ("_spellbook",)
 
-    def __init__(self, spellbook: ISpellbook) -> None:
+    def __init__(self, spellbook: Spellbook) -> None:
         """
         Initialize a Scan helper bound to a specific Spellbook.
 
         Args:
-            spellbook (ISpellbook): The Spellbook used for binding.
+            spellbook (Spellbook): The Spellbook used for binding.
         Raises:
             ValueError: If spellbook is None.
         """

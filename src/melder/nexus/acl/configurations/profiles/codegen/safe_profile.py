@@ -8,10 +8,9 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
     FrameACLViewProfile,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.utilities.interfaces.iframeaclcodegenprofilestrategy import IFrameACLCodegenProfileStrategy
 
 
-class SafeCodegenProfileStrategy(IFrameACLCodegenProfileStrategy):
+class SafeCodegenProfileStrategy:
     """
     Build the reusable `safe` codegen profile.
 

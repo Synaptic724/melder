@@ -27,7 +27,6 @@ from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProf
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -35,6 +34,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 
 @mypyc_attr(native_class=True)
@@ -76,7 +76,7 @@ class SpellbookCreationSystem(Cleanable):
     def __init__(
             self,
             *,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             policy: Optional[str],
             automatic: bool,
             name: Optional[str],
@@ -104,7 +104,7 @@ class SpellbookCreationSystem(Cleanable):
             None.
         """
         super().__init__()
-        self._spellbook: ISpellbook = spellbook
+        self._spellbook: Spellbook = spellbook
         self._policy: Optional[str] = policy
         self._automatic: bool = automatic
         self._name: Optional[str] = name
@@ -209,7 +209,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _prepare_spellbook_for_conjure(
             *,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             phase_scheduler_cls: Type[PhaseScheduler],
     ) -> None:
         """
@@ -267,7 +267,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _resolve_conjure_policy(
             *,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             policy: Optional[str],
             automatic: bool,
     ) -> Policies:
@@ -349,7 +349,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _resolve_frame_dev_ops_manager(
             *,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
     ) -> DevOpsManager:
         """
         Purpose:
@@ -373,7 +373,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _resolve_existing_frame(
             *,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
     ) -> IAethericFrame:
         """
         Purpose:
@@ -625,7 +625,7 @@ class SpellbookCreationSystem(Cleanable):
             return full_ahead_of_time_compilation
 
     @staticmethod
-    def get_conjure_hook_map(spellbook: ISpellbook) -> Optional[Mapping[str, List[Callable]]]:
+    def get_conjure_hook_map(spellbook: Spellbook) -> Optional[Mapping[str, List[Callable]]]:
         """
         Purpose:
             Fetch registered conduit lifecycle hooks for the Spellbook id.

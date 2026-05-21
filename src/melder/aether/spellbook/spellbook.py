@@ -23,7 +23,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state
 if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.iaether import IAether
@@ -41,7 +40,7 @@ from melder.nexus.nexus import Nexus
 
 #region Spellbook
 @mypyc_attr(native_class=True)
-class Spellbook(Cleanable, ISpellbook):
+class Spellbook(Cleanable):
     """
     Public API
 
@@ -431,7 +430,7 @@ and logging.
 
     #endregion Disposal
     #region Context Manager
-    def __enter__(self) -> ISpellbook:
+    def __enter__(self) -> Spellbook:
         """
         Enter the Spellbook lock context and return `self`.
 
@@ -440,7 +439,7 @@ and logging.
             across a controlled block without exposing `_lock` directly.
 
         Returns:
-            ISpellbook:
+            Spellbook:
                 This Spellbook instance while the lock is held.
         """
         self.check_cleaned()

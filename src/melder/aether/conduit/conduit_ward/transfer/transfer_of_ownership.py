@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.utilities.interfaces.ispellbook import ISpellbook
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -109,8 +109,8 @@ class TransferOfOwnership(Cleanable):
         self.mark_dependencies_dirty: bool = mark_dependencies_dirty
 
         self._lock: threading.RLock = threading.RLock()
-        self._source_spellbook: ISpellbook = self.source_conduit._spellbook
-        self._target_spellbook: ISpellbook = self.target_conduit._spellbook
+        self._source_spellbook: Spellbook = self.source_conduit._spellbook
+        self._target_spellbook: Spellbook = self.target_conduit._spellbook
         self._aether: IAether = self._source_spellbook._aether
         self._frame_name: str = self.source_conduit._aetheric_frame_name
         self._preflight_summary: Dict[str, Any] = {}
@@ -491,7 +491,7 @@ class TransferOfOwnership(Cleanable):
             raise RuntimeError(
                 "Cannot use a SpellIndex without an attached owner Spellbook."
             )
-        spellbook = cast(ISpellbook, owner_spellbook)
+        spellbook = cast(Spellbook, owner_spellbook)
         spell_states = spellbook._spell_system_states
         if spell_states is None:
             raise RuntimeError("Owner Spellbook has no SpellSystemStates.")

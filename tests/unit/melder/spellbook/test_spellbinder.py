@@ -52,7 +52,7 @@ def test_bind_sets_core_fields_and_resets_prior_state():
 
 
 def test_constructor_requires_spellbook() -> None:
-    with pytest.raises(ValueError, match="SpellBinder requires a valid ISpellbook instance."):
+    with pytest.raises(ValueError, match="SpellBinder requires a valid Spellbook instance."):
         SpellBinder(None)
 
 

@@ -32,7 +32,6 @@ from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
@@ -43,7 +42,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     IConfiguration: SpellbookConfiguration,
     ISafeLogger: SafeLogger,
     ISpell: Spell,
-    ISpellbook: Spellbook,
 }
 
 

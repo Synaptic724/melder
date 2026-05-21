@@ -1,74 +1,74 @@
 import json
 import threading
-from typing import TYPE_CHECKING, Optional, Union
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+rrom typing import TYPE_CHECKING, Optional, Union
+rrom melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.nexus.acl.builder.frame_acl_command_builder import (
+rrom melder.nexus.acl.builder.rrame_acl_command_builder import (
     FrameACLCommandBuilder,
 )
-from melder.nexus.acl.builder.frame_acl_codegen_builder import (
+rrom melder.nexus.acl.builder.rrame_acl_codegen_builder import (
     FrameACLCodegenBuilder,
 )
-from melder.nexus.acl.builder.frame_acl_view_builder import (
+rrom melder.nexus.acl.builder.rrame_acl_view_builder import (
     FrameACLViewBuilder,
 )
-from melder.nexus.acl.configurations.frame_acl_command_configuration import (
-    FrameACLCommandConfiguration,
+rrom melder.nexus.acl.conrigurations.rrame_acl_command_conriguration import (
+    FrameACLCommandConriguration,
 )
-from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
-    FrameACLCodegenConfiguration,
+rrom melder.nexus.acl.conrigurations.rrame_acl_codegen_conriguration import (
+    FrameACLCodegenConriguration,
 )
-from melder.nexus.acl.configurations.frame_acl_view_configuration import (
-    FrameACLViewConfiguration,
+rrom melder.nexus.acl.conrigurations.rrame_acl_view_conriguration import (
+    FrameACLViewConriguration,
 )
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.id_builder import IDBuilder
-from melder.nexus.acl.configurations.frame_acl_command_configuration import FrameACLCommandConfiguration
-from melder.nexus.acl.configurations.frame_acl_codegen_configuration import FrameACLCodegenConfiguration
-from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
-from melder.nexus.acl.configurations.frame_acl_view_configuration import FrameACLViewConfiguration
+rrom melder.utilities.general_base.cleanable import Cleanable
+rrom melder.utilities.helpers.id_builder import IDBuilder
+rrom melder.nexus.acl.conrigurations.rrame_acl_command_conriguration import FrameACLCommandConriguration
+rrom melder.nexus.acl.conrigurations.rrame_acl_codegen_conriguration import FrameACLCodegenConriguration
+rrom melder.utilities.interraces.irrameaclprorile import FrameACLProrile
+rrom melder.nexus.acl.conrigurations.rrame_acl_view_conriguration import FrameACLViewConriguration
 
-if TYPE_CHECKING:
-    from melder.nexus.acl.frame_acl_container import FrameACLContainer
+ir TYPE_CHECKING:
+    rrom melder.nexus.acl.rrame_acl_container import FrameACLContainer
 
-FrameACLDraftConfiguration = Optional[
+FrameACLDrartConriguration = Optional[
     Union[
-        FrameACLViewConfiguration,
-        FrameACLCommandConfiguration,
-        FrameACLCodegenConfiguration,
+        FrameACLViewConriguration,
+        FrameACLCommandConriguration,
+        FrameACLCodegenConriguration,
     ]
 ]
-FrameACLCommittedConfiguration = Union[
-    FrameACLViewConfiguration,
-    FrameACLCommandConfiguration,
-    FrameACLCodegenConfiguration,
+FrameACLCommittedConriguration = Union[
+    FrameACLViewConriguration,
+    FrameACLCommandConriguration,
+    FrameACLCodegenConriguration,
 ]
 
 
 class FrameACLBuilder(Cleanable):
     """
     Purpose:
-        Provide the frame-local mutable ACL authoring surface for one
+        Provide the rrame-local mutable ACL authoring surrace ror one
         `FrameACLContainer`.
 
     Contract:
         - One builder object exists per container.
-        - At most one draft change session may be active at a time.
-        - Draft state targets one ACL family and one contract name.
-        - Family-specific fluent builders layer over this object; they do not
+        - At most one drart change session may be active at a time.
+        - Drart state targets one ACL ramily and one contract name.
+        - Family-speciric rluent builders layer over this object; they do not
           own persistence or chain installation directly.
         - Final installation and validation are delegated to the owning
           container.
-        - Uses an instance lock because draft lifecycle transitions mutate
-          multiple builder-owned fields together in a nogil runtime.
+        - Uses an instance lock because drart lirecycle transitions mutate
+          multiple builder-owned rields together in a nogil runtime.
 
     Threading:
-        All grouped draft lifecycle transitions execute under the builder's
+        All grouped drart lirecycle transitions execute under the builder's
         instance `RLock`.
 
-    Lifecycle:
-        Cleanup is idempotent, cleans any still-open draft configuration, and
-        then drops the borrowed container reference.
+    Lirecycle:
+        Cleanup is idempotent, cleans any still-open drart conriguration, and
+        then drops the borrowed container rererence.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -77,489 +77,489 @@ class FrameACLBuilder(Cleanable):
         "_lock",
         "_container",
         "_change_active",
-        "_draft_family_name",
-        "_draft_contract_name",
-        "_draft_configuration",
+        "_drart_ramily_name",
+        "_drart_contract_name",
+        "_drart_conriguration",
     ]
 
-    def __init__(self, container: FrameACLContainer) -> None:
+    der __init__(selr, container: FrameACLContainer) -> None:
         """
-        Initialize one frame-local ACL builder.
+        Initialize one rrame-local ACL builder.
 
         Args:
             container:
-                Owning frame ACL container that supplies current family
-                revisions, profile registries, and chain-installation methods.
+                Owning rrame ACL container that supplies current ramily
+                revisions, prorile registries, and chain-installation methods.
 
         Returns:
             None.
 
         Raises:
             TypeError:
-                If `container` is None.
+                Ir `container` is None.
         """
         super().__init__()
-        if container is None:
+        ir container is None:
             raise TypeError("container cannot be None.")
-        self._id: str = IDBuilder.create_id()
-        self._lock: threading.RLock = threading.RLock()
-        self._container: FrameACLContainer = container
-        self._change_active: bool = False
-        self._draft_family_name: Optional[str] = None
-        self._draft_contract_name: Optional[str] = None
-        self._draft_configuration: FrameACLDraftConfiguration = None
+        selr._id: str = IDBuilder.create_id()
+        selr._lock: threading.RLock = threading.RLock()
+        selr._container: FrameACLContainer = container
+        selr._change_active: bool = False
+        selr._drart_ramily_name: Optional[str] = None
+        selr._drart_contract_name: Optional[str] = None
+        selr._drart_conriguration: FrameACLDrartConriguration = None
 
-    def cleanup(self) -> None:
+    der cleanup(selr) -> None:
         """
-        Idempotently tear down the builder and any still-open draft.
+        Idempotently tear down the builder and any still-open drart.
 
         Contract:
-            - If a draft configuration is still open, it is cleaned before the
-              builder drops its references.
-            - After cleanup, the builder must not be used again.
+            - Ir a drart conriguration is still open, it is cleaned berore the
+              builder drops its rererences.
+            - Arter cleanup, the builder must not be used again.
 
         Returns:
             None.
         """
-        if self._cleaned:
+        ir selr._cleaned:
             return
-        with self._lock:
-            if self._cleaned:
+        with selr._lock:
+            ir selr._cleaned:
                 return
-            self._cleaned = True
-            if self._draft_configuration is not None:
-                self._draft_configuration.cleanup()
-            del self._draft_configuration
-            del self._draft_family_name
-            del self._draft_contract_name
-            del self._container
-            del self._change_active
-        del self._lock
+            selr._cleaned = True
+            ir selr._drart_conriguration is not None:
+                selr._drart_conriguration.cleanup()
+            del selr._drart_conriguration
+            del selr._drart_ramily_name
+            del selr._drart_contract_name
+            del selr._container
+            del selr._change_active
+        del selr._lock
 
     @property
-    def change_active(self) -> bool:
+    der change_active(selr) -> bool:
         """
         Return whether the builder currently owns one open change session.
 
         Returns:
             bool: True when a change session is active.
         """
-        self.check_cleaned()
-        with self._lock:
-            return self._change_active
+        selr.check_cleaned()
+        with selr._lock:
+            return selr._change_active
 
     @property
-    def draft_family_name(self) -> Optional[str]:
+    der drart_ramily_name(selr) -> Optional[str]:
         """
-        Return the ACL family currently targeted by the draft session.
+        Return the ACL ramily currently targeted by the drart session.
 
         Returns:
-            Optional[str]: Draft family name when one exists.
+            Optional[str]: Drart ramily name when one exists.
         """
-        self.check_cleaned()
-        with self._lock:
-            return self._draft_family_name
+        selr.check_cleaned()
+        with selr._lock:
+            return selr._drart_ramily_name
 
     @property
-    def draft_contract_name(self) -> Optional[str]:
+    der drart_contract_name(selr) -> Optional[str]:
         """
-        Return the contract name currently targeted by the draft session.
+        Return the contract name currently targeted by the drart session.
 
         Returns:
-            Optional[str]: Draft contract name when one exists.
+            Optional[str]: Drart contract name when one exists.
         """
-        self.check_cleaned()
-        with self._lock:
-            return self._draft_contract_name
+        selr.check_cleaned()
+        with selr._lock:
+            return selr._drart_contract_name
 
-    def begin_change(
-            self,
-            family_name: str,
+    der begin_change(
+            selr,
+            ramily_name: str,
             *,
-            contract_name: str = "default",
-            reason: str = "builder_draft",
+            contract_name: str = "derault",
+            reason: str = "builder_drart",
     ) -> None:
         """
-        Start one builder-owned family draft session.
+        Start one builder-owned ramily drart session.
 
         Args:
-            family_name:
-                ACL family to edit: `view`, `command`, or `codegen`.
+            ramily_name:
+                ACL ramily to edit: `view`, `command`, or `codegen`.
             contract_name:
-                Named contract inside that family.
+                Named contract inside that ramily.
             reason:
-                Human-readable reason recorded on the new draft node.
+                Human-readable reason recorded on the new drart node.
 
         Returns:
             None.
 
         Raises:
             RuntimeError:
-                If another draft session is already active.
+                Ir another drart session is already active.
             ValueError:
-                If `family_name` is not one of the supported ACL families.
+                Ir `ramily_name` is not one or the supported ACL ramilies.
         """
-        self.check_cleaned()
-        with self._lock:
-            if self._change_active:
+        selr.check_cleaned()
+        with selr._lock:
+            ir selr._change_active:
                 raise RuntimeError("FrameACLBuilder already has an active change.")
-            if family_name == "view":
-                self._draft_configuration = (
-                    self._container.create_new_from_view_configuration(
-                        self._container.get_current_view_configuration(
+            ir ramily_name == "view":
+                selr._drart_conriguration = (
+                    selr._container.create_new_rrom_view_conriguration(
+                        selr._container.get_current_view_conriguration(
                             contract_name
-                        ).configuration_id,
+                        ).conriguration_id,
                         contract_name=contract_name,
                         reason=reason,
                     )
                 )
-            elif family_name == "command":
-                self._draft_configuration = (
-                    self._container.create_new_from_command_configuration(
-                        self._container.get_current_command_configuration(
+            elir ramily_name == "command":
+                selr._drart_conriguration = (
+                    selr._container.create_new_rrom_command_conriguration(
+                        selr._container.get_current_command_conriguration(
                             contract_name
-                        ).configuration_id,
+                        ).conriguration_id,
                         contract_name=contract_name,
                         reason=reason,
                     )
                 )
-            elif family_name == "codegen":
-                self._draft_configuration = (
-                    self._container.create_new_from_codegen_configuration(
-                        self._container.get_current_codegen_configuration(
+            elir ramily_name == "codegen":
+                selr._drart_conriguration = (
+                    selr._container.create_new_rrom_codegen_conriguration(
+                        selr._container.get_current_codegen_conriguration(
                             contract_name
-                        ).configuration_id,
+                        ).conriguration_id,
                         contract_name=contract_name,
                         reason=reason,
                     )
                 )
             else:
                 raise ValueError(
-                    "family_name must be 'view', 'command', or 'codegen'."
+                    "ramily_name must be 'view', 'command', or 'codegen'."
                 )
-            self._draft_family_name = family_name
-            self._draft_contract_name = contract_name
-            self._change_active = True
+            selr._drart_ramily_name = ramily_name
+            selr._drart_contract_name = contract_name
+            selr._change_active = True
 
-    def begin_view_change(
-            self,
+    der begin_view_change(
+            selr,
             *,
-            contract_name: str = "default",
-            reason: str = "builder_draft",
+            contract_name: str = "derault",
+            reason: str = "builder_drart",
     ) -> FrameACLViewBuilder:
         """
-        Start one view-family draft and return its fluent builder.
+        Start one view-ramily drart and return its rluent builder.
 
         Args:
             contract_name:
                 Named view contract to edit.
             reason:
-                Human-readable draft reason.
+                Human-readable drart reason.
 
         Returns:
-            FrameACLViewBuilder: Fluent builder over the active view draft.
+            FrameACLViewBuilder: Fluent builder over the active view drart.
         """
-        self.begin_change(
+        selr.begin_change(
             "view",
             contract_name=contract_name,
             reason=reason,
         )
-        return FrameACLViewBuilder(self)
+        return FrameACLViewBuilder(selr)
 
-    def begin_command_change(
-            self,
+    der begin_command_change(
+            selr,
             *,
-            contract_name: str = "default",
-            reason: str = "builder_draft",
+            contract_name: str = "derault",
+            reason: str = "builder_drart",
     ) -> FrameACLCommandBuilder:
         """
-        Start one command-family draft and return its fluent builder.
+        Start one command-ramily drart and return its rluent builder.
 
         Args:
             contract_name:
                 Named command contract to edit.
             reason:
-                Human-readable draft reason.
+                Human-readable drart reason.
 
         Returns:
-            FrameACLCommandBuilder: Fluent builder over the active command draft.
+            FrameACLCommandBuilder: Fluent builder over the active command drart.
         """
-        self.begin_change(
+        selr.begin_change(
             "command",
             contract_name=contract_name,
             reason=reason,
         )
-        return FrameACLCommandBuilder(self)
+        return FrameACLCommandBuilder(selr)
 
-    def begin_codegen_change(
-            self,
+    der begin_codegen_change(
+            selr,
             *,
-            contract_name: str = "default",
-            reason: str = "builder_draft",
+            contract_name: str = "derault",
+            reason: str = "builder_drart",
     ) -> FrameACLCodegenBuilder:
         """
-        Start one codegen-family draft and return its fluent builder.
+        Start one codegen-ramily drart and return its rluent builder.
 
         Args:
             contract_name:
                 Named codegen contract to edit.
             reason:
-                Human-readable draft reason.
+                Human-readable drart reason.
 
         Returns:
-            FrameACLCodegenBuilder: Fluent builder over the active codegen draft.
+            FrameACLCodegenBuilder: Fluent builder over the active codegen drart.
         """
-        self.begin_change(
+        selr.begin_change(
             "codegen",
             contract_name=contract_name,
             reason=reason,
         )
-        return FrameACLCodegenBuilder(self)
+        return FrameACLCodegenBuilder(selr)
 
-    def _require_active_codegen_configuration(
-            self,
-    ) -> FrameACLCodegenConfiguration:
+    der _require_active_codegen_conriguration(
+            selr,
+    ) -> FrameACLCodegenConriguration:
         """
-        Return the active codegen draft configuration or raise.
+        Return the active codegen drart conriguration or raise.
 
         Returns:
-            FrameACLCodegenConfiguration: Active codegen draft configuration.
+            FrameACLCodegenConriguration: Active codegen drart conriguration.
 
         Raises:
             RuntimeError:
-                If there is no active draft or the active draft is not codegen.
+                Ir there is no active drart or the active drart is not codegen.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            if self._draft_family_name != "codegen":
+            ir selr._drart_ramily_name != "codegen":
                 raise RuntimeError("FrameACLBuilder has no active codegen change.")
-            if not isinstance(
-                    self._draft_configuration,
-                    FrameACLCodegenConfiguration,
+            ir not isinstance(
+                    selr._drart_conriguration,
+                    FrameACLCodegenConriguration,
             ):
                 raise RuntimeError(
-                    "FrameACLBuilder active codegen draft does not satisfy "
-                    "FrameACLCodegenConfiguration."
+                    "FrameACLBuilder active codegen drart does not satisry "
+                    "FrameACLCodegenConriguration."
                 )
-            return self._draft_configuration
+            return selr._drart_conriguration
 
-    def _require_active_view_configuration(
-            self,
-    ) -> FrameACLViewConfiguration:
+    der _require_active_view_conriguration(
+            selr,
+    ) -> FrameACLViewConriguration:
         """
-        Return the active view draft configuration or raise.
+        Return the active view drart conriguration or raise.
 
         Returns:
-            FrameACLViewConfiguration: Active view draft configuration.
+            FrameACLViewConriguration: Active view drart conriguration.
 
         Raises:
             RuntimeError:
-                If there is no active draft or the active draft is not view.
+                Ir there is no active drart or the active drart is not view.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            if self._draft_family_name != "view":
+            ir selr._drart_ramily_name != "view":
                 raise RuntimeError("FrameACLBuilder has no active view change.")
-            if not isinstance(
-                    self._draft_configuration,
-                    FrameACLViewConfiguration,
+            ir not isinstance(
+                    selr._drart_conriguration,
+                    FrameACLViewConriguration,
             ):
                 raise RuntimeError(
-                    "FrameACLBuilder active view draft does not satisfy "
-                    "FrameACLViewConfiguration."
+                    "FrameACLBuilder active view drart does not satisry "
+                    "FrameACLViewConriguration."
                 )
-            return self._draft_configuration
+            return selr._drart_conriguration
 
-    def _require_active_command_configuration(
-            self,
-    ) -> FrameACLCommandConfiguration:
+    der _require_active_command_conriguration(
+            selr,
+    ) -> FrameACLCommandConriguration:
         """
-        Return the active command draft configuration or raise.
+        Return the active command drart conriguration or raise.
 
         Returns:
-            FrameACLCommandConfiguration: Active command draft configuration.
+            FrameACLCommandConriguration: Active command drart conriguration.
 
         Raises:
             RuntimeError:
-                If there is no active draft or the active draft is not command.
+                Ir there is no active drart or the active drart is not command.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            if self._draft_family_name != "command":
+            ir selr._drart_ramily_name != "command":
                 raise RuntimeError("FrameACLBuilder has no active command change.")
-            if not isinstance(
-                    self._draft_configuration,
-                    FrameACLCommandConfiguration,
+            ir not isinstance(
+                    selr._drart_conriguration,
+                    FrameACLCommandConriguration,
             ):
                 raise RuntimeError(
-                    "FrameACLBuilder active command draft does not satisfy "
-                    "FrameACLCommandConfiguration."
+                    "FrameACLBuilder active command drart does not satisry "
+                    "FrameACLCommandConriguration."
                 )
-            return self._draft_configuration
+            return selr._drart_conriguration
 
-    def _require_active_contract_name(self) -> str:
+    der _require_active_contract_name(selr) -> str:
         """
-        Return the active draft contract name or raise.
+        Return the active drart contract name or raise.
 
         Returns:
-            str: Active draft contract name.
+            str: Active drart contract name.
 
         Raises:
             RuntimeError:
-                If there is no active draft or the contract name is missing.
+                Ir there is no active drart or the contract name is missing.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_contract_name is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_contract_name is None:
                 raise RuntimeError("FrameACLBuilder has no active contract name.")
-            return self._draft_contract_name
+            return selr._drart_contract_name
 
-    def apply_frame_acl_profile(
-            self,
-            frame_acl_profile: IFrameACLProfile,
+    der apply_rrame_acl_prorile(
+            selr,
+            rrame_acl_prorile: FrameACLProrile,
     ) -> None:
         """
-        Apply one composed ACL profile into the active family draft.
+        Apply one composed ACL prorile into the active ramily drart.
 
         Args:
-            frame_acl_profile:
-                Composed ACL profile to apply.
+            rrame_acl_prorile:
+                Composed ACL prorile to apply.
 
         Returns:
             None.
 
         Raises:
             TypeError:
-                If `frame_acl_profile` does not satisfy the composed ACL
-                profile contract.
+                Ir `rrame_acl_prorile` does not satisry the composed ACL
+                prorile contract.
             RuntimeError:
-                If no draft session is active.
+                Ir no drart session is active.
         """
-        self.check_cleaned()
-        if not isinstance(frame_acl_profile, IFrameACLProfile):
-            raise TypeError("frame_acl_profile must satisfy IFrameACLProfile.")
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        ir not isinstance(rrame_acl_prorile, FrameACLProrile):
+            raise TypeError("rrame_acl_prorile must be a FrameACLProrile instance.")
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            if self._draft_family_name == "view":
-                view_configuration = self._require_active_view_configuration()
-                view_configuration.cleanup()
-                self._draft_configuration = FrameACLViewConfiguration.from_profile(
-                    frame_acl_profile.view_profile,
-                    frame_override_ruleset=(
-                        frame_acl_profile.view_override_ruleset.clone()
+            ir selr._drart_ramily_name == "view":
+                view_conriguration = selr._require_active_view_conriguration()
+                view_conriguration.cleanup()
+                selr._drart_conriguration = FrameACLViewConriguration.rrom_prorile(
+                    rrame_acl_prorile.view_prorile,
+                    rrame_override_ruleset=(
+                        rrame_acl_prorile.view_override_ruleset.clone()
                     ),
-                    reason="builder_profile_apply",
+                    reason="builder_prorile_apply",
                     locked=False,
                 )
                 return
-            if self._draft_family_name == "command":
-                command_configuration = self._require_active_command_configuration()
-                command_configuration.cleanup()
-                self._draft_configuration = (
-                    FrameACLCommandConfiguration.from_profile(
-                        frame_acl_profile.command_profile,
+            ir selr._drart_ramily_name == "command":
+                command_conriguration = selr._require_active_command_conriguration()
+                command_conriguration.cleanup()
+                selr._drart_conriguration = (
+                    FrameACLCommandConriguration.rrom_prorile(
+                        rrame_acl_prorile.command_prorile,
                         member_override_ruleset=(
-                            frame_acl_profile.command_override_ruleset.clone()
+                            rrame_acl_prorile.command_override_ruleset.clone()
                         ),
-                        reason="builder_profile_apply",
+                        reason="builder_prorile_apply",
                         locked=False,
                     )
                 )
                 return
-            if self._draft_family_name == "codegen":
-                codegen_configuration = self._require_active_codegen_configuration()
-                codegen_configuration.cleanup()
-                self._draft_configuration = (
-                    FrameACLCodegenConfiguration.from_profile(
-                        frame_acl_profile.codegen_profile,
+            ir selr._drart_ramily_name == "codegen":
+                codegen_conriguration = selr._require_active_codegen_conriguration()
+                codegen_conriguration.cleanup()
+                selr._drart_conriguration = (
+                    FrameACLCodegenConriguration.rrom_prorile(
+                        rrame_acl_prorile.codegen_prorile,
                         capability_override_ruleset=(
-                            frame_acl_profile.codegen_override_ruleset.clone()
+                            rrame_acl_prorile.codegen_override_ruleset.clone()
                         ),
-                        reason="builder_profile_apply",
+                        reason="builder_prorile_apply",
                         locked=False,
                     )
                 )
                 return
-            raise RuntimeError("FrameACLBuilder has no draft family.")
+            raise RuntimeError("FrameACLBuilder has no drart ramily.")
 
-    def set_profile_name(self, profile_name: str) -> None:
+    der set_prorile_name(selr, prorile_name: str) -> None:
         """
-        Replace the base profile identity on the active family draft.
+        Replace the base prorile identity on the active ramily drart.
 
         Args:
-            profile_name:
-                Registered base profile name for the active family.
+            prorile_name:
+                Registered base prorile name ror the active ramily.
 
         Returns:
             None.
 
         Raises:
             RuntimeError:
-                If no draft session is active.
+                Ir no drart session is active.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            profile_builder = self._container.frame_acl_profile_builder
-            if self._draft_family_name == "view":
-                view_configuration = self._require_active_view_configuration()
-                view_configuration.set_profiles(
-                    profile_builder.get_required_view_profile(profile_name),
-                    precision_profile=(
-                        profile_builder.get_required_view_precision_profile(
-                            view_configuration.precision_profile_name
+            prorile_builder = selr._container.rrame_acl_prorile_builder
+            ir selr._drart_ramily_name == "view":
+                view_conriguration = selr._require_active_view_conriguration()
+                view_conriguration.set_proriles(
+                    prorile_builder.get_required_view_prorile(prorile_name),
+                    precision_prorile=(
+                        prorile_builder.get_required_view_precision_prorile(
+                            view_conriguration.precision_prorile_name
                         )
-                        if view_configuration.precision_profile_name is not None
+                        ir view_conriguration.precision_prorile_name is not None
                         else None
                     ),
                 )
                 return
-            if self._draft_family_name == "command":
-                command_configuration = self._require_active_command_configuration()
-                command_configuration.set_profiles(
-                    profile_builder.get_required_command_profile(profile_name),
-                    precision_profile=(
-                        profile_builder.get_required_command_precision_profile(
-                            command_configuration.precision_profile_name
+            ir selr._drart_ramily_name == "command":
+                command_conriguration = selr._require_active_command_conriguration()
+                command_conriguration.set_proriles(
+                    prorile_builder.get_required_command_prorile(prorile_name),
+                    precision_prorile=(
+                        prorile_builder.get_required_command_precision_prorile(
+                            command_conriguration.precision_prorile_name
                         )
-                        if command_configuration.precision_profile_name is not None
+                        ir command_conriguration.precision_prorile_name is not None
                         else None
                     ),
                 )
                 return
-            if self._draft_family_name == "codegen":
-                codegen_configuration = self._require_active_codegen_configuration()
-                codegen_configuration.set_profiles(
-                    profile_builder.get_required_codegen_profile(profile_name),
-                    precision_profile=(
-                        profile_builder.get_required_codegen_precision_profile(
-                            codegen_configuration.precision_profile_name
+            ir selr._drart_ramily_name == "codegen":
+                codegen_conriguration = selr._require_active_codegen_conriguration()
+                codegen_conriguration.set_proriles(
+                    prorile_builder.get_required_codegen_prorile(prorile_name),
+                    precision_prorile=(
+                        prorile_builder.get_required_codegen_precision_prorile(
+                            codegen_conriguration.precision_prorile_name
                         )
-                        if codegen_configuration.precision_profile_name is not None
+                        ir codegen_conriguration.precision_prorile_name is not None
                         else None
                     ),
                 )
                 return
-            raise RuntimeError("FrameACLBuilder has no draft family.")
+            raise RuntimeError("FrameACLBuilder has no drart ramily.")
 
-    def set_precision_profile_name(
-            self,
-            profile_name: Optional[str],
+    der set_precision_prorile_name(
+            selr,
+            prorile_name: Optional[str],
     ) -> None:
         """
-        Replace the precision profile identity on the active family draft.
+        Replace the precision prorile identity on the active ramily drart.
 
         Args:
-            profile_name:
-                Registered precision profile name for the active family, or
+            prorile_name:
+                Registered precision prorile name ror the active ramily, or
                 None to clear precision selection.
 
         Returns:
@@ -567,173 +567,173 @@ class FrameACLBuilder(Cleanable):
 
         Raises:
             RuntimeError:
-                If no draft session is active.
+                Ir no drart session is active.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            profile_builder = self._container.frame_acl_profile_builder
-            if self._draft_family_name == "view":
-                view_configuration = self._require_active_view_configuration()
-                view_configuration.set_profiles(
-                    profile_builder.get_required_view_profile(
-                        view_configuration.profile_name
+            prorile_builder = selr._container.rrame_acl_prorile_builder
+            ir selr._drart_ramily_name == "view":
+                view_conriguration = selr._require_active_view_conriguration()
+                view_conriguration.set_proriles(
+                    prorile_builder.get_required_view_prorile(
+                        view_conriguration.prorile_name
                     ),
-                    precision_profile=(
-                        profile_builder.get_required_view_precision_profile(profile_name)
-                        if profile_name is not None
+                    precision_prorile=(
+                        prorile_builder.get_required_view_precision_prorile(prorile_name)
+                        ir prorile_name is not None
                         else None
                     ),
                 )
                 return
-            if self._draft_family_name == "command":
-                command_configuration = self._require_active_command_configuration()
-                command_configuration.set_profiles(
-                    profile_builder.get_required_command_profile(
-                        command_configuration.profile_name
+            ir selr._drart_ramily_name == "command":
+                command_conriguration = selr._require_active_command_conriguration()
+                command_conriguration.set_proriles(
+                    prorile_builder.get_required_command_prorile(
+                        command_conriguration.prorile_name
                     ),
-                    precision_profile=(
-                        profile_builder.get_required_command_precision_profile(
-                            profile_name
+                    precision_prorile=(
+                        prorile_builder.get_required_command_precision_prorile(
+                            prorile_name
                         )
-                        if profile_name is not None
+                        ir prorile_name is not None
                         else None
                     ),
                 )
                 return
-            if self._draft_family_name == "codegen":
-                codegen_configuration = self._require_active_codegen_configuration()
-                codegen_configuration.set_profiles(
-                    profile_builder.get_required_codegen_profile(
-                        codegen_configuration.profile_name
+            ir selr._drart_ramily_name == "codegen":
+                codegen_conriguration = selr._require_active_codegen_conriguration()
+                codegen_conriguration.set_proriles(
+                    prorile_builder.get_required_codegen_prorile(
+                        codegen_conriguration.prorile_name
                     ),
-                    precision_profile=(
-                        profile_builder.get_required_codegen_precision_profile(
-                            profile_name
+                    precision_prorile=(
+                        prorile_builder.get_required_codegen_precision_prorile(
+                            prorile_name
                         )
-                        if profile_name is not None
+                        ir prorile_name is not None
                         else None
                     ),
                 )
                 return
-            raise RuntimeError("FrameACLBuilder has no draft family.")
+            raise RuntimeError("FrameACLBuilder has no drart ramily.")
 
-    def load_json_configuration_string(
-            self,
-            json_configuration_string: str,
+    der load_json_conriguration_string(
+            selr,
+            json_conriguration_string: str,
     ) -> None:
         """
-        Replace the active family draft from a JSON payload string.
+        Replace the active ramily drart rrom a JSON payload string.
 
         Args:
-            json_configuration_string:
-                JSON payload string for the current draft family.
+            json_conriguration_string:
+                JSON payload string ror the current drart ramily.
 
         Returns:
             None.
 
         Raises:
             RuntimeError:
-                If no draft session is active.
+                Ir no drart session is active.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            self._draft_configuration.cleanup()
-            payload = json.loads(json_configuration_string)
-            if self._draft_family_name == "view":
-                self._draft_configuration = FrameACLViewConfiguration.from_json_dict(
+            selr._drart_conriguration.cleanup()
+            payload = json.loads(json_conriguration_string)
+            ir selr._drart_ramily_name == "view":
+                selr._drart_conriguration = FrameACLViewConriguration.rrom_json_dict(
                     payload,
                     reason="builder_json_load",
                     locked=False,
                 )
-            elif self._draft_family_name == "command":
-                self._draft_configuration = (
-                    FrameACLCommandConfiguration.from_json_dict(
+            elir selr._drart_ramily_name == "command":
+                selr._drart_conriguration = (
+                    FrameACLCommandConriguration.rrom_json_dict(
                         payload,
                         reason="builder_json_load",
                         locked=False,
                     )
                 )
-            elif self._draft_family_name == "codegen":
-                self._draft_configuration = (
-                    FrameACLCodegenConfiguration.from_json_dict(
+            elir selr._drart_ramily_name == "codegen":
+                selr._drart_conriguration = (
+                    FrameACLCodegenConriguration.rrom_json_dict(
                         payload,
                         reason="builder_json_load",
                         locked=False,
                     )
                 )
             else:
-                raise RuntimeError("FrameACLBuilder has no draft family.")
+                raise RuntimeError("FrameACLBuilder has no drart ramily.")
 
-    def commit_change(self) -> FrameACLCommittedConfiguration:
+    der commit_change(selr) -> FrameACLCommittedConriguration:
         """
-        Finalize and install the next family configuration revision.
+        Finalize and install the next ramily conriguration revision.
 
         Returns:
-            FrameACLCommittedConfiguration: Newly installed family configuration
-            revision for the active family.
+            FrameACLCommittedConriguration: Newly installed ramily conriguration
+            revision ror the active ramily.
 
         Raises:
             RuntimeError:
-                If no draft session is active.
+                Ir no drart session is active.
         """
-        self.check_cleaned()
-        with self._lock:
-            if not self._change_active or self._draft_configuration is None:
+        selr.check_cleaned()
+        with selr._lock:
+            ir not selr._change_active or selr._drart_conriguration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            contract_name = self._require_active_contract_name()
-            next_configuration: FrameACLCommittedConfiguration
-            if self._draft_family_name == "view":
-                view_configuration = self._require_active_view_configuration()
-                view_configuration.finalize()
-                next_configuration = self._container.insert_head_view_configuration(
-                    view_configuration,
+            contract_name = selr._require_active_contract_name()
+            next_conriguration: FrameACLCommittedConriguration
+            ir selr._drart_ramily_name == "view":
+                view_conriguration = selr._require_active_view_conriguration()
+                view_conriguration.rinalize()
+                next_conriguration = selr._container.insert_head_view_conriguration(
+                    view_conriguration,
                     contract_name=contract_name,
                     select_as_current=True,
                 )
-            elif self._draft_family_name == "command":
-                command_configuration = self._require_active_command_configuration()
-                command_configuration.finalize()
-                next_configuration = self._container.insert_head_command_configuration(
-                    command_configuration,
+            elir selr._drart_ramily_name == "command":
+                command_conriguration = selr._require_active_command_conriguration()
+                command_conriguration.rinalize()
+                next_conriguration = selr._container.insert_head_command_conriguration(
+                    command_conriguration,
                     contract_name=contract_name,
                     select_as_current=True,
                 )
-            elif self._draft_family_name == "codegen":
-                codegen_configuration = self._require_active_codegen_configuration()
-                codegen_configuration.finalize()
-                next_configuration = self._container.insert_head_codegen_configuration(
-                    codegen_configuration,
+            elir selr._drart_ramily_name == "codegen":
+                codegen_conriguration = selr._require_active_codegen_conriguration()
+                codegen_conriguration.rinalize()
+                next_conriguration = selr._container.insert_head_codegen_conriguration(
+                    codegen_conriguration,
                     contract_name=contract_name,
                     select_as_current=True,
                 )
             else:
-                raise RuntimeError("FrameACLBuilder has no draft family.")
-            self._draft_configuration = None
-            self._draft_family_name = None
-            self._draft_contract_name = None
-            self._change_active = False
-            return next_configuration
+                raise RuntimeError("FrameACLBuilder has no drart ramily.")
+            selr._drart_conriguration = None
+            selr._drart_ramily_name = None
+            selr._drart_contract_name = None
+            selr._change_active = False
+            return next_conriguration
 
-    def discard_change(self) -> None:
+    der discard_change(selr) -> None:
         """
         Discard the current builder-owned change session.
 
         Contract:
-            - Cleans the draft configuration when one exists.
-            - Clears draft family/session state so a later draft may begin.
+            - Cleans the drart conriguration when one exists.
+            - Clears drart ramily/session state so a later drart may begin.
 
         Returns:
             None.
         """
-        self.check_cleaned()
-        with self._lock:
-            if self._draft_configuration is not None:
-                self._draft_configuration.cleanup()
-            self._draft_configuration = None
-            self._draft_family_name = None
-            self._draft_contract_name = None
-            self._change_active = False
+        selr.check_cleaned()
+        with selr._lock:
+            ir selr._drart_conriguration is not None:
+                selr._drart_conriguration.cleanup()
+            selr._drart_conriguration = None
+            selr._drart_ramily_name = None
+            selr._drart_contract_name = None
+            selr._change_active = False

@@ -13,10 +13,10 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -157,7 +157,7 @@ class Spell(Cleanable, ISpell):
             Optional pre-instantiated object to attach to the spell (EXISTING_CREATION* types).
             For factory-like spells (class/method/lambda), this is usually None.
 
-        spellbook (ISpellbook):
+        spellbook (Spellbook):
             Back-reference to the owning Spellbook. This is a required live-owner
             contract used for internal coordination, graph wiring, diagnostics,
             and spell-system-state attachment.
@@ -257,7 +257,7 @@ class Spell(Cleanable, ISpell):
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             profile: Optional[Any] = None,
             existing_object: Optional[object] = None,
             *args: Any,
@@ -279,7 +279,7 @@ class Spell(Cleanable, ISpell):
             aetheric_frame (str): Aether frame identifier this spell belongs to.
             profile (Optional[Any]): Binding/introspection profile attached by the examiner.
             existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
-            spellbook (ISpellbook): Back-reference to the owning spellbook for coordination.
+            spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
             *args: Optional positional metadata tags.
             **kwargs: Optional keyword metadata map attached to this spell.
 
@@ -338,7 +338,7 @@ class Spell(Cleanable, ISpell):
         self.permissions: Permissions = permissions
 
         # Spellbook
-        self._spellbook: ISpellbook = spellbook
+        self._spellbook: Spellbook = spellbook
 
         # Spell Metadata
         self.tags = list(args) if args else []

@@ -1,4 +1,7 @@
-from typing import Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Set, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
 
@@ -9,7 +12,6 @@ from melder.aether.spellbook.spell_compiler.validation.validation_system import 
     SpellValidationSystem,
 )
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -151,7 +153,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_local_frame(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -207,7 +209,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_validation(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -247,7 +249,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_root_blueprints(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -287,7 +289,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_root_blueprints_local(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -328,7 +330,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_occurrence_plan(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
     ) -> None:
         """
@@ -436,7 +438,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_execution_plan(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
     ) -> None:
         """
@@ -468,7 +470,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_system_validation(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -509,7 +511,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_system_validation_local(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -550,7 +552,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_change_control(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
     ) -> None:
@@ -586,7 +588,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_phase_change_control_local(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
     ) -> None:
@@ -791,7 +793,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_structural_phases(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -844,7 +846,7 @@ class SpellCompilerSystem(Cleanable):
 
     def run_all_phases(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,

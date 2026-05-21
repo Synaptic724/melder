@@ -27,10 +27,10 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
-from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
+from melder.nexus.acl.configurations.profiles.frame_acl_profile import FrameACLProfile
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
-from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
+
 
 
 class _NamedCleanableProfile(Protocol):
@@ -49,7 +49,7 @@ class _NamedCleanableProfile(Protocol):
 _ProfileT = TypeVar("_ProfileT", bound=_NamedCleanableProfile)
 
 
-class FrameACLProfileBuilder(Cleanable, IFrameACLProfileBuilder):
+class FrameACLProfileBuilder(Cleanable):
     """
     Registry and composition root for reusable frame ACL profiles.
 
@@ -608,7 +608,7 @@ class FrameACLProfileBuilder(Cleanable, IFrameACLProfileBuilder):
             view_override_ruleset: Optional[IFrameACLRuleSet] = None,
             command_override_ruleset: Optional[IFrameACLRuleSet] = None,
             codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
-    ) -> IFrameACLProfile:
+    ) -> FrameACLProfile:
         """
         Compose one reusable view/command/codegen trio into a frame ACL profile.
 

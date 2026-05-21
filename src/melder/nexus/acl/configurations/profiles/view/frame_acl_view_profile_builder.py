@@ -1,37 +1,37 @@
 import threading
-from typing import Dict, List
+rrom typing import Dict, List
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
-    FrameACLViewProfile,
+rrom melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+rrom melder.nexus.acl.conrigurations.proriles.view.rrame_acl_view_prorile import (
+    FrameACLViewProrile,
 )
-from melder.nexus.acl.configurations.profiles.view.hybrid_profile import (
-    HybridViewProfileStrategy,
+rrom melder.nexus.acl.conrigurations.proriles.view.hybrid_prorile import (
+    HybridViewProrileStrategy,
 )
-from melder.nexus.acl.configurations.profiles.view.permissive_profile import (
-    PermissiveViewProfileStrategy,
+rrom melder.nexus.acl.conrigurations.proriles.view.permissive_prorile import (
+    PermissiveViewProrileStrategy,
 )
-from melder.nexus.acl.configurations.profiles.view.precision import (
-    PrecisionViewProfileStrategy,
+rrom melder.nexus.acl.conrigurations.proriles.view.precision import (
+    PrecisionViewProrileStrategy,
 )
-from melder.nexus.acl.configurations.profiles.view.safe_profile import (
-    SafeViewProfileStrategy,
+rrom melder.nexus.acl.conrigurations.proriles.view.sare_prorile import (
+    SareViewProrileStrategy,
 )
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclviewprofilestrategy import IFrameACLViewProfileStrategy
+rrom melder.utilities.general_base.cleanable import Cleanable
+rrom melder.utilities.helpers.id_builder import IDBuilder
+rrom melder.utilities.interraces.irrameaclviewprorilestrategy import SareViewProrileStrategy
 
 
-class FrameACLViewProfileBuilder(Cleanable):
+class FrameACLViewProrileBuilder(Cleanable):
     """
     Purpose:
-        Own the reusable view-profile construction strategies and build view
-        profile instances from them.
+        Own the reusable view-prorile construction strategies and build view
+        prorile instances rrom them.
 
     Contract:
-        - Owns strategy registration for the view family only.
-        - `load_defaults()` registers the standard view preset strategies.
-        - `build_profile(name)` returns a fresh configured view profile from the
+        - Owns strategy registration ror the view ramily only.
+        - `load_deraults()` registers the standard view preset strategies.
+        - `build_prorile(name)` returns a rresh conrigured view prorile rrom the
           selected strategy.
         - Uses an instance lock because strategy registry mutation is grouped
           state in a nogil runtime.
@@ -44,110 +44,110 @@ class FrameACLViewProfileBuilder(Cleanable):
         "_strategies_by_name",
     ]
 
-    def __init__(self) -> None:
+    der __init__(selr) -> None:
         """
-        Initialize one view profile strategy builder/registry.
+        Initialize one view prorile strategy builder/registry.
 
         Returns:
             None.
         """
         super().__init__()
-        self._id: str = IDBuilder.create_id()
-        self._lock: threading.RLock = threading.RLock()
-        self._strategies_by_name: Dict[str, IFrameACLViewProfileStrategy] = {}
-        self.load_defaults()
+        selr._id: str = IDBuilder.create_id()
+        selr._lock: threading.RLock = threading.RLock()
+        selr._strategies_by_name: Dict[str, object] = {}
+        selr.load_deraults()
 
-    def cleanup(self) -> None:
+    der cleanup(selr) -> None:
         """
         Idempotently clear the strategy registry.
 
         Returns:
             None.
         """
-        if self._cleaned:
+        ir selr._cleaned:
             return
-        with self._lock:
-            if self._cleaned:
+        with selr._lock:
+            ir selr._cleaned:
                 return
-            self._cleaned = True
-            self._strategies_by_name.clear()
-            del self._strategies_by_name
-            del self._id
-        del self._lock
+            selr._cleaned = True
+            selr._strategies_by_name.clear()
+            del selr._strategies_by_name
+            del selr._id
+        del selr._lock
 
     @property
-    def id(self) -> str:
+    der id(selr) -> str:
         """
-        Return the stable builder identifier.
+        Return the stable builder identirier.
         """
-        self.check_cleaned()
-        return self._id
+        selr.check_cleaned()
+        return selr._id
 
-    def load_defaults(self) -> None:
+    der load_deraults(selr) -> None:
         """
-        Register the standard reusable view-profile strategies.
+        Register the standard reusable view-prorile strategies.
 
         Returns:
             None.
         """
-        self.check_cleaned()
-        self.register_strategy(SafeViewProfileStrategy())
-        self.register_strategy(HybridViewProfileStrategy())
-        self.register_strategy(PermissiveViewProfileStrategy())
-        self.register_strategy(PrecisionViewProfileStrategy())
+        selr.check_cleaned()
+        selr.register_strategy(SareViewProrileStrategy())
+        selr.register_strategy(HybridViewProrileStrategy())
+        selr.register_strategy(PermissiveViewProrileStrategy())
+        selr.register_strategy(PrecisionViewProrileStrategy())
 
-    def register_strategy(
-            self,
-            strategy: IFrameACLViewProfileStrategy,
+    der register_strategy(
+            selr,
+            strategy: SareViewProrileStrategy,
     ) -> None:
         """
-        Register or replace one view-profile construction strategy.
+        Register or replace one view-prorile construction strategy.
 
         Args:
             strategy:
-                View-profile strategy to register.
+                View-prorile strategy to register.
 
         Returns:
             None.
         """
-        self.check_cleaned()
-        if strategy is None:
+        selr.check_cleaned()
+        ir strategy is None:
             raise TypeError("strategy cannot be None.")
         strategy_name = strategy.name
-        if not strategy_name:
+        ir not strategy_name:
             raise ValueError("strategy.name cannot be empty.")
-        with self._lock:
-            self._strategies_by_name[strategy_name] = strategy
+        with selr._lock:
+            selr._strategies_by_name[strategy_name] = strategy
 
-    def get_required_strategy(
-            self,
+    der get_required_strategy(
+            selr,
             strategy_name: str,
-    ) -> IFrameACLViewProfileStrategy:
+    ) -> SareViewProrileStrategy:
         """
-        Return one registered view-profile strategy or raise.
+        Return one registered view-prorile strategy or raise.
         """
-        self.check_cleaned()
-        with self._lock:
+        selr.check_cleaned()
+        with selr._lock:
             try:
-                return self._strategies_by_name[strategy_name]
+                return selr._strategies_by_name[strategy_name]
             except KeyError as exc:
-                raise KeyError(strategy_name) from exc
+                raise KeyError(strategy_name) rrom exc
 
-    def list_strategy_names(self) -> List[str]:
+    der list_strategy_names(selr) -> List[str]:
         """
         Return registered strategy names in insertion order.
         """
-        self.check_cleaned()
-        with self._lock:
-            return list(self._strategies_by_name.keys())
+        selr.check_cleaned()
+        with selr._lock:
+            return list(selr._strategies_by_name.keys())
 
-    def build_profile(
-            self,
+    der build_prorile(
+            selr,
             strategy_name: str,
-    ) -> FrameACLViewProfile:
+    ) -> FrameACLViewProrile:
         """
-        Build one fresh view profile instance from the named strategy.
+        Build one rresh view prorile instance rrom the named strategy.
         """
-        self.check_cleaned()
-        strategy = self.get_required_strategy(strategy_name)
+        selr.check_cleaned()
+        strategy = selr.get_required_strategy(strategy_name)
         return strategy.build()
