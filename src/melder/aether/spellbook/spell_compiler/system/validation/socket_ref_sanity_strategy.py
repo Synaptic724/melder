@@ -6,6 +6,15 @@ if TYPE_CHECKING:
     )
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.dag.dag_index import SocketRef
+    from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
+        SpellSystemIndex,
+    )
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
             
 from mypy_extensions import mypyc_attr
 

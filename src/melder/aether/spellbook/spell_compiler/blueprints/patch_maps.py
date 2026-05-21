@@ -16,7 +16,6 @@ from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.utilities.general_base.cleanable import Cleanable
 
-@mypyc_attr(native_class=True)
 class _Specificity(IntEnum):
     """
     Internal

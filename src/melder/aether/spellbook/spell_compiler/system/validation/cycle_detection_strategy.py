@@ -15,6 +15,9 @@ if TYPE_CHECKING:
     )
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)

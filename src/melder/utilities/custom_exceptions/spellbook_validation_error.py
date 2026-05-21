@@ -3,9 +3,6 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
-from mypy_extensions import mypyc_attr
-
-@mypyc_attr(native_class=True)
 class SpellbookValidationError(RuntimeError):
     """
     Raised when the Spellbook resolution pipeline (requirements -> symbolic

@@ -1,6 +1,4 @@
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=True)
 class PhaseSchedulerError(RuntimeError):
     """
     Base exception for PhaseScheduler-related failures.

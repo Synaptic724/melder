@@ -1,7 +1,4 @@
 
-from mypy_extensions import mypyc_attr
-
-@mypyc_attr(native_class=True)
 class SpellSpaceScopeError(RuntimeError):
     """
     Raised when SpellSpace scoping rules are violated.
