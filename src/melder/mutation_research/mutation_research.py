@@ -24,7 +24,6 @@ from melder.mutation_research.research.spell.node.spell_mutation_node import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iaether import Aether
 from melder.utilities.interfaces.iconduit import IConduit
 
 
