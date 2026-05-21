@@ -2,13 +2,13 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
     FrameACLCodegenProfile,
 )
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
-    IFrameACLCodegenConfiguration,
+    FrameACLCodegenConfiguration,
 )
 
 
 def validate_profile_configuration(
         profile: FrameACLCodegenProfile,
-        configuration: IFrameACLCodegenConfiguration,
+        configuration: FrameACLCodegenConfiguration,
 ) -> None:
     """
     Validate that a precision codegen config keeps local creation closed.

@@ -19,9 +19,9 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
@@ -203,17 +203,17 @@ and logging.
         self._initialize_logging(logger)
 
         # Core spell storage (SpellIndex Maps)
-        self._spells: Dict[ISpellIndex, ISpell] = {}
+        self._spells: Dict[SpellIndex, ISpell] = {}
         self._spell_versions: Set[str] = set()
-        self._lookup_spells: Dict[tuple, ISpellIndex]  = {}
+        self._lookup_spells: Dict[tuple, SpellIndex]  = {}
         self._spells_by_id: Dict[str, ISpell] = {}
         self._spell_id_pool: Dict[str, ISpell] = {}
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = {}
+        self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
         self._contracted_versions: Dict[str, Set[str]] = {}
-        self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]  = {}
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
 
         # Spell States System
@@ -530,8 +530,8 @@ and logging.
 
     @staticmethod
     def _get_required_spell_index_surface(
-            spell_index: ISpellIndex,
-    ) -> ISpellIndex:
+            spell_index: SpellIndex,
+    ) -> SpellIndex:
         """
         Return the live SpellIndex surface used by Spellbook.
         """
@@ -983,7 +983,7 @@ and logging.
         return self._id
 
     @property
-    def spells(self) -> Mapping[ISpellIndex, ISpell]:
+    def spells(self) -> Mapping[SpellIndex, ISpell]:
         """
         Public API
 
@@ -996,16 +996,16 @@ and logging.
               mutation.
 
         Returns:
-            Mapping[ISpellIndex, ISpell]:
+            Mapping[SpellIndex, ISpell]:
                 Immutable map of local `SpellIndex` keys to spell
                 objects.
         """
         self.check_cleaned()
-        spells_view: Mapping[ISpellIndex, ISpell] = MappingProxyType(self._spells)
+        spells_view: Mapping[SpellIndex, ISpell] = MappingProxyType(self._spells)
         return spells_view
 
     @property
-    def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[SpellIndex, ISpell]]:
         """
         Public API
 
@@ -1016,16 +1016,16 @@ and logging.
             - Each value is an immutable spell map for that peer conduit.
 
         Returns:
-            Mapping[str, Mapping[ISpellIndex, ISpell]]:
+            Mapping[str, Mapping[SpellIndex, ISpell]]:
                 Immutable map of peer conduit id to immutable borrowed-spell
                 map.
         """
         self.check_cleaned()
-        contracted_views: Dict[str, Mapping[ISpellIndex, ISpell]] = {
+        contracted_views: Dict[str, Mapping[SpellIndex, ISpell]] = {
             conduit_id: MappingProxyType(dict(spells))
             for conduit_id, spells in self._contracted_spells.items()
         }
-        contracted_spells_view: Mapping[str, Mapping[ISpellIndex, ISpell]] = (
+        contracted_spells_view: Mapping[str, Mapping[SpellIndex, ISpell]] = (
             MappingProxyType(contracted_views)
         )
         return contracted_spells_view
@@ -1061,12 +1061,12 @@ and logging.
             lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
             spell_versions = set(self._spell_versions) if self._spell_versions is not None else set()
 
-            contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = {}
+            contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = {}
             if self._contracted_spells is not None:
                 for conduit_id, spells in self._contracted_spells.items():
                     contracted_spells[conduit_id] = dict(spells)
 
-            lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], ISpellIndex]] = {}
+            lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], SpellIndex]] = {}
             if self._lookup_contracted_spells is not None:
                 for conduit_id, lookup_map in self._lookup_contracted_spells.items():
                     lookup_contracted_spells[conduit_id] = dict(lookup_map)
@@ -1111,7 +1111,7 @@ and logging.
 
         return None
 
-    def get_spell_permissions(self, spell_index: ISpellIndex) -> Optional[str]:
+    def get_spell_permissions(self, spell_index: SpellIndex) -> Optional[str]:
         """
         Public API
 
@@ -1141,7 +1141,7 @@ and logging.
         )
         raise RuntimeError(f"Spell with index {spell_index} not found in the spellbook.")
 
-    def _find_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+    def _find_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
         Internal
 
@@ -1159,7 +1159,7 @@ and logging.
             spell = self._spells.get(spell_index, None)
         return spell
 
-    def _find_contracted_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
         Internal
 
@@ -1185,7 +1185,7 @@ and logging.
     def _find_spell_index_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[ISpellIndex]:
+    ) -> Optional[SpellIndex]:
         """
         Internal
 
@@ -1196,7 +1196,7 @@ and logging.
                 Stable SpellIndex id (ULID) to resolve.
 
         Returns:
-            Optional[ISpellIndex]:
+            Optional[SpellIndex]:
                 Matching local SpellIndex when found, else "None".
         """
         self.check_cleaned()
@@ -1209,7 +1209,7 @@ and logging.
     def _find_contracted_spell_index_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[ISpellIndex]:
+    ) -> Optional[SpellIndex]:
         """
         Internal
 
@@ -1220,7 +1220,7 @@ and logging.
                 Stable SpellIndex id (ULID) to resolve.
 
         Returns:
-            Optional[ISpellIndex]:
+            Optional[SpellIndex]:
                 Matching contracted SpellIndex when found, else "None".
         """
         self.check_cleaned()
@@ -1297,7 +1297,7 @@ and logging.
         return count
 
 
-    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[ISpellIndex]:
+    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[SpellIndex]:
         """
         Public API
 
@@ -1311,7 +1311,7 @@ and logging.
             binding_name (str): The secondary key to distinguish the spell.
 
         Returns:
-            Optional[ISpellIndex]: The SpellIndex associated with this spell.
+            Optional[SpellIndex]: The SpellIndex associated with this spell.
 
         Raises:
             RuntimeError: If the spell is not found in the spellbook (local or contracted).
@@ -1357,7 +1357,7 @@ and logging.
             self,
             *,
             lookup_key: tuple[str, str],
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             context: str,
             check_local: bool = True,
             check_contracted: bool = True,

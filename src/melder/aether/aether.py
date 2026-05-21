@@ -15,7 +15,6 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
 class Aether(Cleanable, IAether):

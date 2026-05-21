@@ -9,7 +9,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -26,6 +25,7 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.creations.creations import Creations
@@ -112,16 +112,16 @@ class Meld(Cleanable):
         self._spellbook: ISpellbook = spellbook
 
         # Spellbook references (used for resolution)
-        self._owned_spells: Dict[ISpellIndex, ISpell] = spellbook._spells
-        self._contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]] = (
+        self._owned_spells: Dict[SpellIndex, ISpell] = spellbook._spells
+        self._contracted_spells: Dict[str, Dict[SpellIndex, ISpell]] = (
             spellbook._contracted_spells
         )
         self._spells_by_id: Dict[str, ISpell] = spellbook._spells_by_id
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = spellbook._contracted_spells_by_id
         self._spell_id_pool: Dict[str, ISpell] = spellbook._spell_id_pool
 
-        self._lookup_owned_spells: Dict[tuple, ISpellIndex] = spellbook._lookup_spells
-        self._lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]] = (
+        self._lookup_owned_spells: Dict[tuple, SpellIndex] = spellbook._lookup_spells
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = (
             spellbook._lookup_contracted_spells
         )
 

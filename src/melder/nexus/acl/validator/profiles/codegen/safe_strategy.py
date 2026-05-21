@@ -4,7 +4,7 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
     FrameACLCodegenProfile,
 )
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
-    IFrameACLCodegenConfiguration,
+    FrameACLCodegenConfiguration,
 )
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
@@ -37,7 +37,7 @@ _SAFE_CODEGEN_FORBIDDEN_OVERRIDES = {
 
 def validate_profile_configuration(
         profile: FrameACLCodegenProfile,
-        configuration: IFrameACLCodegenConfiguration,
+        configuration: FrameACLCodegenConfiguration,
 ) -> None:
     """
     Validate that the `safe` codegen profile stays restrictive.

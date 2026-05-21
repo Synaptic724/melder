@@ -14,7 +14,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
@@ -294,7 +293,7 @@ class Spell(Cleanable, ISpell):
         self._id: str = str(ulid.ULID())  # Unique internal ID for tracking
 
         # Spell Data
-        self.spell_index: ISpellIndex = spell_index
+        self.spell_index: SpellIndex = spell_index
         self.spell: Any = spell  # Object reference
         self.spell_id: str = spell_id  # SHA256 unique identifier
         self.spellframe: Optional[Any] = spellframe

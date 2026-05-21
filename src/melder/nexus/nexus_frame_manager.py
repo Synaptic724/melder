@@ -15,7 +15,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.inexus import INexus
-from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
+from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 
 class NexusFrameManager(Cleanable):
     """
@@ -75,7 +75,7 @@ class NexusFrameManager(Cleanable):
         self._next_indexed_frame_number: int = 1
         self._creating_frame_names: Set[str] = set()
         self._frames_by_name: Dict[str, IAethericFrame] = {}
-        self._configurations_by_frame_name: Dict[str, INexusFrameConfiguration] = {}
+        self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
 
     def cleanup(self) -> None:
         """
@@ -202,7 +202,7 @@ class NexusFrameManager(Cleanable):
 
     def create(
             self,
-            configuration: INexusFrameConfiguration,
+            configuration: NexusFrameConfiguration,
     ) -> IConduit:
         """
         Create one rooted Nexus-managed conduit from authored configuration.
@@ -228,9 +228,9 @@ class NexusFrameManager(Cleanable):
             IConduit: Root conduit for the managed frame.
         """
         self.check_cleaned()
-        if not isinstance(configuration, INexusFrameConfiguration):
+        if not isinstance(configuration, NexusFrameConfiguration):
             raise TypeError(
-                "configuration must satisfy INexusFrameConfiguration."
+                "configuration must be a NexusFrameConfiguration instance."
             )
         self._validate_configuration_contract(configuration)
         return self._create_configuration(
@@ -240,7 +240,7 @@ class NexusFrameManager(Cleanable):
 
     def _create_configuration(
             self,
-            configuration: INexusFrameConfiguration,
+            configuration: NexusFrameConfiguration,
             *,
             validate_raw_mode: bool,
     ) -> IConduit:
@@ -887,7 +887,7 @@ class NexusFrameManager(Cleanable):
 
     @staticmethod
     def _validate_configuration_contract(
-            configuration: INexusFrameConfiguration,
+            configuration: NexusFrameConfiguration,
     ) -> None:
         """
         Validate the fixed Nexus-managed frame posture contract.
@@ -924,7 +924,7 @@ class NexusFrameManager(Cleanable):
 
     def _conjure_root_conduit_for_configuration(
             self,
-            configuration: INexusFrameConfiguration,
+            configuration: NexusFrameConfiguration,
     ) -> IConduit:
         """
         Conjure the required root conduit for one Nexus-managed frame.

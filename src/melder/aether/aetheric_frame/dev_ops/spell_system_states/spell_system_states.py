@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -18,8 +18,9 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 
 def _get_structural_risk_manager_callback(
@@ -231,7 +232,7 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: ISpellIndex) -> SpellSystemState:
+    def register_index(self, spell_index: SpellIndex) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 
@@ -334,7 +335,7 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     # Internal indexing helpers
     # ------------------------------------------------------------------
-    def _resolve_spellbook_id_from_index(self, spell_index: ISpellIndex) -> Optional[str]:
+    def _resolve_spellbook_id_from_index(self, spell_index: SpellIndex) -> Optional[str]:
         """
         Resolve the owning spellbook id for an attached spell index, if available.
 
@@ -444,7 +445,7 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     # Dependency wiring (Phase 3/4 integration)
     # ------------------------------------------------------------------
-    def update_dependencies(self, spell_index: ISpellIndex, dependency_ids: Iterable[str]) -> None:
+    def update_dependencies(self, spell_index: SpellIndex, dependency_ids: Iterable[str]) -> None:
         """
         Attach direct dependency ids for this spell index and update reverse edges.
 
@@ -509,7 +510,7 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     def mark_structural_change(
             self,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             reason: SpellStateChangeReason = SpellStateChangeReason.structure_changed,
     ) -> None:
         """
@@ -718,7 +719,7 @@ class SpellSystemStates(Cleanable):
                 self._resolution_by_conduit_id[conduit_id] = state
             return state
 
-    def unregister_index(self, spell_index: ISpellIndex) -> Optional[SpellSystemState]:
+    def unregister_index(self, spell_index: SpellIndex) -> Optional[SpellSystemState]:
         """
         Remove a spell index and its indices from this registry.
 
@@ -1220,7 +1221,7 @@ class SpellSystemStates(Cleanable):
 
     def register_local_topology(
             self,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             topology: 'SpellLocalTopology',
     ) -> None:
         """
@@ -1281,7 +1282,7 @@ class SpellSystemStates(Cleanable):
 
     def get_local_topology(
             self,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
     ) -> Optional['SpellLocalTopology']:
         """
         Return the local constructor topology for the given spell, if any.

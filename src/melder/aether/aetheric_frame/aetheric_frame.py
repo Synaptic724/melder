@@ -1,13 +1,12 @@
 import threading
 from types import TracebackType
-from typing import Optional, Set, Dict, Type
+from typing import TYPE_CHECKING, Optional, Set, Dict, Type
 import ulid
 from mypy_extensions import mypyc_attr
 # Melder Imports
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
@@ -16,6 +15,8 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 @mypyc_attr(native_class=True)
 class AethericFrame(Cleanable, IAethericFrame):
     """
@@ -76,8 +77,8 @@ class AethericFrame(Cleanable, IAethericFrame):
         self._conduit_ids_by_name: Dict[str, str] = {}
 
         # SpellIndex registry per conduit:
-        #   conduit_id -> Set[ISpellIndex]
-        self._spell_registry: Dict[str, Set[ISpellIndex]] = {}
+        #   conduit_id -> Set[SpellIndex]
+        self._spell_registry: Dict[str, Set[SpellIndex]] = {}
 
         # SHA256 version registry per conduit:
         #   conduit_id -> Set[str]
@@ -529,7 +530,7 @@ class AethericFrame(Cleanable, IAethericFrame):
                     result.add(version_id)
         return result
 
-    def find_and_return_spell_index(self, version_id: str) -> ISpellIndex | None:
+    def find_and_return_spell_index(self, version_id: str) -> SpellIndex | None:
         """
         Find and return the `SpellIndex` that contains the given version id.
 

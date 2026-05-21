@@ -35,6 +35,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
         ChangeControlStagedMutation,
     )
@@ -43,7 +44,6 @@ if TYPE_CHECKING:
     )
 
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
@@ -958,7 +958,7 @@ class ChangeControlManager(Cleanable):
     # ----------------------------------------------------------------------
     def register_pending_change(
             self,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             reason: str,
             metadata: Optional[Dict[str, Any]] = None,
     ) -> None:

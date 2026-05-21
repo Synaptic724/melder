@@ -5,7 +5,7 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
 )
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.utilities.interfaces.iframeaclviewconfiguration import (
-    IFrameACLViewConfiguration,
+    FrameACLViewConfiguration,
 )
 
 
@@ -22,7 +22,7 @@ _SAFE_VIEW_FORBIDDEN_OVERRIDES = {
 
 def validate_profile_configuration(
         profile: FrameACLViewProfile,
-        configuration: IFrameACLViewConfiguration,
+        configuration: FrameACLViewConfiguration,
 ) -> None:
     """
     Validate that the `safe` view profile stays restrictive.

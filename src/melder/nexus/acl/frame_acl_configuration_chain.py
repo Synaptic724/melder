@@ -5,19 +5,19 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
-    IFrameACLCodegenConfiguration,
+    FrameACLCodegenConfiguration,
 )
 from melder.utilities.interfaces.iframeaclcommandconfiguration import (
-    IFrameACLCommandConfiguration,
+    FrameACLCommandConfiguration,
 )
 from melder.utilities.interfaces.iframeaclviewconfiguration import (
-    IFrameACLViewConfiguration,
+    FrameACLViewConfiguration,
 )
 
 ACLFamilyConfiguration = Union[
-    IFrameACLViewConfiguration,
-    IFrameACLCommandConfiguration,
-    IFrameACLCodegenConfiguration,
+    FrameACLViewConfiguration,
+    FrameACLCommandConfiguration,
+    FrameACLCodegenConfiguration,
 ]
 
 

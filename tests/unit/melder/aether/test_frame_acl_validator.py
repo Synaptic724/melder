@@ -155,7 +155,7 @@ def test_frame_acl_validator_rejects_invalid_inputs() -> None:
     validator = FrameACLValidator("ops")
     finance_configuration = FrameACLConfiguration.create_default("finance")
 
-    with pytest.raises(TypeError, match="configuration must satisfy IFrameACLConfiguration"):
+    with pytest.raises(TypeError, match="configuration must satisfy FrameACLConfiguration"):
         validator.validate_configuration(None)
 
     with pytest.raises(ValueError, match="targets frame 'finance', expected 'ops'"):
@@ -277,7 +277,7 @@ def test_frame_acl_validator_rejects_unsupported_spell_payload_floor() -> None:
     with pytest.raises(ValueError, match="Unsupported minimum_spell_payload_version"):
         validator.validate_configuration(configuration)
 
-    with pytest.raises(TypeError, match="view_configuration must satisfy IFrameACLViewConfiguration"):
+    with pytest.raises(TypeError, match="view_configuration must satisfy FrameACLViewConfiguration"):
         validator._validate_view_configuration(None)
 
     configuration = FrameACLConfiguration.create_new_from_acl_configuration(
@@ -598,7 +598,7 @@ def test_frame_acl_validator_rejects_invalid_codegen_configuration_type() -> Non
     """
     validator = FrameACLValidator("ops")
 
-    with pytest.raises(TypeError, match="codegen_configuration must satisfy IFrameACLCodegenConfiguration"):
+    with pytest.raises(TypeError, match="codegen_configuration must satisfy FrameACLCodegenConfiguration"):
         validator._validate_codegen_configuration(None)
 
 
@@ -611,7 +611,7 @@ def test_frame_acl_validator_rejects_invalid_command_configuration_type() -> Non
     """
     validator = FrameACLValidator("ops")
 
-    with pytest.raises(TypeError, match="command_configuration must satisfy IFrameACLCommandConfiguration"):
+    with pytest.raises(TypeError, match="command_configuration must satisfy FrameACLCommandConfiguration"):
         validator._validate_command_configuration(None)
 
 

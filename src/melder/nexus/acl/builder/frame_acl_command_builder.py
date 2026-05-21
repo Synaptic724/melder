@@ -7,7 +7,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
+from melder.nexus.acl.configurations.frame_acl_command_configuration import FrameACLCommandConfiguration
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 if TYPE_CHECKING:
@@ -101,12 +101,12 @@ class FrameACLCommandBuilder(Cleanable):
             return self._id
 
     @property
-    def draft_configuration(self) -> IFrameACLCommandConfiguration:
+    def draft_configuration(self) -> FrameACLCommandConfiguration:
         """
         Return the currently borrowed active command configuration draft.
 
         Returns:
-            IFrameACLCommandConfiguration: Active mutable command draft.
+            FrameACLCommandConfiguration: Active mutable command draft.
         """
         self.check_cleaned()
         with self._lock:
@@ -452,17 +452,17 @@ class FrameACLCommandBuilder(Cleanable):
             rule_name,
         )
 
-    def commit_change(self) -> IFrameACLCommandConfiguration:
+    def commit_change(self) -> FrameACLCommandConfiguration:
         """
         Commit the active command draft through the borrowed generic builder.
 
         Returns:
-            IFrameACLCommandConfiguration: Newly installed command revision.
+            FrameACLCommandConfiguration: Newly installed command revision.
         """
         self.check_cleaned()
         with self._lock:
             configuration = self._frame_acl_builder.commit_change()
-            if not isinstance(configuration, IFrameACLCommandConfiguration):
+            if not isinstance(configuration, FrameACLCommandConfiguration):
                 raise RuntimeError(
                     "FrameACLCommandBuilder commit returned a non-command "
                     "configuration."

@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -8,16 +8,16 @@ from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcommandconfiguration import (
-    IFrameACLCommandConfiguration,
+    FrameACLCommandConfiguration,
 )
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
-    IFrameACLCodegenConfiguration,
+    FrameACLCodegenConfiguration,
 )
-from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.utilities.interfaces.iframeaclviewconfiguration import (
-    IFrameACLViewConfiguration,
+    FrameACLViewConfiguration,
 )
 
 
@@ -132,7 +132,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
 
     def validate_configuration(
             self,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
     ) -> FrameACLSetCompatibilityReport:
         """
         Validate one selected frame ACL bundle for cross-set compatibility.
@@ -159,9 +159,9 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if not isinstance(configuration, IFrameACLConfiguration):
+            if not isinstance(configuration, FrameACLConfiguration):
                 raise TypeError(
-                    "configuration must satisfy IFrameACLConfiguration."
+                    "configuration must be a FrameACLConfiguration instance."
                 )
             if configuration.frame_name != self._frame_name:
                 raise ValueError(
@@ -201,8 +201,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     def _validate_view_and_command(
             self,
             report: FrameACLSetCompatibilityReport,
-            view_configuration: IFrameACLViewConfiguration,
-            command_configuration: IFrameACLCommandConfiguration,
+            view_configuration: FrameACLViewConfiguration,
+            command_configuration: FrameACLCommandConfiguration,
     ) -> None:
         """
         Validate view/command compatibility for the effective bundle.
@@ -319,8 +319,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     def _validate_command_and_codegen(
             self,
             report: FrameACLSetCompatibilityReport,
-            command_configuration: IFrameACLCommandConfiguration,
-            codegen_configuration: IFrameACLCodegenConfiguration,
+            command_configuration: FrameACLCommandConfiguration,
+            codegen_configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
         Validate command/codegen compatibility for the effective bundle.

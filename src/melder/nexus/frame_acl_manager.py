@@ -30,7 +30,7 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
     FrameACLViewProfile,
 )
 from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 
 
 
@@ -562,7 +562,7 @@ class FrameACLManager(Cleanable):
     def _validate_frame_acl_configuration_against_descriptor(
             self,
             frame_name: str,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             frame_descriptor: FrameDescriptor,
     ) -> bool:
         """

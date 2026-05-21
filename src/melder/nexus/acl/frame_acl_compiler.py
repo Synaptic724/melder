@@ -11,7 +11,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
-from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
@@ -86,7 +86,7 @@ class FrameACLCompiler(Cleanable):
     def compile_frame_access_surface(
             self,
             frame_descriptor: FrameDescriptor,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
     ) -> CompiledFrameACLAccessSurface:
         """
         Compile one frame-local consumer-facing ACL access surface.

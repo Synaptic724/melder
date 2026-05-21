@@ -4,13 +4,14 @@ from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+
 
 
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
+    from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
     from melder.nexus.configuration.rift_configuration import RiftConfiguration
     from melder.nexus.rift.rift_gate.rift_gate import RiftGate
     from melder.nexus.rift.rift_gate_controller.rift_gate_controller import RiftGateController
@@ -315,7 +316,7 @@ class INexus(ICleanable, Protocol):
     def _validate_frame_acl_configuration_against_descriptor(
             self,
             frame_name: str,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             descriptor: "FrameDescriptor",
     ) -> bool:
         """
@@ -390,7 +391,7 @@ class INexus(ICleanable, Protocol):
             self,
             frame_name: str,
             contract_name: str = "default",
-    ) -> IFrameACLConfiguration:
+    ) -> FrameACLConfiguration:
         """
         Return one named frame ACL configuration for a frame.
         """
@@ -408,10 +409,10 @@ class INexus(ICleanable, Protocol):
     def register_named_frame_acl_configuration(
             self,
             frame_name: str,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             *,
             contract_name: str = "default",
-    ) -> IFrameACLConfiguration:
+    ) -> FrameACLConfiguration:
         """
         Register one named ACL configuration for a frame.
         """
@@ -420,10 +421,10 @@ class INexus(ICleanable, Protocol):
     def insert_head_frame_acl_configuration(
             self,
             frame_name: str,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             *,
             select_as_current: bool = True,
-    ) -> IFrameACLConfiguration:
+    ) -> FrameACLConfiguration:
         """
         Install one replacement revision into the selected same-name ACL contract.
         """
@@ -469,7 +470,7 @@ class INexus(ICleanable, Protocol):
             view_contract_name: str = "default",
             command_contract_name: str = "default",
             codegen_contract_name: str = "default",
-    ) -> IFrameACLConfiguration:
+    ) -> FrameACLConfiguration:
         """
         Return one assembled ACL snapshot for the selected family contracts.
         """

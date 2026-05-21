@@ -7,7 +7,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
+from melder.nexus.acl.configurations.frame_acl_codegen_configuration import FrameACLCodegenConfiguration
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 if TYPE_CHECKING:
@@ -105,12 +105,12 @@ class FrameACLCodegenBuilder(Cleanable):
             return self._id
 
     @property
-    def draft_configuration(self) -> IFrameACLCodegenConfiguration:
+    def draft_configuration(self) -> FrameACLCodegenConfiguration:
         """
         Return the active codegen draft configuration.
 
         Returns:
-            IFrameACLCodegenConfiguration: Active codegen draft.
+            FrameACLCodegenConfiguration: Active codegen draft.
         """
         self.check_cleaned()
         with self._lock:
@@ -447,17 +447,17 @@ class FrameACLCodegenBuilder(Cleanable):
             )
             return self
 
-    def commit_change(self) -> IFrameACLCodegenConfiguration:
+    def commit_change(self) -> FrameACLCodegenConfiguration:
         """
         Commit the active codegen draft through the owning generic builder.
 
         Returns:
-            IFrameACLCodegenConfiguration: Newly installed codegen revision.
+            FrameACLCodegenConfiguration: Newly installed codegen revision.
         """
         self.check_cleaned()
         with self._lock:
             configuration = self._frame_acl_builder.commit_change()
-            if not isinstance(configuration, IFrameACLCodegenConfiguration):
+            if not isinstance(configuration, FrameACLCodegenConfiguration):
                 raise RuntimeError(
                     "FrameACLCodegenBuilder commit returned a non-codegen "
                     "configuration."

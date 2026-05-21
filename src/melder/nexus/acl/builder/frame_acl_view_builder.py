@@ -11,7 +11,7 @@ from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
 if TYPE_CHECKING:
     from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.utilities.interfaces.iframeaclviewconfiguration import IFrameACLViewConfiguration
+from melder.nexus.acl.configurations.frame_acl_view_configuration import FrameACLViewConfiguration
 
 
 class FrameACLViewBuilder(Cleanable):
@@ -101,12 +101,12 @@ class FrameACLViewBuilder(Cleanable):
             return self._id
 
     @property
-    def draft_configuration(self) -> IFrameACLViewConfiguration:
+    def draft_configuration(self) -> FrameACLViewConfiguration:
         """
         Return the currently borrowed active view configuration draft.
 
         Returns:
-            IFrameACLViewConfiguration: Active mutable view draft.
+            FrameACLViewConfiguration: Active mutable view draft.
         """
         self.check_cleaned()
         with self._lock:
@@ -561,17 +561,17 @@ class FrameACLViewBuilder(Cleanable):
             rule_name,
         )
 
-    def commit_change(self) -> IFrameACLViewConfiguration:
+    def commit_change(self) -> FrameACLViewConfiguration:
         """
         Commit the active view draft through the borrowed generic builder.
 
         Returns:
-            IFrameACLViewConfiguration: Newly installed view revision.
+            FrameACLViewConfiguration: Newly installed view revision.
         """
         self.check_cleaned()
         with self._lock:
             configuration = self._frame_acl_builder.commit_change()
-            if not isinstance(configuration, IFrameACLViewConfiguration):
+            if not isinstance(configuration, FrameACLViewConfiguration):
                 raise RuntimeError(
                     "FrameACLViewBuilder commit returned a non-view "
                     "configuration."

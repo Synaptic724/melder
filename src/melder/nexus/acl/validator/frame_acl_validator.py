@@ -46,16 +46,16 @@ from melder.nexus.acl.validator.profiles.view.safe_strategy import (
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcommandconfiguration import (
-    IFrameACLCommandConfiguration,
+    FrameACLCommandConfiguration,
 )
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
-    IFrameACLCodegenConfiguration,
+    FrameACLCodegenConfiguration,
 )
-from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 from melder.utilities.interfaces.iframeaclviewconfiguration import (
-    IFrameACLViewConfiguration,
+    FrameACLViewConfiguration,
 )
 
 
@@ -281,7 +281,7 @@ class FrameACLValidator(Cleanable):
 
     def validate_configuration(
             self,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
     ) -> bool:
         """
         Validate one frame ACL configuration against this validator's frame.
@@ -313,9 +313,9 @@ class FrameACLValidator(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if not isinstance(configuration, IFrameACLConfiguration):
+            if not isinstance(configuration, FrameACLConfiguration):
                 raise TypeError(
-                    "configuration must satisfy IFrameACLConfiguration."
+                    "configuration must be a FrameACLConfiguration instance."
                 )
             if configuration.frame_name != self._frame_name:
                 raise ValueError(
@@ -332,7 +332,7 @@ class FrameACLValidator(Cleanable):
 
     def validate_configuration_against_descriptor(
             self,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             frame_descriptor: FrameDescriptor,
     ) -> bool:
         """
@@ -370,7 +370,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_configuration_shape_only(
             self,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
     ) -> None:
         """
         Validate the configuration bundle without resolving reusable profiles.
@@ -378,9 +378,9 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        if not isinstance(configuration, IFrameACLConfiguration):
+        if not isinstance(configuration, FrameACLConfiguration):
             raise TypeError(
-                "configuration must satisfy IFrameACLConfiguration."
+                "configuration must be a FrameACLConfiguration instance."
             )
         if configuration.frame_name != self._frame_name:
             raise ValueError(
@@ -401,7 +401,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_view_configuration(
             self,
-            view_configuration: IFrameACLViewConfiguration,
+            view_configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Validate the typed view-side configuration object.
@@ -479,7 +479,7 @@ class FrameACLValidator(Cleanable):
     def _validate_descriptor_record_contracts(
             self,
             frame_descriptor: FrameDescriptor,
-            view_configuration: IFrameACLViewConfiguration,
+            view_configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Validate descriptor record contracts against one ACL view config.
@@ -541,7 +541,7 @@ class FrameACLValidator(Cleanable):
     def _validate_spell_selector_rules_against_descriptor(
             self,
             frame_descriptor: FrameDescriptor,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
     ) -> None:
         """
         Validate selector-aware spell rules against published descriptor truth.
@@ -565,7 +565,7 @@ class FrameACLValidator(Cleanable):
     def _validate_view_spell_selector_rules(
             self,
             frame_descriptor: FrameDescriptor,
-            configuration: IFrameACLViewConfiguration,
+            configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Validate selector-aware spell rules from one view config.
@@ -606,7 +606,7 @@ class FrameACLValidator(Cleanable):
     def _validate_command_spell_selector_rules(
             self,
             frame_descriptor: FrameDescriptor,
-            configuration: IFrameACLCommandConfiguration,
+            configuration: FrameACLCommandConfiguration,
     ) -> None:
         """
         Validate selector-aware spell rules from one command config.
@@ -647,7 +647,7 @@ class FrameACLValidator(Cleanable):
     def _validate_codegen_spell_selector_rules(
             self,
             frame_descriptor: FrameDescriptor,
-            configuration: IFrameACLCodegenConfiguration,
+            configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
         Validate selector-aware spell rules from one codegen config.
@@ -805,7 +805,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_codegen_configuration(
             self,
-            codegen_configuration: IFrameACLCodegenConfiguration,
+            codegen_configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
         Validate the typed codegen-side configuration object.
@@ -857,7 +857,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_command_configuration(
             self,
-            command_configuration: IFrameACLCommandConfiguration,
+            command_configuration: FrameACLCommandConfiguration,
     ) -> None:
         """
         Validate the typed command-side configuration object.
@@ -928,7 +928,7 @@ class FrameACLValidator(Cleanable):
     def _run_view_profile_validation(
             self,
             profile: FrameACLViewProfile,
-            configuration: IFrameACLViewConfiguration,
+            configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Run the validator-owned strategy for one resolved view profile.
@@ -950,7 +950,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_view_configuration_shape_only(
             self,
-            view_configuration: IFrameACLViewConfiguration,
+            view_configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Validate only the intrinsic shape of one view configuration.
@@ -958,9 +958,9 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        if not isinstance(view_configuration, IFrameACLViewConfiguration):
+        if not isinstance(view_configuration, FrameACLViewConfiguration):
             raise TypeError(
-                "view_configuration must satisfy IFrameACLViewConfiguration."
+                "view_configuration must be a FrameACLViewConfiguration instance."
             )
         if (
                 view_configuration.required_nexus_label,
@@ -1015,7 +1015,7 @@ class FrameACLValidator(Cleanable):
     def _run_command_profile_validation(
             self,
             profile: FrameACLCommandProfile,
-            configuration: IFrameACLCommandConfiguration,
+            configuration: FrameACLCommandConfiguration,
     ) -> None:
         """
         Run the validator-owned strategy for one resolved command profile.
@@ -1037,7 +1037,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_command_configuration_shape_only(
             self,
-            command_configuration: IFrameACLCommandConfiguration,
+            command_configuration: FrameACLCommandConfiguration,
     ) -> None:
         """
         Validate only the intrinsic shape of one command configuration.
@@ -1047,11 +1047,11 @@ class FrameACLValidator(Cleanable):
         """
         if not isinstance(
                 command_configuration,
-                IFrameACLCommandConfiguration,
+                FrameACLCommandConfiguration,
         ):
             raise TypeError(
                 "command_configuration must satisfy "
-                "IFrameACLCommandConfiguration."
+                "FrameACLCommandConfiguration."
             )
         self._validate_ruleset_family(
             command_configuration.frame_override_ruleset,
@@ -1078,7 +1078,7 @@ class FrameACLValidator(Cleanable):
     def _run_codegen_profile_validation(
             self,
             profile: FrameACLCodegenProfile,
-            configuration: IFrameACLCodegenConfiguration,
+            configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
         Run the validator-owned strategy for one resolved codegen profile.
@@ -1100,7 +1100,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_codegen_configuration_shape_only(
             self,
-            codegen_configuration: IFrameACLCodegenConfiguration,
+            codegen_configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
         Validate only the intrinsic shape of one codegen configuration.
@@ -1108,10 +1108,10 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        if not isinstance(codegen_configuration, IFrameACLCodegenConfiguration):
+        if not isinstance(codegen_configuration, FrameACLCodegenConfiguration):
             raise TypeError(
                 "codegen_configuration must satisfy "
-                "IFrameACLCodegenConfiguration."
+                "FrameACLCodegenConfiguration."
             )
         self._validate_ruleset_family(
             codegen_configuration.frame_override_ruleset,
@@ -1250,7 +1250,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_safe_view_configuration(
             self,
-            view_configuration: IFrameACLViewConfiguration,
+            view_configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Validate that the seeded safe view configuration stays restrictive.
@@ -1276,7 +1276,7 @@ class FrameACLValidator(Cleanable):
 
     def _validate_safe_codegen_configuration(
             self,
-            codegen_configuration: IFrameACLCodegenConfiguration,
+            codegen_configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
         Validate that the seeded safe codegen configuration stays restrictive.
@@ -1335,7 +1335,7 @@ class FrameACLValidator(Cleanable):
 
     @staticmethod
     def _assert_safe_member_access_not_widened(
-            view_configuration: IFrameACLViewConfiguration,
+            view_configuration: FrameACLViewConfiguration,
     ) -> None:
         """
         Validate that safe view overrides do not re-open dunder member access.

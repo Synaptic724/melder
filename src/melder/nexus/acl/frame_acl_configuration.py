@@ -50,7 +50,7 @@ def _parse_json_configuration_string(
     return parsed_payload
 
 
-class FrameACLConfiguration(Cleanable, FrameACLConfiguration):
+class FrameACLConfiguration(Cleanable):
     """
     Purpose:
         Represent one frame-scoped typed ACL configuration node owned by a

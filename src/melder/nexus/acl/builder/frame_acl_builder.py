@@ -23,25 +23,25 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
-from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
+from melder.nexus.acl.configurations.frame_acl_command_configuration import FrameACLCommandConfiguration
+from melder.nexus.acl.configurations.frame_acl_codegen_configuration import FrameACLCodegenConfiguration
 from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
-from melder.utilities.interfaces.iframeaclviewconfiguration import IFrameACLViewConfiguration
+from melder.nexus.acl.configurations.frame_acl_view_configuration import FrameACLViewConfiguration
 
 if TYPE_CHECKING:
     from melder.nexus.acl.frame_acl_container import FrameACLContainer
 
 FrameACLDraftConfiguration = Optional[
     Union[
-        IFrameACLViewConfiguration,
-        IFrameACLCommandConfiguration,
-        IFrameACLCodegenConfiguration,
+        FrameACLViewConfiguration,
+        FrameACLCommandConfiguration,
+        FrameACLCodegenConfiguration,
     ]
 ]
 FrameACLCommittedConfiguration = Union[
-    IFrameACLViewConfiguration,
-    IFrameACLCommandConfiguration,
-    IFrameACLCodegenConfiguration,
+    FrameACLViewConfiguration,
+    FrameACLCommandConfiguration,
+    FrameACLCodegenConfiguration,
 ]
 
 
@@ -318,12 +318,12 @@ class FrameACLBuilder(Cleanable):
 
     def _require_active_codegen_configuration(
             self,
-    ) -> IFrameACLCodegenConfiguration:
+    ) -> FrameACLCodegenConfiguration:
         """
         Return the active codegen draft configuration or raise.
 
         Returns:
-            IFrameACLCodegenConfiguration: Active codegen draft configuration.
+            FrameACLCodegenConfiguration: Active codegen draft configuration.
 
         Raises:
             RuntimeError:
@@ -337,22 +337,22 @@ class FrameACLBuilder(Cleanable):
                 raise RuntimeError("FrameACLBuilder has no active codegen change.")
             if not isinstance(
                     self._draft_configuration,
-                    IFrameACLCodegenConfiguration,
+                    FrameACLCodegenConfiguration,
             ):
                 raise RuntimeError(
                     "FrameACLBuilder active codegen draft does not satisfy "
-                    "IFrameACLCodegenConfiguration."
+                    "FrameACLCodegenConfiguration."
                 )
             return self._draft_configuration
 
     def _require_active_view_configuration(
             self,
-    ) -> IFrameACLViewConfiguration:
+    ) -> FrameACLViewConfiguration:
         """
         Return the active view draft configuration or raise.
 
         Returns:
-            IFrameACLViewConfiguration: Active view draft configuration.
+            FrameACLViewConfiguration: Active view draft configuration.
 
         Raises:
             RuntimeError:
@@ -366,22 +366,22 @@ class FrameACLBuilder(Cleanable):
                 raise RuntimeError("FrameACLBuilder has no active view change.")
             if not isinstance(
                     self._draft_configuration,
-                    IFrameACLViewConfiguration,
+                    FrameACLViewConfiguration,
             ):
                 raise RuntimeError(
                     "FrameACLBuilder active view draft does not satisfy "
-                    "IFrameACLViewConfiguration."
+                    "FrameACLViewConfiguration."
                 )
             return self._draft_configuration
 
     def _require_active_command_configuration(
             self,
-    ) -> IFrameACLCommandConfiguration:
+    ) -> FrameACLCommandConfiguration:
         """
         Return the active command draft configuration or raise.
 
         Returns:
-            IFrameACLCommandConfiguration: Active command draft configuration.
+            FrameACLCommandConfiguration: Active command draft configuration.
 
         Raises:
             RuntimeError:
@@ -395,11 +395,11 @@ class FrameACLBuilder(Cleanable):
                 raise RuntimeError("FrameACLBuilder has no active command change.")
             if not isinstance(
                     self._draft_configuration,
-                    IFrameACLCommandConfiguration,
+                    FrameACLCommandConfiguration,
             ):
                 raise RuntimeError(
                     "FrameACLBuilder active command draft does not satisfy "
-                    "IFrameACLCommandConfiguration."
+                    "FrameACLCommandConfiguration."
                 )
             return self._draft_configuration
 

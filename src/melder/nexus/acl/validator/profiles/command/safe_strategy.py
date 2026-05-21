@@ -4,7 +4,7 @@ from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile 
     FrameACLCommandProfile,
 )
 from melder.utilities.interfaces.iframeaclcommandconfiguration import (
-    IFrameACLCommandConfiguration,
+    FrameACLCommandConfiguration,
 )
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
@@ -18,7 +18,7 @@ _SAFE_COMMAND_FORBIDDEN_MEMBER_OVERRIDES: Set[str] = {
 
 def validate_profile_configuration(
         profile: FrameACLCommandProfile,
-        configuration: IFrameACLCommandConfiguration,
+        configuration: FrameACLCommandConfiguration,
 ) -> None:
     """
     Validate that the `safe` command profile stays restrictive.

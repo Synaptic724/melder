@@ -28,14 +28,14 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 )
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
-    IFrameACLCodegenConfiguration,
+    FrameACLCodegenConfiguration,
 )
 from melder.utilities.interfaces.iframeaclcommandconfiguration import (
-    IFrameACLCommandConfiguration,
+    FrameACLCommandConfiguration,
 )
-from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclviewconfiguration import (
-    IFrameACLViewConfiguration,
+    FrameACLViewConfiguration,
 )
 
 
@@ -379,7 +379,7 @@ class FrameACLContainer(Cleanable):
 
     def register_named_configuration(
             self,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             *,
             contract_name: str = "default",
     ) -> FrameACLConfiguration:
@@ -390,9 +390,9 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Registered assembled bundle snapshot.
         """
         self.check_cleaned()
-        if not isinstance(configuration, IFrameACLConfiguration):
+        if not isinstance(configuration, FrameACLConfiguration):
             raise TypeError(
-                "configuration must satisfy IFrameACLConfiguration."
+                "configuration must be a FrameACLConfiguration instance."
             )
         if configuration.frame_name != self._frame_name:
             raise ValueError(
@@ -425,7 +425,7 @@ class FrameACLContainer(Cleanable):
 
     def install_configuration(
             self,
-            configuration: IFrameACLConfiguration,
+            configuration: FrameACLConfiguration,
             *,
             contract_name: str = "default",
     ) -> FrameACLConfiguration:
@@ -436,9 +436,9 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Newly assembled current ACL snapshot.
         """
         self.check_cleaned()
-        if not isinstance(configuration, IFrameACLConfiguration):
+        if not isinstance(configuration, FrameACLConfiguration):
             raise TypeError(
-                "configuration must satisfy IFrameACLConfiguration."
+                "configuration must be a FrameACLConfiguration instance."
             )
         if configuration.frame_name != self._frame_name:
             raise ValueError(
@@ -541,11 +541,11 @@ class FrameACLContainer(Cleanable):
 
     def insert_head_view_configuration(
             self,
-            configuration: IFrameACLViewConfiguration,
+            configuration: FrameACLViewConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> IFrameACLViewConfiguration:
+    ) -> FrameACLViewConfiguration:
         """
         Insert one view configuration revision at the head of a named chain.
 
@@ -569,11 +569,11 @@ class FrameACLContainer(Cleanable):
 
     def insert_head_command_configuration(
             self,
-            configuration: IFrameACLCommandConfiguration,
+            configuration: FrameACLCommandConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> IFrameACLCommandConfiguration:
+    ) -> FrameACLCommandConfiguration:
         """
         Insert one command configuration revision at the head of a named chain.
 
@@ -597,11 +597,11 @@ class FrameACLContainer(Cleanable):
 
     def insert_head_codegen_configuration(
             self,
-            configuration: IFrameACLCodegenConfiguration,
+            configuration: FrameACLCodegenConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> IFrameACLCodegenConfiguration:
+    ) -> FrameACLCodegenConfiguration:
         """
         Insert one codegen configuration revision at the head of a named chain.
 
@@ -907,9 +907,9 @@ class FrameACLContainer(Cleanable):
             *,
             family_name: str,
             contract_name: str,
-            next_view_configuration: Optional[IFrameACLViewConfiguration] = None,
-            next_command_configuration: Optional[IFrameACLCommandConfiguration] = None,
-            next_codegen_configuration: Optional[IFrameACLCodegenConfiguration] = None,
+            next_view_configuration: Optional[FrameACLViewConfiguration] = None,
+            next_command_configuration: Optional[FrameACLCommandConfiguration] = None,
+            next_codegen_configuration: Optional[FrameACLCodegenConfiguration] = None,
     ) -> None:
         """
         Validate one family change by assembling a same-name snapshot.
