@@ -7,7 +7,7 @@ from melder.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 class StaticFrameViewer(FrameViewer):
@@ -65,7 +65,7 @@ class StaticFrameViewer(FrameViewer):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[ISpellRecord]:
+    ) -> Iterator[SpellRecord]:
         """
         Yield live-only spell records in deterministic hosted order.
 
@@ -74,7 +74,7 @@ class StaticFrameViewer(FrameViewer):
                 Optional hosted frame name filter.
 
         Yields:
-            ISpellRecord: Live-only spell records.
+            SpellRecord: Live-only spell records.
         """
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             for spell_record in self._iter_live_spell_records_for_frame(
@@ -103,7 +103,7 @@ class StaticFrameViewer(FrameViewer):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[str, ISpellRecord]:
+    ) -> Tuple[str, SpellRecord]:
         """
         Return one live-only spell record plus its frame name or raise.
 
@@ -114,13 +114,13 @@ class StaticFrameViewer(FrameViewer):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, ISpellRecord]: `(frame_name, spell_record)` for the
+            Tuple[str, SpellRecord]: `(frame_name, spell_record)` for the
             resolved live spell.
         """
         if not spell_source_id:
             raise ValueError("spell_source_id cannot be empty.")
         spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
-        matching_records: List[Tuple[str, ISpellRecord]] = []
+        matching_records: List[Tuple[str, SpellRecord]] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             for spell_record in self._iter_live_spell_records_for_frame(
                     current_frame_name
@@ -217,7 +217,7 @@ class StaticFrameViewer(FrameViewer):
             metadata=base_compiled_access_surface.metadata,
         )
 
-    def _iter_live_spell_records_for_frame(self, frame_name: str) -> List[ISpellRecord]:
+    def _iter_live_spell_records_for_frame(self, frame_name: str) -> List[SpellRecord]:
         """
         Return the live visible spell records for one frame.
 
@@ -226,14 +226,14 @@ class StaticFrameViewer(FrameViewer):
                 Hosted frame name.
 
         Returns:
-            List[ISpellRecord]: Live visible spell records in deterministic
+            List[SpellRecord]: Live visible spell records in deterministic
             order.
         """
         descriptor = self._get_required_frame_descriptor(frame_name)
         base_compiled_access_surface = super()._get_required_compiled_access_surface(
             frame_name
         )
-        live_spell_records: List[ISpellRecord] = []
+        live_spell_records: List[SpellRecord] = []
         for record_key in base_compiled_access_surface.visible_spell_keys:
             spell_record = descriptor.spell_records_by_key.get(record_key)
             if spell_record is None:
@@ -245,7 +245,7 @@ class StaticFrameViewer(FrameViewer):
     def _is_spell_record_live(
             self,
             frame_name: str,
-            spell_record: ISpellRecord,
+            spell_record: SpellRecord,
     ) -> bool:
         """
         Return whether one published spell record currently has a live object.

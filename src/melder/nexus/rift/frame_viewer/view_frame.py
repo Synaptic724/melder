@@ -21,7 +21,7 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 @decorate_public_view_actions
@@ -1894,7 +1894,7 @@ class ViewFrame(Cleanable):
         )
 
     @staticmethod
-    def _build_spell_source_id(spell_record: ISpellRecord) -> str:
+    def _build_spell_source_id(spell_record: SpellRecord) -> str:
         """
         Build the published spell source id for one spell record.
 
@@ -1993,7 +1993,7 @@ class ViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[FrameLink, ISpellRecord]]:
+    ) -> List[Tuple[FrameLink, SpellRecord]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -2003,7 +2003,7 @@ class ViewFrame(Cleanable):
                 bound frame.
 
         Returns:
-            List[Tuple[FrameLink, ISpellRecord]]: Visible spell links paired with
+            List[Tuple[FrameLink, SpellRecord]]: Visible spell links paired with
             spell records.
         """
         descriptor = self._get_required_frame_descriptor()

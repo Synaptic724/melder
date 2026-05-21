@@ -5,7 +5,7 @@ from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 class StaticCommandSystem(CommandSystem):
@@ -564,7 +564,7 @@ class StaticCommandSystem(CommandSystem):
 
     def _describe_static_spell_status(
             self,
-            spell_record: ISpellRecord,
+            spell_record: SpellRecord,
             *,
             frame_name: str,
     ) -> dict:

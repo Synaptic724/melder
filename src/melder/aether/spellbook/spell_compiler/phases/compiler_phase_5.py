@@ -1,4 +1,4 @@
-from typing import Collection, Dict, List, Mapping, Optional, Set
+from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
 
 from mypy_extensions import mypyc_attr
 
@@ -29,8 +29,9 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellsystemstate import ISpellSystemState
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -95,8 +96,8 @@ class CompilerPhase5:
 
     def _get_required_spell_system_states(
             self,
-            spell_system_states: ISpellSystemStates,
-    ) -> ISpellSystemStates:
+            spell_system_states: SpellSystemStates,
+    ) -> SpellSystemStates:
         """
         Require a live SpellSystemStates collaborator.
 
@@ -105,7 +106,7 @@ class CompilerPhase5:
                 Candidate collaborator.
 
         Returns:
-            ISpellSystemStates: Validated SpellSystemStates.
+            SpellSystemStates: Validated SpellSystemStates.
 
         Raises:
             RuntimeError:
@@ -119,9 +120,9 @@ class CompilerPhase5:
 
     def _get_required_spell_state_by_spell_id(
             self,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             spell_id: str,
-    ) -> ISpellSystemState:
+    ) -> SpellSystemState:
         """
         Resolve the spell-system state for a given spell id.
 
@@ -132,7 +133,7 @@ class CompilerPhase5:
                 Spell id to resolve.
 
         Returns:
-            ISpellSystemState: Resolved state for the requested spell id.
+            SpellSystemState: Resolved state for the requested spell id.
 
         Raises:
             RuntimeError:
@@ -242,7 +243,7 @@ class CompilerPhase5:
             *,
             snapshot: SpellSystemAdjacencySnapshot,
             spell_lookup: Dict[str, ISpell],
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
     ) -> SpellSystemIndex:
         """
         Build a SpellSystemIndex for a pre-filtered adjacency snapshot.
@@ -434,7 +435,7 @@ class CompilerPhase5:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -571,7 +572,7 @@ class CompilerPhase5:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:

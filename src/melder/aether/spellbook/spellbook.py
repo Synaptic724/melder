@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType, TracebackType
-from typing import Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union
+from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union
 import threading
 import time
 
@@ -20,11 +20,12 @@ from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iaether import IAether
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.bind.bind import Bind
@@ -216,7 +217,7 @@ and logging.
         self._contracted_spells_by_id: Dict[str, Dict[str, ISpell]] = {}
 
         # Spell States System
-        self._spell_system_states: ISpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
+        self._spell_system_states: SpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
         # Validation gate used by Meld to skip safety checks when risk is zero.
         self._spellbook_validation_required: bool = True
 
@@ -547,7 +548,7 @@ and logging.
 
     def _get_required_change_control_manager(
             self,
-    ) -> IChangeControlManager:
+    ) -> ChangeControlManager:
         """
         Return the frame-local change-control manager surface used internally.
         """

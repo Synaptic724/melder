@@ -14,7 +14,7 @@ from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 
 @mypyc_attr(native_class=True)
@@ -87,7 +87,7 @@ class CompilerPhase8:
             root_blueprint: Optional[IRootResolutionBlueprint],
             spell_lookup: Optional[Dict[str, ISpell]],
             spellbook: ISpellbook,
-            spell_system_states: Optional[ISpellSystemStates],
+            spell_system_states: Optional[SpellSystemStates],
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build a lightweight deterministic key for phase8 signature reuse.
@@ -227,7 +227,7 @@ class CompilerPhase8:
             root_blueprint: Optional[IRootResolutionBlueprint],
             spell_lookup: Optional[Dict[str, ISpell]],
             spellbook: ISpellbook,
-            spell_system_states: Optional[ISpellSystemStates],
+            spell_system_states: Optional[SpellSystemStates],
     ) -> Optional[str]:
         """
         Build a deterministic phase8 input signature for occurrence-plan reuse.
@@ -379,7 +379,7 @@ class CompilerPhase8:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: Optional[ISpellSystemStates],
+            spell_system_states: Optional[SpellSystemStates],
     ) -> None:
         """
         Phase 8 - Occurrence plan compilation.

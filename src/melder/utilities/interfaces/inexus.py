@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
     from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
     from melder.nexus.nexus_frame_manager import NexusFrameManager
+    from melder.nexus.nexus_frame_manager import NexusFrameManager
 
 @runtime_checkable
 class INexus(ICleanable, Protocol):

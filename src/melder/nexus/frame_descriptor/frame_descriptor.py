@@ -8,7 +8,7 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 
 
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 if TYPE_CHECKING:
     from melder.nexus.frame_descriptor.frame_record import FrameRecord
@@ -82,7 +82,7 @@ class FrameDescriptor(Cleanable):
         self._frame_configuration: Optional[AethericFrameConfiguration] = None
         self._frame_overview: Optional["FrameRecord"] = None
         self._conduit_records_by_id: Dict[str, "ConduitRecord"] = {}
-        self._spell_records_by_key: Dict[Tuple[str, str], ISpellRecord] = {}
+        self._spell_records_by_key: Dict[Tuple[str, str], SpellRecord] = {}
         self._spell_keys_by_conduit_id: Dict[str, Set[Tuple[str, str]]] = {}
         self._spell_keys_by_spellbook_id: Dict[str, Set[Tuple[str, str]]] = {}
 
@@ -214,7 +214,7 @@ class FrameDescriptor(Cleanable):
             return dict(self._conduit_records_by_id)
 
     @property
-    def spell_records_by_key(self) -> Dict[Tuple[str, str], ISpellRecord]:
+    def spell_records_by_key(self) -> Dict[Tuple[str, str], SpellRecord]:
         """
         Return a snapshot of the descriptor-owned spell record map.
 
@@ -421,7 +421,7 @@ class FrameDescriptor(Cleanable):
             if existing is not None:
                 existing.cleanup()
 
-    def upsert_spell_record(self, spell_record: ISpellRecord) -> None:
+    def upsert_spell_record(self, spell_record: SpellRecord) -> None:
         """
         Upsert one spell record and refresh descriptor-local indexes.
 
@@ -538,7 +538,7 @@ class FrameDescriptor(Cleanable):
             self._spell_keys_by_spellbook_id[spellbook_id] = spell_keys
         return spell_keys
 
-    def _discard_spell_from_indexes(self, spell_record: ISpellRecord) -> None:
+    def _discard_spell_from_indexes(self, spell_record: SpellRecord) -> None:
         """
         Remove one spell record's key from descriptor-local indexes.
 

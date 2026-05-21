@@ -1,4 +1,4 @@
-﻿import inspect
+import inspect
 import types
 import typing
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
@@ -39,7 +39,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
@@ -91,8 +91,8 @@ class CompilerPhase3:
 
     def _get_required_spell_system_states(
             self,
-            spell_system_states: ISpellSystemStates,
-    ) -> ISpellSystemStates:
+            spell_system_states: SpellSystemStates,
+    ) -> SpellSystemStates:
         """
         Return the borrowed spell-system-state registry or raise.
 
@@ -101,7 +101,7 @@ class CompilerPhase3:
                 Candidate spell-system-state surface.
 
         Returns:
-            ISpellSystemStates: Borrowed spell-system-state registry.
+            SpellSystemStates: Borrowed spell-system-state registry.
 
         Raises:
             RuntimeError: If the registry is missing at runtime.
@@ -555,7 +555,7 @@ class CompilerPhase3:
             self,
             spell: ISpell,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             requirements: "SpellRequirements",
             graph: SpellSymbolicGraph,
             cancellation_event: Optional[CancellationEvent],
@@ -677,7 +677,7 @@ class CompilerPhase3:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """

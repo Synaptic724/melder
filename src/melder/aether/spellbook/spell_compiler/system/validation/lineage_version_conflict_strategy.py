@@ -13,7 +13,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 )
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 @mypyc_attr(native_class=True)
@@ -38,7 +38,7 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
             blueprints: Dict[str, IRootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             spell_lookup: Mapping[str, ISpell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],

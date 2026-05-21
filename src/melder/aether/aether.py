@@ -1,7 +1,7 @@
 import logging
 from threading import RLock
 from types import TracebackType
-from typing import Optional, Any, Dict, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple
 import ulid
 from mypy_extensions import mypyc_attr
 
@@ -15,8 +15,7 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
@@ -25,6 +24,8 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFr
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.mutation_research.mutation_research import MutationResearch
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 
 @mypyc_attr(native_class=True)
 class Aether(Cleanable, IAether):
@@ -1549,12 +1550,12 @@ class Aether(Cleanable, IAether):
         return frame._dev_ops_manager
 
 
-    def _get_spell_system_states(self, aetheric_frame_name: str = "default") -> ISpellSystemStates:
+    def _get_spell_system_states(self, aetheric_frame_name: str = "default") -> SpellSystemStates:
         """
         Retrieves the global SpellSystemStates manager.
 
         Returns:
-            ISpellSystemStates: The SpellSystemStates instance.
+            SpellSystemStates: The SpellSystemStates instance.
         """
         self.check_cleaned()
         return self._get_devops_manager(aetheric_frame_name).spell_system_states
@@ -1569,7 +1570,7 @@ class Aether(Cleanable, IAether):
         self.check_cleaned()
         return self._get_devops_manager(aetheric_frame_name).incident_manager
 
-    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> IChangeControlManager:
+    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> ChangeControlManager:
         """
         Retrieves the ChangeControlManager from the DevOpsManager of a specific frame.
 

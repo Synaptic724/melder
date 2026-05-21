@@ -40,7 +40,7 @@ from melder.utilities.helpers.class_surface_ast_describer import (
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 if TYPE_CHECKING:
     from melder.nexus.rift.frame_link.frame_link import FrameLink
 
@@ -1573,7 +1573,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[ISpellRecord]:
+    ) -> Iterator[SpellRecord]:
         """
         Yield descriptor-owned spell records for the selected frame scope.
 
@@ -1582,7 +1582,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            ISpellRecord: Descriptor-owned spell records.
+            SpellRecord: Descriptor-owned spell records.
         """
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
@@ -1590,7 +1590,7 @@ class FrameViewer(Cleanable):
                 yield descriptor.spell_records_by_key[record_key]
 
     @staticmethod
-    def _build_spell_source_id(spell_record: ISpellRecord) -> str:
+    def _build_spell_source_id(spell_record: SpellRecord) -> str:
         """
         Build the published spell source id for one spell record.
 
@@ -1668,7 +1668,7 @@ class FrameViewer(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[str, ISpellRecord]:
+    ) -> Tuple[str, SpellRecord]:
         """
         Return one descriptor-owned spell record plus its hosted frame.
 
@@ -1679,13 +1679,13 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, ISpellRecord]: `(frame_name, spell_record)` for the
+            Tuple[str, SpellRecord]: `(frame_name, spell_record)` for the
             resolved record.
         """
         if not spell_source_id:
             raise ValueError("spell_source_id cannot be empty.")
         spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
-        matching_records: List[Tuple[str, ISpellRecord]] = []
+        matching_records: List[Tuple[str, SpellRecord]] = []
         for current_frame_name in self._get_frame_names_for_query(frame_name):
             descriptor = self._get_required_frame_descriptor(current_frame_name)
             record = descriptor.spell_records_by_key.get((spellbook_id, spell_id))

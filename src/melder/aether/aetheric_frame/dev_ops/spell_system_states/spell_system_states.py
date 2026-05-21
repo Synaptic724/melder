@@ -696,7 +696,7 @@ class SpellSystemStates(Cleanable):
               risk tracking in sync.
             - Never returns a detached copy.
         Returns:
-            IConduitResolutionState:
+            ConduitResolutionState:
                 The resolution state instance for this conduit.
         Raises:
             ValueError:

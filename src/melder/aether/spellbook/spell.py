@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence
 import ulid
 from threading import RLock
 from types import TracebackType
@@ -16,7 +16,9 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -392,7 +394,7 @@ class Spell(Cleanable, ISpell):
         self._owner_creations: Any = None  # Scope level creations for singletons
 
         # Spell System State
-        self._spell_system_states: ISpellSystemStates = self._spellbook._spell_system_states
+        self._spell_system_states: SpellSystemStates = self._spellbook._spell_system_states
 
         # Key for the spell in the Spellbook (normalized)
         frame_key, bind_key = SpellInputUtils.make_spell_key_from_parts(

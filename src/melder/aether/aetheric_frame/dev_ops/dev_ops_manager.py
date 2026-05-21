@@ -8,7 +8,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -47,7 +47,7 @@ class DevOpsManager(Cleanable):
         "_creation_gate_controller",
     ]
 
-    def __init__(self, spell_system_states: ISpellSystemStates) -> None:
+    def __init__(self, spell_system_states: SpellSystemStates) -> None:
         """
         Initialize the frame-level DevOps manager and owned subsystems.
 
@@ -77,7 +77,7 @@ class DevOpsManager(Cleanable):
             raise ValueError("spell_system_states cannot be None")
 
         self._lock: RLock = RLock()
-        self._spell_system_states: ISpellSystemStates = spell_system_states
+        self._spell_system_states: SpellSystemStates = spell_system_states
         self._incident_manager: IncidentManager = IncidentManager()
         self._change_control_manager: ChangeControlManager = ChangeControlManager(
             spell_system_states=spell_system_states
@@ -429,7 +429,7 @@ class DevOpsManager(Cleanable):
             )
 
     @property
-    def spell_system_states(self) -> ISpellSystemStates:
+    def spell_system_states(self) -> SpellSystemStates:
         """
         Expose the underlying `SpellSystemStates` for direct state inspection.
 
@@ -437,7 +437,7 @@ class DevOpsManager(Cleanable):
         ownership hub as the other operational managers.
 
         Returns:
-            ISpellSystemStates: The frame-local spell-system state registry
+            SpellSystemStates: The frame-local spell-system state registry
             owned by this DevOps root.
         """
         self.check_cleaned()

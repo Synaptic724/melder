@@ -8,7 +8,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.utilities.interfaces.ispell import ISpell
     from melder.utilities.interfaces.ispellbook import ISpellbook
-    from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
 class _ConduitRiskState:
@@ -89,7 +89,7 @@ class RiskManager(Cleanable):
         "_lineage_conduits",
     ]
 
-    def __init__(self, spell_system_states: ISpellSystemStates) -> None:
+    def __init__(self, spell_system_states: SpellSystemStates) -> None:
         """
         Initialize the RiskManager.
 
@@ -111,7 +111,7 @@ class RiskManager(Cleanable):
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
         self._lock: RLock = RLock()
-        self._spell_system_states: ISpellSystemStates = spell_system_states
+        self._spell_system_states: SpellSystemStates = spell_system_states
         self._conduit_states: Dict[str, _ConduitRiskState] = {}
         self._lineage_conduits: Dict[str, Set[str]] = {}
 

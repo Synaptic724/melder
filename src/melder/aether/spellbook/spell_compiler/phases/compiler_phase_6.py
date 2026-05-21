@@ -95,7 +95,7 @@ from melder.utilities.interfaces.irootresolutionblueprint import (
 )
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -154,7 +154,7 @@ class CompilerPhase6:
             self,
             *,
             spell: ISpell,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             scoped_spell_ids: Collection[str],
             spell_lookup: Dict[str, ISpell],
             root_ids: Collection[str],
@@ -320,7 +320,7 @@ class CompilerPhase6:
             self,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -383,7 +383,7 @@ class CompilerPhase6:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:

@@ -5,14 +5,14 @@ from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
 class SpellSystemAdjacencyBuilder:
     """
     Builder for: class:`SpellSystemAdjacencySnapshot`.
 
-    This is a thin adapter over: class:`ISpellSystemStates` and is
+    This is a thin adapter over: class:`SpellSystemStates` and is
     intentionally dumb:
 
         * It trusts that SpellSystemStates contain correct per-spell
@@ -27,7 +27,7 @@ class SpellSystemAdjacencyBuilder:
     __slots__ = []
 
     @staticmethod
-    def build(spell_system_states: ISpellSystemStates,
+    def build(spell_system_states: SpellSystemStates,
               ) -> SpellSystemAdjacencySnapshot:
         """
         Build a frame-wide adjacency view from SpellSystemStates.

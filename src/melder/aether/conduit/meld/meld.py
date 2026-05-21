@@ -1,7 +1,7 @@
 import inspect
 from types import TracebackType
 from threading import RLock
-from typing import Optional, Dict, Any, Callable, List, Tuple, Sequence
+from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, List, Tuple, Sequence
 
 from mypy_extensions import mypyc_attr
 
@@ -29,6 +29,9 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 
 @mypyc_attr(native_class=True)
 class Meld(Cleanable):

@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
 class ChangeControlManager(Cleanable):
@@ -100,7 +100,7 @@ class ChangeControlManager(Cleanable):
         "_dirty_marker",
     ]
 
-    def __init__(self, spell_system_states: ISpellSystemStates) -> None:
+    def __init__(self, spell_system_states: SpellSystemStates) -> None:
         """
         Initialize a ChangeControlManager.
 
@@ -123,7 +123,7 @@ class ChangeControlManager(Cleanable):
         Cleanable.__init__(self)
 
         self._lock: RLock = RLock()
-        self._spell_system_states: ISpellSystemStates = spell_system_states
+        self._spell_system_states: SpellSystemStates = spell_system_states
 
         # spell_index_id -> Dict[str, Any]
         self._pending_changes: Dict[str, Dict[str, Any]] = {}

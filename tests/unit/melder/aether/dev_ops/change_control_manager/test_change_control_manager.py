@@ -12,7 +12,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
@@ -24,7 +24,7 @@ CONDUIT_ID = "conduit-1"
 
 @pytest.fixture
 def mock_sss():
-    return MagicMock(spec=ISpellSystemStates)
+    return MagicMock(spec=SpellSystemStates)
 
 @pytest.fixture
 def manager(mock_sss):

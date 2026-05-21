@@ -14,7 +14,6 @@ from melder.utilities.interfaces.iaether import IAether
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -25,6 +24,8 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 @mypyc_attr(native_class=True)
 class TransferOfOwnership(Cleanable):
     """
@@ -120,7 +121,7 @@ class TransferOfOwnership(Cleanable):
             raise RuntimeError(
                 "Aether did not provide a ChangeControlManager for ownership transfer."
             )
-        self._change_control_manager: IChangeControlManager = change_control_manager
+        self._change_control_manager: ChangeControlManager = change_control_manager
         self._incident_manager: IncidentManager = self._aether._get_incident_manager(self._frame_name)
         self._rollback_actions: List[Callable[[], object]] = []
         self._op_id: str = str(ulid.ULID())

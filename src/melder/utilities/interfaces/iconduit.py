@@ -1154,7 +1154,7 @@ class IConduit(ICleanable, Protocol):
             - Lesser conduits resolve state via their root conduit id.
             - Returns None when no resolution state has been recorded.
         Returns:
-            Optional[IConduitResolutionState]:
+            Optional[ConduitResolutionState]:
                 Resolution state for this conduit (or its root), if present.
         Raises:
             RuntimeError: If the conduit is cleaned or the root conduit is unavailable.
@@ -1182,7 +1182,7 @@ class IConduit(ICleanable, Protocol):
             refresh_structural:
                 Whether to run structural validation before conduit validation.
         Returns:
-            Optional[IConduitResolutionState]:
+            Optional[ConduitResolutionState]:
                 Resolution state for this conduit (or its root), if present.
         Raises:
             RuntimeError: If the conduit is cleaned or the root conduit is unavailable.

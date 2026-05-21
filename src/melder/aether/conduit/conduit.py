@@ -21,7 +21,6 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellspace import ISpellSpace
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.inexus import INexus
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
@@ -39,6 +38,8 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.mutation_research.mutation_research import MutationResearch
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 
 #region Conduit
 @mypyc_attr(native_class=True)
@@ -2934,7 +2935,7 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Conduit Ward API
     #region Conduit Resolution Validation API
-    def get_resolution_state(self) -> Optional[IConduitResolutionState]:
+    def get_resolution_state(self) -> Optional[ConduitResolutionState]:
         """
         Public API
 
@@ -2987,7 +2988,7 @@ class Conduit(Cleanable, IConduit):
 
         return spell_system_states.get_conduit_resolution_state(conduit_id)
 
-    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional[IConduitResolutionState]:
+    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional[ConduitResolutionState]:
         """
         Public API
 

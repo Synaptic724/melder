@@ -2,7 +2,7 @@ import pytest
 import threading
 from unittest.mock import MagicMock, patch
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 # ----------------------------------------------------------------------
@@ -31,8 +31,8 @@ def mock_dependencies():
 
 @pytest.fixture
 def mock_sss():
-    """Returns a mock ISpellSystemStates."""
-    return MagicMock(spec=ISpellSystemStates)
+    """Returns a mock SpellSystemStates."""
+    return MagicMock(spec=SpellSystemStates)
 
 @pytest.fixture
 def manager(mock_dependencies, mock_sss):

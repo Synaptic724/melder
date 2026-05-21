@@ -16,7 +16,7 @@ from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommand
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
@@ -882,7 +882,7 @@ class FrameACLCompiler(Cleanable):
 
     @staticmethod
     def _collect_effective_spell_operation_effects_for_record(
-            spell_record: ISpellRecord,
+            spell_record: SpellRecord,
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
@@ -926,7 +926,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _spell_rule_matches_record(
             conditions: Dict[str, object],
-            spell_record: ISpellRecord,
+            spell_record: SpellRecord,
     ) -> bool:
         """
         Return whether one spell rule condition set matches a spell record.
@@ -1022,7 +1022,7 @@ class FrameACLCompiler(Cleanable):
     @staticmethod
     def _collect_selector_spell_operation_effects_for_record(
             operation: str,
-            spell_record: ISpellRecord,
+            spell_record: SpellRecord,
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """

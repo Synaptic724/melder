@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Mapping, Optional, List, Set
+from typing import TYPE_CHECKING, Dict, Mapping, Optional, List, Set
 
 from mypy_extensions import mypyc_attr
 
@@ -7,7 +7,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
@@ -44,7 +43,7 @@ class SpellSystemValidationStrategy(ABC):
             blueprints: Dict[str, IRootResolutionBlueprint],
             phase4_results: Mapping[str, object],
             broken_spell_ids: Set[str],
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             spell_lookup: Mapping[str, ISpell],
             diagnostics: List[SystemDiagnostic],
             cancel_event: Optional[CancellationEvent],

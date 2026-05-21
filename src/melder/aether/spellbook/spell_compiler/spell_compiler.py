@@ -46,7 +46,7 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 )
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.validation_system import (
@@ -185,7 +185,7 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -243,7 +243,7 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spell_validator: "SpellValidationSystem",
-            spell_system_states: Optional[ISpellSystemStates],
+            spell_system_states: Optional[SpellSystemStates],
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
@@ -285,7 +285,7 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -333,7 +333,7 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -380,7 +380,7 @@ class SpellCompiler:
             self,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -426,7 +426,7 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -551,7 +551,7 @@ class SpellCompiler:
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             spellbook: ISpellbook,
-            spell_system_states: Optional[ISpellSystemStates],
+            spell_system_states: Optional[SpellSystemStates],
     ) -> None:
         """
         Run compiler phase 8 (occurrence plan).

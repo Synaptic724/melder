@@ -25,7 +25,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.m
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 @decorate_public_view_actions
@@ -1677,7 +1677,7 @@ class ViewSpell(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> ISpellRecord:
+    ) -> SpellRecord:
         """
         Return one descriptor-owned spell record or raise.
 
@@ -1689,7 +1689,7 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            ISpellRecord: Descriptor-owned spell record.
+            SpellRecord: Descriptor-owned spell record.
         """
         spell_link = self.get_required_spell(
             spell_source_id,
@@ -1705,7 +1705,7 @@ class ViewSpell(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[FrameLink, ISpellRecord]]:
+    ) -> List[Tuple[FrameLink, SpellRecord]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -1715,7 +1715,7 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            List[Tuple[FrameLink, ISpellRecord]]: Visible spell links paired with
+            List[Tuple[FrameLink, SpellRecord]]: Visible spell links paired with
             their backing spell records.
         """
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
@@ -2050,7 +2050,7 @@ class ViewSpell(Cleanable):
         return name.startswith("__") and name.endswith("__")
 
     @staticmethod
-    def _build_spell_source_id(spell_record: ISpellRecord) -> str:
+    def _build_spell_source_id(spell_record: SpellRecord) -> str:
         """
         Build the published spell source id for one spell record.
 

@@ -20,7 +20,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
@@ -86,7 +86,7 @@ class SpellSystemValidationSystem(Cleanable):
             blueprints: Dict[str, IRootResolutionBlueprint],
             phase4_results: Dict[str, object],
             broken_spell_ids: Set[str],
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: Optional[str] = None,
             spell_lookup: Optional[Mapping[str, ISpell]] = None,
             cancel_event: Optional[CancellationEvent] = None,
@@ -191,7 +191,7 @@ class SpellSystemValidationSystem(Cleanable):
     def _record_conduit_resolution_state(
             self,
             *,
-            spell_system_states: ISpellSystemStates,
+            spell_system_states: SpellSystemStates,
             conduit_id: str,
             index: SpellSystemIndex,
             blueprints: Mapping[str, IRootResolutionBlueprint],

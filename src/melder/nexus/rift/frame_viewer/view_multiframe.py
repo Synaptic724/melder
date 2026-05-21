@@ -16,7 +16,7 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.utilities.interfaces.ispellrecord import ISpellRecord
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 @decorate_public_view_actions
@@ -155,7 +155,7 @@ class ViewMultiFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Iterator[ISpellRecord]:
+    ) -> Iterator[SpellRecord]:
         """
         Yield descriptor-owned spell records for the selected frame scope.
 
@@ -164,14 +164,14 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name filter.
 
         Yields:
-            ISpellRecord: Descriptor-owned spell records.
+            SpellRecord: Descriptor-owned spell records.
         """
         for spell_record in self._viewer._iter_spell_records(
                 frame_name=frame_name,
         ):
             yield spell_record
 
-    def _build_spell_source_id(self, spell_record: ISpellRecord) -> str:
+    def _build_spell_source_id(self, spell_record: SpellRecord) -> str:
         """
         Build one published spell source id from a spell record.
 
@@ -202,7 +202,7 @@ class ViewMultiFrame(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[str, ISpellRecord]:
+    ) -> Tuple[str, SpellRecord]:
         """
         Return one descriptor-owned spell record plus its hosted frame.
 
@@ -213,7 +213,7 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name to constrain the lookup.
 
         Returns:
-            Tuple[str, ISpellRecord]: `(frame_name, spell_record)` for the resolved
+            Tuple[str, SpellRecord]: `(frame_name, spell_record)` for the resolved
             record.
         """
         resolved_frame_name, spell_record = self._viewer._get_required_spell_record(
@@ -333,7 +333,7 @@ class ViewMultiFrame(Cleanable):
             normalized.append(current_value)
         return tuple(normalized)
 
-    def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[ISpellRecord], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
+    def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[SpellRecord], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
         """
         Group spell source ids by one normalized spell-record value.
 
@@ -362,7 +362,7 @@ class ViewMultiFrame(Cleanable):
             for current_value, source_ids in grouped_source_ids_by_value.items()
         }
 
-    def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[ISpellRecord], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
+    def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[SpellRecord], Optional[object]]) -> Dict[str, Tuple[str, ...]]:
         """
         Return spell value groups that have more than one published member.
 
@@ -390,7 +390,7 @@ class ViewMultiFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str],
-            value_getter: Callable[[ISpellRecord], Optional[object]],
+            value_getter: Callable[[SpellRecord], Optional[object]],
     ) -> Dict[str, Dict[str, object]]:
         """
         Return spellbook groups whose selected value is not uniform.
@@ -405,7 +405,7 @@ class ViewMultiFrame(Cleanable):
         Returns:
             Dict[str, Dict[str, object]]: Spellbook mismatch summaries.
         """
-        grouped_records_by_spellbook_id: Dict[str, List[ISpellRecord]] = {}
+        grouped_records_by_spellbook_id: Dict[str, List[SpellRecord]] = {}
         for spell_record in self._iter_spell_records(frame_name=frame_name):
             grouped_records_by_spellbook_id.setdefault(
                 spell_record.origin_spellbook_id,
