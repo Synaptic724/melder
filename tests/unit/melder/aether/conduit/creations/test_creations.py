@@ -532,13 +532,14 @@ def test_cleanup_is_idempotent(normal_conduit: FakeConduit) -> None:
 
 def test_cleanup_records_fatal_sequence_error_and_still_tears_down(
     normal_conduit: FakeConduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     creations = _mk_creations(conduit=normal_conduit)
 
     def boom() -> list[Exception]:
         raise RuntimeError("boom")
 
-    creations._drain_disposal_stack = boom
+    monkeypatch.setattr(Creations, "_drain_disposal_stack", lambda self: boom())
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()

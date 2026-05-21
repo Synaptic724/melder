@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframedescriptorpayload import IFrameDescriptorPayload
+from melder.nexus.frame_descriptor.frame_descriptor_payload import FrameDescriptorPayload
 
 
 class FrameRecord(Cleanable):
@@ -47,7 +47,7 @@ class FrameRecord(Cleanable):
             frame_name: str,
             frame_id: str,
             config_origin_spellbook_id: Optional[str],
-            payload: IFrameDescriptorPayload,
+            payload: FrameDescriptorPayload,
     ) -> None:
         """
         Initialize one canonical frame record.
@@ -77,7 +77,7 @@ class FrameRecord(Cleanable):
             ValueError:
                 If `nexus_label`, `nexus_version`, or `payload` is missing.
             TypeError:
-                If `payload` does not satisfy `IFrameDescriptorPayload`.
+                If `payload` does not satisfy `FrameDescriptorPayload`.
         """
         super().__init__()
         if not nexus_label:
@@ -86,8 +86,8 @@ class FrameRecord(Cleanable):
             raise ValueError("nexus_version cannot be empty.")
         if payload is None:
             raise ValueError("payload cannot be None.")
-        if not isinstance(payload, IFrameDescriptorPayload):
-            raise TypeError("payload must satisfy IFrameDescriptorPayload.")
+        if not isinstance(payload, FrameDescriptorPayload):
+            raise TypeError("payload must satisfy FrameDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self.nexus_label = nexus_label

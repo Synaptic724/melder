@@ -1,12 +1,13 @@
-﻿"""
+"""
 Protocol contract for Nexus-published spell records.
 """
 
-from typing import Any, Optional, Protocol, Tuple, runtime_checkable
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Tuple, runtime_checkable
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.ispelldescriptorpayload import ISpellDescriptorPayload
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.spell_descriptor_payload import SpellDescriptorPayload
 
 
 @runtime_checkable
@@ -114,7 +115,7 @@ class ISpellRecord(ICleanable, Protocol):
         ...
 
     @property
-    def payload(self) -> ISpellDescriptorPayload:
+    def payload(self) -> SpellDescriptorPayload:
         """
         Return the descriptor-safe spell payload owned by this record.
         """

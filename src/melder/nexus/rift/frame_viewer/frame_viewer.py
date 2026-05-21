@@ -7,7 +7,7 @@ projection caches.
 """
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
@@ -39,9 +39,10 @@ from melder.utilities.helpers.class_surface_ast_describer import (
 )
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
+if TYPE_CHECKING:
+    from melder.nexus.rift.frame_link.frame_link import FrameLink
 
 
 @decorate_public_view_actions
@@ -1988,7 +1989,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduit links that are also root conduits.
 
@@ -1997,7 +1998,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Visible root conduit links.
+            List[FrameLink]: Visible root conduit links.
         """
         return self.get_view_frame(frame_name=frame_name).list_visible_root_conduits(
             frame_name=frame_name,
@@ -2126,7 +2127,7 @@ class FrameViewer(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible targets whose identity contains one text fragment.
 
@@ -2143,7 +2144,7 @@ class FrameViewer(Cleanable):
                 Optional target-kind filter.
 
         Returns:
-            List[IFrameLink]: Matching visible targets in deterministic order.
+            List[FrameLink]: Matching visible targets in deterministic order.
         """
         return self.get_view_frame(frame_name=frame_name).search_targets_contains(
             text,
@@ -2157,7 +2158,7 @@ class FrameViewer(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible targets whose identity starts with one prefix.
 
@@ -2171,9 +2172,9 @@ class FrameViewer(Cleanable):
                 Optional target-kind filter.
 
         Returns:
-            List[IFrameLink]: Matching visible targets in deterministic order.
+            List[FrameLink]: Matching visible targets in deterministic order.
         """
-        matching_targets: List[IFrameLink] = [
+        matching_targets: List[FrameLink] = [
             link
             for link in self.get_view_frame(
                 frame_name=frame_name
@@ -2189,7 +2190,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Dict[str, List[IFrameLink]]:
+    ) -> Dict[str, List[FrameLink]]:
         """
         Return visible targets grouped by target kind.
 
@@ -2198,7 +2199,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            Dict[str, List[IFrameLink]]: Visible targets grouped by source kind.
+            Dict[str, List[FrameLink]]: Visible targets grouped by source kind.
         """
         return self.get_view_frame(frame_name=frame_name).group_targets_by_kind(
             frame_name=frame_name,
@@ -2412,7 +2413,7 @@ class FrameViewer(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible targets whose display name matches exactly.
 
@@ -2429,7 +2430,7 @@ class FrameViewer(Cleanable):
                 Optional target-kind filter.
 
         Returns:
-            List[IFrameLink]: Matching visible targets.
+            List[FrameLink]: Matching visible targets.
         """
         return self.get_view_frame(frame_name=frame_name).find_target_by_display_name(
             display_name,
@@ -2475,7 +2476,7 @@ class FrameViewer(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return the currently visible targets for the selected frame.
 
@@ -2492,7 +2493,7 @@ class FrameViewer(Cleanable):
                 Optional target-kind filter (`frame`, `conduit`, or `spell`).
 
         Returns:
-            List[IFrameLink]: Ordered ACL-filtered targets.
+            List[FrameLink]: Ordered ACL-filtered targets.
         """
         return self.get_view_frame(frame_name=frame_name).list_targets(
             frame_name=frame_name,
@@ -2531,7 +2532,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return the currently visible conduit links for the selected frame.
 
@@ -2546,7 +2547,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Conduit links for the selected frame.
+            List[FrameLink]: Conduit links for the selected frame.
         """
         return self.get_view_conduit(frame_name=frame_name).list_conduits(
             frame_name=frame_name,
@@ -2556,7 +2557,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduit links that are root conduits.
 
@@ -2565,7 +2566,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Visible root conduit links.
+            List[FrameLink]: Visible root conduit links.
         """
         return self.get_view_conduit(frame_name=frame_name).list_root_conduits(
             frame_name=frame_name,
@@ -2600,7 +2601,7 @@ class FrameViewer(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> IFrameLink:
+    ) -> FrameLink:
         """
         Return one conduit link by conduit id or raise.
 
@@ -2611,7 +2612,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            IFrameLink: Matching conduit link.
+            FrameLink: Matching conduit link.
         """
         return self.get_view_conduit(frame_name=frame_name).get_required_conduit(
             conduit_id,
@@ -2789,7 +2790,7 @@ class FrameViewer(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return the ACL-visible spells owned by one conduit.
 
@@ -2804,7 +2805,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: ACL-visible spells owned by the conduit.
+            List[FrameLink]: ACL-visible spells owned by the conduit.
         """
         return self.get_view_conduit(frame_name=frame_name).list_conduit_spells(
             conduit_id,
@@ -2916,7 +2917,7 @@ class FrameViewer(Cleanable):
             root_conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits grouped under one root conduit id.
 
@@ -2927,7 +2928,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Visible conduits whose root lineage matches.
+            List[FrameLink]: Visible conduits whose root lineage matches.
         """
         return self.get_view_conduit(frame_name=frame_name).list_conduits_by_root_id(
             root_conduit_id,
@@ -2939,7 +2940,7 @@ class FrameViewer(Cleanable):
             policy_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits with one conduit policy value.
 
@@ -2950,7 +2951,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Visible conduits whose payload policy matches.
+            List[FrameLink]: Visible conduits whose payload policy matches.
         """
         return self.get_view_conduit(frame_name=frame_name).list_conduits_by_policy(
             policy_name,
@@ -2962,7 +2963,7 @@ class FrameViewer(Cleanable):
             state_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits with one conduit-state value.
 
@@ -2973,7 +2974,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Visible conduits whose payload state matches.
+            List[FrameLink]: Visible conduits whose payload state matches.
         """
         return self.get_view_conduit(frame_name=frame_name).list_conduits_by_state(
             state_name,
@@ -2985,7 +2986,7 @@ class FrameViewer(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible peer conduit links for one conduit.
 
@@ -2996,7 +2997,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Visible peer conduit links.
+            List[FrameLink]: Visible peer conduit links.
         """
         return self.get_view_conduit(frame_name=frame_name).list_peer_conduits(
             conduit_id,
@@ -3119,7 +3120,7 @@ class FrameViewer(Cleanable):
             conduit_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits whose display name matches exactly.
 
@@ -3130,7 +3131,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible conduit links.
+            List[FrameLink]: Matching visible conduit links.
         """
         return self.get_view_conduit(frame_name=frame_name).find_conduit_by_name(
             conduit_name,
@@ -3191,7 +3192,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return the currently visible spell links for the selected frame.
 
@@ -3206,7 +3207,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Spell links for the selected frame.
+            List[FrameLink]: Spell links for the selected frame.
         """
         return self.get_view_spell(frame_name=frame_name).list_spells(
             frame_name=frame_name,
@@ -3242,7 +3243,7 @@ class FrameViewer(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> IFrameLink:
+    ) -> FrameLink:
         """
         Return one spell link by published source id or raise.
 
@@ -3253,7 +3254,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            IFrameLink: Matching spell link.
+            FrameLink: Matching spell link.
         """
         return self.get_view_spell(frame_name=frame_name).get_required_spell(
             spell_source_id,
@@ -3657,7 +3658,7 @@ class FrameViewer(Cleanable):
             payload_type: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose published payload type matches exactly.
 
@@ -3668,7 +3669,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
         return self.get_view_spell(frame_name=frame_name).list_spells_by_payload_type(
             payload_type,
@@ -3680,7 +3681,7 @@ class FrameViewer(Cleanable):
             binding_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose binding name matches exactly.
 
@@ -3691,7 +3692,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
         return self.get_view_spell(frame_name=frame_name).find_spell_by_binding_name(
             binding_name,
@@ -3703,7 +3704,7 @@ class FrameViewer(Cleanable):
             spell_index_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells sharing one spell-index id.
 
@@ -3714,7 +3715,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
         return self.get_view_spell(frame_name=frame_name).list_spells_by_index_id(
             spell_index_id,
@@ -3726,7 +3727,7 @@ class FrameViewer(Cleanable):
             spell_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose spell name matches exactly.
 
@@ -3737,7 +3738,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
         return self.get_view_spell(frame_name=frame_name).list_spells_by_spell_name(
             spell_name,
@@ -3749,7 +3750,7 @@ class FrameViewer(Cleanable):
             text: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose identity contains one text fragment.
 
@@ -3760,7 +3761,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
         return self.get_view_spell(frame_name=frame_name).search_spells_contains(
             text,
@@ -3772,7 +3773,7 @@ class FrameViewer(Cleanable):
             prefix: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose identity starts with one prefix.
 
@@ -3783,9 +3784,9 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
-        matching_spells: List[IFrameLink] = [
+        matching_spells: List[FrameLink] = [
             link
             for link in self.get_view_spell(
                 frame_name=frame_name

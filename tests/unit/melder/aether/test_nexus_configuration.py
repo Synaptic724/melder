@@ -233,7 +233,9 @@ def test_nexus_configuration_validate_rejects_missing_properties_and_invalid_inv
             invalid_configuration.validate()
 
 
-def test_nexus_configuration_freeze_finalize_and_build_return_self() -> None:
+def test_nexus_configuration_freeze_finalize_and_build_return_self(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify freeze/finalize/build enforce validation and preserve fluent identity.
 
@@ -260,7 +262,7 @@ def test_nexus_configuration_freeze_finalize_and_build_return_self() -> None:
     assert configuration.frozen is frozen_before
 
     invalid = _build_valid_configuration()
-    invalid.validate = lambda: False
+    monkeypatch.setattr(NexusConfiguration, "validate", lambda self: False)
     with pytest.raises(ValueError, match="NexusConfiguration validation failed"):
         invalid.freeze()
 

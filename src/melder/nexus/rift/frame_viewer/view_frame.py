@@ -21,7 +21,6 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
@@ -157,7 +156,7 @@ class ViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return the currently visible targets for the bound frame.
 
@@ -252,7 +251,7 @@ class ViewFrame(Cleanable):
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         compiled_access_surface = self._get_required_compiled_access_surface()
-        grouped_links: Dict[str, List[IFrameLink]] = {}
+        grouped_links: Dict[str, List[FrameLink]] = {}
         for frame_link in self._build_links():
             grouped_links.setdefault(frame_link.source_kind, []).append(frame_link)
         descriptor = self._get_required_frame_descriptor()
@@ -946,7 +945,7 @@ class ViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduit links that are also root conduits.
 
@@ -961,7 +960,7 @@ class ViewFrame(Cleanable):
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         descriptor = self._get_required_frame_descriptor()
-        root_conduits: List[IFrameLink] = []
+        root_conduits: List[FrameLink] = []
         for conduit_link in self.list_targets(
                 frame_name=frame_name,
                 source_kind="conduit",
@@ -1184,7 +1183,7 @@ class ViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible targets whose identity contains one text fragment.
 
@@ -1225,7 +1224,7 @@ class ViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible targets whose identity starts with one prefix.
 
@@ -1240,7 +1239,7 @@ class ViewFrame(Cleanable):
                 Optional target-kind filter.
 
         Returns:
-            List[IFrameLink]: Matching visible targets in deterministic order.
+            List[FrameLink]: Matching visible targets in deterministic order.
         """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
@@ -1261,7 +1260,7 @@ class ViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Dict[str, List[IFrameLink]]:
+    ) -> Dict[str, List[FrameLink]]:
         """
         Return visible targets grouped by target kind.
 
@@ -1275,7 +1274,7 @@ class ViewFrame(Cleanable):
         """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
-        grouped_targets: Dict[str, List[IFrameLink]] = {}
+        grouped_targets: Dict[str, List[FrameLink]] = {}
         for frame_link in self.list_targets(frame_name=frame_name):
             grouped_targets.setdefault(frame_link.source_kind, []).append(frame_link)
         return {
@@ -1377,7 +1376,7 @@ class ViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible targets whose display name matches exactly.
 
@@ -1559,7 +1558,7 @@ class ViewFrame(Cleanable):
             frame_name: Optional[str] = None,
             source_kind: str,
             source_id: str,
-    ) -> IFrameLink:
+    ) -> FrameLink:
         """
         Return one ACL-filtered target by source identity or raise.
 
@@ -1595,7 +1594,7 @@ class ViewFrame(Cleanable):
             )
         )
 
-    def _build_links(self) -> List[IFrameLink]:
+    def _build_links(self) -> List[FrameLink]:
         """
         Build ACL-filtered `FrameLink` objects for the bound frame.
 
@@ -1611,7 +1610,7 @@ class ViewFrame(Cleanable):
         descriptor = self._get_required_frame_descriptor()
         compiled_access_surface = self._get_required_compiled_access_surface()
         frame_name = self._get_required_frame_name()
-        links: List[IFrameLink] = []
+        links: List[FrameLink] = []
         frame_overview = descriptor.frame_overview
         if "frame" in compiled_access_surface.allowed_kinds:
             if frame_overview is None:
@@ -1994,7 +1993,7 @@ class ViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[IFrameLink, ISpellRecord]]:
+    ) -> List[Tuple[FrameLink, ISpellRecord]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -2004,7 +2003,7 @@ class ViewFrame(Cleanable):
                 bound frame.
 
         Returns:
-            List[Tuple[IFrameLink, ISpellRecord]]: Visible spell links paired with
+            List[Tuple[FrameLink, ISpellRecord]]: Visible spell links paired with
             spell records.
         """
         descriptor = self._get_required_frame_descriptor()

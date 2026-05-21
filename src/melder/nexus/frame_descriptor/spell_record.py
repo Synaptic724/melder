@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.utilities.interfaces.ispelldescriptorpayload import ISpellDescriptorPayload
+from melder.nexus.frame_descriptor.spell_descriptor_payload import SpellDescriptorPayload
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -61,7 +61,7 @@ class SpellRecord(Cleanable):
             binding_name: Optional[str],
             permissions: Permissions,
             existence: Existence,
-            payload: ISpellDescriptorPayload,
+            payload: SpellDescriptorPayload,
     ) -> None:
         """
         Initialize one canonical spell record.
@@ -105,7 +105,7 @@ class SpellRecord(Cleanable):
             ValueError:
                 If `nexus_label`, `nexus_version`, or `payload` is missing.
             TypeError:
-                If `payload` does not satisfy `ISpellDescriptorPayload`.
+                If `payload` does not satisfy `SpellDescriptorPayload`.
         """
         super().__init__()
         if not nexus_label:
@@ -114,8 +114,8 @@ class SpellRecord(Cleanable):
             raise ValueError("nexus_version cannot be empty.")
         if payload is None:
             raise ValueError("payload cannot be None.")
-        if not isinstance(payload, ISpellDescriptorPayload):
-            raise TypeError("payload must satisfy ISpellDescriptorPayload.")
+        if not isinstance(payload, SpellDescriptorPayload):
+            raise TypeError("payload must satisfy SpellDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self.nexus_label = nexus_label

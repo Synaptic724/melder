@@ -1,7 +1,8 @@
-﻿from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispelldescriptorpayload import ISpellDescriptorPayload
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.spell_descriptor_payload import SpellDescriptorPayload
 
 @runtime_checkable
 class ISpellGeneralProfile(ICleanable, Protocol):
@@ -29,11 +30,11 @@ class ISpellGeneralProfile(ICleanable, Protocol):
         """
         ...
 
-    def to_descriptor_payload(self) -> "ISpellDescriptorPayload":
+    def to_descriptor_payload(self) -> SpellDescriptorPayload:
         """
         Export one descriptor-safe spell payload.
 
         Returns:
-            ISpellDescriptorPayload: Descriptor-safe spell payload.
+            SpellDescriptorPayload: Descriptor-safe spell payload.
         """
         ...

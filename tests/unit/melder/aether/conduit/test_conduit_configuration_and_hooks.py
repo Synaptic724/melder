@@ -1098,6 +1098,7 @@ def test_describe_contract_delegates_and_returns_payload(
 
 def test_register_to_creations_adds_unique_spell(
     conduit_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify _register_to_creations registers unique existing-object spells.
@@ -1116,12 +1117,13 @@ def test_register_to_creations_adds_unique_spell(
     spell.spell_id = "spell-1"
     spell.has_disposal_methods = True
     spell.disposal_method_names = ["cleanup"]
-    conduit_normal._creations.add_creation = MagicMock()
+    add_creation = MagicMock()
+    monkeypatch.setattr(type(conduit_normal._creations), "add_creation", add_creation)
     instance = object()
 
     conduit_normal._register_to_creations(spell, instance)
 
-    conduit_normal._creations.add_creation.assert_called_once_with(
+    add_creation.assert_called_once_with(
         "spell-1",
         instance,
         has_disposal_methods=True,
@@ -1154,6 +1156,7 @@ def test_register_to_creations_rejects_non_unique_spells(
 
 def test_register_to_creations_accepts_lesser_conduits(
     conduit_lesser: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify _register_to_creations accepts lesser conduits with Creations.
@@ -1172,10 +1175,11 @@ def test_register_to_creations_accepts_lesser_conduits(
     spell.spell_id = "spell-1"
     spell.has_disposal_methods = False
     spell.disposal_method_names = []
-    conduit_lesser._creations.add_creation = MagicMock()
+    add_creation = MagicMock()
+    monkeypatch.setattr(type(conduit_lesser._creations), "add_creation", add_creation)
 
     conduit_lesser._register_to_creations(spell, object())
-    conduit_lesser._creations.add_creation.assert_called_once()
+    add_creation.assert_called_once()
 
 
 def test_register_to_creations_rejects_non_creations_manager(

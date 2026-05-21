@@ -101,7 +101,7 @@ def test_conduit_record_rejects_invalid_constructor_inputs() -> None:
         )
         raise AssertionError("Expected invalid payload type to fail.")
     except TypeError as exc:
-        assert "payload must satisfy IConduitDescriptorPayload" in str(exc)
+        assert "payload must satisfy ConduitDescriptorPayload" in str(exc)
 
 
 def test_conduit_record_cleanup_is_idempotent_and_cleans_owned_payload() -> None:

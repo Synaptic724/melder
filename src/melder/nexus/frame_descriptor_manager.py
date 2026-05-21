@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
@@ -21,9 +21,6 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
     AethericFrameConfiguration,
 )
 from melder.utilities.interfaces.iconduitward import IConduitWard
-from melder.utilities.interfaces.ispelldescriptorpayload import (
-    ISpellDescriptorPayload,
-)
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -499,7 +496,7 @@ class FrameDescriptorManager(Cleanable):
             descriptor = self._get_or_create_frame_descriptor(frame_name)
 
             profile = spell.profile
-            payload: Optional[ISpellDescriptorPayload] = None
+            payload: Optional[SpellDescriptorPayload] = None
             if isinstance(profile, ISpellGeneralProfile):
                 payload = profile.to_descriptor_payload()
             if payload is None:
@@ -713,7 +710,7 @@ class FrameDescriptorManager(Cleanable):
     @classmethod
     def _validate_published_spell_payload(
             cls,
-            payload: ISpellDescriptorPayload,
+            payload: SpellDescriptorPayload,
     ) -> None:
         """
         Validate one published spell payload contract before descriptor ingest.

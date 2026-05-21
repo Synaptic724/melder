@@ -100,7 +100,7 @@ def test_frame_record_rejects_invalid_constructor_inputs() -> None:
         )
         raise AssertionError("Expected invalid payload type to fail.")
     except TypeError as exc:
-        assert "payload must satisfy IFrameDescriptorPayload" in str(exc)
+        assert "payload must satisfy FrameDescriptorPayload" in str(exc)
 
 
 def test_frame_record_cleanup_is_idempotent_and_cleans_owned_payload() -> None:

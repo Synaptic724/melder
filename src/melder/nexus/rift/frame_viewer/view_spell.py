@@ -25,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.m
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iframelink import IFrameLink
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
@@ -115,7 +114,7 @@ class ViewSpell(Cleanable):
         ):
             yield
 
-    def list_spells(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+    def list_spells(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         """
         Return the currently visible spell links for the selected frame.
 
@@ -937,7 +936,7 @@ class ViewSpell(Cleanable):
             payload_type: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose published payload type matches exactly.
 
@@ -954,7 +953,7 @@ class ViewSpell(Cleanable):
         self.check_cleaned()
         if not payload_type:
             raise ValueError("payload_type cannot be empty.")
-        matching_spells: List[IFrameLink] = []
+        matching_spells: List[FrameLink] = []
         frame_view = self._get_required_frame_view()
         descriptor = frame_view._get_required_frame_descriptor()
         for spell_link in self.list_spells(frame_name=frame_name):
@@ -971,7 +970,7 @@ class ViewSpell(Cleanable):
             binding_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose binding name matches exactly.
 
@@ -999,7 +998,7 @@ class ViewSpell(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells owned by one conduit.
 
@@ -1029,7 +1028,7 @@ class ViewSpell(Cleanable):
             spellbook_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells published by one spellbook id.
 
@@ -1059,7 +1058,7 @@ class ViewSpell(Cleanable):
             spell_index_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells sharing one spell-index id.
 
@@ -1089,7 +1088,7 @@ class ViewSpell(Cleanable):
             permission_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells with one permission posture.
 
@@ -1120,7 +1119,7 @@ class ViewSpell(Cleanable):
             existence_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells with one existence posture.
 
@@ -1151,7 +1150,7 @@ class ViewSpell(Cleanable):
             spell_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose spell name matches exactly.
 
@@ -1181,7 +1180,7 @@ class ViewSpell(Cleanable):
             spellframe_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells with one normalized spellframe value.
 
@@ -1212,7 +1211,7 @@ class ViewSpell(Cleanable):
             text: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose identity contains one text fragment.
 
@@ -1249,7 +1248,7 @@ class ViewSpell(Cleanable):
             prefix: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible spells whose identity starts with one prefix.
 
@@ -1261,7 +1260,7 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            List[IFrameLink]: Matching visible spell links.
+            List[FrameLink]: Matching visible spell links.
         """
         self.check_cleaned()
         if not prefix:
@@ -1572,7 +1571,7 @@ class ViewSpell(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> IFrameLink:
+    ) -> FrameLink:
         """
         Return one spell link by published source id or raise.
 
@@ -1706,7 +1705,7 @@ class ViewSpell(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[IFrameLink, ISpellRecord]]:
+    ) -> List[Tuple[FrameLink, ISpellRecord]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -1716,7 +1715,7 @@ class ViewSpell(Cleanable):
                 frame helper.
 
         Returns:
-            List[Tuple[IFrameLink, ISpellRecord]]: Visible spell links paired with
+            List[Tuple[FrameLink, ISpellRecord]]: Visible spell links paired with
             their backing spell records.
         """
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()

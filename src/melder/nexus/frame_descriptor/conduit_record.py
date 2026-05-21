@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduitdescriptorpayload import IConduitDescriptorPayload
+from melder.nexus.frame_descriptor.conduit_descriptor_payload import ConduitDescriptorPayload
 
 
 class ConduitRecord(Cleanable):
@@ -48,7 +48,7 @@ class ConduitRecord(Cleanable):
             root_conduit_id: str,
             frame_name: str,
             origin_spellbook_id: Optional[str],
-            payload: IConduitDescriptorPayload,
+            payload: ConduitDescriptorPayload,
     ) -> None:
         """
         Initialize one canonical conduit record.
@@ -80,7 +80,7 @@ class ConduitRecord(Cleanable):
             ValueError:
                 If `nexus_label`, `nexus_version`, or `payload` is missing.
             TypeError:
-                If `payload` does not satisfy `IConduitDescriptorPayload`.
+                If `payload` does not satisfy `ConduitDescriptorPayload`.
         """
         super().__init__()
         if not nexus_label:
@@ -89,8 +89,8 @@ class ConduitRecord(Cleanable):
             raise ValueError("nexus_version cannot be empty.")
         if payload is None:
             raise ValueError("payload cannot be None.")
-        if not isinstance(payload, IConduitDescriptorPayload):
-            raise TypeError("payload must satisfy IConduitDescriptorPayload.")
+        if not isinstance(payload, ConduitDescriptorPayload):
+            raise TypeError("payload must satisfy ConduitDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self.nexus_label = nexus_label

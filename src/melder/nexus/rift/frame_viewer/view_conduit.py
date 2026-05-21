@@ -20,7 +20,6 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.utilities.interfaces.iframelink import IFrameLink
 
 
 @decorate_public_view_actions
@@ -109,7 +108,7 @@ class ViewConduit(Cleanable):
         ):
             yield
 
-    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         """
         Return the currently visible conduit links for the selected frame.
 
@@ -230,7 +229,7 @@ class ViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return the ACL-visible spells owned by one conduit.
 
@@ -255,7 +254,7 @@ class ViewConduit(Cleanable):
             source_kind="spell",
         )
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
-        filtered_links: List[IFrameLink] = []
+        filtered_links: List[FrameLink] = []
         for spell_link in spell_links:
             record_key = self._get_required_record_key(
                 spell_link.metadata["record_key"]
@@ -643,7 +642,7 @@ class ViewConduit(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduit links that are root conduits.
 
@@ -716,7 +715,7 @@ class ViewConduit(Cleanable):
             root_conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits grouped under one root conduit id.
 
@@ -733,7 +732,7 @@ class ViewConduit(Cleanable):
         self.check_cleaned()
         if not root_conduit_id:
             raise ValueError("root_conduit_id cannot be empty.")
-        matching_conduits: List[IFrameLink] = []
+        matching_conduits: List[FrameLink] = []
         for conduit_link in self.list_conduits(frame_name=frame_name):
             conduit_record = self._get_required_conduit_record(
                 conduit_link.source_id,
@@ -748,7 +747,7 @@ class ViewConduit(Cleanable):
             policy_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits with one conduit policy value.
 
@@ -766,7 +765,7 @@ class ViewConduit(Cleanable):
         if not policy_name:
             raise ValueError("policy_name cannot be empty.")
         normalized_policy_name = policy_name.lower()
-        matching_conduits: List[IFrameLink] = []
+        matching_conduits: List[FrameLink] = []
         for conduit_link in self.list_conduits(frame_name=frame_name):
             conduit_record = self._get_required_conduit_record(
                 conduit_link.source_id,
@@ -786,7 +785,7 @@ class ViewConduit(Cleanable):
             state_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits with one conduit-state value.
 
@@ -804,7 +803,7 @@ class ViewConduit(Cleanable):
         if not state_name:
             raise ValueError("state_name cannot be empty.")
         normalized_state_name = state_name.lower()
-        matching_conduits: List[IFrameLink] = []
+        matching_conduits: List[FrameLink] = []
         for conduit_link in self.list_conduits(frame_name=frame_name):
             conduit_record = self._get_required_conduit_record(
                 conduit_link.source_id,
@@ -820,7 +819,7 @@ class ViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible peer conduit links for one conduit.
 
@@ -1025,7 +1024,7 @@ class ViewConduit(Cleanable):
             conduit_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[IFrameLink]:
+    ) -> List[FrameLink]:
         """
         Return visible conduits whose display name matches exactly.
 
@@ -1135,7 +1134,7 @@ class ViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> IFrameLink:
+    ) -> FrameLink:
         """
         Return one conduit link by conduit id or raise.
 
