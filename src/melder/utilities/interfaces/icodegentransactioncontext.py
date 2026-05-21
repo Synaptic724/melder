@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, runtime_checkable
 
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -91,3 +91,4 @@ class ICodegenTransactionContext(ICleanable, Protocol):
         Replace the optional live namespace.
         """
         ...
+

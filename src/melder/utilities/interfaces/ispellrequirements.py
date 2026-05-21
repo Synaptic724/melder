@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, Sequence, runtime_checkable
+﻿from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -36,3 +36,4 @@ class ISpellRequirements(ICleanable, Protocol):
     @property
     def parameters(self) -> Sequence[ISpellParameterRequirement]:
         ...
+

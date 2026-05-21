@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, Set, runtime_checkable
+﻿from typing import Dict, Protocol, Set, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
@@ -88,3 +88,4 @@ class IConduitCluster(ICleanable, Protocol):
         Push the owner's shareable roots into one borrower conduit.
         """
         ...
+

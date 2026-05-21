@@ -1,4 +1,4 @@
-import inspect
+﻿import inspect
 from typing import Any, Optional, Protocol, runtime_checkable
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -61,3 +61,4 @@ class ISpellParameterRequirement(ICleanable, Protocol):
     @property
     def spellmap_default(self) -> Optional[SpellMap]:
         ...
+

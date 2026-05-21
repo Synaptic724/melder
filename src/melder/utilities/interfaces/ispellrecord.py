@@ -1,4 +1,4 @@
-"""
+﻿"""
 Protocol contract for Nexus-published spell records.
 """
 
@@ -133,3 +133,4 @@ class ISpellRecord(ICleanable, Protocol):
             Tuple[str, str]: `(origin_spellbook_id, spell_id)`.
         """
         ...
+

@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitdescriptorpayload import IConduitDescriptorPayload
 
@@ -15,3 +15,4 @@ class IConduitRecord(ICleanable, Protocol):
     frame_name: str
     origin_spellbook_id: Optional[str]
     payload: IConduitDescriptorPayload
+

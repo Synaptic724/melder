@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Any, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
     ChangeTransactionType,
@@ -60,3 +60,4 @@ class IChangeControlTransactionManager(Protocol):
         Remove one borrower/provider conduit link.
         """
         ...
+

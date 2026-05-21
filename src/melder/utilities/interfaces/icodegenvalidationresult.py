@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -47,3 +47,4 @@ class ICodegenValidationResult(ICleanable, Protocol):
         Return the public validation payload.
         """
         ...
+

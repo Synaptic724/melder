@@ -1,4 +1,4 @@
-from typing import Any, Protocol, Union, runtime_checkable
+﻿from typing import Any, Protocol, Union, runtime_checkable
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -37,3 +37,4 @@ class IBind(ICleanable, Protocol):
             Union[ISpell, Any]: The newly created ISpell blueprint.
         """
         ...
+

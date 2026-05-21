@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 
 @runtime_checkable
@@ -54,3 +54,4 @@ class IStaticCommandSystem(ICommandSystem, Protocol):
         Return static availability status for one stable spell lineage id.
         """
         ...
+

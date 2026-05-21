@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Optional, Protocol, Tuple, Type, Union, runtime_checkable
+﻿from typing import Any, Mapping, Optional, Protocol, Tuple, Type, Union, runtime_checkable
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
@@ -135,3 +135,4 @@ class IRiftConfiguration(ICleanable, Protocol):
             None.
         """
         ...
+

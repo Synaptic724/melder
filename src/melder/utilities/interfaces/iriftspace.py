@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 from melder.utilities.interfaces.iframeviewer import IFrameViewer
@@ -109,3 +109,4 @@ class IRiftSpace(ICleanable, Protocol):
         Unregister one action-hook subscription by id.
         """
         ...
+

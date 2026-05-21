@@ -1,4 +1,4 @@
-from typing import Mapping, Optional, Protocol, runtime_checkable, Tuple
+﻿from typing import Mapping, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -25,3 +25,4 @@ class IInjectionPlan(ICleanable, Protocol):
             root_spell_id: str,
     ) -> Optional[Mapping[InstanceKey, IInjectionSpec]]:
         ...
+

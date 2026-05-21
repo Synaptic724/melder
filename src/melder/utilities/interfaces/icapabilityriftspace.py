@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.icapabilitycommandsystem import ICapabilityCommandSystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 
@@ -14,3 +14,4 @@ class ICapabilityRiftSpace(IRiftSpace, Protocol):
         Return the room-local capability command system owned by this space.
         """
         ...
+

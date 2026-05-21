@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -66,3 +66,4 @@ class IFrameACLSetCompatibilityReport(ICleanable, Protocol):
         Return the first recorded error when one exists.
         """
         ...
+

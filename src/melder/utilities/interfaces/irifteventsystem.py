@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iriftevent import IRiftEvent
 
@@ -75,3 +75,4 @@ class IRiftEventSystem(ICleanable, Protocol):
         Create one Rift-space runtime event and emit it immediately.
         """
         ...
+

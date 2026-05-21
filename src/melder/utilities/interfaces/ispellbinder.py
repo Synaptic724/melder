@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Callable, Optional, Protocol, runtime_checkable
 
 from melder.aether.spellbook.existence.existence import Existence
 
@@ -126,3 +126,4 @@ class ISpellBinder(Protocol):
             str: Registered `spell_id` for the finalized spell.
         """
         ...
+

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Protocol, Set, Tuple, runtime_checkable
+﻿from typing import Any, Dict, List, Optional, Protocol, Set, Tuple, runtime_checkable
 from melder.aether.spellbook.spell_compiler.dag.dag_index import PathRegistry
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -56,3 +56,4 @@ class IOccurrencePlan(ICleanable, Protocol):
     @property
     def path_registry(self) -> PathRegistry:
         ...
+

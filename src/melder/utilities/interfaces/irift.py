@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Tuple, runtime_checkable, Sequence
+﻿from typing import Dict, Optional, Protocol, Tuple, Sequence, runtime_checkable
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -341,3 +341,4 @@ class IRift(ICleanable, Protocol):
             None.
         """
         ...
+

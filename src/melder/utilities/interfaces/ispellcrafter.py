@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Protocol, Set, Tuple, runtime_checkable
+﻿from typing import Any, Callable, Dict, Optional, Protocol, Set, Tuple, runtime_checkable
 
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
@@ -831,3 +831,4 @@ class ISpellCrafter(ICleanable, Protocol):
             final DAG and dependency spell_ids once Phase 3 is fully implemented.
         """
         ...
+

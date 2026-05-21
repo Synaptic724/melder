@@ -1,4 +1,4 @@
-from typing import runtime_checkable, Optional, Protocol, Tuple
+﻿from typing import Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 
@@ -144,3 +144,4 @@ class IConduitCloud(ICleanable, Protocol):
 
 
 from melder.utilities.interfaces.iconduitcluster import IConduitCluster
+

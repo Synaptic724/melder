@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Protocol, Sequence, runtime_checkable
+﻿from typing import Dict, List, Optional, Protocol, Sequence, runtime_checkable
 
 from melder.utilities.interfaces.imutationconduit import IMutationConduit
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -111,3 +111,4 @@ class IMutationResearch(ICleanable, Protocol):
             tags: Optional[List[str]] = None,
     ) -> object:
         ...
+

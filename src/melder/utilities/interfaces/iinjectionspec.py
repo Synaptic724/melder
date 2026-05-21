@@ -1,4 +1,4 @@
-from typing import Any, Dict, Mapping, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Dict, Mapping, Optional, Protocol, runtime_checkable
 
 from melder.utilities.interfaces.iparamsource import IParamSource
 
@@ -50,3 +50,4 @@ class IInjectionSpec(Protocol):
         Return the optional contract override payload for this instance.
         """
         ...
+

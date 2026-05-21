@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Callable, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iriftmemory import IRiftMemory
 
@@ -106,3 +106,4 @@ class IRiftMemorySystem(ICleanable, Protocol):
     ) -> IRiftMemory:
         """Create one memory record and emit it immediately."""
         ...
+

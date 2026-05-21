@@ -1,4 +1,4 @@
-from typing import List, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import List, Optional, Protocol, Tuple, runtime_checkable
 
 InstanceKey = Tuple[str, Optional[int]]
 
@@ -48,3 +48,4 @@ class IParamSource(Protocol):
         Return the SpellContract key for this parameter, if any.
         """
         ...
+

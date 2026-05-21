@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
 
@@ -121,3 +121,4 @@ class IFrameACLCodegenBuilder(ICleanable, Protocol):
 
     def discard_change(self) -> None:
         ...
+

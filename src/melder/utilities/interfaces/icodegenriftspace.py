@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 
@@ -14,3 +14,4 @@ class ICodegenRiftSpace(IRiftSpace, Protocol):
         Return the room-owned internal codegen system.
         """
         ...
+

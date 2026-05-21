@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -44,3 +44,4 @@ class IMeld(ICleanable, Protocol):
         Return an already-existing live object for one resolved spell.
         """
         ...
+

@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+﻿from contextlib import contextmanager
 from typing import Any, Iterator, List, Optional, Protocol, Tuple, runtime_checkable
 import threading
 
@@ -105,3 +105,4 @@ class IFrameViewer(ICleanable, Protocol):
         Return the resolved frame name plus one required spell record.
         """
         ...
+

@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, runtime_checkable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
@@ -128,3 +128,4 @@ class IContract(ICleanable, Protocol):
             permission (Permissions): The permission level to assign.
         """
         ...
+

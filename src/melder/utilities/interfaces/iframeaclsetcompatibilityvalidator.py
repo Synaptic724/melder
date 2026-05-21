@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfiguration
 from melder.utilities.interfaces.iframeaclsetcompatibilityreport import IFrameACLSetCompatibilityReport
@@ -31,3 +31,4 @@ class IFrameACLSetCompatibilityValidator(ICleanable, Protocol):
         Validate one selected frame ACL bundle for cross-set compatibility.
         """
         ...
+

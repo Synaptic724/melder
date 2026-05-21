@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iconduit import IConduit
@@ -126,3 +126,4 @@ class INexusFrameManager(ICleanable, Protocol):
         Remove manager-owned bookkeeping for one externally disposed Aether frame.
         """
         ...
+

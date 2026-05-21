@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -34,3 +34,4 @@ class IMutationResearchConfiguration(ICleanable, Protocol):
 
     def activate(self) -> "IMutationResearchConfiguration":
         ...
+

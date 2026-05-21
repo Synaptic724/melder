@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, Protocol, Union, runtime_checkable
+﻿from typing import Any, Dict, Iterable, Optional, Protocol, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -131,3 +131,4 @@ class ISafeLogger(ICleanable, Protocol):
         Emit one `CRITICAL`-level log entry through the safe-logger facade.
         """
         ...
+

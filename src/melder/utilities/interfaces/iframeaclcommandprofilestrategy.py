@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.iframeaclcommandprofile import (
     IFrameACLCommandProfile,
 )
@@ -32,3 +32,4 @@ class IFrameACLCommandProfileStrategy(Protocol):
             IFrameACLCommandProfile: Fresh configured profile instance.
         """
         ...
+

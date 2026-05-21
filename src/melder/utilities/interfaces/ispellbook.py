@@ -1,4 +1,4 @@
-from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable, \
+﻿from typing import Any, ContextManager, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple, Union, \
     Set
 import threading
 from types import ModuleType
@@ -1151,3 +1151,4 @@ class ISpellbook(ICleanable, Protocol):
                 If configuration fails validation.
         """
         ...
+

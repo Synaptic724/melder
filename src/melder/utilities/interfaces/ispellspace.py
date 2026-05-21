@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -98,3 +98,4 @@ class ISpellSpace(ICleanable, Protocol):
             RuntimeError: If this SpellSpace has been cleaned.
         """
         ...
+

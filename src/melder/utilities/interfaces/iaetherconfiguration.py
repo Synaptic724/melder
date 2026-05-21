@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -228,3 +228,4 @@ class IAetherConfiguration(ICleanable, Protocol):
             IAetherConfiguration: This activated configuration instance.
         """
         ...
+

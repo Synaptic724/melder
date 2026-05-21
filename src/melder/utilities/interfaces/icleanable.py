@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 
 @runtime_checkable
 class ICleanable(Protocol):
@@ -53,3 +53,4 @@ class ICleanable(Protocol):
         - Be idempotent (safe to call multiple times).
         """
         ...
+

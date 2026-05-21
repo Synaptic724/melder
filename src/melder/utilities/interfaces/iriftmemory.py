@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, runtime_checkable
+﻿from typing import Dict, Protocol, runtime_checkable
 
 @runtime_checkable
 class IRiftMemory(Protocol):
@@ -42,3 +42,4 @@ class IRiftMemory(Protocol):
         Return the memory metadata mapping.
         """
         ...
+

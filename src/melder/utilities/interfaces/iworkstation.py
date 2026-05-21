@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -110,3 +110,4 @@ class IWorkstation(ICleanable, Protocol):
         Invoke the current target and optionally bind the return value.
         """
         ...
+

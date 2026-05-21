@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icodegennamespaceconfiguration import ICodegenNamespaceConfiguration
 
@@ -41,3 +41,4 @@ class ICodegenNamespace(ICleanable, Protocol):
         Return the optional `result` value from this namespace.
         """
         ...
+

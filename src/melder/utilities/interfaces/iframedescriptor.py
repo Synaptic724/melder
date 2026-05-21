@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iaethericframeconfiguration import (
@@ -50,3 +50,4 @@ class IFrameDescriptor(Protocol):
         Clear runtime-owned publication data from the descriptor.
         """
         ...
+

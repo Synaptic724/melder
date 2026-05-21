@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from threading import RLock
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -129,3 +129,4 @@ class ILesserCreations(ICleanable, Protocol):
             RuntimeError: If the Creations manager is cleaned.
         """
         ...
+

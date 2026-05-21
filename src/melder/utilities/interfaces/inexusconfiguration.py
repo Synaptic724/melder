@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Sequence, Union, runtime_checkable
+﻿from typing import Optional, Protocol, Sequence, Union, runtime_checkable
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import (
@@ -253,3 +253,4 @@ class INexusConfiguration(ICleanable, Protocol):
         Set the default validation mode applied to Rift programming and activation flows.
         """
         ...
+

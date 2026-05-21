@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Dict, Iterable, List, Optional, Protocol, runtime_checkable
 import threading
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
@@ -58,3 +58,4 @@ class IIncidentManager(ICleanable, Protocol):
         - kind: only incidents with this kind string.
         """
         ...
+

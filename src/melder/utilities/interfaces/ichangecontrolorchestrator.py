@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
 )
@@ -15,3 +15,4 @@ class IChangeControlOrchestrator(Protocol):
         Return one staged mutation by request id, if present.
         """
         ...
+

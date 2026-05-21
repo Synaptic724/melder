@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.iriftspace import IRiftSpace
 from melder.utilities.interfaces.istaticcommandsystem import IStaticCommandSystem
 
@@ -14,3 +14,4 @@ class IStaticRiftSpace(IRiftSpace, Protocol):
         Return the room-local static command system owned by this space.
         """
         ...
+

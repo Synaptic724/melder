@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -12,3 +12,4 @@ class IDescriptorPayload(ICleanable, Protocol):
     """
 
     payload_version: str
+

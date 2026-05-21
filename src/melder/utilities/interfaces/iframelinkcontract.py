@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, runtime_checkable
+﻿from typing import Dict, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 
@@ -65,3 +65,4 @@ class IFrameLinkContract(ICleanable, Protocol):
         Return a detached summary of this per-frame contract.
         """
         ...
+

@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, runtime_checkable
+﻿from typing import Dict, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -54,3 +54,4 @@ class IFrameLink(ICleanable, Protocol):
         Return a detached copy of this target entry.
         """
         ...
+

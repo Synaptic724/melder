@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Protocol, Union, runtime_checkable
+﻿from typing import Any, Dict, Optional, Protocol, Union, runtime_checkable
 
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -222,3 +222,4 @@ class IAethericFrameConfiguration(ICleanable, Protocol):
             Dict[str, Any]: Plain posture dictionary.
         """
         ...
+

@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iriftgate import IRiftGate
 
@@ -90,3 +90,4 @@ class IRiftGateController(ICleanable, Protocol):
         Set the admission mode for every registered Rift gate.
         """
         ...
+

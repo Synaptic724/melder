@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, Tuple, runtime_checkable
+﻿from typing import Dict, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icodegenexecutionresult import ICodegenExecutionResult
 from melder.utilities.interfaces.icodegentransactioncontext import ICodegenTransactionContext
@@ -76,3 +76,4 @@ class ICodegenSystem(ICleanable, Protocol):
         Convert one validation result into the public payload shape.
         """
         ...
+

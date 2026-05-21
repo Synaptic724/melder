@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, runtime_checkable
+﻿from typing import Any, Optional, Protocol, runtime_checkable
 
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispell import ISpell
@@ -44,3 +44,4 @@ class ISpellValidationSystem(ICleanable, Protocol):
             Any: Concrete validation result object returned by the implementation.
         """
         ...
+

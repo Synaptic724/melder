@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Set, runtime_checkable
+﻿from typing import Dict, Optional, Protocol, Set, runtime_checkable
 from types import TracebackType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
@@ -134,3 +134,4 @@ class IAethericFrame(ICleanable, Protocol):
         Return the `SpellIndex` that owns the given version id, if any.
         """
         ...
+

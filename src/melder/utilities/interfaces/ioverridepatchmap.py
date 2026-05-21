@@ -1,4 +1,4 @@
-from typing import Dict, List, Mapping, Protocol, runtime_checkable
+﻿from typing import Dict, List, Mapping, Protocol, runtime_checkable
 from melder.aether.spellbook.spell_compiler.dag.dag_index import SocketRef
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -20,3 +20,4 @@ class IOverridePatchMap(ICleanable, Protocol):
     @property
     def specificity_by_spec(self) -> Mapping[str, int]:
         ...
+

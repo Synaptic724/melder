@@ -1,4 +1,4 @@
-from typing import Dict, List, Protocol, runtime_checkable
+﻿from typing import Dict, List, Protocol, runtime_checkable
 from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationEdgePatch
 from melder.utilities.interfaces.icleanable import ICleanable
 
@@ -16,3 +16,4 @@ class IMutationPatchMap(ICleanable, Protocol):
     @property
     def targets_by_spec(self) -> Dict[str, List[MutationEdgePatch]]:
         ...
+

@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframedescriptorpayload import IFrameDescriptorPayload
 
@@ -14,3 +14,4 @@ class IFrameRecord(ICleanable, Protocol):
     frame_id: str
     config_origin_spellbook_id: Optional[str]
     payload: IFrameDescriptorPayload
+

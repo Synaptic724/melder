@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icommandsystem import ICommandSystem
 
 @runtime_checkable
@@ -320,3 +320,4 @@ class ICapabilityCommandSystem(ICommandSystem, Protocol):
         Return contracted spell data keyed by peer conduit name.
         """
         ...
+

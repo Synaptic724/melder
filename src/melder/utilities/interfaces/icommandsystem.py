@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -203,3 +203,4 @@ class ICommandSystem(ICleanable, Protocol):
         Return the public command methods supported by this room surface.
         """
         ...
+

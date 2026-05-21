@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -36,3 +36,4 @@ class IMutationConduit(ICleanable, Protocol):
         Return the referenced change-control manager for this conduit.
         """
         ...
+

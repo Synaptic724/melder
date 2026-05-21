@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Protocol, Self, runtime_checkable
+﻿from typing import Any, Callable, Optional, Protocol, Self, runtime_checkable
 from types import TracebackType
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -237,3 +237,4 @@ class IUnitOfWork(ICleanable, Protocol):
         Return whether this unit of work completed in a cancelled state.
         """
         ...
+

@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, runtime_checkable
+﻿from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, runtime_checkable
 import threading
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -420,3 +420,4 @@ class ISpellSystemStates(ICleanable, Protocol):
         Attach a RiskManager to this registry.
         """
         ...
+

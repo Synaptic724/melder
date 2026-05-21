@@ -1,4 +1,4 @@
-from typing import Set, Protocol, runtime_checkable
+﻿from typing import Set, Protocol, runtime_checkable
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -36,3 +36,4 @@ class IDetail(ICleanable, Protocol):
         deleted afterward.
         """
         ...
+

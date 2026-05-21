@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, runtime_checkable
+﻿from typing import Dict, Protocol, runtime_checkable
 from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.nexus.rift.projection.command_projection import CommandProjection
 from melder.nexus.rift.projection.view_projection import ViewProjection
@@ -63,3 +63,4 @@ class IFrameProjectionSet(ICleanable, Protocol):
         Return a detached metadata snapshot for this projection set.
         """
         ...
+

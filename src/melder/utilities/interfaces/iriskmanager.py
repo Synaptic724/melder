@@ -1,4 +1,4 @@
-from typing import Mapping, Optional, Protocol, Set, runtime_checkable, Dict
+﻿from typing import Mapping, Optional, Protocol, Set, Dict, runtime_checkable
 import threading
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -90,3 +90,4 @@ class IRiskManager(ICleanable, Protocol):
             validity: New resolution validity.
         """
         ...
+

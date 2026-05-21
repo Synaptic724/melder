@@ -1,4 +1,4 @@
-from typing import Mapping, Optional, Protocol, Sequence, runtime_checkable
+﻿from typing import Mapping, Optional, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
 from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
@@ -328,3 +328,4 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
             IFrameACLProfile: Newly composed frame ACL profile.
         """
         ...
+

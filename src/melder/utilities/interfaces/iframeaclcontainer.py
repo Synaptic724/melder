@@ -1,4 +1,4 @@
-from typing import Mapping, Protocol, Sequence, runtime_checkable
+﻿from typing import Mapping, Protocol, Sequence, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
@@ -296,3 +296,4 @@ class IFrameACLContainer(ICleanable, Protocol):
         Roll current codegen selection back to one historical revision.
         """
         ...
+

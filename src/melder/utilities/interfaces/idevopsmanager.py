@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 import threading
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -120,3 +120,4 @@ class IDevOpsManager(ICleanable, Protocol):
         direct graph/dirty-state access through the DevOpsManager.
         """
         ...
+

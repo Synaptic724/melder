@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+﻿from typing import Protocol, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 
 @runtime_checkable
@@ -90,3 +90,4 @@ class IRiftGate(ICleanable, Protocol):
         Terminally close the gate and wait for ticket drain.
         """
         ...
+

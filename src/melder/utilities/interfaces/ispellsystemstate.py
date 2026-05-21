@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Protocol, Set, runtime_checkable
+﻿from typing import Iterable, Optional, Protocol, Set, runtime_checkable
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
@@ -42,3 +42,4 @@ class ISpellSystemState(ICleanable, Protocol):
 
     def clear_dirty(self, last_validated_at: Optional[float]) -> None:
         ...
+

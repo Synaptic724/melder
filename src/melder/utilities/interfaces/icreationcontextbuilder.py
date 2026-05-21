@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, runtime_checkable
+﻿from typing import Optional, Protocol, runtime_checkable
 
 from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 from melder.utilities.interfaces.ispell import ISpell
@@ -52,3 +52,4 @@ class ICreationContextBuilder(Protocol):
                 If the spell is not in a runnable state for context creation.
         """
         ...
+
