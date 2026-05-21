@@ -9,7 +9,8 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.helpers.id_builder import IDBuilder
 
-@mypyc_attr(native_class=False)
+
+@mypyc_attr(native_class=True)
 class SafeLogger(Cleanable):
     """
     Unified logger adapter over channel loggers and stdlib loggers.
@@ -38,6 +39,7 @@ class SafeLogger(Cleanable):
     __deletable__: ClassVar[List[str]] = [
         "_logger", "_id", "_level", "_level_name", "_is_channel",
     ]
+
     def __init__(self, logger: logging.Logger | IChannelLogger | None, level_name: str = "INFO"):
         """
         Initialize the logger adapter around one concrete logger or null target.
