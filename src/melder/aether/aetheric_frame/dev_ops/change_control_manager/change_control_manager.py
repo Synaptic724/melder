@@ -9,6 +9,7 @@ from typing import (
     Set,
     Tuple,
     TYPE_CHECKING,
+    ClassVar,
 )
 
 from mypy_extensions import mypyc_attr
@@ -79,8 +80,28 @@ class ChangeControlManager(Cleanable):
     Lifecycle:
         cleanup() is idempotent and nulls internal references.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_system_states",
+        "_pending_changes",
+        "_component_of_by_conduit",
+        "_dirty_spells_by_conduit",
+        "_dirty_roots_by_conduit",
+        "_monitor_active_by_conduit",
+        "_revalidate_fn_by_conduit",
+        "_change_control_enabled",
+        "_transaction_manager",
+        "_conflict_manager",
+        "_embargo_manager",
+        "_orchestrator",
+        "_commit_validator",
+        "_commit_hook",
+        "_abort_hook",
+        "_structural_validator",
+        "_dirty_marker",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_spell_system_states",
         "_pending_changes",

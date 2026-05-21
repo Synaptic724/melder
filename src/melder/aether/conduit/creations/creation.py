@@ -34,6 +34,13 @@ class Creation(Cleanable):
         "_disposal_methods",
         "_lock",
     ]
+    __deletable__: ClassVar[list[str]] = [
+        "_id",
+        "_value",
+        "_has_disposal_methods",
+        "_disposal_methods",
+        "_lock",
+    ]
 
     def __init__(
             self,

@@ -1,5 +1,6 @@
 import threading
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, \
+    ClassVar
 
 from mypy_extensions import mypyc_attr
 # Melder imports
@@ -66,8 +67,23 @@ class SpellSystemStates(Cleanable):
         * `consume_dirty_indexes(...)` to get a worklist
         * `compute_impact_closure(...)` to fan out impacted spell indexes
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_frame",
+        "_states_by_index_id",
+        "_states_by_spell_id",
+        "_dirty_indexes",
+        "_local_topologies",
+        "_resolution_by_conduit_id",
+        "_index_owner_spellbook_id",
+        "_collection_frames_by_index",
+        "_collection_dependents_by_spellbook",
+        "_contract_keys_by_index",
+        "_contract_dependents_by_spellbook",
+        "_risk_manager",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_frame",
         "_states_by_index_id",
@@ -1187,7 +1203,11 @@ class SpellSystemStates(Cleanable):
             if contract_keys is None:
                 key_iter = book_index.keys()
             else:
-                key_iter = (key for key in contract_keys if key)
+                key_iter = [
+                    key
+                    for key in contract_keys
+                    if key
+                ]
 
             for contract_key in key_iter:
                 dependents = book_index.get(contract_key)

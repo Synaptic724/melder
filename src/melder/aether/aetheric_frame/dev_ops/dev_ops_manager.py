@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -39,8 +39,16 @@ class DevOpsManager(Cleanable):
     - Cleanup is responsible for tearing down the owned manager graph in a
       deterministic order.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_system_states",
+        "_incident_manager",
+        "_change_control_manager",
+        "_risk_manager",
+        "_creation_gate_controller",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_spell_system_states",
         "_incident_manager",

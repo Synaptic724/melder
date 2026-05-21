@@ -180,8 +180,8 @@ def test_cleanup_noops_when_marked_cleaned_inside_lock(ward) -> None:
 
     ward._lock = LockThatMarksCleaned(ward)
 
-    with patch.object(ward, "_clean_up_links") as mock_links, patch.object(
-        ward,
+    with patch.object(ConduitWard, "_clean_up_links") as mock_links, patch.object(
+        ConduitWard,
         "_clean_up_lesser_conduits_links",
     ) as mock_lesser:
         ward.cleanup()
@@ -657,8 +657,8 @@ def test_transaction_context_manager_yields_self_and_closes(ward) -> None:
     """
     Verify transaction() begins, yields the ward, and always ends on success.
     """
-    with patch.object(ward, "begin_transaction") as mock_begin, patch.object(
-        ward,
+    with patch.object(ConduitWard, "begin_transaction") as mock_begin, patch.object(
+        ConduitWard,
         "end_transaction",
     ) as mock_end:
         with ward.transaction("link", conduit_ids=["conduit-2"]) as active_ward:
@@ -680,8 +680,8 @@ def test_transaction_context_manager_closes_on_exception(ward) -> None:
     """
     Verify transaction() still ends the active transaction when the body fails.
     """
-    with patch.object(ward, "begin_transaction") as mock_begin, patch.object(
-        ward,
+    with patch.object(ConduitWard, "begin_transaction") as mock_begin, patch.object(
+        ConduitWard,
         "end_transaction",
     ) as mock_end:
         with pytest.raises(RuntimeError, match="boom"):
@@ -945,7 +945,7 @@ def test_clean_up_links_delegates_to_sever(ward):
     """
     Verify _clean_up_links delegates to _sever_all_linked_conduits.
     """
-    with patch.object(ward, "_sever_all_linked_conduits") as mock_sever:
+    with patch.object(ConduitWard, "_sever_all_linked_conduits") as mock_sever:
         ward._clean_up_links()
 
     mock_sever.assert_called_once()
@@ -963,7 +963,7 @@ def test_sever_all_linked_conduits_calls_remove_contract_for_each_peer(ward):
     ward._create_new_contract(target_a)
     ward._create_new_contract(target_b)
 
-    with patch.object(ward, "_remove_contract") as mock_remove:
+    with patch.object(ConduitWard, "_remove_contract") as mock_remove:
         ward._sever_all_linked_conduits()
 
     assert mock_remove.call_count == 2
@@ -976,7 +976,7 @@ def test_sever_all_linked_conduits_noops_when_cleaned_before_lock(ward) -> None:
     """
     ward._cleaned = True
 
-    with patch.object(ward, "_remove_contract") as mock_remove:
+    with patch.object(ConduitWard, "_remove_contract") as mock_remove:
         ward._sever_all_linked_conduits()
 
     mock_remove.assert_not_called()
@@ -1000,7 +1000,7 @@ def test_sever_all_linked_conduits_noops_when_cleaned_inside_lock(ward) -> None:
 
     ward._lock = LockThatMarksCleaned(ward)
 
-    with patch.object(ward, "_remove_contract") as mock_remove:
+    with patch.object(ConduitWard, "_remove_contract") as mock_remove:
         ward._sever_all_linked_conduits()
 
     mock_remove.assert_not_called()

@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -38,8 +38,18 @@ class AethericFrameConfiguration(Cleanable):
         bound into the owning `AethericFrame`.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_lock",
+        "_frozen",
+        "_origin_spellbook_id",
+        "_system_state",
+        "_ai_native_enabled",
+        "_rift_enabled",
+        "_shared_framewide_spellbook_configuration",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_id",
         "_lock",
         "_frozen",

@@ -1,5 +1,5 @@
 ﻿import threading
-from typing import TYPE_CHECKING, Dict, Set, Optional, List
+from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
@@ -37,8 +37,8 @@ class ConduitCluster(Cleanable):
             When True, a dependency closure is auto-contracted with each shared
             root. When False, only the root spell is linked.
     """
-    __melder_internal__ = _mrg.sentinel
-    __slots__ = (
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",
         "_registry",
@@ -47,8 +47,19 @@ class ConduitCluster(Cleanable):
         "shared_spells",
         "auto_link_dependencies",
         "_cleaned",
-        "_id"
-    )
+        "_id",
+    ]
+    __deletable__: ClassVar[list[str]] =  [
+        "_lock",
+        "_name",
+        "_registry",
+        "_aetheric_frame_name",
+        "members",
+        "shared_spells",
+        "auto_link_dependencies",
+        "_cleaned",
+        "_id",
+    ]
 
     def __init__(
             self,

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.meld import Meld
 
 
 def test_creation_gate_controller_registers_normal_gate(conduit_normal: Conduit) -> None:
@@ -69,7 +70,10 @@ def test_creation_gate_controller_disable_all(
         lesser.cleanup()
 
 
-def test_creation_gate_ticket_tracking_success(conduit_dynamic_normal: Conduit) -> None:
+def test_creation_gate_ticket_tracking_success(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify meld ticket tracking clears after successful meld calls.
 
@@ -77,20 +81,25 @@ def test_creation_gate_ticket_tracking_success(conduit_dynamic_normal: Conduit) 
         - A meld call registers and unregisters a ticket.
         - active_ticket_count returns to zero after completion.
     """
-    conduit_dynamic_normal._meld.meld = MagicMock(return_value="ok")
+    meld_mock = MagicMock(return_value="ok")
+    monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
     result = conduit_dynamic_normal.meld(spell="spell-id")
     assert result == "ok"
     assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
 
 
-def test_creation_gate_ticket_tracking_exception(conduit_dynamic_normal: Conduit) -> None:
+def test_creation_gate_ticket_tracking_exception(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify meld ticket tracking clears after exceptions.
 
     Contract:
         - active_ticket_count returns to zero after a failing meld call.
     """
-    conduit_dynamic_normal._meld.meld = MagicMock(side_effect=RuntimeError("boom"))
+    meld_mock = MagicMock(side_effect=RuntimeError("boom"))
+    monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
     with pytest.raises(RuntimeError, match="boom"):
         conduit_dynamic_normal.meld(spell="spell-id")
     assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
@@ -121,7 +130,10 @@ def test_creation_gate_controller_active_thread_counts(
         lesser.cleanup()
 
 
-def test_creation_gate_controller_close_and_wait(conduit_dynamic_normal: Conduit) -> None:
+def test_creation_gate_controller_close_and_wait(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify close_and_wait_until_free blocks until active tickets drain.
 
@@ -169,6 +181,7 @@ def test_creation_gate_controller_close_and_wait(conduit_dynamic_normal: Conduit
     assert not t.is_alive()
 
     # Verify subsequent meld calls raise when the gate is closed.
-    conduit_dynamic_normal._meld.meld = MagicMock(return_value="ok")
+    meld_mock = MagicMock(return_value="ok")
+    monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
     with pytest.raises(RuntimeError, match="CreationGate is closed"):
         conduit_dynamic_normal.meld(spell="spell-id")

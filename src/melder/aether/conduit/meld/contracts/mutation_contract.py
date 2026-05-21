@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Any, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -53,8 +53,16 @@ class MutationContract(Cleanable):
           currently gates active use behind `MUTATION_CONTRACT_DISABLED`.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell",
+        "_spellframe",
+        "_binding_name",
+        "_spell_override",
+        "_late_binding",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_spell",
         "_spellframe",

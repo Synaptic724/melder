@@ -1,5 +1,15 @@
 import threading
-from typing import TYPE_CHECKING, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -68,8 +78,20 @@ class ConduitResolutionState(Cleanable):
     - last_change_reason:
         Optional SpellStateChangeReason describing the last change.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_conduit_id",
+        "_lock",
+        "_spell_validity",
+        "_root_validity",
+        "_diagnostics",
+        "_dirty",
+        "_last_validated_at",
+        "_last_change_reason",
+        "_initial_validity",
+        "_risk_manager",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_conduit_id",
         "_lock",
         "_spell_validity",
@@ -126,6 +148,45 @@ class ConduitResolutionState(Cleanable):
         self._last_change_reason: Optional[SpellStateChangeReason] = None
         self._initial_validity: SpellValidity = initial_validity
         self._risk_manager: Optional[RiskManager] = None
+
+    # ------------------------------------------------------------------ #
+    # Cleanup                                                            #
+    # ------------------------------------------------------------------ #
+    def cleanup(self) -> None:
+        """
+        Deterministically tear down this resolution state.
+
+        Contract:
+            - Idempotent and lock-guarded.
+            - Cleans owned diagnostic clones before dropping references.
+            - Clears spell/root verdict maps and resets dirty/validation
+              markers.
+            - Nulls owned references so later callers fail through
+              `check_cleaned()`.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+
+            self._cleaned = True
+
+            self._spell_validity.clear()
+            self._root_validity.clear()
+            self._cleanup_diagnostics_locked()
+            self._dirty = False
+
+            del self._spell_validity
+            del self._root_validity
+            del self._diagnostics
+            del self._last_validated_at
+            del self._last_change_reason
+            del self._conduit_id
+            del self._initial_validity
+            del self._risk_manager
+        del self._lock
 
     # ------------------------------------------------------------------ #
     # Validity accessors                                                  #
@@ -603,45 +664,6 @@ class ConduitResolutionState(Cleanable):
         """
         self.check_cleaned()
         return self._last_validated_at
-
-    # ------------------------------------------------------------------ #
-    # Cleanup                                                            #
-    # ------------------------------------------------------------------ #
-    def cleanup(self) -> None:
-        """
-        Deterministically tear down this resolution state.
-
-        Contract:
-            - Idempotent and lock-guarded.
-            - Cleans owned diagnostic clones before dropping references.
-            - Clears spell/root verdict maps and resets dirty/validation
-              markers.
-            - Nulls owned references so later callers fail through
-              `check_cleaned()`.
-        """
-        if self._cleaned:
-            return
-
-        with self._lock:
-            if self._cleaned:
-                return
-
-            self._cleaned = True
-
-            self._spell_validity.clear()
-            self._root_validity.clear()
-            self._cleanup_diagnostics_locked()
-            self._dirty = False
-
-            del self._spell_validity
-            del self._root_validity
-            del self._diagnostics
-            del self._last_validated_at
-            del self._last_change_reason
-            del self._conduit_id
-            del self._initial_validity
-            del self._risk_manager
-        del self._lock
 
     def _set_risk_manager(self, risk_manager: Optional[RiskManager]) -> None:
         """

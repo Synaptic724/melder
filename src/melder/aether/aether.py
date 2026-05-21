@@ -1,7 +1,7 @@
 ﻿import logging
 from threading import RLock
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
 import ulid
 from mypy_extensions import mypyc_attr
 
@@ -59,10 +59,10 @@ class Aether(Cleanable):
     - Resets `_instance` and `_initialized` so tests or later runtime flows can
       create a fresh singleton after teardown.
     """
-    __melder_internal__ = _mrg.sentinel
-    _instance: Optional["Aether"] = None
-    _lock = RLock()
-    _initialized = False
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _instance: ClassVar["Aether"] = None
+    _lock: ClassVar[RLock] = RLock()
+    _initialized: ClassVar[bool] = False
 
     def __new__(cls, *args: object, **kwargs: object) -> "Aether":
         """

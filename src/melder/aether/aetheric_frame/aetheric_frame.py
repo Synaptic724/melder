@@ -1,6 +1,6 @@
 ﻿import threading
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Set, Dict, Type
+from typing import TYPE_CHECKING, Optional, Set, Dict, Type, ClassVar
 import ulid
 from mypy_extensions import mypyc_attr
 # Melder Imports
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-    from melder.aether.aether import Aether
 
 @mypyc_attr(native_class=True)
 class AethericFrame(Cleanable):
@@ -43,7 +42,38 @@ class AethericFrame(Cleanable):
         mutation.
       - Relies on child objects to guard their own internal state.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_aether",
+        "name",
+        "_id",
+        "_lock",
+        "_conduits",
+        "_conduit_ids_by_name",
+        "_spell_registry",
+        "_version_registry",
+        "_conduit_cloud",
+        "_spell_system_states",
+        "_dev_ops_manager",
+        "_configuration",
+        "_frame_configuration",
+    ]
+    __deletable__ = [
+        "_aether",
+        "name",
+        "_id",
+        "_lock",
+        "_conduits",
+        "_conduit_ids_by_name",
+        "_spell_registry",
+        "_version_registry",
+        "_conduit_cloud",
+        "_spell_system_states",
+        "_dev_ops_manager",
+        "_configuration",
+        "_frame_configuration",
+    ]
+
     def __init__(self, aether: "Aether", name: str) -> None:
         """
         Initialize a new AethericFrame.
@@ -59,8 +89,8 @@ class AethericFrame(Cleanable):
 
         if aether is None:
             raise TypeError("aether cannot be None")
-        from melder.aether.aether import Aether
-        if not isinstance(aether, Aether):
+        from melder.aether.aether import Aether as _Aether
+        if not isinstance(aether, _Aether):
             raise TypeError("aether must satisfy Aether")
         if not name:
             raise ValueError("name cannot be empty")

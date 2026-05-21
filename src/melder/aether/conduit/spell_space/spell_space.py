@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -40,8 +40,17 @@ class SpellSpace(Cleanable):
         - Cleanup is idempotent and drops all injected collaborators.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_id",
+        "_owner_conduit_id",
+        "_meld",
+        "_creations",
+        "_spellspace_registry",
+        "_version",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_id",
         "_owner_conduit_id",
@@ -57,7 +66,7 @@ class SpellSpace(Cleanable):
             owner_conduit_id: str,
             meld: Meld,
             creations: Creations,
-            spellspace_registry: set[SpellSpace],
+            spellspace_registry: set["SpellSpace"],
     ) -> None:
         """
         Create one explicit spellspace scope.

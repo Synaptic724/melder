@@ -106,6 +106,46 @@ class ConduitWard(Cleanable):
     - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_conduit",
+        "_conduit_cloud",
+        "_logger",
+        "_dynamic",
+        "_conduit_type",
+        "_id",
+        "_display_name",
+        "_log_groups",
+        "_log_sysgroups",
+        "_policy_set",
+        "_initiated_index",
+        "_received_index",
+        "_contracts",
+        "_parent_conduit",
+        "_root_conduit",
+        "_lesser_conduits",
+        "_policy",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_lock",
+        "_conduit",
+        "_conduit_cloud",
+        "_logger",
+        "_dynamic",
+        "_conduit_type",
+        "_id",
+        "_display_name",
+        "_log_groups",
+        "_log_sysgroups",
+        "_policy_set",
+        "_initiated_index",
+        "_received_index",
+        "_contracts",
+        "_parent_conduit",
+        "_root_conduit",
+        "_lesser_conduits",
+        "_policy",
+    ]
     def __init__(
             self,
             conduit: Conduit,

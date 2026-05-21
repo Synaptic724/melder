@@ -443,6 +443,7 @@ def test_set_creation_gate_controller_for_lineage_uses_existing_gate_and_updates
 
 def test_set_creation_gate_controller_for_lineage_creates_gate_when_missing(
     conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """_set_creation_gate_controller_for_lineage should create a gate when none exists anywhere."""
     controller = MagicMock()
@@ -455,11 +456,16 @@ def test_set_creation_gate_controller_for_lineage_creates_gate_when_missing(
     conduit_dynamic_normal._conduit_ward._lock.__exit__.return_value = False
     conduit_dynamic_normal._conduit_ward._lesser_conduits = {}
     controller.get_conduit_gate.return_value = None
-    conduit_dynamic_normal._create_gate_for_current_root = MagicMock(return_value=created_gate)
+    create_gate_for_current_root = MagicMock(return_value=created_gate)
+    monkeypatch.setattr(
+        Conduit,
+        "_create_gate_for_current_root",
+        lambda self, conduit_id: create_gate_for_current_root(conduit_id),
+    )
 
     conduit_dynamic_normal._set_creation_gate_controller_for_lineage()
 
-    conduit_dynamic_normal._create_gate_for_current_root.assert_called_once_with(conduit_dynamic_normal._id)
+    create_gate_for_current_root.assert_called_once_with(conduit_dynamic_normal._id)
     assert conduit_dynamic_normal._creation_gate is created_gate
 
 

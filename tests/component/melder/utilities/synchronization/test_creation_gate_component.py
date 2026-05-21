@@ -7,6 +7,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -253,7 +254,9 @@ def test_component_conduit_meld_with_creation_gate_terminal_close_raises() -> No
         conduit.cleanup()
 
 
-def test_component_conduit_meld_with_creation_gate_ticket_tracking_success() -> None:
+def test_component_conduit_meld_with_creation_gate_ticket_tracking_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Purpose:
         Verify ticket tracking returns to zero after successful meld call.
@@ -262,7 +265,8 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_success() -> 
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
         conduit._creation_gate = CreationGate()
-        conduit._meld.meld = MagicMock(return_value="ok")
+        meld_mock = MagicMock(return_value="ok")
+        monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
         result = conduit.meld(spell="spell-id")
         assert result == "ok"
         assert conduit._creation_gate.active_ticket_count() == 0
@@ -270,7 +274,9 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_success() -> 
         conduit.cleanup()
 
 
-def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception() -> None:
+def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Purpose:
         Verify ticket tracking returns to zero after failing meld call.
@@ -279,7 +285,8 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception() -
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
         conduit._creation_gate = CreationGate()
-        conduit._meld.meld = MagicMock(side_effect=RuntimeError("boom"))
+        meld_mock = MagicMock(side_effect=RuntimeError("boom"))
+        monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
         with pytest.raises(RuntimeError, match="boom"):
             conduit.meld(spell="spell-id")
         assert conduit._creation_gate.active_ticket_count() == 0

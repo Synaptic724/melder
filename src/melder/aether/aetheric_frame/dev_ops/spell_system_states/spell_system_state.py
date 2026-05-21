@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Iterable, Optional, Set, TYPE_CHECKING
+from typing import Callable, Iterable, Optional, Set, TYPE_CHECKING, ClassVar
 
 from mypy_extensions import mypyc_attr
 # Melder imports
@@ -46,8 +46,21 @@ class SpellSystemState(Cleanable):
     - `last_validated_at`:
         Optional timestamp (float seconds) of last *successful* structural validation.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_index_id",
+        "_current_spell_id",
+        "_direct_dependencies",
+        "_direct_dependents",
+        "_validity",
+        "_flags",
+        "_change_reason",
+        "_transitively_dirty",
+        "_last_validated_at",
+        "_risk_manager",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_spell_index_id",
         "_current_spell_id",

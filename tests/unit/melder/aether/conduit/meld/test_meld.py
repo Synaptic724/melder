@@ -27,6 +27,21 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import (
 )
 
 
+def _patch_meld_method(
+    monkeypatch: pytest.MonkeyPatch,
+    method_name: str,
+    delegate: Callable[..., Any],
+) -> None:
+    """
+    Patch one Meld method at the class level through a delegate callable.
+    """
+
+    def _wrapped(self: Meld, *args: Any, **kwargs: Any) -> Any:
+        return delegate(*args, **kwargs)
+
+    monkeypatch.setattr(Meld, method_name, _wrapped)
+
+
 class _SpellIndexStub:
     """
     Minimal spell index stub with current/id fields.
@@ -765,7 +780,7 @@ def test_cleanup_clears_references() -> None:
     assert not hasattr(meld, '_meld_hooks')
 
 
-def test_meld_no_hooks_uses_cached_context_no_overrides_door() -> None:
+def test_meld_no_hooks_uses_cached_context_no_overrides_door(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify no-hooks/no-overrides calls execute cached context fast door.
     """
@@ -774,7 +789,8 @@ def test_meld_no_hooks_uses_cached_context_no_overrides_door() -> None:
     context = _CreationContextStub(no_hooks_no_overrides_result="instance")
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
     spell._hooks_enabled = False
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "instance"
     assert context.calls == ["no_hooks_no_overrides"]
@@ -782,7 +798,7 @@ def test_meld_no_hooks_uses_cached_context_no_overrides_door() -> None:
     assert context.last_overrides is None
 
 
-def test_meld_no_hooks_uses_cached_context_overrides_door() -> None:
+def test_meld_no_hooks_uses_cached_context_overrides_door(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify no-hooks override calls use override door with normalized payload.
     """
@@ -791,14 +807,15 @@ def test_meld_no_hooks_uses_cached_context_overrides_door() -> None:
     context = _CreationContextStub(no_hooks_overrides_result="instance-with-overrides")
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
     spell._hooks_enabled = False
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "instance-with-overrides"
     assert context.calls == ["no_hooks_overrides"]
     assert context.last_overrides == {"__args__": [1, 2]}
 
 
-def test_meld_no_hooks_empty_dict_override_uses_no_overrides_door() -> None:
+def test_meld_no_hooks_empty_dict_override_uses_no_overrides_door(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify empty dict override payloads route through the no-overrides door.
 
@@ -811,14 +828,15 @@ def test_meld_no_hooks_empty_dict_override_uses_no_overrides_door() -> None:
     context = _CreationContextStub(no_hooks_no_overrides_result="instance")
     spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
     spell._hooks_enabled = False
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1", spell_override={}) == "instance"
     assert context.calls == ["no_hooks_no_overrides"]
     assert context.last_overrides is None
 
 
-def test_meld_non_string_cache_hit_reuses_input_resolution_entry() -> None:
+def test_meld_non_string_cache_hit_reuses_input_resolution_entry(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify non-string meld calls reuse the input-resolution cache entry.
 
@@ -840,14 +858,15 @@ def test_meld_non_string_cache_hit_reuses_input_resolution_entry() -> None:
     target_spell._hooks_enabled = False
 
     spell_token = object()
-    meld._resolve_spell = MagicMock(return_value=target_spell)
+    resolve_spell = MagicMock(return_value=target_spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell", resolve_spell)
 
     first = meld.meld(spell=spell_token, spellframe="frame", binding_name="primary")
     second = meld.meld(spell=spell_token, spellframe="frame", binding_name="primary")
 
     assert first == "instance"
     assert second == "instance"
-    meld._resolve_spell.assert_called_once_with(
+    resolve_spell.assert_called_once_with(
         spell=spell_token,
         spell_name=None,
         spellframe="frame",
@@ -856,7 +875,7 @@ def test_meld_non_string_cache_hit_reuses_input_resolution_entry() -> None:
     assert context.calls == ["no_hooks_no_overrides", "no_hooks_no_overrides"]
 
 
-def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key() -> None:
+def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify unhashable non-string inputs use the id-based fallback cache key.
 
@@ -885,7 +904,8 @@ def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key() -> 
         __hash__ = None
 
     unhashable_spell = _Unhashable()
-    meld._resolve_spell = MagicMock(return_value=target_spell)
+    resolve_spell = MagicMock(return_value=target_spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell", resolve_spell)
 
     first = meld.meld(spell=unhashable_spell)
     fallback_key = (None, id(unhashable_spell), id(None), None)
@@ -894,7 +914,7 @@ def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key() -> 
 
     second = meld.meld(spell=unhashable_spell)
     assert second == "instance"
-    meld._resolve_spell.assert_called_once_with(
+    resolve_spell.assert_called_once_with(
         spell=unhashable_spell,
         spell_name=None,
         spellframe=None,
@@ -903,7 +923,7 @@ def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key() -> 
     assert context.calls == ["no_hooks_no_overrides", "no_hooks_no_overrides"]
 
 
-def test_meld_hooks_lane_runs_activation_on_created_instance() -> None:
+def test_meld_hooks_lane_runs_activation_on_created_instance(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify hooks lane executes activation hooks only when context reports created.
     """
@@ -926,14 +946,15 @@ def test_meld_hooks_lane_runs_activation_on_created_instance() -> None:
     spell._pre_hooks = [pre_hook]
     spell._post_hooks = [post_hook]
     spell._activation_hooks = [activation_hook]
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1", spell_override={"x": 1}) == "created"
     assert context.calls == ["hooks_overrides"]
     assert events == ["pre", "activation:created", "post"]
 
 
-def test_meld_hooks_lane_skips_activation_for_reused_instance() -> None:
+def test_meld_hooks_lane_skips_activation_for_reused_instance(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify hooks lane skips activation hooks when context reports created=False.
     """
@@ -956,14 +977,15 @@ def test_meld_hooks_lane_skips_activation_for_reused_instance() -> None:
     spell._pre_hooks = [pre_hook]
     spell._post_hooks = [post_hook]
     spell._activation_hooks = [activation_hook]
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "reuse"
     assert context.calls == ["hooks_no_overrides"]
     assert events == ["pre", "post"]
 
 
-def test_meld_builds_context_on_cache_miss() -> None:
+def test_meld_builds_context_on_cache_miss(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify meld calls CreationContextFactory when spell cache has no context.
     """
@@ -976,14 +998,15 @@ def test_meld_builds_context_on_cache_miss() -> None:
     spell._creation_context_factory = factory
     spell._hooks_enabled = False
     spell._compiler_artifact._root_blueprint_phase5 = None
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "built"
     factory.get_or_build_for_spell.assert_called_once_with(spell)
     assert built_context.calls == ["no_hooks_no_overrides"]
 
 
-def test_meld_rebuilds_context_when_switch_is_not_open() -> None:
+def test_meld_rebuilds_context_when_switch_is_not_open(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify meld rebuilds spell context when CounterSwitch is not open.
     """
@@ -1002,7 +1025,8 @@ def test_meld_rebuilds_context_when_switch_is_not_open() -> None:
     spell._hooks_enabled = False
     spell._compiler_artifact._root_blueprint_phase5 = None
     spell._creation_context_switch.state = 0
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "fresh"
     factory.get_or_build_for_spell.assert_called_once_with(spell)
@@ -1431,7 +1455,7 @@ def test_ensure_lineage_resolvable_missing_contract_raises() -> None:
         meld._ensure_lineage_resolvable(spell)
 
 
-def test_ensure_lineage_resolvable_wraps_contracted_lookup_failures() -> None:
+def test_ensure_lineage_resolvable_wraps_contracted_lookup_failures(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify contract lookup failures are wrapped with spell/parameter context.
 
@@ -1453,7 +1477,12 @@ def test_ensure_lineage_resolvable_wraps_contracted_lookup_failures() -> None:
             self.service = service
 
     spell.spell = ContractConsumer
-    meld._resolve_contracted_by_lookup_key = MagicMock(side_effect=RuntimeError("lookup failed"))
+    resolve_contracted_by_lookup_key = MagicMock(side_effect=RuntimeError("lookup failed"))
+    _patch_meld_method(
+        monkeypatch,
+        "_resolve_contracted_by_lookup_key",
+        resolve_contracted_by_lookup_key,
+    )
 
     with pytest.raises(MeldExecutionError, match="param 'service'"):
         meld._ensure_lineage_resolvable(spell)
@@ -1752,7 +1781,7 @@ def test_gated_validation_required_ignores_change_control_errors() -> None:
     assert meld._gated_validation_required(spell) is False
 
 
-def test_meld_reuses_cached_context_without_factory_rebuild() -> None:
+def test_meld_reuses_cached_context_without_factory_rebuild(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify cached clean context is reused without calling factory rebuild.
     """
@@ -1763,14 +1792,15 @@ def test_meld_reuses_cached_context_without_factory_rebuild() -> None:
     spell._hooks_enabled = False
     factory = MagicMock()
     spell._creation_context_factory = factory
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "reuse"
     factory.get_or_build_for_spell.assert_not_called()
     assert context.calls == ["no_hooks_no_overrides"]
 
 
-def test_meld_level_hooks_receive_expected_arguments() -> None:
+def test_meld_level_hooks_receive_expected_arguments(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify meld-level hooks receive spell and activation payload arguments.
 
@@ -1804,7 +1834,8 @@ def test_meld_level_hooks_receive_expected_arguments() -> None:
             "on_meld_post_resolve": [on_post_resolve],
         }
     )
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "instance"
     assert seen == [
@@ -2025,7 +2056,7 @@ def test_ensure_runtime_resolution_ready_requires_conduit_id() -> None:
     assert spell.resolution_complete is False
 
 
-def test_meld_runs_deferred_runtime_resolution_before_context_build() -> None:
+def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify meld executes deferred runtime gate before creation-context build.
 
@@ -2071,7 +2102,8 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build() -> None:
     spell._get_or_build_creation_context = MagicMock(return_value=context)
 
     meld = _make_meld(creations=creations, spellbook=spellbook)
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     assert meld.meld(spell="spell-1") == "resolved"
     spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
@@ -2084,7 +2116,7 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build() -> None:
     assert spell.resolution_required is False
 
 
-def test_meld_skips_context_build_when_deferred_runtime_resolution_fails() -> None:
+def test_meld_skips_context_build_when_deferred_runtime_resolution_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify meld does not build context when deferred runtime gate fails.
 
@@ -2107,7 +2139,8 @@ def test_meld_skips_context_build_when_deferred_runtime_resolution_fails() -> No
     spell._get_or_build_creation_context = MagicMock()
 
     meld = _make_meld(spellbook=spellbook)
-    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
     with pytest.raises(RuntimeError, match="deferred gate failure"):
         meld.meld(spell="spell-1")

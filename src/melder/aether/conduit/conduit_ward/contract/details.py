@@ -33,7 +33,7 @@ class Detail(Cleanable):
         sources (Set[str]): Root spell ids that currently justify this detail.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __slots__ = (
+    __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",
         "spell_index",
@@ -42,7 +42,17 @@ class Detail(Cleanable):
         "contract_type",
         "reason",
         "sources",
-    )
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_lock",
+        "_id",
+        "spell_index",
+        "spell_id",
+        "permissions",
+        "contract_type",
+        "reason",
+        "sources",
+    ]
 
     def __init__(
             self,

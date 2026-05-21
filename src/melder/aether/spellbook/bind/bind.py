@@ -1,7 +1,7 @@
 import inspect
 import threading
 import hashlib
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
@@ -57,13 +57,20 @@ class Bind(Cleanable):
       examination and deterministic fingerprinting rather than ad hoc ids.
     - Decorator-style and direct-call usage share the same binding pipeline.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
         "_spellbook",
         "_spell_examiner",
     ]
+    __deletable__: ClassVar[list[str]] = [
+        "_id",
+        "_lock",
+        "_spellbook",
+        "_spell_examiner",
+    ]
+
     def __init__(self, spellbook: Spellbook):
         """
         Initialize the spell registration gateway for one spellbook.

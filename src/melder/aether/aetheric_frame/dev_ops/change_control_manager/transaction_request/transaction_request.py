@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 # Melder imports
@@ -29,7 +29,7 @@ class ChangeTransactionType(str, Enum):
     Lifecycle:
         No cleanup required.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     BIND = "bind"
     LINK = "link"
     TRANSFER_OWNERSHIP = "transfer_ownership"
@@ -85,7 +85,7 @@ class ChangeControlTransactionRequest:
     Lifecycle:
         Immutable; no cleanup required.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     request_id: str
     request_type: ChangeTransactionType
     created_at: float
@@ -130,7 +130,7 @@ class ChangeControlAdmissionResult:
     Lifecycle:
         Immutable; no cleanup required.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     admitted: bool
     reasons: Tuple[str, ...] = ()
     conflicts: Tuple[str, ...] = ()

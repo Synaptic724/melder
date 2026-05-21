@@ -3,7 +3,17 @@ import time
 from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType, TracebackType
-from typing import TYPE_CHECKING, Optional, Any, Tuple, Callable, Iterable, Dict, Generator
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Any,
+    Tuple,
+    Callable,
+    Iterable,
+    Dict,
+    Generator,
+    ClassVar,
+)
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -96,9 +106,63 @@ class Conduit(Cleanable):
         - Logger cleanup is intentionally last.
 
     """
-    _DEFAULT_ROOT_CONDUIT_NAME = "default"
-    __melder_internal__ = _mrg.sentinel
-    _CONDUIT_HOOK_NAMES_FROM_CONFIGURATION = (
+    __slots__ = Cleanable.__slots__ + [
+       "_id",
+       "_lock",
+       "_name",
+       "__dynamic_environment__",
+       "_nexus_publish_enabled",
+       "_automatic",
+       "_aetheric_frame_name",
+       "_aetheric_frame",
+       "_configuration",
+       "_conduit_state",
+       "_spellbook",
+       "_nexus",
+       "_dev_ops_manager",
+       "_logger",
+       "_root_conduit_id",
+       "_spellspace_stack",
+       "_spellspace_registry",
+       "_creations",
+       "_creation_gate_controller",
+       "_creation_gate",
+       "_conduit_hooks",
+       "_meld_hooks",
+       "_local_conduit_hooks",
+       "_meld",
+       "_conduit_ward",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "_id",
+        "_lock",
+        "_name",
+        "__dynamic_environment__",
+        "_nexus_publish_enabled",
+        "_automatic",
+        "_aetheric_frame_name",
+        "_aetheric_frame",
+        "_configuration",
+        "_conduit_state",
+        "_spellbook",
+        "_nexus",
+        "_dev_ops_manager",
+        "_logger",
+        "_root_conduit_id",
+        "_spellspace_stack",
+        "_spellspace_registry",
+        "_creations",
+        "_creation_gate_controller",
+        "_creation_gate",
+        "_conduit_hooks",
+        "_meld_hooks",
+        "_local_conduit_hooks",
+        "_meld",
+        "_conduit_ward",
+    ]
+    _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _CONDUIT_HOOK_NAMES_FROM_CONFIGURATION: ClassVar[Tuple[str, ...]] = (
         "on_conduit_pre_created",
         "on_conduit_post_created",
         "on_conduit_activated",
@@ -109,10 +173,12 @@ class Conduit(Cleanable):
         "on_contract_created",
         "on_contract_removed",
     )
-    _MELD_HOOK_NAMES_FROM_CONFIGURATION = (
+    _MELD_HOOK_NAMES_FROM_CONFIGURATION: ClassVar[Tuple[str, ...]] = (
         "on_meld_pre_resolve",
         "on_meld_post_resolve",
     )
+
+
     def __init__(
             self,
             spellbook: Spellbook,

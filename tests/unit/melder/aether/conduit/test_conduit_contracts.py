@@ -849,6 +849,7 @@ def test_remove_root_from_contracts_delegates_to_ward(
 
 def test_add_spell_to_contract_with_dependencies_forwards(
     conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify add_spell_to_contract_with_dependencies forwards to add_spell_to_contract.
@@ -864,7 +865,12 @@ def test_add_spell_to_contract_with_dependencies_forwards(
     Raises:
         AssertionError: If forwarding arguments are incorrect.
     """
-    conduit_dynamic_normal.add_spell_to_contract = MagicMock(return_value=True)
+    add_spell_to_contract = MagicMock(return_value=True)
+    monkeypatch.setattr(
+        Conduit,
+        "add_spell_to_contract",
+        lambda self, **kwargs: add_spell_to_contract(**kwargs),
+    )
 
     result = conduit_dynamic_normal.add_spell_to_contract_with_dependencies(
         spell_id="sha-1",
@@ -874,7 +880,7 @@ def test_add_spell_to_contract_with_dependencies_forwards(
     )
 
     assert result is True
-    conduit_dynamic_normal.add_spell_to_contract.assert_called_once_with(
+    add_spell_to_contract.assert_called_once_with(
         spell=None,
         spell_id="sha-1",
         conduit=None,

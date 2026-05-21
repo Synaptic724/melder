@@ -42,6 +42,15 @@ class Creations(Cleanable):
         "_creations",
         "_spellspace_stack",
     ]
+    __deletable__: ClassVar[list[str]] = [
+        "_owner_conduit_id",
+        "_id",
+        "_lock",
+        "_disposal_stack",
+        "_spellspace_disposal_stacks",
+        "_creations",
+        "_spellspace_stack",
+    ]
 
     def __init__(
             self,
@@ -236,10 +245,12 @@ class Creations(Cleanable):
             return
         if not self._disposal_stack:
             return
-        self._disposal_stack = deque(
-            item for item in self._disposal_stack
+        filtered_items = [
+            item
+            for item in self._disposal_stack
             if item is not creation
-        )
+        ]
+        self._disposal_stack = deque(filtered_items)
 
     def _remove_spellspace_disposal_creation(self, spellspace_id: str, creation: Creation) -> None:
         """
@@ -254,10 +265,12 @@ class Creations(Cleanable):
         stack = self._spellspace_disposal_stacks.get(spellspace_id)
         if not stack:
             return
-        self._spellspace_disposal_stacks[spellspace_id] = deque(
-            item for item in stack
+        filtered_items = [
+            item
+            for item in stack
             if item is not creation
-        )
+        ]
+        self._spellspace_disposal_stacks[spellspace_id] = deque(filtered_items)
 
     def _drain_disposal_stack(self) -> List[Exception]:
         """

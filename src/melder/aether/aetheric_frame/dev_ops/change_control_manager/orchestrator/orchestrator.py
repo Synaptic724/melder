@@ -1,5 +1,14 @@
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    ClassVar,
+)
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -48,8 +57,15 @@ class ChangeControlOrchestrator(Cleanable):
         cleanup() is idempotent and clears only orchestrator-owned staged state
         and hook references.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_staged",
+        "_commit_validator",
+        "_commit_hook",
+        "_abort_hook",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_staged",
         "_commit_validator",

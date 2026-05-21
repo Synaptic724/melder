@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING, ClassVar
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
@@ -42,8 +42,19 @@ class Incident(Cleanable):
       future use.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_id",
+        "_kind",
+        "_severity",
+        "_status",
+        "_spell_index_id",
+        "_root_ids",
+        "_summary",
+        "_details",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "_lock",
         "_id",
         "_kind",

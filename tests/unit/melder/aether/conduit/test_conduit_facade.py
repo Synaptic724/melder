@@ -823,6 +823,7 @@ def test_meld_does_not_fire_conduit_level_meld_hooks(
 
 def test_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
     conduit_lesser: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify conduit meld bypasses hook dispatch when no meld hooks exist.
@@ -841,16 +842,22 @@ def test_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
     conduit_lesser._meld.meld.return_value = "result"
     conduit_lesser._conduit_hooks = {}
     conduit_lesser._local_conduit_hooks = {}
-    conduit_lesser._fire_conduit_hooks = MagicMock()
+    fire_conduit_hooks = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_fire_conduit_hooks",
+        lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
+    )
 
     result = conduit_lesser.meld(spell="sha-1")
 
     assert result == "result"
-    conduit_lesser._fire_conduit_hooks.assert_not_called()
+    fire_conduit_hooks.assert_not_called()
 
 
 def test_dynamic_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
     conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify dynamic meld bypasses hook dispatch when no meld hooks exist.
@@ -869,12 +876,17 @@ def test_dynamic_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
     conduit_dynamic_normal._meld.meld.return_value = "result"
     conduit_dynamic_normal._conduit_hooks = {}
     conduit_dynamic_normal._local_conduit_hooks = {}
-    conduit_dynamic_normal._fire_conduit_hooks = MagicMock()
+    fire_conduit_hooks = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_fire_conduit_hooks",
+        lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
+    )
 
     result = conduit_dynamic_normal.meld(spell="sha-1")
 
     assert result == "result"
-    conduit_dynamic_normal._fire_conduit_hooks.assert_not_called()
+    fire_conduit_hooks.assert_not_called()
     assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
 
 

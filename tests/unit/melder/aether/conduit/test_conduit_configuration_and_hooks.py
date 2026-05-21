@@ -400,6 +400,7 @@ def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
 
 def test_configure_conduit_state_logs_and_reraises_normal_registration_failure(
     conduit_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify normal conduit registration failures are logged and re-raised.
@@ -409,8 +410,10 @@ def test_configure_conduit_state_logs_and_reraises_normal_registration_failure(
         - The original error is propagated.
     """
     conduit_normal._logger = MagicMock()
-    conduit_normal._add_root_conduit = MagicMock(side_effect=RuntimeError("register boom"))
-    conduit_normal._add_spells_to_aether = MagicMock()
+    add_root_conduit = MagicMock(side_effect=RuntimeError("register boom"))
+    add_spells_to_aether = MagicMock()
+    monkeypatch.setattr(Conduit, "_add_root_conduit", lambda self: add_root_conduit())
+    monkeypatch.setattr(Conduit, "_add_spells_to_aether", lambda self: add_spells_to_aether())
 
     with pytest.raises(RuntimeError, match="register boom"):
         conduit_normal._configure_conduit_state()

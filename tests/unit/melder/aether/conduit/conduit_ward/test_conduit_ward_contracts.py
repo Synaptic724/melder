@@ -718,7 +718,7 @@ def test_add_spell_to_contract_rolls_back_root_when_dependency_linking_fails(
 
     with pytest.raises(RuntimeError, match="dep boom"):
         with patch.object(
-            borrower._conduit_ward,
+            ConduitWard,
             "_link_spell_dependencies",
             side_effect=RuntimeError("dep boom"),
         ):
@@ -743,11 +743,11 @@ def test_add_spell_to_contract_logs_when_dependency_link_rollback_fails(
     spell = _register_spell(owner, "spell-dep-rollback-log", permissions=Permissions.create)
 
     with patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_link_spell_dependencies",
         side_effect=RuntimeError("dep boom"),
     ), patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_remove_root_from_contracts",
         side_effect=RuntimeError("rollback boom"),
     ):
@@ -1032,7 +1032,7 @@ def test_remove_spell_from_contract_raises_when_contract_cleanup_fails(
     )
 
     with patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_remove_contract",
         side_effect=RuntimeError("cleanup boom"),
     ):
@@ -1697,7 +1697,7 @@ def test_preflight_contract_dependency_collisions_downgrades_requested_read() ->
     )
     borrower.register_spell_owner(dep_spell.spell_id, owner)
 
-    with patch.object(borrower._conduit_ward, "_check_spell_if_eligible") as mock_eligible:
+    with patch.object(ConduitWard, "_check_spell_if_eligible") as mock_eligible:
         borrower._conduit_ward._preflight_contract_dependency_collisions(
             root_spell=root_spell,
             root_spell_id=root_spell.spell_id,
@@ -2330,7 +2330,7 @@ def test_get_all_spells_in_contracts_raises_when_contracted_lookup_fails_with_va
     contract = borrower._conduit_ward._find_contract(owner)
 
     with patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_validate_contracts_and_define",
         return_value={contract._id: True},
     ):
@@ -3002,7 +3002,7 @@ def test_remove_root_from_contracts_logs_contract_sever_failure(
     contract = borrower._conduit_ward._find_contract(owner)
 
     with patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_remove_contract",
         side_effect=RuntimeError("sever boom"),
     ):

@@ -235,13 +235,19 @@ def test_conduit_begin_transaction_appends_explicit_conduit_ids_for_non_link_req
 
 def test_begin_binding_transaction_delegates_to_begin_transaction(
     conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """begin_binding_transaction should forward to begin_transaction with BIND."""
-    conduit_dynamic_normal.begin_transaction = MagicMock()
+    begin_transaction = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "begin_transaction",
+        lambda self, transaction_type, **kwargs: begin_transaction(transaction_type, **kwargs),
+    )
 
     conduit_dynamic_normal.begin_binding_transaction()
 
-    conduit_dynamic_normal.begin_transaction.assert_called_once_with(
+    begin_transaction.assert_called_once_with(
         ChangeTransactionType.BIND
     )
 
@@ -274,17 +280,28 @@ def test_end_binding_transaction_delegates_for_normal_conduit(
 def test_binding_transaction_ends_on_exception(
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The binding_transaction context manager should always end the transaction, even on exceptions."""
-    conduit_dynamic_normal.begin_binding_transaction = MagicMock()
-    conduit_dynamic_normal.end_binding_transaction = MagicMock()
+    begin_binding_transaction = MagicMock()
+    end_binding_transaction = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "begin_binding_transaction",
+        lambda self: begin_binding_transaction(),
+    )
+    monkeypatch.setattr(
+        Conduit,
+        "end_binding_transaction",
+        lambda self: end_binding_transaction(),
+    )
 
     with pytest.raises(RuntimeError, match="boom"):
         with conduit_dynamic_normal.binding_transaction():
             raise RuntimeError("boom")
 
-    conduit_dynamic_normal.begin_binding_transaction.assert_called_once()
-    conduit_dynamic_normal.end_binding_transaction.assert_called_once()
+    begin_binding_transaction.assert_called_once()
+    end_binding_transaction.assert_called_once()
 
 
 def test_conduit_transaction_context_ends_on_exception(

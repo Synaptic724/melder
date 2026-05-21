@@ -1,6 +1,6 @@
 import weakref
 import threading
-from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union
+from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union, ClassVar
 from contextlib import contextmanager
 import ulid
 from mypy_extensions import mypyc_attr
@@ -71,15 +71,23 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
     phantom/cleanup behaviour.
     """
 
-    __slots__ = (
+    __slots__ = [
             "_weak",
             "_lock",
             "_id",
             "_on_collect",
             "_auto_cleanup",
             "_phantom_fired",
-    )
-    __melder_internal__ = _mrg.sentinel
+    ]
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __deletable__ = [
+        "_weak",
+        "_lock",
+        "_id",
+        "_on_collect",
+        "_auto_cleanup",
+        "_phantom_fired",
+    ]
 
     # ------------------------------------------------------------------
     # Construction

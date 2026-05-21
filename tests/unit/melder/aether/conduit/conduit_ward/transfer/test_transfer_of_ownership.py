@@ -2638,7 +2638,9 @@ def test_clear_change_intent_calls_manager() -> None:
     assert env.change_control_manager._clear_calls == [env.spell_index.id]
 
 
-def test_execute_failure_rolls_back_registry_and_records_incident() -> None:
+def test_execute_failure_rolls_back_registry_and_records_incident(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify execute failure triggers rollback and incident reporting.
 
@@ -2660,7 +2662,11 @@ def test_execute_failure_rolls_back_registry_and_records_incident() -> None:
     def boom(_: Any) -> None:
         raise RuntimeError("boom")
 
-    transfer._move_creations = boom
+    monkeypatch.setattr(
+        TransferOfOwnership,
+        "_move_creations",
+        lambda self, spell: boom(spell),
+    )
     with pytest.raises(RuntimeError, match="boom"):
         transfer.execute()
     assert env.spell_index in env.frame._spell_registry[SOURCE_ID]
@@ -3250,7 +3256,9 @@ def test_execute_invalidate_false_sets_gated_validity() -> None:
     assert updated.change_reason == SpellStateChangeReason.structure_changed
 
 
-def test_execute_failure_lifts_disable_gated() -> None:
+def test_execute_failure_lifts_disable_gated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify execute failure lifts disable into gated validity for safety.
 
@@ -3278,7 +3286,11 @@ def test_execute_failure_lifts_disable_gated() -> None:
         """
         raise RuntimeError("boom")
 
-    transfer._move_creations = boom
+    monkeypatch.setattr(
+        TransferOfOwnership,
+        "_move_creations",
+        lambda self, spell: boom(spell),
+    )
     with pytest.raises(RuntimeError, match="boom"):
         transfer.execute()
     state = env.states_system.get_by_index_id(env.spell_index.id)
@@ -4296,7 +4308,9 @@ def test_spell_in_registry_non_default_frame() -> None:
     assert transfer._spell_in_registry(env.source, env.spell_index) is True
 
 
-def test_execute_include_dependencies_calls_transfer_owned_dependencies() -> None:
+def test_execute_include_dependencies_calls_transfer_owned_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify execute delegates to owned dependency transfer when enabled.
 
@@ -4322,12 +4336,18 @@ def test_execute_include_dependencies_calls_transfer_owned_dependencies() -> Non
         """
         captured.extend(deps)
 
-    transfer._transfer_owned_dependencies = capture_deps
+    monkeypatch.setattr(
+        TransferOfOwnership,
+        "_transfer_owned_dependencies",
+        lambda self, deps: capture_deps(deps),
+    )
     transfer.execute()
     assert captured == ["dep-1"]
 
 
-def test_execute_include_dependencies_skips_dirty_dependencies() -> None:
+def test_execute_include_dependencies_skips_dirty_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
     Verify execute does not dirty dependencies when include_dependencies is True.
 
@@ -4351,8 +4371,16 @@ def test_execute_include_dependencies_skips_dirty_dependencies() -> None:
         """
         called["value"] = True
 
-    transfer._dirty_dependencies = mark_called
-    transfer._transfer_owned_dependencies = lambda _: None
+    monkeypatch.setattr(
+        TransferOfOwnership,
+        "_dirty_dependencies",
+        lambda self, deps: mark_called(deps),
+    )
+    monkeypatch.setattr(
+        TransferOfOwnership,
+        "_transfer_owned_dependencies",
+        lambda self, deps: None,
+    )
     transfer.execute()
     assert called["value"] is False
 
