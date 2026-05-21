@@ -74,15 +74,11 @@ class Aether(Cleanable):
             - Returns the existing live instance on later calls until cleanup
               resets singleton state.
         """
-        instance = cls._instance
-        if instance is None:
+        if cls._instance is None:
             with cls._lock:
-                instance = cls._instance
-                if instance is None:
-                    instance = super(Aether, cls).__new__(cls)
-                    cls._instance = instance
-        assert instance is not None
-        return instance
+                if cls._instance is None:
+                    cls._instance = super(Aether, cls).__new__(cls)
+        return cls._instance
 
     def __init__(self) -> None:
         """
