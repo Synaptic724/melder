@@ -11,11 +11,10 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.icreationcontextbuilder import ICreationContextBuilder
 from melder.utilities.synchronization.creation_gate import CreationGate
 
 @mypyc_attr(native_class=True)
-class CreationContextBuilder(ICreationContextBuilder):
+class CreationContextBuilder:
     """
     Build spell-shaped `CreationContext` instances.
 

@@ -1,4 +1,4 @@
-﻿from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
+﻿from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
 from threading import RLock
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import ChangeControlStagedMutation
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -6,12 +6,18 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeControlTransactionRequest,
 )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.utilities.interfaces.ichangecontrolorchestrator import IChangeControlOrchestrator
-from melder.utilities.interfaces.ichangecontroltransactionmanager import IChangeControlTransactionManager
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator import (
+        ChangeControlOrchestrator,
+    )
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
+        ChangeControlTransactionManager,
+    )
 
 @runtime_checkable
 class IChangeControlManager(ICleanable, Protocol):
@@ -381,13 +387,13 @@ class IChangeControlManager(ICleanable, Protocol):
         """
         ...
 
-    def transaction_manager(self) -> IChangeControlTransactionManager:
+    def transaction_manager(self) -> "ChangeControlTransactionManager":
         """
         Return the owned transaction-manager surface.
         """
         ...
 
-    def orchestrator(self) -> IChangeControlOrchestrator:
+    def orchestrator(self) -> "ChangeControlOrchestrator":
         """
         Return the owned staged-mutation orchestrator surface.
         """
@@ -439,4 +445,5 @@ class IChangeControlManager(ICleanable, Protocol):
             bool: True when at least one conduit has a registered revalidator.
         """
         ...
+
 
