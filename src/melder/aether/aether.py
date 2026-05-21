@@ -60,7 +60,7 @@ class Aether(Cleanable):
       create a fresh singleton after teardown.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _instance: ClassVar["Aether"] = None
+    _instance: ClassVar[Optional["Aether"]] = None
     _lock: ClassVar[RLock] = RLock()
     _initialized: ClassVar[bool] = False
 
@@ -74,11 +74,15 @@ class Aether(Cleanable):
             - Returns the existing live instance on later calls until cleanup
               resets singleton state.
         """
-        if cls._instance is None:
+        instance = cls._instance
+        if instance is None:
             with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(Aether, cls).__new__(cls)
-        return cls._instance
+                instance = cls._instance
+                if instance is None:
+                    instance = super(Aether, cls).__new__(cls)
+                    cls._instance = instance
+        assert instance is not None
+        return instance
 
     def __init__(self) -> None:
         """

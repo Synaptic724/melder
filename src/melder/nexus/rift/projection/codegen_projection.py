@@ -1,7 +1,14 @@
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.frame_acl_compiled_access_surface import (
+        CompiledFrameACLAccessSurface,
+    )
+    from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+    from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 
 
 class CodegenProjection(Cleanable):
@@ -34,18 +41,18 @@ class CodegenProjection(Cleanable):
             self,
             *,
             frame_name: str,
-            frame_descriptor: Any,
-            frame_acl_configuration: Any,
-            compiled_access_surface: Any,
+            frame_descriptor: FrameDescriptor,
+            frame_acl_configuration: FrameACLConfiguration,
+            compiled_access_surface: CompiledFrameACLAccessSurface,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         super().__init__()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
         self._frame_name: str = frame_name
-        self._frame_descriptor: Any = frame_descriptor
-        self._frame_acl_configuration: Any = frame_acl_configuration
-        self._compiled_access_surface: Any = compiled_access_surface
+        self._frame_descriptor: FrameDescriptor = frame_descriptor
+        self._frame_acl_configuration: FrameACLConfiguration = frame_acl_configuration
+        self._compiled_access_surface: CompiledFrameACLAccessSurface = compiled_access_surface
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -72,19 +79,19 @@ class CodegenProjection(Cleanable):
         return self._frame_name
 
     @property
-    def frame_descriptor(self) -> Any:
+    def frame_descriptor(self) -> FrameDescriptor:
         """Return the live frame descriptor reference."""
         self.check_cleaned()
         return self._frame_descriptor
 
     @property
-    def frame_acl_configuration(self) -> Any:
+    def frame_acl_configuration(self) -> FrameACLConfiguration:
         """Return the detached ACL configuration snapshot."""
         self.check_cleaned()
         return self._frame_acl_configuration
 
     @property
-    def compiled_access_surface(self) -> Any:
+    def compiled_access_surface(self) -> CompiledFrameACLAccessSurface:
         """Return the detached compiled access surface."""
         self.check_cleaned()
         return self._compiled_access_surface

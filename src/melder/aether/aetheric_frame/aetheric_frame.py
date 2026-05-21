@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+    from melder.aether.aether import Aether
 
 @mypyc_attr(native_class=True)
 class AethericFrame(Cleanable):
