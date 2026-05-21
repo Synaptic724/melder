@@ -1,14 +1,10 @@
 import logging
 import threading
 from typing import Any, Callable, Dict, Iterable, Optional, Union, ClassVar
-from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.logger.safe_logger import SafeLogger
-@mypyc_attr(native_class=True)
-
-class AetherUtilitySystem(Cleanable):
+class AetherUtilitySystem:
     """
     Internal
 
@@ -40,12 +36,14 @@ class AetherUtilitySystem(Cleanable):
     _instance: ClassVar[Optional["AetherUtilitySystem"]] = None
     _singleton_lock: ClassVar[threading.RLock] = threading.RLock()
     _initialized: ClassVar[bool] = False
-    __slots__ = Cleanable.__slots__ + [
+    __slots__ = [
+        "_cleaned",
         "_lock",
         "_channel_logger_activation_enabled",
         "_channel_logger_resolver",
         "_default_logger",
     ]
+    _cleaned: bool
     __deletable__ = [
         "_lock",
         "_channel_logger_activation_enabled",
@@ -68,11 +66,48 @@ class AetherUtilitySystem(Cleanable):
         Returns:
             AetherUtilitySystem: The one process-wide utility system instance.
         """
-        if cls._instance is None:
+        instance = cls._instance
+        if instance is None:
             with cls._singleton_lock:
-                if cls._instance is None:
-                    cls._instance = super(AetherUtilitySystem, cls).__new__(cls)
-        return cls._instance
+                instance = cls._instance
+                if instance is None:
+                    instance = super(AetherUtilitySystem, cls).__new__(cls)
+                    cls._instance = instance
+        assert instance is not None
+        return instance
+
+    @property
+    def cleaned(self) -> bool:
+        """
+        Return whether this utility-system singleton has already been cleaned.
+
+        Returns:
+            bool:
+                True when cleanup has completed.
+        """
+        return self._cleaned
+
+    @property
+    def is_cleaned(self) -> bool:
+        """
+        Alias for `cleaned`.
+
+        Returns:
+            bool:
+                Current cleaned-state flag.
+        """
+        return self._cleaned
+
+    def check_cleaned(self) -> None:
+        """
+        Raise when this utility-system singleton has already been cleaned.
+
+        Raises:
+            RuntimeError:
+                If cleanup has already completed.
+        """
+        if self._cleaned:
+            raise RuntimeError("AetherUtilitySystem has already been cleaned.")
 
     def __init__(self) -> None:
         """
@@ -88,7 +123,7 @@ class AetherUtilitySystem(Cleanable):
             None.
         """
         if not AetherUtilitySystem._initialized:
-            super().__init__()
+            self._cleaned = False
             self._lock: threading.RLock = threading.RLock()
             self._channel_logger_activation_enabled: bool = False
             self._channel_logger_resolver: Optional[Callable[..., Any]] = None
