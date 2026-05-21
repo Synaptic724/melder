@@ -11,16 +11,9 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import FrameACLCodegenProfile
-from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import FrameACLCommandProfile
 
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
-
-if TYPE_CHECKING:
-    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
-        FrameACLProfileBuilder,
-    )
-
 
 class FrameACLCompiler(Cleanable):
     """

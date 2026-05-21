@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Mapping, Optional, 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
-    from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.configuration.spellbook_configuration import (
         SpellbookConfiguration,

@@ -1,6 +1,6 @@
 import threading
 from concurrent.futures import Future
-from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, ClassVar
 from types import TracebackType
 # Melder imports
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
@@ -56,7 +56,7 @@ class UnitOfWork(Cleanable, Future):
         - Subsequent guarded operations will fail via: meth:`check_cleaned` or by
           detecting that the lock is None.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_func",
         "_args",

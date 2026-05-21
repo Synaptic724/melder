@@ -1,6 +1,6 @@
 import hashlib
 from threading import RLock
-from typing import Iterable, List, Set, Tuple, TYPE_CHECKING
+from typing import Iterable, List, Set, Tuple, TYPE_CHECKING, ClassVar
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -25,7 +25,7 @@ class ChangeControlConflictManager(Cleanable):
     - Also checks direct raw-key overlap when both sides provide keys.
     - Returns request ids for the in-flight requests that conflict.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]

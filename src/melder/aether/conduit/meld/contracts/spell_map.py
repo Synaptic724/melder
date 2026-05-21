@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union, Tuple
+from typing import Any, Optional, Union, Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -68,12 +68,15 @@ class SpellMap(Cleanable):
         - Should not be subclassed or treated like a runtime-resolved object.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellframe",
         "binding_name",
         "spell_override",
+    ]
+    __deletable__: ClassVar[list[str]] = [
+        "spell", "spellframe", "binding_name", "spell_override"
     ]
 
     def __init__(

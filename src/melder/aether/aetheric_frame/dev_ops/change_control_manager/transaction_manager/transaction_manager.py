@@ -2,7 +2,18 @@ import time
 import uuid
 import hashlib
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    ClassVar,
+)
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -50,7 +61,7 @@ class ChangeControlTransactionManager(Cleanable):
     - Pure formatting/hash helpers do not require the lock because they do not
       mutate manager state.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_in_flight",

@@ -82,7 +82,7 @@ class RiskManager(Cleanable):
     - Owned by `DevOpsManager` and cleaned from that ownership boundary.
     - After cleanup, public methods fail through `check_cleaned()`.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

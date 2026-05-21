@@ -18,12 +18,6 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 
-if TYPE_CHECKING:
-    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
-        FrameACLProfileBuilder,
-    )
-
-
 class FrameACLSetCompatibilityValidator(Cleanable):
     """
     Purpose:

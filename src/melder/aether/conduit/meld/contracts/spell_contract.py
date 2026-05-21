@@ -66,7 +66,7 @@ class SpellContract(Cleanable):
           ordinary in-conduit DI.
     """
 
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellframe",
