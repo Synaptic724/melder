@@ -202,6 +202,33 @@ class ISpellbook(ICleanable, Protocol):
         ...
 
 
+    def scan(self, module: ModuleType) -> list[str]:
+        """
+        Public API
+
+        Scan a module for `scan_bind`-decorated objects and bind them.
+
+        This is a module-only scan: it does not traverse packages or import
+        submodules. Any object marked with `scan_bind` must originate from the
+        scanned module, otherwise the scan fails.
+
+        Scanning requires an active binding transaction. Use
+        ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
+        before scanning and ``end_binding_transaction()`` once registration
+        is complete.
+
+        Args:
+            module (ModuleType): The module to scan for decorated spell targets.
+        Returns:
+            list[str]: Spell IDs bound during the scan, in module dict order.
+        Raises:
+            TypeError: If `module` is not a module or metadata is invalid.
+            ValueError: If a decorated object is not owned by the module.
+            RuntimeError: If no binding transaction is active for this Spellbook.
+            RuntimeError: Propagated from Spellbook.bind on binding errors.
+        """
+        ...
+
     def begin_binding_transaction(self) -> None:
         """
         Public API

@@ -11,6 +11,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
+from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
@@ -2932,6 +2933,35 @@ and logging.
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
             raise
 
+    def scan(self, module: ModuleType) -> list[str]:
+        """
+        Public API
+
+        Scan a module for `scan_bind`-decorated objects and bind them.
+
+        This is a module-only scan: it does not traverse packages or import
+        submodules. Any object marked with `scan_bind` must originate from the
+        scanned module, otherwise the scan fails.
+
+        Scanning requires an active binding transaction. Use
+        "begin_transaction("bind")" (or "begin_binding_transaction()")
+        before scanning and "end_binding_transaction()" once registration
+        is complete.
+
+        Args:
+            module (ModuleType): The module to scan for decorated spell targets.
+        Returns:
+            list[str]: Spell IDs bound during the scan, in module dict order.
+        Raises:
+            TypeError: If `module` is not a module or metadata is invalid.
+            ValueError: If the module does not own a decorated object.
+            RuntimeError: If no binding transaction is active for this Spellbook.
+            RuntimeError: Propagated from Spellbook.bind on binding errors.
+        """
+        self.check_cleaned()
+        self._ensure_binding_transaction_active(action="scan")
+        scanner = Scan(self)
+        return scanner.scan_module(module)
 
     def _add_hooks_to_spell(self, spell: ISpell, **kwargs: Any) -> None:
         """

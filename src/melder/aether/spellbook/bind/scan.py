@@ -1,15 +1,13 @@
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Callable, Optional, Sequence
+
 from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
-
-#from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.interfaces.ispellbook import ISpellbook
 
 _SCAN_BIND_ATTR = "__melder_scan_bind__"
 
@@ -200,7 +198,7 @@ def scan_bind(
     return decorator
 
 @mypyc_attr(native_class=True)
-class Scan(Cleanable):
+class Scan:
     """
     Public API
 
@@ -214,42 +212,20 @@ class Scan(Cleanable):
         - Rejects re-exports: the object's __module__`` must match the module name.
         - Delegates all validation to `Spellbook.bind`.
     """
-    __slots__ = Cleanable.__slots__ + ["_weak_spellbook",]
+    __slots__ = ("_spellbook",)
 
-    def __init__(self, spellbook: Spellbook) -> None:
+    def __init__(self, spellbook: ISpellbook) -> None:
         """
         Initialize a Scan helper bound to a specific Spellbook.
 
         Args:
-            spellbook (Spellbook): The Spellbook used for binding.
+            spellbook (ISpellbook): The Spellbook used for binding.
         Raises:
             ValueError: If spellbook is None.
         """
-        super().__init__()
         if spellbook is None:
             raise ValueError("Scan requires a valid Spellbook instance.")
-        self._weak_spellbook: SyncWeakRef[Spellbook] = SyncWeakRef(target=spellbook, on_collect=self._spellbook_destroyed_hook, auto_cleanup=True)
-
-    def cleanup(self) -> None:
-        """
-        Release resources and perform cleanup tasks.
-        """
-        if self.cleaned:
-            return
-        self._weak_spellbook.cleanup()
-        del self._weak_spellbook
-
-
-    def _spellbook_destroyed_hook(
-            self,
-            _ref: SyncWeakRef[Spellbook] | None = None,
-    ) -> None:
-        """
-        This hook is called when the Spellbook is destroyed.
-        Due to the weakref, this is called when the spellbook is garbage
-        collected.
-        """
-        self.cleanup()
+        self._spellbook = spellbook
 
     def scan_module(self, module: ModuleType) -> list[str]:
         """
@@ -266,7 +242,6 @@ class Scan(Cleanable):
             ValueError: If a decorated object is not owned by the module.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
-        self.check_cleaned()
         if not isinstance(module, ModuleType):
             raise TypeError("scan_module requires a Python module object.")
 
