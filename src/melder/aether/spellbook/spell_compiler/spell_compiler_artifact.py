@@ -1,34 +1,7 @@
 import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
-
 from mypy_extensions import mypyc_attr
-
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
-        OccurrencePlan,
-    )
-
-from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
-    SpellResolutionFrame,
-)
-from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
-    SpellSymbolicGraph,
-)
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlan,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
-    SpellSystemIndex,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
-    SpellSystemValidationState,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
-    SpellValidationResult,
-)
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
@@ -36,6 +9,28 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
     )
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
+        SpellValidationResult,
+    )
+    from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
+        SpellSystemValidationState,
+    )
+    from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
+        SpellSystemIndex,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
+        ExecutionPlan,
+    )
+    from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
+        SpellResolutionFrame,
+    )
+    from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
+        SpellSymbolicGraph,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 
 
 @mypyc_attr(native_class=True)
@@ -121,7 +116,7 @@ class SpellCompilerArtifact(Cleanable):
         self._validation_result_phase6: Optional[SpellSystemValidationState] = None
         self._validated_phase6: bool = False
         self._validated: bool = False
-        self._root_blueprint_phase5: Optional[IRootResolutionBlueprint] = None
+        self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
@@ -144,7 +139,7 @@ class SpellCompilerArtifact(Cleanable):
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._is_broken: bool = False
         self._entire_dag_blueprint_phase5: Optional[
-            Dict[str, IRootResolutionBlueprint]
+            Dict[str, RootResolutionBlueprint]
         ] = None
 
     def cleanup(self) -> None:

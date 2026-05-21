@@ -1,5 +1,5 @@
 import threading
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
@@ -26,8 +26,10 @@ from melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_s
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
-from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.irift import IRift
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 
 
 class CodegenNamespaceBuilder(Cleanable):
@@ -114,7 +116,7 @@ class CodegenNamespaceBuilder(Cleanable):
             configuration: CodegenNamespaceConfiguration,
             *,
             rift: IRift,
-            space: ICodegenRiftSpace,
+            space: CodegenRiftSpace,
     ) -> CodegenNamespace:
         """
         Build one live namespace from config and room/runtime state.

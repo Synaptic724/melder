@@ -10,11 +10,10 @@ from melder.nexus.rift.command_system.codegen_command_system import (
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
-from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.irift import IRift
 
 
-class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
+class CodegenRiftSpace(RiftSpace):
     """
 
     __slots__ = [

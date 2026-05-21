@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
@@ -6,11 +6,13 @@ from melder.nexus.rift.command_system.command_system import (
 )
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 from melder.nexus.rift.rift_space.workstation import Workstation
 
 
@@ -71,7 +73,7 @@ class CodegenCommandSystem(CommandSystem):
             self,
             *,
             rift: IRift,
-            space: ICodegenRiftSpace,
+            space: CodegenRiftSpace,
             workstation: Workstation,
             codegen_system: Optional[ICodegenSystem] = None,
     ) -> None:

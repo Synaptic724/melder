@@ -5,11 +5,13 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
-from melder.utilities.interfaces.iriftspace import IRiftSpace
 
 if TYPE_CHECKING:
     from melder.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
+    from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+    from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
     from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+    from melder.nexus.rift.rift_space.rift_space import RiftSpace
 
 @runtime_checkable
 class IRift(ICleanable, Protocol):
@@ -22,7 +24,7 @@ class IRift(ICleanable, Protocol):
 
     Contract:
         - Represents one registered or registerable live Rift session.
-        - Owns exactly one primary `IRiftSpace`.
+        - Owns exactly one primary `RiftSpace`.
         - Tracks frame-link contract state for engaged target frames.
         - Exposes Nexus-managed frame access and frame-link lifecycle methods.
         - Exposes only runtime-facing accessors and commands; it does not own
@@ -111,7 +113,7 @@ class IRift(ICleanable, Protocol):
         ...
 
     @property
-    def space(self) -> IRiftSpace:
+    def space(self) -> RiftSpace:
         """
         Return the one owned RiftSpace for this Rift.
 
@@ -205,7 +207,7 @@ class IRift(ICleanable, Protocol):
             self,
             *,
             frame_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, "FrameProjectionSet"]:
+    ) -> Dict[str, FrameProjectionSet]:
         """
         Refresh the Rift-owned projection registry for the supplied frames or
         for all currently assigned frames when omitted.

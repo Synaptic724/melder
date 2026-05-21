@@ -16,11 +16,9 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 
-from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.irift import IRift
 from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
-from melder.utilities.interfaces.iriftspace import IRiftSpace
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 
 class Rift(Cleanable, IRift):
@@ -160,7 +158,7 @@ class Rift(Cleanable, IRift):
         self._rift_gate: RiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
         self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
-        self._space: Optional[IRiftSpace] = None
+        self._space: Optional[RiftSpace] = None
         self._is_registered: bool = False
         self._is_active: bool = False
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
@@ -749,26 +747,26 @@ class Rift(Cleanable, IRift):
             raise ValueError("frame_names cannot be empty.")
         return tuple(normalized_frame_names)
 
-    def get_frame_viewer(self) -> IFrameViewer:
+    def get_frame_viewer(self) -> FrameViewer:
         """
         Internal
 
         Return the attached frame viewer for the owned space or raise.
 
         Returns:
-            IFrameViewer: Attached frame viewer for the owned space.
+            FrameViewer: Attached frame viewer for the owned space.
         """
         self.check_cleaned()
         return self.space.frame_viewer
 
     @property
-    def space(self) -> IRiftSpace:
+    def space(self) -> RiftSpace:
         """
         Purpose:
             Return the one owned RiftSpace for this Rift.
 
         Returns:
-            IRiftSpace: Owned primary space.
+            RiftSpace: Owned primary space.
         """
         self.check_cleaned()
         if self._space is None:
@@ -871,7 +869,7 @@ class Rift(Cleanable, IRift):
             self,
             *,
             space_id: Optional[str] = None,
-    ) -> IRiftSpace:
+    ) -> RiftSpace:
         """
         Internal
 
@@ -894,7 +892,7 @@ class Rift(Cleanable, IRift):
                 Optional explicit primary-space id.
 
         Returns:
-            IRiftSpace: Primary space for this Rift.
+            RiftSpace: Primary space for this Rift.
         """
         self.check_cleaned()
         configured_space_type = self._configuration.space_type
@@ -904,7 +902,7 @@ class Rift(Cleanable, IRift):
                 str,
         ):
             raise TypeError("space_name must be a string or None.")
-        primary_space: IRiftSpace
+        primary_space: RiftSpace
         if configured_space_type == RiftSpaceType.codegen:
             primary_space = CodegenRiftSpace(
                 owner_rift_id=self._id,

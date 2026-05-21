@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.codegen_system.codegen_transaction_context import (
@@ -41,11 +41,13 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
-from melder.utilities.interfaces.icodegenriftspace import ICodegenRiftSpace
 from melder.utilities.interfaces.icodegensystem import ICodegenSystem
 from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 from melder.utilities.interfaces.irift import IRift
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 
 
 class CodegenSystem(Cleanable, ICodegenSystem):
@@ -87,7 +89,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
         "_monitor",
     ]
 
-    def __init__(self, *, rift: IRift, space: ICodegenRiftSpace) -> None:
+    def __init__(self, *, rift: IRift, space: CodegenRiftSpace) -> None:
         """
         Initialize one root codegen system.
 
@@ -113,7 +115,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()
         self._rift: IRift = rift
-        self._space: ICodegenRiftSpace = space
+        self._space: CodegenRiftSpace = space
         self._validator: CodegenValidator = CodegenValidator()
         self._validation_reporter: CodegenValidationReporter = (
             CodegenValidationReporter()

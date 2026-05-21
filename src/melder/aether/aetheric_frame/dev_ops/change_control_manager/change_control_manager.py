@@ -1,5 +1,15 @@
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -12,25 +22,31 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator import (
     ChangeControlOrchestrator,
 )
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
-    ChangeControlStagedMutation,
-)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
-    ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+        ChangeControlStagedMutation,
+    )
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+        ChangeControlTransactionRequest,
+    )
+
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 @mypyc_attr(native_class=True)
 class ChangeControlManager(Cleanable, IChangeControlManager):
     """

@@ -16,7 +16,6 @@ from melder.nexus.rift.frame_viewer.view_action_hooks import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.utilities.interfaces.iframeviewer import IFrameViewer
 from melder.utilities.interfaces.ispellrecord import ISpellRecord
 
 
@@ -43,7 +42,7 @@ class ViewMultiFrame(Cleanable):
         "_viewer",
     ]
 
-    def __init__(self, *, viewer: IFrameViewer) -> None:
+    def __init__(self, *, viewer: FrameViewer) -> None:
         """
         Initialize one multi-frame helper.
 

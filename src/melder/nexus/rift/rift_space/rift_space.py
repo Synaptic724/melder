@@ -18,12 +18,9 @@ from melder.nexus.rift.rift_space.workstation import Workstation
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.icommandsystem import ICommandSystem
-from melder.utilities.interfaces.iframeviewer import IFrameViewer
-from melder.utilities.interfaces.iriftspace import IRiftSpace
 
 
-class RiftSpace(Cleanable, IRiftSpace):
+class RiftSpace(Cleanable):
     """
     Internal
 
@@ -397,7 +394,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._metadata
 
     @property
-    def frame_viewer(self) -> IFrameViewer:
+    def frame_viewer(self) -> FrameViewer:
         """
         Purpose:
             Return the attached frame-surface viewer for this space.
@@ -407,7 +404,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             - The viewer may host zero frames before any projection exists.
 
         Returns:
-            IFrameViewer: Attached frame viewer for this active space.
+            FrameViewer: Attached frame viewer for this active space.
         """
         self.check_cleaned()
         with self._lock:
@@ -445,7 +442,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             return self._workstation
 
     @property
-    def command_system(self) -> ICommandSystem:
+    def command_system(self) -> CommandSystem:
         """
         Purpose:
             Return the room-local command system.
@@ -456,7 +453,7 @@ class RiftSpace(Cleanable, IRiftSpace):
               detached copy.
 
         Returns:
-            ICommandSystem: Room-local command system.
+            CommandSystem: Room-local command system.
         """
         self.check_cleaned()
         with self._lock:

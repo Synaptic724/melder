@@ -1,18 +1,18 @@
 import time
 from dataclasses import dataclass
 from threading import RLock
-from typing import Any, Dict, Iterable, List, Set, Tuple
-
+from typing import Any, Dict, Iterable, List, Set, Tuple, TYPE_CHECKING
 from mypy_extensions import mypyc_attr
-
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-    ChangeControlTransactionRequest,
-)
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
-    ChangeControlStagedMutation,
-)
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+        ChangeControlTransactionRequest,
+    )
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+        ChangeControlStagedMutation,
+    )
 
 @mypyc_attr(native_class=True)
 @dataclass(frozen=True)

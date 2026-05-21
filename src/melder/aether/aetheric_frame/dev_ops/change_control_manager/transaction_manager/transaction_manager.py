@@ -2,16 +2,19 @@ import time
 import uuid
 import hashlib
 from threading import RLock
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
-
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING
 from mypy_extensions import mypyc_attr
-
+# Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
-    ChangeTransactionType,
 )
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+        ChangeTransactionType,
+    )
+
 @mypyc_attr(native_class=True)
 
 class ChangeControlTransactionManager(Cleanable):

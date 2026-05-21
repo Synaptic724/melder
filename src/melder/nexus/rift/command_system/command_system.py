@@ -10,10 +10,9 @@ from melder.nexus.acl.frame_acl_compiled_access_surface import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.icommandsystem import ICommandSystem
 
 
-class CommandSystem(Cleanable, ICommandSystem):
+class CommandSystem(Cleanable):
     """
     Internal
 
