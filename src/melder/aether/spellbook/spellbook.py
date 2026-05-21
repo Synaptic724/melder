@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
+    from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 
 #region Spellbook
 @mypyc_attr(native_class=True)
@@ -193,7 +194,7 @@ and logging.
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
         self._configuration: Optional[SpellbookConfiguration] = configuration
-        self._aetheric_frame_configuration: Optional[Any] = None
+        self._aetheric_frame_configuration: Optional[AethericFrameConfiguration] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
         self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()

@@ -63,8 +63,6 @@ class SpellSystemAdjacencyBuilder:
 
         with spell_system_states._lock:
             states_by_index_id = spell_system_states._states_by_index_id
-            if states_by_index_id is None:
-                raise RuntimeError("SpellSystemStates has been cleaned.")
             local_topologies = spell_system_states._local_topologies
 
             for state in states_by_index_id.values():
@@ -79,9 +77,7 @@ class SpellSystemAdjacencyBuilder:
                     all_dependency_ids.add(dep_id)
                     reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
-                topology = local_topologies.get(spell_id)
-                if topology is not None:
-                    topologies[spell_id] = topology
+                topologies[spell_id] = local_topologies.get(spell_id)
 
         # Structural roots are spells that **never appear as a dependency**
         # of any other spell in the frame.

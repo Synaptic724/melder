@@ -335,11 +335,14 @@ class SpellbookCreationSystem(Cleanable):
             Exception: Propagates constructor failures from `Conduit`.
         """
         resolved_name = name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
+        config = spellbook._configuration
+        if config is None:
+            raise ValueError("Spellbook configuration cannot be None")
         return Conduit(
             spellbook=spellbook,
             name=resolved_name,
             conduit_state=ConduitState.normal,
-            configuration=spellbook._configuration,
+            configuration=config,
             aetheric_frame_name=spellbook._aetheric_frame,
             aetheric_frame=aetheric_frame,
             policy=policy,
