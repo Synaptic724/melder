@@ -27,6 +27,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
     SpellGeneralProfile,
     SpellResolutionProfile,
 )
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
 )
@@ -195,7 +196,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
             show_dunders=show_dunders,
             max_repr=max_repr,
         )
-        if isinstance(target, ISpell):
+        if isinstance(target, Spell):
             profile.complete_with_spell(target)
         return profile
 
@@ -222,7 +223,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
                 If `spell` does not satisfy the spell protocol.
         """
         self.check_cleaned()
-        if not isinstance(spell, ISpell):
+        if not isinstance(spell, Spell):
             raise TypeError("Detailed profile completion requires a Spell instance.")
         super().complete_with_spell(spell)
         if self._detail_complete:

@@ -6,8 +6,8 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicService
 
@@ -238,13 +238,13 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     owner_spell = owner.get_spell_by_id(spell_id)
     assert owner_spell is not None
     assert owner_spell.spell_id == spell_id
-    assert isinstance(owner_spell, ISpell)
+    assert isinstance(owner_spell, Spell)
     assert any(spell_index.has_version(spell_id) for spell_index in owner_book.spells.keys())
 
     borrower_spell = borrower.get_spell_by_id(spell_id)
     assert borrower_spell is not None
     assert borrower_spell.spell_id == spell_id
-    assert isinstance(borrower_spell, ISpell)
+    assert isinstance(borrower_spell, Spell)
 
     inspected_wrapper_id = borrower.inspect_spell(owner_spell)
     inspected_target_id = borrower.inspect_spell(owner_spell.spell)
@@ -323,7 +323,7 @@ def test_conduit_contract_by_spell_id_dynamic_link() -> None:
         assert spell_in_contracts is not None
         contracted_conduit_id, contracted_spell = spell_in_contracts
         assert contracted_conduit_id == owner._id
-        assert isinstance(contracted_spell, ISpell)
+        assert isinstance(contracted_spell, Spell)
         assert contracted_spell.spell_id == spell_id
 
         contracted_spells = borrower_book.contracted_spells.get(owner._id)
@@ -368,7 +368,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
 
     owner_spell = owner.get_spell_by_id(spell_id)
     assert owner_spell is not None
-    assert isinstance(owner_spell, ISpell)
+    assert isinstance(owner_spell, Spell)
     inspected_wrapper_id = borrower.inspect_spell(owner_spell)
     inspected_target_id = borrower.inspect_spell(owner_spell.spell)
     assert inspected_target_id == spell_id
@@ -382,7 +382,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
         assert spell_in_contracts is not None
         contracted_conduit_id, contracted_spell = spell_in_contracts
         assert contracted_conduit_id == owner._id
-        assert isinstance(contracted_spell, ISpell)
+        assert isinstance(contracted_spell, Spell)
         assert contracted_spell.spell_id == spell_id
 
         contracted_spells = borrower_book.contracted_spells.get(owner._id)

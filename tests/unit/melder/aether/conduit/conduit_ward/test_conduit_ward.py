@@ -7,11 +7,11 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
@@ -575,7 +575,7 @@ def test_check_spell_eligible_success(ward):
     """
     Verify spell check passes for owned spell with correct permissions.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.create
     spell.spell_name = "TestSpell"
@@ -587,7 +587,7 @@ def test_check_spell_eligible_not_owner(ward):
     """
     Verify failure if spell not owned by conduit.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = "other-owner"
     spell.permissions = Permissions.create
     spell.spell_name = "ForeignSpell"
@@ -599,7 +599,7 @@ def test_check_spell_eligible_permission_mismatch(ward):
     """
     Verify failure if requested permission exceeds spell permission.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.read # Only read allowed
     spell.spell_name = "ReadOnlySpell"
@@ -728,7 +728,7 @@ def test_add_spell_to_contract_flow(ward):
     ward._create_new_contract(target_conduit)
     
     # Setup Spell
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
     spell._owner_conduit_id = target_conduit._id
@@ -769,7 +769,7 @@ def test_add_spell_no_contract_raises(ward):
     ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(
         return_value=target_conduit
     )
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
@@ -1109,7 +1109,7 @@ def test_check_spell_id_and_spell_raises_on_id_mismatch(ward):
     """
     Verify _check_spell_id_and_spell rejects mismatched spell IDs.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
     spell.spell_id = "sha-2"
 
@@ -1120,7 +1120,7 @@ def test_check_spell_id_and_spell_success(ward):
     """
     Verify _check_spell_id_and_spell resolves and returns the spell.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
     spell.spell_id = "sha-1"
 
@@ -1428,14 +1428,14 @@ def test_check_spell_id_and_spell_rejects_non_ispell(ward):
     """
     Verify _check_spell_id_and_spell rejects non-ISpell objects.
     """
-    with pytest.raises(TypeError, match="Expected ISpell instance"):
+    with pytest.raises(TypeError, match="Expected Spell instance"):
         ward._check_spell_id_and_spell(spell=object())
 
 def test_check_spell_id_and_spell_raises_when_spell_id_missing(ward):
     """
     Verify _check_spell_id_and_spell errors when spell has no spell_id.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = None
 
     with pytest.raises(RuntimeError, match="Could not determine spell_id from spell"):
@@ -1445,7 +1445,7 @@ def test_check_spell_id_and_spell_with_spell_and_id_success(ward):
     """
     Verify _check_spell_id_and_spell succeeds when spell and id match.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
 
     spell_id, resolved_spell = ward._check_spell_id_and_spell(spell=spell, spell_id="sha-1")
@@ -1457,7 +1457,7 @@ def test_check_spell_id_and_spell_with_explicit_spell_rejects_missing_inspected_
     """
     Verify _check_spell_id_and_spell rejects explicit spell objects whose inspected spell_id is missing.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = None
 
     with pytest.raises(RuntimeError, match="Could not determine spell_id from spell"):
@@ -1467,7 +1467,7 @@ def test_check_spell_id_and_spell_with_spell_and_id_mismatch(ward):
     """
     Verify _check_spell_id_and_spell rejects mismatched spell_id with spell.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-2"
 
     with pytest.raises(RuntimeError, match="does not match inspected ID"):
@@ -1509,7 +1509,7 @@ def test_check_spell_eligible_rejects_block_all_policy(ward):
     Verify block_all policy prevents contracting any spells.
     """
     ward._policy = Policies.block_all
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.read
     spell.spell_name = "ReadSpell"
@@ -1522,7 +1522,7 @@ def test_check_spell_eligible_rejects_block_permissions_without_whitelist(ward):
     Verify block-permission spells are rejected unless policy is whitelist_all.
     """
     ward._policy = Policies.default
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.block
     spell.spell_name = "BlockedSpell"
@@ -1535,7 +1535,7 @@ def test_check_spell_eligible_allows_block_permissions_with_whitelist(ward):
     Verify block-permission spells are allowed when policy is whitelist_all.
     """
     ward._policy = Policies.whitelist_all
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.block
     spell.spell_name = "BlockedSpell"
@@ -1547,7 +1547,7 @@ def test_check_spell_eligible_rejects_read_permission_mismatch(ward):
     Verify read requests fail when the spell lacks read/create permissions.
     """
     ward._policy = Policies.default
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell._owner_conduit_id = ward._id
     spell.permissions = Permissions.block
     spell.spell_name = "BlockedSpell"
@@ -1598,7 +1598,7 @@ def test_check_spell_id_and_spell_success_with_spell_only(ward):
     """
     Verify _check_spell_id_and_spell resolves ID from the spell when spell only is provided.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
 
     resolved_id, resolved_spell = ward._check_spell_id_and_spell(spell=spell)
@@ -1709,7 +1709,7 @@ def test_create_detail_sets_sources_and_fields(ward):
     """
     Verify _create_detail populates core fields and sources.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
 
@@ -1732,7 +1732,7 @@ def test_create_detail_rejects_invalid_permissions(ward):
     """
     Verify _create_detail rejects invalid permission types.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
 
@@ -1743,7 +1743,7 @@ def test_create_detail_rejects_invalid_contract_type(ward):
     """
     Verify _create_detail rejects invalid contract type values.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
 
@@ -1754,7 +1754,7 @@ def test_create_detail_rejects_invalid_reason(ward):
     """
     Verify _create_detail rejects invalid reason values.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
 
@@ -1765,7 +1765,7 @@ def test_get_spell_permissions_reads_permissions_attr(ward):
     """
     Verify _get_spell_permissions reads and normalizes spell.permissions.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.permissions = "create"
     spell._permissions = None
 
@@ -1775,7 +1775,7 @@ def test_get_spell_permissions_raises_when_missing(ward):
     """
     Verify _get_spell_permissions raises when no permissions are defined.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.permissions = None
     spell._permissions = None
 
@@ -1810,7 +1810,7 @@ def test_is_contract_empty_false_after_detail_added(ward):
     ward._create_new_contract(target_conduit)
     contract = ward._find_contract(target_conduit)
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
     detail = ward._create_detail(
@@ -2065,7 +2065,7 @@ def test_validate_contracts_and_define_returns_false_when_missing_spells(ward):
     ward._create_new_contract(target_conduit)
     contract = ward._find_contract(target_conduit)
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
     detail = ward._create_detail(
@@ -2109,7 +2109,7 @@ def test_validate_contracts_and_define_returns_true_when_all_present(ward):
     ward._create_new_contract(target_conduit)
     contract = ward._find_contract(target_conduit)
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
     detail = ward._create_detail(
@@ -2144,7 +2144,7 @@ def test_validate_received_contracts_returns_true_when_valid(ward):
     ward._create_new_contract(target_conduit)
     contract = ward._find_contract(target_conduit)
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
     detail = ward._create_detail(
@@ -2168,7 +2168,7 @@ def test_check_spell_id_and_spell_passes_aetheric_frame(ward):
     """
     Verify _check_spell_id_and_spell forwards aetheric_frame to ID resolution.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
     spell.spell_id = "sha-1"
@@ -2215,7 +2215,7 @@ def test_describe_contract_returns_spell_metadata(ward):
     ward._create_new_contract(target_conduit)
     contract = ward._find_contract(target_conduit)
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
     spell.spell_index = SpellIndex("sha-1")
     detail = ward._create_detail(
@@ -2277,7 +2277,7 @@ def test_get_spell_contract_keys_collects_contract_defaults(ward):
         """
         return None
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell = _callable
 
     keys = ward._get_spell_contract_keys(spell)
@@ -2300,7 +2300,7 @@ def test_get_spell_contract_keys_returns_empty_on_signature_error(ward):
     Contract:
         - Non-callable spell targets yield an empty key set.
     """
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell = object()
 
     assert ward._get_spell_contract_keys(spell) == set()
@@ -2315,7 +2315,7 @@ def test_get_spell_contract_keys_ignores_required_parameters(ward) -> None:
         """Provide one required arg and one SpellContract default."""
         return None
 
-    spell = MagicMock(spec=ISpell)
+    spell = MagicMock(spec=Spell)
     spell.spell = _callable
 
     keys = ward._get_spell_contract_keys(spell)
@@ -2359,13 +2359,13 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
         """
         return None
 
-    spell_a = MagicMock(spec=ISpell)
+    spell_a = MagicMock(spec=Spell)
     spell_a.spell_id = "spell-a"
     spell_a.spell = _consumer_a
-    spell_b = MagicMock(spec=ISpell)
+    spell_b = MagicMock(spec=Spell)
     spell_b.spell_id = "spell-b"
     spell_b.spell = _consumer_b
-    spell_none = MagicMock(spec=ISpell)
+    spell_none = MagicMock(spec=Spell)
     spell_none.spell_id = "spell-c"
     spell_none.spell = _consumer_none
 
@@ -2476,10 +2476,10 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
         """
         return None
 
-    spell_a = MagicMock(spec=ISpell)
+    spell_a = MagicMock(spec=Spell)
     spell_a.spell_id = "spell-a"
     spell_a.spell = _consumer_a
-    spell_b = MagicMock(spec=ISpell)
+    spell_b = MagicMock(spec=Spell)
     spell_b.spell_id = "spell-b"
     spell_b.spell = _consumer_b
 

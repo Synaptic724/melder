@@ -15,6 +15,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.spellbook.spell import Spell
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.utilities.interfaces.ispell import ISpell
@@ -1236,14 +1237,14 @@ class ConduitWard(Cleanable):
                 raise RuntimeError(f"Could not resolve spell for spell_id '{spell_id}'.")
 
         if spell_id is None:
-            if not isinstance(spell, ISpell):
+            if not isinstance(spell, Spell):
                 self._logger.error(
                     f"check_spell_id_and_spell: spell wrong type {type(spell).__name__}",
                     method_name="_check_spell_id_and_spell",
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
-                raise TypeError(f"Expected ISpell instance, got {type(spell).__name__}")
+                raise TypeError(f"Expected Spell instance, got {type(spell).__name__}")
             resolved_spell_id = spell.spell_id
             spell_id = resolved_spell_id
             if spell_id is None:
@@ -1255,7 +1256,7 @@ class ConduitWard(Cleanable):
                 )
                 raise RuntimeError("Could not determine spell_id from spell.")
 
-        if isinstance(spell, ISpell):
+        if isinstance(spell, Spell):
             inspected_id: Optional[str] = spell.spell_id
             if inspected_id is None:
                 self._logger.error(
@@ -2912,7 +2913,7 @@ class ConduitWard(Cleanable):
             raise RuntimeError("Ownership transfer requires dynamic mode.")
 
         resolved_spell: Optional[ISpell]
-        if isinstance(spell, ISpell):
+        if isinstance(spell, Spell):
             resolved_spell = spell
         elif isinstance(spell, SpellIndex):
             resolved_spell = self._conduit.get_spell_by_index_id(spell.id)

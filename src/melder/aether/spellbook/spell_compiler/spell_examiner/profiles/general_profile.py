@@ -20,6 +20,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
+from melder.aether.spellbook.spell import Spell
 
 
 GeneralProfileT = TypeVar("GeneralProfileT", bound="SpellGeneralProfile")
@@ -105,13 +106,13 @@ class SpellGeneralProfile(Cleanable):
                 New profile object. If `target` is an `ISpell`, the returned
                 profile is already fully completed.
         """
-        binding_target = target.spell if isinstance(target, ISpell) else target
+        binding_target = target.spell if isinstance(target, Spell) else target
         binding_profile = BindingProfileStrategy(
             show_dunders=show_dunders,
             max_repr=max_repr,
         ).build_profile(binding_target)
         profile = cls(binding_profile=binding_profile)
-        if isinstance(target, ISpell):
+        if isinstance(target, Spell):
             profile.complete_with_spell(target)
         return profile
 

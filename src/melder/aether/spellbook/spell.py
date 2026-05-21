@@ -259,7 +259,7 @@ class Spell(Cleanable, ISpell):
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
-            spellbook: Spellbook,
+            spellbook: "Spellbook",
             profile: Optional[Any] = None,
             existing_object: Optional[object] = None,
             *args: Any,
@@ -340,7 +340,7 @@ class Spell(Cleanable, ISpell):
         self.permissions: Permissions = permissions
 
         # Spellbook
-        self._spellbook: Spellbook = spellbook
+        self._spellbook: "Spellbook" = spellbook
 
         # Spell Metadata
         self.tags = list(args) if args else []

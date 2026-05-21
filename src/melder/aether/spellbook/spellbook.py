@@ -32,6 +32,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.spellbook.spell import Spell
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
@@ -2978,7 +2979,7 @@ and logging.
         Raises:
             TypeError: If any provided hook is not callable.
         """
-        if not isinstance(spell, ISpell):
+        if not isinstance(spell, Spell):
             self._logger.error("spell must be an instance of Spell.", "_add_hooks_to_spell", exc_info=True)
             raise TypeError("spell must be an instance of Spell.")
         if len(kwargs) == 0:
