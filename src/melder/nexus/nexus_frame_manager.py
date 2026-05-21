@@ -2,6 +2,10 @@ import threading
 from typing import Dict, Optional, Set, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+if TYPE_CHECKING:
+    from melder.nexus.nexus import Nexus
+    from melder.aether.aether import Aether
+
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
@@ -14,7 +18,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.inexus import INexus
 from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 
 class NexusFrameManager(Cleanable):
@@ -51,7 +54,7 @@ class NexusFrameManager(Cleanable):
         "_configurations_by_frame_name",
     ]
 
-    def __init__(self, *, nexus: INexus) -> None:
+    def __init__(self, *, nexus: Nexus) -> None:
         """
         Initialize one Nexus frame-authoring facade.
 
@@ -71,7 +74,7 @@ class NexusFrameManager(Cleanable):
             raise TypeError("nexus cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._nexus: INexus = nexus
+        self._nexus: Nexus = nexus
         self._next_indexed_frame_number: int = 1
         self._creating_frame_names: Set[str] = set()
         self._frames_by_name: Dict[str, AethericFrame] = {}

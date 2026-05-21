@@ -2,6 +2,8 @@ import threading
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
+    from melder.nexus.nexus import Nexus
+    from melder.aether.aether import Aether
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -22,7 +24,7 @@ from melder.mutation_research.research.spell.node.spell_mutation_node import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaether import Aether
 from melder.utilities.interfaces.iconduit import IConduit
 
 
@@ -76,7 +78,7 @@ class MutationResearch(Cleanable):
 
     def __init__(
             self,
-            aether: IAether,
+            aether: Aether,
             *,
             configuration: Optional[MutationResearchConfiguration] = None,
     ) -> None:
@@ -98,7 +100,7 @@ class MutationResearch(Cleanable):
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
-            self._aether: Optional[IAether] = aether
+            self._aether: Optional[Aether] = aether
             self._configuration: Optional[MutationResearchConfiguration] = None
             self._configured: bool = False
             self._activated: bool = False

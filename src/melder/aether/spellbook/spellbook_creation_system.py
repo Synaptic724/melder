@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
     SpellGeneralProfile,
 )
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-from melder.utilities.interfaces.iunitofwork import IUnitOfWork
+from melder.utilities.interfaces.iunitofwork import UnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -711,7 +711,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run structural phases followed by conduit-scoped resolution phases.
@@ -723,14 +723,14 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: Conduit id used for resolution scope.
             phase_scheduler_cls: Phase scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
         Raises:
             ValueError: If conduit_id is empty.
         """
         spellbook.check_cleaned()
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
-        results: Dict[str, Sequence[IUnitOfWork]] = {}
+        results: Dict[str, Sequence[UnitOfWork]] = {}
         results.update(
             SpellbookCreationSystem.run_structural_phases(
                 spellbook=spellbook,
@@ -750,7 +750,7 @@ class SpellbookCreationSystem(Cleanable):
     def run_structural_phases(
             spellbook: Any,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run structural phase pipeline (requirements/symbolic/local/validation).
@@ -761,7 +761,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Phase scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
         Raises:
             SpellbookValidationError: If any spell validates as broken.
         """
@@ -867,7 +867,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run conduit-scoped resolution phases for a single conduit id.
@@ -882,7 +882,7 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: Conduit id used for resolution scope.
             phase_scheduler_cls: Phase scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
         Raises:
             ValueError: If conduit_id is empty.
         """
@@ -929,7 +929,7 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: str,
             target_spell: Spell,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local resolution phases for one spell within a conduit scope.
@@ -944,7 +944,7 @@ class SpellbookCreationSystem(Cleanable):
             target_spell: Target spell for local resolution.
             phase_scheduler_cls: Phase scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
         Raises:
             ValueError: If conduit_id is empty or target_spell is None.
             PhaseExecutionError: When non-visibility phase errors occur.
@@ -955,7 +955,7 @@ class SpellbookCreationSystem(Cleanable):
         if target_spell is None:
             raise ValueError("target_spell must not be None.")
 
-        results: Dict[str, Sequence[IUnitOfWork]] = {}
+        results: Dict[str, Sequence[UnitOfWork]] = {}
         target_spell_id = target_spell.spell_id
 
         results.update(
@@ -1019,7 +1019,7 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: str,
             target_spell: Spell,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local deferred plan phases (8/9/10/11) for one spell.
@@ -1035,7 +1035,7 @@ class SpellbookCreationSystem(Cleanable):
             target_spell: Target spell for local deferred resolution.
             phase_scheduler_cls: Phase scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
         Raises:
             ValueError: If conduit_id is empty or target_spell is None.
             PhaseExecutionError: When non-visibility phase errors occur.
@@ -1237,7 +1237,7 @@ class SpellbookCreationSystem(Cleanable):
             phase_scheduler_cls: Type[PhaseScheduler],
             context_name: str,
             register_phases: Callable[[PhaseScheduler], None],
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run a scheduler lifecycle from phase registration through execution.
@@ -1250,7 +1250,7 @@ class SpellbookCreationSystem(Cleanable):
             context_name: Logging context label.
             register_phases: Callback that registers phases on the scheduler.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution results.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution results.
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
@@ -1395,7 +1395,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run foundational conduit resolution phases (5/6/7).
@@ -1406,7 +1406,7 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: Conduit scope id.
             phase_scheduler_cls: Scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution results.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution results.
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
@@ -1434,7 +1434,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run conduit plan compilation phases (8/9/10/11).
@@ -1445,7 +1445,7 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: Conduit scope id.
             phase_scheduler_cls: Scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution results.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution results.
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
@@ -1514,7 +1514,7 @@ class SpellbookCreationSystem(Cleanable):
             target_spell: Spell,
             target_spell_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local foundational phases (root/system/change-control).
@@ -1527,7 +1527,7 @@ class SpellbookCreationSystem(Cleanable):
             target_spell_id: Target spell id.
             phase_scheduler_cls: Scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution results.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution results.
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
@@ -1608,7 +1608,7 @@ class SpellbookCreationSystem(Cleanable):
             target_spell: Spell,
             target_spell_id: str,
             phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local plan phases (occurrence/injection/patch/execution).
@@ -1621,7 +1621,7 @@ class SpellbookCreationSystem(Cleanable):
             target_spell_id: Target spell id.
             phase_scheduler_cls: Scheduler class to instantiate.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution results.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution results.
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
@@ -1799,7 +1799,7 @@ class SpellbookCreationSystem(Cleanable):
             phase_name: str,
             phase_callable_attr: str,
             args_factory: Callable[[Spell, Any], Tuple[Any, ...]],
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build one unit-of-work per local spell for repeated per-spell phases.
@@ -1818,7 +1818,7 @@ class SpellbookCreationSystem(Cleanable):
             phase_callable_attr: Compiler-system method name to invoke for each unit.
             args_factory: Builder for unit args per spell.
         Returns:
-            Sequence[IUnitOfWork]: Per-spell units for the requested phase.
+            Sequence[UnitOfWork]: Per-spell units for the requested phase.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
             AttributeError: If compiler system does not expose `phase_callable_attr`.
@@ -1830,7 +1830,7 @@ class SpellbookCreationSystem(Cleanable):
 
         cancel_event = scheduler.cancel_event
         create_unit_of_work = scheduler.create_unit_of_work
-        units: List[IUnitOfWork] = []
+        units: List[UnitOfWork] = []
         phase_func = getattr(compiler_system, phase_callable_attr)
         for spell in spells.values():
             spell_id = spell.spell_id
@@ -1852,7 +1852,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-1 requirements units for all local spells.
@@ -1862,7 +1862,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
         Returns:
-            Sequence[IUnitOfWork]: Requirements phase units.
+            Sequence[UnitOfWork]: Requirements phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -1880,7 +1880,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-2 symbolic graph units for all local spells.
@@ -1890,7 +1890,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
         Returns:
-            Sequence[IUnitOfWork]: Symbolic graph phase units.
+            Sequence[UnitOfWork]: Symbolic graph phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -1908,7 +1908,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-3 local frame units for all local spells.
@@ -1918,7 +1918,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
         Returns:
-            Sequence[IUnitOfWork]: Local frame phase units.
+            Sequence[UnitOfWork]: Local frame phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -1940,7 +1940,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Any,
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-4 validation units for all local spells.
@@ -1950,7 +1950,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
         Returns:
-            Sequence[IUnitOfWork]: Validation phase units.
+            Sequence[UnitOfWork]: Validation phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -1973,7 +1973,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build frame-scoped phase-5 root-blueprints unit(s).
@@ -1985,7 +1985,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: Root-blueprints phase units.
+            Sequence[UnitOfWork]: Root-blueprints phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2013,7 +2013,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-8 occurrence-plan units for all local spells.
@@ -2025,7 +2025,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: Occurrence-plan phase units.
+            Sequence[UnitOfWork]: Occurrence-plan phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2044,7 +2044,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-9 injection-plan units for all local spells.
@@ -2056,7 +2056,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: Injection-plan phase units.
+            Sequence[UnitOfWork]: Injection-plan phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2075,7 +2075,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-10 patch-map units for all local spells.
@@ -2087,7 +2087,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: Patch-maps phase units.
+            Sequence[UnitOfWork]: Patch-maps phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2106,7 +2106,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build phase-11 execution-plan units for all local spells.
@@ -2118,7 +2118,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: Execution-plan phase units.
+            Sequence[UnitOfWork]: Execution-plan phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2137,7 +2137,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build frame-scoped system-validation phase units.
@@ -2149,7 +2149,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: System-validation phase units.
+            Sequence[UnitOfWork]: System-validation phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2177,7 +2177,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-    ) -> Sequence[IUnitOfWork]:
+    ) -> Sequence[UnitOfWork]:
         """
         Purpose:
             Build frame-scoped change-control phase units.
@@ -2189,7 +2189,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: Scheduler creating units of work.
             conduit_id: Conduit scope id.
         Returns:
-            Sequence[IUnitOfWork]: Change-control phase units.
+            Sequence[UnitOfWork]: Change-control phase units.
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
@@ -2210,4 +2210,6 @@ class SpellbookCreationSystem(Cleanable):
                 },
             )
         ]
+
+
 

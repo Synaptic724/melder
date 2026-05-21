@@ -1,4 +1,4 @@
-from typing import Dict
+﻿from typing import Dict
 
 import pytest
 
@@ -6,19 +6,16 @@ from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 
-from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
 _INTERFACE_MAP: Dict[type, type] = {
     IConduit: Conduit,
-    IConfiguration: SpellbookConfiguration,
 }
 
 
@@ -47,3 +44,4 @@ def test_concrete_types_explicitly_inherit_interfaces(
         AssertionError: If an implementation does not inherit the expected interface.
     """
     assert interface_type in implementation_type.__mro__
+

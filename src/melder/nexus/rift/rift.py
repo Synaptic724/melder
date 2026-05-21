@@ -16,8 +16,9 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
 
-from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.irift import IRift
+if TYPE_CHECKING:
+    from melder.nexus.nexus import Nexus
 from melder.utilities.logger.safe_logger import SafeLogger
 
 class Rift(Cleanable, IRift):
@@ -90,7 +91,7 @@ class Rift(Cleanable, IRift):
 
     def __init__(
             self,
-            nexus: INexus,
+            nexus: "Nexus",
             *,
             configuration: RiftConfiguration,
             rift_gate: Optional[RiftGate] = None,
@@ -138,8 +139,9 @@ class Rift(Cleanable, IRift):
         """
         if nexus is None:
             raise TypeError("nexus cannot be None.")
-        if not isinstance(nexus, INexus):
-            raise TypeError("nexus must satisfy INexus.")
+        from melder.nexus.nexus import Nexus
+        if not isinstance(nexus, Nexus):
+            raise TypeError("nexus must satisfy Nexus.")
         if not nexus.is_configured:
             raise RuntimeError("Rift requires a configured Nexus.")
         if not nexus.is_enabled:
@@ -152,7 +154,7 @@ class Rift(Cleanable, IRift):
         self._rift_name: Optional[str] = rift_name
         self._lock: threading.RLock = threading.RLock()
         self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
-        self._nexus: INexus = nexus
+        self._nexus: "Nexus" = nexus
         self._configuration: RiftConfiguration = configuration
         self._rift_gate: RiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}

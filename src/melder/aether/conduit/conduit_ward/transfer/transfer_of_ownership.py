@@ -10,8 +10,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaether import Aether
 if TYPE_CHECKING:
+    from melder.aether.aether import Aether
     from melder.aether.spellbook.spell import Spell
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
@@ -111,7 +112,7 @@ class TransferOfOwnership(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._source_spellbook: Spellbook = self.source_conduit._spellbook
         self._target_spellbook: Spellbook = self.target_conduit._spellbook
-        self._aether: IAether = self._source_spellbook._aether
+        self._aether: Aether = self._source_spellbook._aether
         self._frame_name: str = self.source_conduit._aetheric_frame_name
         self._preflight_summary: Dict[str, Any] = {}
         change_control_manager = self._aether._get_change_control_manager(

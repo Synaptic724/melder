@@ -1,4 +1,4 @@
-import ast
+﻿import ast
 import importlib.util
 import inspect
 import site
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.isyntheticmodule import ISyntheticModule
+from melder.utilities.interfaces.isyntheticmodule import SyntheticModule
 
 
 class SpellCrystal(Cleanable):
@@ -842,7 +842,7 @@ class SpellCrystal(Cleanable):
                 synthetic, built-in, frozen, or otherwise pathless.
         """
         if module_obj is not None:
-            if isinstance(module_obj, ISyntheticModule):
+            if isinstance(module_obj, SyntheticModule):
                 physical_file_path = module_obj.physical_file_path
                 if isinstance(physical_file_path, str) and physical_file_path:
                     try:
@@ -944,7 +944,7 @@ class SpellCrystal(Cleanable):
         """
         if module_obj is None:
             return False
-        return isinstance(module_obj, ISyntheticModule)
+        return isinstance(module_obj, SyntheticModule)
 
     def _classify_module_target(
             self,
@@ -1038,7 +1038,7 @@ class SpellCrystal(Cleanable):
                 Source text used for AST import analysis, or None when the
                 module format does not expose source safely.
         """
-        if isinstance(module_obj, ISyntheticModule):
+        if isinstance(module_obj, SyntheticModule):
             source_text = module_obj.source_text
             return source_text if isinstance(source_text, str) else None
 
@@ -1420,3 +1420,5 @@ class SpellCrystal(Cleanable):
                 "created_from_site_package_root": self._created_from_site_package_root,
                 "created_from_user_source_root": self._created_from_user_source_root,
             }
+
+

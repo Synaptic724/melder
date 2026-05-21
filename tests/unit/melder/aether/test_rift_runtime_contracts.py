@@ -161,7 +161,7 @@ def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> No
     """
     configuration = _build_finalized_rift_configuration()
 
-    with pytest.raises(TypeError, match="nexus must satisfy INexus"):
+    with pytest.raises(TypeError, match="nexus must satisfy Nexus"):
         Rift(
             object(),
             configuration=configuration,

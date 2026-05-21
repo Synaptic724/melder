@@ -97,8 +97,8 @@ def test_init_missing_aether_raises() -> None:
 
 
 def test_init_non_iaether_raises() -> None:
-    """AethericFrame should reject owners that do not satisfy IAether."""
-    with pytest.raises(TypeError, match="must satisfy IAether"):
+    """AethericFrame should reject owners that do not satisfy Aether."""
+    with pytest.raises(TypeError, match="must satisfy Aether"):
         AethericFrame(object(), "my_frame")
 
 def test_init_empty_name_raises():

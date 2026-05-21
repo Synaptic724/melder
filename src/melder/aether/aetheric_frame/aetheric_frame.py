@@ -7,7 +7,7 @@ from mypy_extensions import mypyc_attr
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iaether import IAether
 
-from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
@@ -44,7 +44,7 @@ class AethericFrame(Cleanable):
       - Relies on child objects to guard their own internal state.
     """
     __melder_internal__ = _mrg.sentinel
-    def __init__(self, aether: IAether, name: str) -> None:
+    def __init__(self, aether: "Aether", name: str) -> None:
         """
         Initialize a new AethericFrame.
 
@@ -59,12 +59,13 @@ class AethericFrame(Cleanable):
 
         if aether is None:
             raise TypeError("aether cannot be None")
-        if not isinstance(aether, IAether):
-            raise TypeError("aether must satisfy IAether")
+        from melder.aether.aether import Aether
+        if not isinstance(aether, Aether):
+            raise TypeError("aether must satisfy Aether")
         if not name:
             raise ValueError("name cannot be empty")
 
-        self._aether: IAether = aether
+        self._aether: "Aether" = aether
         self.name: str = name
         self._id: str = str(ulid.ULID())
         self._lock: threading.RLock = threading.RLock()
@@ -98,7 +99,7 @@ class AethericFrame(Cleanable):
         self._dev_ops_manager: DevOpsManager = DevOpsManager(self._spell_system_states)
 
         # Optional explicit frame-owned shared rich Spellbook configuration.
-        self._configuration: Optional[IConfiguration] = None
+        self._configuration: Optional[SpellbookConfiguration] = None
         # Narrow frame-level AR posture owned by the frame itself.
         self._frame_configuration: AethericFrameConfiguration = (
             AethericFrameConfiguration(
@@ -559,3 +560,5 @@ class AethericFrame(Cleanable):
                     if version_id in spell_index.get_all_versions():
                         return spell_index
         return None
+
+

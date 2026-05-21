@@ -1,7 +1,10 @@
 import threading
 import time
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.aether.aether import Aether
 
 from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
@@ -40,17 +43,18 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 
 
-from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.irift import IRift
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
 
-class Nexus(Cleanable, INexus):
+class Nexus(Cleanable):
     """
     Purpose:
         Provide the public singleton root for Rift-domain registry,
@@ -125,7 +129,7 @@ class Nexus(Cleanable, INexus):
     def __init__(
             self,
             *,
-            aether: Optional[IAether] = None,
+            aether: Optional["Aether"] = None,
             configuration: Optional[NexusConfiguration] = None,
             logger: Optional[Any] = None,
     ) -> None:
@@ -178,7 +182,7 @@ class Nexus(Cleanable, INexus):
             super().__init__()
             self._id: str = IDBuilder.create_id()
             self._logger = InitHelpers.resolve_safe_logger(None)
-            self._aether: IAether = aether
+            self._aether: "Aether" = aether
             self._configuration: Optional[NexusConfiguration] = configuration
             self._configured: bool = configuration is not None
             self._enabled: bool = False
@@ -2521,7 +2525,7 @@ class Nexus(Cleanable, INexus):
     def _get_required_target_frame_configuration(
             self,
             target_frame_name: str,
-    ) -> IConfiguration:
+    ) -> SpellbookConfiguration:
         """
         Internal
 
@@ -2532,7 +2536,7 @@ class Nexus(Cleanable, INexus):
                 Target frame name being validated.
 
         Returns:
-            IConfiguration: Bound Melder configuration.
+            SpellbookConfiguration: Bound Melder configuration.
         """
         try:
             target_frame_configuration = self._aether._get_configuration(
@@ -2872,5 +2876,6 @@ class Nexus(Cleanable, INexus):
             value = configuration.get_property(key)
             cloned_configuration.set_property(key, value)
         return cloned_configuration
+
 
 

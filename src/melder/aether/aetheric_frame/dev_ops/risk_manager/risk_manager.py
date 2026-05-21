@@ -2,16 +2,14 @@ from threading import RLock
 from typing import Dict, Optional, Set, List, TYPE_CHECKING
 from mypy_extensions import mypyc_attr
 
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
-    from melder.aether.spellbook.spellbook import Spellbook
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
-    from melder.utilities.interfaces.ispell import Spell
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+    from melder.aether.spellbook.spellbook import Spellbook
 
 @mypyc_attr(native_class=True)
 class _ConduitRiskState:

@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from unittest.mock import MagicMock
 
 import pytest
@@ -150,10 +150,10 @@ class _LockProbe:
 
 def test_init_rejects_non_configuration(spellbook_stub: MagicMock) -> None:
     """
-    Verify Conduit rejects non-IConfiguration inputs.
+    Verify Conduit rejects non-SpellbookConfiguration inputs.
 
     Contract:
-        - __init__ raises TypeError when configuration is not IConfiguration.
+        - __init__ raises TypeError when configuration is not SpellbookConfiguration.
 
     Args:
         spellbook_stub (MagicMock): Spellbook stub used for construction.
@@ -161,7 +161,7 @@ def test_init_rejects_non_configuration(spellbook_stub: MagicMock) -> None:
     Raises:
         AssertionError: If the expected TypeError is not raised.
     """
-    with pytest.raises(TypeError, match="IConfiguration"):
+    with pytest.raises(TypeError, match="SpellbookConfiguration"):
         _build_conduit(
             spellbook=spellbook_stub,
             configuration=object(),
@@ -803,4 +803,5 @@ def test_unregister_spellspace_ignores_missing_registry(
     conduit_lesser._unregister_spellspace(MagicMock())
 
     assert conduit_lesser._spellspace_registry is None
+
 

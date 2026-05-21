@@ -2,6 +2,10 @@ import threading
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+if TYPE_CHECKING:
+    from melder.nexus.nexus import Nexus
+    from melder.aether.aether import Aether
+
 from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
@@ -16,7 +20,6 @@ from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.utilities.interfaces.iaether import IAether
 from melder.aether.aetheric_frame.aetheric_frame_configuration import (
     AethericFrameConfiguration,
 )
@@ -75,7 +78,7 @@ class FrameDescriptorManager(Cleanable):
         "0.0.1",
     }
 
-    def __init__(self, aether: IAether) -> None:
+    def __init__(self, aether: Aether) -> None:
         """
         Initialize one frame-scoped Nexus state manager.
 
@@ -103,7 +106,7 @@ class FrameDescriptorManager(Cleanable):
             raise TypeError("aether cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._aether: IAether = aether
+        self._aether: Aether = aether
         self._frame_descriptors_by_name: Dict[str, FrameDescriptor] = {}
 
     def cleanup(self) -> None:

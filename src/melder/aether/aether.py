@@ -14,7 +14,7 @@ from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
-from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
-class Aether(Cleanable, IAether):
+class Aether(Cleanable):
     """
     The global singleton root that owns all `AethericFrame` instances.
 
@@ -753,7 +753,7 @@ class Aether(Cleanable, IAether):
 
     def _bind_configuration(
             self,
-            configuration: IConfiguration,
+            configuration: SpellbookConfiguration,
             aetheric_frame_name: str = "default",
     ) -> None:
         """
@@ -789,7 +789,7 @@ class Aether(Cleanable, IAether):
                 frame._configuration = configuration
 
 
-    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[IConfiguration]:
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[SpellbookConfiguration]:
         """
         Return the shared Spellbook configuration object bound to one frame.
 
@@ -1614,3 +1614,5 @@ class Aether(Cleanable, IAether):
         devops.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
 
     #endregion DevOps Management
+
+

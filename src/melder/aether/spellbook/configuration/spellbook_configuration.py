@@ -1,14 +1,13 @@
-import threading
+﻿import threading
 from typing import Any, Dict, Type, Callable, Iterator
 import ulid
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @mypyc_attr(native_class=True)
-class SpellbookConfiguration(Cleanable, IConfiguration):
+class SpellbookConfiguration(Cleanable):
     """
     Mutable build-time configuration surface for one spellbook/runtime context.
 
@@ -354,7 +353,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
                 self._properties[key] = value
 
     # ------------------------------------------------------------------
-    # System hook API (Meld / Conduit / Link / Contract) â€“ normal style
+    # System hook API (Meld / Conduit / Link / Contract) Ã¢â‚¬â€œ normal style
     # ------------------------------------------------------------------
 
     def add_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> None:
@@ -515,7 +514,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
     # ---------------------------
     # Fluent / Builder-style API
     # ---------------------------
-    def with_phase_scheduler_workers(self, workers: int) -> IConfiguration:
+    def with_phase_scheduler_workers(self, workers: int) -> SpellbookConfiguration:
         """
         Set the number of worker threads used by the Resolution Phase Scheduler.
         Must be >= 1.
@@ -524,7 +523,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             workers (int): Number of worker threads.
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Contract:
             - Validates the worker count before writing it.
@@ -536,7 +535,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         return self
 
 
-    def with_phase_scheduler_barrier_timeout(self, timeout_milliseconds: int) -> IConfiguration:
+    def with_phase_scheduler_barrier_timeout(self, timeout_milliseconds: int) -> SpellbookConfiguration:
         """
         Set the barrier timeout in milliseconds used by the Resolution Phase Scheduler.
         Must be >= 0.
@@ -545,7 +544,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             timeout_milliseconds (int): Barrier timeout in milliseconds.
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Contract:
             - Rejects zero and excessively large values up front.
@@ -563,7 +562,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("phase_scheduler_barrier_timeout_milliseconds", timeout_milliseconds)
         return self
 
-    def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> IConfiguration:
+    def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> SpellbookConfiguration:
         """
         Fluent
 
@@ -578,7 +577,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             enabled (bool): Desired compilation mode flag.
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Raises:
             TypeError: If "enabled" is not a bool.
@@ -588,7 +587,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("full_ahead_of_time_compilation", enabled)
         return self
 
-    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
+    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> SpellbookConfiguration:
         """
         Fluent
 
@@ -607,7 +606,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.add_hook(spellbook_id, hook_name, hook)
         return self
 
-    def with_hooks(self, spellbook_id: str, **hooks: Any) -> IConfiguration:
+    def with_hooks(self, spellbook_id: str, **hooks: Any) -> SpellbookConfiguration:
         """
         Fluent
 
@@ -631,11 +630,11 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.add_hooks(spellbook_id, **hooks)
         return self
 
-    def with_defaults(self) -> IConfiguration:
+    def with_defaults(self) -> SpellbookConfiguration:
         """
         Fluent
 
-        Load Melderâ€™s standard defaults into this configuration and return `self`
+        Load MelderÃ¢â‚¬â„¢s standard defaults into this configuration and return `self`
         so you can keep chaining.
 
         Behaviour:
@@ -645,12 +644,12 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
         """
         self.load_default_dictionary()
         return self
 
-    def with_disposal(self, enabled: bool = True) -> IConfiguration:
+    def with_disposal(self, enabled: bool = True) -> SpellbookConfiguration:
         """
         Enable or disable disposal features and return `self`.
 
@@ -658,7 +657,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             enabled: True to enable disposal semantics; False to disable.
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Contract:
             - Writes only the `disposal` flag.
@@ -667,7 +666,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("disposal", enabled)
         return self
 
-    def with_disposal_method_names(self, names: list[str]) -> IConfiguration:
+    def with_disposal_method_names(self, names: list[str]) -> SpellbookConfiguration:
         """
         Replace the entire list of disposal method names and return `self`.
 
@@ -678,7 +677,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             names: Full replacement list of method names (strings).
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Contract:
             - Replaces the entire disposal-method list.
@@ -689,7 +688,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("disposal_method_names", names)
         return self
 
-    def add_disposal_methods(self, *names: str) -> IConfiguration:
+    def add_disposal_methods(self, *names: str) -> SpellbookConfiguration:
         """
         Append one or more disposal method names (deduplicated, order-preserving)
         and return `self`.
@@ -702,7 +701,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             *names: One or more method names to add.
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Contract:
             - Initializes the disposal-method list when absent.
@@ -722,12 +721,12 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.set_property("disposal_method_names", extended)
         return self
 
-    def finalize(self) -> IConfiguration:
+    def finalize(self) -> SpellbookConfiguration:
         """
         Validate and freeze, returning `self`.
 
         Returns:
-            IConfiguration: This same configuration instance (for chaining).
+            SpellbookConfiguration: This same configuration instance (for chaining).
 
         Contract:
             - Runs the full validation pipeline.
@@ -737,7 +736,7 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
         self.freeze()
         return self
 
-    def build(self) -> IConfiguration:
+    def build(self) -> SpellbookConfiguration:
         """
         Fluent alias for `finalize()`.
 
@@ -746,4 +745,5 @@ class SpellbookConfiguration(Cleanable, IConfiguration):
             - Returns `self` for chaining.
         """
         return self.finalize()
+
 

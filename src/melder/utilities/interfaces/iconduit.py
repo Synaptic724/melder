@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ContextManager, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
+﻿from typing import TYPE_CHECKING, Any, ContextManager, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 import threading
 from types import ModuleType, TracebackType
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -7,7 +7,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -39,7 +39,7 @@ class IConduit(ICleanable, Protocol):
     _nexus: Any
     _root_conduit_id: str
 
-    _configuration: 'IConfiguration'
+    _configuration: 'SpellbookConfiguration'
     _logger: 'SafeLogger'
     _nexus_publish_enabled: bool
 
@@ -176,12 +176,12 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Logger resolution
     # ------------------------------------------------------------------
-    def _resolve_logger_from_config(self, configuration: 'IConfiguration') -> 'SafeLogger':
+    def _resolve_logger_from_config(self, configuration: 'SpellbookConfiguration') -> 'SafeLogger':
         """
         Resolve the logger for this conduit from the provided configuration.
 
         Args:
-            configuration (IConfiguration): The locked system configuration.
+            configuration (SpellbookConfiguration): The locked system configuration.
 
         Returns:
             SafeLogger: The resolved SafeLogger instance.
@@ -284,14 +284,14 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _creations_configuration(self, configuration: 'IConfiguration') -> Creations:
+    def _creations_configuration(self, configuration: 'SpellbookConfiguration') -> Creations:
         """
         Internal
 
         Returns the current creations configuration for this Conduit.
 
         Args:
-            configuration (IConfiguration): The locked system configuration.
+            configuration (SpellbookConfiguration): The locked system configuration.
 
         Returns:
             Creations: The creation manager for this conduit.
@@ -1591,5 +1591,7 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Mutation Research
     # ------------------------------------------------------------------
+
+
 
 

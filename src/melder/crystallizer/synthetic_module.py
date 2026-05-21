@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 import importlib
 import importlib.abc
 import importlib.util
@@ -9,7 +9,6 @@ from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.utilities.interfaces.isyntheticmodule import ISyntheticModule
 
 
 class _SyntheticModuleImportLoader(importlib.abc.Loader):
@@ -115,7 +114,7 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         return SyntheticModule.build_registered_spec(fullname)
 
 
-class SyntheticModule(ModuleType, ISyntheticModule):
+class SyntheticModule(ModuleType):
     """
     Live in-memory module embodiment for crystallized source.
 
@@ -1329,3 +1328,4 @@ class SyntheticModule(ModuleType, ISyntheticModule):
                 "is_package": self._is_package,
                 "executed_source": self._executed_source,
             }
+

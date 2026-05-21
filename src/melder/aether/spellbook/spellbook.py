@@ -17,14 +17,14 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconfiguration import IConfiguration
+from melder.utilities.interfaces.iconfiguration import SpellbookConfiguration
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
-from melder.utilities.interfaces.iunitofwork import IUnitOfWork
+from melder.utilities.interfaces.iunitofwork import UnitOfWork
 from melder.utilities.logger.safe_logger import SafeLogger
-from melder.utilities.interfaces.iaether import IAether
+from melder.utilities.interfaces.iaether import Aether
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.existence.existence import Existence
@@ -104,7 +104,7 @@ and logging.
           object already exists on the frame.
     """
     __melder_internal__ = _mrg.sentinel
-    _aether: IAether = Aether()
+    _aether: Aether = Aether()
     __slots__ = Cleanable.__slots__ + [
         "__dict__",
         "__weakref__",
@@ -139,7 +139,7 @@ and logging.
         "_whitelist_all_spells",
     ]
 
-    def __init__(self, aetheric_frame: str = "default", configuration: Optional[IConfiguration] = None,
+    def __init__(self, aetheric_frame: str = "default", configuration: Optional[SpellbookConfiguration] = None,
                  logger: Any | None = None):
         """
         Public API
@@ -159,7 +159,7 @@ and logging.
         Args:
             aetheric_frame (str):
                 Frame name to bind this Spellbook to.
-            configuration (Optional[IConfiguration]):
+            configuration (Optional[SpellbookConfiguration]):
                 Optional configuration to reuse for the frame.
             logger (Optional[Any]):
                 Optional logger instance or factory output.
@@ -193,7 +193,7 @@ and logging.
 
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
-        self._configuration: Optional[IConfiguration] = configuration
+        self._configuration: Optional[SpellbookConfiguration] = configuration
         self._aetheric_frame_configuration: Optional[Any] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
         self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
@@ -498,7 +498,7 @@ and logging.
         After this runs:
             - Each conduit_id in `_contracted_spells` will have a corresponding
               ConcurrentSet[str] in `_contracted_versions` containing all
-              version IDs (SHA256) for that conduitÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s spells.
+              version IDs (SHA256) for that conduitÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s spells.
         """
 
         with self._lock:
@@ -556,7 +556,7 @@ and logging.
         manager = self._aether._get_change_control_manager(self._aetheric_frame)
         return manager
 
-    def _get_required_configuration(self) -> IConfiguration:
+    def _get_required_configuration(self) -> SpellbookConfiguration:
         """
         Return the live spellbook configuration or raise.
         """
@@ -3030,7 +3030,7 @@ and logging.
               * Otherwise create a fresh SpellbookConfiguration for this frame (unlocked).
         """
         try:
-            aether_config: Optional[IConfiguration] = self._get_configuration_from_aether()
+            aether_config: Optional[SpellbookConfiguration] = self._get_configuration_from_aether()
             if aether_config is not None:
                 if self._configuration is not None and aether_config is not self._configuration:
                     self._logger.error(
@@ -3070,7 +3070,7 @@ and logging.
             )
             raise
 
-    def _get_configuration_from_aether(self) -> IConfiguration | None:
+    def _get_configuration_from_aether(self) -> SpellbookConfiguration | None:
         """
         Internal
 
@@ -3078,7 +3078,7 @@ and logging.
         when the canonical frame posture explicitly permits shared rich config.
 
         Returns:
-            IConfiguration | None: The frame-owned shared rich configuration for
+            SpellbookConfiguration | None: The frame-owned shared rich configuration for
             this Aether frame, or None when explicit shared rich-config reuse is
             not active.
         """
@@ -3100,7 +3100,7 @@ and logging.
 
     def _is_frame_owned_shared_configuration(
             self,
-            configuration: Optional[IConfiguration] = None,
+            configuration: Optional[SpellbookConfiguration] = None,
     ) -> bool:
         """
         Internal
@@ -3534,14 +3534,14 @@ and logging.
 
 
 
-    def get_configuration(self) -> IConfiguration:
+    def get_configuration(self) -> SpellbookConfiguration:
         """
         Public API
 
         Returns the active configuration object for this Spellbook.
 
         Returns:
-            IConfiguration: The active configuration instance.
+            SpellbookConfiguration: The active configuration instance.
         """
         return self._get_required_configuration()
 
@@ -3739,7 +3739,7 @@ and logging.
                 self._block_all_spells = False
                 self._whitelist_all_spells = False
 
-    def _run_structural_phases(self) -> Dict[str, Sequence[IUnitOfWork]]:
+    def _run_structural_phases(self) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -3752,7 +3752,7 @@ and logging.
         Threading:
             Caller must hold the Spellbook lock for deterministic conjure ordering.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution result mapping.
         Raises:
             SpellbookValidationError: If structural validation marks any spell broken.
             Exception: Propagates scheduler/phase execution failures.
@@ -3790,7 +3790,7 @@ and logging.
     def _run_resolution_phases_for_conduit(
             self,
             conduit_id: str,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -3805,7 +3805,7 @@ and logging.
         Args:
             conduit_id: Conduit id for resolution scope.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution result mapping.
         Raises:
             ValueError: If conduit_id is empty.
             Exception: Propagates phase execution failures.
@@ -3820,7 +3820,7 @@ and logging.
             self,
             conduit_id: str,
             target_spell: Spell,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -3836,7 +3836,7 @@ and logging.
             conduit_id: Conduit id for resolution scope.
             target_spell: Spell being resolved locally.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution result mapping.
         Raises:
             ValueError: If conduit_id is empty or target_spell is None.
             PhaseExecutionError: On non-visibility execution failures.
@@ -3852,7 +3852,7 @@ and logging.
             self,
             conduit_id: str,
             target_spell: Spell,
-    ) -> Dict[str, Sequence[IUnitOfWork]]:
+    ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -3869,7 +3869,7 @@ and logging.
             conduit_id: Conduit id for deferred-resolution scope.
             target_spell: Spell being resolved in deferred mode.
         Returns:
-            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+            Dict[str, Sequence[UnitOfWork]]: Phase execution result mapping.
         Raises:
             ValueError: If conduit_id is empty or target_spell is None.
             PhaseExecutionError: On non-visibility execution failures.
@@ -3883,6 +3883,8 @@ and logging.
 
     #endregion
 #endregion
+
+
 
 
 
