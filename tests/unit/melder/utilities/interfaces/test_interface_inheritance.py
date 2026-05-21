@@ -25,7 +25,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
-from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
@@ -39,8 +38,6 @@ from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.icontract import IContract
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.idetail import IDetail
-from melder.utilities.interfaces.idevopsmanager import IDevOpsManager
-from melder.utilities.interfaces.iincidentmanager import IIncidentManager
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -53,7 +50,6 @@ from melder.utilities.logger.safe_logger import SafeLogger
 
 
 _INTERFACE_MAP: Dict[type, type] = {
-    IAether: Aether,
     IAetherConfiguration: AetherConfiguration,
     IAetherConfigurationBuilder: AetherConfigurationBuilder,
     IAethericFrame: AethericFrame,
@@ -66,8 +62,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     IContract: Contract,
     ICreations: Creations,
     IDetail: Detail,
-    IDevOpsManager: DevOpsManager,
-    IIncidentManager: IncidentManager,
     IConfiguration: SpellbookConfiguration,
     IMeld: Meld,
     ISafeLogger: SafeLogger,

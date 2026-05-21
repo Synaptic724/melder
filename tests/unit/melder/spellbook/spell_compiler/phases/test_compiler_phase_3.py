@@ -969,6 +969,31 @@ def test_run_phase_local_frame_requires_prior_phases() -> None:
         )
 
 
+def test_run_phase_local_frame_requires_spell_system_states() -> None:
+    """Phase 3 entrypoint should require a live SpellSystemStates surface."""
+    phase = CompilerPhase3()
+    root_spell = _make_spell_stub(
+        "root",
+        spell_obj=object(),
+        spellframe=None,
+        spell_name="RootSpell",
+    )
+    artifact = SpellCompilerArtifact("root")
+    artifact._requirements = SimpleNamespace()
+    artifact._symbolic_graph = SpellSymbolicGraph(
+        spell_version_id="root",
+        dependencies=[],
+    )
+
+    with pytest.raises(RuntimeError, match="live SpellSystemStates surface"):
+        phase.run(
+            root_spell,
+            artifact,
+            SimpleNamespace(_spell_id_pool={}),
+            None,
+        )
+
+
 def test_run_builds_resolution_frame_and_updates_topology(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:

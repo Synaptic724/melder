@@ -247,3 +247,52 @@ def test_clear_phase5_artifacts_preserves_structural_fields() -> None:
     assert artifact._resolution_frame == "frame"
     assert artifact._validation_result_phase4 == "phase4"
     assert artifact._validation_result_phase6 == "phase6"
+
+
+def test_cleanup_execution_plans_phase11_cleans_variants_and_clears_fields() -> None:
+    """Phase 11 cleanup helper should clean all cached plans and clear their refs."""
+    artifact = SpellCompilerArtifact("spell-1")
+    main = CleanupTracker()
+    no_overrides = CleanupTracker()
+    overrides = CleanupTracker()
+    artifact._execution_plan_phase11 = main
+    artifact._execution_plan_phase11_no_overrides = no_overrides
+    artifact._execution_plan_phase11_overrides = overrides
+    artifact._phase11_no_overrides_plan_signature = "sig"
+    artifact._phase11_no_overrides_transient_schema = {"schema": 1}
+
+    artifact._cleanup_execution_plans_phase11()
+
+    assert main.cleanup_calls == 1
+    assert no_overrides.cleanup_calls == 1
+    assert overrides.cleanup_calls == 1
+    assert artifact._execution_plan_phase11 is None
+    assert artifact._execution_plan_phase11_no_overrides is None
+    assert artifact._execution_plan_phase11_overrides is None
+    assert artifact._phase11_no_overrides_plan_signature is None
+    assert artifact._phase11_no_overrides_transient_schema is None
+
+
+def test_cleanup_execution_plans_phase11_swallows_cleanup_failures() -> None:
+    """Phase 11 cleanup helper should swallow per-plan cleanup failures."""
+    artifact = SpellCompilerArtifact("spell-1")
+
+    class _FailingCleanupTracker(CleanupTracker):
+        """Cleanup tracker that raises after recording cleanup."""
+
+        def cleanup(self) -> None:
+            self.cleanup_calls += 1
+            self._cleaned = True
+            raise RuntimeError("cleanup boom")
+
+    main = _FailingCleanupTracker()
+    overrides = _FailingCleanupTracker()
+    artifact._execution_plan_phase11 = main
+    artifact._execution_plan_phase11_overrides = overrides
+
+    artifact._cleanup_execution_plans_phase11()
+
+    assert main.cleanup_calls == 1
+    assert overrides.cleanup_calls == 1
+    assert artifact._execution_plan_phase11 is None
+    assert artifact._execution_plan_phase11_overrides is None

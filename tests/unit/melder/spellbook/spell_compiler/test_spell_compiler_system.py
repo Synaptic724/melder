@@ -310,3 +310,91 @@ def test_run_all_phases_cleans_structural_artifacts_and_creation_context(
 
     assert artifact_calls == ["artifact"]
     assert spell._cleanup_creation_context_calls == ["cleanup"]
+
+
+def test_run_all_phases_forwards_cancel_event_to_supported_phases(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Full helper should forward one cancel event to every phase that accepts it."""
+    compiler_system = SpellCompilerSystem()
+    spellbook = make_spellbook()
+    spell = make_spell()
+    cancel = object()
+    received: list[tuple[str, Any]] = []
+
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_requirements",
+        lambda self, spell, cancel_event=None: received.append(("phase1", cancel_event)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_symbolic_graph",
+        lambda self, spell, cancel_event=None: received.append(("phase2", cancel_event)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_local_frame",
+        lambda self, spellbook, spell, cancel_event=None: received.append(("phase3", cancel_event)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_validation",
+        lambda self, spellbook, spell, cancel_event=None: received.append(("phase4", cancel_event)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_root_blueprints",
+        lambda self, spellbook, spell, conduit_id, cancel_event=None: received.append(("phase5", cancel_event)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_system_validation",
+        lambda self, spellbook, spell, conduit_id, cancel_event=None: received.append(("phase6", cancel_event)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_change_control",
+        lambda self, spellbook, spell, conduit_id: received.append(("phase7", None)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_occurrence_plan",
+        lambda self, spellbook, spell: received.append(("phase8", None)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_injection_plan",
+        lambda self, spell: received.append(("phase9", None)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_patch_maps",
+        lambda self, spell: received.append(("phase10", None)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerSystem,
+        "run_phase_execution_plan",
+        lambda self, spellbook, spell: received.append(("phase11", None)),
+    )
+    monkeypatch.setattr(
+        SpellCompilerArtifact,
+        "cleanup_phase_artifacts",
+        lambda self: None,
+    )
+
+    compiler_system.run_all_phases(spellbook, spell, "cid", cancel_event=cancel)
+
+    assert received == [
+        ("phase1", cancel),
+        ("phase2", cancel),
+        ("phase3", cancel),
+        ("phase4", cancel),
+        ("phase5", cancel),
+        ("phase6", cancel),
+        ("phase7", None),
+        ("phase8", None),
+        ("phase9", None),
+        ("phase10", None),
+        ("phase11", None),
+    ]
