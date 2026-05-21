@@ -98,7 +98,7 @@ def _find_spell_by_version_id(spellbook: Spellbook, spell_id: str):
             Bound spell version id returned by ``bind(...)``.
 
     Returns:
-        ISpell:
+        Spell:
             Matching bound spell.
 
     Raises:

@@ -100,7 +100,7 @@ class _StubSpellbook:
 class _StubSpell:
     """
     Purpose:
-        Provide a minimal ISpell surface for occurrence planning.
+        Provide a minimal Spell surface for occurrence planning.
     Contract:
         - Exposes spell_index.current, spell_name, spell callable, existence,
           and mutation_override.
@@ -119,7 +119,7 @@ class _StubSpell:
     ) -> None:
         """
         Purpose:
-            Provide a minimal ISpell-like surface for occurrence planning.
+            Provide a minimal Spell-like surface for occurrence planning.
         Contract:
             - Exposes spell_index.current, spell_name, spell callable, existence,
               and mutation_override (None).

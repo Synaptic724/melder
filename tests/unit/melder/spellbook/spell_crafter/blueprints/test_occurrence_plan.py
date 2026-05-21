@@ -125,7 +125,7 @@ class _StubSpellbook:
 class _StubSpell:
     """
     Purpose:
-        Provide a minimal ISpell-like object for occurrence plan compilation.
+        Provide a minimal Spell-like object for occurrence plan compilation.
     Contract:
         - Supplies spell metadata required by OccurrencePlanBuilder.
         - Exposes a SpellIndex-like object via `spell_index`.

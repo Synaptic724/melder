@@ -211,7 +211,7 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
         Validate Existence.unique_per_conduit_cluster shares across a cluster.
     Contract:
         - Bound spell_id resolves to a local spell after conjure.
-        - Resolved spell objects implement the ISpell protocol.
+        - Resolved spell objects are concrete Spell instances.
         - Borrower can resolve the spell by ID and inspect the bound target.
         - Borrower receives a contracted spell entry after cluster refresh.
         - Two conduits in the same cluster resolve the same instance.
@@ -343,7 +343,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
     Purpose:
         Validate dynamic link contracts using a spell object.
     Contract:
-        - Borrower can contract a spell by ISpell after link.
+        - Borrower can contract a spell by Spell after link.
         - Contracted spell appears in borrower contract lookups.
         - Borrower can meld the contracted spell by spell_id.
     Returns:

@@ -1129,9 +1129,9 @@ def test_check_spell_id_and_spell_success(ward):
     assert resolved_id == "sha-1"
     assert resolved_spell is spell
 
-def test_check_spell_id_and_spell_uses_inspect_spell_for_non_ispell_objects(ward) -> None:
+def test_check_spell_id_and_spell_uses_inspect_spell_for_non_spell_objects(ward) -> None:
     """
-    Verify _check_spell_id_and_spell delegates to inspect_spell for raw non-ISpell objects.
+    Verify _check_spell_id_and_spell delegates to inspect_spell for raw non-Spell objects.
     """
     raw_spell = object()
     ward._conduit.inspect_spell = MagicMock(return_value="sha-raw")
@@ -1424,9 +1424,9 @@ def test_remove_contract_raises_when_registry_delete_fails(ward) -> None:
 # 14. Validation Helpers (Additional Paths)
 # ----------------------------------------------------------------------
 
-def test_check_spell_id_and_spell_rejects_non_ispell(ward):
+def test_check_spell_id_and_spell_rejects_non_spell(ward):
     """
-    Verify _check_spell_id_and_spell rejects non-ISpell objects.
+    Verify _check_spell_id_and_spell rejects non-Spell objects.
     """
     with pytest.raises(TypeError, match="Expected Spell instance"):
         ward._check_spell_id_and_spell(spell=object())

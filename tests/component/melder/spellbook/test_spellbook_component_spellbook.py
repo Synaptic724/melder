@@ -1170,7 +1170,7 @@ def test_component_spellbook_add_hooks_to_spell_rejects_non_spell() -> None:
     Purpose:
         Validate hook attachment rejects non-Spell inputs.
     Contract:
-        - _add_hooks_to_spell raises TypeError when the target is not an ISpell.
+        - _add_hooks_to_spell raises TypeError when the target is not a Spell.
     Returns:
         None.
     Raises:
