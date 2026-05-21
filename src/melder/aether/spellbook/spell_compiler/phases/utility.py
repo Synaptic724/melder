@@ -1,10 +1,11 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from mypy_extensions import mypyc_attr
 
-from melder.utilities.synchronization.cancellation_event_signal import (
-    CancellationEvent,
-)
+if TYPE_CHECKING:
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 
 @mypyc_attr(native_class=True)

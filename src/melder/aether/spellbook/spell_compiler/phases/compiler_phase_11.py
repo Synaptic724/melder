@@ -3,26 +3,24 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
+        OccurrencePlan,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
+        InjectionPlan,
+    )
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlan,
     ExecutionPlanBuilder,
     ExecutionPlanCallMode,
     ExecutionPlanVariant,
 )
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
-        OccurrencePlan,
-    )
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
@@ -50,7 +48,7 @@ class CompilerPhase11:
     def _get_required_occurrence_plan_phase8(
             self,
             artifact: SpellCompilerArtifact,
-    ) -> "OccurrencePlan":
+    ) -> OccurrencePlan:
         """
         Return the Phase 8 occurrence plan or raise.
 
@@ -281,7 +279,7 @@ class CompilerPhase11:
     def _build_phase11_no_overrides_input_signature(
             self,
             *,
-            occurrence_plan: "OccurrencePlan",
+            occurrence_plan: OccurrencePlan,
             injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, Spell],
     ) -> Optional[str]:
@@ -471,7 +469,7 @@ class CompilerPhase11:
             self,
             spell: Spell,
             *,
-            occurrence_plan: "OccurrencePlan",
+            occurrence_plan: OccurrencePlan,
             plan: ExecutionPlan,
     ) -> None:
         """
@@ -549,7 +547,7 @@ class CompilerPhase11:
     def _build_execution_plan_variant(
             self,
             *,
-            occurrence_plan: "OccurrencePlan",
+            occurrence_plan: OccurrencePlan,
             injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, Spell],
             plan_variant: str,

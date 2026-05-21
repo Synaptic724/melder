@@ -384,7 +384,7 @@ class CompilerPhase5:
         all_spell_ids: Collection[str] = visible_spell_ids
         dependencies: Dict[str, Set[str]] = {}
         reverse_dependencies: Dict[str, Set[str]] = {}
-        topologies: Dict[str, "SpellLocalTopology"] = {}
+        topologies: Dict[str, SpellLocalTopology] = {}
 
         for spell_id in all_spell_ids:
             deps = snapshot.dependencies.get(spell_id, set())

@@ -12,21 +12,11 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
-from melder.utilities.synchronization.creation_gate_controller import (
-    CreationGateController,
-)
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
-    SpellSystemValidationState,
-)
-from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
-    SpellValidationResult,
-)
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
@@ -35,12 +25,24 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph 
 )
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
     )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
+    from melder.utilities.synchronization.creation_gate_controller import (
+        CreationGateController,
+    )
+    from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
+        SpellSystemValidationState,
+    )
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
+        SpellValidationResult,
+    )
 
 
 

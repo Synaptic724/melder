@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, 
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlan,

@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+        SpellBindingProfile,
+    )
 
 from mypy_extensions import mypyc_attr
 
@@ -22,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
     SpellGeneralProfile,
 )
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
-    SpellBindingProfile,
     ClassBindingProfile,
     CallableBindingProfile,
     InstanceBindingProfile,

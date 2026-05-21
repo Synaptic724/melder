@@ -5,12 +5,12 @@ if TYPE_CHECKING:
         RootResolutionBlueprint,
     )
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
 from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import (
     PatchMapBuilder,
 )

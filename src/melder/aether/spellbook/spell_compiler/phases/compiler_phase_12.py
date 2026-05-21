@@ -3,17 +3,17 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
+        ExecutionPlan,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
-)
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlan,
 )
 from melder.aether.spellbook.spell_compiler.blueprints.phase12_no_overrides_executor import (
     compile_phase12_no_overrides_executor,

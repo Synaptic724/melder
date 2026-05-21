@@ -12,6 +12,9 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_6 import (
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
+    SpellSystemIndex,
+)
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 
@@ -100,7 +103,7 @@ def test_run_frame_wide_requires_phase5_artifacts(
         }
     if not missing_index:
         root_spell._compiler_artifact._spell_system_index_phase5 = (
-            compiler_phase_6_module.SpellSystemIndex()
+            SpellSystemIndex()
         )
 
     with pytest.raises(RuntimeError, match="Phase 5"):
@@ -124,7 +127,7 @@ def test_run_frame_wide_collects_phase4_and_broken_ids(
         "root": object(),
     }
     root_spell._compiler_artifact._spell_system_index_phase5 = (
-        compiler_phase_6_module.SpellSystemIndex()
+        SpellSystemIndex()
     )
     root_spell._compiler_artifact._validation_result_phase4 = "phase4-root"
     other_spell._compiler_artifact._validation_result_phase4 = "phase4-other"
@@ -165,7 +168,7 @@ def test_run_frame_wide_sets_flags_for_all_visible_spells(
         "root": object(),
     }
     root_spell._compiler_artifact._spell_system_index_phase5 = (
-        compiler_phase_6_module.SpellSystemIndex()
+        SpellSystemIndex()
     )
     validation_state = {"state": "frame-ok"}
     _ValidatorStub.next_result = validation_state
