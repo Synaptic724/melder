@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
+
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
@@ -13,7 +16,6 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
 )
 
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
@@ -660,7 +662,7 @@ class CompilerPhase11:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
     ) -> None:
         # ------------------------------------------------------------------
         # Phase 11 - Execution Assembly Plan

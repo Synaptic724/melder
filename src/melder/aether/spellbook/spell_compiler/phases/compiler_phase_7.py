@@ -1,4 +1,7 @@
-from typing import Optional, Set
+from typing import TYPE_CHECKING, Optional, Set
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
 
@@ -8,7 +11,6 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_5 import (
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -51,7 +53,7 @@ class CompilerPhase7:
     def run_frame_wide(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> None:
         """
@@ -74,7 +76,7 @@ class CompilerPhase7:
     def run_local(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> None:
         """
@@ -107,7 +109,7 @@ class CompilerPhase7:
     def _ensure_change_control_ready(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> None:
         """
@@ -183,7 +185,7 @@ class CompilerPhase7:
     def _ensure_change_control_ready_local(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> None:
         """

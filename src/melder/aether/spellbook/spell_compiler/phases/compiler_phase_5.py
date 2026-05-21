@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
+
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
@@ -28,7 +31,6 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 )
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
@@ -53,7 +55,7 @@ class CompilerPhase5:
 
     __slots__ = ()
 
-    def _get_required_spellbook_frame_name(self, spellbook: ISpellbook) -> str:
+    def _get_required_spellbook_frame_name(self, spellbook: Spellbook) -> str:
         """
             Return the non-empty owning frame name for one spellbook or raise.
             
@@ -400,7 +402,7 @@ class CompilerPhase5:
 
     def _filter_root_blueprints_to_owned(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             root_blueprints: Mapping[str, IRootResolutionBlueprint],
     ) -> Dict[str, IRootResolutionBlueprint]:
         """
@@ -434,7 +436,7 @@ class CompilerPhase5:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -571,7 +573,7 @@ class CompilerPhase5:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,

@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
+
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
@@ -45,7 +48,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 if TYPE_CHECKING:
@@ -184,7 +186,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
@@ -284,7 +286,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -332,7 +334,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -379,7 +381,7 @@ class SpellCompiler:
     def run_phase_system_validation(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -425,7 +427,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -471,7 +473,7 @@ class SpellCompiler:
     def run_phase_change_control(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> None:
         """
@@ -510,7 +512,7 @@ class SpellCompiler:
     def run_phase_change_control_local(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: str,
     ) -> None:
         """
@@ -550,7 +552,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: Optional[SpellSystemStates],
     ) -> None:
         """
@@ -692,7 +694,7 @@ class SpellCompiler:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
     ) -> None:
         """
         Run compiler phase 11 (execution plan).
@@ -737,7 +739,7 @@ class SpellCompiler:
 
     def compile_phase12_no_overrides_executor(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
     ) -> None:
@@ -809,7 +811,7 @@ class SpellCompiler:
 
     def compile_phase12_no_overrides_executor_from_payload(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
             no_overrides_payload: Dict[str, Any],

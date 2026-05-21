@@ -14,9 +14,9 @@ from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
-from melder.utilities.interfaces.ispellbook import ISpellbook
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.conduit.spell_space.spell_space import SpellSpace
     from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.meld.meld import Meld
@@ -36,7 +36,7 @@ class IConduit(ICleanable, Protocol):
     __dynamic_environment__: bool
     _aetheric_frame_name: str
     _aetheric_frame: Any
-    _spellbook: ISpellbook
+    _spellbook: Spellbook
     _nexus: Any
     _root_conduit_id: str
 

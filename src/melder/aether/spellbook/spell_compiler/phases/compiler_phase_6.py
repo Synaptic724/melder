@@ -1,4 +1,7 @@
-from typing import Any, Collection, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Set, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
 
 from mypy_extensions import mypyc_attr
 
@@ -94,7 +97,6 @@ from melder.utilities.interfaces.irootresolutionblueprint import (
     IRootResolutionBlueprint,
 )
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
@@ -319,7 +321,7 @@ class CompilerPhase6:
     def run_frame_wide(
             self,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,
@@ -382,7 +384,7 @@ class CompilerPhase6:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             conduit_id: str,
             cancel_event: Optional[CancellationEvent] = None,

@@ -3,6 +3,9 @@ import types
 import typing
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
+
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
@@ -37,7 +40,6 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellbook import ISpellbook
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
@@ -114,7 +116,7 @@ class CompilerPhase3:
 
     def _iter_all_spells(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
     ) -> Generator[tuple[Any, Any], Any, None]:
         """
             Iterate all visible spells via the Spellbook's live spell_id_pool.
@@ -249,7 +251,7 @@ class CompilerPhase3:
     def _resolve_single_by_annotation(
             self,
             spell: ISpell,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
@@ -311,7 +313,7 @@ class CompilerPhase3:
 
     def _resolve_collection_by_annotation(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
@@ -368,7 +370,7 @@ class CompilerPhase3:
     def _resolve_spellmap_default(
             self,
             spell: ISpell,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             dep: SpellSymbolicDependency,
     ) -> Dict[Any, ISpell]:
         """
@@ -554,7 +556,7 @@ class CompilerPhase3:
     def _build_local_frame_dag(
             self,
             spell: ISpell,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             requirements: "SpellRequirements",
             graph: SpellSymbolicGraph,
@@ -676,7 +678,7 @@ class CompilerPhase3:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:

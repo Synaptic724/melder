@@ -5,6 +5,9 @@ from contextlib import contextmanager
 from types import ModuleType, TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Tuple, Callable, Iterable, Dict, Generator
 from mypy_extensions import mypyc_attr
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
 # Melder Imports
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -15,7 +18,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
@@ -104,7 +106,7 @@ class Conduit(Cleanable, IConduit):
     )
     def __init__(
             self,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             configuration: IConfiguration,
             conduit_state: ConduitState,
             aetheric_frame_name: str,
@@ -124,7 +126,7 @@ class Conduit(Cleanable, IConduit):
         Initializes a new Conduit.
 
         Args:
-            spellbook (ISpellbook):
+            spellbook (Spellbook):
                 The Spellbook governing this Conduit.
             configuration (IConfiguration):
                 The locked system configuration.
@@ -189,7 +191,7 @@ class Conduit(Cleanable, IConduit):
 
         self._configuration: IConfiguration = configuration
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
-        self._spellbook: ISpellbook = spellbook
+        self._spellbook: Spellbook = spellbook
         self._nexus: INexus = spellbook._nexus
         self._dev_ops_manager: DevOpsManager = dev_ops_manager
         self._logger: ISafeLogger = self._configure_logger(logger)

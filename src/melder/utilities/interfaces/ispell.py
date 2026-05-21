@@ -12,6 +12,9 @@ from typing import (
     runtime_checkable,
 )
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
+
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
@@ -118,7 +121,7 @@ class ISpell(ICleanable, Protocol):
     dependencies: List[str]
 
     # Spellbook
-    _spellbook: "ISpellbook"
+    _spellbook: "Spellbook"
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline.

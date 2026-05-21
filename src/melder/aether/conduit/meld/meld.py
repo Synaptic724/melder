@@ -3,11 +3,13 @@ from types import TracebackType
 from threading import RLock
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, List, Tuple, Sequence
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spellbook import Spellbook
+
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -68,7 +70,7 @@ class Meld(Cleanable):
     def __init__(
             self,
             creations: Creations,
-            spellbook: ISpellbook,
+            spellbook: Spellbook,
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
             dynamic_environment: bool = False,
@@ -109,7 +111,7 @@ class Meld(Cleanable):
             resolution_conduit_id if resolution_conduit_id is not None else conduit_id
         )
         self._dynamic_environment: bool = bool(dynamic_environment)
-        self._spellbook: ISpellbook = spellbook
+        self._spellbook: Spellbook = spellbook
 
         # Spellbook references (used for resolution)
         self._owned_spells: Dict[SpellIndex, ISpell] = spellbook._spells
@@ -991,7 +993,7 @@ class Meld(Cleanable):
 
     def _get_cached_change_control_manager(
             self,
-            spellbook: Optional[ISpellbook],
+            spellbook: Optional[Spellbook],
     ) -> Optional[ChangeControlManager]:
         """
         Return a cached change-control manager for the spellbook frame.
