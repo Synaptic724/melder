@@ -340,7 +340,22 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
                 raise ReferenceError("Referenced object is no longer alive.")
             return obj
 
-    snapshot = property(get)
+    @property
+    def snapshot(self) -> T:
+        """
+        Return the current live referent using the strict `get()` contract.
+
+        Returns:
+            T:
+                The current live referent.
+
+        Raises:
+            ReferenceError:
+                If the referent is no longer alive.
+            RuntimeError:
+                If this wrapper has already been cleaned.
+        """
+        return self.get()
 
     # ------------------------------------------------------------------
     # CAS / swap
@@ -418,7 +433,29 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         obj = self.get()
         return fn(obj)
 
-    map = transform
+    def map(self, fn: Callable[[T], R]) -> R:
+        """
+        Apply `fn` to the current live referent.
+
+        Contract:
+            - Preserves the historical alias semantics of `map = transform`.
+            - Uses the same strict live-reference contract as `transform()`.
+
+        Args:
+            fn:
+                Callable applied to the live referent.
+
+        Returns:
+            R:
+                Value returned by `fn`.
+
+        Raises:
+            ReferenceError:
+                If the referent is no longer alive.
+            RuntimeError:
+                If this wrapper has already been cleaned.
+        """
+        return self.transform(fn)
 
     # ------------------------------------------------------------------
     # locked() context

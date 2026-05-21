@@ -345,7 +345,38 @@ class SafeLogger(Cleanable):
             groups=groups, system_groups=system_groups, properties=properties,
         )
 
-    warn = warning  # alias
+    def warn(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object | None = None,
+            owner_id: str | None = None,
+            owner_display: str | None = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Compatibility alias for `warning()`.
+
+        Contract:
+            - Preserves the historical `warn` surface without relying on a
+              class-body alias assignment.
+            - Delegates all behavior and metadata handling to `warning()`.
+        """
+        self.warning(
+            msg,
+            method_name,
+            mask=mask,
+            owner=owner,
+            owner_id=owner_id,
+            owner_display=owner_display,
+            groups=groups,
+            system_groups=system_groups,
+            properties=properties,
+        )
 
     def error(
             self,
@@ -432,4 +463,35 @@ class SafeLogger(Cleanable):
             groups=groups, system_groups=system_groups, properties=properties,
         )
 
-    fatal = critical
+    def fatal(
+            self,
+            msg: str,
+            method_name: str,
+            *,
+            mask: bool = False,
+            owner: object | None = None,
+            owner_id: str | None = None,
+            owner_display: str | None = None,
+            groups: Optional[Iterable[str]] = None,
+            system_groups: Optional[Iterable[str]] = None,
+            properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Compatibility alias for `critical()`.
+
+        Contract:
+            - Preserves the historical `fatal` surface without relying on a
+              class-body alias assignment.
+            - Delegates all behavior and metadata handling to `critical()`.
+        """
+        self.critical(
+            msg,
+            method_name,
+            mask=mask,
+            owner=owner,
+            owner_id=owner_id,
+            owner_display=owner_display,
+            groups=groups,
+            system_groups=system_groups,
+            properties=properties,
+        )

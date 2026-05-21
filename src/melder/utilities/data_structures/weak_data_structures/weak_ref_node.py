@@ -234,8 +234,20 @@ class WeakRefNode(Cleanable, Generic[_T]):
             raise DeadReferenceError("WeakRefNode target has already been collected.")
         return obj
 
-    # Alias for SyncWeakRef API
-    snapshot = property(get)
+    @property
+    def snapshot(self) -> _T:
+        """
+        Return the current live referent using the strict `get()` contract.
+
+        Returns:
+            _T:
+                The current live referent.
+
+        Raises:
+            DeadReferenceError:
+                If the target has already been collected.
+        """
+        return self.get()
 
     # ------------------------------------------------------------------
     # Mutating the reference (container must serialize externally)
@@ -325,7 +337,27 @@ class WeakRefNode(Cleanable, Generic[_T]):
         obj = self.get()
         return fn(obj)
 
-    map = transform
+    def map(self, fn: Callable[[_T], Any]) -> Any:
+        """
+        Apply `fn` to the current live referent.
+
+        Contract:
+            - Preserves the historical alias semantics of `map = transform`.
+            - Uses the same strict live-reference contract as `transform()`.
+
+        Args:
+            fn:
+                Callable applied to the live referent.
+
+        Returns:
+            Any:
+                Value returned by `fn`.
+
+        Raises:
+            DeadReferenceError:
+                If the referent has already been collected.
+        """
+        return self.transform(fn)
 
     @overload
     def deref(self, *, strict: Literal[True] = True) -> _T:
