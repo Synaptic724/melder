@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Dict, Optional, Protocol, Set, runtime_checkab
 from types import TracebackType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
@@ -69,7 +68,7 @@ class IAethericFrame(ICleanable, Protocol):
         ...
 
     @property
-    def frame_configuration(self) -> Optional[IAethericFrameConfiguration]:
+    def frame_configuration(self) -> Optional[AethericFrameConfiguration]:
         """
         Return the canonical frame-owned posture object.
         """
@@ -95,7 +94,7 @@ class IAethericFrame(ICleanable, Protocol):
     def freeze_frame_configuration(
             self,
             origin_spellbook_id: Optional[str] = None,
-    ) -> IAethericFrameConfiguration:
+    ) -> AethericFrameConfiguration:
         """
         Freeze the current frame-owned posture object.
         """
@@ -103,8 +102,8 @@ class IAethericFrame(ICleanable, Protocol):
 
     def bind_frame_configuration(
             self,
-            frame_configuration: IAethericFrameConfiguration,
-    ) -> IAethericFrameConfiguration:
+            frame_configuration: AethericFrameConfiguration,
+    ) -> AethericFrameConfiguration:
         """
         Bind one posture object onto this frame and return the canonical owner.
         """

@@ -7,10 +7,9 @@ from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 
 
-class RiftConfiguration(Cleanable, IRiftConfiguration):
+class RiftConfiguration(Cleanable):
     """
     Internal
 
@@ -284,7 +283,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             raise ValueError("RiftConfiguration validation failed.")
         self._frozen = True
 
-    def finalize(self) -> "IRiftConfiguration":
+    def finalize(self) -> RiftConfiguration:
         """
         Fluent
 
@@ -295,7 +294,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             - Does not allocate or clone a detached configuration object.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         self.freeze()
         return self
@@ -316,7 +315,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self.check_cleaned()
         self._consumed = True
 
-    def build(self) -> "IRiftConfiguration":
+    def build(self) -> RiftConfiguration:
         """
         Fluent alias for `finalize()`.
 
@@ -325,11 +324,11 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             - Returns this same configuration instance after finalize/freeze.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         return self.finalize()
 
-    def with_defaults(self) -> "IRiftConfiguration":
+    def with_defaults(self) -> RiftConfiguration:
         """
         Fluent
 
@@ -341,7 +340,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             - Leaves the configuration mutable until `freeze()` or `finalize()`.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         self.load_default_dictionary()
         return self
@@ -349,7 +348,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
     def with_space_type(
             self,
             space_type: Union[RiftSpaceType, str],
-    ) -> "IRiftConfiguration":
+    ) -> RiftConfiguration:
         """
         Fluent
 
@@ -362,7 +361,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
                 instantiate the primary space during Rift creation.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         self.set_property("space_type", space_type)
         return self
@@ -370,7 +369,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
     def with_space_name(
             self,
             space_name: Optional[str],
-    ) -> "IRiftConfiguration":
+    ) -> RiftConfiguration:
         """
         Fluent
 
@@ -381,7 +380,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
                 Optional stable room name.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         self.set_property("space_name", space_name)
         return self
@@ -389,7 +388,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
     def with_auto_activate_on_program(
             self,
             enabled: bool = True,
-    ) -> "IRiftConfiguration":
+    ) -> RiftConfiguration:
         """
         Fluent
 
@@ -400,7 +399,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
                 True to mark the Rift active during programming.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         self.set_property("auto_activate_on_program", enabled)
         return self
@@ -408,7 +407,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
     def with_validation_mode(
             self,
             mode: Union[RiftValidationMode, str],
-    ) -> "IRiftConfiguration":
+    ) -> RiftConfiguration:
         """
         Fluent
 
@@ -419,7 +418,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
                 Validation mode enum or string.
 
         Returns:
-            IRiftConfiguration: This configuration instance.
+            RiftConfiguration: This configuration instance.
         """
         self.set_property("validation_mode", mode)
         return self

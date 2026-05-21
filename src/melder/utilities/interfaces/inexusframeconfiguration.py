@@ -1,7 +1,6 @@
-﻿from typing import Dict, Optional, Protocol, runtime_checkable
+from typing import Dict, Optional, Protocol, runtime_checkable
 
 from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 
@@ -18,7 +17,7 @@ class INexusFrameConfiguration(ICleanable, Protocol):
     Contract:
         - Stores only Nexus frame-authoring inputs, not live frame objects.
         - Uses the narrower frame posture fields that later compile into
-          `IAethericFrameConfiguration`.
+          `AethericFrameConfiguration`.
         - Nexus-managed frames are always dynamic, AI-native, and Rift-enabled.
         - Always carries one root-conduit bootstrap name for rooted creation.
         - Is immutable-by-convention after construction.
@@ -80,7 +79,7 @@ class INexusFrameConfiguration(ICleanable, Protocol):
         """Create the default dynamic Nexus-managed frame posture."""
         ...
 
-    def to_aetheric_frame_configuration(self) -> IAethericFrameConfiguration:
+    def to_aetheric_frame_configuration(self) -> AethericFrameConfiguration:
         """Compile the authored posture into the narrow frame runtime posture."""
         ...
 

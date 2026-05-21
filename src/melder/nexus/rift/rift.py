@@ -18,7 +18,6 @@ from melder.utilities.interfaces.iconduit import IConduit
 
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 
 class Rift(Cleanable, IRift):
@@ -93,7 +92,7 @@ class Rift(Cleanable, IRift):
             self,
             nexus: INexus,
             *,
-            configuration: IRiftConfiguration,
+            configuration: RiftConfiguration,
             rift_gate: Optional[RiftGate] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
@@ -154,7 +153,7 @@ class Rift(Cleanable, IRift):
         self._lock: threading.RLock = threading.RLock()
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
         self._nexus: INexus = nexus
-        self._configuration: IRiftConfiguration = configuration
+        self._configuration: RiftConfiguration = configuration
         self._rift_gate: RiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
         self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
@@ -283,13 +282,13 @@ class Rift(Cleanable, IRift):
         return self._rift_name
 
     @property
-    def configuration(self) -> IRiftConfiguration:
+    def configuration(self) -> RiftConfiguration:
         """
         Purpose:
             Return the finalized per-Rift configuration snapshot.
 
         Returns:
-            IRiftConfiguration: Owned configuration snapshot.
+            RiftConfiguration: Owned configuration snapshot.
         """
         self.check_cleaned()
         return self._configuration

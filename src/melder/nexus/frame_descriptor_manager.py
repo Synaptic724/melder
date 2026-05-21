@@ -17,8 +17,8 @@ from melder.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.utilities.interfaces.iaether import IAether
-from melder.utilities.interfaces.iaethericframeconfiguration import (
-    IAethericFrameConfiguration,
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
 )
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.ispelldescriptorpayload import (
@@ -144,7 +144,7 @@ class FrameDescriptorManager(Cleanable):
     def _refresh_frame_posture_cache(
             self,
             frame_name: str,
-    ) -> Optional[IAethericFrameConfiguration]:
+    ) -> Optional[AethericFrameConfiguration]:
         """
         Refresh cached frame posture from Aether for one frame.
 
@@ -163,7 +163,7 @@ class FrameDescriptorManager(Cleanable):
                 Stable frame name whose posture cache should be refreshed.
 
         Returns:
-            Optional[IAethericFrameConfiguration]:
+            Optional[AethericFrameConfiguration]:
                 Bound frame posture when available, otherwise None.
         """
         self.check_cleaned()
@@ -189,7 +189,7 @@ class FrameDescriptorManager(Cleanable):
     def _get_publishable_frame_posture(
             self,
             frame_name: str,
-    ) -> Optional[IAethericFrameConfiguration]:
+    ) -> Optional[AethericFrameConfiguration]:
         """
         Return a frame posture only when passive Nexus publication is allowed.
 
@@ -208,7 +208,7 @@ class FrameDescriptorManager(Cleanable):
                 Stable frame name whose passive-publication posture is needed.
 
         Returns:
-            Optional[IAethericFrameConfiguration]:
+            Optional[AethericFrameConfiguration]:
                 Publishable frame posture or None when publication should
                 short-circuit.
         """

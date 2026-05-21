@@ -4,9 +4,9 @@ from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 
-from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 
 if TYPE_CHECKING:
+    from melder.nexus.configuration.rift_configuration import RiftConfiguration
     from melder.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
     from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
     from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
@@ -56,7 +56,7 @@ class IRift(ICleanable, Protocol):
         ...
 
     @property
-    def configuration(self) -> IRiftConfiguration:
+    def configuration(self) -> RiftConfiguration:
         """
         Return the configuration object that defines this Rift's runtime policy.
 

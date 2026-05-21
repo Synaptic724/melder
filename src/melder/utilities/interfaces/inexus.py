@@ -10,9 +10,9 @@ from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfigur
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 
 if TYPE_CHECKING:
+    from melder.nexus.configuration.rift_configuration import RiftConfiguration
     from melder.nexus.rift.rift_gate.rift_gate import RiftGate
     from melder.nexus.rift.rift_gate_controller.rift_gate_controller import RiftGateController
     from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
@@ -97,7 +97,7 @@ class INexus(ICleanable, Protocol):
     def create_rift_configuration(
             self,
             profile_name: Optional[str] = None,
-    ) -> IRiftConfiguration:
+    ) -> RiftConfiguration:
         """
         Create and return a new Rift configuration, optionally seeded from a named profile.
         """
@@ -106,7 +106,7 @@ class INexus(ICleanable, Protocol):
     def register_rift_profile(
             self,
             name: str,
-            configuration: IRiftConfiguration,
+            configuration: RiftConfiguration,
     ) -> None:
         """
         Register one reusable Rift configuration profile under a stable name.
@@ -119,7 +119,7 @@ class INexus(ICleanable, Protocol):
     def create_rift(
             self,
             *,
-            configuration: Optional[IRiftConfiguration] = None,
+            configuration: Optional[RiftConfiguration] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
             space_id: Optional[str] = None,

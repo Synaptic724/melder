@@ -7,7 +7,6 @@ from mypy_extensions import mypyc_attr
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
@@ -362,7 +361,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def bind_frame_configuration(
             self,
-            frame_configuration: IAethericFrameConfiguration,
+            frame_configuration: AethericFrameConfiguration,
     ) -> AethericFrameConfiguration:
         """
         Bind one frame-level posture object onto this frame.

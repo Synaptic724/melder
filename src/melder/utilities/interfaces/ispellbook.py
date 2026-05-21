@@ -6,7 +6,6 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import ChangeControlTransactionRequest
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.interfaces.iaethericframeconfiguration import IAethericFrameConfiguration
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -16,6 +15,7 @@ from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispell import ISpell
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.aether.spellbook.spell_compiler.validation.validation_system import (
         SpellValidationSystem,
     )
@@ -56,7 +56,7 @@ class ISpellbook(ICleanable, Protocol):
     _lock: threading.RLock
     _aether: "IAether"
     _aetheric_frame: Optional[str]
-    _aetheric_frame_configuration: Optional[IAethericFrameConfiguration]
+    _aetheric_frame_configuration: Optional[AethericFrameConfiguration]
     _configuration: 'Optional[IConfiguration]'
     _logger: ISafeLogger
     _spell_id_pool: Dict[str, ISpell]

@@ -49,7 +49,6 @@ from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfigur
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.iriftconfiguration import IRiftConfiguration
 
 
 class Nexus(Cleanable, INexus):
@@ -188,7 +187,7 @@ class Nexus(Cleanable, INexus):
             self._rifts_by_id: Dict[str, IRift] = {}
             self._rift_ids_by_name: Dict[str, str] = {}
             self._next_default_rift_number: int = 1
-            self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
+            self._rift_profiles_by_name: Dict[str, RiftConfiguration] = {}
             self._rift_gate_controller: RiftGateController = RiftGateController()
             self._frame_acl_manager: FrameACLManager = FrameACLManager(
                 change_callback=self._on_frame_acl_changed,
@@ -579,7 +578,7 @@ class Nexus(Cleanable, INexus):
     def create_rift_configuration(
             self,
             profile_name: Optional[str] = None,
-    ) -> IRiftConfiguration:
+    ) -> RiftConfiguration:
         """
         Create a per-Rift configuration initialized from Nexus defaults.
 
@@ -602,7 +601,7 @@ class Nexus(Cleanable, INexus):
                 configuration is cloned from the stored profile template.
 
         Returns:
-            IRiftConfiguration: Mutable per-Rift configuration.
+            RiftConfiguration: Mutable per-Rift configuration.
 
         Raises:
             RuntimeError:
@@ -647,7 +646,7 @@ class Nexus(Cleanable, INexus):
     def register_rift_profile(
             self,
             name: str,
-            configuration: IRiftConfiguration,
+            configuration: RiftConfiguration,
     ) -> None:
         """
         Internal
@@ -685,7 +684,7 @@ class Nexus(Cleanable, INexus):
     def create_rift(
             self,
             *,
-            configuration: Optional[IRiftConfiguration] = None,
+            configuration: Optional[RiftConfiguration] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
             space_id: Optional[str] = None,
@@ -2854,7 +2853,7 @@ class Nexus(Cleanable, INexus):
             return
         ref_counts[key] = ref_counts[key] - 1
 
-    def _clone_rift_configuration(self, configuration: IRiftConfiguration) -> RiftConfiguration:
+    def _clone_rift_configuration(self, configuration: RiftConfiguration) -> RiftConfiguration:
         """
         Internal
 

@@ -25,8 +25,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
-from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
-from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
@@ -44,8 +42,6 @@ from melder.utilities.logger.safe_logger import SafeLogger
 
 
 _INTERFACE_MAP: Dict[type, type] = {
-    IAetherConfiguration: AetherConfiguration,
-    IAetherConfigurationBuilder: AetherConfigurationBuilder,
     IAethericFrame: AethericFrame,
     IChangeControlManager: ChangeControlManager,
     IConduit: Conduit,

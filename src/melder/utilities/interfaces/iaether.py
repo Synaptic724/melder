@@ -2,12 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
-from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.iaethericframeconfiguration import (
-    IAethericFrameConfiguration,
-)
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -16,6 +11,9 @@ from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
 
 if TYPE_CHECKING:
+    from melder.aether.aether_configuration import AetherConfiguration
+    from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
+    from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
@@ -88,27 +86,27 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def create_configuration(self) -> IAetherConfiguration:
+    def create_configuration(self) -> AetherConfiguration:
         """
         Create one mutable Aether root configuration.
 
         Returns:
-            IAetherConfiguration:
+            AetherConfiguration:
                 Fresh mutable configuration instance.
         """
         ...
 
-    def create_configuration_builder(self) -> IAetherConfigurationBuilder:
+    def create_configuration_builder(self) -> AetherConfigurationBuilder:
         """
         Create one fluent builder for Aether root configuration assembly.
 
         Returns:
-            IAetherConfigurationBuilder:
+            AetherConfigurationBuilder:
                 New one-shot builder.
         """
         ...
 
-    def configure(self, configuration: IAetherConfiguration) -> None:
+    def configure(self, configuration: AetherConfiguration) -> None:
         """
         Install one root configuration on Aether.
 
@@ -123,7 +121,7 @@ class IAether(ICleanable, Protocol):
 
     def activate(
             self,
-            configuration: Optional[IAetherConfiguration] = None,
+            configuration: Optional[AetherConfiguration] = None,
     ) -> None:
         """
         Activate the installed Aether root configuration.
@@ -209,7 +207,7 @@ class IAether(ICleanable, Protocol):
     def _get_aetheric_frame_configuration(
             self,
             aetheric_frame_name: str = "default",
-    ) -> Optional[IAethericFrameConfiguration]:
+    ) -> Optional[AethericFrameConfiguration]:
         """
         Return the frame-owned AR posture object for one frame.
         """

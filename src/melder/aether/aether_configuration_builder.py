@@ -8,11 +8,10 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iaetherconfigurationbuilder import IAetherConfigurationBuilder
 
 
 @mypyc_attr(native_class=True)
-class AetherConfigurationBuilder(Cleanable, IAetherConfigurationBuilder):
+class AetherConfigurationBuilder(Cleanable):
     """
     One-shot builder for Aether root configuration assembly.
 

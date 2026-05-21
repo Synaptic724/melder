@@ -18,7 +18,6 @@ from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.iaetherconfiguration import IAetherConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -568,7 +567,7 @@ class Aether(Cleanable, IAether):
         self.check_cleaned()
         return AetherConfigurationBuilder()
 
-    def configure(self, configuration: IAetherConfiguration) -> None:
+    def configure(self, configuration: AetherConfiguration) -> None:
         """
         Install one root configuration on Aether.
 
@@ -587,7 +586,7 @@ class Aether(Cleanable, IAether):
 
     def activate(
             self,
-            configuration: Optional[IAetherConfiguration] = None,
+            configuration: Optional[AetherConfiguration] = None,
     ) -> None:
         """
         Activate the installed Aether root configuration.
