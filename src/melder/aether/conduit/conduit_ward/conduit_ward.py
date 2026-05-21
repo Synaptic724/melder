@@ -51,7 +51,7 @@ class ConduitWard(Cleanable):
       by this conduit (pure ownership; no contract semantics here).
     - Root pointer: the **normal conduit** at the top of this lineage tree.
     - Policy state: the active `Policies` enum guiding dynamic/whitelist/block
-      behaviors and eligibility to form contracts.
+      behaviours and eligibility to form contracts.
 
     Core indices (all ward-local)
     -----------------------------
@@ -101,15 +101,15 @@ class ConduitWard(Cleanable):
               that conduit.
             - Resolves the initial policy through `_set_initial_policy(...)`
               so the ward starts from one validated policy value.
-            - Does not create any peer contracts or lineage links by itself;
+            - Does not create any peer contracts or lineage links by themselves;
               those are established later through explicit ward operations.
 
         Args:
             conduit:
-                Owning conduit whose links, lineage, and policy this ward
+                Owning a conduit whose links, lineage, and policy this ward
                 manages.
             dynamic:
-                Whether dynamic link/contract behavior is enabled for this
+                Whether dynamic link/contract behaviour is enabled for this
                 conduit.
             conduit_type:
                 Current conduit lifecycle state (`normal` or `lesser`).
@@ -163,11 +163,11 @@ class ConduitWard(Cleanable):
         """
         Public API
 
-        Idempotently tear down this ward, its contracts, and lesser lineage.
+        Idempotently tears down this ward, its contracts, and lesser lineage.
 
         Behaviour:
           - Best-effort sever all peer contracts (uses `_remove_contract`, which updates Spellbook maps).
-          - Cleanup all lesser conduits and clear lineage references.
+          - Clean up all lesser conduits and clear lineage references.
           - Null internal state and mark cleaned. Logger metadata is nulled last.
 
         Returns:
@@ -367,9 +367,9 @@ class ConduitWard(Cleanable):
             scope_hashes:
                 Optional normalized scope hashes for conflict checks.
             binding_keys:
-                Optional binding keys affected by the request.
+                Optional binding keys are affected by the request.
             contract_keys:
-                Optional contract keys affected by the request.
+                Optional contract keys are affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
         Returns:
@@ -457,9 +457,9 @@ class ConduitWard(Cleanable):
             scope_hashes:
                 Optional normalized scope hashes for conflict checks.
             binding_keys:
-                Optional binding keys affected by the request.
+                Optional binding keys are affected by the request.
             contract_keys:
-                Optional contract keys affected by the request.
+                Optional contract keys are affected by the request.
             metadata:
                 Optional structured metadata for diagnostics.
         Returns:
@@ -500,7 +500,7 @@ class ConduitWard(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is not a lesser conduit.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
             RuntimeError: If no parent conduit link is found (unknown error state).
         """
         self.check_cleaned()
@@ -593,7 +593,7 @@ class ConduitWard(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
             RuntimeError: If the Conduit is a lesser Conduit.
             RuntimeError: If attempting to set to `block_all` or `whitelist_all` while contracts exist.
         """
@@ -652,7 +652,7 @@ class ConduitWard(Cleanable):
             RuntimeError: If attempting to link to a lesser conduit.
             RuntimeError: If attempting to link a conduit to itself.
             RuntimeError: If attempting to link to a conduit in a different frame.
-            RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If a dynamic environment is not enabled.
             RuntimeError: If policy forbids initiating outbound links or target forbids inbound links.
         """
         self.check_cleaned()
@@ -1191,7 +1191,7 @@ class ConduitWard(Cleanable):
         Validation and resolution helper: ensures both a spell ID and its corresponding spell object are available.
 
         Contract:
-            - If `spell` is an Spell instance, this uses `spell.spell_id` directly.
+            - If `spell` is a Spell instance, this uses `spell.spell_id` directly.
             - If `spell` is a raw object, the ID is resolved via `inspect_spell`.
 
         Args:
@@ -1205,7 +1205,7 @@ class ConduitWard(Cleanable):
         Raises:
             ValueError: If neither `spell` nor `spell_id` is provided.
             TypeError: If types are incorrect.
-            RuntimeError: If the spell cannot be resolved or if the provided ID and resolved ID mismatch.
+            RuntimeError: If the spell cannot be resolved, or if the provided ID and resolved ID mismatch.
         """
         if spell is None and spell_id is None:
             self._logger.error(
@@ -1377,7 +1377,7 @@ class ConduitWard(Cleanable):
 
         Args:
             spell (Spell): The spell being granted/received.
-            permissions (Permissions): The permissions applied to this lineage.
+            permissions (Permissions): The permissions are applied to this lineage.
             contract_type (ContractTypes): Role of this Detail from the
                 perspective of the ward that will own it.
             reason (DetailReason): Why this detail is being added.
@@ -1470,7 +1470,7 @@ class ConduitWard(Cleanable):
 
         Args:
             contract (Contract): Contract receiving the restored detail.
-            ward (ConduitWard): Ward whose detail map owns the detail.
+            ward (ConduitWard): Ward, whose detail map owns the detail.
             snapshot (Dict[str, Any]): Snapshot produced by `_snapshot_detail`.
 
         Returns:
@@ -1500,7 +1500,7 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the conduit policy prevents contracting (`block_all`).
             RuntimeError: If the spell doesn't have the required permissions (`create`, `read`).
-            RuntimeError: If the spell is blocked (`Permissions.block`) and policy isn't `whitelist_all`.
+            RuntimeError: If the spell is blocked (`Permissions.block`) and the policy isn't `whitelist_all`.
             RuntimeError: If the spell is not owned by the proposing conduit.
         """
         spell_permissions = self._get_spell_permissions(spell)
@@ -1574,7 +1574,7 @@ class ConduitWard(Cleanable):
         lineage will advance, and lookups will resolve to the new version.
         When a new contract entry is added, cached consumer creations that
         declare a matching SpellContract are invalidated so future melds
-        re-resolve dependencies.
+         resolve dependencies.
 
         Args:
             spell (Spell, optional): The spell object to contract.
@@ -2058,7 +2058,7 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Link all transitive dependencies for a root spell by contracting them
+        Link all transitive dependencies to a root spell by contracting them
         from their owning conduits. Each dependency detail is tagged with
         DetailReason.dependency and source=root_spell_id for reversible teardown.
         """
@@ -2094,7 +2094,7 @@ class ConduitWard(Cleanable):
             if owner_conduit._id == self._id:
                 return
 
-            # Ensure we have a contract; will honor policy gating inside _link.
+            # Ensure we have a contract; will honour policy gating inside _link.
             if not self._find_contract(owner_conduit):
                 self._link(owner_conduit)
             contract = self._find_contract(owner_conduit)
@@ -2151,7 +2151,7 @@ class ConduitWard(Cleanable):
             and any transitive dependencies before linking.
         Contract:
             - Raises if any dependency is missing or ineligible for contracting.
-            - Raises if any contracted binding key would collide with an existing
+            - Raises if any contracted binding key collides with an existing
               contracted spell or another spell in this preflight batch.
             - Does not mutate contracts or spellbooks.
         Args:
@@ -2189,7 +2189,7 @@ class ConduitWard(Cleanable):
                 - Raises when two different spells in the same preflight batch
                   would claim the same contracted binding key.
                 - Reuses the spellbook's own lookup-key assertion for
-                  contracted-key collision checks against current runtime state.
+                  contracted-key collision checks against the current runtime state.
             """
             contract_key = spellbook._make_spell_key(
                 spell.spellframe,
@@ -2346,7 +2346,7 @@ class ConduitWard(Cleanable):
 
         When the contract entry is fully removed, cached consumer creations that
         declare a matching SpellContract are invalidated so future melds
-        re-resolve dependencies.
+         resolve dependencies.
 
         Args:
             spell (Spell, optional): The spell object to remove.
@@ -2477,7 +2477,7 @@ class ConduitWard(Cleanable):
 
         This helper applies the single-spell removal path repeatedly and
         returns a per-spell success/failure report. It preserves the same
-        lineage/source-aware removal semantics and cleanup behavior as the
+        lineage/source-aware removal semantics and cleanup behaviour as the
         single-item API.
 
         Args:
@@ -2532,7 +2532,7 @@ class ConduitWard(Cleanable):
         Removes ALL spells from the contract associated with the specified peer conduit.
 
         Cached consumer creations that declare SpellContract sockets are invalidated
-        so future melds re-resolve dependencies after the bulk removal.
+        so future melds resolve dependencies after the bulk removal.
 
         Args:
             conduit (IConduit, optional): The target peer conduit.
@@ -2995,7 +2995,7 @@ class ConduitWard(Cleanable):
 
         This ensures both sides list the same spells and that every referenced
         spell is present in the **peer's contracted spellbook view**. Contract
-        validation does not consult local spell registries, because contracted
+        validation does not consult local spell registries because contracted
         spell availability is the authoritative signal for shared usage.
 
         Args:
