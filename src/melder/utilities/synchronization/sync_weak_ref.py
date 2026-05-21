@@ -7,7 +7,6 @@ from mypy_extensions import mypyc_attr
 
 # Command Ops imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.general_base.sync import Sync
 
 T = TypeVar("T")
@@ -16,7 +15,7 @@ R = TypeVar("R")
 _OnCollect = Callable[["SyncWeakRef[T]"], None]
 
 @mypyc_attr(native_class=True)
-class SyncWeakRef(Cleanable, Sync, Generic[T]):
+class SyncWeakRef(Sync, Generic[T]):
     """
     SyncWeakRef(target)
     ===================
@@ -72,6 +71,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
     """
 
     __slots__ = [
+            "_cleaned",
             "_weak",
             "_lock",
             "_id",
@@ -113,7 +113,7 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
             referent is collected. This effectively prunes the wrapper
             once the target dies.
         """
-        super().__init__()
+        self._cleaned: bool = False
         self._id = str(ulid.ULID())
         self._on_collect: Optional[_OnCollect] = on_collect
         self._auto_cleanup: bool = auto_cleanup
@@ -123,6 +123,28 @@ class SyncWeakRef(Cleanable, Sync, Generic[T]):
         # an internal callback for phantom-style notification.
         self._weak: weakref.ref[T] = weakref.ref(target, self._weakref_callback)
         self._lock: threading.RLock = threading.RLock()
+
+    @property
+    def cleaned(self) -> bool:
+        """
+        Return whether this wrapper has already been cleaned.
+
+        Returns:
+            bool:
+                True when cleanup has completed.
+        """
+        return self._cleaned
+
+    @property
+    def is_cleaned(self) -> bool:
+        """
+        Alias for `cleaned`.
+
+        Returns:
+            bool:
+                Current cleaned-state flag.
+        """
+        return self._cleaned
 
 
     # ------------------------------------------------------------------

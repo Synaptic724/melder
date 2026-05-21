@@ -6,7 +6,6 @@ from types import SimpleNamespace
 import ulid
 from mypy_extensions import mypyc_attr
 
-from melder.utilities.general_base.cleanable import Cleanable
 from typing import (
     Callable,
     Generic,
@@ -50,7 +49,7 @@ def _is_async_callable(
 
 @mypyc_attr(native_class=True)
 
-class Package(Cleanable, Generic[P, R]):
+class Package(Generic[P, R]):
     """
     A lightweight, thread-safe wrapper around a callable (sync or coroutine).
 
@@ -103,7 +102,7 @@ class Package(Cleanable, Generic[P, R]):
     'HELLO, ALICE.'
     """
 
-    __slots__ = Cleanable.__slots__ + ["_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
+    __slots__ = ["_cleaned", "_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
     __deletable__: ClassVar[list[str]] = ["_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
 
     def __init__(self, func: Callable[..., R], *args: Any, **kwargs: Any):
@@ -118,7 +117,7 @@ class Package(Cleanable, Generic[P, R]):
         Raises:
             TypeError: If func is not a callable or is a coroutine/generator function.
         """
-        super().__init__()
+        self._cleaned: bool = False
         if isinstance(func, Package):
             raise TypeError("Cannot create a Package from an existing Package instance directly. "
                             "Use .curry() or .bind() on the existing instance if you want to extend it, "
@@ -140,6 +139,39 @@ class Package(Cleanable, Generic[P, R]):
         self._kwargs: Dict[str, Any] = dict(kwargs) if kwargs else {}
         self._signature_cache: SimpleNamespace | None = None
         self._frozen: bool = False
+
+    @property
+    def cleaned(self) -> bool:
+        """
+        Return whether this package has already been cleaned.
+
+        Returns:
+            bool:
+                True when cleanup has completed.
+        """
+        return self._cleaned
+
+    @property
+    def is_cleaned(self) -> bool:
+        """
+        Alias for `cleaned`.
+
+        Returns:
+            bool:
+                Current cleaned-state flag.
+        """
+        return self._cleaned
+
+    def check_cleaned(self) -> None:
+        """
+        Raise when this package has already been cleaned.
+
+        Raises:
+            RuntimeError:
+                If the package has already been cleaned.
+        """
+        if self._cleaned:
+            raise RuntimeError("Package has already been cleaned.")
 
     def cleanup(self) -> None:
         """
