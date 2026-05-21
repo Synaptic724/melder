@@ -41,7 +41,7 @@ class MutationFrame(Cleanable):
             self,
             *,
             aetheric_frame_name: str,
-            mutation_research: "MutationResearch",
+            mutation_research: MutationResearch,
             spell_system_states: SpellSystemStates,
             change_control_manager: ChangeControlManager,
     ) -> None:
@@ -110,7 +110,7 @@ class MutationFrame(Cleanable):
         return self._aetheric_frame_name
 
     @property
-    def mutation_research(self) -> "MutationResearch":
+    def mutation_research(self) -> MutationResearch:
         """
         Return the owning mutation-research root.
 

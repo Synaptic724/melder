@@ -1,11 +1,13 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.nexus.frame_descriptor.spell_record import SpellRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 
 class StaticCommandSystem(CommandSystem):

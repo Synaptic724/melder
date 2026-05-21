@@ -41,7 +41,7 @@ class MutationConduit(Cleanable):
             self,
             *,
             conduit: Conduit,
-            mutation_research: "MutationResearch",
+            mutation_research: MutationResearch,
             spell_system_states: SpellSystemStates,
             change_control_manager: ChangeControlManager,
     ) -> None:
@@ -110,7 +110,7 @@ class MutationConduit(Cleanable):
         return self._conduit
 
     @property
-    def mutation_research(self) -> "MutationResearch":
+    def mutation_research(self) -> MutationResearch:
         """
         Return the owning mutation-research root.
 
