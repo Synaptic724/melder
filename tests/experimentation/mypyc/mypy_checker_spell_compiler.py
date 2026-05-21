@@ -12,16 +12,21 @@ from setuptools import Extension, find_packages, setup
 
 
 COMPILED_TOP_LEVEL_DIRECTORIES: set[str] = {
-    "aether",
-    "utilities",
+    "blueprints",
+    "dag",
+    "phases",
+    "profiles",
+    "spell_examiner",
+    "spell_requirements_finder",
+    "symbolic_graph",
+    "system",
+    "topology",
+    "validation",
 }
 
 EXCLUDED_DIRECTORY_NAMES: set[str] = {
     "tests",
     "__pycache__",
-    "crystallizer",
-    "mutation_research",
-    "nexus",
 }
 
 SKIPPED_TYPECHECK_MODULES: set[str] = {
@@ -946,13 +951,13 @@ class MypycReporter:
 
 
 build = MypycBuild(
-    source_root="src",
-    package_root="melder",
+    source_root="src/melder/aether/spellbook",
+    package_root="spell_compiler",
     compiled_top_level_directories=COMPILED_TOP_LEVEL_DIRECTORIES,
     excluded_directory_names=EXCLUDED_DIRECTORY_NAMES,
     skipped_typecheck_modules=SKIPPED_TYPECHECK_MODULES,
     forbidden_core_import_roots=FORBIDDEN_CORE_IMPORT_ROOTS,
-    include_package_root_modules=False,
+    include_package_root_modules=True,
 )
 
 compiled_modules = build.collect_python_modules()
