@@ -42,13 +42,12 @@ if TYPE_CHECKING:
         ChangeControlTransactionRequest,
     )
 
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 @mypyc_attr(native_class=True)
-class ChangeControlManager(Cleanable, IChangeControlManager):
+class ChangeControlManager(Cleanable):
     """
     Change-control registry for an Aetheric Frame.
 

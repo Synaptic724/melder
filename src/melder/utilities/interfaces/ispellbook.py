@@ -10,7 +10,6 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispell import ISpell
 
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.validation_system import (
         SpellValidationSystem,
     )
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @runtime_checkable
 class ISpellbook(ICleanable, Protocol):
@@ -65,7 +65,7 @@ class ISpellbook(ICleanable, Protocol):
     _nexus: Any
     _active_change_request: Optional[ChangeControlTransactionRequest]
 
-    _spell_system_states: "ISpellSystemStates"
+    _spell_system_states: SpellSystemStates
 
     # ------------------------------------------------------------------
     # Properties

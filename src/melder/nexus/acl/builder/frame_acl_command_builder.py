@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
@@ -7,13 +7,14 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
-from melder.utilities.interfaces.iframeaclcommandbuilder import IFrameACLCommandBuilder
 from melder.utilities.interfaces.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
+if TYPE_CHECKING:
+    from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
 
-class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
+
+class FrameACLCommandBuilder(Cleanable):
     """
     Purpose:
         Provide fluent authoring for one active command-family ACL draft.
@@ -42,7 +43,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         "_frame_acl_builder",
     ]
 
-    def __init__(self, frame_acl_builder: IFrameACLBuilder) -> None:
+    def __init__(self, frame_acl_builder: FrameACLBuilder) -> None:
         """
         Initialize one fluent command ACL builder.
 
@@ -56,14 +57,15 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
 
         Raises:
             TypeError:
-                If `frame_acl_builder` does not satisfy `IFrameACLBuilder`.
+                If `frame_acl_builder` does not satisfy `FrameACLBuilder`.
         """
         super().__init__()
-        if not isinstance(frame_acl_builder, IFrameACLBuilder):
-            raise TypeError("frame_acl_builder must satisfy IFrameACLBuilder.")
+        from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder as _FrameACLBuilder
+        if not isinstance(frame_acl_builder, _FrameACLBuilder):
+            raise TypeError("frame_acl_builder must satisfy FrameACLBuilder.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._frame_acl_builder: IFrameACLBuilder = frame_acl_builder
+        self._frame_acl_builder: FrameACLBuilder = frame_acl_builder
 
     def cleanup(self) -> None:
         """
@@ -110,7 +112,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         with self._lock:
             return self._frame_acl_builder._require_active_command_configuration()
 
-    def use_profile(self, profile_name: str) -> "IFrameACLCommandBuilder":
+    def use_profile(self, profile_name: str) -> FrameACLCommandBuilder:
         """
         Replace the base command profile on the active draft.
 
@@ -129,7 +131,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
     def use_precision_profile(
             self,
             profile_name: Optional[str],
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Replace or clear the precision command profile on the active draft.
 
@@ -153,7 +155,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Upsert one frame-family rule on the active draft.
 
@@ -185,7 +187,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Upsert one conduit-family rule on the active draft.
 
@@ -217,7 +219,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Upsert one spell-family rule on the active draft.
 
@@ -249,7 +251,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Upsert one member-family rule on the active draft.
 
@@ -276,7 +278,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions=conditions,
         )
 
-    def allow_frame_enable(self) -> "IFrameACLCommandBuilder":
+    def allow_frame_enable(self) -> FrameACLCommandBuilder:
         """
         Allow command access to the frame in the active draft.
 
@@ -285,7 +287,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         return self.set_frame_operation("enable", allow=True)
 
-    def deny_frame_enable(self) -> "IFrameACLCommandBuilder":
+    def deny_frame_enable(self) -> FrameACLCommandBuilder:
         """
         Deny command access to the frame in the active draft.
 
@@ -294,7 +296,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         return self.set_frame_operation("enable", allow=False)
 
-    def allow_conduit_enable(self) -> "IFrameACLCommandBuilder":
+    def allow_conduit_enable(self) -> FrameACLCommandBuilder:
         """
         Allow command access to conduits in the active draft.
 
@@ -303,7 +305,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         return self.set_conduit_operation("enable", allow=True)
 
-    def deny_conduit_enable(self) -> "IFrameACLCommandBuilder":
+    def deny_conduit_enable(self) -> FrameACLCommandBuilder:
         """
         Deny command access to conduits in the active draft.
 
@@ -312,7 +314,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         return self.set_conduit_operation("enable", allow=False)
 
-    def allow_spell_enable(self) -> "IFrameACLCommandBuilder":
+    def allow_spell_enable(self) -> FrameACLCommandBuilder:
         """
         Allow command access to spells in the active draft.
 
@@ -321,7 +323,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         return self.set_spell_operation("enable", allow=True)
 
-    def deny_spell_enable(self) -> "IFrameACLCommandBuilder":
+    def deny_spell_enable(self) -> FrameACLCommandBuilder:
         """
         Deny command access to spells in the active draft.
 
@@ -330,7 +332,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
         """
         return self.set_spell_operation("enable", allow=False)
 
-    def allow_member_read_attribute(self) -> "IFrameACLCommandBuilder":
+    def allow_member_read_attribute(self) -> FrameACLCommandBuilder:
         """
         Allow attribute reads for any member name in the active draft.
 
@@ -343,7 +345,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def deny_member_read_attribute(self) -> "IFrameACLCommandBuilder":
+    def deny_member_read_attribute(self) -> FrameACLCommandBuilder:
         """
         Deny attribute reads for any member name in the active draft.
 
@@ -356,7 +358,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def allow_member_invoke_method(self) -> "IFrameACLCommandBuilder":
+    def allow_member_invoke_method(self) -> FrameACLCommandBuilder:
         """
         Allow method invocation for any member name in the active draft.
 
@@ -369,7 +371,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def deny_member_invoke_method(self) -> "IFrameACLCommandBuilder":
+    def deny_member_invoke_method(self) -> FrameACLCommandBuilder:
         """
         Deny method invocation for any member name in the active draft.
 
@@ -382,7 +384,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def allow_member_write_attribute(self) -> "IFrameACLCommandBuilder":
+    def allow_member_write_attribute(self) -> FrameACLCommandBuilder:
         """
         Allow attribute writes for any member name in the active draft.
 
@@ -395,7 +397,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def deny_member_write_attribute(self) -> "IFrameACLCommandBuilder":
+    def deny_member_write_attribute(self) -> FrameACLCommandBuilder:
         """
         Deny attribute writes for any member name in the active draft.
 
@@ -408,7 +410,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def allow_member_dunder_access(self) -> "IFrameACLCommandBuilder":
+    def allow_member_dunder_access(self) -> FrameACLCommandBuilder:
         """
         Allow dunder-member access for any member name in the active draft.
 
@@ -421,7 +423,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def deny_member_dunder_access(self) -> "IFrameACLCommandBuilder":
+    def deny_member_dunder_access(self) -> FrameACLCommandBuilder:
         """
         Deny dunder-member access for any member name in the active draft.
 
@@ -434,7 +436,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             conditions={"pattern": "*"},
         )
 
-    def remove_member_rule(self, rule_name: str) -> "IFrameACLCommandBuilder":
+    def remove_member_rule(self, rule_name: str) -> FrameACLCommandBuilder:
         """
         Remove one member-family rule from the active draft.
 
@@ -486,7 +488,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             allow: bool,
             rule_name: Optional[str],
             conditions: Optional[Dict[str, object]],
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Upsert one typed rule into the supplied ruleset.
 
@@ -532,7 +534,7 @@ class FrameACLCommandBuilder(Cleanable, IFrameACLCommandBuilder):
             self,
             ruleset: IFrameACLRuleSet,
             rule_name: str,
-    ) -> "IFrameACLCommandBuilder":
+    ) -> FrameACLCommandBuilder:
         """
         Remove one named rule from the supplied ruleset.
 

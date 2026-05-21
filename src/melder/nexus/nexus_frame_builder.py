@@ -4,9 +4,10 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 
 from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
+if TYPE_CHECKING:
+    from melder.nexus.nexus_frame_manager import NexusFrameManager
 
 
 class NexusFrameBuilder(Cleanable):
@@ -45,7 +46,7 @@ class NexusFrameBuilder(Cleanable):
     def __init__(
             self,
             *,
-            manager: INexusFrameManager,
+            manager: NexusFrameManager,
             frame_name: str,
     ) -> None:
         """
@@ -76,7 +77,7 @@ class NexusFrameBuilder(Cleanable):
             raise TypeError("manager cannot be None.")
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        self._manager: INexusFrameManager = manager
+        self._manager: NexusFrameManager = manager
         self._frame_name: str = frame_name
         self._system_state: SystemState = SystemState.dynamic
         self._ai_native_enabled: Optional[bool] = True

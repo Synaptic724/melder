@@ -8,7 +8,6 @@ from melder.utilities.interfaces.iframeaclconfiguration import IFrameACLConfigur
 
 
 from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
-from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
     from melder.nexus.rift.rift_gate_controller.rift_gate_controller import RiftGateController
     from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
     from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+    from melder.nexus.nexus_frame_manager import NexusFrameManager
 
 @runtime_checkable
 class INexus(ICleanable, Protocol):
@@ -61,7 +61,7 @@ class INexus(ICleanable, Protocol):
         ...
 
     @property
-    def frame_manager(self) -> INexusFrameManager:
+    def frame_manager(self) -> NexusFrameManager:
         """
         Return the Nexus-owned frame authoring and topology manager.
         """

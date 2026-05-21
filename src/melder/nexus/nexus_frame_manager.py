@@ -15,10 +15,9 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.inexus import INexus
-from melder.utilities.interfaces.inexusframemanager import INexusFrameManager
 from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
 
-class NexusFrameManager(Cleanable, INexusFrameManager):
+class NexusFrameManager(Cleanable):
     """
     Authoring and topology facade for Nexus-managed frames.
 

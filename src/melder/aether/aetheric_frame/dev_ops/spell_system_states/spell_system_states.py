@@ -18,9 +18,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
@@ -43,7 +41,7 @@ def _get_structural_risk_manager_callback(
         return None
     return callback
 @mypyc_attr(native_class=True)
-class SpellSystemStates(Cleanable, ISpellSystemStates):
+class SpellSystemStates(Cleanable):
     """
     Per-frame registry for all SpellSystemState instances.
 
@@ -110,7 +108,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         # Version-id keyed topologies captured during Phase 3.
         self._local_topologies: Dict[str, 'SpellLocalTopology'] = {}
         # Per-conduit resolution state for Phases 5-7.
-        self._resolution_by_conduit_id: Optional[Dict[str, IConduitResolutionState]] = {}
+        self._resolution_by_conduit_id: Optional[Dict[str, ConduitResolutionState]] = {}
         # Spellbook-scoped indices for collection dependencies (list[Frame]).
         self._index_owner_spellbook_id: Optional[Dict[str, str]] = {}
         self._collection_frames_by_index: Optional[Dict[str, Set[str]]] = {}
@@ -655,7 +653,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     # ------------------------------------------------------------------
     # Per-conduit resolution state (Phases 5-7)
     # ------------------------------------------------------------------
-    def get_conduit_resolution_state(self, conduit_id: str) -> Optional[IConduitResolutionState]:
+    def get_conduit_resolution_state(self, conduit_id: str) -> Optional[ConduitResolutionState]:
         """
         Retrieve the per-conduit resolution state for a given conduit id.
 
@@ -667,7 +665,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             conduit_id:
                 Conduit identifier used as the resolution-state key.
         Returns:
-            Optional[IConduitResolutionState]:
+            Optional[ConduitResolutionState]:
                 The resolution state if present; otherwise None.
         """
         self.check_cleaned()
@@ -678,7 +676,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 return None
             return self._resolution_by_conduit_id.get(conduit_id)
 
-    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> IConduitResolutionState:
+    def get_or_create_conduit_resolution_state(self, conduit_id: str) -> ConduitResolutionState:
         """
         Retrieve or create the per-conduit resolution state for a conduit id.
 
@@ -867,7 +865,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 except Exception:
                     pass
 
-    def iter_conduit_resolution_states(self) -> Iterator[IConduitResolutionState]:
+    def iter_conduit_resolution_states(self) -> Iterator[ConduitResolutionState]:
         """
         Iterate over a snapshot of all registered per-conduit resolution states.
 
@@ -876,7 +874,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         `ConduitResolutionState` objects are still the owned live instances.
 
         Returns:
-            Iterator[IConduitResolutionState]:
+            Iterator[ConduitResolutionState]:
                 Snapshot iterator over registered resolution states.
         """
         self.check_cleaned()

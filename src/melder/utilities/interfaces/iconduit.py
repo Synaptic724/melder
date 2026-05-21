@@ -7,7 +7,6 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
@@ -1141,7 +1140,7 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Conduit Resolution Validation API
     # ------------------------------------------------------------------
-    def get_resolution_state(self) -> Optional['IConduitResolutionState']:
+    def get_resolution_state(self) -> Optional[ConduitResolutionState]:
         """
         Public API
 
@@ -1166,7 +1165,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional['IConduitResolutionState']:
+    def validate_resolution(self, *, refresh_structural: bool = True) -> Optional[ConduitResolutionState]:
         """
         Public API
 

@@ -1,13 +1,11 @@
 import logging
 from typing import TYPE_CHECKING, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.interfaces.iconduit import IConduit
 
 if TYPE_CHECKING:
@@ -18,6 +16,9 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
     from melder.mutation_research.mutation_research import MutationResearch
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -151,7 +152,7 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> IChangeControlManager:
+    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> ChangeControlManager:
         """
         Return the frame-owned change-control manager for one frame.
 
@@ -160,7 +161,7 @@ class IAether(ICleanable, Protocol):
                 Frame name whose change-control manager is requested.
 
         Returns:
-            IChangeControlManager: Frame-owned change-control manager.
+            ChangeControlManager: Frame-owned change-control manager.
         """
         ...
 
@@ -225,7 +226,7 @@ class IAether(ICleanable, Protocol):
     def _get_spell_system_states(
             self,
             aetheric_frame_name: str = "default",
-    ) -> ISpellSystemStates:
+    ) -> SpellSystemStates:
         """
         Return the frame-owned spell-system-state registry for one frame.
         """

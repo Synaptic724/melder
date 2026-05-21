@@ -29,7 +29,6 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
@@ -37,7 +36,6 @@ from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.ispellspace import ISpellSpace
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
@@ -45,7 +43,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     IAethericFrame: AethericFrame,
     IChangeControlManager: ChangeControlManager,
     IConduit: Conduit,
-    IConduitResolutionState: ConduitResolutionState,
     IConduitWard: ConduitWard,
     IConfiguration: SpellbookConfiguration,
     ISafeLogger: SafeLogger,
@@ -53,7 +50,6 @@ _INTERFACE_MAP: Dict[type, type] = {
     ISpellbook: Spellbook,
     ISpellIndex: SpellIndex,
     ISpellSpace: SpellSpace,
-    ISpellSystemStates: SpellSystemStates,
 }
 
 

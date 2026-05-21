@@ -1,11 +1,12 @@
-﻿import threading
+import threading
 from typing import TYPE_CHECKING, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 if TYPE_CHECKING:
     from melder.mutation_research.mutation_research import MutationResearch
@@ -42,8 +43,8 @@ class MutationFrame(Cleanable):
             *,
             aetheric_frame_name: str,
             mutation_research: "MutationResearch",
-            spell_system_states: ISpellSystemStates,
-            change_control_manager: IChangeControlManager,
+            spell_system_states: SpellSystemStates,
+            change_control_manager: ChangeControlManager,
     ) -> None:
         """
         Initialize one placeholder mutation frame.
@@ -64,8 +65,8 @@ class MutationFrame(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._aetheric_frame_name: str = aetheric_frame_name
         self._mutation_research = mutation_research
-        self._spell_system_states: ISpellSystemStates = spell_system_states
-        self._change_control_manager: IChangeControlManager = change_control_manager
+        self._spell_system_states: SpellSystemStates = spell_system_states
+        self._change_control_manager: ChangeControlManager = change_control_manager
 
     def cleanup(self) -> None:
         """
@@ -121,23 +122,23 @@ class MutationFrame(Cleanable):
         return self._mutation_research
 
     @property
-    def spell_system_states(self) -> ISpellSystemStates:
+    def spell_system_states(self) -> SpellSystemStates:
         """
         Return the referenced spell-system-states surface.
 
         Returns:
-            ISpellSystemStates: Referenced spell-system-states surface.
+            SpellSystemStates: Referenced spell-system-states surface.
         """
         self.check_cleaned()
         return self._spell_system_states
 
     @property
-    def change_control_manager(self) -> IChangeControlManager:
+    def change_control_manager(self) -> ChangeControlManager:
         """
         Return the referenced change-control manager.
 
         Returns:
-            IChangeControlManager: Referenced change-control manager.
+            ChangeControlManager: Referenced change-control manager.
         """
         self.check_cleaned()
         return self._change_control_manager

@@ -12,8 +12,6 @@ from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.icreation import ICreation
-from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -24,6 +22,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
@@ -132,7 +133,7 @@ class Meld(Cleanable):
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
         self._spell_id_resolution_cache: Dict[str, ISpell] = {}
         self._max_resolution_cache_size: int = 2048
-        self._change_control_manager_by_frame: Dict[str, IChangeControlManager] = {}
+        self._change_control_manager_by_frame: Dict[str, ChangeControlManager] = {}
 
         # Optional hook map pulled from Configuration (via Conduit).
         # This is stored by reference when provided.
@@ -991,7 +992,7 @@ class Meld(Cleanable):
     def _get_cached_change_control_manager(
             self,
             spellbook: Optional[ISpellbook],
-    ) -> Optional[IChangeControlManager]:
+    ) -> Optional[ChangeControlManager]:
         """
         Return a cached change-control manager for the spellbook frame.
 
@@ -1005,7 +1006,7 @@ class Meld(Cleanable):
                 Spellbook owning the spell currently being validated.
 
         Returns:
-            Optional[IChangeControlManager]:
+            Optional[ChangeControlManager]:
                 Change-control manager for the frame, or None.
         """
         if spellbook is None:
@@ -1023,7 +1024,7 @@ class Meld(Cleanable):
         if aether is None:
             return None
 
-        manager: Optional[IChangeControlManager] = None
+        manager: Optional[ChangeControlManager] = None
         try:
             manager = aether._get_change_control_manager(frame_name)
         except Exception:
@@ -1328,7 +1329,7 @@ class Meld(Cleanable):
     def _get_resolution_validity(
             self,
             spell: ISpell,
-            resolution_state: Optional[IConduitResolutionState],
+            resolution_state: Optional[ConduitResolutionState],
     ) -> Optional[SpellValidity]:
         """
         Return the effective conduit-local validity for this spell.

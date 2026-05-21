@@ -10,7 +10,6 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnosticSeverity,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
         SpellStateChangeReason,
@@ -37,7 +36,7 @@ def _get_resolution_risk_manager_callback(
     return callback
 
 @mypyc_attr(native_class=True)
-class ConduitResolutionState(Cleanable, IConduitResolutionState):
+class ConduitResolutionState(Cleanable):
     """
     Per-conduit resolution validity container.
 

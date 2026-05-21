@@ -3,7 +3,6 @@ from types import TracebackType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
@@ -54,7 +53,7 @@ class IAethericFrame(ICleanable, Protocol):
         ...
 
     @property
-    def spell_system_states(self) -> ISpellSystemStates:
+    def spell_system_states(self) -> SpellSystemStates:
         """
         Return the frame-owned `SpellSystemStates` registry.
         """

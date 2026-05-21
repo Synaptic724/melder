@@ -27,7 +27,6 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 
-from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -47,6 +46,7 @@ if TYPE_CHECKING:
         SpellRequirements,
     )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import SpellCompilerArtifact
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.aether.conduit.creations.creations import Creations
 
 @runtime_checkable
@@ -150,7 +150,7 @@ class ISpell(ICleanable, Protocol):
     _activation_hooks: Optional[List[Callable[..., Any]]]
     _post_hooks: Optional[List[Callable[..., Any]]]
 
-    _spell_system_states: ISpellSystemStates
+    _spell_system_states: SpellSystemStates
     _key: Tuple[str, str]
 
     # ------------------------------------------------------------------

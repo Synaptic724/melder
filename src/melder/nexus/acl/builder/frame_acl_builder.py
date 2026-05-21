@@ -1,6 +1,6 @@
 import json
 import threading
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.builder.frame_acl_command_builder import (
@@ -23,15 +23,13 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclbuilder import IFrameACLBuilder
-from melder.utilities.interfaces.iframeaclcommandbuilder import IFrameACLCommandBuilder
 from melder.utilities.interfaces.iframeaclcommandconfiguration import IFrameACLCommandConfiguration
-from melder.utilities.interfaces.iframeaclcodegenbuilder import IFrameACLCodegenBuilder
 from melder.utilities.interfaces.iframeaclcodegenconfiguration import IFrameACLCodegenConfiguration
-from melder.utilities.interfaces.iframeaclcontainer import IFrameACLContainer
 from melder.utilities.interfaces.iframeaclprofile import IFrameACLProfile
-from melder.utilities.interfaces.iframeaclviewbuilder import IFrameACLViewBuilder
 from melder.utilities.interfaces.iframeaclviewconfiguration import IFrameACLViewConfiguration
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.frame_acl_container import FrameACLContainer
 
 FrameACLDraftConfiguration = Optional[
     Union[
@@ -47,7 +45,7 @@ FrameACLCommittedConfiguration = Union[
 ]
 
 
-class FrameACLBuilder(Cleanable, IFrameACLBuilder):
+class FrameACLBuilder(Cleanable):
     """
     Purpose:
         Provide the frame-local mutable ACL authoring surface for one
@@ -84,7 +82,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
         "_draft_configuration",
     ]
 
-    def __init__(self, container: IFrameACLContainer) -> None:
+    def __init__(self, container: FrameACLContainer) -> None:
         """
         Initialize one frame-local ACL builder.
 
@@ -105,7 +103,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             raise TypeError("container cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._container: IFrameACLContainer = container
+        self._container: FrameACLContainer = container
         self._change_active: bool = False
         self._draft_family_name: Optional[str] = None
         self._draft_contract_name: Optional[str] = None
@@ -248,7 +246,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             *,
             contract_name: str = "default",
             reason: str = "builder_draft",
-    ) -> IFrameACLViewBuilder:
+    ) -> FrameACLViewBuilder:
         """
         Start one view-family draft and return its fluent builder.
 
@@ -273,7 +271,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             *,
             contract_name: str = "default",
             reason: str = "builder_draft",
-    ) -> IFrameACLCommandBuilder:
+    ) -> FrameACLCommandBuilder:
         """
         Start one command-family draft and return its fluent builder.
 
@@ -298,7 +296,7 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             *,
             contract_name: str = "default",
             reason: str = "builder_draft",
-    ) -> IFrameACLCodegenBuilder:
+    ) -> FrameACLCodegenBuilder:
         """
         Start one codegen-family draft and return its fluent builder.
 
