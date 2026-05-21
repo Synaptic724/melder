@@ -6,7 +6,7 @@ from typing import Literal, Optional, Type
 from mypy_extensions import mypyc_attr
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=False)
 class Cleanable(ABC):
     """
     Abstract base class for objects that own explicit cleanup lifecycle.
@@ -99,3 +99,90 @@ class Cleanable(ABC):
           teardown completes.
         """
         raise NotImplementedError("Subclasses must implement async_cleanup().")
+
+    class _CleanupContext:
+        """
+        Standalone context manager that guarantees one cleanup call on exit.
+
+        Contract:
+            - Does not rely on the owner's own `__enter__` / `__exit__`.
+            - Calls `owner.cleanup()` at most once.
+            - Drops the strong owner reference after exit.
+            - Never suppresses exceptions raised by the caller's block.
+        """
+        __slots__ = ("_owner", "_cleaned", "_lock")
+
+        _cleaned: bool
+
+        def __init__(self, owner: "Cleanable") -> None:
+            """
+            Bind the helper context to one cleanable owner.
+
+            Contract:
+            - Stores one strong owner reference until exit.
+            - Tracks whether cleanup has already been triggered so exit remains
+              idempotent.
+            """
+            self._owner: Optional["Cleanable"] = owner
+            self._cleaned: bool = False
+            self._lock: threading.RLock = threading.RLock()
+
+        def __enter__(self) -> "Cleanable":
+            """
+            Enter the cleanup helper context and return the owner.
+
+            Returns:
+                Cleanable:
+                    The owner object protected by this helper.
+            """
+            self._lock.acquire()
+            if self._owner is None:
+                raise RuntimeError("Cleanup context no longer owns a live object.")
+            return self._owner
+
+        def __exit__(
+                self,
+                exc_type: Optional[Type[BaseException]],
+                exc: Optional[BaseException],
+                tb: Optional[TracebackType],
+        ) -> Literal[False]:
+            """
+            Exit the cleanup helper context and trigger owner cleanup once.
+
+            Returns:
+                Literal[False]:
+                    Always False so caller exceptions are never suppressed.
+            """
+            # Guarantee cleanup only once.
+            try:
+                owner = self._owner
+                if owner is not None and not self._cleaned:
+                    self._cleaned = True
+                    try:
+                        owner.cleanup()
+                    except Exception:
+                        pass
+
+                # Explicitly drop the reference so nothing is leaked.
+                self._owner = None
+
+                # Do NOT suppress user exceptions.
+                return False
+            finally:
+                self._lock.release()
+
+
+    def using_cleanup(self) -> "_CleanupContext":
+        """
+        Return a helper context manager that guarantees `cleanup()` on exit.
+
+        Contract:
+        - Independent of any context-manager behavior implemented by the owner.
+        - Intended for callers that want deterministic cleanup without relying
+          on the object's own `__enter__` / `__exit__`.
+
+        Returns:
+            Cleanable._CleanupContext:
+                Helper context manager bound to this object.
+        """
+        return Cleanable._CleanupContext(self)

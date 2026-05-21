@@ -1,8 +1,9 @@
-import logging
+﻿import logging
 from threading import RLock
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
 import ulid
+from mypy_extensions import mypyc_attr
 
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
@@ -12,6 +13,7 @@ from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -26,7 +28,8 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
-class Aether:
+@mypyc_attr(native_class=True)
+class Aether(Cleanable):
     """
     The global singleton root that owns all `AethericFrame` instances.
 
@@ -60,23 +63,6 @@ class Aether:
     _instance: ClassVar[Optional["Aether"]] = None
     _lock: ClassVar[RLock] = RLock()
     _initialized: ClassVar[bool] = False
-    __slots__ = [
-        "_cleaned",
-        "_id",
-        "_configuration",
-        "_configured",
-        "_activated",
-        "_logger",
-        "_aetheric_frames",
-        "_default_frame",
-        "_aether_utility_system",
-        "_aetheric_frames",
-        "_default_frame",
-        "_crystallizer",
-        "_mutation_research",
-        "_nexus",
-    ]
-    _cleaned: bool
 
     def __new__(cls, *args: object, **kwargs: object) -> "Aether":
         """
@@ -97,39 +83,6 @@ class Aether:
                     cls._instance = instance
         assert instance is not None
         return instance
-
-    @property
-    def cleaned(self) -> bool:
-        """
-        Return whether this singleton has already been cleaned.
-
-        Returns:
-            bool:
-                True when cleanup has completed.
-        """
-        return self._cleaned
-
-    @property
-    def is_cleaned(self) -> bool:
-        """
-        Alias for `cleaned`.
-
-        Returns:
-            bool:
-                Current cleaned-state flag.
-        """
-        return self._cleaned
-
-    def check_cleaned(self) -> None:
-        """
-        Raise when this singleton has already been cleaned.
-
-        Raises:
-            RuntimeError:
-                If cleanup has already completed.
-        """
-        if self._cleaned:
-            raise RuntimeError("Aether has already been cleaned.")
 
     def __init__(self) -> None:
         """
@@ -154,7 +107,7 @@ class Aether:
         """
         if not Aether._initialized:
             try:
-                self._cleaned = False
+                super().__init__()
                 self._id: str = str(ulid.ULID())
                 self._configuration: Optional[AetherConfiguration] = None
                 self._configured: bool = False
