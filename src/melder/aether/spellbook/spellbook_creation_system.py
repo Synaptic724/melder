@@ -1,5 +1,5 @@
 ﻿import threading
-from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Type
 from mypy_extensions import mypyc_attr
 
 from melder.aether.conduit.conduit import Conduit
@@ -1324,14 +1324,14 @@ class SpellbookCreationSystem(Cleanable):
         )
 
     @staticmethod
-    def _collect_broken_spells(spells: Sequence[Spell]) -> List[Spell]:
+    def _collect_broken_spells(spells: Iterable[Spell]) -> List[Spell]:
         """
         Purpose:
             Collect spells that resolve as broken from a spell sequence.
         Contract:
             - Treats `is_broken` access errors as broken for safety parity.
         Args:
-            spells: Sequence of spells to inspect.
+            spells: Iterable of spells to inspect.
         Returns:
             List[Spell]: Spells considered broken.
         """
@@ -1792,11 +1792,11 @@ class SpellbookCreationSystem(Cleanable):
                 return
 
             for spell_id in spell_ids:
-                spell = spellbook._spell_id_pool.get(spell_id, None)
-                if spell is None:
+                target_spell = spellbook._spell_id_pool.get(spell_id, None)
+                if target_spell is None:
                     continue
                 try:
-                    compiler_system.cleanup_phase_artifacts(spell)
+                    compiler_system.cleanup_phase_artifacts(target_spell)
                 except Exception:
                     pass
         finally:

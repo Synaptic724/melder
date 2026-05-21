@@ -384,8 +384,8 @@ class ResolutionStyleMatrix:
             expected_unsupported = tuple(policy["unsupported"])
             spell_types = policy["spell_types"]
             for spell_type_name in spell_types:
-                entry = matrix_by_spell_type.get(spell_type_name)
-                if entry is None:
+                policy_entry = matrix_by_spell_type.get(spell_type_name)
+                if policy_entry is None:
                     errors.append(
                         "Family policy references unknown spell type in "
                         + family_name
@@ -394,8 +394,8 @@ class ResolutionStyleMatrix:
                         + "."
                     )
                     continue
-                actual_supported = tuple(entry.get("supported", ()))
-                actual_unsupported = tuple(entry.get("unsupported", ()))
+                actual_supported = tuple(policy_entry.get("supported", ()))
+                actual_unsupported = tuple(policy_entry.get("unsupported", ()))
                 if actual_supported != expected_supported:
                     errors.append(
                         "Family policy mismatch for "
