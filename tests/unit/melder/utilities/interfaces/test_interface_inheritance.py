@@ -33,11 +33,7 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconduitward import IConduitWard
-from melder.utilities.interfaces.icontract import IContract
-from melder.utilities.interfaces.icreations import ICreations
-from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
@@ -55,11 +51,7 @@ _INTERFACE_MAP: Dict[type, type] = {
     IConduit: Conduit,
     IConduitResolutionState: ConduitResolutionState,
     IConduitWard: ConduitWard,
-    IContract: Contract,
-    ICreations: Creations,
-    IDetail: Detail,
     IConfiguration: SpellbookConfiguration,
-    IMeld: Meld,
     ISafeLogger: SafeLogger,
     ISpell: Spell,
     ISpellbook: Spellbook,

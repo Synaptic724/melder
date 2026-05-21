@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Optional, Dict, Any, Callable, Tuple, Sequence
+from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, Tuple, Sequence
 
 from mypy_extensions import mypyc_attr
 
@@ -20,8 +20,9 @@ from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executo
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ispell import ISpell
+if TYPE_CHECKING:
+    from melder.aether.conduit.creations.creations import Creations
 from melder.utilities.synchronization.creation_gate import CreationGate
 
 @mypyc_attr(native_class=True)
@@ -419,7 +420,7 @@ class CreationContext(Cleanable):
 
     def execute(
             self,
-            caller_creations: ICreations,
+            caller_creations: Creations,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
@@ -485,7 +486,7 @@ class CreationContext(Cleanable):
 
     def execute_no_hooks(
             self,
-            caller_creations: ICreations,
+            caller_creations: Creations,
             overrides: Optional[dict[str, Any]] = None,
     ) -> Any:
         """
@@ -573,7 +574,7 @@ class CreationContext(Cleanable):
 
     def _execute_with_overrides(
             self,
-            caller_creations: ICreations,
+            caller_creations: Creations,
             overrides: Optional[dict[str, Any]],
             caller_creations_lock_held: bool,
     ) -> Any:

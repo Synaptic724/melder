@@ -1,5 +1,5 @@
-﻿from types import TracebackType
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type, runtime_checkable
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type, runtime_checkable
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import (
     ContractTypes,
@@ -12,9 +12,10 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit_ward.contract.details import Detail
 
 @runtime_checkable
 class IConduitWard(ICleanable, Protocol):
@@ -564,7 +565,7 @@ class IConduitWard(ICleanable, Protocol):
             *,
             reason: DetailReason = DetailReason.other,
             root_spell_id: Optional[str] = None,
-    ) -> 'IDetail':
+    ) -> Detail:
         """
         Internal
 
@@ -579,7 +580,7 @@ class IConduitWard(ICleanable, Protocol):
             root_spell_id (Optional[str]): Optional root-lineage source tag.
 
         Returns:
-            IDetail: A new detail instance.
+            Detail: A new detail instance.
         """
         ...
 

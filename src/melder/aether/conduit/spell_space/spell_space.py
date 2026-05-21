@@ -1,5 +1,5 @@
 import threading
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 from mypy_extensions import mypyc_attr
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -9,9 +9,10 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.icreations import ICreations
-from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.ispellspace import ISpellSpace
+if TYPE_CHECKING:
+    from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.meld.meld import Meld
 
 
 @mypyc_attr(native_class=True)
@@ -55,8 +56,8 @@ class SpellSpace(Cleanable, ISpellSpace):
             self,
             *,
             owner_conduit_id: str,
-            meld: IMeld,
-            creations: ICreations,
+            meld: Meld,
+            creations: Creations,
             spellspace_registry: set[ISpellSpace],
     ) -> None:
         """
@@ -91,8 +92,8 @@ class SpellSpace(Cleanable, ISpellSpace):
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._owner_conduit_id: str = owner_conduit_id
-        self._meld: IMeld = meld
-        self._creations: ICreations = creations
+        self._meld: Meld = meld
+        self._creations: Creations = creations
         self._spellspace_registry: set[ISpellSpace] = spellspace_registry
         self._version: int = 0
 

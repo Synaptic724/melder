@@ -11,8 +11,6 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.imeld import IMeld
-from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.icreation import ICreation
 from melder.utilities.interfaces.ichangecontrolmanager import IChangeControlManager
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
@@ -32,7 +30,7 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
 )
 
 @mypyc_attr(native_class=True)
-class Meld(Cleanable, IMeld):
+class Meld(Cleanable):
     """
     ## 🪄 Meld: Spell Activation and Dependency Resolution
 
@@ -68,7 +66,7 @@ class Meld(Cleanable, IMeld):
     __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
-            creations: ICreations,
+            creations: Creations,
             spellbook: ISpellbook,
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
@@ -128,7 +126,7 @@ class Meld(Cleanable, IMeld):
 
 
         # Conduit-local instantiation manager.
-        self._creations: ICreations = creations
+        self._creations: Creations = creations
 
         # Front-door resolution caches.
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
@@ -202,7 +200,7 @@ class Meld(Cleanable, IMeld):
 
 
     # region Context Manager
-    def __enter__(self) -> IMeld:
+    def __enter__(self) -> Meld:
         """
         Enter the meld lock context.
 

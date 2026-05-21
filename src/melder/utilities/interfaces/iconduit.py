@@ -1,4 +1,4 @@
-﻿from typing import Any, ContextManager, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
+from typing import TYPE_CHECKING, Any, ContextManager, Dict, Iterable, Optional, Protocol, Tuple, runtime_checkable
 import threading
 from types import ModuleType, TracebackType
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -9,8 +9,6 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduitresolutionstate import IConduitResolutionState
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.icreations import ICreations
-from melder.utilities.interfaces.imeld import IMeld
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
@@ -18,6 +16,10 @@ from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
 )
 from melder.utilities.interfaces.ispellbook import ISpellbook
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.meld.meld import Meld
 
 @runtime_checkable
 class IConduit(ICleanable, Protocol):
@@ -43,8 +45,8 @@ class IConduit(ICleanable, Protocol):
     _nexus_publish_enabled: bool
 
     _conduit_state: 'ConduitState'
-    _creations: 'ICreations'
-    _meld: 'IMeld'
+    _creations: Creations
+    _meld: Meld
     _creation_gate: 'CreationGate'
     _creation_gate_controller: 'CreationGateController'
 
@@ -283,7 +285,7 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
-    def _creations_configuration(self, configuration: 'IConfiguration') -> 'ICreations':
+    def _creations_configuration(self, configuration: 'IConfiguration') -> Creations:
         """
         Internal
 
@@ -293,7 +295,7 @@ class IConduit(ICleanable, Protocol):
             configuration (IConfiguration): The locked system configuration.
 
         Returns:
-            ICreations: The creation manager for this conduit.
+            Creations: The creation manager for this conduit.
 
         Raises:
             RuntimeError: If the Conduit state is unknown.

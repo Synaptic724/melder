@@ -46,6 +46,7 @@ class ConduitCluster(Cleanable):
         "shared_spells",
         "auto_link_dependencies",
         "_cleaned",
+        "_id"
     )
 
     def __init__(

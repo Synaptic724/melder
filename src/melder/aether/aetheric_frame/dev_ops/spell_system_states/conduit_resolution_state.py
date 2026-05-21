@@ -127,7 +127,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         self._diagnostics: List[SystemDiagnostic] = []
         self._dirty: bool = False
         self._last_validated_at: Optional[float] = None
-        self._last_change_reason: Optional["SpellStateChangeReason"] = None
+        self._last_change_reason: Optional[SpellStateChangeReason] = None
         self._initial_validity: SpellValidity = initial_validity
         self._risk_manager: Optional[object] = None
 
@@ -180,7 +180,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             spell_id: str,
             validity: SpellValidity,
             *,
-            change_reason: Optional["SpellStateChangeReason"] = None,
+            change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
         Publish one spell-level resolution verdict for this conduit.
@@ -232,7 +232,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             self,
             validity_map: Mapping[str, SpellValidity],
             *,
-            change_reason: Optional["SpellStateChangeReason"] = None,
+            change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
         Publish a batch of spell-level resolution verdicts.
@@ -331,7 +331,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             root_id: str,
             validity: SpellValidity,
             *,
-            change_reason: Optional["SpellStateChangeReason"] = None,
+            change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
         Publish one root-level resolution verdict for this conduit.
@@ -384,7 +384,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             self,
             validity_map: Mapping[str, SpellValidity],
             *,
-            change_reason: Optional["SpellStateChangeReason"] = None,
+            change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
         Publish a batch of root-level resolution verdicts.
@@ -557,7 +557,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     # ------------------------------------------------------------------ #
     def mark_dirty(
             self,
-            change_reason: Optional["SpellStateChangeReason"] = None,
+            change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
         Mark this resolution state as dirty.

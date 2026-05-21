@@ -18,7 +18,6 @@ from melder.utilities.interfaces.iaethericframe import IAethericFrame
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.utilities.interfaces.iconduitward import IConduitWard
-from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispellindex import ISpellIndex
@@ -1437,7 +1436,7 @@ class ConduitWard(Cleanable, IConduitWard):
             sources={root_spell_id} if root_spell_id is not None else None,
         )
 
-    def _snapshot_detail(self, detail: IDetail) -> Dict[str, Any]:
+    def _snapshot_detail(self, detail: Detail) -> Dict[str, Any]:
         """
         Internal
 

@@ -5,14 +5,13 @@ from typing import List, Optional, Dict, Any
 from mypy_extensions import mypyc_attr
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.icreations import ICreations
 from melder.aether.conduit.creations.creation import Creation
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # TODO: Narrow this manager's public surface so storage/disposal internals are
 # not the default interface exposed to the rest of the conduit runtime.
 @mypyc_attr(native_class=True)
-class Creations(Cleanable, ICreations):
+class Creations(Cleanable):
     """
     Conduit-owned registry for live creation objects and their disposal state.
 

@@ -1,4 +1,4 @@
-﻿from typing import (
+from typing import (
     Any,
     Callable,
     Dict,
@@ -25,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_result i
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
@@ -48,6 +47,7 @@ if TYPE_CHECKING:
         SpellRequirements,
     )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import SpellCompilerArtifact
+    from melder.aether.conduit.creations.creations import Creations
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
@@ -143,7 +143,7 @@ class ISpell(ICleanable, Protocol):
     _owner_conduit_id: Optional[str]
     _owner_conduit_name: Optional[str]
     owned_spell: Optional[bool]
-    _owner_creations: Optional[ICreations]
+    _owner_creations: Optional[Creations]
 
     # Lifecycle hooks (private)
     _pre_hooks: Optional[List[Callable[..., Any]]]

@@ -12,12 +12,10 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.icontract import IContract
-from melder.utilities.interfaces.idetail import IDetail
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 @mypyc_attr(native_class=True)
-class Contract(Cleanable, IContract):
+class Contract(Cleanable):
     """
     Bidirectional contract between two conduit wards.
 
@@ -53,8 +51,8 @@ class Contract(Cleanable, IContract):
         self._ward_b: IConduitWard = ward_b
 
         # Each side stores its own view of spell permissions.
-        self._details_a: Dict[str, IDetail] = {} # Borrowed from conduit b
-        self._details_b: Dict[str, IDetail] = {} # Borrowed from conduit a
+        self._details_a: Dict[str, Detail] = {} # Borrowed from conduit b
+        self._details_b: Dict[str, Detail] = {} # Borrowed from conduit a
 
     #region Cleanup
     def cleanup(self) -> None:
@@ -136,7 +134,7 @@ class Contract(Cleanable, IContract):
             return self._ward_a
         raise ValueError("Ward is not a member of this contract.")
 
-    def _get_opposite_conduit(self, contract: IContract, known_id: str) -> Optional[IConduit]:
+    def _get_opposite_conduit(self, contract: Contract, known_id: str) -> Optional[IConduit]:
         """
         Internal
 
@@ -154,7 +152,7 @@ class Contract(Cleanable, IContract):
             return contract._ward_a._conduit
         return None
 
-    def _get_detail_map(self, ward: IConduitWard) -> Dict[str, IDetail]:
+    def _get_detail_map(self, ward: IConduitWard) -> Dict[str, Detail]:
         """
         Internal
 
@@ -175,7 +173,7 @@ class Contract(Cleanable, IContract):
             return self._details_b
         raise ValueError("Invalid ward for contract access.")
 
-    def _add(self, ward: IConduitWard, contract_detail: IDetail) -> bool:
+    def _add(self, ward: IConduitWard, contract_detail: Detail) -> bool:
         """
         Internal
 
