@@ -1,10 +1,7 @@
 import inspect
 import threading
 import hashlib
-from typing import TYPE_CHECKING, Any, Optional, Union
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
+from typing import Any, Optional, Union
 
 from mypy_extensions import mypyc_attr
 
@@ -12,6 +9,7 @@ from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell import Spell
@@ -63,7 +61,7 @@ class Bind(Cleanable):
         "_spellbook",
         "_spell_examiner",
     ]
-    def __init__(self, spellbook: Spellbook):
+    def __init__(self, spellbook: ISpellbook):
         """
         Initialize the spell registration gateway for one spellbook.
 
@@ -78,7 +76,7 @@ class Bind(Cleanable):
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
-        self._spellbook: Spellbook = spellbook
+        self._spellbook: ISpellbook = spellbook
         self._lock = threading.RLock()
         self._spell_examiner: SpellExaminer = SpellExaminer()
 

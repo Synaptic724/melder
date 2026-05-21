@@ -1,11 +1,9 @@
 import threading
-from typing import TYPE_CHECKING, Any, Optional, Callable
+from typing import Any, Optional, Callable
 from mypy_extensions import mypyc_attr
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
 # Melder Imports
 from melder.aether.spellbook.existence.existence import Existence
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
@@ -59,7 +57,7 @@ class SpellBinder(Cleanable):
 
     def __init__(
             self,
-            spellbook: Spellbook,
+            spellbook: ISpellbook,
             *,
             default_existence: Existence = Existence.unique,
             default_permissions: str = "create",
@@ -69,7 +67,7 @@ class SpellBinder(Cleanable):
         Initialize a new `SpellBinder` linked to a specific `Spellbook`.
 
         Args:
-            spellbook (Spellbook):
+            spellbook (ISpellbook):
                 The target Spellbook. The binder holds a weak reference to this
                 book to prevent reference cycles. If the Spellbook is collected or
                 cleaned, future binder calls will rise through the cleaned/live
@@ -91,10 +89,10 @@ class SpellBinder(Cleanable):
         Cleanable.__init__(self)
 
         if spellbook is None:
-            raise ValueError("SpellBinder requires a valid Spellbook instance.")
+            raise ValueError("SpellBinder requires a valid ISpellbook instance.")
 
         # 2. Initialize Infrastructure
-        self._weak_spellbook: SyncWeakRef[Spellbook] = SyncWeakRef(spellbook)
+        self._weak_spellbook: SyncWeakRef[ISpellbook] = SyncWeakRef(spellbook)
         self._lock: threading.RLock = threading.RLock()
         self._default_existence = default_existence
         self._default_permissions = default_permissions
@@ -148,7 +146,7 @@ class SpellBinder(Cleanable):
             del self._default_permissions
             del self._default_profile
 
-    def _require_spellbook(self) -> Spellbook:
+    def _require_spellbook(self) -> ISpellbook:
         """
         Resolve the target Spellbook and prove the binder is still live.
 

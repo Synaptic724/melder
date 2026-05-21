@@ -13,9 +13,9 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
 )
 
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
         OccurrencePlan,
     )
@@ -660,7 +660,7 @@ class CompilerPhase11:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: Spellbook,
+            spellbook: ISpellbook,
     ) -> None:
         # ------------------------------------------------------------------
         # Phase 11 - Execution Assembly Plan

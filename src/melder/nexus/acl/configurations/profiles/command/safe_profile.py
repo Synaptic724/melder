@@ -2,9 +2,10 @@ from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile 
     FrameACLCommandProfile,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.interfaces.iframeaclcommandprofilestrategy import IFrameACLCommandProfileStrategy
 
 
-class SafeCommandProfileStrategy:
+class SafeCommandProfileStrategy(IFrameACLCommandProfileStrategy):
     """
     Build the reusable `safe` command profile.
 

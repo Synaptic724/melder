@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
+from typing import Any, Dict, List, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -16,6 +13,7 @@ from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
 )
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 
@@ -88,7 +86,7 @@ class CompilerPhase8:
             *,
             root_blueprint: Optional[IRootResolutionBlueprint],
             spell_lookup: Optional[Dict[str, ISpell]],
-            spellbook: Spellbook,
+            spellbook: ISpellbook,
             spell_system_states: Optional[SpellSystemStates],
     ) -> Optional[Tuple[Any, ...]]:
         """
@@ -228,7 +226,7 @@ class CompilerPhase8:
             *,
             root_blueprint: Optional[IRootResolutionBlueprint],
             spell_lookup: Optional[Dict[str, ISpell]],
-            spellbook: Spellbook,
+            spellbook: ISpellbook,
             spell_system_states: Optional[SpellSystemStates],
     ) -> Optional[str]:
         """
@@ -380,7 +378,7 @@ class CompilerPhase8:
             self,
             spell: ISpell,
             artifact: SpellCompilerArtifact,
-            spellbook: Spellbook,
+            spellbook: ISpellbook,
             spell_system_states: Optional[SpellSystemStates],
     ) -> None:
         """

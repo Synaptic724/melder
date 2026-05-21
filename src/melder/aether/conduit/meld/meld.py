@@ -7,6 +7,7 @@ from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispell import ISpell
 from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -24,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
@@ -68,7 +68,7 @@ class Meld(Cleanable):
     def __init__(
             self,
             creations: Creations,
-            spellbook: Spellbook,
+            spellbook: ISpellbook,
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
             dynamic_environment: bool = False,
@@ -109,7 +109,7 @@ class Meld(Cleanable):
             resolution_conduit_id if resolution_conduit_id is not None else conduit_id
         )
         self._dynamic_environment: bool = bool(dynamic_environment)
-        self._spellbook: Spellbook = spellbook
+        self._spellbook: ISpellbook = spellbook
 
         # Spellbook references (used for resolution)
         self._owned_spells: Dict[SpellIndex, ISpell] = spellbook._spells
@@ -991,7 +991,7 @@ class Meld(Cleanable):
 
     def _get_cached_change_control_manager(
             self,
-            spellbook: Optional[Spellbook],
+            spellbook: Optional[ISpellbook],
     ) -> Optional[ChangeControlManager]:
         """
         Return a cached change-control manager for the spellbook frame.

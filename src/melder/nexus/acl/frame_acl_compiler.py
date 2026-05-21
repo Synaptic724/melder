@@ -1,37 +1,37 @@
 import threading
-rrom typing import Dict, List, Optional, Set, Tuple
-rrom melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from typing import Dict, List, Optional, Set, Tuple
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-rrom melder.nexus.acl.rrame_acl_compiled_access_surrace import (
-    CompiledFrameACLAccessSurrace,
+from melder.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
 )
-rrom melder.nexus.acl.rrame_acl_conriguration import FrameACLConriguration
-rrom melder.nexus.rrame_descriptor.rrame_descriptor import FrameDescriptor
-rrom melder.utilities.helpers.general_helpers import SpellInputUtils
-rrom melder.utilities.general_base.cleanable import Cleanable
-rrom melder.utilities.helpers.id_builder import IDBuilder
-rrom melder.utilities.interraces.irrameaclcodegenprorile import IFrameACLCodegenProrile
-rrom melder.nexus.acl.rrame_acl_conriguration import FrameACLConriguration
-rrom melder.utilities.interraces.irrameaclcommandprorile import IFrameACLCommandProrile
-rrom melder.utilities.interraces.irrameaclprorilebuilder import FrameACLProrileBuilder
-rrom melder.utilities.interraces.irrameaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclcodegenprofile import IFrameACLCodegenProfile
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.utilities.interfaces.iframeaclcommandprofile import IFrameACLCommandProfile
+from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
 
-rrom melder.nexus.rrame_descriptor.spell_record import SpellRecord
-rrom melder.utilities.interraces.irrameaclviewprorile import IFrameACLViewProrile
+from melder.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.utilities.interfaces.iframeaclviewprofile import IFrameACLViewProfile
 
 
 class FrameACLCompiler(Cleanable):
     """
     Purpose:
-        Compile typed ACL conriguration over payload-backed descriptor records
-        into a downstream consumer-racing access surrace.
+        Compile typed ACL configuration over payload-backed descriptor records
+        into a downstream consumer-facing access surface.
 
     Contract:
-        - Consumes descriptor truth and ACL conriguration only; never mutates
+        - Consumes descriptor truth and ACL configuration only; never mutates
           descriptor state.
-        - Resolves errective reusable proriles through the manager-owned prorile
+        - Resolves effective reusable profiles through the manager-owned profile
           builder/library.
-        - Produces derived access answers suitable ror downstream rrame-link
+        - Produces derived access answers suitable for downstream frame-link
           contract shaping.
     """
 
@@ -39,197 +39,197 @@ class FrameACLCompiler(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
-        "_prorile_builder",
+        "_profile_builder",
     ]
 
-    der __init__(selr, prorile_builder: FrameACLProrileBuilder) -> None:
+    def __init__(self, profile_builder: IFrameACLProfileBuilder) -> None:
         """
         Initialize one ACL compiler.
 
         Args:
-            prorile_builder:
-                Reusable ACL prorile builder/library used to resolve errective
-                view/codegen proriles by name.
+            profile_builder:
+                Reusable ACL profile builder/library used to resolve effective
+                view/codegen profiles by name.
 
         Returns:
             None.
         """
         super().__init__()
-        ir prorile_builder is None:
-            raise TypeError("prorile_builder cannot be None.")
-        selr._id: str = IDBuilder.create_id()
-        selr._lock: threading.RLock = threading.RLock()
-        selr._prorile_builder: FrameACLProrileBuilder = prorile_builder
+        if profile_builder is None:
+            raise TypeError("profile_builder cannot be None.")
+        self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
+        self._profile_builder: IFrameACLProfileBuilder = profile_builder
 
-    der cleanup(selr) -> None:
+    def cleanup(self) -> None:
         """
-        Idempotently clear compiler-owned rererences.
+        Idempotently clear compiler-owned references.
 
         Contract:
-            - Sare to call more than once.
+            - Safe to call more than once.
             - Runs grouped teardown under the compiler-owned instance lock.
-            - Drops only compiler-owned rererences.
+            - Drops only compiler-owned references.
 
         Returns:
             None.
         """
-        ir selr._cleaned:
+        if self._cleaned:
             return
-        with selr._lock:
-            ir selr._cleaned:
+        with self._lock:
+            if self._cleaned:
                 return
-            selr._cleaned = True
-            del selr._prorile_builder
-            del selr._id
-            del selr._lock
+            self._cleaned = True
+            del self._profile_builder
+            del self._id
+            del self._lock
 
-    der compile_rrame_access_surrace(
-            selr,
-            rrame_descriptor: FrameDescriptor,
-            conriguration: FrameACLConriguration,
-    ) -> CompiledFrameACLAccessSurrace:
+    def compile_frame_access_surface(
+            self,
+            frame_descriptor: FrameDescriptor,
+            configuration: FrameACLConfiguration,
+    ) -> CompiledFrameACLAccessSurface:
         """
-        Compile one rrame-local consumer-racing ACL access surrace.
+        Compile one frame-local consumer-facing ACL access surface.
 
         Args:
-            rrame_descriptor:
-                Descriptor truth ror the target rrame.
-            conriguration:
-                Typed ACL conriguration to compile.
+            frame_descriptor:
+                Descriptor truth for the target frame.
+            configuration:
+                Typed ACL configuration to compile.
 
         Returns:
-            CompiledFrameACLAccessSurrace: Derived consumer-racing access
-            surrace.
+            CompiledFrameACLAccessSurface: Derived consumer-facing access
+            surface.
         """
-        selr.check_cleaned()
-        ir not isinstance(rrame_descriptor, FrameDescriptor):
-            raise TypeError("rrame_descriptor must be a FrameDescriptor.")
-        ir not isinstance(conriguration, FrameACLConriguration):
-            raise TypeError("conriguration must be a FrameACLConriguration.")
+        self.check_cleaned()
+        if not isinstance(frame_descriptor, FrameDescriptor):
+            raise TypeError("frame_descriptor must be a FrameDescriptor.")
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError("configuration must be a FrameACLConfiguration.")
 
-        view_prorile = selr._prorile_builder.get_required_view_prorile(
-            conriguration.view_conriguration.prorile_name
+        view_profile = self._profile_builder.get_required_view_profile(
+            configuration.view_configuration.profile_name
         )
-        view_precision_prorile = (
-            selr._prorile_builder.get_required_view_precision_prorile(
-                conriguration.view_conriguration.precision_prorile_name
+        view_precision_profile = (
+            self._profile_builder.get_required_view_precision_profile(
+                configuration.view_configuration.precision_profile_name
             )
-            ir conriguration.view_conriguration.precision_prorile_name is not None
+            if configuration.view_configuration.precision_profile_name is not None
             else None
         )
-        codegen_prorile = selr._prorile_builder.get_required_codegen_prorile(
-            conriguration.codegen_conriguration.prorile_name
+        codegen_profile = self._profile_builder.get_required_codegen_profile(
+            configuration.codegen_configuration.profile_name
         )
-        codegen_precision_prorile = (
-            selr._prorile_builder.get_required_codegen_precision_prorile(
-                conriguration.codegen_conriguration.precision_prorile_name
+        codegen_precision_profile = (
+            self._profile_builder.get_required_codegen_precision_profile(
+                configuration.codegen_configuration.precision_profile_name
             )
-            ir conriguration.codegen_conriguration.precision_prorile_name is not None
+            if configuration.codegen_configuration.precision_profile_name is not None
             else None
         )
-        command_prorile = selr._prorile_builder.get_required_command_prorile(
-            conriguration.command_conriguration.prorile_name
+        command_profile = self._profile_builder.get_required_command_profile(
+            configuration.command_configuration.profile_name
         )
-        command_precision_prorile = (
-            selr._prorile_builder.get_required_command_precision_prorile(
-                conriguration.command_conriguration.precision_prorile_name
+        command_precision_profile = (
+            self._profile_builder.get_required_command_precision_profile(
+                configuration.command_configuration.precision_profile_name
             )
-            ir conriguration.command_conriguration.precision_prorile_name is not None
+            if configuration.command_configuration.precision_profile_name is not None
             else None
         )
 
-        rrame_payload_rields = selr._compile_rrame_payload_rields(
-            view_prorile,
-            view_precision_prorile,
-            conriguration,
+        frame_payload_fields = self._compile_frame_payload_fields(
+            view_profile,
+            view_precision_profile,
+            configuration,
         )
         visible_conduit_ids, conduit_payload_sections_by_id = (
-            selr._compile_conduit_access(
-                rrame_descriptor,
-                view_prorile,
-                view_precision_prorile,
-                conriguration,
+            self._compile_conduit_access(
+                frame_descriptor,
+                view_profile,
+                view_precision_profile,
+                configuration,
             )
         )
         visible_spell_keys, visible_spell_index_ids, spell_payload_sections_by_key = (
-            selr._compile_spell_access(
-                rrame_descriptor,
-                view_prorile,
-                view_precision_prorile,
-                conriguration,
+            self._compile_spell_access(
+                frame_descriptor,
+                view_profile,
+                view_precision_profile,
+                configuration,
             )
         )
-        allowed_kinds = selr._compile_allowed_kinds(
-            rrame_payload_rields,
+        allowed_kinds = self._compile_allowed_kinds(
+            frame_payload_fields,
             visible_conduit_ids,
             visible_spell_keys,
         )
-        allowed_commands = selr._compile_allowed_commands(
-            codegen_prorile,
-            codegen_precision_prorile,
-            conriguration,
+        allowed_commands = self._compile_allowed_commands(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
         )
         (
-            command_rrame_enabled,
+            command_frame_enabled,
             enabled_conduit_ids,
             enabled_spell_index_ids,
-        ) = selr._compile_command_enablement(
-            rrame_descriptor,
-            command_prorile,
-            command_precision_prorile,
-            conriguration,
+        ) = self._compile_command_enablement(
+            frame_descriptor,
+            command_profile,
+            command_precision_profile,
+            configuration,
         )
         (
             codegen_imports_enabled,
             allowed_import_module_roots,
             denied_import_module_roots,
-        ) = selr._compile_codegen_import_controls(
-            codegen_prorile,
-            codegen_precision_prorile,
-            conriguration,
+        ) = self._compile_codegen_import_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
         )
-        denied_builtin_names = selr._compile_codegen_builtin_controls(
-            codegen_prorile,
-            codegen_precision_prorile,
-            conriguration,
+        denied_builtin_names = self._compile_codegen_builtin_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
             imports_enabled=codegen_imports_enabled,
         )
         (
-            codegen_unsare_rerlection_allowed,
+            codegen_unsafe_reflection_allowed,
             codegen_dunder_access_allowed,
-        ) = selr._compile_codegen_meta_controls(
-            codegen_prorile,
-            codegen_precision_prorile,
-            conriguration,
+        ) = self._compile_codegen_meta_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
         )
         codegen_recursive_codegen_allowed = (
-            selr._compile_codegen_recursive_control(
-                codegen_prorile,
-                codegen_precision_prorile,
-                conriguration,
+            self._compile_codegen_recursive_control(
+                codegen_profile,
+                codegen_precision_profile,
+                configuration,
             )
         )
 
         metadata: Dict[str, object] = {
-            "view_prorile_name": view_prorile.name,
-            "view_prorile_version": view_prorile.version,
-            "view_precision_prorile_name": (
-                view_precision_prorile.name
-                ir view_precision_prorile is not None
+            "view_profile_name": view_profile.name,
+            "view_profile_version": view_profile.version,
+            "view_precision_profile_name": (
+                view_precision_profile.name
+                if view_precision_profile is not None
                 else None
             ),
-            "codegen_prorile_name": codegen_prorile.name,
-            "codegen_prorile_version": codegen_prorile.version,
-            "codegen_precision_prorile_name": (
-                codegen_precision_prorile.name
-                ir codegen_precision_prorile is not None
+            "codegen_profile_name": codegen_profile.name,
+            "codegen_profile_version": codegen_profile.version,
+            "codegen_precision_profile_name": (
+                codegen_precision_profile.name
+                if codegen_precision_profile is not None
                 else None
             ),
-            "command_prorile_name": command_prorile.name,
-            "command_prorile_version": command_prorile.version,
-            "command_precision_prorile_name": (
-                command_precision_prorile.name
-                ir command_precision_prorile is not None
+            "command_profile_name": command_profile.name,
+            "command_profile_version": command_profile.version,
+            "command_precision_profile_name": (
+                command_precision_profile.name
+                if command_precision_profile is not None
                 else None
             ),
             "visible_conduit_count": len(visible_conduit_ids),
@@ -238,24 +238,24 @@ class FrameACLCompiler(Cleanable):
             "enabled_conduit_count": len(enabled_conduit_ids),
             "enabled_spell_index_count": len(enabled_spell_index_ids),
         }
-        return CompiledFrameACLAccessSurrace(
-            rrame_name=rrame_descriptor.rrame_name,
-            conriguration_id=conriguration.conriguration_id,
-            view_prorile_name=view_prorile.name,
-            view_prorile_version=view_prorile.version,
-            codegen_prorile_name=codegen_prorile.name,
-            codegen_prorile_version=codegen_prorile.version,
+        return CompiledFrameACLAccessSurface(
+            frame_name=frame_descriptor.frame_name,
+            configuration_id=configuration.configuration_id,
+            view_profile_name=view_profile.name,
+            view_profile_version=view_profile.version,
+            codegen_profile_name=codegen_profile.name,
+            codegen_profile_version=codegen_profile.version,
             codegen_imports_enabled=codegen_imports_enabled,
             allowed_import_module_roots=tuple(sorted(allowed_import_module_roots)),
             denied_import_module_roots=tuple(sorted(denied_import_module_roots)),
             denied_builtin_names=tuple(sorted(denied_builtin_names)),
-            codegen_unsare_rerlection_allowed=codegen_unsare_rerlection_allowed,
+            codegen_unsafe_reflection_allowed=codegen_unsafe_reflection_allowed,
             codegen_dunder_access_allowed=codegen_dunder_access_allowed,
             codegen_recursive_codegen_allowed=codegen_recursive_codegen_allowed,
-            command_rrame_enabled=command_rrame_enabled,
+            command_frame_enabled=command_frame_enabled,
             allowed_kinds=tuple(sorted(allowed_kinds)),
             allowed_commands=tuple(sorted(allowed_commands)),
-            rrame_payload_rields=tuple(sorted(rrame_payload_rields)),
+            frame_payload_fields=tuple(sorted(frame_payload_fields)),
             visible_conduit_ids=tuple(sorted(visible_conduit_ids)),
             visible_spell_keys=tuple(sorted(visible_spell_keys)),
             visible_spell_index_ids=tuple(sorted(visible_spell_index_ids)),
@@ -267,37 +267,37 @@ class FrameACLCompiler(Cleanable):
         )
 
     @staticmethod
-    der _compile_rrame_payload_rields(
-            view_prorile: IFrameACLViewProrile,
-            precision_prorile: Optional[IFrameACLViewProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_frame_payload_fields(
+            view_profile: IFrameACLViewProfile,
+            precision_profile: Optional[IFrameACLViewProfile],
+            configuration: FrameACLConfiguration,
     ) -> Set[str]:
         """
-        Derive the rrame-level payload rields visible under the errective view ACL.
+        Derive the frame-level payload fields visible under the effective view ACL.
 
         Contract:
-            - Merges the reusable view prorile rules with the conriguration's
-              rrame override ruleset.
-            - Returns an empty set when rrame payload visibility is denied or
+            - Merges the reusable view profile rules with the configuration's
+              frame override ruleset.
+            - Returns an empty set when frame payload visibility is denied or
               not allowed.
-            - Returns only descriptor payload rield names, not raw payload
+            - Returns only descriptor payload field names, not raw payload
               values.
         """
-        rields: Set[str] = set()
+        fields: Set[str] = set()
         allow_operations, deny_operations = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
-                view_prorile.rrame_ruleset,
-                precision_prorile.rrame_ruleset ir precision_prorile is not None else None,
-                FrameACLCompiler._as_rrame_acl_ruleset(
-                    conriguration.view_conriguration.rrame_override_ruleset
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                view_profile.frame_ruleset,
+                precision_profile.frame_ruleset if precision_profile is not None else None,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.view_configuration.frame_override_ruleset
                 ),
             )
         )
-        ir "show_payload" in allow_operations and "show_payload" not in deny_operations:
-            rields.update({
+        if "show_payload" in allow_operations and "show_payload" not in deny_operations:
+            fields.update({
                 "system_state",
                 "ai_native_enabled",
-                "rirt_enabled",
+                "rift_enabled",
                 "root_conduit_count",
                 "root_conduit_ids",
                 "named_root_conduits",
@@ -306,72 +306,72 @@ class FrameACLCompiler(Cleanable):
                 "cluster_count",
                 "cluster_names",
             })
-        return rields
+        return fields
 
     @staticmethod
-    der _compile_conduit_access(
-            rrame_descriptor: FrameDescriptor,
-            view_prorile: IFrameACLViewProrile,
-            precision_prorile: Optional[IFrameACLViewProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_conduit_access(
+            frame_descriptor: FrameDescriptor,
+            view_profile: IFrameACLViewProfile,
+            precision_profile: Optional[IFrameACLViewProfile],
+            configuration: FrameACLConfiguration,
     ) -> Tuple[Set[str], Dict[str, Tuple[str, ...]]]:
         """
-        Derive conduit visibility and conduit payload sections ror one rrame.
+        Derive conduit visibility and conduit payload sections for one frame.
 
         Contract:
             - Returns both the visible conduit-id set and the per-conduit
-              payload sections visible under the errective ACL.
-            - Visibility is all-or-nothing per conduit in this rirst cut; the
+              payload sections visible under the effective ACL.
+            - Visibility is all-or-nothing per conduit in this first cut; the
               section tuple controls which conduit payload slices are exposed.
             - Deny operations override allow operations.
         """
         allow_operations, deny_operations = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
-                view_prorile.conduit_ruleset,
-                precision_prorile.conduit_ruleset ir precision_prorile is not None else None,
-                FrameACLCompiler._as_rrame_acl_ruleset(
-                    conriguration.view_conriguration.conduit_override_ruleset
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                view_profile.conduit_ruleset,
+                precision_profile.conduit_ruleset if precision_profile is not None else None,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.view_configuration.conduit_override_ruleset
                 ),
             )
         )
         visible_ids: Set[str] = set()
         sections_by_id: Dict[str, Tuple[str, ...]] = {}
-        ir "visible" in deny_operations:
+        if "visible" in deny_operations:
             return visible_ids, sections_by_id
-        ir "visible" not in allow_operations:
+        if "visible" not in allow_operations:
             return visible_ids, sections_by_id
-        ror conduit_id in rrame_descriptor.conduit_records_by_id.keys():
+        for conduit_id in frame_descriptor.conduit_records_by_id.keys():
             sections: List[str] = []
-            ir "show_payload" in allow_operations and "show_payload" not in deny_operations:
+            if "show_payload" in allow_operations and "show_payload" not in deny_operations:
                 sections.extend(["conduit_name", "conduit_state"])
-            ir "show_policy" in allow_operations and "show_policy" not in deny_operations:
+            if "show_policy" in allow_operations and "show_policy" not in deny_operations:
                 sections.append("policy")
-            ir "show_peer_links" in allow_operations and "show_peer_links" not in deny_operations:
+            if "show_peer_links" in allow_operations and "show_peer_links" not in deny_operations:
                 sections.append("peer_conduit_ids")
             visible_ids.add(conduit_id)
             sections_by_id[conduit_id] = tuple(sorted(sections))
         return visible_ids, sections_by_id
 
     @staticmethod
-    der _compile_spell_access(
-            rrame_descriptor: FrameDescriptor,
-            view_prorile: IFrameACLViewProrile,
-            precision_prorile: Optional[IFrameACLViewProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_spell_access(
+            frame_descriptor: FrameDescriptor,
+            view_profile: IFrameACLViewProfile,
+            precision_profile: Optional[IFrameACLViewProfile],
+            configuration: FrameACLConfiguration,
     ) -> Tuple[
         Set[Tuple[str, str]],
         Set[str],
         Dict[Tuple[str, str], Tuple[str, ...]],
     ]:
         """
-        Derive spell visibility and payload sections ror one rrame.
+        Derive spell visibility and payload sections for one frame.
 
         Contract:
             - Returns both the visible spell-key set and the per-record payload
-              section tuple visible under the errective ACL.
+              section tuple visible under the effective ACL.
             - Also returns the visible stable `spell_index_id` set so later
               runtime consumers can target lineages directly.
-            - Visibility is all-or-nothing per spell record in this rirst cut;
+            - Visibility is all-or-nothing per spell record in this first cut;
               the section tuple controls which payload slices are exposed.
             - Deny operations override allow operations.
         """
@@ -381,58 +381,58 @@ class FrameACLCompiler(Cleanable):
         operation_to_section = {
             "show_binding_payload": "binding_payload",
             "show_resolution_payload": "resolution_payload",
-            "show_class_prorile": "class_prorile",
-            "show_callable_prorile": "callable_prorile",
+            "show_class_profile": "class_profile",
+            "show_callable_profile": "callable_profile",
             "show_metadata": "metadata",
             "show_instance_members": "instance_members",
             "show_dynamic_access": "dynamic_access",
         }
         spell_rulesets = (
-            view_prorile.spell_ruleset,
-            precision_prorile.spell_ruleset ir precision_prorile is not None else None,
-            FrameACLCompiler._as_rrame_acl_ruleset(
-                conriguration.view_conriguration.spell_override_ruleset
+            view_profile.spell_ruleset,
+            precision_profile.spell_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.view_configuration.spell_override_ruleset
             ),
         )
         selector_visible_rules_present = (
-            FrameACLCompiler._spell_selector_rules_present_ror_operation(
+            FrameACLCompiler._spell_selector_rules_present_for_operation(
                 "visible",
                 *spell_rulesets,
             )
         )
-        ror record_key, spell_record in rrame_descriptor.spell_records_by_key.items():
-            ir selector_visible_rules_present:
+        for record_key, spell_record in frame_descriptor.spell_records_by_key.items():
+            if selector_visible_rules_present:
                 selector_visible_allow, selector_visible_deny = (
-                    FrameACLCompiler._collect_selector_spell_operation_errects_ror_record(
+                    FrameACLCompiler._collect_selector_spell_operation_effects_for_record(
                         "visible",
                         spell_record,
                         *spell_rulesets,
                     )
                 )
-                ir "visible" in selector_visible_deny:
+                if "visible" in selector_visible_deny:
                     continue
-                ir "visible" not in selector_visible_allow:
+                if "visible" not in selector_visible_allow:
                     continue
             else:
                 allow_operations, deny_operations = (
-                    FrameACLCompiler._collect_errective_spell_operation_errects_ror_record(
+                    FrameACLCompiler._collect_effective_spell_operation_effects_for_record(
                         spell_record,
                         *spell_rulesets,
                     )
                 )
-                ir "visible" in deny_operations:
+                if "visible" in deny_operations:
                     continue
-                ir "visible" not in allow_operations:
+                if "visible" not in allow_operations:
                     continue
             allow_operations, deny_operations = (
-                FrameACLCompiler._collect_errective_spell_operation_errects_ror_record(
+                FrameACLCompiler._collect_effective_spell_operation_effects_for_record(
                     spell_record,
                     *spell_rulesets,
                 )
             )
             sections: List[str] = []
-            ror operation, section_name in operation_to_section.items():
-                ir operation in allow_operations and operation not in deny_operations:
+            for operation, section_name in operation_to_section.items():
+                if operation in allow_operations and operation not in deny_operations:
                     sections.append(section_name)
             visible_keys.add(record_key)
             visible_spell_index_ids.add(spell_record.spell_index_id)
@@ -440,8 +440,8 @@ class FrameACLCompiler(Cleanable):
         return visible_keys, visible_spell_index_ids, sections_by_key
 
     @staticmethod
-    der _compile_allowed_kinds(
-            rrame_payload_rields: Set[str],
+    def _compile_allowed_kinds(
+            frame_payload_fields: Set[str],
             visible_conduit_ids: Set[str],
             visible_spell_keys: Set[Tuple[str, str]],
     ) -> Set[str]:
@@ -449,68 +449,68 @@ class FrameACLCompiler(Cleanable):
         Collapse compiled visibility sets into the high-level visible kinds set.
 
         Contract:
-            Adds `"rrame"`, `"conduit"`, and/or `"spell"` when the compiled
+            Adds `"frame"`, `"conduit"`, and/or `"spell"` when the compiled
             payload/visibility outputs show that kind is visible at all.
         """
         allowed_kinds: Set[str] = set()
-        ir len(rrame_payload_rields) > 0:
-            allowed_kinds.add("rrame")
-        ir len(visible_conduit_ids) > 0:
+        if len(frame_payload_fields) > 0:
+            allowed_kinds.add("frame")
+        if len(visible_conduit_ids) > 0:
             allowed_kinds.add("conduit")
-        ir len(visible_spell_keys) > 0:
+        if len(visible_spell_keys) > 0:
             allowed_kinds.add("spell")
         return allowed_kinds
 
     @staticmethod
-    der _compile_allowed_commands(
-            codegen_prorile: IFrameACLCodegenProrile,
-            precision_prorile: Optional[IFrameACLCodegenProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_allowed_commands(
+            codegen_profile: IFrameACLCodegenProfile,
+            precision_profile: Optional[IFrameACLCodegenProfile],
+            configuration: FrameACLConfiguration,
     ) -> Set[str]:
         """
-        Derive the errective allowed command set ror codegen/runtime consumers.
+        Derive the effective allowed command set for codegen/runtime consumers.
 
         Contract:
-            - Merges rrame, conduit, spell, and capability codegen rule
-              ramilies.
-            - Applies deny operations arter allow aggregation.
+            - Merges frame, conduit, spell, and capability codegen rule
+              families.
+            - Applies deny operations after allow aggregation.
             - Returns command names only; call sites decide how those commands
               are interpreted.
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror base_ruleset, precision_ruleset, override_ruleset in (
+        for base_ruleset, precision_ruleset, override_ruleset in (
                 (
-                    codegen_prorile.rrame_ruleset,
-                    precision_prorile.rrame_ruleset ir precision_prorile is not None else None,
-                    FrameACLCompiler._as_rrame_acl_ruleset(
-                        conriguration.codegen_conriguration.rrame_override_ruleset
+                    codegen_profile.frame_ruleset,
+                    precision_profile.frame_ruleset if precision_profile is not None else None,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.frame_override_ruleset
                     ),
                 ),
                 (
-                    codegen_prorile.conduit_ruleset,
-                    precision_prorile.conduit_ruleset ir precision_prorile is not None else None,
-                    FrameACLCompiler._as_rrame_acl_ruleset(
-                        conriguration.codegen_conriguration.conduit_override_ruleset
+                    codegen_profile.conduit_ruleset,
+                    precision_profile.conduit_ruleset if precision_profile is not None else None,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.conduit_override_ruleset
                     ),
                 ),
                 (
-                    codegen_prorile.spell_ruleset,
-                    precision_prorile.spell_ruleset ir precision_prorile is not None else None,
-                    FrameACLCompiler._as_rrame_acl_ruleset(
-                        conriguration.codegen_conriguration.spell_override_ruleset
+                    codegen_profile.spell_ruleset,
+                    precision_profile.spell_ruleset if precision_profile is not None else None,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.spell_override_ruleset
                     ),
                 ),
                 (
-                    codegen_prorile.capability_ruleset,
-                    precision_prorile.capability_ruleset ir precision_prorile is not None else None,
-                    FrameACLCompiler._as_rrame_acl_ruleset(
-                        conriguration.codegen_conriguration.capability_override_ruleset
+                    codegen_profile.capability_ruleset,
+                    precision_profile.capability_ruleset if precision_profile is not None else None,
+                    FrameACLCompiler._as_frame_acl_ruleset(
+                        configuration.codegen_configuration.capability_override_ruleset
                     ),
                 ),
         ):
             ruleset_allows, ruleset_denies = (
-                FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
+                FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                     base_ruleset,
                     precision_ruleset,
                     override_ruleset,
@@ -518,30 +518,30 @@ class FrameACLCompiler(Cleanable):
             )
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
-        return allow_operations.dirrerence(deny_operations)
+        return allow_operations.difference(deny_operations)
 
     @staticmethod
-    der _compile_codegen_import_controls(
-            codegen_prorile: IFrameACLCodegenProrile,
-            precision_prorile: Optional[IFrameACLCodegenProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_codegen_import_controls(
+            codegen_profile: IFrameACLCodegenProfile,
+            precision_profile: Optional[IFrameACLCodegenProfile],
+            configuration: FrameACLConfiguration,
     ) -> Tuple[bool, Set[str], Set[str]]:
         """
-        Derive codegen import posture rrom the capability ruleset ramily.
+        Derive codegen import posture from the capability ruleset family.
 
         Returns:
-            Tuple[bool, Set[str], Set[str]]: Imports-enabled rlag, allowed
+            Tuple[bool, Set[str], Set[str]]: Imports-enabled flag, allowed
                 import roots, and denied import roots.
         """
         rulesets = (
-            codegen_prorile.capability_ruleset,
-            precision_prorile.capability_ruleset ir precision_prorile is not None else None,
-            FrameACLCompiler._as_rrame_acl_ruleset(
-                conriguration.codegen_conriguration.capability_override_ruleset
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
             ),
         )
         allow_operations, deny_operations = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 *rulesets
             )
         )
@@ -552,85 +552,85 @@ class FrameACLCompiler(Cleanable):
         (
             allowed_import_module_roots,
             denied_import_module_roots,
-        ) = FrameACLCompiler._collect_import_module_roots_rrom_rulesets(*rulesets)
-        ir not imports_enabled:
+        ) = FrameACLCompiler._collect_import_module_roots_from_rulesets(*rulesets)
+        if not imports_enabled:
             return False, set(), denied_import_module_roots
         return (
             True,
-            allowed_import_module_roots.dirrerence(denied_import_module_roots),
+            allowed_import_module_roots.difference(denied_import_module_roots),
             denied_import_module_roots,
         )
 
     @staticmethod
-    der _compile_codegen_builtin_controls(
-            codegen_prorile: IFrameACLCodegenProrile,
-            precision_prorile: Optional[IFrameACLCodegenProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_codegen_builtin_controls(
+            codegen_profile: IFrameACLCodegenProfile,
+            precision_profile: Optional[IFrameACLCodegenProfile],
+            configuration: FrameACLConfiguration,
             *,
             imports_enabled: bool,
     ) -> Set[str]:
         """
-        Derive the denied builtin-name set ror codegen validation/runtime.
+        Derive the denied builtin-name set for codegen validation/runtime.
 
         Returns:
             Set[str]: Denied builtin names.
         """
         rulesets = (
-            codegen_prorile.capability_ruleset,
-            precision_prorile.capability_ruleset ir precision_prorile is not None else None,
-            FrameACLCompiler._as_rrame_acl_ruleset(
-                conriguration.codegen_conriguration.capability_override_ruleset
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
             ),
         )
         allowed_builtin_names, denied_builtin_names = (
-            FrameACLCompiler._collect_condition_string_values_rrom_rulesets(
+            FrameACLCompiler._collect_condition_string_values_from_rulesets(
                 "builtin_names",
                 "builtin_names",
                 *rulesets,
             )
         )
-        rinal_denied_builtin_names: Set[str] = set(denied_builtin_names)
-        ir not imports_enabled:
-            rinal_denied_builtin_names.add("__import__")
-        return rinal_denied_builtin_names.dirrerence(allowed_builtin_names)
+        final_denied_builtin_names: Set[str] = set(denied_builtin_names)
+        if not imports_enabled:
+            final_denied_builtin_names.add("__import__")
+        return final_denied_builtin_names.difference(allowed_builtin_names)
 
     @staticmethod
-    der _compile_codegen_meta_controls(
-            codegen_prorile: IFrameACLCodegenProrile,
-            precision_prorile: Optional[IFrameACLCodegenProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_codegen_meta_controls(
+            codegen_profile: IFrameACLCodegenProfile,
+            precision_profile: Optional[IFrameACLCodegenProfile],
+            configuration: FrameACLConfiguration,
     ) -> Tuple[bool, bool]:
         """
-        Derive rerlection and dunder posture ror codegen validation/runtime.
+        Derive reflection and dunder posture for codegen validation/runtime.
 
         Returns:
-            Tuple[bool, bool]: Unsare-rerlection-allowed rlag and
-                dunder-access-allowed rlag.
+            Tuple[bool, bool]: Unsafe-reflection-allowed flag and
+                dunder-access-allowed flag.
         """
         rulesets = (
-            codegen_prorile.capability_ruleset,
-            precision_prorile.capability_ruleset ir precision_prorile is not None else None,
-            FrameACLCompiler._as_rrame_acl_ruleset(
-                conriguration.codegen_conriguration.capability_override_ruleset
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
             ),
         )
         allow_operations, deny_operations = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 *rulesets
             )
         )
         return (
-            "unsare_rerlection" in allow_operations
-            and "unsare_rerlection" not in deny_operations,
+            "unsafe_reflection" in allow_operations
+            and "unsafe_reflection" not in deny_operations,
             "dunder_access" in allow_operations
             and "dunder_access" not in deny_operations,
         )
 
     @staticmethod
-    der _compile_codegen_recursive_control(
-            codegen_prorile: IFrameACLCodegenProrile,
-            precision_prorile: Optional[IFrameACLCodegenProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_codegen_recursive_control(
+            codegen_profile: IFrameACLCodegenProfile,
+            precision_profile: Optional[IFrameACLCodegenProfile],
+            configuration: FrameACLConfiguration,
     ) -> bool:
         """
         Derive whether recursive codegen is allowed.
@@ -639,14 +639,14 @@ class FrameACLCompiler(Cleanable):
             bool: True when recursive codegen is allowed.
         """
         rulesets = (
-            codegen_prorile.capability_ruleset,
-            precision_prorile.capability_ruleset ir precision_prorile is not None else None,
-            FrameACLCompiler._as_rrame_acl_ruleset(
-                conriguration.codegen_conriguration.capability_override_ruleset
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
             ),
         )
         allow_operations, deny_operations = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
                 *rulesets
             )
         )
@@ -656,126 +656,126 @@ class FrameACLCompiler(Cleanable):
         )
 
     @staticmethod
-    der _compile_command_enablement(
-            rrame_descriptor: FrameDescriptor,
-            command_prorile: IFrameACLCommandProrile,
-            precision_prorile: Optional[IFrameACLCommandProrile],
-            conriguration: FrameACLConriguration,
+    def _compile_command_enablement(
+            frame_descriptor: FrameDescriptor,
+            command_profile: IFrameACLCommandProfile,
+            precision_profile: Optional[IFrameACLCommandProfile],
+            configuration: FrameACLConfiguration,
     ) -> Tuple[bool, Set[str], Set[str]]:
         """
-        Derive command enablement ror rrame/conduit/spell access paths.
+        Derive command enablement for frame/conduit/spell access paths.
 
         Returns:
-            Tuple[bool, Set[str], Set[str]]: Frame enabled rlag, enabled
+            Tuple[bool, Set[str], Set[str]]: Frame enabled flag, enabled
                 conduit ids, and enabled spell index ids.
         """
-        rrame_allows, rrame_denies = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
-                command_prorile.rrame_ruleset,
-                precision_prorile.rrame_ruleset ir precision_prorile is not None else None,
-                FrameACLCompiler._as_rrame_acl_ruleset(
-                    conriguration.command_conriguration.rrame_override_ruleset
+        frame_allows, frame_denies = (
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                command_profile.frame_ruleset,
+                precision_profile.frame_ruleset if precision_profile is not None else None,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.command_configuration.frame_override_ruleset
                 ),
             )
         )
         conduit_allows, conduit_denies = (
-            FrameACLCompiler._collect_errective_operation_errects_rrom_rulesets(
-                command_prorile.conduit_ruleset,
-                precision_prorile.conduit_ruleset ir precision_prorile is not None else None,
-                FrameACLCompiler._as_rrame_acl_ruleset(
-                    conriguration.command_conriguration.conduit_override_ruleset
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                command_profile.conduit_ruleset,
+                precision_profile.conduit_ruleset if precision_profile is not None else None,
+                FrameACLCompiler._as_frame_acl_ruleset(
+                    configuration.command_configuration.conduit_override_ruleset
                 ),
             )
         )
         spell_rulesets = (
-            command_prorile.spell_ruleset,
-            precision_prorile.spell_ruleset ir precision_prorile is not None else None,
-            FrameACLCompiler._as_rrame_acl_ruleset(
-                conriguration.command_conriguration.spell_override_ruleset
+            command_profile.spell_ruleset,
+            precision_profile.spell_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.command_configuration.spell_override_ruleset
             ),
         )
-        command_rrame_enabled = (
-            "enable" in rrame_allows and "enable" not in rrame_denies
+        command_frame_enabled = (
+            "enable" in frame_allows and "enable" not in frame_denies
         )
         enabled_conduit_ids: Set[str] = set()
-        ir "enable" in conduit_allows and "enable" not in conduit_denies:
-            enabled_conduit_ids.update(rrame_descriptor.conduit_records_by_id.keys())
+        if "enable" in conduit_allows and "enable" not in conduit_denies:
+            enabled_conduit_ids.update(frame_descriptor.conduit_records_by_id.keys())
         enabled_spell_index_ids: Set[str] = set()
         selector_enable_rules_present = (
-            FrameACLCompiler._spell_selector_rules_present_ror_operation(
+            FrameACLCompiler._spell_selector_rules_present_for_operation(
                 "enable",
                 *spell_rulesets,
             )
         )
-        ror spell_record in rrame_descriptor.spell_records_by_key.values():
-            ir selector_enable_rules_present:
+        for spell_record in frame_descriptor.spell_records_by_key.values():
+            if selector_enable_rules_present:
                 selector_enable_allow, selector_enable_deny = (
-                    FrameACLCompiler._collect_selector_spell_operation_errects_ror_record(
+                    FrameACLCompiler._collect_selector_spell_operation_effects_for_record(
                         "enable",
                         spell_record,
                         *spell_rulesets,
                     )
                 )
-                ir "enable" in selector_enable_deny:
+                if "enable" in selector_enable_deny:
                     continue
-                ir "enable" not in selector_enable_allow:
+                if "enable" not in selector_enable_allow:
                     continue
             else:
                 spell_allows, spell_denies = (
-                    FrameACLCompiler._collect_errective_spell_operation_errects_ror_record(
+                    FrameACLCompiler._collect_effective_spell_operation_effects_for_record(
                         spell_record,
                         *spell_rulesets,
                     )
                 )
-                ir "enable" in spell_denies:
+                if "enable" in spell_denies:
                     continue
-                ir "enable" not in spell_allows:
+                if "enable" not in spell_allows:
                     continue
             enabled_spell_index_ids.add(spell_record.spell_index_id)
         return (
-            command_rrame_enabled,
+            command_frame_enabled,
             enabled_conduit_ids,
             enabled_spell_index_ids,
         )
 
     @staticmethod
-    der _collect_operation_errects(
+    def _collect_operation_effects(
             ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
         Split one ruleset into allowed and denied operation sets.
 
         Contract:
-            Reads only the rule errect/operation pairs and ignores other rule
+            Reads only the rule effect/operation pairs and ignores other rule
             metadata.
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror rule in ruleset.rules_by_name.values():
-            ir rule.errect == "allow":
+        for rule in ruleset.rules_by_name.values():
+            if rule.effect == "allow":
                 allow_operations.add(rule.operation)
-            elir rule.errect == "deny":
+            elif rule.effect == "deny":
                 deny_operations.add(rule.operation)
         return allow_operations, deny_operations
 
     @staticmethod
-    der _collect_errective_operation_errects(
+    def _collect_effective_operation_effects(
             base_ruleset: IFrameACLRuleSet,
             override_ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Merge base and override rulesets into errective allow/deny sets.
+        Merge base and override rulesets into effective allow/deny sets.
 
         Contract:
-            Errective operations are the union or base and override allow/deny
+            Effective operations are the union of base and override allow/deny
             sets. Callers still apply deny-wins semantics at interpretation
             time.
         """
-        base_allows, base_denies = FrameACLCompiler._collect_operation_errects(
+        base_allows, base_denies = FrameACLCompiler._collect_operation_effects(
             base_ruleset
         )
         override_allows, override_denies = (
-            FrameACLCompiler._collect_operation_errects(override_ruleset)
+            FrameACLCompiler._collect_operation_effects(override_ruleset)
         )
         return (
             base_allows.union(override_allows),
@@ -783,23 +783,23 @@ class FrameACLCompiler(Cleanable):
         )
 
     @staticmethod
-    der _collect_errective_operation_errects_rrom_rulesets(
+    def _collect_effective_operation_effects_from_rulesets(
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Merge an ordered list or base/precision/override rulesets into one errect set.
+        Merge an ordered list of base/precision/override rulesets into one effect set.
 
         Returns:
-            Tuple[Set[str], Set[str]]: Errective allow and deny operation names.
+            Tuple[Set[str], Set[str]]: Effective allow and deny operation names.
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
             ruleset_allows, ruleset_denies = (
-                FrameACLCompiler._collect_operation_errects(
-                    FrameACLCompiler._as_rrame_acl_ruleset(ruleset)
+                FrameACLCompiler._collect_operation_effects(
+                    FrameACLCompiler._as_frame_acl_ruleset(ruleset)
                 )
             )
             allow_operations.update(ruleset_allows)
@@ -807,13 +807,13 @@ class FrameACLCompiler(Cleanable):
         return allow_operations, deny_operations
 
     @staticmethod
-    der _collect_condition_string_values_rrom_rulesets(
+    def _collect_condition_string_values_from_rulesets(
             operation_name: str,
             condition_key: str,
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Collect string condition values ror one operation across rulesets.
+        Collect string condition values for one operation across rulesets.
 
         Args:
             operation_name:
@@ -828,22 +828,22 @@ class FrameACLCompiler(Cleanable):
         """
         allowed_values: Set[str] = set()
         denied_values: Set[str] = set()
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
-            ror rule in FrameACLCompiler._as_rrame_acl_ruleset(ruleset).rules_by_name.values():
-                ir rule.operation != operation_name:
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
+                if rule.operation != operation_name:
                     continue
                 condition_values = rule.conditions.get(condition_key, tuple())
-                ror value in condition_values:
-                    ir rule.errect == "allow":
+                for value in condition_values:
+                    if rule.effect == "allow":
                         allowed_values.add(value)
-                    elir rule.errect == "deny":
+                    elif rule.effect == "deny":
                         denied_values.add(value)
         return allowed_values, denied_values
 
     @staticmethod
-    der _collect_import_module_roots_rrom_rulesets(
+    def _collect_import_module_roots_from_rulesets(
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
@@ -851,7 +851,7 @@ class FrameACLCompiler(Cleanable):
 
         Contract:
             - Allowed import roots intersect across allow-bearing rulesets so
-              precision proriles can narrow broader base proriles.
+              precision profiles can narrow broader base profiles.
             - Denied import roots always union across the rulesets.
 
         Returns:
@@ -859,64 +859,64 @@ class FrameACLCompiler(Cleanable):
         """
         allowed_value_sets: List[Set[str]] = []
         denied_values: Set[str] = set()
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
             ruleset_allowed_values: Set[str] = set()
-            ror rule in FrameACLCompiler._as_rrame_acl_ruleset(ruleset).rules_by_name.values():
-                ir rule.operation != "import_modules":
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
+                if rule.operation != "import_modules":
                     continue
                 module_roots = set(rule.conditions.get("module_roots", tuple()))
-                ir rule.errect == "allow":
+                if rule.effect == "allow":
                     ruleset_allowed_values.update(module_roots)
-                elir rule.errect == "deny":
+                elif rule.effect == "deny":
                     denied_values.update(module_roots)
-            ir len(ruleset_allowed_values) > 0:
+            if len(ruleset_allowed_values) > 0:
                 allowed_value_sets.append(ruleset_allowed_values)
-        ir len(allowed_value_sets) == 0:
+        if len(allowed_value_sets) == 0:
             return set(), denied_values
         allowed_values = set(allowed_value_sets[0])
-        ror value_set in allowed_value_sets[1:]:
+        for value_set in allowed_value_sets[1:]:
             allowed_values.intersection_update(value_set)
         return allowed_values, denied_values
 
     @staticmethod
-    der _collect_errective_spell_operation_errects_ror_record(
+    def _collect_effective_spell_operation_effects_for_record(
             spell_record: SpellRecord,
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Merge spell operations ror one record using selector-aware spell rules.
+        Merge spell operations for one record using selector-aware spell rules.
 
         Returns:
-            Tuple[Set[str], Set[str]]: Errective allow and deny operations ror
+            Tuple[Set[str], Set[str]]: Effective allow and deny operations for
                 the target record.
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
-            ror rule in FrameACLCompiler._as_rrame_acl_ruleset(ruleset).rules_by_name.values():
-                ir not FrameACLCompiler._spell_rule_matches_record(
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
+                if not FrameACLCompiler._spell_rule_matches_record(
                         rule.conditions,
                         spell_record,
                 ):
                     continue
-                ir rule.errect == "allow":
+                if rule.effect == "allow":
                     allow_operations.add(rule.operation)
-                elir rule.errect == "deny":
+                elif rule.effect == "deny":
                     deny_operations.add(rule.operation)
         return allow_operations, deny_operations
 
     @staticmethod
-    der _as_rrame_acl_ruleset(ruleset: IFrameACLRuleSet) -> IFrameACLRuleSet:
+    def _as_frame_acl_ruleset(ruleset: IFrameACLRuleSet) -> IFrameACLRuleSet:
         """
-        Preserve the shared ruleset interrace surrace at existing call sites.
+        Preserve the shared ruleset interface surface at existing call sites.
 
         Args:
             ruleset:
-                Interrace-typed ACL ruleset.
+                Interface-typed ACL ruleset.
 
         Returns:
             IFrameACLRuleSet: The same ruleset object.
@@ -924,7 +924,7 @@ class FrameACLCompiler(Cleanable):
         return ruleset
 
     @staticmethod
-    der _spell_rule_matches_record(
+    def _spell_rule_matches_record(
             conditions: Dict[str, object],
             spell_record: SpellRecord,
     ) -> bool:
@@ -937,35 +937,35 @@ class FrameACLCompiler(Cleanable):
         selector_keys = {
             "spell_id",
             "spell_index_id",
-            "spellrrame",
+            "spellframe",
             "spell_name",
             "binding_name",
         }
-        ir not any(key in conditions ror key in selector_keys):
+        if not any(key in conditions for key in selector_keys):
             return True
-        ir (
+        if (
                 "spell_id" in conditions
                 and conditions["spell_id"] != spell_record.spell_id
         ):
             return False
-        ir (
+        if (
                 "spell_index_id" in conditions
                 and conditions["spell_index_id"] != spell_record.spell_index_id
         ):
             return False
-        ir "spellrrame" in conditions:
-            ir spell_record.spellrrame is None:
+        if "spellframe" in conditions:
+            if spell_record.spellframe is None:
                 return False
-            ir (
-                    SpellInputUtils.normalize_rrame_key(conditions["spellrrame"]) !=
-                    SpellInputUtils.normalize_rrame_key(spell_record.spellrrame)
+            if (
+                    SpellInputUtils.normalize_frame_key(conditions["spellframe"]) !=
+                    SpellInputUtils.normalize_frame_key(spell_record.spellframe)
             ):
                 return False
-        ir "spell_name" in conditions:
-            ir str(conditions["spell_name"]).lower() != str(spell_record.spell_name).lower():
+        if "spell_name" in conditions:
+            if str(conditions["spell_name"]).lower() != str(spell_record.spell_name).lower():
                 return False
-        ir "binding_name" in conditions:
-            ir (
+        if "binding_name" in conditions:
+            if (
                     SpellInputUtils.normalize_binding_name(
                         conditions["binding_name"]
                     ) !=
@@ -977,7 +977,7 @@ class FrameACLCompiler(Cleanable):
         return True
 
     @staticmethod
-    der _spell_rule_has_selector(
+    def _spell_rule_has_selector(
             conditions: Dict[str, object],
     ) -> bool:
         """
@@ -988,31 +988,31 @@ class FrameACLCompiler(Cleanable):
         """
         return any(
             key in conditions
-            ror key in (
+            for key in (
                 "spell_id",
                 "spell_index_id",
-                "spellrrame",
+                "spellframe",
                 "spell_name",
                 "binding_name",
             )
         )
 
     @staticmethod
-    der _spell_selector_rules_present_ror_operation(
+    def _spell_selector_rules_present_for_operation(
             operation: str,
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> bool:
         """
-        Return whether any selector-aware rule exists ror one spell operation.
+        Return whether any selector-aware rule exists for one spell operation.
 
         Returns:
-            bool: True when selector-aware rules exist ror the operation.
+            bool: True when selector-aware rules exist for the operation.
         """
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
-            ror rule in FrameACLCompiler._as_rrame_acl_ruleset(ruleset).rules_by_name.values():
-                ir (
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
+                if (
                         rule.operation == operation and
                         FrameACLCompiler._spell_rule_has_selector(rule.conditions)
                 ):
@@ -1020,36 +1020,36 @@ class FrameACLCompiler(Cleanable):
         return False
 
     @staticmethod
-    der _collect_selector_spell_operation_errects_ror_record(
+    def _collect_selector_spell_operation_effects_for_record(
             operation: str,
             spell_record: SpellRecord,
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Collect selector-aware errects ror one operation and spell record only.
+        Collect selector-aware effects for one operation and spell record only.
 
         Returns:
-            Tuple[Set[str], Set[str]]: Allow and deny operations rrom
+            Tuple[Set[str], Set[str]]: Allow and deny operations from
                 selector-aware rules matching the target record.
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
-            ror rule in FrameACLCompiler._as_rrame_acl_ruleset(ruleset).rules_by_name.values():
-                ir rule.operation != operation:
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
+                if rule.operation != operation:
                     continue
-                ir not FrameACLCompiler._spell_rule_has_selector(rule.conditions):
+                if not FrameACLCompiler._spell_rule_has_selector(rule.conditions):
                     continue
-                ir not FrameACLCompiler._spell_rule_matches_record(
+                if not FrameACLCompiler._spell_rule_matches_record(
                         rule.conditions,
                         spell_record,
                 ):
                     continue
-                ir rule.errect == "allow":
+                if rule.effect == "allow":
                     allow_operations.add(rule.operation)
-                elir rule.errect == "deny":
+                elif rule.effect == "deny":
                     deny_operations.add(rule.operation)
         return allow_operations, deny_operations
 

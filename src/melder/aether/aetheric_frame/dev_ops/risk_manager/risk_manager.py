@@ -6,8 +6,8 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
     from melder.utilities.interfaces.ispell import ISpell
+    from melder.utilities.interfaces.ispellbook import ISpellbook
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 
 @mypyc_attr(native_class=True)
@@ -29,7 +29,7 @@ class _ConduitRiskState:
         "risky_resolution",
     ]
 
-    def __init__(self, spellbook: Spellbook) -> None:
+    def __init__(self, spellbook: ISpellbook) -> None:
         """
         Initialize one conduit-local risk bucket.
 
@@ -41,7 +41,7 @@ class _ConduitRiskState:
         - Retains the live spellbook reference so later risk refreshes can push
           validation-required state back onto the conduit owner.
         """
-        self.spellbook: Spellbook = spellbook
+        self.spellbook: ISpellbook = spellbook
         self.lineages: Set[str] = set()
         self.risky_structural: Set[str] = set()
         self.risky_resolution: Set[str] = set()
@@ -138,7 +138,7 @@ class RiskManager(Cleanable):
             del self._spell_system_states
         del self._lock
 
-    def register_conduit(self, conduit_id: str, spellbook: Spellbook) -> None:
+    def register_conduit(self, conduit_id: str, spellbook: ISpellbook) -> None:
         """
         Register a conduit with its Spellbook and initialize risk state.
 
@@ -345,7 +345,7 @@ class RiskManager(Cleanable):
     # ------------------------------------------------------------------ #
     # Internal helpers                                                   #
     # ------------------------------------------------------------------ #
-    def _iter_spellbook_spells(self, spellbook: Spellbook) -> List[ISpell]:
+    def _iter_spellbook_spells(self, spellbook: ISpellbook) -> List[ISpell]:
         """
         Collect all spells currently visible through the spellbook.
 

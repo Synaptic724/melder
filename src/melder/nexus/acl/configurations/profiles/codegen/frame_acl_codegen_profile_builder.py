@@ -1,40 +1,40 @@
 import threading
-rrom typing import Dict, List
+from typing import Dict, List
 
-rrom melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-rrom melder.nexus.acl.conrigurations.proriles.codegen.rrame_acl_codegen_prorile import (
-    FrameACLCodegenProrile,
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+    FrameACLCodegenProfile,
 )
-rrom melder.nexus.acl.conrigurations.proriles.codegen.rull_access_prorile import (
-    FullAccessCodegenProrileStrategy,
+from melder.nexus.acl.configurations.profiles.codegen.full_access_profile import (
+    FullAccessCodegenProfileStrategy,
 )
-rrom melder.nexus.acl.conrigurations.proriles.codegen.hybrid_prorile import (
-    HybridCodegenProrileStrategy,
+from melder.nexus.acl.configurations.profiles.codegen.hybrid_profile import (
+    HybridCodegenProfileStrategy,
 )
-rrom melder.nexus.acl.conrigurations.proriles.codegen.permissive_prorile import (
-    PermissiveCodegenProrileStrategy,
+from melder.nexus.acl.configurations.profiles.codegen.permissive_profile import (
+    PermissiveCodegenProfileStrategy,
 )
-rrom melder.nexus.acl.conrigurations.proriles.codegen.precision import (
-    PrecisionCodegenProrileStrategy,
+from melder.nexus.acl.configurations.profiles.codegen.precision import (
+    PrecisionCodegenProfileStrategy,
 )
-rrom melder.nexus.acl.conrigurations.proriles.codegen.sare_prorile import (
-    SareCodegenProrileStrategy,
+from melder.nexus.acl.configurations.profiles.codegen.safe_profile import (
+    SafeCodegenProfileStrategy,
 )
-rrom melder.utilities.general_base.cleanable import Cleanable
-rrom melder.utilities.helpers.id_builder import IDBuilder
-rrom melder.utilities.interraces.irrameaclcodegenprorilestrategy import SareCodegenProrileStrategy
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.iframeaclcodegenprofilestrategy import IFrameACLCodegenProfileStrategy
 
 
-class FrameACLCodegenProrileBuilder(Cleanable):
+class FrameACLCodegenProfileBuilder(Cleanable):
     """
     Purpose:
-        Own the reusable codegen-prorile construction strategies and build
-        codegen prorile instances rrom them.
+        Own the reusable codegen-profile construction strategies and build
+        codegen profile instances from them.
 
     Contract:
-        - Owns strategy registration ror the codegen ramily only.
-        - `load_deraults()` registers the standard codegen preset strategies.
-        - `build_prorile(name)` returns a rresh conrigured codegen prorile rrom
+        - Owns strategy registration for the codegen family only.
+        - `load_defaults()` registers the standard codegen preset strategies.
+        - `build_profile(name)` returns a fresh configured codegen profile from
           the selected strategy.
         - Uses an instance lock because strategy registry mutation is grouped
           state in a nogil runtime.
@@ -47,104 +47,104 @@ class FrameACLCodegenProrileBuilder(Cleanable):
         "_strategies_by_name",
     ]
 
-    der __init__(selr) -> None:
+    def __init__(self) -> None:
         """
-        Initialize one codegen prorile strategy builder/registry.
+        Initialize one codegen profile strategy builder/registry.
 
         Returns:
             None.
         """
         super().__init__()
-        selr._id: str = IDBuilder.create_id()
-        selr._lock: threading.RLock = threading.RLock()
-        selr._strategies_by_name: Dict[str, object] = {}
-        selr.load_deraults()
+        self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
+        self._strategies_by_name: Dict[str, IFrameACLCodegenProfileStrategy] = {}
+        self.load_defaults()
 
-    der cleanup(selr) -> None:
+    def cleanup(self) -> None:
         """
         Idempotently clear the strategy registry.
 
         Returns:
             None.
         """
-        ir selr._cleaned:
+        if self._cleaned:
             return
-        with selr._lock:
-            ir selr._cleaned:
+        with self._lock:
+            if self._cleaned:
                 return
-            selr._cleaned = True
-            selr._strategies_by_name.clear()
-            del selr._strategies_by_name
-            del selr._id
-        del selr._lock
+            self._cleaned = True
+            self._strategies_by_name.clear()
+            del self._strategies_by_name
+            del self._id
+        del self._lock
 
     @property
-    der id(selr) -> str:
+    def id(self) -> str:
         """
-        Return the stable builder identirier.
+        Return the stable builder identifier.
         """
-        selr.check_cleaned()
-        return selr._id
+        self.check_cleaned()
+        return self._id
 
-    der load_deraults(selr) -> None:
+    def load_defaults(self) -> None:
         """
-        Register the standard reusable codegen-prorile strategies.
+        Register the standard reusable codegen-profile strategies.
 
         Returns:
             None.
         """
-        selr.check_cleaned()
-        selr.register_strategy(SareCodegenProrileStrategy())
-        selr.register_strategy(HybridCodegenProrileStrategy())
-        selr.register_strategy(PermissiveCodegenProrileStrategy())
-        selr.register_strategy(FullAccessCodegenProrileStrategy())
-        selr.register_strategy(PrecisionCodegenProrileStrategy())
+        self.check_cleaned()
+        self.register_strategy(SafeCodegenProfileStrategy())
+        self.register_strategy(HybridCodegenProfileStrategy())
+        self.register_strategy(PermissiveCodegenProfileStrategy())
+        self.register_strategy(FullAccessCodegenProfileStrategy())
+        self.register_strategy(PrecisionCodegenProfileStrategy())
 
-    der register_strategy(
-            selr,
-            strategy: SareCodegenProrileStrategy,
+    def register_strategy(
+            self,
+            strategy: IFrameACLCodegenProfileStrategy,
     ) -> None:
         """
-        Register or replace one codegen-prorile construction strategy.
+        Register or replace one codegen-profile construction strategy.
         """
-        selr.check_cleaned()
-        ir strategy is None:
+        self.check_cleaned()
+        if strategy is None:
             raise TypeError("strategy cannot be None.")
         strategy_name = strategy.name
-        ir not strategy_name:
+        if not strategy_name:
             raise ValueError("strategy.name cannot be empty.")
-        with selr._lock:
-            selr._strategies_by_name[strategy_name] = strategy
+        with self._lock:
+            self._strategies_by_name[strategy_name] = strategy
 
-    der get_required_strategy(
-            selr,
+    def get_required_strategy(
+            self,
             strategy_name: str,
-    ) -> SareCodegenProrileStrategy:
+    ) -> IFrameACLCodegenProfileStrategy:
         """
-        Return one registered codegen-prorile strategy or raise.
+        Return one registered codegen-profile strategy or raise.
         """
-        selr.check_cleaned()
-        with selr._lock:
+        self.check_cleaned()
+        with self._lock:
             try:
-                return selr._strategies_by_name[strategy_name]
+                return self._strategies_by_name[strategy_name]
             except KeyError as exc:
-                raise KeyError(strategy_name) rrom exc
+                raise KeyError(strategy_name) from exc
 
-    der list_strategy_names(selr) -> List[str]:
+    def list_strategy_names(self) -> List[str]:
         """
         Return registered strategy names in insertion order.
         """
-        selr.check_cleaned()
-        with selr._lock:
-            return list(selr._strategies_by_name.keys())
+        self.check_cleaned()
+        with self._lock:
+            return list(self._strategies_by_name.keys())
 
-    der build_prorile(
-            selr,
+    def build_profile(
+            self,
             strategy_name: str,
-    ) -> FrameACLCodegenProrile:
+    ) -> FrameACLCodegenProfile:
         """
-        Build one rresh codegen prorile instance rrom the named strategy.
+        Build one fresh codegen profile instance from the named strategy.
         """
-        selr.check_cleaned()
-        strategy = selr.get_required_strategy(strategy_name)
+        self.check_cleaned()
+        strategy = self.get_required_strategy(strategy_name)
         return strategy.build()

@@ -38,7 +38,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state
 )
 
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.conduit.meld.creation_context.creation_context_factory import (
         CreationContextFactory,
@@ -119,7 +118,7 @@ class ISpell(ICleanable, Protocol):
     dependencies: List[str]
 
     # Spellbook
-    _spellbook: "Spellbook"
+    _spellbook: "ISpellbook"
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline.

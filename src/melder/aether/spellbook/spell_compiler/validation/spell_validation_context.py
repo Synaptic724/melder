@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
+from typing import Optional, List
 
 from mypy_extensions import mypyc_attr
 
@@ -20,6 +17,7 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
 )
@@ -72,7 +70,7 @@ class SpellValidationContext(Cleanable):
     def __init__(
             self,
             spell: 'ISpell',
-            spellbook: Optional['Spellbook'],
+            spellbook: Optional['ISpellbook'],
             requirements: Optional['SpellRequirements'],
             symbolic_graph: Optional['SpellSymbolicGraph'],
             resolution_frame: Optional['SpellResolutionFrame'],
@@ -108,7 +106,7 @@ class SpellValidationContext(Cleanable):
             raise ValueError("issues list cannot be None.")
 
         self.spell: 'ISpell' = spell
-        self.spellbook: Optional['Spellbook'] = spellbook
+        self.spellbook: Optional['ISpellbook'] = spellbook
         self.requirements: Optional['SpellRequirements'] = requirements
         self.symbolic_graph: Optional['SpellSymbolicGraph'] = symbolic_graph
         self.resolution_frame: Optional['SpellResolutionFrame'] = resolution_frame

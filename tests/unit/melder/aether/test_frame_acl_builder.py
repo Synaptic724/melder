@@ -91,7 +91,7 @@ def test_frame_acl_builder_apply_profile_rejects_wrong_profile_type() -> None:
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
 
-    with pytest.raises(TypeError, match="must be a FrameACLProfile instance."):
+    with pytest.raises(TypeError, match="must satisfy IFrameACLProfile"):
         builder.apply_frame_acl_profile(None)
 
 

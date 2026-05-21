@@ -1,395 +1,395 @@
 import threading
-rrom typing import Optional, Set, Tuple
-rrom melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from typing import Optional, Set, Tuple
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-rrom melder.nexus.acl.validator.compatibility.rrame_acl_set_compatibility_report import (
+from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report import (
     FrameACLSetCompatibilityReport,
 )
-rrom melder.utilities.general_base.cleanable import Cleanable
-rrom melder.utilities.helpers.id_builder import IDBuilder
-rrom melder.nexus.acl.conrigurations.rrame_acl_command_conriguration import (
-    FrameACLCommandConriguration,
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
+from melder.nexus.acl.configurations.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
 )
-rrom melder.nexus.acl.conrigurations.rrame_acl_codegen_conriguration import (
-    FrameACLCodegenConriguration,
+from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
+    FrameACLCodegenConfiguration,
 )
-rrom melder.nexus.acl.rrame_acl_conriguration import FrameACLConriguration
-rrom melder.utilities.interraces.irrameaclprorilebuilder import FrameACLProrileBuilder
-rrom melder.utilities.interraces.irrameaclruleset import IFrameACLRuleSet
-rrom melder.nexus.acl.conrigurations.rrame_acl_view_conriguration import (
-    FrameACLViewConriguration,
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
+from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
 )
 
 
 class FrameACLSetCompatibilityValidator(Cleanable):
     """
     Purpose:
-        Validate whether one selected rrame ACL bundle is internally coherent
+        Validate whether one selected frame ACL bundle is internally coherent
         across view, command, and codegen policy layers.
 
     Contract:
-        - Operates on a rully typed `FrameACLConriguration` bundle.
-        - Resolves reusable view/codegen proriles through the shared ACL
-          prorile builder so warnings/errors rerlect errective policy, not just
+        - Operates on a fully typed `FrameACLConfiguration` bundle.
+        - Resolves reusable view/codegen profiles through the shared ACL
+          profile builder so warnings/errors reflect effective policy, not just
           local overrides.
-        - Produces a detached compatibility report ror diagnostics.
-        - Raises on compatibility-report errors while preserving warnings ror
+        - Produces a detached compatibility report for diagnostics.
+        - Raises on compatibility-report errors while preserving warnings for
           caller inspection.
 
-    Lirecycle:
-        Cleanup is idempotent and clears the last report plus the prorile
-        builder rererence.
+    Lifecycle:
+        Cleanup is idempotent and clears the last report plus the profile
+        builder reference.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
-        "_rrame_name",
-        "_prorile_builder",
+        "_frame_name",
+        "_profile_builder",
         "_last_report",
     ]
 
-    der __init__(
-            selr,
-            rrame_name: str,
-            prorile_builder: FrameACLProrileBuilder,
+    def __init__(
+            self,
+            frame_name: str,
+            profile_builder: IFrameACLProfileBuilder,
     ) -> None:
         """
-        Initialize one rrame-scoped ACL set compatibility validator.
+        Initialize one frame-scoped ACL set compatibility validator.
 
         Args:
-            rrame_name:
-                Owning rrame name.
-            prorile_builder:
-                Shared ACL prorile builder/library used to resolve errective
-                view and codegen prorile semantics.
+            frame_name:
+                Owning frame name.
+            profile_builder:
+                Shared ACL profile builder/library used to resolve effective
+                view and codegen profile semantics.
 
         Returns:
             None.
 
         Raises:
             ValueError:
-                Ir `rrame_name` is empty.
+                If `frame_name` is empty.
             TypeError:
-                Ir `prorile_builder` is None.
+                If `profile_builder` is None.
         """
         super().__init__()
-        ir not rrame_name:
-            raise ValueError("rrame_name cannot be empty.")
-        ir prorile_builder is None:
-            raise TypeError("prorile_builder cannot be None.")
-        selr._id: str = IDBuilder.create_id()
-        selr._lock: threading.RLock = threading.RLock()
-        selr._rrame_name: str = rrame_name
-        selr._prorile_builder: FrameACLProrileBuilder = prorile_builder
-        selr._last_report: Optional[FrameACLSetCompatibilityReport] = None
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        if profile_builder is None:
+            raise TypeError("profile_builder cannot be None.")
+        self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
+        self._frame_name: str = frame_name
+        self._profile_builder: IFrameACLProfileBuilder = profile_builder
+        self._last_report: Optional[FrameACLSetCompatibilityReport] = None
 
-    der cleanup(selr) -> None:
+    def cleanup(self) -> None:
         """
         Idempotently clear validator-owned state.
 
         Returns:
             None.
         """
-        ir selr._cleaned:
+        if self._cleaned:
             return
-        with selr._lock:
-            ir selr._cleaned:
+        with self._lock:
+            if self._cleaned:
                 return
-            selr._cleaned = True
-            ir selr._last_report is not None:
-                selr._last_report.cleanup()
-            del selr._last_report
-            del selr._prorile_builder
-            del selr._rrame_name
-            del selr._id
-        del selr._lock
+            self._cleaned = True
+            if self._last_report is not None:
+                self._last_report.cleanup()
+            del self._last_report
+            del self._profile_builder
+            del self._frame_name
+            del self._id
+        del self._lock
 
     @property
-    der rrame_name(selr) -> str:
+    def frame_name(self) -> str:
         """
-        Return the owning rrame name ror this validator.
+        Return the owning frame name for this validator.
 
         Returns:
-            str: Owning rrame name.
+            str: Owning frame name.
         """
-        selr.check_cleaned()
-        with selr._lock:
-            return selr._rrame_name
+        self.check_cleaned()
+        with self._lock:
+            return self._frame_name
 
     @property
-    der last_report(selr) -> Optional[FrameACLSetCompatibilityReport]:
+    def last_report(self) -> Optional[FrameACLSetCompatibilityReport]:
         """
         Return the most recent compatibility report when one exists.
 
         Returns:
             Optional[FrameACLSetCompatibilityReport]: Last report snapshot.
         """
-        selr.check_cleaned()
-        with selr._lock:
-            return selr._last_report
+        self.check_cleaned()
+        with self._lock:
+            return self._last_report
 
-    der validate_conriguration(
-            selr,
-            conriguration: FrameACLConriguration,
+    def validate_configuration(
+            self,
+            configuration: FrameACLConfiguration,
     ) -> FrameACLSetCompatibilityReport:
         """
-        Validate one selected rrame ACL bundle ror cross-set compatibility.
+        Validate one selected frame ACL bundle for cross-set compatibility.
 
         Contract:
-            - Conrirms rrame-name alignment ror the bundle.
-            - Builds a detached report or warnings/errors based on errective
+            - Confirms frame-name alignment for the bundle.
+            - Builds a detached report of warnings/errors based on effective
               view, command, and codegen policy.
-            - Raises ir the report contains errors.
+            - Raises if the report contains errors.
 
         Args:
-            conriguration:
-                Typed rrame ACL bundle to validate.
+            configuration:
+                Typed frame ACL bundle to validate.
 
         Returns:
             FrameACLSetCompatibilityReport: Compatibility validation report.
 
         Raises:
             TypeError:
-                Ir `conriguration` is not a `FrameACLConriguration`.
+                If `configuration` is not a `FrameACLConfiguration`.
             ValueError:
-                Ir the bundle targets another rrame or compatibility errors are
+                If the bundle targets another frame or compatibility errors are
                 detected.
         """
-        selr.check_cleaned()
-        with selr._lock:
-            ir not isinstance(conriguration, FrameACLConriguration):
+        self.check_cleaned()
+        with self._lock:
+            if not isinstance(configuration, FrameACLConfiguration):
                 raise TypeError(
-                    "conriguration must be a FrameACLConriguration instance."
+                    "configuration must be a FrameACLConfiguration instance."
                 )
-            ir conriguration.rrame_name != selr._rrame_name:
+            if configuration.frame_name != self._frame_name:
                 raise ValueError(
-                    "FrameACLConriguration targets rrame '{0}', expected '{1}'.".rormat(
-                        conriguration.rrame_name,
-                        selr._rrame_name,
+                    "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                        configuration.frame_name,
+                        self._frame_name,
                     )
                 )
             report = FrameACLSetCompatibilityReport(
-                rrame_name=conriguration.rrame_name,
-                conriguration_id=conriguration.conriguration_id,
+                frame_name=configuration.frame_name,
+                configuration_id=configuration.configuration_id,
             )
-            ir selr._last_report is not None:
-                selr._last_report.cleanup()
-            selr._last_report = report
+            if self._last_report is not None:
+                self._last_report.cleanup()
+            self._last_report = report
 
-            selr._validate_view_and_command(
+            self._validate_view_and_command(
                 report,
-                conriguration.view_conriguration,
-                conriguration.command_conriguration,
+                configuration.view_configuration,
+                configuration.command_configuration,
             )
-            selr._validate_command_and_codegen(
+            self._validate_command_and_codegen(
                 report,
-                conriguration.command_conriguration,
-                conriguration.codegen_conriguration,
+                configuration.command_configuration,
+                configuration.codegen_configuration,
             )
 
-            ir report.has_errors:
+            if report.has_errors:
                 raise ValueError(
-                    "Frame ACL bundle compatibility validation railed ror rrame '{0}': {1}".rormat(
-                        conriguration.rrame_name,
+                    "Frame ACL bundle compatibility validation failed for frame '{0}': {1}".format(
+                        configuration.frame_name,
                         "; ".join(report.errors),
                     )
                 )
             return report
 
-    der _validate_view_and_command(
-            selr,
+    def _validate_view_and_command(
+            self,
             report: FrameACLSetCompatibilityReport,
-            view_conriguration: FrameACLViewConriguration,
-            command_conriguration: FrameACLCommandConriguration,
+            view_configuration: FrameACLViewConfiguration,
+            command_configuration: FrameACLCommandConfiguration,
     ) -> None:
         """
-        Validate view/command compatibility ror the errective bundle.
+        Validate view/command compatibility for the effective bundle.
 
         Args:
             report:
                 Report collecting warnings/errors.
-            view_conriguration:
-                Typed view-side conriguration.
-            command_conriguration:
-                Typed command-side conriguration.
+            view_configuration:
+                Typed view-side configuration.
+            command_configuration:
+                Typed command-side configuration.
 
         Returns:
             None.
         """
-        view_prorile = selr._prorile_builder.get_required_view_prorile(
-            view_conriguration.prorile_name
+        view_profile = self._profile_builder.get_required_view_profile(
+            view_configuration.profile_name
         )
-        view_precision_prorile = (
-            selr._prorile_builder.get_required_view_precision_prorile(
-                view_conriguration.precision_prorile_name
+        view_precision_profile = (
+            self._profile_builder.get_required_view_precision_profile(
+                view_configuration.precision_profile_name
             )
-            ir view_conriguration.precision_prorile_name is not None
+            if view_configuration.precision_profile_name is not None
             else None
         )
-        command_prorile = selr._prorile_builder.get_required_command_prorile(
-            command_conriguration.prorile_name
+        command_profile = self._profile_builder.get_required_command_profile(
+            command_configuration.profile_name
         )
-        command_precision_prorile = (
-            selr._prorile_builder.get_required_command_precision_prorile(
-                command_conriguration.precision_prorile_name
+        command_precision_profile = (
+            self._profile_builder.get_required_command_precision_profile(
+                command_configuration.precision_profile_name
             )
-            ir command_conriguration.precision_prorile_name is not None
+            if command_configuration.precision_profile_name is not None
             else None
         )
-        selr._check_visibility_vs_enable(
+        self._check_visibility_vs_enable(
             report,
-            ramily_label="rrame",
+            family_label="frame",
             view_rulesets=(
-                view_prorile.rrame_ruleset,
-                view_precision_prorile.rrame_ruleset
-                ir view_precision_prorile is not None
+                view_profile.frame_ruleset,
+                view_precision_profile.frame_ruleset
+                if view_precision_profile is not None
                 else None,
             ),
-            view_override_ruleset=view_conriguration.rrame_override_ruleset,
+            view_override_ruleset=view_configuration.frame_override_ruleset,
             command_rulesets=(
-                command_prorile.rrame_ruleset,
-                command_precision_prorile.rrame_ruleset
-                ir command_precision_prorile is not None
+                command_profile.frame_ruleset,
+                command_precision_profile.frame_ruleset
+                if command_precision_profile is not None
                 else None,
             ),
-            command_override_ruleset=command_conriguration.rrame_override_ruleset,
+            command_override_ruleset=command_configuration.frame_override_ruleset,
             view_operation="visible",
             command_operation="enable",
         )
-        selr._check_visibility_vs_enable(
+        self._check_visibility_vs_enable(
             report,
-            ramily_label="conduit",
+            family_label="conduit",
             view_rulesets=(
-                view_prorile.conduit_ruleset,
-                view_precision_prorile.conduit_ruleset
-                ir view_precision_prorile is not None
+                view_profile.conduit_ruleset,
+                view_precision_profile.conduit_ruleset
+                if view_precision_profile is not None
                 else None,
             ),
-            view_override_ruleset=view_conriguration.conduit_override_ruleset,
+            view_override_ruleset=view_configuration.conduit_override_ruleset,
             command_rulesets=(
-                command_prorile.conduit_ruleset,
-                command_precision_prorile.conduit_ruleset
-                ir command_precision_prorile is not None
+                command_profile.conduit_ruleset,
+                command_precision_profile.conduit_ruleset
+                if command_precision_profile is not None
                 else None,
             ),
-            command_override_ruleset=command_conriguration.conduit_override_ruleset,
+            command_override_ruleset=command_configuration.conduit_override_ruleset,
             view_operation="visible",
             command_operation="enable",
         )
-        selr._check_visibility_vs_enable(
+        self._check_visibility_vs_enable(
             report,
-            ramily_label="spell",
+            family_label="spell",
             view_rulesets=(
-                view_prorile.spell_ruleset,
-                view_precision_prorile.spell_ruleset
-                ir view_precision_prorile is not None
+                view_profile.spell_ruleset,
+                view_precision_profile.spell_ruleset
+                if view_precision_profile is not None
                 else None,
             ),
-            view_override_ruleset=view_conriguration.spell_override_ruleset,
+            view_override_ruleset=view_configuration.spell_override_ruleset,
             command_rulesets=(
-                command_prorile.spell_ruleset,
-                command_precision_prorile.spell_ruleset
-                ir command_precision_prorile is not None
+                command_profile.spell_ruleset,
+                command_precision_profile.spell_ruleset
+                if command_precision_profile is not None
                 else None,
             ),
-            command_override_ruleset=command_conriguration.spell_override_ruleset,
+            command_override_ruleset=command_configuration.spell_override_ruleset,
             view_operation="visible",
             command_operation="enable",
         )
-        selr._check_member_visibility_vs_command(
+        self._check_member_visibility_vs_command(
             report,
             view_rulesets=(
-                view_prorile.member_ruleset,
-                view_precision_prorile.member_ruleset
-                ir view_precision_prorile is not None
+                view_profile.member_ruleset,
+                view_precision_profile.member_ruleset
+                if view_precision_profile is not None
                 else None,
             ),
-            view_override_ruleset=view_conriguration.member_override_ruleset,
+            view_override_ruleset=view_configuration.member_override_ruleset,
             command_rulesets=(
-                command_prorile.member_ruleset,
-                command_precision_prorile.member_ruleset
-                ir command_precision_prorile is not None
+                command_profile.member_ruleset,
+                command_precision_profile.member_ruleset
+                if command_precision_profile is not None
                 else None,
             ),
-            command_override_ruleset=command_conriguration.member_override_ruleset,
+            command_override_ruleset=command_configuration.member_override_ruleset,
         )
 
-    der _validate_command_and_codegen(
-            selr,
+    def _validate_command_and_codegen(
+            self,
             report: FrameACLSetCompatibilityReport,
-            command_conriguration: FrameACLCommandConriguration,
-            codegen_conriguration: FrameACLCodegenConriguration,
+            command_configuration: FrameACLCommandConfiguration,
+            codegen_configuration: FrameACLCodegenConfiguration,
     ) -> None:
         """
-        Validate command/codegen compatibility ror the errective bundle.
+        Validate command/codegen compatibility for the effective bundle.
 
         Args:
             report:
                 Report collecting warnings/errors.
-            command_conriguration:
-                Typed command-side conriguration.
-            codegen_conriguration:
-                Typed codegen-side conriguration.
+            command_configuration:
+                Typed command-side configuration.
+            codegen_configuration:
+                Typed codegen-side configuration.
 
         Returns:
             None.
         """
-        command_prorile = selr._prorile_builder.get_required_command_prorile(
-            command_conriguration.prorile_name
+        command_profile = self._profile_builder.get_required_command_profile(
+            command_configuration.profile_name
         )
-        command_precision_prorile = (
-            selr._prorile_builder.get_required_command_precision_prorile(
-                command_conriguration.precision_prorile_name
+        command_precision_profile = (
+            self._profile_builder.get_required_command_precision_profile(
+                command_configuration.precision_profile_name
             )
-            ir command_conriguration.precision_prorile_name is not None
+            if command_configuration.precision_profile_name is not None
             else None
         )
-        codegen_prorile = selr._prorile_builder.get_required_codegen_prorile(
-            codegen_conriguration.prorile_name
+        codegen_profile = self._profile_builder.get_required_codegen_profile(
+            codegen_configuration.profile_name
         )
-        codegen_precision_prorile = (
-            selr._prorile_builder.get_required_codegen_precision_prorile(
-                codegen_conriguration.precision_prorile_name
+        codegen_precision_profile = (
+            self._profile_builder.get_required_codegen_precision_profile(
+                codegen_configuration.precision_profile_name
             )
-            ir codegen_conriguration.precision_prorile_name is not None
+            if codegen_configuration.precision_profile_name is not None
             else None
         )
-        command_spell_allows, command_spell_denies = selr._collect_errective_operation_errects_rrom_rulesets(
-            command_prorile.spell_ruleset,
+        command_spell_allows, command_spell_denies = self._collect_effective_operation_effects_from_rulesets(
+            command_profile.spell_ruleset,
             (
-                command_precision_prorile.spell_ruleset
-                ir command_precision_prorile is not None
+                command_precision_profile.spell_ruleset
+                if command_precision_profile is not None
                 else None
             ),
-            command_conriguration.spell_override_ruleset,
+            command_configuration.spell_override_ruleset,
         )
         command_member_allows, command_member_denies = (
-            selr._collect_errective_operation_errects_rrom_rulesets(
-                command_prorile.member_ruleset,
+            self._collect_effective_operation_effects_from_rulesets(
+                command_profile.member_ruleset,
                 (
-                    command_precision_prorile.member_ruleset
-                    ir command_precision_prorile is not None
+                    command_precision_profile.member_ruleset
+                    if command_precision_profile is not None
                     else None
                 ),
-                command_conriguration.member_override_ruleset,
+                command_configuration.member_override_ruleset,
             )
         )
-        codegen_spell_allows, codegen_spell_denies = selr._collect_errective_operation_errects_rrom_rulesets(
-            codegen_prorile.spell_ruleset,
+        codegen_spell_allows, codegen_spell_denies = self._collect_effective_operation_effects_from_rulesets(
+            codegen_profile.spell_ruleset,
             (
-                codegen_precision_prorile.spell_ruleset
-                ir codegen_precision_prorile is not None
+                codegen_precision_profile.spell_ruleset
+                if codegen_precision_profile is not None
                 else None
             ),
-            codegen_conriguration.spell_override_ruleset,
+            codegen_configuration.spell_override_ruleset,
         )
-        ir (
+        if (
                 "enable" not in command_spell_allows
                 or "enable" in command_spell_denies
         ):
-            ir len(command_member_allows) > 0:
+            if len(command_member_allows) > 0:
                 report.add_error(
                     "command.member enables actions while command.spell does not enable spell access."
                 )
@@ -398,24 +398,24 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             "read_attribute",
             "write_attribute",
         }
-        errective_codegen_actions = (
-            codegen_spell_allows.intersection(codegen_action_ops).dirrerence(
+        effective_codegen_actions = (
+            codegen_spell_allows.intersection(codegen_action_ops).difference(
                 codegen_spell_denies
             )
         )
-        errective_command_actions = command_member_allows.dirrerence(
+        effective_command_actions = command_member_allows.difference(
             command_member_denies
         )
-        ir len(errective_codegen_actions.dirrerence(errective_command_actions)) > 0:
+        if len(effective_codegen_actions.difference(effective_command_actions)) > 0:
             report.add_warning(
                 "codegen.spell allows action operations that command.member does not permit."
             )
 
-    der _check_visibility_vs_enable(
-            selr,
+    def _check_visibility_vs_enable(
+            self,
             report: FrameACLSetCompatibilityReport,
             *,
-            ramily_label: str,
+            family_label: str,
             view_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
             view_override_ruleset: IFrameACLRuleSet,
             command_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
@@ -424,21 +424,21 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             command_operation: str,
     ) -> None:
         """
-        Compare one view visibility ramily to one command enable ramily.
+        Compare one view visibility family to one command enable family.
 
         Args:
             report:
                 Report collecting warnings/errors.
-            ramily_label:
-                Human-readable ramily name.
+            family_label:
+                Human-readable family name.
             view_rulesets:
                 Base and precision reusable view rulesets.
             view_override_ruleset:
-                View override ruleset ror the ramily.
+                View override ruleset for the family.
             command_rulesets:
                 Base and precision reusable command rulesets.
             command_override_ruleset:
-                Command override ruleset ror the ramily.
+                Command override ruleset for the family.
             view_operation:
                 View operation to evaluate.
             command_operation:
@@ -447,11 +447,11 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         Returns:
             None.
         """
-        view_allows, view_denies = selr._collect_errective_operation_errects_rrom_rulesets(
+        view_allows, view_denies = self._collect_effective_operation_effects_from_rulesets(
             *view_rulesets,
             view_override_ruleset,
         )
-        command_allows, command_denies = selr._collect_errective_operation_errects_rrom_rulesets(
+        command_allows, command_denies = self._collect_effective_operation_effects_from_rulesets(
             *command_rulesets,
             command_override_ruleset,
         )
@@ -464,21 +464,21 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             command_operation in command_allows
             and command_operation not in command_denies
         )
-        ir view_enabled and not command_enabled and command_has_policy:
+        if view_enabled and not command_enabled and command_has_policy:
             report.add_warning(
-                "view.{0} is visible while command.{0} is not enabled.".rormat(
-                    ramily_label
+                "view.{0} is visible while command.{0} is not enabled.".format(
+                    family_label
                 )
             )
-        ir command_enabled and not view_enabled:
+        if command_enabled and not view_enabled:
             report.add_warning(
-                "command.{0} is enabled while view.{0} is not visible.".rormat(
-                    ramily_label
+                "command.{0} is enabled while view.{0} is not visible.".format(
+                    family_label
                 )
             )
 
-    der _check_member_visibility_vs_command(
-            selr,
+    def _check_member_visibility_vs_command(
+            self,
             report: FrameACLSetCompatibilityReport,
             *,
             view_rulesets: Tuple[Optional[IFrameACLRuleSet], ...],
@@ -502,11 +502,11 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         Returns:
             None.
         """
-        view_allows, view_denies = selr._collect_errective_operation_errects_rrom_rulesets(
+        view_allows, view_denies = self._collect_effective_operation_effects_from_rulesets(
             *view_rulesets,
             view_override_ruleset,
         )
-        command_allows, command_denies = selr._collect_errective_operation_errects_rrom_rulesets(
+        command_allows, command_denies = self._collect_effective_operation_effects_from_rulesets(
             *command_rulesets,
             command_override_ruleset,
         )
@@ -515,8 +515,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             "show_member" in view_allows
             and "show_member" not in view_denies
         )
-        command_member_actions = command_allows.dirrerence(command_denies)
-        ir (
+        command_member_actions = command_allows.difference(command_denies)
+        if (
                 view_members_visible
                 and len(command_member_actions) == 0
                 and command_has_policy
@@ -524,17 +524,17 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             report.add_warning(
                 "view.member exposes members while command.member permits no member actions."
             )
-        ir len(command_member_actions) > 0 and not view_members_visible:
+        if len(command_member_actions) > 0 and not view_members_visible:
             report.add_warning(
                 "command.member permits actions while view.member does not expose members."
             )
 
     @staticmethod
-    der _collect_operation_errects(
+    def _collect_operation_effects(
             ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Collect allow/deny operations rrom one ruleset.
+        Collect allow/deny operations from one ruleset.
 
         Args:
             ruleset:
@@ -545,37 +545,37 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror rule in ruleset.rules_by_name.values():
-            ir rule.errect == "allow":
+        for rule in ruleset.rules_by_name.values():
+            if rule.effect == "allow":
                 allow_operations.add(rule.operation)
-            elir rule.errect == "deny":
+            elif rule.effect == "deny":
                 deny_operations.add(rule.operation)
         return allow_operations, deny_operations
 
     @staticmethod
-    der _collect_errective_operation_errects(
+    def _collect_effective_operation_effects(
             base_ruleset: IFrameACLRuleSet,
             override_ruleset: IFrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Collect errective allow/deny operations rrom base plus override rules.
+        Collect effective allow/deny operations from base plus override rules.
 
         Args:
             base_ruleset:
-                Base reusable prorile ruleset.
+                Base reusable profile ruleset.
             override_ruleset:
-                Applied conriguration override ruleset.
+                Applied configuration override ruleset.
 
         Returns:
-            Tuple[Set[str], Set[str]]: Errective allow and deny operation names.
+            Tuple[Set[str], Set[str]]: Effective allow and deny operation names.
         """
         base_allows, base_denies = (
-            FrameACLSetCompatibilityValidator._collect_operation_errects(
+            FrameACLSetCompatibilityValidator._collect_operation_effects(
                 base_ruleset
             )
         )
         override_allows, override_denies = (
-            FrameACLSetCompatibilityValidator._collect_operation_errects(
+            FrameACLSetCompatibilityValidator._collect_operation_effects(
                 override_ruleset
             )
         )
@@ -585,22 +585,22 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         )
 
     @staticmethod
-    der _collect_errective_operation_errects_rrom_rulesets(
+    def _collect_effective_operation_effects_from_rulesets(
             *rulesets: Optional[IFrameACLRuleSet],
     ) -> Tuple[Set[str], Set[str]]:
         """
-        Merge an ordered list or base/precision/override rulesets into one errect set.
+        Merge an ordered list of base/precision/override rulesets into one effect set.
 
         Returns:
-            Tuple[Set[str], Set[str]]: Errective allow and deny operation names.
+            Tuple[Set[str], Set[str]]: Effective allow and deny operation names.
         """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
-        ror ruleset in rulesets:
-            ir ruleset is None:
+        for ruleset in rulesets:
+            if ruleset is None:
                 continue
             ruleset_allows, ruleset_denies = (
-                FrameACLSetCompatibilityValidator._collect_operation_errects(
+                FrameACLSetCompatibilityValidator._collect_operation_effects(
                     ruleset
                 )
             )

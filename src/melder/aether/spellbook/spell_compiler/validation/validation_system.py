@@ -1,8 +1,5 @@
 from threading import RLock
-from typing import TYPE_CHECKING, Dict, List, Optional
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spellbook import Spellbook
+from typing import Dict, List, Optional
 
 from mypy_extensions import mypyc_attr
 
@@ -45,6 +42,7 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ispell import ISpell
+from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
@@ -277,7 +275,7 @@ class SpellValidationSystem(Cleanable):
         if cancel_event is not None and cancel_event.is_set:
             cancel_event.throw_if_set()
 
-        spellbook: Optional[Spellbook] = spell._spellbook
+        spellbook: Optional[ISpellbook] = spell._spellbook
 
         issues: List['SpellValidationIssue'] = []
 
