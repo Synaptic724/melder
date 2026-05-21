@@ -9,11 +9,11 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.interfaces.ispell import ISpell
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.aether.spellbook.spell_compiler.validation.validation_system import (
         SpellValidationSystem,
@@ -43,12 +43,12 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Core backing fields (shape only; concrete types live in impl)
     # ------------------------------------------------------------------
-    _lookup_contracted_spells: Dict[str, Dict[tuple, ISpellIndex]]
-    _lookup_spells: Dict[tuple, ISpellIndex]
-    _contracted_spells: Dict[str, Dict[ISpellIndex, ISpell]]
+    _lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]
+    _lookup_spells: Dict[tuple, SpellIndex]
+    _contracted_spells: Dict[str, Dict[SpellIndex, ISpell]]
     _contracted_versions: Dict[str, Set[str]]
     _contracted_spells_by_id: Dict[str, Dict[str, ISpell]]
-    _spells: Dict[ISpellIndex, ISpell]
+    _spells: Dict[SpellIndex, ISpell]
     _spell_versions: Set[str]
     _spells_by_id: Dict[str, ISpell]
     _bind: Optional[Any]
@@ -71,7 +71,7 @@ class ISpellbook(ICleanable, Protocol):
     # Properties
     # ------------------------------------------------------------------
     @property
-    def spells(self) -> Mapping[ISpellIndex, ISpell]:
+    def spells(self) -> Mapping[SpellIndex, ISpell]:
         """
         Public API
 
@@ -88,7 +88,7 @@ class ISpellbook(ICleanable, Protocol):
         ...
 
     @property
-    def contracted_spells(self) -> Mapping[str, Mapping[ISpellIndex, ISpell]]:
+    def contracted_spells(self) -> Mapping[str, Mapping[SpellIndex, ISpell]]:
         """
         Public API
 
@@ -463,7 +463,7 @@ class ISpellbook(ICleanable, Protocol):
             spellframe: str,
             spell_name: str,
             binding_name: str,
-    ) -> Optional[ISpellIndex]:
+    ) -> Optional[SpellIndex]:
         """
         Public API
 
@@ -541,7 +541,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_permissions(self, spell_index: ISpellIndex) -> Optional[str]:
+    def get_spell_permissions(self, spell_index: SpellIndex) -> Optional[str]:
         """
         Public API
 
@@ -566,7 +566,7 @@ class ISpellbook(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Internal local/contracted lookup + version cache API
     # ------------------------------------------------------------------
-    def _find_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+    def _find_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
         Internal
 
@@ -582,7 +582,7 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
-    def _find_contracted_spell(self, spell_index: ISpellIndex) -> Optional[ISpell]:
+    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
         """
         Internal
 
@@ -645,7 +645,7 @@ class ISpellbook(ICleanable, Protocol):
             self,
             *,
             lookup_key: tuple[str, str],
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             context: str,
             check_local: bool = True,
             check_contracted: bool = True,

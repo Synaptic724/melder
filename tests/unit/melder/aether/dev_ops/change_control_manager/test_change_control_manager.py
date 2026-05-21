@@ -11,7 +11,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -32,7 +32,7 @@ def manager(mock_sss):
 
 @pytest.fixture
 def mock_spell_index():
-    index = MagicMock(spec=ISpellIndex)
+    index = MagicMock(spec=SpellIndex)
     index.id = "spell-123"
     return index
 
@@ -71,7 +71,7 @@ def test_register_updates_existing(manager, mock_spell_index):
     assert change["note"] == "overwrite"
 
 def test_register_validates_inputs(manager):
-    index = MagicMock(spec=ISpellIndex)
+    index = MagicMock(spec=SpellIndex)
     index.id = "s1"
     
     with pytest.raises(ValueError, match="spell_index cannot be None"):
@@ -92,8 +92,8 @@ def test_get_pending_change_returns_copy(manager, mock_spell_index):
     assert original["data"] == "mutable"
 
 def test_list_pending_changes(manager):
-    idx1 = MagicMock(spec=ISpellIndex, id="s1")
-    idx2 = MagicMock(spec=ISpellIndex, id="s2")
+    idx1 = MagicMock(spec=SpellIndex, id="s1")
+    idx2 = MagicMock(spec=SpellIndex, id="s2")
     
     manager.register_pending_change(idx1, "r1")
     manager.register_pending_change(idx2, "r2")
@@ -435,7 +435,7 @@ def test_default_structural_validator_resolves_spellbook_from_conduit_ids(manage
     - Conduit ids are used to resolve the owning Spellbook.
     - Only unresolved Phase-4 spells are passed to the post-conjure structural run.
     """
-    spell_index = MagicMock(spec=ISpellIndex)
+    spell_index = MagicMock(spec=SpellIndex)
     spell = MagicMock()
     spell.validation_result_phase4 = None
 

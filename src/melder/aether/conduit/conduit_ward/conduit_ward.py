@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.isafelogger import ISafeLogger
-from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -2880,7 +2880,7 @@ class ConduitWard(Cleanable, IConduitWard):
     def _transfer_spell_ownership(
             self,
             *,
-            spell: ISpell | str | ISpellIndex,
+            spell: ISpell | str | SpellIndex,
             target_conduit: IConduit,
             move_creations: bool = False,
             include_dependencies: bool = False,
@@ -2915,7 +2915,7 @@ class ConduitWard(Cleanable, IConduitWard):
         resolved_spell: Optional[ISpell]
         if isinstance(spell, ISpell):
             resolved_spell = spell
-        elif isinstance(spell, ISpellIndex):
+        elif isinstance(spell, SpellIndex):
             resolved_spell = self._conduit.get_spell_by_index_id(spell.id)
         else:
             resolved_spell = self._conduit.get_spell_by_id(

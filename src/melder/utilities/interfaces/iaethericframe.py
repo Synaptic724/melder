@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, Dict, Optional, Protocol, Set, runtime_checkab
 from types import TracebackType
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 
@@ -37,7 +37,7 @@ class IAethericFrame(ICleanable, Protocol):
     _id: str
     _conduits: Dict[str, IConduit]
     _conduit_cloud: ConduitCloud
-    _spell_registry: Dict[str, Set[ISpellIndex]]
+    _spell_registry: Dict[str, Set[SpellIndex]]
     name: str
 
     def register_root_conduit(self, conduit: IConduit) -> None:
@@ -129,7 +129,7 @@ class IAethericFrame(ICleanable, Protocol):
     def find_and_return_spell_index(
             self,
             version_id: str,
-    ) -> ISpellIndex | None:
+    ) -> SpellIndex | None:
         """
         Return the `SpellIndex` that owns the given version id, if any.
         """

@@ -1,5 +1,8 @@
-﻿import threading
-from typing import Any, Dict, List, Optional
+import threading
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.mutation_research.mutation_configuration import (
@@ -21,7 +24,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.imutationresearchconfiguration import (
     IMutationResearchConfiguration,
 )
@@ -370,7 +372,7 @@ class MutationResearch(Cleanable):
 
     def create_session(
             self,
-            target_index: ISpellIndex,
+            target_index: SpellIndex,
             *,
             name: Optional[str] = None,
             level: Optional[int] = None,
@@ -419,7 +421,7 @@ class MutationResearch(Cleanable):
             self._sessions_by_index[index_id] = session
             return session
 
-    def get_session_for_index(self, target_index: ISpellIndex) -> Optional[Research]:
+    def get_session_for_index(self, target_index: SpellIndex) -> Optional[Research]:
         """
         Retrieve the `Research` session for a given SpellIndex, if it exists.
 
@@ -476,7 +478,7 @@ class MutationResearch(Cleanable):
                 return []
             return list(self._sessions_by_index.values())
 
-    def remove_session_for_index(self, target_index: ISpellIndex) -> None:
+    def remove_session_for_index(self, target_index: SpellIndex) -> None:
         """
         Remove and cleanup the session associated with one SpellIndex, if present.
 
@@ -508,7 +510,7 @@ class MutationResearch(Cleanable):
 
     def begin_spell_mutation(
             self,
-            target_index: ISpellIndex,
+            target_index: SpellIndex,
             *,
             research_name: Optional[str] = None,
             message: Optional[str] = None,
@@ -555,7 +557,7 @@ class MutationResearch(Cleanable):
 
     def begin_creation_mutation(
             self,
-            target_index: ISpellIndex,
+            target_index: SpellIndex,
             creation_id: str,
             *,
             research_name: Optional[str] = None,

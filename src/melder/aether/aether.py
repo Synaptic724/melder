@@ -17,7 +17,7 @@ from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
-from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
@@ -26,6 +26,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.mutation_research.mutation_research import MutationResearch
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
+    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 
 @mypyc_attr(native_class=True)
 class Aether(Cleanable, IAether):
@@ -1239,7 +1242,7 @@ class Aether(Cleanable, IAether):
 
     # region Spell Management
 
-    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> ISpellIndex | None:
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> SpellIndex | None:
         """
         Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
         using the frame's _version_registry cache.
@@ -1253,7 +1256,7 @@ class Aether(Cleanable, IAether):
             aetheric_frame_name (str): The name of the frame.
 
         Returns:
-            ISpellIndex | None: The SpellIndex containing the spell ID, or None if not found.
+            SpellIndex | None: The SpellIndex containing the spell ID, or None if not found.
         """
         self.check_cleaned()
         # Pick frame
@@ -1277,21 +1280,21 @@ class Aether(Cleanable, IAether):
         else:
             return None
 
-    def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[ISpellIndex],
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                               aetheric_frame_name: str = "default") -> None:
         """
         Registers a set of SpellIndex objects for a conduit and refreshes version registry.
 
         Args:
             conduit_id (str): The id of the owning conduit.
-            spell_set (Set[ISpellIndex]): The set of SpellIndex objects to register.
+            spell_set (Set[SpellIndex]): The set of SpellIndex objects to register.
             aetheric_frame_name (str): The name of the frame.
         """
         self.check_cleaned()
 
         # Validate spell_set contents
         for item in spell_set:
-            if not isinstance(item, ISpellIndex):
+            if not isinstance(item, SpellIndex):
                 raise TypeError("spell_set must contain only SpellIndex instances")
 
         # Pick frame
@@ -1315,14 +1318,14 @@ class Aether(Cleanable, IAether):
         # Critical: update SHA256 version registry
         frame.refresh_version_registry()
 
-    def _remove_spells_from_aether(self, conduit_id: str, spell_set: Set[ISpellIndex],
+    def _remove_spells_from_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                                    aetheric_frame_name: str = "default") -> None:
         """
         Unregisters a set of SpellIndex objects for a conduit and refreshes version registry.
 
         Args:
             conduit_id (str): The id of the owning conduit.
-            spell_set (Set[ISpellIndex]): The set of SpellIndex objects to unregister.
+            spell_set (Set[SpellIndex]): The set of SpellIndex objects to unregister.
             aetheric_frame_name (str): The name of the frame.
         """
         self.check_cleaned()
@@ -1349,7 +1352,7 @@ class Aether(Cleanable, IAether):
         frame.refresh_version_registry()
 
 
-    def _register_single_spell_index(self, conduit_id: str, spell_index: ISpellIndex,
+    def _register_single_spell_index(self, conduit_id: str, spell_index: SpellIndex,
                                      aetheric_frame_name: str = "default") -> None:
         """
         Registers a single SpellIndex under a conduit and refreshes version registry.
@@ -1388,7 +1391,7 @@ class Aether(Cleanable, IAether):
     def _remove_single_spell_index(
             self,
             conduit_id: str,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             aetheric_frame_name: str = "default",
     ) -> None:
         """
@@ -1396,7 +1399,7 @@ class Aether(Cleanable, IAether):
 
         Args:
             conduit_id (str): The id of the owning conduit.
-            spell_index (ISpellIndex): The SpellIndex to remove.
+            spell_index (SpellIndex): The SpellIndex to remove.
             aetheric_frame_name (str): The name of the frame.
 
         Raises:

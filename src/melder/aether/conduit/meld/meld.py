@@ -4,7 +4,6 @@ from threading import RLock
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, List, Tuple, Sequence
 
 from mypy_extensions import mypyc_attr
-
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -22,9 +21,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-if TYPE_CHECKING:
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
@@ -32,6 +28,7 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
+    from melder.aether.conduit.creations.creations import Creations
 
 @mypyc_attr(native_class=True)
 class Meld(Cleanable):

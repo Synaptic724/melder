@@ -25,7 +25,6 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_result i
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -39,6 +38,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state
 )
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.conduit.meld.creation_context.creation_context_factory import (
         CreationContextFactory,
     )
@@ -85,7 +85,7 @@ class ISpell(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Spell metadata / structure
     # ------------------------------------------------------------------
-    spell_index: 'ISpellIndex'
+    spell_index: 'SpellIndex'
     _hooks_enabled: bool
     spell: Any
     spell_id: str

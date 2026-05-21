@@ -4,11 +4,11 @@ from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.ispellindex import ISpellIndex
 from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.iconduit import IConduit
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aether_configuration import AetherConfiguration
     from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
     from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
@@ -239,7 +239,7 @@ class IAether(ICleanable, Protocol):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[ISpellIndex]:
+    ) -> Optional[SpellIndex]:
         """
         Return the registered SpellIndex owning the supplied spell id, if any.
         """
@@ -248,7 +248,7 @@ class IAether(ICleanable, Protocol):
     def _register_single_spell_index(
             self,
             conduit_id: str,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             aetheric_frame_name: str = "default",
     ) -> None:
         """
@@ -259,7 +259,7 @@ class IAether(ICleanable, Protocol):
     def _add_spells_to_aether(
             self,
             conduit_id: str,
-            spell_set: Set[ISpellIndex],
+            spell_set: Set[SpellIndex],
             aetheric_frame_name: str = "default",
     ) -> None:
         """
@@ -270,7 +270,7 @@ class IAether(ICleanable, Protocol):
     def _remove_spells_from_aether(
             self,
             conduit_id: str,
-            spell_set: Set[ISpellIndex],
+            spell_set: Set[SpellIndex],
             aetheric_frame_name: str = "default",
     ) -> None:
         """
@@ -381,7 +381,7 @@ class IAether(ICleanable, Protocol):
     def _remove_single_spell_index(
             self,
             conduit_id: str,
-            spell_index: ISpellIndex,
+            spell_index: SpellIndex,
             aetheric_frame_name: str = "default",
     ) -> None:
         """

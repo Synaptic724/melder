@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.ispellindex import ISpellIndex
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -346,7 +346,7 @@ class TransferOfOwnership(Cleanable):
         # spell may be object, id, or SpellIndex
         if hasattr(self.spell, "spell_id"):
             return self.spell
-        if isinstance(self.spell, ISpellIndex):
+        if isinstance(self.spell, SpellIndex):
             idx = self.spell
             book = self._source_spellbook
             with book._lock:
@@ -473,7 +473,7 @@ class TransferOfOwnership(Cleanable):
                 return False
         return True
 
-    def _mark_lineage_dirty(self, spell_index: ISpellIndex) -> None:
+    def _mark_lineage_dirty(self, spell_index: SpellIndex) -> None:
         """
         Record a structural-change gate for one lineage in `SpellSystemStates`.
 
@@ -633,7 +633,7 @@ class TransferOfOwnership(Cleanable):
                     return True
         return False
 
-    def _mark_lineage_disabled(self, spell_index: ISpellIndex) -> None:
+    def _mark_lineage_disabled(self, spell_index: SpellIndex) -> None:
         """
         Hard-disable the lineage while the ownership flip is actively in flight.
 
@@ -934,7 +934,7 @@ class TransferOfOwnership(Cleanable):
         }
         return snapshot
 
-    def _spell_in_registry(self, conduit: Any, spell_index: ISpellIndex) -> bool:
+    def _spell_in_registry(self, conduit: Any, spell_index: SpellIndex) -> bool:
         """
         Check whether Aether already records this lineage under the conduit.
 
@@ -1146,7 +1146,7 @@ class TransferOfOwnership(Cleanable):
         except Exception:
             pass
 
-    def _lift_disable(self, spell_index: ISpellIndex, gated: bool) -> None:
+    def _lift_disable(self, spell_index: SpellIndex, gated: bool) -> None:
         """
         Exit the hard-disabled in-flight state after transfer success or
         failure.
@@ -1595,7 +1595,7 @@ class TransferOfOwnership(Cleanable):
                 sub_transfer.execute()
                 # Mark dependency lineage dirty if requested
                 if self.invalidate_after_transfer:
-                    if isinstance(dep_spell.spell_index, ISpellIndex):
+                    if isinstance(dep_spell.spell_index, SpellIndex):
                         self._mark_lineage_dirty(dep_spell.spell_index)
             except Exception:
                 continue
@@ -1619,7 +1619,7 @@ class TransferOfOwnership(Cleanable):
                 dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
                 if dep_spell is None:
                     continue
-                if isinstance(dep_spell.spell_index, ISpellIndex):
+                if isinstance(dep_spell.spell_index, SpellIndex):
                     self._mark_lineage_dirty(dep_spell.spell_index)
             except Exception:
                 continue
@@ -1667,7 +1667,7 @@ class TransferOfOwnership(Cleanable):
             # Best-effort; failures here should not block the transfer.
             pass
 
-    def _clear_change_intent(self, spell_index: ISpellIndex) -> None:
+    def _clear_change_intent(self, spell_index: SpellIndex) -> None:
         """
         Remove the pending-change record after a successful transfer.
 

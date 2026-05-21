@@ -8,10 +8,9 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.inexusframeconfiguration import INexusFrameConfiguration
 
 
-class NexusFrameConfiguration(Cleanable, INexusFrameConfiguration):
+class NexusFrameConfiguration(Cleanable):
     """
     Authored frame configuration for one Nexus-managed frame.
 
@@ -171,7 +170,7 @@ class NexusFrameConfiguration(Cleanable, INexusFrameConfiguration):
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
             root_conduit_name: str = "root",
-    ) -> INexusFrameConfiguration:
+    ) -> NexusFrameConfiguration:
         """
         Create one dynamic authored frame configuration.
 
