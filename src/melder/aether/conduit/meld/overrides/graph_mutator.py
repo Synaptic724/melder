@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -31,8 +31,11 @@ class GraphMutator(Cleanable):
     - Only mutation sockets are rewired; other sockets remain intact.
     - New targets are added as nodes but must be valid spell ids upstream.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
+    __deletable__: ClassVar[list[str]] = [
+        "_blueprint", "_engine"
+    ]
 
     _cleaned: bool
 

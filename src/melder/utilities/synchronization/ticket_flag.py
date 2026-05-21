@@ -1,6 +1,6 @@
 from collections import deque
 from types import TracebackType
-from typing import Deque, Literal, Optional
+from typing import Deque, Literal, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 from melder.utilities.general_base.cleanable import Cleanable
@@ -29,6 +29,7 @@ class TicketFlag(Cleanable):
     """
 
     __slots__ = ("_tickets",)
+    __deletable__: ClassVar[list[str]] = ["_tickets"]
 
     def __init__(self, value: bool = False) -> None:
         """

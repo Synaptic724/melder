@@ -63,6 +63,36 @@ class Aether(Cleanable):
     _instance: ClassVar[Optional["Aether"]] = None
     _lock: ClassVar[RLock] = RLock()
     _initialized: ClassVar[bool] = False
+    __slots__ = Cleanable.__slots__ + [
+        "_id",
+        "_configuration",
+        "_configured",
+        "_activated",
+        "_logger",
+        "_aetheric_frames",
+        "_default_frame",
+        "_aether_utility_system",
+        "_aetheric_frames",
+        "_default_frame",
+        "_crystallizer",
+        "_mutation_research",
+        "_nexus",
+    ]
+    __deletable__ = [
+        "_id",
+        "_configuration",
+        "_configured",
+        "_activated",
+        "_logger",
+        "_aetheric_frames",
+        "_default_frame",
+        "_aether_utility_system",
+        "_aetheric_frames",
+        "_default_frame",
+        "_crystallizer",
+        "_mutation_research",
+        "_nexus",
+    ]
 
     def __new__(cls, *args: object, **kwargs: object) -> "Aether":
         """

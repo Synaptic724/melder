@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque
+from typing import Deque, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -35,6 +35,7 @@ class FastSwitch(Cleanable):
     """
 
     __slots__ = ("_tickets",)
+    __deletable__: ClassVar[list[str]] = ["_tickets"]
 
     def __init__(self, value: bool = False) -> None:
         """
