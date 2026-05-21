@@ -4,6 +4,18 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
+        SpellResolutionFrame,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
+    from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
+        SpellSymbolicGraph,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
@@ -45,18 +57,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
     SpellValidationStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
-    SpellSymbolicGraph,
-)
-from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
-    SpellRequirements,
-)
-from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
-    SpellResolutionFrame,
-)
-from melder.utilities.synchronization.cancellation_event_signal import (
-    CancellationEvent,
-)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 @mypyc_attr(native_class=True)
@@ -247,7 +247,7 @@ class SpellValidationSystem(Cleanable):
             symbolic_graph: Optional[SpellSymbolicGraph],
             resolution_frame: Optional[SpellResolutionFrame],
             cancel_event: Optional[CancellationEvent] = None,
-    ) -> 'SpellValidationResult':
+    ) -> SpellValidationResult:
         """
         Validate a single spell using all registered strategies.
 

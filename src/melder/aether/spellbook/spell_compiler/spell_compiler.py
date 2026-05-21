@@ -3,12 +3,24 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
+        ExecutionPlan,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+    from melder.aether.spellbook.spell_compiler.validation.validation_system import (
+        SpellValidationSystem,
+    )
+    from melder.utilities.synchronization.cancellation_event_signal import (
+        CancellationEvent,
+    )
 
 from mypy_extensions import mypyc_attr
 
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlan,
-)
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_1 import (
     CompilerPhase1,
 )
@@ -45,16 +57,6 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
     CompilerPhase12,
 )
-from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
-    SpellCompilerArtifact,
-)
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.validation.validation_system import (
-        SpellValidationSystem,
-    )
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
 @mypyc_attr(native_class=True)
@@ -244,7 +246,7 @@ class SpellCompiler:
             self,
             spell: Spell,
             artifact: SpellCompilerArtifact,
-            spell_validator: "SpellValidationSystem",
+            spell_validator: SpellValidationSystem,
             spell_system_states: Optional[SpellSystemStates],
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
