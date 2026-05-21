@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING, Optional, Set, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -34,6 +34,11 @@ class CreationContextFactory(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_dynamic_environment",
+        "_creation_gate_controller",
+        "_created_spell_index_ids",
+    ]
+    __deletable__: ClassVar[list[str]] =  [
         "_dynamic_environment",
         "_creation_gate_controller",
         "_created_spell_index_ids",

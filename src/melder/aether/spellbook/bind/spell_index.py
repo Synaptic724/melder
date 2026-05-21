@@ -1,17 +1,17 @@
 import threading
 import ulid
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Dict, Tuple
-
-if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
-    from melder.aether.spellbook.spellbook import Spellbook
-
+from typing import TYPE_CHECKING, Optional, Dict, Tuple, ClassVar
 from mypy_extensions import mypyc_attr
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
+
+
 @mypyc_attr(native_class=True)
 class SpellIndex(Cleanable):
     """
@@ -28,7 +28,7 @@ class SpellIndex(Cleanable):
     - The index can be attached to owning and contracted Spellbooks so
       version changes can update spell_id lookup maps.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
         "_current_id",  # The mutable pointer to the active version (e.g., a SHA256).
@@ -40,6 +40,17 @@ class SpellIndex(Cleanable):
         "_owner_conduit_id",
         "_contracted_spellbooks",
     )
+    __deletable__: ClassVar[list[str]] = [
+        "_id",
+        "_current_id",
+        "_lock",
+        "_cleaned",
+        "_versions",
+        "_owner_spellbook",
+        "_owner_spell",
+        "_owner_conduit_id",
+        "_contracted_spellbooks",
+    ]
 
     def __init__(self, initial_id: str):
         """
@@ -370,7 +381,7 @@ class SpellIndex(Cleanable):
             return f"<SpellIndex id={self._id} current={self._current_id}>"
 
 
-    def __enter__(self) -> SpellIndex:
+    def __enter__(self) -> "SpellIndex":
         """
         Acquire the internal lock and return this index.
 

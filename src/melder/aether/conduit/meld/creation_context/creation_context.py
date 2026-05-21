@@ -1,5 +1,14 @@
 from operator import itemgetter
-from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, Tuple, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Dict,
+    Any,
+    Callable,
+    Tuple,
+    Sequence,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -40,6 +49,15 @@ class OverrideRouteConfig(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "plan_signature",
+        "path_registry",
+        "plan_rows",
+        "root_spell_id",
+        "spell_lookup",
+        "empty_shape_key",
+        "baseline_executor",
+    ]
+    __deletable__: ClassVar[list[str]] = [
         "plan_signature",
         "path_registry",
         "plan_rows",
@@ -133,14 +151,42 @@ class CreationContext(Cleanable):
         - Owns override specialization executors scoped to this spell.
     """
 
-    __melder_internal__ = _mrg.sentinel
-    ROUTE_EXISTING_CREATION = "existing_creation"
-    ROUTE_SPELLSPACE = "spellspace"
-    ROUTE_UNIQUE_PER_CONDUIT = "unique_per_conduit"
-    ROUTE_MANY = "many"
-    ROUTE_SHARED = "shared"
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    ROUTE_EXISTING_CREATION: ClassVar[str] = "existing_creation"
+    ROUTE_SPELLSPACE: ClassVar[str] = "spellspace"
+    ROUTE_UNIQUE_PER_CONDUIT: ClassVar[str] = "unique_per_conduit"
+    ROUTE_MANY: ClassVar[str] = "many"
+    ROUTE_SHARED: ClassVar[str] = "shared"
 
     __slots__ = Cleanable.__slots__ + [
+        "_spell",
+        "_spell_id",
+        "_dynamic_environment",
+        "_creation_gate",
+        "_creation_gate_index_id",
+        "_owner_creations",
+        "_execute_hooks_overrides_compiled",
+        "_execute_hooks_no_overrides_compiled",
+        "_execute_no_hooks_overrides_compiled",
+        "_execute_no_hooks_no_overrides_compiled",
+        "_no_overrides_executor",
+        "_override_patch_map_phase10",
+        "_override_apply_with_socket_shape_prechecked_phase10",
+        "_override_route_config_no_mutation",
+        "_override_route_config_mutation",
+        "_override_route_config_active",
+        "_override_empty_shape_key",
+        "_override_specialization_cache",
+        "_override_executor_source_cache_by_plan_signature",
+        "_override_executor_code_object_cache_by_plan_signature",
+        "_override_prefilter_step_targets_cache",
+        "_override_prefilter_path_metadata_cache",
+        "_override_socket_shape_cache",
+        "_override_last_socket_shape",
+        "_override_last_root_positional_arity",
+        "_override_last_executor",
+    ]
+    __deletable__ = [
         "_spell",
         "_spell_id",
         "_dynamic_environment",
