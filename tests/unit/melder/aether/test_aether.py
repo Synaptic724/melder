@@ -1131,7 +1131,7 @@ def test_ensure_frame_raises_when_registry_unavailable_before_lock() -> None:
 def test_ensure_frame_raises_when_registry_becomes_unavailable_inside_lock() -> None:
     """_ensure_frame should fail if the registry disappears after the initial check."""
     a = Aether()
-    original_lock = a._lock
+    original_lock = Aether._lock
 
     class _LockThatDropsRegistry:
         def __enter__(self_inner):
@@ -1142,11 +1142,11 @@ def test_ensure_frame_raises_when_registry_becomes_unavailable_inside_lock() -> 
             return False
 
     try:
-        a._lock = _LockThatDropsRegistry()
+        Aether._lock = _LockThatDropsRegistry()
         with pytest.raises(RuntimeError, match="unavailable"):
             a._ensure_frame("custom")
     finally:
-        a._lock = original_lock
+        Aether._lock = original_lock
 
 
 def test_ensure_frame_recreates_default_and_updates_default_pointer() -> None:

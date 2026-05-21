@@ -2354,11 +2354,11 @@ def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatc
         lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
     )
 
-    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *a, **k: False)
+    monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, *a, **k: False)
     monkeypatch.setattr(
-        Spellbook._aether,
+        type(Spellbook._aether),
         "_register_single_spell_index",
-        lambda conduit_id, spell_index, frame: register_single_calls.append(
+        lambda self, conduit_id, spell_index, frame: register_single_calls.append(
             (conduit_id, spell_index, frame)
         ),
     )
@@ -2413,11 +2413,11 @@ def test_bind_after_conjure_keeps_resolution_required_false_when_aot_enabled(mon
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 
-    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *a, **k: False)
+    monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, *a, **k: False)
     monkeypatch.setattr(
-        Spellbook._aether,
+        type(Spellbook._aether),
         "_register_single_spell_index",
-        lambda conduit_id, spell_index, frame: None,
+        lambda self, conduit_id, spell_index, frame: None,
     )
 
     idx = DummySpellIndex(sid="aot-sid", current="aot-sid")
@@ -4123,7 +4123,7 @@ def test_check_all_spells_raises_on_duplicate(monkeypatch):
         """
         return True
 
-    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", fake_check_for_spell)
+    monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, version_id, frame: fake_check_for_spell(version_id, frame))
     with pytest.raises(RuntimeError):
         sb._check_all_spells()
 
@@ -4160,7 +4160,7 @@ def test_check_all_spells_passes_when_unique(monkeypatch):
         """
         return False
 
-    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", fake_check_for_spell)
+    monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, version_id, frame: fake_check_for_spell(version_id, frame))
     sb._check_all_spells()
 
 
@@ -4546,7 +4546,7 @@ def test_inspect_spell_returns_none_on_missing(monkeypatch):
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._bind = types.SimpleNamespace(spell_id_inspector=lambda s: "id")
-    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *_: False)
+    monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, *_: False)
     assert sb.inspect_spell(DummySpell()) is None
 
 
@@ -4566,7 +4566,7 @@ def test_inspect_spell_returns_id_when_found(monkeypatch):
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._bind = types.SimpleNamespace(spell_id_inspector=lambda s: "id")
-    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *_: True)
+    monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, *_: True)
     assert sb.inspect_spell(DummySpell()) == "id"
 
 

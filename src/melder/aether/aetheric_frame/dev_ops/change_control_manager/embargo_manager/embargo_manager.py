@@ -32,7 +32,7 @@ class ChangeControlEmbargoRecord:
         - Records are immutable and may be copied freely across threads or
           tooling boundaries.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     scope_key: str
     reason_tag: str
     owner_request_id: str

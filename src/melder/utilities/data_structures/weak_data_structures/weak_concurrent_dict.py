@@ -1129,7 +1129,8 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         """
         self.check_cleaned()
         items = self._snapshot_items()
-        return (k for k, _ in items)
+        keys = [key for key, _ in items]
+        return iter(keys)
 
     def __reversed__(self) -> Iterator[_K]:
         """
@@ -1139,7 +1140,8 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         """
         self.check_cleaned()
         items = self._snapshot_items()
-        return (k for k, _ in reversed(items))
+        keys = [key for key, _ in reversed(items)]
+        return iter(keys)
 
     def keys(self) -> Collection[_K]:
         """

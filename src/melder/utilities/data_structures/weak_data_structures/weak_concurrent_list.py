@@ -849,13 +849,19 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         """
         Apply ``func`` to each live element and return a new weak list of results.
         """
-        return WeakConcurrentList((func(v) for v in self.to_list()), auto_prune=self._auto_prune)
+        mapped_values = [func(value) for value in self.to_list()]
+        return WeakConcurrentList(mapped_values, auto_prune=self._auto_prune)
 
     def filter(self, func: Callable[[_T], bool]) -> "WeakConcurrentList[_T]":
         """
         Keep only live elements where ``func(value)`` returns True.
         """
-        return WeakConcurrentList((v for v in self.to_list() if func(v)), auto_prune=self._auto_prune)
+        filtered_values = [
+            value
+            for value in self.to_list()
+            if func(value)
+        ]
+        return WeakConcurrentList(filtered_values, auto_prune=self._auto_prune)
 
     def reduce(self, func: Callable[[Any, _T], Any], initial: Any) -> Any:
         """

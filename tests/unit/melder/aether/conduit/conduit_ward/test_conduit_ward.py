@@ -2,6 +2,7 @@
 import threading
 from unittest.mock import MagicMock, patch
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
+from melder.aether.conduit.conduit_ward.contract.contract import Contract
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -1361,10 +1362,8 @@ def test_remove_contract_logs_cleanup_failure_but_returns_true(ward) -> None:
 
     ward._create_new_contract(target_conduit)
     contract_id = next(iter(ward._contracts))
-    contract = ward._contracts[contract_id]
-    contract.cleanup = MagicMock(side_effect=RuntimeError("cleanup boom"))
-
-    result = ward._remove_contract(target_conduit)
+    with patch.object(Contract, "cleanup", side_effect=RuntimeError("cleanup boom")):
+        result = ward._remove_contract(target_conduit)
 
     assert result is True
     assert ward._contracts == {}
@@ -1969,7 +1968,7 @@ def test_sever_all_linked_conduits_continues_on_error(ward):
             raise RuntimeError("boom")
         return True
 
-    with patch.object(ward, "_remove_contract", side_effect=remove_side_effect) as mock_remove:
+    with patch.object(ConduitWard, "_remove_contract", side_effect=remove_side_effect) as mock_remove:
         ward._sever_all_linked_conduits()
 
     assert mock_remove.call_count == 2
@@ -2248,7 +2247,7 @@ def test_validate_contracts_and_define_returns_false_on_exception(ward):
     ward._create_new_contract(target_conduit)
     contract = ward._find_contract(target_conduit)
 
-    with patch.object(contract, "_get_peer", side_effect=RuntimeError("boom")):
+    with patch.object(Contract, "_get_peer", side_effect=RuntimeError("boom")):
         results = ward._validate_contracts_and_define()
 
     assert results[contract._id] is False

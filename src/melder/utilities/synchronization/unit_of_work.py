@@ -74,7 +74,6 @@ class UnitOfWork(Cleanable, Future):
         "_label",
         "_metadata",
         "_lock",
-        "__melder_internal__"
     ]
 
     def __init__(

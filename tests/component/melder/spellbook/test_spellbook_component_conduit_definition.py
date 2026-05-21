@@ -266,7 +266,11 @@ def test_component_spellbook_check_all_spells_raises_on_aether_collision(
             """
             return version_id == spell_id and frame == spellbook._aetheric_frame
 
-        monkeypatch.setattr(spellbook._aether, "_check_for_spell", _check_for_spell)
+        monkeypatch.setattr(
+            type(spellbook._aether),
+            "_check_for_spell",
+            lambda self, version_id, frame: _check_for_spell(version_id, frame),
+        )
         with pytest.raises(RuntimeError, match="already exists in the registry"):
             spellbook._check_all_spells()
     finally:
@@ -311,7 +315,11 @@ def test_component_spellbook_check_all_spells_passes_when_aether_reports_unique(
             """
             return False
 
-        monkeypatch.setattr(spellbook._aether, "_check_for_spell", _check_for_spell)
+        monkeypatch.setattr(
+            type(spellbook._aether),
+            "_check_for_spell",
+            lambda self, version_id, frame: _check_for_spell(version_id, frame),
+        )
         spellbook._check_all_spells()
     finally:
         spellbook.cleanup()

@@ -7,6 +7,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.contract.contract import Contract
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -694,7 +695,7 @@ def test_add_spell_to_contract_logs_when_spellbook_add_rollback_fails(
     borrower._spellbook._add_contracted_spell = MagicMock(side_effect=RuntimeError("add boom"))
     contract = borrower._conduit_ward._find_contract(owner)
 
-    with patch.object(contract, "_remove_source", side_effect=RuntimeError("rollback boom")):
+    with patch.object(Contract, "_remove_source", side_effect=RuntimeError("rollback boom")):
         with pytest.raises(RuntimeError, match="add boom"):
             borrower._conduit_ward._add_spell_to_contract(
                 spell=spell,
@@ -1005,13 +1006,16 @@ def test_remove_spell_from_contract_swallows_invalidate_contract_consumers_error
         conduit=owner,
         permissions="create",
     )
-    borrower._conduit_ward._invalidate_contract_consumers = MagicMock(side_effect=RuntimeError("invalidate boom"))
-
-    result = borrower._conduit_ward._remove_spell_from_contract(
-        spell=spell,
-        spell_id=spell.spell_id,
-        conduit=owner,
-    )
+    with patch.object(
+        ConduitWard,
+        "_invalidate_contract_consumers",
+        side_effect=RuntimeError("invalidate boom"),
+    ):
+        result = borrower._conduit_ward._remove_spell_from_contract(
+            spell=spell,
+            spell_id=spell.spell_id,
+            conduit=owner,
+        )
 
     assert result is True
     assert borrower._conduit_ward._find_contract(owner) is None
@@ -1064,16 +1068,15 @@ def test_remove_spell_from_contract_succeeds_when_contract_key_lookup_fails(
         permissions="create",
     )
     borrower._spellbook._find_contracted_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
-    borrower._conduit_ward._invalidate_contract_consumers = MagicMock()
-
-    result = borrower._conduit_ward._remove_spell_from_contract(
-        spell=spell,
-        spell_id=spell.spell_id,
-        conduit=owner,
-    )
+    with patch.object(ConduitWard, "_invalidate_contract_consumers") as mock_invalidate:
+        result = borrower._conduit_ward._remove_spell_from_contract(
+            spell=spell,
+            spell_id=spell.spell_id,
+            conduit=owner,
+        )
 
     assert result is True
-    borrower._conduit_ward._invalidate_contract_consumers.assert_called_once_with(None)
+    mock_invalidate.assert_called_once_with(None)
 
 
 def test_remove_spell_from_contract_logs_when_restore_rollback_fails(
@@ -1095,7 +1098,7 @@ def test_remove_spell_from_contract_logs_when_restore_rollback_fails(
         "_remove_contracted_spell",
         side_effect=RuntimeError("remove boom"),
     ), patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_restore_detail_snapshot",
         side_effect=RuntimeError("restore boom"),
     ):
@@ -1126,16 +1129,15 @@ def test_remove_spell_from_contract_succeeds_when_contract_key_lookup_fails(
         permissions="create",
     )
     borrower._spellbook._find_contracted_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
-    borrower._conduit_ward._invalidate_contract_consumers = MagicMock()
-
-    result = borrower._conduit_ward._remove_spell_from_contract(
-        spell=spell,
-        spell_id=spell.spell_id,
-        conduit=owner,
-    )
+    with patch.object(ConduitWard, "_invalidate_contract_consumers") as mock_invalidate:
+        result = borrower._conduit_ward._remove_spell_from_contract(
+            spell=spell,
+            spell_id=spell.spell_id,
+            conduit=owner,
+        )
 
     assert result is True
-    borrower._conduit_ward._invalidate_contract_consumers.assert_called_once_with(None)
+    mock_invalidate.assert_called_once_with(None)
 
 
 def test_remove_all_spells_from_contract_swallows_invalidate_contract_consumers_error(
@@ -1151,9 +1153,12 @@ def test_remove_all_spells_from_contract_swallows_invalidate_contract_consumers_
         conduit=owner,
         permissions="create",
     )
-    borrower._conduit_ward._invalidate_contract_consumers = MagicMock(side_effect=RuntimeError("invalidate boom"))
-
-    result = borrower._conduit_ward._remove_all_spells_from_contract(conduit=owner)
+    with patch.object(
+        ConduitWard,
+        "_invalidate_contract_consumers",
+        side_effect=RuntimeError("invalidate boom"),
+    ):
+        result = borrower._conduit_ward._remove_all_spells_from_contract(conduit=owner)
 
     contract = borrower._conduit_ward._find_contract(owner)
     assert result is True
@@ -1542,7 +1547,7 @@ def test_remove_root_from_contracts_logs_when_restore_rollback_fails(
         "_remove_contracted_spell",
         side_effect=RuntimeError("remove boom"),
     ), patch.object(
-        borrower._conduit_ward,
+        ConduitWard,
         "_restore_detail_snapshot",
         side_effect=RuntimeError("restore boom"),
     ):
@@ -1893,8 +1898,8 @@ def test_link_spell_dependencies_raises_when_contract_cannot_be_established(
     )
     borrower.register_spell_owner(dep_spell.spell_id, owner)
 
-    with patch.object(borrower._conduit_ward, "_find_contract", return_value=None), patch.object(
-        borrower._conduit_ward,
+    with patch.object(ConduitWard, "_find_contract", return_value=None), patch.object(
+        ConduitWard,
         "_link",
         return_value=True,
     ):
@@ -2697,7 +2702,7 @@ def test_preflight_contract_dependency_collisions_downgrades_requested_read() ->
     )
     borrower.register_spell_owner(dep_spell.spell_id, owner)
 
-    with patch.object(borrower._conduit_ward, "_check_spell_if_eligible") as mock_eligible:
+    with patch.object(ConduitWard, "_check_spell_if_eligible") as mock_eligible:
         borrower._conduit_ward._preflight_contract_dependency_collisions(
             root_spell=root_spell,
             root_spell_id=root_spell.spell_id,

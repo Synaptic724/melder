@@ -3766,9 +3766,9 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
         )
     )
     monkeypatch.setattr(
-        type(space.command_system)._aether,
+        type(type(space.command_system)._aether),
         "_get_conduit_by_id",
-        lambda conduit_id, frame_name: owner_conduit,
+        lambda self, conduit_id, frame_name: owner_conduit,
     )
 
     assert (
@@ -4438,9 +4438,9 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
         )
     )
     monkeypatch.setattr(
-        type(space.command_system)._aether,
+        type(type(space.command_system)._aether),
         "_get_conduit_by_id",
-        lambda conduit_id, frame_name: owner_conduit,
+        lambda self, conduit_id, frame_name: owner_conduit,
     )
 
     with pytest.raises(

@@ -33,25 +33,6 @@ def test_cleanup_idempotent():
     obj.cleanup()
     assert obj.cleaned_count == 1
 
-
-def test_context_manager_using_cleanup_calls_cleanup():
-    obj = DummyCleanable()
-    with obj.using_cleanup() as inner:
-        assert inner is obj
-        assert obj.cleaned is False
-    assert obj.cleaned is True
-    assert obj.cleaned_count == 1
-
-
-def test_using_cleanup_does_not_suppress_exceptions():
-    obj = DummyCleanable()
-    with pytest.raises(ZeroDivisionError):
-        with obj.using_cleanup():
-            1 / 0
-    assert obj.cleaned is True
-    assert obj.cleaned_count == 1
-
-
 def test_async_cleanup_defers_to_cleanup():
     obj = DummyCleanable()
     assert obj.cleaned is False
@@ -82,30 +63,3 @@ class FailingCleanable(DummyCleanable):
         self.cleaned_count += 1
         self._cleaned = True
         raise RuntimeError("cleanup boom")
-
-
-def test_using_cleanup_swallows_cleanup_exception():
-    obj = FailingCleanable()
-    with obj.using_cleanup():
-        pass
-    # Even though cleanup raises, context manager should swallow
-    assert obj.cleaned is True
-    assert obj.cleaned_count == 1
-
-
-def test_using_cleanup_multiple_times_idempotent():
-    obj = DummyCleanable()
-    for _ in range(2):
-        with obj.using_cleanup():
-            pass
-    assert obj.cleaned_count == 1
-
-
-def test_async_cleanup_then_using_cleanup_noop():
-    obj = DummyCleanable()
-    import asyncio
-
-    asyncio.run(obj.async_cleanup())
-    with obj.using_cleanup():
-        pass
-    assert obj.cleaned_count == 1

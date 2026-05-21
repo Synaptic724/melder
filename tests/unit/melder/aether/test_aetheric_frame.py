@@ -459,7 +459,7 @@ def test_cleanup_handles_none_registries_gracefully(frame):
     frame._conduits = None
     frame._spell_registry = None
     frame._version_registry = None
-    frame._conduit_clusters = None
+    frame._conduit_cloud = None
     
     # Should not raise
     frame.cleanup()

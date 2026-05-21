@@ -220,7 +220,7 @@ def test_contract_cleanup_noops_when_marked_cleaned_inside_lock(contract):
     original_details_a = contract._details_a
     original_details_b = contract._details_b
 
-    with patch.object(contract, "_clean_up") as mock_clean_up:
+    with patch.object(Contract, "_clean_up") as mock_clean_up:
         contract.cleanup()
 
     mock_clean_up.assert_not_called()

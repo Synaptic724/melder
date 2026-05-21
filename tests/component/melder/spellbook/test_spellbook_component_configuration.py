@@ -307,7 +307,14 @@ def test_component_spellbook_bind_configuration_to_aether_propagates_errors(
 
     try:
         set_shared_framewide_spellbook_configuration_for_spellbook_configuration(spellbook.get_configuration(), True)
-        monkeypatch.setattr(spellbook._aether, "_bind_configuration", _raise_bind)
+        monkeypatch.setattr(
+            type(spellbook._aether),
+            "_bind_configuration",
+            lambda self, configuration, aetheric_frame_name="default": _raise_bind(
+                configuration,
+                aetheric_frame_name,
+            ),
+        )
         with pytest.raises(ValueError, match="bind-failed"):
             spellbook._bind_configuration_to_aether()
     finally:
@@ -350,7 +357,13 @@ def test_component_spellbook_get_configuration_from_aether_propagates_errors(
             spellbook._aetheric_frame,
             shared_framewide_spellbook_configuration=True,
         )
-        monkeypatch.setattr(spellbook._aether, "_get_configuration", _raise_get_configuration)
+        monkeypatch.setattr(
+            type(spellbook._aether),
+            "_get_configuration",
+            lambda self, aetheric_frame_name="default": _raise_get_configuration(
+                aetheric_frame_name
+            ),
+        )
         with pytest.raises(ValueError, match="missing-frame"):
             spellbook._get_configuration_from_aether()
     finally:

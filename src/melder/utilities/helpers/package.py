@@ -46,7 +46,10 @@ def _is_async_callable(
         bool: True when `task` is an `async def` coroutine function.
     """
     return inspect.iscoroutinefunction(task)
+
+
 @mypyc_attr(native_class=True)
+
 class Package(Cleanable, Generic[P, R]):
     """
     A lightweight, thread-safe wrapper around a callable (sync or coroutine).
