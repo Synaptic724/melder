@@ -1,5 +1,15 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Iterable, Callable, Sequence, Tuple, Optional
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Iterable,
+    Callable,
+    Sequence,
+    Tuple,
+    Optional,
+    ClassVar,
+)
 
 from mypy_extensions import mypyc_attr
 
@@ -34,8 +44,16 @@ class PathRegistry(Cleanable):
     Threading:
         - Not thread-safe. Builder-owned only.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_root_path_id",
+        "_parent_ids",
+        "_segments",
+        "_depths",
+        "_child_ids",
+        "_formatted_path_by_id",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_root_path_id",
         "_parent_ids",
         "_segments",
@@ -132,7 +150,7 @@ class PathRegistry(Cleanable):
         Resolve a sequence of path segments to a PathId.
 
         Contract:
-            - Returns the root id when segments is empty.
+            - Returns the root id when segments are empty.
             - Returns None when any segment is unknown.
 
         Args:
@@ -249,7 +267,7 @@ class SocketRef:
         socket_kind:
             The logical kind of socket – normal DI, SpellContract, MutationContract.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     node_id: str
     param_name: str
     param_path_id: int
@@ -273,7 +291,7 @@ class DagIndex(Cleanable):
     """
     Internal
 
-    Lightweight index over :class:`SocketRef` instances, keyed by:
+    Lightweight index over: class:`SocketRef` instances, keyed by:
 
     * exact param path id (interned in a PathRegistry) and
     * param name (``"repo"``).
@@ -281,8 +299,14 @@ class DagIndex(Cleanable):
     This is the shared substrate for `spell_override` and `mutation_override`
     targeting. It is intentionally dumb: no graph logic, no Melder awareness.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_path_registry",
+        "_by_exact_path_id",
+        "_by_name",
+        "_built",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_path_registry",
         "_by_exact_path_id",
         "_by_name",
@@ -436,15 +460,17 @@ class DagTargetingEngine(Cleanable):
 
     Shared targeting core for overrides.
 
-    Given a :class:`DagIndex` and a :class:`TargetSpec`, resolves the set of
-    :class:`SocketRef` instances that should be affected by a particular
+    Given a: class:`DagIndex` and a: class:`TargetSpec`, resolves the set of: class:`SocketRef` instances that should be affected by a particular
     override key.
 
     It does *not* know about Melder, SpellCrafter, or contracts – a caller
     provides a `filter_fn` to constrain which sockets are eligible.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_index",]
+    __deletable__: ClassVar[List[str]] = [
+        "_index",
+    ]
 
     def __init__(self, index: DagIndex) -> None:
         """Initialize the targeting engine over one prebuilt `DagIndex`."""
@@ -471,7 +497,7 @@ class DagTargetingEngine(Cleanable):
             filter_fn: Callable[[SocketRef], bool],
     ) -> List[SocketRef]:
         """
-        Resolve a :class:`TargetSpec` to a list of sockets.
+        Resolve a: class:`TargetSpec` to a list of sockets.
 
         Cardinality guarantees:
 
@@ -481,7 +507,7 @@ class DagTargetingEngine(Cleanable):
 
         * UNIQUE (*param):
             - 0 matches -> RuntimeError
-            - >1 matches -> RuntimeError
+            - >1 match -> RuntimeError
             - 1 match -> valid
 
         * BROADCAST (**param):
@@ -585,13 +611,13 @@ class DagIndexBuilder:
 
     Placeholder index builder.
 
-    In this stage we only support building a shallow index for a *single*
+    At this stage we only support building a shallow index for a *single*
     spell's constructor sockets (param_path_id represents ``(param_name,)``).
 
     Phases 5–7 will extend this to walk the full system blueprint and assign
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     @staticmethod
     def build_shallow(
@@ -599,7 +625,7 @@ class DagIndexBuilder:
             sockets: Sequence["SpellSocketDescriptor"],  # defined in topology module
     ) -> DagIndex:
         """
-        Build a shallow :class:`DagIndex` from a spell's local topology.
+        Build a shallow: class:`DagIndex` from a spell's local topology.
 
         Each socket is indexed under a single-segment param path:
 

@@ -3,6 +3,7 @@ import pytest
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
+from melder.aether.spellbook.spell_compiler.dag.dag_node import DagNode
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
 
@@ -133,14 +134,14 @@ def test_cleanup_marks_nodes_cleaned_and_clears_map():
         dag.get_node("a")
 
 
-def test_cleanup_swallow_node_cleanup_errors():
+def test_cleanup_swallow_node_cleanup_errors(monkeypatch):
     dag = DirectedAcyclicWorkGraph()
-    node = dag.add_node("n")
+    dag.add_node("n")
 
-    def bad_cleanup():
+    def bad_cleanup(self):
         raise RuntimeError("fail")
 
-    node.cleanup = bad_cleanup  # type: ignore[assignment]
+    monkeypatch.setattr("melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode.cleanup", bad_cleanup)
     dag.cleanup()
     assert dag.cleaned
 

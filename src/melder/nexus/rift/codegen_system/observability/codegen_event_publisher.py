@@ -3,12 +3,18 @@ from typing import TYPE_CHECKING, Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
-from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.codegen_transaction_context import (
+        CodegenTransactionContext,
+    )
+    from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
+        CodegenExecutionResult,
+    )
     from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
+    from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
+        CodegenValidationResult,
+    )
 
 
 class CodegenEventPublisher(Cleanable):

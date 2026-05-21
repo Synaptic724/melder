@@ -3,10 +3,10 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift
+    from melder.nexus.rift.command_system.command_system import (
+        CommandSystem,
+    )
 
-from melder.nexus.rift.command_system.command_system import (
-    CommandSystem,
-)
 from melder.nexus.rift.command_system.codegen_command_system import (
     CodegenCommandSystem,
 )

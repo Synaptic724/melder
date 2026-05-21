@@ -1,6 +1,6 @@
 import heapq
 from threading import RLock
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 from melder.aether.spellbook.spell_compiler.dag.dag_node import DagNode
@@ -32,12 +32,18 @@ class DirectedAcyclicWorkGraph(Cleanable):
 
     It is intentionally not a general-purpose runtime workflow engine.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
         "_nodes",
         "_socket_kinds",
+    ]
+    __deletable__: ClassVar[List[str]] = [
+        "_lock",
+        "_nodes",
+        "_socket_kinds",
+        "_id"
     ]
     def __init__(self) -> None:
         """

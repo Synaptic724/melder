@@ -4,15 +4,21 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
-from melder.nexus.rift.codegen_system.validation.codegen_validation_result import CodegenValidationResult
 
 if TYPE_CHECKING:
-    from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
-
-from melder.nexus.rift.rift_space.workstation import Workstation
+    from melder.nexus.rift.codegen_system.codegen_transaction_context import (
+        CodegenTransactionContext,
+    )
+    from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
+        CodegenExecutionResult,
+    )
+    from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
+        CodegenValidationResult,
+    )
+    from melder.nexus.rift.rift import Rift
+    from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
+    from melder.nexus.rift.rift_space.workstation import Workstation
 
 
 class CodegenCommandSystem(CommandSystem):

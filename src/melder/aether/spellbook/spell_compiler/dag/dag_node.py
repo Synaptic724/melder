@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Set
+from typing import Any, Callable, Dict, List, Set, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -26,7 +26,7 @@ class DagNode(Cleanable):
         - Dependencies model "must be created before me".
         - The DAG object is responsible for computing a topological order.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_children_by_param",
         "_dependencies",
@@ -35,7 +35,15 @@ class DagNode(Cleanable):
         "_incoming_params",
         "_payload",
         "_tasks",
-        "__dict__",
+    ]
+    __deletable__: ClassVar[List[str]] = [
+        "_children_by_param",
+        "_dependencies",
+        "_dependents",
+        "_incoming_params",
+        "_payload",
+        "_tasks",
+        "_id"
     ]
     def __init__(self, key: str, payload: Any | None = None) -> None:
         """
@@ -80,7 +88,7 @@ class DagNode(Cleanable):
         """
         if self._cleaned:
             return
-
+        self._cleaned = True
         # No lock is used here; nodes are owned by the DAG and not expected
         # to be mutated concurrently in Melder.
         self._payload = None
@@ -100,8 +108,6 @@ class DagNode(Cleanable):
 
         # Clear tasks
         self._tasks.clear()
-
-        self._cleaned = True
 
     # --------------------------------------------------------------------- #
     # Properties

@@ -1,4 +1,5 @@
 import pytest
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
     SpellSystemRootBlueprintBuilder,
@@ -17,6 +18,43 @@ from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
+
+
+def _old_dependency_edges(
+    ordered_reachable_ids: List[str],
+    dependencies: Dict[str, Set[str]],
+    reachable_ids: Set[str],
+) -> List[Tuple[str, str, Optional[str], Optional[SocketKind]]]:
+    """
+    Purpose:
+        Reproduce the pre-refactor dependency-edge materialization logic.
+
+    Contract:
+        - Preserves the original nested-loop order exactly.
+        - Uses the same provider filtering semantics as the old inline
+          generator expression.
+
+    Args:
+        ordered_reachable_ids:
+            Sorted reachable node ids used by the builder before edge emission.
+        dependencies:
+            Full adjacency mapping from consumer -> providers.
+        reachable_ids:
+            Reachable-node membership filter for the current root subgraph.
+
+    Returns:
+        List[Tuple[str, str, Optional[str], Optional[SocketKind]]]:
+            The provider -> consumer edge tuples produced by the old generator
+            logic.
+    """
+    return list(
+        (
+            (provider_id, consumer_id, None, None)
+            for consumer_id in ordered_reachable_ids
+            for provider_id in sorted(dependencies.get(consumer_id) or ())
+            if provider_id in reachable_ids
+        )
+    )
 
 
 def _snapshot(
@@ -203,6 +241,75 @@ def test_build_single_root_dag_topology_order_stable():
     deps = {"root": {"b", "a"}, "a": set(), "b": set()}
     dag, ordered = SpellSystemRootBlueprintBuilder()._build_single_root_dag("root", deps)
     assert ordered == ["a", "b", "root"]
+
+
+@pytest.mark.parametrize(
+    ("root_spell_id", "dependencies", "allowed_spell_ids"),
+    [
+        (
+            "root",
+            {"root": {"mid_b", "mid_a"}, "mid_a": {"leaf"}, "mid_b": set(), "leaf": set()},
+            None,
+        ),
+        (
+            "root",
+            {
+                "root": {"mid", "blocked"},
+                "mid": {"leaf"},
+                "leaf": set(),
+                "blocked": {"ghost"},
+            },
+            {"root", "mid", "leaf"},
+        ),
+        (
+            "root",
+            {"root": {"shared"}, "shared": set(), "orphan": {"ghost"}, "ghost": set()},
+            None,
+        ),
+        (
+            "solo",
+            {"solo": set()},
+            None,
+        ),
+    ],
+)
+def test_build_single_root_dag_materializes_same_edges_as_old_generator(
+    monkeypatch,
+    root_spell_id: str,
+    dependencies: Dict[str, Set[str]],
+    allowed_spell_ids: Optional[Set[str]],
+) -> None:
+    captured_edges: List[Tuple[str, str, Optional[str], Optional[SocketKind]]] = []
+    original = DirectedAcyclicWorkGraph.add_dependencies_bulk
+
+    def _capture_edges(
+        self: DirectedAcyclicWorkGraph,
+        edges: Iterable[Tuple[str, str, Optional[str], Optional[SocketKind]]],
+    ) -> None:
+        materialized_edges = list(edges)
+        captured_edges[:] = materialized_edges
+        original(self, materialized_edges)
+
+    monkeypatch.setattr(
+        DirectedAcyclicWorkGraph,
+        "add_dependencies_bulk",
+        _capture_edges,
+    )
+
+    dag, _ = SpellSystemRootBlueprintBuilder()._build_single_root_dag(
+        root_spell_id,
+        dependencies,
+        allowed_spell_ids=allowed_spell_ids,
+    )
+
+    reachable_ids = set(dag.nodes.keys())
+    expected_edges = _old_dependency_edges(
+        sorted(reachable_ids),
+        dependencies,
+        reachable_ids,
+    )
+
+    assert captured_edges == expected_edges
 
 
 def test_build_root_blueprints_handles_unknown_root_id():
