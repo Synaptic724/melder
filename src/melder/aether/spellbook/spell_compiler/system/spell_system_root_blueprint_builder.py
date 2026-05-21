@@ -36,7 +36,7 @@ class SpellSystemRootBlueprintBuilder:
               - param_name and socket_kind on edges are left unset (None).
           Socket metadata and DagIndex are overlaid in later Phase-5 steps.
     """
-    __melder_internal__ = _mrg.sentinel
+    # __melder_internal__ = _mrg.sentinel
     __slots__: list[str] = []
 
     def build_root_blueprints(

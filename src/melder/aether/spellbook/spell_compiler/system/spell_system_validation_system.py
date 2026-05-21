@@ -56,7 +56,7 @@ class SpellSystemValidationSystem(Cleanable):
         Callers are responsible for external synchronization when sharing inputs
         across threads. This class does not introduce additional locking.
     """
-    __melder_internal__ = _mrg.sentinel
+    # __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_strategies",
     ]

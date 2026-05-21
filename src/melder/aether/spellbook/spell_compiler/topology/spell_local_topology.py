@@ -66,7 +66,7 @@ class SpellSocketDescriptor:
             For MUTATION_CONTRACT sockets, indicates whether the contract is
             declared late-binding. This is None for non-mutation sockets.
     """
-    __melder_internal__ = _mrg.sentinel
+    # __melder_internal__ = _mrg.sentinel
     spell_id: str
     param_name: str
     position: int
@@ -93,11 +93,15 @@ class SpellLocalTopology(Cleanable):
     - Is effectively immutable after construction; callers read from it but do
       not mutate it in place.
     """
-    __melder_internal__ = _mrg.sentinel
+    # __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_sockets",
         "_by_param_name",
+    ]
+    __deletable__ = [
+        "_by_param_name",
+        "_sockets",
     ]
 
     def __init__(

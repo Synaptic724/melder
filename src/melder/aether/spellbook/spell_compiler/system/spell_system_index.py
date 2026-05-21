@@ -24,8 +24,9 @@ class SpellSystemIndex(Cleanable):
     Phase 6 consumes it for system-level validation.
     Phase 7 uses it for change-control / impact analysis.
     """
-    __melder_internal__ = _mrg.sentinel
+    # __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_nodes"]
+    __deletable__ = ["_nodes"]
 
     def __init__(self) -> None:
         """

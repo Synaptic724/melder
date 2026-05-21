@@ -20,8 +20,44 @@ class MethodProfile(Cleanable):
         - Provenance fields are best-effort and may be None.
         - Cleanup() is idempotent and clears all owned references.
     """
-    __melder_internal__ = _mrg.sentinel
+    #__melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "name",
+        "qualname",
+        "module",
+        "id",
+        "type",
+        "repr",
+        "builtin_mod",
+        "extension_mod",
+        "file",
+        "preview",
+        "src_offset",
+        "start_line",
+        "end_line",
+        "source_text",
+        "signature",
+        "parameters",
+        "uninspectable",
+        "func",
+        "method",
+        "builtin",
+        "classmethod",
+        "staticmethod",
+        "generator",
+        "async_gen",
+        "coroutine",
+        "lambda_fn",
+        "abstract",
+        "closure",
+        "decorated",
+        "wrapped_repr",
+        "docstring_raw",
+        "docstring_summary",
+        "behavior_summary",
+        "tags",
+    ]
+    __deletable__ = [
         "name",
         "qualname",
         "module",

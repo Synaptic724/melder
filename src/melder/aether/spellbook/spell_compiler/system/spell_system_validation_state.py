@@ -13,7 +13,7 @@ class SpellSystemValidationState(Cleanable):
     """
     Frame-level system validation verdict.
     """
-    __melder_internal__ = _mrg.sentinel
+    # __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_is_valid",
         "_errors",
