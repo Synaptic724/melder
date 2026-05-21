@@ -1,13 +1,13 @@
-import threading
+﻿import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.irootresolutionblueprint import IRootResolutionBlueprint
-from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
+
 from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
     SpellResolutionFrame,
 )
@@ -28,7 +28,11 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_result i
 )
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
     from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationPatchMap, OverridePatchMap
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
 
 
 @mypyc_attr(native_class=True)
@@ -106,7 +110,7 @@ class SpellCompilerArtifact(Cleanable):
             raise ValueError("spell_id cannot be empty.")
         self._lock: threading.RLock = threading.RLock()
         self.spell_id: str = spell_id
-        self._requirements: Optional[ISpellRequirements] = None
+        self._requirements: Optional["SpellRequirements"] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         self._resolution_frame: Optional[SpellResolutionFrame] = None
         self._validation_result_phase4: Optional[SpellValidationResult] = None
@@ -119,7 +123,7 @@ class SpellCompilerArtifact(Cleanable):
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
         self._occurrence_plan_phase8: Optional[IOccurrencePlan] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
-        self._injection_plan_phase9: Optional[IInjectionPlan] = None
+        self._injection_plan_phase9: Optional["InjectionPlan"] = None
         self._override_patch_map_phase10: Optional["OverridePatchMap"] = None
         self._mutation_patch_map_phase10: Optional["MutationPatchMap"] = None
         self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
@@ -418,3 +422,5 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_plan_phase11_overrides = None
         self._phase11_no_overrides_plan_signature = None
         self._phase11_no_overrides_transient_schema = None
+
+

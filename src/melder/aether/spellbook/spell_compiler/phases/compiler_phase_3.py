@@ -1,7 +1,7 @@
-import inspect
+﻿import inspect
 import types
 import typing
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
 
 from mypy_extensions import mypyc_attr
 
@@ -38,8 +38,13 @@ from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
-from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
+
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
@@ -551,7 +556,7 @@ class CompilerPhase3:
             spell: ISpell,
             spellbook: ISpellbook,
             spell_system_states: ISpellSystemStates,
-            requirements: ISpellRequirements,
+            requirements: "SpellRequirements",
             graph: SpellSymbolicGraph,
             cancellation_event: Optional[CancellationEvent],
             *,
@@ -767,3 +772,4 @@ class CompilerPhase3:
             # Test stubs may not implement the build-details hook.
             pass
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
+

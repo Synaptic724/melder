@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+﻿from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -7,13 +7,13 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
-from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
-from melder.utilities.interfaces.iparamsource import IParamSource
+
+
 
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
 @mypyc_attr(native_class=True)
-class ParamSource(IParamSource):
+class ParamSource:
     """
     Internal
 
@@ -200,7 +200,7 @@ class InjectionSpec(IInjectionSpec):
         self._contract_payload: Optional[Dict[str, Any]] = contract_payload
 
     @property
-    def param_sources(self) -> Mapping[str, IParamSource]:
+    def param_sources(self) -> Mapping[str, ParamSource]:
         """
         Return the parameter source mapping.
 
@@ -345,7 +345,7 @@ def build_kwargs_from_injection_spec(
     return kwargs
 
 @mypyc_attr(native_class=True)
-class InjectionPlan(Cleanable, IInjectionPlan):
+class InjectionPlan(Cleanable):
     """
     Internal
 
@@ -440,7 +440,7 @@ class InjectionPlan(Cleanable, IInjectionPlan):
         return self._root_spell_id
 
     @property
-    def instance_injections(self) -> Mapping[InstanceKey, IInjectionSpec]:
+    def instance_injections(self) -> Mapping[InstanceKey, InjectionSpec]:
         """
         Return the injection spec mapping by instance key.
 
@@ -462,7 +462,7 @@ class InjectionPlan(Cleanable, IInjectionPlan):
             self,
             *,
             root_spell_id: str,
-    ) -> Optional[Mapping[InstanceKey, IInjectionSpec]]:
+    ) -> Optional[Mapping[InstanceKey, InjectionSpec]]:
         """
         Determine whether this Phase 9 plan can drive a meld execution.
 
@@ -696,3 +696,4 @@ class InjectionPlanBuilder(object):
             root_spell_id=plan.root_spell_id,
             instance_injections=instance_injections,
         )
+

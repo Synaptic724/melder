@@ -8,6 +8,7 @@
     Sequence,
     Set,
     Tuple,
+    TYPE_CHECKING,
     runtime_checkable,
 )
 
@@ -26,7 +27,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.icreations import ICreations
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
+
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -38,6 +39,14 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
     SpellSystemState,
 )
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.meld.creation_context.creation_context_factory import (
+        CreationContextFactory,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
 
 @runtime_checkable
 class ISpell(ICleanable, Protocol):
@@ -113,7 +122,7 @@ class ISpell(ICleanable, Protocol):
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline.
     _creation_context: Any
-    _creation_context_factory: Optional["ICreationContextFactory"]
+    _creation_context_factory: Optional["CreationContextFactory"]
     _creation_context_switch: CounterSwitch
     _dynamic_environment: bool
     resolution_required: bool
@@ -457,7 +466,7 @@ class ISpell(ICleanable, Protocol):
     # Resolution Phase Artifacts (read-only view)
     # ------------------------------------------------------------------
     @property
-    def requirements(self) -> Optional['ISpellRequirements']:
+    def requirements(self) -> Optional["SpellRequirements"]:
         """
         Return the Phase 1 requirements artifact for this spell, if present.
 
@@ -516,4 +525,6 @@ class ISpell(ICleanable, Protocol):
         Return whether this spell currently reports a broken / unsafe state.
         """
         ...
+
+
 

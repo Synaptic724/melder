@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+﻿from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -8,7 +8,10 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.iinjectionspec import IInjectionSpec
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
-from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
+
 
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
@@ -942,7 +945,7 @@ class ExecutionPlan(Cleanable):
             - Includes the root step index for fast-path result lookup.
             - Includes call-mode metadata and single-dependency indices for
               trivial call shapes.
-            - Includes direct dependency indices for CALL2–CALL8 steps.
+            - Includes direct dependency indices for CALL2â€“CALL8 steps.
         """
         if self._fast_dep_indices is None:
             return None
@@ -1052,7 +1055,7 @@ class ExecutionPlanBuilder:
             self,
             *,
             occurrence_plan: IOccurrencePlan,
-            injection_plan: Optional[IInjectionPlan],
+            injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
     ) -> None:
@@ -2067,3 +2070,4 @@ class ExecutionPlanBuilder:
             if source.dependency_keys:
                 dependency_keys_by_param[param_name] = list(source.dependency_keys)
         return dependency_keys, dependency_keys_by_param
+

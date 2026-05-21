@@ -1,4 +1,4 @@
-from typing import Optional, List, Any, Callable, Sequence
+﻿from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence
 import ulid
 from threading import RLock
 from types import TracebackType
@@ -15,7 +15,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
 from melder.utilities.interfaces.ispellindex import ISpellIndex
-from melder.utilities.interfaces.ispellrequirements import ISpellRequirements
+
 from melder.utilities.interfaces.ispellsystemstates import ISpellSystemStates
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -40,6 +40,11 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
+        SpellRequirements,
+    )
 
 
 
@@ -369,7 +374,7 @@ class Spell(Cleanable, ISpell):
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
         self._creation_context: Optional[Any] = None
         # Spell-owned context factory configured at conduit ownership stamp time.
-        self._creation_context_factory: Optional["ICreationContextFactory"] = None
+        self._creation_context_factory: Optional[CreationContextFactory] = None
         # Spell-owned selector latch for one-leader CreationContext publication.
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
         # Runtime mode carried from owning conduit for context factory wiring.
@@ -854,7 +859,7 @@ class Spell(Cleanable, ISpell):
         return self._owner_conduit_id, self._owner_conduit_name
 
     @property
-    def requirements(self) -> Optional[ISpellRequirements]:
+    def requirements(self) -> Optional["SpellRequirements"]:
         """
         Phase 1 artifact for this spell, if it has been computed.
 
@@ -1252,5 +1257,6 @@ class Spell(Cleanable, ISpell):
 
     #endregion Spell Mutations
 #endregion Spell
+
 
 

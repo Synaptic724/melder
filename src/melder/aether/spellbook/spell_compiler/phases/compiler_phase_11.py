@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+﻿from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from mypy_extensions import mypyc_attr
 
@@ -11,10 +11,13 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanCallMode,
     ExecutionPlanVariant,
 )
-from melder.utilities.interfaces.iinjectionplan import IInjectionPlan
+
 from melder.utilities.interfaces.ioccurrenceplan import IOccurrencePlan
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispellbook import ISpellbook
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
@@ -274,7 +277,7 @@ class CompilerPhase11:
             self,
             *,
             occurrence_plan: IOccurrencePlan,
-            injection_plan: Optional[IInjectionPlan],
+            injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, ISpell],
     ) -> Optional[str]:
         """
@@ -542,7 +545,7 @@ class CompilerPhase11:
             self,
             *,
             occurrence_plan: IOccurrencePlan,
-            injection_plan: Optional[IInjectionPlan],
+            injection_plan: Optional["InjectionPlan"],
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
     ) -> ExecutionPlan:
@@ -802,3 +805,4 @@ class CompilerPhase11:
             artifact,
             plan_no_overrides,
         )
+
