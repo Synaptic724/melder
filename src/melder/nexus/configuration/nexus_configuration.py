@@ -10,10 +10,9 @@ from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 
 
-class NexusConfiguration(Cleanable, INexusConfiguration):
+class NexusConfiguration(Cleanable):
     """
     Internal
 
@@ -407,7 +406,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             raise ValueError("NexusConfiguration validation failed.")
         self._frozen = True
 
-    def finalize(self) -> "INexusConfiguration":
+    def finalize(self) -> "NexusConfiguration":
         """
         Fluent
 
@@ -418,12 +417,12 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             - Does not allocate or clone a detached configuration object.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.freeze()
         return self
 
-    def build(self) -> "INexusConfiguration":
+    def build(self) -> "NexusConfiguration":
         """
         Fluent alias for `finalize()`.
 
@@ -432,11 +431,11 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             - Returns this same configuration instance after finalize/freeze.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         return self.finalize()
 
-    def with_defaults(self) -> "INexusConfiguration":
+    def with_defaults(self) -> "NexusConfiguration":
         """
         Fluent
 
@@ -448,7 +447,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             - Leaves the configuration mutable until `freeze()` or `finalize()`.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.load_default_dictionary()
         return self
@@ -456,7 +455,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_rift_creation_enabled(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -468,7 +467,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 policy gates.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allow_rift_creation", enabled)
         return self
@@ -476,7 +475,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_creation_token_required(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -487,7 +486,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to require `creation_token_value` during creation.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("creation_token_required", enabled)
         return self
@@ -495,7 +494,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_creation_token(
             self,
             token_value: Optional[str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -506,7 +505,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Optional creation token string. `None` clears the token value.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("creation_token_value", token_value)
         return self
@@ -514,7 +513,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_direct_rift_access(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -526,7 +525,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 policy gates.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allow_direct_rift_access", enabled)
         return self
@@ -534,7 +533,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_rift_access_token_required(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -546,7 +545,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 retrieval.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("rift_access_token_required", enabled)
         return self
@@ -554,7 +553,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_rift_access_token(
             self,
             token_value: Optional[str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -565,7 +564,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Optional Rift-access token string. `None` clears the token.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("rift_access_token_value", token_value)
         return self
@@ -573,7 +572,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_allow_external_rift_registration(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -584,7 +583,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to permit external Rift registration/programming.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allow_external_rift_registration", enabled)
         return self
@@ -592,7 +591,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_allow_nested_rift_creation(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -603,7 +602,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to permit nested Rift creation flows.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allow_nested_rift_creation", enabled)
         return self
@@ -611,7 +610,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_max_active_rift_count(
             self,
             count: int,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -622,7 +621,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Maximum number of active Rifts. `0` means unlimited.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("max_active_rift_count", count)
         return self
@@ -630,7 +629,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_nexus_frame_mode(
             self,
             mode: Union[NexusFrameMode, str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -641,7 +640,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Frame-topology mode enum or string.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("nexus_frame_mode", mode)
         return self
@@ -649,7 +648,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_nexus_frame_name(
             self,
             frame_name: str,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -661,7 +660,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 in other modes.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("default_nexus_frame_name", frame_name)
         return self
@@ -669,7 +668,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_auto_create_nexus_frames(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -682,7 +681,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 state creation.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("auto_create_nexus_frames", enabled)
         return self
@@ -690,7 +689,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_max_nexus_frame_count(
             self,
             count: int,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -701,7 +700,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Maximum number of internal Nexus frames allowed.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("max_nexus_frame_count", count)
         return self
@@ -709,7 +708,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_allowed_target_frame_names(
             self,
             frame_names: Sequence[str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -720,7 +719,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Sequence of permitted target frame names.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allowed_target_frame_names", frame_names)
         return self
@@ -728,7 +727,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_denied_target_frame_names(
             self,
             frame_names: Sequence[str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -739,7 +738,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Sequence of denied target frame names.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("denied_target_frame_names", frame_names)
         return self
@@ -747,7 +746,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_target_frame_override(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -758,7 +757,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to allow per-Rift target-frame override requests.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allow_target_frame_override", enabled)
         return self
@@ -766,7 +765,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_multiple_target_frames(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -777,7 +776,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to permit more than one distinct target frame.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("allow_multiple_target_frames", enabled)
         return self
@@ -785,7 +784,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_max_target_frame_count(
             self,
             count: int,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -796,7 +795,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Maximum number of distinct target frames.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("max_target_frame_count", count)
         return self
@@ -804,7 +803,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_projection_refresh_gate(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -817,7 +816,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 refresh projections/viewers, then reopen gates.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("projection_refresh_gate_enabled", enabled)
         return self
@@ -825,7 +824,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_projection_refresh_gate_timeout_seconds(
             self,
             timeout_seconds: Union[int, float],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -836,7 +835,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Positive timeout in seconds.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property(
             "projection_refresh_gate_timeout_seconds",
@@ -847,7 +846,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_projection_refresh_gate_poll_interval_seconds(
             self,
             interval_seconds: Union[int, float],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -859,7 +858,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Positive poll interval in seconds.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property(
             "projection_refresh_gate_poll_interval_seconds",
@@ -870,7 +869,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_space_type(
             self,
             space_type: Union[RiftSpaceType, str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -881,7 +880,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Default room-kind enum or string.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("default_space_type", space_type)
         return self
@@ -889,7 +888,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_auto_activate_on_program(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -900,7 +899,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to mark new Rifts active during programming.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("default_auto_activate_on_program", enabled)
         return self
@@ -908,7 +907,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_auto_create_space(
             self,
             enabled: bool = True,
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -919,7 +918,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to create the initial room automatically.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("default_auto_create_space", enabled)
         return self
@@ -927,7 +926,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_validation_mode(
             self,
             mode: Union[RiftValidationMode, str],
-    ) -> "INexusConfiguration":
+    ) -> "NexusConfiguration":
         """
         Fluent
 
@@ -938,7 +937,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Validation mode enum or string.
 
         Returns:
-            INexusConfiguration: This configuration instance.
+            NexusConfiguration: This configuration instance.
         """
         self.set_property("default_validation_mode", mode)
         return self

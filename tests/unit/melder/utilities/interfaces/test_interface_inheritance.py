@@ -10,22 +10,16 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.interfaces.icleanable import ICleanable as AssetICleanable
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iconduitward import IConduitWard
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
 _INTERFACE_MAP: Dict[type, type] = {
-    IAethericFrame: AethericFrame,
     IConduit: Conduit,
-    IConduitWard: ConduitWard,
     IConfiguration: SpellbookConfiguration,
-    ISafeLogger: SafeLogger,
     ISpell: Spell,
 }
 

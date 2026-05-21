@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -7,9 +7,6 @@ from melder.mutation_research.mutation_configuration import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.imutationresearchconfiguration import (
-    IMutationResearchConfiguration,
-)
 
 
 class MutationResearchConfigurationBuilder(Cleanable):
@@ -101,7 +98,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.with_unrestricted_module_mutations(enabled)
         return self
 
-    def build(self) -> IMutationResearchConfiguration:
+    def build(self) -> MutationResearchConfiguration:
         """
         Transfer the wrapped mutable configuration to the caller.
 
@@ -111,7 +108,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self.check_cleaned()
         return self._handoff_configuration()
 
-    def finalize(self) -> IMutationResearchConfiguration:
+    def finalize(self) -> MutationResearchConfiguration:
         """
         Finalize and transfer the wrapped configuration to the caller.
 
@@ -122,7 +119,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.finalize()
         return self._handoff_configuration()
 
-    def activate(self) -> IMutationResearchConfiguration:
+    def activate(self) -> MutationResearchConfiguration:
         """
         Activate and transfer the wrapped configuration to the caller.
 
@@ -133,7 +130,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.activate()
         return self._handoff_configuration()
 
-    def _handoff_configuration(self) -> IMutationResearchConfiguration:
+    def _handoff_configuration(self) -> MutationResearchConfiguration:
         """
         Transfer builder-owned configuration ownership to the caller.
 

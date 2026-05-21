@@ -15,7 +15,7 @@ from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iaethericframe import AethericFrame
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -246,7 +246,7 @@ class Aether(Cleanable, IAether):
     def _detach_cleaned_frame(
             self,
             frame_name: str,
-            frame: IAethericFrame,
+            frame: AethericFrame,
     ) -> None:
         """
         Internal
@@ -857,7 +857,7 @@ class Aether(Cleanable, IAether):
     def _get_existing_frame(
             self,
             aetheric_frame_name: str = "default",
-    ) -> IAethericFrame:
+    ) -> AethericFrame:
         """
         Return one existing frame without creating new custom frames.
 
@@ -866,7 +866,7 @@ class Aether(Cleanable, IAether):
                 Name of the target frame.
 
         Returns:
-            IAethericFrame: Existing frame handle.
+            AethericFrame: Existing frame handle.
 
         Raises:
             ValueError: If the specified custom frame does not exist.

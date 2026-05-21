@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 
 
@@ -78,7 +78,7 @@ class FrameDescriptor(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
-        self._frame_handle: Optional[IAethericFrame] = None
+        self._frame_handle: Optional[AethericFrame] = None
         self._frame_configuration: Optional[AethericFrameConfiguration] = None
         self._frame_overview: Optional["FrameRecord"] = None
         self._conduit_records_by_id: Dict[str, "ConduitRecord"] = {}
@@ -149,7 +149,7 @@ class FrameDescriptor(Cleanable):
         return self._frame_name
 
     @property
-    def frame_handle(self) -> Optional[IAethericFrame]:
+    def frame_handle(self) -> Optional[AethericFrame]:
         """
         Return the current runtime frame reference when known.
 
@@ -158,7 +158,7 @@ class FrameDescriptor(Cleanable):
             when available.
 
         Returns:
-            Optional[IAethericFrame]: Current runtime frame handle.
+            Optional[AethericFrame]: Current runtime frame handle.
         """
         self.check_cleaned()
         with self._lock:
@@ -268,7 +268,7 @@ class FrameDescriptor(Cleanable):
                 for spellbook_id, spell_keys in self._spell_keys_by_spellbook_id.items()
             }
 
-    def set_frame_handle(self, frame_handle: Optional[IAethericFrame]) -> None:
+    def set_frame_handle(self, frame_handle: Optional[AethericFrame]) -> None:
         """
         Attach or replace the runtime frame reference.
 

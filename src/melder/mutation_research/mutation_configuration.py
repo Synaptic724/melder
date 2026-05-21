@@ -4,12 +4,9 @@ from typing import Dict, Tuple, Type, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.imutationresearchconfiguration import (
-    IMutationResearchConfiguration,
-)
 
 
-class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
+class MutationResearchConfiguration(Cleanable):
     """
     Mutable-to-frozen configuration surface for the mutation-research root.
 
@@ -208,7 +205,7 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
         with self._lock:
             self._frozen = True
 
-    def finalize(self) -> IMutationResearchConfiguration:
+    def finalize(self) -> MutationResearchConfiguration:
         """
         Validate and freeze the configuration, then return it.
 
@@ -218,7 +215,7 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
         self.freeze()
         return self
 
-    def activate(self) -> IMutationResearchConfiguration:
+    def activate(self) -> MutationResearchConfiguration:
         """
         Validate, freeze, and mark the configuration as activated.
 
@@ -230,7 +227,7 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
             self._activated = True
         return self
 
-    def with_defaults(self) -> IMutationResearchConfiguration:
+    def with_defaults(self) -> MutationResearchConfiguration:
         """
         Apply the default mutation-research posture.
 
@@ -251,7 +248,7 @@ class MutationResearchConfiguration(Cleanable, IMutationResearchConfiguration):
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,
-    ) -> IMutationResearchConfiguration:
+    ) -> MutationResearchConfiguration:
         """
         Set the unrestricted-module-mutations posture.
 

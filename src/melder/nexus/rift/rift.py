@@ -18,7 +18,7 @@ from melder.utilities.interfaces.iconduit import IConduit
 
 from melder.utilities.interfaces.inexus import INexus
 from melder.utilities.interfaces.irift import IRift
-from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.logger.safe_logger import SafeLogger
 
 class Rift(Cleanable, IRift):
     """
@@ -151,7 +151,7 @@ class Rift(Cleanable, IRift):
         self._id: str = rift_id or IDBuilder.create_id()
         self._rift_name: Optional[str] = rift_name
         self._lock: threading.RLock = threading.RLock()
-        self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
+        self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
         self._nexus: INexus = nexus
         self._configuration: RiftConfiguration = configuration
         self._rift_gate: RiftGate = rift_gate if rift_gate is not None else RiftGate()

@@ -18,10 +18,10 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.interfaces.inexus import INexus
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
@@ -110,7 +110,7 @@ class Conduit(Cleanable, IConduit):
             configuration: IConfiguration,
             conduit_state: ConduitState,
             aetheric_frame_name: str,
-            aetheric_frame: IAethericFrame,
+            aetheric_frame: AethericFrame,
             policy: Policies,
             dev_ops_manager: DevOpsManager,
             automatic: bool = True,
@@ -134,7 +134,7 @@ class Conduit(Cleanable, IConduit):
                 The role of this Conduit ('normal' or 'lesser').
             aetheric_frame_name (str):
                 The Aetheric frame name this Conduit belongs to.
-            aetheric_frame (IAethericFrame):
+            aetheric_frame (AethericFrame):
                 The live frame object that owns registration and frame-local
                 cloud services for this conduit.
             policy (Policies):
@@ -184,7 +184,7 @@ class Conduit(Cleanable, IConduit):
         self._nexus_publish_enabled: bool = False
         self._automatic: bool = automatic
         self._aetheric_frame_name: str = aetheric_frame_name
-        self._aetheric_frame: IAethericFrame = aetheric_frame
+        self._aetheric_frame: AethericFrame = aetheric_frame
         # Special Configuration
         if not isinstance(configuration, IConfiguration):
             raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
@@ -194,7 +194,7 @@ class Conduit(Cleanable, IConduit):
         self._spellbook: Spellbook = spellbook
         self._nexus: INexus = spellbook._nexus
         self._dev_ops_manager: DevOpsManager = dev_ops_manager
-        self._logger: ISafeLogger = self._configure_logger(logger)
+        self._logger: SafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()
         # Override dynamic environment if caller requested automatic/dynamic explicitly.
@@ -687,7 +687,7 @@ class Conduit(Cleanable, IConduit):
             channels="system",
         )
 
-    def _resolve_logger_from_config(self, configuration: IConfiguration) -> ISafeLogger:
+    def _resolve_logger_from_config(self, configuration: IConfiguration) -> SafeLogger:
         """
         Internal
 
@@ -698,7 +698,7 @@ class Conduit(Cleanable, IConduit):
                 The locked configuration driving conduit construction.
 
         Returns:
-            ISafeLogger: Resolved conduit logger instance.
+            SafeLogger: Resolved conduit logger instance.
         """
         return InitHelpers.resolve_channel_logger(
             self,
@@ -2190,7 +2190,7 @@ class Conduit(Cleanable, IConduit):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduitÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s own spellbook**.
+        conduitÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -2229,7 +2229,7 @@ class Conduit(Cleanable, IConduit):
 
         Purpose:
             Expose the process-wide mutation-research root through the conduit
-            faÃƒÆ’Ã‚Â§ade so callers do not need to reach through private conduit
+            faÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ade so callers do not need to reach through private conduit
             state to access the Aether-owned runtime surface.
 
         Returns:
@@ -3776,7 +3776,7 @@ class Conduit(Cleanable, IConduit):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduitÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s name, the number of active spells involved, and permission levels.
+        including the peer conduitÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:

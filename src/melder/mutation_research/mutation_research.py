@@ -25,7 +25,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.iaether import IAether
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.imutationresearchconfiguration import (
-    IMutationResearchConfiguration,
+    MutationResearchConfiguration,
 )
 
 
@@ -220,7 +220,7 @@ class MutationResearch(Cleanable):
         return self.activated
 
     @property
-    def configuration(self) -> Optional[IMutationResearchConfiguration]:
+    def configuration(self) -> Optional[MutationResearchConfiguration]:
         """
         Return the installed configuration, if any.
 
@@ -230,7 +230,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         return self._configuration
 
-    def create_configuration(self) -> IMutationResearchConfiguration:
+    def create_configuration(self) -> MutationResearchConfiguration:
         """
         Create a fresh mutation-research configuration object.
 
@@ -250,7 +250,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         return MutationResearchConfigurationBuilder()
 
-    def configure(self, configuration: IMutationResearchConfiguration) -> None:
+    def configure(self, configuration: MutationResearchConfiguration) -> None:
         """
         Install one configuration on the mutation-research root.
 
@@ -283,7 +283,7 @@ class MutationResearch(Cleanable):
 
     def activate(
             self,
-            configuration: Optional[IMutationResearchConfiguration] = None,
+            configuration: Optional[MutationResearchConfiguration] = None,
     ) -> None:
         """
         Activate the mutation-research root using one activated configuration.

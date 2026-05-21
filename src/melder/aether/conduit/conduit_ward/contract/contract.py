@@ -10,7 +10,9 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iconduitward import IConduitWard
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -35,7 +37,7 @@ class Contract(Cleanable):
     """
     __melder_internal__ = _mrg.sentinel
 
-    def __init__(self, ward_a: IConduitWard, ward_b: IConduitWard):
+    def __init__(self, ward_a: ConduitWard, ward_b: ConduitWard):
         """
         Create a new symmetric contract between two wards.
 
@@ -47,8 +49,8 @@ class Contract(Cleanable):
         self._lock = RLock()
         self._id: str = IDBuilder.create_id()
 
-        self._ward_a: IConduitWard = ward_a
-        self._ward_b: IConduitWard = ward_b
+        self._ward_a: ConduitWard = ward_a
+        self._ward_b: ConduitWard = ward_b
 
         # Each side stores its own view of spell permissions.
         self._details_a: Dict[str, Detail] = {} # Borrowed from conduit b
@@ -59,7 +61,7 @@ class Contract(Cleanable):
         """
         Idempotently tear down this contract and all contained Details.
 
-        Clears both wards’ detail maps, nulls ward references, and marks the
+        Clears both wardsÃ¢â‚¬â„¢ detail maps, nulls ward references, and marks the
         contract cleaned so it can no longer be used.
         """
         if self._cleaned:
@@ -113,7 +115,7 @@ class Contract(Cleanable):
 
     #endregion Context Manager
 
-    def _get_peer(self, ward: IConduitWard) -> IConduitWard:
+    def _get_peer(self, ward: ConduitWard) -> ConduitWard:
         """
         Internal
 
@@ -123,7 +125,7 @@ class Contract(Cleanable):
             ward: The ward requesting its peer.
 
         Returns:
-            IConduitWard: The other ward in the contract.
+            ConduitWard: The other ward in the contract.
 
         Raises:
             ValueError: If the ward is not part of this contract.
@@ -152,7 +154,7 @@ class Contract(Cleanable):
             return contract._ward_a._conduit
         return None
 
-    def _get_detail_map(self, ward: IConduitWard) -> Dict[str, Detail]:
+    def _get_detail_map(self, ward: ConduitWard) -> Dict[str, Detail]:
         """
         Internal
 
@@ -173,7 +175,7 @@ class Contract(Cleanable):
             return self._details_b
         raise ValueError("Invalid ward for contract access.")
 
-    def _add(self, ward: IConduitWard, contract_detail: Detail) -> bool:
+    def _add(self, ward: ConduitWard, contract_detail: Detail) -> bool:
         """
         Internal
 
@@ -202,7 +204,7 @@ class Contract(Cleanable):
         detail_map[contract_detail.spell_id] = contract_detail
         return True
 
-    def _remove(self, ward: IConduitWard, spell_id: str) -> None:
+    def _remove(self, ward: ConduitWard, spell_id: str) -> None:
         """
         Internal
 
@@ -216,7 +218,7 @@ class Contract(Cleanable):
         if spell_id in detail_map:
             del detail_map[spell_id]
 
-    def _remove_source(self, ward: IConduitWard, spell_id: str, root_spell_id: str | None) -> bool:
+    def _remove_source(self, ward: ConduitWard, spell_id: str, root_spell_id: str | None) -> bool:
         """
         Internal
 
@@ -256,7 +258,7 @@ class Contract(Cleanable):
             self._details_b.clear()
 
 
-    def _check_if_exists_and_permissions(self, ward: IConduitWard, spell_id: str, permission: Permissions) -> bool:
+    def _check_if_exists_and_permissions(self, ward: ConduitWard, spell_id: str, permission: Permissions) -> bool:
         """
         Internal
 
@@ -267,7 +269,7 @@ class Contract(Cleanable):
             return False
         return detail_map[spell_id].permissions == permission
 
-    def _check_if_exists(self, ward: IConduitWard, spell_id: str) -> bool:
+    def _check_if_exists(self, ward: ConduitWard, spell_id: str) -> bool:
         """
         Internal
 
@@ -277,7 +279,7 @@ class Contract(Cleanable):
         return spell_id in detail_map
 
 
-    def _find_spell_in_ward(self, spell_id: str) -> IConduitWard | None:
+    def _find_spell_in_ward(self, spell_id: str) -> ConduitWard | None:
         """
         Internal
 
@@ -293,7 +295,7 @@ class Contract(Cleanable):
             return None
 
 
-    def _grant(self, ward: IConduitWard, spell_ids: list[str], permission: Permissions) -> None:
+    def _grant(self, ward: ConduitWard, spell_ids: list[str], permission: Permissions) -> None:
         """
         Internal
 
@@ -302,7 +304,7 @@ class Contract(Cleanable):
         and the Detail is recorded as an initiated grant.
 
         Args:
-            ward (IConduitWard): The ward granting access.
+            ward (ConduitWard): The ward granting access.
             spell_ids (list[str]): List of spell IDs to grant.
             permission (Permissions): The permission level to assign.
 

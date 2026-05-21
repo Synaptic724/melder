@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
-from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.interfaces.iaether import IAether
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.bind.bind import Bind
@@ -105,7 +105,6 @@ and logging.
     """
     __melder_internal__ = _mrg.sentinel
     _aether: IAether = Aether()
-    _nexus: Nexus = Nexus()
     __slots__ = Cleanable.__slots__ + [
         "_active_change_request",
         "_aetheric_frame",
@@ -124,6 +123,7 @@ and logging.
         "_lock",
         "_logger",
         "_lookup_contracted_spells",
+        "_nexus",
         "_nexus_publish_enabled",
         "_lookup_spells",
         "_pending_binding_frame_keys",
@@ -194,7 +194,7 @@ and logging.
         self._configuration: Optional[IConfiguration] = configuration
         self._aetheric_frame_configuration: Optional[Any] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
-        self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
+        self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()
         self._initialize_configuration()
 
@@ -496,7 +496,7 @@ and logging.
         After this runs:
             - Each conduit_id in `_contracted_spells` will have a corresponding
               ConcurrentSet[str] in `_contracted_versions` containing all
-              version IDs (SHA256) for that conduitâ€™s spells.
+              version IDs (SHA256) for that conduitÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s spells.
         """
 
         with self._lock:

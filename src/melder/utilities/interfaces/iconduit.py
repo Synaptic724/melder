@@ -8,7 +8,6 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.interfaces.icleanable import ICleanable
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.isafelogger import ISafeLogger
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.synchronization.creation_gate import CreationGate
 from melder.utilities.synchronization.creation_gate_controller import (
@@ -41,7 +40,7 @@ class IConduit(ICleanable, Protocol):
     _root_conduit_id: str
 
     _configuration: 'IConfiguration'
-    _logger: 'ISafeLogger'
+    _logger: 'SafeLogger'
     _nexus_publish_enabled: bool
 
     _conduit_state: 'ConduitState'
@@ -177,7 +176,7 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     # Logger resolution
     # ------------------------------------------------------------------
-    def _resolve_logger_from_config(self, configuration: 'IConfiguration') -> 'ISafeLogger':
+    def _resolve_logger_from_config(self, configuration: 'IConfiguration') -> 'SafeLogger':
         """
         Resolve the logger for this conduit from the provided configuration.
 

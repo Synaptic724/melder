@@ -47,7 +47,6 @@ from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 
 
 from melder.utilities.interfaces.inexus import INexus
-from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.irift import IRift
 
 
@@ -127,7 +126,7 @@ class Nexus(Cleanable, INexus):
             self,
             *,
             aether: Optional[IAether] = None,
-            configuration: Optional[INexusConfiguration] = None,
+            configuration: Optional[NexusConfiguration] = None,
             logger: Optional[Any] = None,
     ) -> None:
         """
@@ -180,7 +179,7 @@ class Nexus(Cleanable, INexus):
             self._id: str = IDBuilder.create_id()
             self._logger = InitHelpers.resolve_safe_logger(None)
             self._aether: IAether = aether
-            self._configuration: Optional[INexusConfiguration] = configuration
+            self._configuration: Optional[NexusConfiguration] = configuration
             self._configured: bool = configuration is not None
             self._enabled: bool = False
 
@@ -445,7 +444,7 @@ class Nexus(Cleanable, INexus):
         return self._frame_manager
 
     @property
-    def configuration(self) -> INexusConfiguration:
+    def configuration(self) -> NexusConfiguration:
         """
         Purpose:
             Return the installed Nexus configuration.
@@ -455,7 +454,7 @@ class Nexus(Cleanable, INexus):
             copy.
 
         Returns:
-            INexusConfiguration: Installed process-wide config.
+            NexusConfiguration: Installed process-wide config.
 
         Raises:
             RuntimeError: If Nexus has not been configured yet.
@@ -501,7 +500,7 @@ class Nexus(Cleanable, INexus):
         self.check_cleaned()
         return self._rift_gate_controller
 
-    def create_system_configuration(self) -> INexusConfiguration:
+    def create_system_configuration(self) -> NexusConfiguration:
         """
         Create a fresh mutable Nexus configuration with default values.
 
@@ -515,14 +514,14 @@ class Nexus(Cleanable, INexus):
             - Does not install the configuration onto Nexus automatically.
 
         Returns:
-            INexusConfiguration: Fresh mutable Nexus config.
+            NexusConfiguration: Fresh mutable Nexus config.
         """
         self.check_cleaned()
         return NexusConfiguration().with_defaults()
 
     def enable(
             self,
-            configuration: Optional[INexusConfiguration] = None,
+            configuration: Optional[NexusConfiguration] = None,
     ) -> None:
         """
         Install configuration if needed and enable Nexus operations.

@@ -14,12 +14,12 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.iconduit import IConduit
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.utilities.interfaces.iaethericframe import AethericFrame
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
-from melder.utilities.interfaces.iconduitward import IConduitWard
+from melder.utilities.interfaces.iconduitward import ConduitWard
 from melder.utilities.interfaces.ispell import ISpell
-from melder.utilities.interfaces.isafelogger import ISafeLogger
+from melder.utilities.interfaces.isafelogger import SafeLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
@@ -36,7 +36,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 #region ConduitWard
 @mypyc_attr(native_class=True)
-class ConduitWard(Cleanable, IConduitWard):
+class ConduitWard(Cleanable):
     """
     Control-plane for a single Conduit: contracts, index, and policy.
 
@@ -91,7 +91,7 @@ class ConduitWard(Cleanable, IConduitWard):
             dynamic: bool,
             conduit_type: ConduitState,
             policy: Policies,
-            aetheric_frame: IAethericFrame,
+            aetheric_frame: AethericFrame,
     ):
         """
         Initialize the ward for one conduit.
@@ -126,7 +126,7 @@ class ConduitWard(Cleanable, IConduitWard):
         ## Conduit Ward properties
         self._conduit: IConduit = conduit
         self._conduit_cloud: ConduitCloud = aetheric_frame._conduit_cloud
-        self._logger: ISafeLogger = conduit._logger
+        self._logger: SafeLogger = conduit._logger
         self._dynamic: bool = dynamic
         self._conduit_type: ConduitState = conduit_type
         self._id = conduit._id
@@ -287,7 +287,7 @@ class ConduitWard(Cleanable, IConduitWard):
     #endregion Cleanup
 
     #region Context Manager
-    def __enter__(self) -> IConduitWard:
+    def __enter__(self) -> ConduitWard:
         """
         Acquire the ward lock and return this ward.
 
@@ -435,7 +435,7 @@ class ConduitWard(Cleanable, IConduitWard):
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
             metadata: Optional[Dict[str, Any]] = None,
-    ) -> Generator[IConduitWard, Any, None]:
+    ) -> Generator[ConduitWard, Any, None]:
         """
         Public API
 
@@ -995,7 +995,7 @@ class ConduitWard(Cleanable, IConduitWard):
         with self._lock:
             self._lesser_conduits[lesser_conduit._id] = lesser_conduit
             try:
-                child_ward: Optional[IConduitWard] = lesser_conduit._conduit_ward
+                child_ward: Optional[ConduitWard] = lesser_conduit._conduit_ward
             except Exception:
                 child_ward = None
             if child_ward is not None:
@@ -1027,7 +1027,7 @@ class ConduitWard(Cleanable, IConduitWard):
         for conduit in self._lesser_conduits.values():
             if conduit._id == conduit_id:
                 return conduit
-            ward: Optional[IConduitWard] = conduit._conduit_ward
+            ward: Optional[ConduitWard] = conduit._conduit_ward
             if ward is not None:
                 result = ward._get_lesser_conduit(conduit_id)
                 if result is not None:
@@ -1461,7 +1461,7 @@ class ConduitWard(Cleanable, IConduitWard):
     def _restore_detail_snapshot(
             self,
             contract: Contract,
-            ward: IConduitWard,
+            ward: ConduitWard,
             snapshot: Dict[str, Any],
     ) -> None:
         """
@@ -1471,7 +1471,7 @@ class ConduitWard(Cleanable, IConduitWard):
 
         Args:
             contract (Contract): Contract receiving the restored detail.
-            ward (IConduitWard): Ward whose detail map owns the detail.
+            ward (ConduitWard): Ward whose detail map owns the detail.
             snapshot (Dict[str, Any]): Snapshot produced by `_snapshot_detail`.
 
         Returns:

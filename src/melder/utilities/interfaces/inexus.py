@@ -7,17 +7,16 @@ from melder.utilities.interfaces.iconduit import IConduit
 
 
 
-from melder.utilities.interfaces.inexusconfiguration import INexusConfiguration
 from melder.utilities.interfaces.irift import IRift
 
 if TYPE_CHECKING:
     from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+    from melder.nexus.configuration.nexus_configuration import NexusConfiguration
     from melder.nexus.configuration.rift_configuration import RiftConfiguration
     from melder.nexus.rift.rift_gate.rift_gate import RiftGate
     from melder.nexus.rift.rift_gate_controller.rift_gate_controller import RiftGateController
     from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
     from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
-    from melder.nexus.nexus_frame_manager import NexusFrameManager
     from melder.nexus.nexus_frame_manager import NexusFrameManager
 
 @runtime_checkable
@@ -35,7 +34,7 @@ class INexus(ICleanable, Protocol):
         ...
 
     @property
-    def configuration(self) -> INexusConfiguration:
+    def configuration(self) -> NexusConfiguration:
         """
         Return the active Nexus configuration object.
         """
@@ -69,7 +68,7 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
-    def create_system_configuration(self) -> INexusConfiguration:
+    def create_system_configuration(self) -> NexusConfiguration:
         """
         Create and return a new mutable Nexus configuration object.
         """
@@ -77,7 +76,7 @@ class INexus(ICleanable, Protocol):
 
     def enable(
             self,
-            configuration: Optional[INexusConfiguration] = None,
+            configuration: Optional[NexusConfiguration] = None,
     ) -> None:
         """
         Enable Nexus, optionally binding a configuration as part of the enable flow.

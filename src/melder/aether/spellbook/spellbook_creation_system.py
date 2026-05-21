@@ -28,7 +28,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.ispell import ISpell
 from melder.utilities.interfaces.ispelldetailedprofile import ISpellDetailedProfile
 from melder.utilities.interfaces.ispellgeneralprofile import ISpellGeneralProfile
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.utilities.interfaces.iunitofwork import IUnitOfWork
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
@@ -311,7 +311,7 @@ class SpellbookCreationSystem(Cleanable):
             policy: Policies,
             conduit_id: str,
             dev_ops_manager: DevOpsManager,
-            aetheric_frame: IAethericFrame,
+            aetheric_frame: AethericFrame,
     ) -> Conduit:
         """
         Purpose:
@@ -376,7 +376,7 @@ class SpellbookCreationSystem(Cleanable):
     def _resolve_existing_frame(
             *,
             spellbook: Spellbook,
-    ) -> IAethericFrame:
+    ) -> AethericFrame:
         """
         Purpose:
             Resolve the live frame object required for root conduit creation.
@@ -389,7 +389,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook for this conjure run.
 
         Returns:
-            IAethericFrame: The live frame object for the target frame.
+            AethericFrame: The live frame object for the target frame.
         """
         return spellbook._aether._get_existing_frame(spellbook._aetheric_frame)
 

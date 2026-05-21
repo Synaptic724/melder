@@ -1,10 +1,10 @@
 import logging
 from typing import TYPE_CHECKING, Optional, Protocol, Set, Tuple, Union, runtime_checkable
 from melder.utilities.interfaces.icleanable import ICleanable
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.interfaces.iconfiguration import IConfiguration
-from melder.utilities.interfaces.isafelogger import ISafeLogger
+
 from melder.utilities.interfaces.iconduit import IConduit
 
 if TYPE_CHECKING:
@@ -146,7 +146,7 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    _logger: ISafeLogger
+    _logger: SafeLogger
 
     @property
     def mutation_research(self) -> "MutationResearch":
@@ -177,13 +177,13 @@ class IAether(ICleanable, Protocol):
         """
         ...
 
-    def _ensure_frame(self, aetheric_frame_name: str = "default") -> IAethericFrame:
+    def _ensure_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
         """
         Return the existing frame for the given name, creating it if needed.
         """
         ...
 
-    def _create_frame(self, aetheric_frame_name: str) -> IAethericFrame:
+    def _create_frame(self, aetheric_frame_name: str) -> AethericFrame:
         """
         Create and return one new frame with the supplied name.
         """
@@ -398,7 +398,7 @@ class IAether(ICleanable, Protocol):
     def _detach_cleaned_frame(
             self,
             frame_name: str,
-            frame: IAethericFrame,
+            frame: AethericFrame,
     ) -> None:
         """
         Internal
@@ -430,7 +430,7 @@ class IAether(ICleanable, Protocol):
     def _get_existing_frame(
             self,
             aetheric_frame_name: str = "default",
-    ) -> IAethericFrame:
+    ) -> AethericFrame:
         """
         Return one existing frame without creating new custom frames.
         """

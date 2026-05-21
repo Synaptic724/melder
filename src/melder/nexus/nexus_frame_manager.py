@@ -12,7 +12,7 @@ from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iaethericframe import IAethericFrame
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.utilities.interfaces.iconduit import IConduit
 from melder.utilities.interfaces.inexus import INexus
 from melder.nexus.nexus_frame_configuration import NexusFrameConfiguration
@@ -27,7 +27,7 @@ class NexusFrameManager(Cleanable):
 
     Contract:
         - Holds the authoritative Nexus-managed frame registry as
-          `frame_name -> IAethericFrame`.
+          `frame_name -> AethericFrame`.
         - Holds the authored frame configuration registry as
           `frame_name -> NexusFrameConfiguration`.
         - Every managed frame is dynamic, AI-native, and Rift-enabled.
@@ -74,7 +74,7 @@ class NexusFrameManager(Cleanable):
         self._nexus: INexus = nexus
         self._next_indexed_frame_number: int = 1
         self._creating_frame_names: Set[str] = set()
-        self._frames_by_name: Dict[str, IAethericFrame] = {}
+        self._frames_by_name: Dict[str, AethericFrame] = {}
         self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
 
     def cleanup(self) -> None:
@@ -267,7 +267,7 @@ class NexusFrameManager(Cleanable):
             self._validate_raw_creation_for_mode(frame_name)
         root_conduit: Optional[IConduit] = None
         spellbook_id: Optional[str] = None
-        frame: Optional[IAethericFrame] = None
+        frame: Optional[AethericFrame] = None
         with self._lock:
             if (
                     frame_name in self._frames_by_name
@@ -410,7 +410,7 @@ class NexusFrameManager(Cleanable):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
-    ) -> IAethericFrame:
+    ) -> AethericFrame:
         """
         Return one manager-owned frame for a Rift under the current topology.
 
@@ -426,7 +426,7 @@ class NexusFrameManager(Cleanable):
                 Optional explicit frame name.
 
         Returns:
-            IAethericFrame: Resolved managed frame.
+            AethericFrame: Resolved managed frame.
         """
         self.check_cleaned()
         self._require_nexus_enabled()
