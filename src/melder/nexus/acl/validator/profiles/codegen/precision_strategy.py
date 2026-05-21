@@ -1,7 +1,7 @@
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
 

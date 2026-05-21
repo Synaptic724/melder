@@ -1,7 +1,7 @@
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
 )
-from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
 

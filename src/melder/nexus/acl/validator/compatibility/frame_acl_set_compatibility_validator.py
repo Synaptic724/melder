@@ -7,16 +7,16 @@ from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
-from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclprofilebuilder import IFrameACLProfileBuilder
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframeaclviewconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 

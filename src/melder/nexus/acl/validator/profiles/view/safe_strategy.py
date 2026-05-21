@@ -4,7 +4,7 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
     FrameACLViewProfile,
 )
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframeaclviewconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 

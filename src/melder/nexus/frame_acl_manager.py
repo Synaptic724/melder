@@ -30,7 +30,6 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
     FrameACLViewProfile,
 )
 from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 
 
 

@@ -45,16 +45,16 @@ from melder.nexus.acl.validator.profiles.view.safe_strategy import (
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.iframeaclcommandconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
-from melder.utilities.interfaces.iframeaclcodegenconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.interfaces.iframeaclrule import IFrameACLRule
 from melder.utilities.interfaces.iframeaclruleset import IFrameACLRuleSet
-from melder.utilities.interfaces.iframeaclviewconfiguration import (
+from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 
