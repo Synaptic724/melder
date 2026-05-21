@@ -6,6 +6,11 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence,
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.dag.dag_index import (
+        DagIndex,
+        PathRegistry,
+        SocketRef,
+    )
 
 from mypy_extensions import mypyc_attr
 
@@ -13,7 +18,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec, TargetSpecKind
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (

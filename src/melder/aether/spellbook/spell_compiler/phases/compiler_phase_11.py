@@ -3,6 +3,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
+        ExecutionPlan,
+    )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
         SpellCompilerArtifact,
     )
@@ -16,7 +19,6 @@ if TYPE_CHECKING:
 from mypy_extensions import mypyc_attr
 
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlan,
     ExecutionPlanBuilder,
     ExecutionPlanCallMode,
     ExecutionPlanVariant,
@@ -280,7 +282,7 @@ class CompilerPhase11:
             self,
             *,
             occurrence_plan: OccurrencePlan,
-            injection_plan: Optional["InjectionPlan"],
+            injection_plan: Optional[InjectionPlan],
             spell_lookup: Dict[str, Spell],
     ) -> Optional[str]:
         """
@@ -548,7 +550,7 @@ class CompilerPhase11:
             self,
             *,
             occurrence_plan: OccurrencePlan,
-            injection_plan: Optional["InjectionPlan"],
+            injection_plan: Optional[InjectionPlan],
             spell_lookup: Dict[str, Spell],
             plan_variant: str,
     ) -> ExecutionPlan:

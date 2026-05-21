@@ -396,7 +396,11 @@ class CompilerPhase5:
             for dep_id in filtered_deps:
                 reverse_dependencies.setdefault(dep_id, set()).add(spell_id)
 
-            if topologies is not None and snapshot_topologies is not None:
+            if (
+                topologies is not None
+                and snapshot_topologies is not None
+                and spell_id in snapshot_topologies
+            ):
                 topologies[spell_id] = snapshot_topologies.get(spell_id)
 
         root_spell_ids = {spell_id for spell_id in all_spell_ids if spell_id not in reverse_dependencies}

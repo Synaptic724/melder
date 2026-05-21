@@ -1057,8 +1057,8 @@ class ExecutionPlanBuilder:
     def __init__(
             self,
             *,
-            occurrence_plan: "OccurrencePlan",
-            injection_plan: Optional["InjectionPlan"],
+            occurrence_plan: OccurrencePlan,
+            injection_plan: Optional[InjectionPlan],
             spell_lookup: Dict[str, Spell],
             plan_variant: str,
     ) -> None:

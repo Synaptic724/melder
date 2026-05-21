@@ -1,15 +1,17 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Iterable, Callable, Sequence, Tuple, Optional
+from typing import TYPE_CHECKING, Dict, List, Iterable, Callable, Sequence, Tuple, Optional
 
 from mypy_extensions import mypyc_attr
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec, TargetSpecKind
+from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpecKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellSocketDescriptor,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec
 
 @mypyc_attr(native_class=True)
 class PathRegistry(Cleanable):
