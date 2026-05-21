@@ -1,4 +1,5 @@
 import threading
+from typing import TYPE_CHECKING
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from types import CodeType
 
@@ -6,8 +7,11 @@ from melder.nexus.rift.codegen_system.execution.codegen_execution_result import 
     CodegenExecutionResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.rift.codegen_system.execution.codegen_execution_result import CodegenExecutionResult
-from melder.nexus.rift.codegen_system.codegen_transaction_context import CodegenTransactionContext
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.codegen_transaction_context import (
+        CodegenTransactionContext,
+    )
 
 
 class CodegenExecutor(Cleanable):

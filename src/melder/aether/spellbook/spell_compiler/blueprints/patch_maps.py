@@ -1,6 +1,6 @@
 ﻿from dataclasses import dataclass
 from enum import IntEnum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -902,11 +902,17 @@ class PatchMapBuilder(object):
     Lifecycle:
         - Builder does not own the blueprint and performs no cleanup.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_cleaned",
         "_blueprint",
         "_path_spec_key_by_id",
+    ]
+
+    __deletable__: ClassVar[List[str]] = [
+        "_blueprint",
+        "_path_spec_key_by_id",
+        "_cleaned"
     ]
 
     def __init__(

@@ -1,5 +1,5 @@
 import threading
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -32,8 +32,17 @@ class RootResolutionBlueprint(Cleanable):
         - Consumers should treat exposed list/index data as read-only, even
           when accessors return copies.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_root_spell_id",
+        "_root_lineage_id",
+        "_dag",
+        "_ordered_node_ids",
+        "_socket_refs",
+        "_dag_index",
+        "_dag_index_build_lock",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_root_spell_id",
         "_root_lineage_id",
         "_dag",

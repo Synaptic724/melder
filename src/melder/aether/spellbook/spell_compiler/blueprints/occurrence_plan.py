@@ -2,7 +2,18 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 import heapq
 import inspect
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    ClassVar,
+)
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -49,7 +60,7 @@ class OccurrencePlanSelection:
           payloads needed by later phases.
         - Is intended to be an immutable handoff object once constructed.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]]
     execution_order: List[str]
     instance_keys_by_spell_id: Dict[str, List[InstanceKey]]
@@ -131,8 +142,22 @@ class OccurrencePlan(Cleanable):
     Threading:
         - Not thread-safe. Treat as read-only data after construction.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_root_spell_id",
+        "_occurrence_graph",
+        "_execution_order",
+        "_instance_keys_by_spell_id",
+        "_canonical_occurrences_by_spell_id",
+        "_root_instance_key",
+        "_shared_spell_ids",
+        "_contract_overrides_by_occurrence",
+        "_contract_overrides_by_spell_id",
+        "_contract_dependencies_complete",
+        "_path_registry",
+    ]
+
+    __deletable__: ClassVar[List[str]] = [
         "_root_spell_id",
         "_occurrence_graph",
         "_execution_order",
@@ -422,9 +447,17 @@ class OccurrencePlanBuilder(object):
         - Dynamic mode may allow missing providers during plan build.
         - Not thread-safe.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_cleaned",
+        "_root_spell",
+        "_blueprint",
+        "_spell_lookup",
+        "_system_states",
+        "_path_registry",
+    ]
+    __deletable__: ClassVar[List[str]] = [
+        "_cleaned"
         "_root_spell",
         "_blueprint",
         "_spell_lookup",

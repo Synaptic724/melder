@@ -1,13 +1,19 @@
 import threading
 import hashlib
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace import CodegenNamespace
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
+        CodegenNamespace,
+    )
+    from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+        CodegenNamespaceConfiguration,
+    )
+    from melder.nexus.rift.projection.codegen_projection import CodegenProjection
 
 
 

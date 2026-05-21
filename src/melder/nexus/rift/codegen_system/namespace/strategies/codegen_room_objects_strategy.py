@@ -3,9 +3,11 @@ from typing import TYPE_CHECKING, Dict
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 
 if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+        CodegenNamespaceConfiguration,
+    )
     from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 

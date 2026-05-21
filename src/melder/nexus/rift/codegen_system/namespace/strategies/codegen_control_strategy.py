@@ -6,9 +6,11 @@ from melder.nexus.rift.codegen_system.namespace.codegen_control_surface import (
     CodegenControlSurface,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import CodegenNamespaceConfiguration
 
 if TYPE_CHECKING:
+    from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+        CodegenNamespaceConfiguration,
+    )
     from melder.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 
 

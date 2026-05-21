@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, ClassVar
 
 from mypy_extensions import mypyc_attr
 
@@ -32,11 +32,11 @@ class ExecutionPlanVariant:
         Identify which precompiled execution plan should be selected based on
         override and mutation payloads at meld time.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
-    NO_OVERRIDES_FAST = "no_overrides_fast"
-    OVERRIDES = "overrides"
-    OVERRIDES_WITH_MUTATIONS = "overrides_with_mutations"
+    NO_OVERRIDES_FAST: ClassVar[str] = "no_overrides_fast"
+    OVERRIDES: ClassVar[str] = "overrides"
+    OVERRIDES_WITH_MUTATIONS: ClassVar[str] = "overrides_with_mutations"
 
 @mypyc_attr(native_class=True)
 class ExecutionPlanTargetKind:
@@ -49,11 +49,11 @@ class ExecutionPlanTargetKind:
         Represent creations routing as a compact enum-like value to avoid
         repeated string comparisons at runtime.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
-    CALLER = 1
-    OWNER = 2
-    SPELLSPACE = 3
+    CALLER: ClassVar[int] = 1
+    OWNER: ClassVar[int] = 2
+    SPELLSPACE: ClassVar[int] = 3
 
 @mypyc_attr(native_class=True)
 class ExecutionPlanCallMode:
@@ -66,18 +66,18 @@ class ExecutionPlanCallMode:
         Capture trivial call shapes (0, 1, 2, or 3 dependencies) to avoid
         per-step list allocation and inner loop overhead.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
-    CALL0 = 0
-    CALL1 = 1
-    CALL2 = 2
-    CALL3 = 3
-    CALL4 = 4
-    CALL5 = 5
-    CALL6 = 6
-    CALL7 = 7
-    CALL8 = 8
-    CALLN = 9
+    CALL0: ClassVar[int] = 0
+    CALL1: ClassVar[int] = 1
+    CALL2: ClassVar[int] = 2
+    CALL3: ClassVar[int] = 3
+    CALL4: ClassVar[int] = 4
+    CALL5: ClassVar[int] = 5
+    CALL6: ClassVar[int] = 6
+    CALL7: ClassVar[int] = 7
+    CALL8: ClassVar[int] = 8
+    CALLN: ClassVar[int] = 9
 
 @mypyc_attr(native_class=True)
 class ExecutionPlanStep:
@@ -90,8 +90,36 @@ class ExecutionPlanStep:
         Capture precomputed routing, call recipes, and spell references needed
         to execute meld with minimal runtime planning.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
+        "_instance_key",
+        "_occurrence",
+        "_spell",
+        "_existence",
+        "_creations_target_kind",
+        "_shared_instance",
+        "_inject_spec",
+        "_dependency_keys",
+        "_dependency_keys_by_param",
+        "_dependency_resolution_order",
+        "_override_keys",
+        "_override_match_prefix",
+        "_override_match_prefix_len",
+        "_expects_overrides",
+        "_contract_keys",
+        "_allow_list_aggregation",
+        "_uses_positional_override",
+        "_contract_payload",
+        "_contract_positional_override",
+        "_has_contract_payload",
+        "_lock_hint",
+        "_use_spell_lock_hint",
+        "_requires_spellspace",
+        "_owner_conduit_required",
+        "_must_register",
+        "_disposal_method_names",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_instance_key",
         "_occurrence",
         "_spell",
@@ -386,8 +414,77 @@ class ExecutionPlan(Cleanable):
     This plan can optionally carry a compact, array-style fast path for
     no-override execution to minimize runtime overhead.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_root_spell_id",
+        "_root_instance_key",
+        "_steps",
+        "_spell_id_step_index",
+        "_optimistic_object_refs_by_spell_id",
+        "_available_param_by_spell_id",
+        "_plan_variant",
+        "_fast_dep_indices",
+        "_fast_param_group_names",
+        "_fast_param_group_dep_offsets",
+        "_fast_param_group_dep_counts",
+        "_fast_param_group_offsets",
+        "_fast_param_group_counts",
+        "_fast_use_positional",
+        "_fast_contract_payload_items",
+        "_fast_contract_positional_args",
+        "_fast_instance_keys",
+        "_fast_creations_target_kinds",
+        "_fast_existence",
+        "_fast_must_register",
+        "_fast_set_result_flags",
+        "_fast_spells",
+        "_fast_call_targets",
+        "_fast_existing_objects",
+        "_fast_is_existing_creation",
+        "_fast_is_callable",
+        "_fast_root_step_index",
+        "_fast_call_modes",
+        "_fast_single_dep_indices",
+        "_fast_call2_dep_indices_a",
+        "_fast_call2_dep_indices_b",
+        "_fast_call3_dep_indices_a",
+        "_fast_call3_dep_indices_b",
+        "_fast_call3_dep_indices_c",
+        "_fast_call4_dep_indices_a",
+        "_fast_call4_dep_indices_b",
+        "_fast_call4_dep_indices_c",
+        "_fast_call4_dep_indices_d",
+        "_fast_call5_dep_indices_a",
+        "_fast_call5_dep_indices_b",
+        "_fast_call5_dep_indices_c",
+        "_fast_call5_dep_indices_d",
+        "_fast_call5_dep_indices_e",
+        "_fast_call6_dep_indices_a",
+        "_fast_call6_dep_indices_b",
+        "_fast_call6_dep_indices_c",
+        "_fast_call6_dep_indices_d",
+        "_fast_call6_dep_indices_e",
+        "_fast_call6_dep_indices_f",
+        "_fast_call7_dep_indices_a",
+        "_fast_call7_dep_indices_b",
+        "_fast_call7_dep_indices_c",
+        "_fast_call7_dep_indices_d",
+        "_fast_call7_dep_indices_e",
+        "_fast_call7_dep_indices_f",
+        "_fast_call7_dep_indices_g",
+        "_fast_call8_dep_indices_a",
+        "_fast_call8_dep_indices_b",
+        "_fast_call8_dep_indices_c",
+        "_fast_call8_dep_indices_d",
+        "_fast_call8_dep_indices_e",
+        "_fast_call8_dep_indices_f",
+        "_fast_call8_dep_indices_g",
+        "_fast_call8_dep_indices_h",
+        "_fast_transient_plan",
+        "_fast_has_contract_payloads",
+        "_fast_has_existing_creations",
+    ]
+    __deletable__: ClassVar[List[str]] = [
         "_root_spell_id",
         "_root_instance_key",
         "_steps",
@@ -1046,13 +1143,14 @@ class ExecutionPlanBuilder:
 
     Build a Phase 11 ExecutionPlan from Phase 8/9 artifacts.
     """
-    __melder_internal__ = _mrg.sentinel
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_occurrence_plan",
         "_injection_plan",
         "_spell_lookup",
         "_plan_variant",
     ]
+    __deletable__: ClassVar[List[str]] = ["_occurrence_plan", "_injection_plan", "_spell_lookup", "_plan_variant"]
 
     def __init__(
             self,
