@@ -130,7 +130,7 @@ class ParamSource:
         return self._contract_key
 
 @mypyc_attr(native_class=True)
-class InjectionSpec(IInjectionSpec):
+class InjectionSpec:
     """
     Internal
 
@@ -696,4 +696,5 @@ class InjectionPlanBuilder(object):
             root_spell_id=plan.root_spell_id,
             instance_injections=instance_injections,
         )
+
 

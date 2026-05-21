@@ -773,3 +773,4 @@ class CompilerPhase3:
             pass
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
 
+
