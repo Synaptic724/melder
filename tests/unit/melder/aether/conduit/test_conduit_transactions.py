@@ -284,7 +284,7 @@ def test_binding_transaction_ends_on_exception(
 ) -> None:
     """The binding_transaction context manager should always end the transaction, even on exceptions."""
     begin_binding_transaction = MagicMock()
-    end_binding_transaction = MagicMock()
+    end_transaction = MagicMock()
     monkeypatch.setattr(
         Conduit,
         "begin_binding_transaction",
@@ -292,8 +292,11 @@ def test_binding_transaction_ends_on_exception(
     )
     monkeypatch.setattr(
         Conduit,
-        "end_binding_transaction",
-        lambda self: end_binding_transaction(),
+        "end_transaction",
+        lambda self, transaction_type=None, success=True: end_transaction(
+            transaction_type=transaction_type,
+            success=success,
+        ),
     )
 
     with pytest.raises(RuntimeError, match="boom"):
@@ -301,7 +304,10 @@ def test_binding_transaction_ends_on_exception(
             raise RuntimeError("boom")
 
     begin_binding_transaction.assert_called_once()
-    end_binding_transaction.assert_called_once()
+    end_transaction.assert_called_once_with(
+        transaction_type=ChangeTransactionType.BIND,
+        success=False,
+    )
 
 
 def test_conduit_transaction_context_ends_on_exception(
@@ -318,7 +324,8 @@ def test_conduit_transaction_context_ends_on_exception(
 
     spellbook_stub.begin_transaction.assert_called_once()
     spellbook_stub.end_transaction.assert_called_once_with(
-        transaction_type=ChangeTransactionType.BIND
+        transaction_type=ChangeTransactionType.BIND,
+        success=False,
     )
 
 

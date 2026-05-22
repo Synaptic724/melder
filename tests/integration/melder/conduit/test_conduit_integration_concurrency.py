@@ -1117,7 +1117,10 @@ def test_conduit_concurrent_contract_additions_same_spell_multiple_borrowers() -
         functions = [add_for(borrower) for borrower in borrowers]
         _results, errors = _run_concurrent_calls(functions=functions)
         assert all(
-            "Change-control admission denied" in str(error)
+            (
+                "Change-control admission denied" in str(error)
+                or "Another root transaction session is already active in this frame." in str(error)
+            )
             for error in errors
         )
         for borrower in borrowers:

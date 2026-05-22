@@ -9,7 +9,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.spellbook.configuration.configuration import Configuration
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration as Configuration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 
@@ -264,7 +264,7 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
         raise AssertionError(f"Unknown mode: {mode}")
 
     cfg = Configuration()
-    cfg.dynamic_defaults()
+    cfg.with_defaults()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     cfg.set_property("full_ahead_of_time_compilation", True)  # compile everything at bind time to exclude JIT from timing
 

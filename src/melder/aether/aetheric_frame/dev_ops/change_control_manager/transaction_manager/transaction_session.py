@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
         ChangeControlStagedMutation,
     )
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_identity import (
+        TransactionIdentity,
+    )
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
         ChangeControlTransactionRequest,
     )
@@ -65,6 +68,7 @@ class TransactionSession(Cleanable):
         "_lock",
         "_request",
         "_staged",
+        "_submitter_identity",
         "_owner_thread_id",
         "_capabilities",
         "_depth",
@@ -82,6 +86,7 @@ class TransactionSession(Cleanable):
             *,
             request: "ChangeControlTransactionRequest",
             staged: "ChangeControlStagedMutation",
+            submitter_identity: Optional["TransactionIdentity"] = None,
             owner_thread_id: int,
             capabilities: Optional[Iterable[str]] = None,
     ) -> None:
@@ -93,6 +98,8 @@ class TransactionSession(Cleanable):
                 Admitted immutable transaction request.
             staged:
                 Admitted immutable staged mutation payload.
+            submitter_identity:
+                Optional identity surface that originated the root session.
             owner_thread_id:
                 Thread identifier that owns the root transaction.
             capabilities:
@@ -113,6 +120,7 @@ class TransactionSession(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._request: ChangeControlTransactionRequest = request
         self._staged: ChangeControlStagedMutation = staged
+        self._submitter_identity: Optional[TransactionIdentity] = submitter_identity
         self._owner_thread_id: int = owner_thread_id
         self._capabilities: Set[str] = set(capabilities or ())
         self._depth: int = 1
@@ -147,6 +155,7 @@ class TransactionSession(Cleanable):
             self._rollback_actions.clear()
             del self._request
             del self._staged
+            del self._submitter_identity
             del self._owner_thread_id
             del self._capabilities
             del self._depth
@@ -182,6 +191,14 @@ class TransactionSession(Cleanable):
         """
         self.check_cleaned()
         return self._owner_thread_id
+
+    @property
+    def submitter_identity(self) -> Optional["TransactionIdentity"]:
+        """
+        Return the identity surface that originated this root session.
+        """
+        self.check_cleaned()
+        return self._submitter_identity
 
     @property
     def depth(self) -> int:
@@ -450,6 +467,11 @@ class TransactionSession(Cleanable):
                 "request_id": self._request.request_id,
                 "request_type": self._request.request_type,
                 "owner_thread_id": self._owner_thread_id,
+                "submitter_identity": (
+                    None
+                    if self._submitter_identity is None
+                    else self._submitter_identity.describe()
+                ),
                 "depth": self._depth,
                 "status": self._status,
                 "capabilities": tuple(sorted(self._capabilities)),

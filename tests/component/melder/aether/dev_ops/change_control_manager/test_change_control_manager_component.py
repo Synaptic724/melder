@@ -1,5 +1,6 @@
 import pytest
 import threading
+import time
 
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -568,40 +569,68 @@ def test_component_change_control_transaction_mediator_queue_turn_taking() -> No
             capabilities=("bind",),
         )
 
-        other_request = manager.transaction_manager().build_request(
-            request_type=ChangeTransactionType.LINK,
-            initiator_conduit_id="conduit-2",
-            spellbook_id="spellbook-2",
-            scope_keys=["scope:spellbook:spellbook-2"],
-        )
-        other_admission = manager.admit_request(other_request)
-        assert other_admission.admitted is True
-        other_staged = manager.orchestrator().get_staged(other_request.request_id)
-        assert other_staged is not None
+        worker_payloads = []
+        for idx in range(5):
+            other_request = manager.transaction_manager().build_request(
+                request_type=ChangeTransactionType.LINK,
+                initiator_conduit_id=f"conduit-{idx + 2}",
+                spellbook_id=f"spellbook-{idx + 2}",
+                scope_keys=[f"scope:spellbook:spellbook-{idx + 2}"],
+            )
+            other_admission = manager.admit_request(other_request)
+            assert other_admission.admitted is True
+            other_staged = manager.orchestrator().get_staged(other_request.request_id)
+            assert other_staged is not None
+            worker_payloads.append((idx, other_request, other_staged))
 
-        finished = threading.Event()
+        finished_events = [threading.Event() for _ in range(5)]
         failures: list[BaseException] = []
+        acquisition_order: list[int] = []
+        active_count = 0
+        max_active = 0
+        state_lock = threading.Lock()
 
-        def _run() -> None:
+        def _run(index: int, other_request, other_staged, finished: threading.Event) -> None:
+            nonlocal active_count, max_active
             try:
                 manager.transaction_mediator().begin_frame(
                     request=other_request,
                     staged=other_staged,
                 )
+                with state_lock:
+                    acquisition_order.append(index)
+                    active_count += 1
+                    max_active = max(max_active, active_count)
+                time.sleep(0.02)
+                with state_lock:
+                    active_count -= 1
                 manager.transaction_mediator().end_frame(success=True)
             except BaseException as exc:
                 failures.append(exc)
             finally:
                 finished.set()
 
-        thread = threading.Thread(target=_run, name="ccm-mediator-queue-peer")
-        thread.start()
-        assert finished.wait(timeout=0.05) is False
+        threads = []
+        for idx, other_request, other_staged in worker_payloads:
+            finished = finished_events[idx]
+            thread = threading.Thread(
+                target=_run,
+                args=(idx, other_request, other_staged, finished),
+                name=f"ccm-mediator-queue-peer-{idx}",
+            )
+            thread.start()
+            threads.append(thread)
+
+        assert all(event.wait(timeout=0.05) is False for event in finished_events)
         manager.transaction_mediator().end_frame(success=True)
-        assert finished.wait(timeout=1.0) is True
-        thread.join(timeout=5)
-        assert thread.is_alive() is False
+        for event in finished_events:
+            assert event.wait(timeout=1.0) is True
+        for thread in threads:
+            thread.join(timeout=5)
+            assert thread.is_alive() is False
         assert failures == []
+        assert sorted(acquisition_order) == [0, 1, 2, 3, 4]
+        assert max_active == 1
     finally:
         frame.cleanup()
 

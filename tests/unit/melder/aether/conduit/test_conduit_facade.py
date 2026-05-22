@@ -152,7 +152,7 @@ def test_scan_reuses_active_binding_transaction(
     conduit_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """scan should reuse an active bind transaction instead of nesting one."""
+    """scan should still route through conduit-side bind tracking."""
     module = MagicMock()
     spellbook_stub.scan.return_value = ["spell-1"]
     spellbook_stub.begin_transaction = MagicMock()
@@ -164,9 +164,9 @@ def test_scan_reuses_active_binding_transaction(
 
     result = conduit_normal.scan(module)
 
-    spellbook_stub.begin_transaction.assert_not_called()
+    spellbook_stub.begin_transaction.assert_called_once()
     spellbook_stub.scan.assert_called_once_with(module)
-    spellbook_stub.end_binding_transaction.assert_not_called()
+    spellbook_stub.end_binding_transaction.assert_called_once_with()
     assert result == ["spell-1"]
 
 

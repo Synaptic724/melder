@@ -98,6 +98,9 @@ class _SpellSystemStatesStub:
         """
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
+        self.collection_dirty_calls: list[tuple[str, set[str]]] = []
+        self.dependencies_by_spell: dict[object, list[str]] = {}
+        self.topology_by_spell: dict[object, object] = {}
 
     def register_index(self, spell_index: object) -> None:
         """
@@ -124,6 +127,53 @@ class _SpellSystemStatesStub:
             None.
         """
         self.unregistered_lineages.append(spell_index)
+
+    def mark_collection_dependents_dirty(
+            self,
+            *,
+            spellbook_id: str,
+            frame_keys: set[str],
+    ) -> None:
+        """
+        Purpose:
+            Record collection-dependent invalidation after a conjured bind window.
+        Contract:
+            - Appends the spellbook id and affected frame keys in call order.
+        Args:
+            spellbook_id: Spellbook whose collection membership changed.
+            frame_keys: Normalized frame keys dirtied by the bind transaction.
+        Returns:
+            None.
+        """
+        self.collection_dirty_calls.append((spellbook_id, set(frame_keys)))
+
+    def update_dependencies(self, spell_index: object, dependency_spell_ids: list[str]) -> None:
+        """
+        Purpose:
+            Record dependency spell ids produced during structural compilation.
+        Contract:
+            - Stores a copy of dependency ids keyed by spell_index.
+        Args:
+            spell_index: SpellIndex whose direct dependencies were resolved.
+            dependency_spell_ids: Concrete dependency spell ids for the lineage.
+        Returns:
+            None.
+        """
+        self.dependencies_by_spell[spell_index] = list(dependency_spell_ids)
+
+    def register_local_topology(self, spell_index: object, topology: object) -> None:
+        """
+        Purpose:
+            Record local constructor topology produced during structural phases.
+        Contract:
+            - Stores the topology keyed by spell_index.
+        Args:
+            spell_index: SpellIndex whose topology was compiled.
+            topology: Local topology object produced by Phase 3.
+        Returns:
+            None.
+        """
+        self.topology_by_spell[spell_index] = topology
 
 
 class _ConduitStub:
@@ -272,14 +322,16 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
     conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")
     spellbook._conduit = conduit
     spellbook._conjured = True
+    spellbook._run_post_conjure_structural_phases = lambda spells: None
     existing = BasicService(marker="existing")
 
     try:
-        spell_id = spellbook.bind(
-            spell=existing,
-            existence=Existence.unique,
-            permissions="create",
-        )
+        with spellbook.binding_transaction():
+            spell_id = spellbook.bind(
+                spell=existing,
+                existence=Existence.unique,
+                permissions="create",
+            )
 
         assert len(conduit.registered) == 1
         registered_spell, registered_obj = conduit.registered[0]
@@ -860,13 +912,15 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")
     spellbook._conduit = conduit
     spellbook._conjured = True
+    spellbook._run_post_conjure_structural_phases = lambda spells: None
 
     try:
-        spell_id = spellbook.bind(
-            spell=BasicService,
-            existence=Existence.unique,
-            permissions="create",
-        )
+        with spellbook.binding_transaction():
+            spell_id = spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
         assert conduit.registered == []
 
         bound_spell = _get_spell_by_version_id(spellbook, spell_id)

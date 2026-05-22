@@ -1,4 +1,5 @@
 import threading
+import time
 import warnings
 
 import pytest
@@ -49,6 +50,7 @@ def _build_admitted_bundle():
     assert staged is not None
     mediator = TransactionMediator(
         transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
         embargo_manager=embargo_manager,
         orchestrator=orchestrator,
     )
@@ -266,6 +268,94 @@ def test_transaction_mediator_queue_times_out_when_root_never_finishes() -> None
     assert len(failures) == 1
     assert isinstance(failures[0], RuntimeError)
     assert "Timed out waiting" in str(failures[0])
+
+
+def test_transaction_mediator_queue_drains_five_waiters_one_by_one_in_fifo_order() -> None:
+    """Queued mode should drain five waiting root starts one by one in FIFO order."""
+    _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
+    mediator.configure(
+        change_control_mode="strict",
+        allow_multiple_root_transactions=False,
+        queue_competing_root_transactions=True,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+    mediator.begin_frame(request=request, staged=staged)
+
+    worker_payloads = []
+    for idx in range(5):
+        req = _tm.build_request(
+            request_type=ChangeTransactionType.LINK,
+            initiator_conduit_id=f"conduit-{idx + 2}",
+            spellbook_id=f"spellbook-{idx + 2}",
+            scope_keys=[f"scope:spellbook:spellbook-{idx + 2}"],
+        )
+        staged_req = ChangeControlStagedMutation.from_request(
+            request_id=req.request_id,
+            request_type=req.request_type,
+            initiator_conduit_id=req.initiator_conduit_id,
+            spellbook_id=req.spellbook_id,
+            conduit_ids=req.conduit_ids,
+            scope_keys=req.scope_keys,
+            binding_keys=req.binding_keys,
+            contract_keys=req.contract_keys,
+            metadata=req.metadata,
+        )
+        worker_payloads.append((idx, req, staged_req))
+
+    acquisition_order: list[int] = []
+    failures: list[BaseException] = []
+    active_count = 0
+    max_active = 0
+    state_lock = threading.Lock()
+    finished_events = [threading.Event() for _ in range(5)]
+
+    def _run(index: int, req, staged_req, finished: threading.Event) -> None:
+        nonlocal active_count, max_active
+        try:
+            session = mediator.begin_frame(request=req, staged=staged_req)
+            with state_lock:
+                acquisition_order.append(index)
+                active_count += 1
+                max_active = max(max_active, active_count)
+            time.sleep(0.02)
+            with state_lock:
+                active_count -= 1
+            mediator.end_frame(success=True)
+            assert session.request is req
+        except BaseException as exc:
+            failures.append(exc)
+        finally:
+            finished.set()
+
+    threads = []
+    for idx, req, staged_req in worker_payloads:
+        finished = finished_events[idx]
+        thread = threading.Thread(
+            target=_run,
+            args=(idx, req, staged_req, finished),
+            name=f"mediator-queued-five-{idx}",
+        )
+        thread.start()
+        threads.append(thread)
+        deadline = time.monotonic() + 1.0
+        while True:
+            with mediator._lock:  # unit-test-only internal check to confirm queue ordering
+                pending_count = len(mediator._pending_root_starts)
+            if pending_count >= idx + 1:
+                break
+            if time.monotonic() >= deadline:
+                raise AssertionError("Worker did not enter the pending-start queue in time.")
+            time.sleep(0.005)
+
+    assert all(event.wait(timeout=0.05) is False for event in finished_events)
+    mediator.end_frame(success=True)
+    for thread in threads:
+        thread.join(timeout=5)
+        assert thread.is_alive() is False
+
+    assert failures == []
+    assert acquisition_order == [0, 1, 2, 3, 4]
+    assert max_active == 1
 
 
 def test_transaction_mediator_root_success_commits_and_clears_session() -> None:

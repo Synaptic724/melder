@@ -311,6 +311,43 @@ def test_upgrade_to_normal_transitions_and_registers(
     )
 
 
+def test_upgrade_to_normal_refreshes_transaction_identity_without_changing_owner_id(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """
+    Verify upgrade_to_normal preserves conduit identity and refreshes metadata.
+
+    Contract:
+        - The conduit id stays stable across lesser -> normal upgrade.
+        - TransactionIdentity keeps the same owner id.
+        - Available transactions expand once the conduit becomes normal.
+        - Root conduit metadata is refreshed to the upgraded conduit id.
+    """
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
+    conduit_dynamic_lesser._nexus_publish_enabled = False
+
+    original_id = conduit_dynamic_lesser._id
+    identity = conduit_dynamic_lesser._transaction_identity
+
+    assert identity.owner_id == original_id
+    assert identity.available_transactions == tuple()
+
+    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
+
+    assert conduit_dynamic_lesser._id == original_id
+    assert conduit_dynamic_lesser._root_conduit_id == original_id
+    assert identity.owner_id == original_id
+    assert identity.supports_transaction("bind") is True
+    assert identity.supports_transaction("scan") is True
+    assert identity.supports_transaction("link") is True
+    assert identity.supports_transaction("transfer_ownership") is True
+    assert identity.supports_transaction("mutation") is True
+    assert identity.supports_transaction("cluster_link") is True
+    assert identity.metadata["conduit_state"] == ConduitState.normal.value
+    assert identity.metadata["root_conduit_id"] == original_id
+
+
 def test_upgrade_to_normal_defaults_name_when_omitted(
     conduit_dynamic_lesser: Conduit,
     aetheric_frame_stub: MagicMock,
