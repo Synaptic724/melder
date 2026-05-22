@@ -68,12 +68,6 @@ class ChangeControlTransactionManager(Cleanable):
         "_link_mirror",
         "_audit_log_fn",
     ]
-    __deletable__ = [
-        "_lock",
-        "_in_flight",
-        "_link_mirror",
-        "_audit_log_fn",
-    ]
 
     def __init__(self) -> None:
         """

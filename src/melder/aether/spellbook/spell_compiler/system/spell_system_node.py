@@ -38,16 +38,6 @@ class SpellSystemNode(Cleanable):
         "ward_id",
         "is_root",
     ]
-    __deletable__ = [
-        "_spell_id",
-        "_lineage_id",
-        "_dependencies",
-        "existence",
-        "spell_type",
-        "conduit_id",
-        "ward_id",
-        "is_root",
-    ]
 
     def __init__(
             self,

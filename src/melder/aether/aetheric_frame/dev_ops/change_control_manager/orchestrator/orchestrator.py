@@ -65,13 +65,6 @@ class ChangeControlOrchestrator(Cleanable):
         "_commit_hook",
         "_abort_hook",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_staged",
-        "_commit_validator",
-        "_commit_hook",
-        "_abort_hook",
-    ]
 
     def __init__(self) -> None:
         """

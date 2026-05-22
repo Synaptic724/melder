@@ -47,12 +47,6 @@ class AetherUtilitySystem(Cleanable):
         "_default_logger",
     ]
     _cleaned: bool
-    __deletable__ = [
-        "_lock",
-        "_channel_logger_activation_enabled",
-        "_channel_logger_resolver",
-        "_default_logger",
-    ]
 
     def __new__(
             cls,

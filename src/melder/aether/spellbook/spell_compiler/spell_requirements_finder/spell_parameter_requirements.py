@@ -50,22 +50,6 @@ class SpellParameterRequirement(Cleanable):
         "_collection_element_annotation",
         "_spellmap_default",
     ]
-    __deletable__ = [
-        "_lock",
-        "_name",
-        "_position",
-        "_kind",
-        "_annotation",
-        "_default_value",
-        "_has_default",
-        "_is_var_positional",
-        "_is_var_keyword",
-        "_is_keyword_only",
-        "_is_optional",
-        "_di_shape",
-        "_collection_element_annotation",
-        "_spellmap_default",
-    ]
 
     def __init__(
             self,

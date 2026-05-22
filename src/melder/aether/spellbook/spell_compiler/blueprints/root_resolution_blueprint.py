@@ -42,15 +42,6 @@ class RootResolutionBlueprint(Cleanable):
         "_dag_index",
         "_dag_index_build_lock",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_root_spell_id",
-        "_root_lineage_id",
-        "_dag",
-        "_ordered_node_ids",
-        "_socket_refs",
-        "_dag_index",
-        "_dag_index_build_lock",
-    ]
 
     def __init__(
             self,

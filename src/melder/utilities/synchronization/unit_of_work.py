@@ -66,15 +66,6 @@ class UnitOfWork(Cleanable, Future):
         "_metadata",
         "_lock",
     ]
-    __deletable__ = [
-        "_func",
-        "_args",
-        "_kwargs",
-        "_cancel_event",
-        "_label",
-        "_metadata",
-        "_lock",
-    ]
 
     def __init__(
             self: "UnitOfWork",

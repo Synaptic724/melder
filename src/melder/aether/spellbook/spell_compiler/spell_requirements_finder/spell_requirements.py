@@ -46,15 +46,6 @@ class SpellRequirements(Cleanable):
         "_binding_name",
         "_parameters",
     ]
-    __deletable__ = [
-        "_lock",
-        "_spell_id",
-        "_spell_type",
-        "_existence",
-        "_spellframe",
-        "_binding_name",
-        "_parameters",
-    ]
 
     def __init__(
             self,

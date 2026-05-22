@@ -87,26 +87,6 @@ class TransferOfOwnership(Cleanable):
         "_rollback_actions",
         "_op_id",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_lock",
-        "_source_spellbook",
-        "_target_spellbook",
-        "_aether",
-        "_frame_name",
-        "_preflight_summary",
-        "source_conduit",
-        "target_conduit",
-        "spell",
-        "move_creations",
-        "include_dependencies",
-        "force_unshare",
-        "invalidate_after_transfer",
-        "mark_dependencies_dirty",
-        "_change_control_manager",
-        "_incident_manager",
-        "_rollback_actions",
-        "_op_id",
-    ]
 
     def __init__(
         self,

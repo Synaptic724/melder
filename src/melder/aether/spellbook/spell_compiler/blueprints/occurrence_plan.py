@@ -157,20 +157,6 @@ class OccurrencePlan(Cleanable):
         "_path_registry",
     ]
 
-    __deletable__: ClassVar[List[str]] = [
-        "_root_spell_id",
-        "_occurrence_graph",
-        "_execution_order",
-        "_instance_keys_by_spell_id",
-        "_canonical_occurrences_by_spell_id",
-        "_root_instance_key",
-        "_shared_spell_ids",
-        "_contract_overrides_by_occurrence",
-        "_contract_overrides_by_spell_id",
-        "_contract_dependencies_complete",
-        "_path_registry",
-    ]
-
     def __init__(
             self,
             *,
@@ -449,14 +435,6 @@ class OccurrencePlanBuilder(object):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
-        "_cleaned",
-        "_root_spell",
-        "_blueprint",
-        "_spell_lookup",
-        "_system_states",
-        "_path_registry",
-    ]
-    __deletable__: ClassVar[List[str]] = [
         "_cleaned",
         "_root_spell",
         "_blueprint",

@@ -60,19 +60,6 @@ class SpellSystemState(Cleanable):
         "_last_validated_at",
         "_risk_manager",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_spell_index_id",
-        "_current_spell_id",
-        "_direct_dependencies",
-        "_direct_dependents",
-        "_validity",
-        "_flags",
-        "_change_reason",
-        "_transitively_dirty",
-        "_last_validated_at",
-        "_risk_manager",
-    ]
 
     def __init__(self, spell_index_id: str, current_spell_id: str) -> None:
         """

@@ -42,15 +42,6 @@ class Creations(Cleanable):
         "_creations",
         "_spellspace_stack",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_owner_conduit_id",
-        "_id",
-        "_lock",
-        "_disposal_stack",
-        "_spellspace_disposal_stacks",
-        "_creations",
-        "_spellspace_stack",
-    ]
 
     def __init__(
             self,

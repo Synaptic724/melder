@@ -37,13 +37,6 @@ class SpellValidationIssue(Cleanable):
         "source",
         "details",
     ]
-    __deletable__ = [
-        "severity",
-        "code",
-        "message",
-        "source",
-        "details",
-    ]
 
     def __init__(
             self,

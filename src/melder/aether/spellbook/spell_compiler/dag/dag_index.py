@@ -53,14 +53,6 @@ class PathRegistry(Cleanable):
         "_child_ids",
         "_formatted_path_by_id",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_root_path_id",
-        "_parent_ids",
-        "_segments",
-        "_depths",
-        "_child_ids",
-        "_formatted_path_by_id",
-    ]
 
     def __init__(self) -> None:
         """
@@ -306,12 +298,6 @@ class DagIndex(Cleanable):
         "_by_name",
         "_built",
     ]
-    __deletable__: ClassVar[List[str]] = [
-        "_path_registry",
-        "_by_exact_path_id",
-        "_by_name",
-        "_built",
-    ]
 
     def __init__(self, path_registry: Optional[PathRegistry] = None) -> None:
         """
@@ -468,9 +454,6 @@ class DagTargetingEngine(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_index",]
-    __deletable__: ClassVar[List[str]] = [
-        "_index",
-    ]
 
     def __init__(self, index: DagIndex) -> None:
         """Initialize the targeting engine over one prebuilt `DagIndex`."""

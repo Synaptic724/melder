@@ -56,20 +56,6 @@ class SpellBinder(Cleanable):
         "_binding_name",
         "_kwargs",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_weak_spellbook",
-        "_lock",
-        "_default_existence",
-        "_default_permissions",
-        "_default_profile",
-        "_spell",
-        "_existence",
-        "_permissions",
-        "_profile",
-        "_spellframe",
-        "_binding_name",
-        "_kwargs",
-    ]
 
     def __init__(
             self,

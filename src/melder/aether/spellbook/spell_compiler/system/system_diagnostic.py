@@ -45,15 +45,6 @@ class SystemDiagnostic(Cleanable):
         "_source",
         "_details",
     ]
-    __deletable__ = [
-        "_code",
-        "_message",
-        "_severity",
-        "_spell_id",
-        "_root_id",
-        "_source",
-        "_details",
-    ]
 
     def __init__(
             self,

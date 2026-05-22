@@ -83,21 +83,6 @@ class SpellSystemStates(Cleanable):
         "_contract_dependents_by_spellbook",
         "_risk_manager",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_frame",
-        "_states_by_index_id",
-        "_states_by_spell_id",
-        "_dirty_indexes",
-        "_local_topologies",
-        "_resolution_by_conduit_id",
-        "_index_owner_spellbook_id",
-        "_collection_frames_by_index",
-        "_collection_dependents_by_spellbook",
-        "_contract_keys_by_index",
-        "_contract_dependents_by_spellbook",
-        "_risk_manager",
-    ]
 
     def __init__(self, frame: AethericFrame) -> None:
         """

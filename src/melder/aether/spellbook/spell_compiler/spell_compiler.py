@@ -94,20 +94,6 @@ class SpellCompiler(Cleanable):
         "_phase_11",
         "_phase_12",
     ]
-    __deletable__ = [
-        "_phase_1",
-        "_phase_2",
-        "_phase_3",
-        "_phase_4",
-        "_phase_5",
-        "_phase_6",
-        "_phase_7",
-        "_phase_8",
-        "_phase_9",
-        "_phase_10",
-        "_phase_11",
-        "_phase_12",
-    ]
 
     def __init__(self) -> None:
         """

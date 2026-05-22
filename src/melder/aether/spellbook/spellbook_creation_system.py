@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Type, \
     ClassVar
 from mypy_extensions import mypyc_attr
@@ -68,15 +68,6 @@ class SpellbookCreationSystem(Cleanable):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __slots__ = Cleanable.__slots__ + [
-        "_automatic",
-        "_conduit_logger",
-        "_lock",
-        "_name",
-        "_phase_scheduler_cls",
-        "_policy",
-        "_spellbook",
-    ]
-    __deletable__: ClassVar[list[str]] = [
         "_automatic",
         "_conduit_logger",
         "_lock",

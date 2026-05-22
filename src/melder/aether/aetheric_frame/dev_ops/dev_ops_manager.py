@@ -48,14 +48,6 @@ class DevOpsManager(Cleanable):
         "_risk_manager",
         "_creation_gate_controller",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_spell_system_states",
-        "_incident_manager",
-        "_change_control_manager",
-        "_risk_manager",
-        "_creation_gate_controller",
-    ]
 
     def __init__(self, spell_system_states: SpellSystemStates) -> None:
         """

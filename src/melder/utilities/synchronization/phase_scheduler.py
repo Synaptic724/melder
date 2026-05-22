@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from concurrent.futures import FIRST_EXCEPTION, Future, wait
 from typing import (
     TYPE_CHECKING,
@@ -86,21 +86,6 @@ class PhaseScheduler(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_configuration",
-        "_workers",
-        "_barrier_timeout_ms",
-        "_cancel_signal",
-        "_cancel_event",
-        "_queue",
-        "_threads",
-        "_lock",
-        "_workers_started",
-        "_shutdown",
-        "_phase_factories",
-        "_phase_order",
-        "_sentinel",
-    ]
-    __deletable__: ClassVar[list[str]] = [
         "_configuration",
         "_workers",
         "_barrier_timeout_ms",

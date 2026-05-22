@@ -1,4 +1,4 @@
-﻿from dataclasses import dataclass
+from dataclasses import dataclass
 from enum import IntEnum
 from typing import Dict, List, Optional, ClassVar
 
@@ -97,19 +97,6 @@ class OverridePatchMap(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_root_spell_id",
-        "_targets_by_spec",
-        "_specificity_by_spec",
-        "_resolved_targets_by_raw_key",
-        "_last_single_raw_key",
-        "_last_single_value",
-        "_last_single_override_map",
-        "_last_single_socket_shape",
-        "_last_multi_signature",
-        "_last_multi_override_map",
-        "_last_multi_socket_shape",
-    ]
-    __deletable__: ClassVar[List[str]] = [
         "_root_spell_id",
         "_targets_by_spec",
         "_specificity_by_spec",
@@ -576,11 +563,6 @@ class MutationPatchMap(Cleanable):
         "_targets_by_spec",
     ]
 
-    __deletable__: ClassVar[List[str]] = [
-        "_root_spell_id",
-        "_targets_by_spec"
-    ]
-
     def __init__(
             self,
             *,
@@ -925,12 +907,6 @@ class PatchMapBuilder(object):
         "_cleaned",
         "_blueprint",
         "_path_spec_key_by_id",
-    ]
-
-    __deletable__: ClassVar[List[str]] = [
-        "_blueprint",
-        "_path_spec_key_by_id",
-        "_cleaned"
     ]
 
     def __init__(

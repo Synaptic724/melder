@@ -50,15 +50,6 @@ class SpellSpace(Cleanable):
         "_spellspace_registry",
         "_version",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_id",
-        "_owner_conduit_id",
-        "_meld",
-        "_creations",
-        "_spellspace_registry",
-        "_version",
-    ]
 
     def __init__(
             self,

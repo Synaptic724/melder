@@ -96,27 +96,6 @@ class Meld(Cleanable):
         "_meld_hooks",
         "_spell_compiler_system",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_conduit_id",
-        "_resolution_conduit_id",
-        "_dynamic_environment",
-        "_spellbook",
-        "_owned_spells",
-        "_contracted_spells",
-        "_spells_by_id",
-        "_contracted_spells_by_id",
-        "_spell_id_pool",
-        "_lookup_owned_spells",
-        "_lookup_contracted_spells",
-        "_creations",
-        "_input_resolution_cache",
-        "_spell_id_resolution_cache",
-        "_max_resolution_cache_size",
-        "_change_control_manager_by_frame",
-        "_meld_hooks",
-        "_spell_compiler_system",
-    ]
     def __init__(
             self,
             creations: Creations,

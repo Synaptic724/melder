@@ -27,12 +27,6 @@ class AetherConfigurationBuilder(Cleanable):
         "_configuration",
         "_finalized",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_id",
-        "_lock",
-        "_configuration",
-        "_finalized",
-    ]
 
     def __init__(self) -> None:
         """

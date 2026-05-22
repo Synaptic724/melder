@@ -62,14 +62,6 @@ class MutationContract(Cleanable):
         "_spell_override",
         "_late_binding",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_spell",
-        "_spellframe",
-        "_binding_name",
-        "_spell_override",
-        "_late_binding",
-    ]
 
     def __init__(
         self,

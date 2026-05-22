@@ -54,17 +54,6 @@ class Incident(Cleanable):
         "_summary",
         "_details",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_lock",
-        "_id",
-        "_kind",
-        "_severity",
-        "_status",
-        "_spell_index_id",
-        "_root_ids",
-        "_summary",
-        "_details",
-    ]
 
     def __init__(
         self,

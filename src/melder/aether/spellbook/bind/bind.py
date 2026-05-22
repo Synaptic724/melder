@@ -64,12 +64,6 @@ class Bind(Cleanable):
         "_spellbook",
         "_spell_examiner",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_id",
-        "_lock",
-        "_spellbook",
-        "_spell_examiner",
-    ]
 
     def __init__(self, spellbook: Spellbook):
         """

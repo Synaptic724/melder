@@ -32,13 +32,6 @@ class SpellSystemAdjacencySnapshot(Cleanable):
         "_root_spell_ids",
         "_topologies",
     ]
-    __deletable__ = [
-        "_dependencies",
-        "_reverse_dependencies",
-        "_all_spell_ids",
-        "_root_spell_ids",
-        "_topologies",
-    ]
 
     def __init__(
             self,

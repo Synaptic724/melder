@@ -31,13 +31,6 @@ class AetherConfiguration(Cleanable):
         "_activated",
         "_properties",
     ]
-    __deletable__: ClassVar[list[str]] = [
-        "_id",
-        "_lock",
-        "_frozen",
-        "_activated",
-        "_properties",
-    ]
 
     def __init__(self) -> None:
         """
