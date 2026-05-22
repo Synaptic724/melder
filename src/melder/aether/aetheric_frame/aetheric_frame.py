@@ -131,7 +131,10 @@ class AethericFrame(Cleanable):
         )
 
         # Per-frame graph + dirtiness registry for all spell lineages.
-        self._spell_system_states: SpellSystemStates = SpellSystemStates(self)
+        self._spell_system_states: SpellSystemStates = SpellSystemStates(
+            self,
+            self._devops_information_registry,
+        )
 
         # Per-frame DevOps hub: incidents + change-control over this frame.
         self._dev_ops_manager: DevOpsManager = DevOpsManager(
