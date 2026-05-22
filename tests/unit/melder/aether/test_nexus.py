@@ -4557,9 +4557,10 @@ def test_capability_rift_can_attach_to_automatic_target_frame_when_rift_enabled(
     assert isinstance(rift.space, CapabilityRiftSpace)
 
 
-def test_capability_room_broad_access_no_longer_exposes_removed_conduit_cloud_method() -> None:
+def test_capability_room_broad_access_can_execute_conduit_cloud_method() -> None:
     """
-    Verify bound conduit objects no longer expose the removed cloud method.
+    Verify bound conduit objects still expose the conduit cloud method through
+    the capability command surface when the target frame allows it.
 
     Returns:
         None.
@@ -4611,8 +4612,8 @@ def test_capability_room_broad_access_no_longer_exposes_removed_conduit_cloud_me
         space.workstation.bind_object("root", capability_conduit, weak_ref=False)
         space.workstation.set_target("root", store="objects")
 
-        with pytest.raises(AttributeError, match="get_conduit_cloud"):
-            space.command_system.execute_target_method("get_conduit_cloud")
+        conduit_cloud = space.command_system.execute_target_method("get_conduit_cloud")
+        assert conduit_cloud is conduit.get_conduit_cloud()
     finally:
         conduit.cleanup()
         spellbook.cleanup()

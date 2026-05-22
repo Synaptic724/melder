@@ -1,7 +1,11 @@
 import pytest
+import threading
 
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import (
     ChangeControlManager,
     ChangeTransactionType,
@@ -317,6 +321,287 @@ def test_component_change_control_commit_request_disabled_removes_in_flight() ->
         manager.admit_request(request)
         manager.commit_request(request.request_id)
         assert manager.transaction_manager().get_in_flight(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_transaction_mediator_nested_same_thread_commit() -> None:
+    """
+    Purpose:
+        Validate the frame-owned mediator supports nested same-thread frames.
+    Contract:
+        - One admitted request can open one root session.
+        - A nested same-thread begin joins that root session.
+        - Child exit does not commit the root request.
+        - Root exit commits and clears in-flight + staged state.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If nested same-thread session behavior drifts.
+    """
+    frame = AethericFrame(Aether(), "component-ccm-mediator-nested")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+        staged = manager.orchestrator().get_staged(request.request_id)
+        assert staged is not None
+
+        session = manager.transaction_mediator().begin_frame(
+            request=request,
+            staged=staged,
+            capabilities=("bind",),
+        )
+        joined = manager.transaction_mediator().begin_frame(
+            required_capabilities=("bind",),
+        )
+
+        assert joined is session
+        assert session.depth == 2
+
+        manager.transaction_mediator().end_frame(success=True)
+        assert session.depth == 1
+        assert session.status == session.STATUS_OPEN
+        assert manager.transaction_manager().get_in_flight(request.request_id) is request
+        assert manager.orchestrator().get_staged(request.request_id) is not None
+
+        manager.transaction_mediator().end_frame(success=True)
+        assert session.status == session.STATUS_COMMITTED
+        assert manager.transaction_manager().get_in_flight(request.request_id) is None
+        assert manager.orchestrator().get_staged(request.request_id) is None
+        assert manager.transaction_mediator().has_active_session() is False
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_transaction_mediator_rejects_cross_thread_root_begin_in_strict_mode() -> None:
+    """
+    Purpose:
+        Validate strict mediator policy rejects another thread entering the same root session.
+    Contract:
+        - One root session is opened on the main thread.
+        - A worker thread attempting to begin the same root session is rejected.
+        - The original root session remains active until the owning thread ends it.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cross-thread strict rejection does not hold.
+    """
+    frame = AethericFrame(Aether(), "component-ccm-mediator-cross-thread")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+        staged = manager.orchestrator().get_staged(request.request_id)
+        assert staged is not None
+
+        session = manager.transaction_mediator().begin_frame(
+            request=request,
+            staged=staged,
+            capabilities=("bind",),
+        )
+
+        failures: list[BaseException] = []
+
+        def _run() -> None:
+            try:
+                manager.transaction_mediator().begin_frame(
+                    request=request,
+                    staged=staged,
+                    capabilities=("bind",),
+                )
+            except BaseException as exc:
+                failures.append(exc)
+
+        thread = threading.Thread(target=_run, name="ccm-mediator-peer")
+        thread.start()
+        thread.join(timeout=5)
+        assert thread.is_alive() is False
+        assert len(failures) == 1
+        assert isinstance(failures[0], RuntimeError)
+
+        assert manager.transaction_manager().get_in_flight(request.request_id) is request
+        assert session.status == session.STATUS_OPEN
+
+        manager.transaction_mediator().end_frame(success=True)
+        assert manager.transaction_manager().get_in_flight(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_transaction_mediator_rejects_five_threads_against_same_active_root() -> None:
+    """
+    Purpose:
+        Validate strict mediator policy under multi-thread contention.
+    Contract:
+        - One root session is opened on the main thread.
+        - Five worker threads attempt to begin the same root session.
+        - Every worker is rejected while the root session stays active on the
+          owning thread.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any worker is allowed to join/start the root session.
+    """
+    frame = AethericFrame(Aether(), "component-ccm-mediator-five-thread")
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+        staged = manager.orchestrator().get_staged(request.request_id)
+        assert staged is not None
+
+        session = manager.transaction_mediator().begin_frame(
+            request=request,
+            staged=staged,
+            capabilities=("bind",),
+        )
+
+        failures: list[BaseException] = []
+        barrier = threading.Barrier(6)
+
+        def _run() -> None:
+            barrier.wait(timeout=5)
+            try:
+                manager.transaction_mediator().begin_frame(
+                    request=request,
+                    staged=staged,
+                    capabilities=("bind",),
+                )
+            except BaseException as exc:
+                failures.append(exc)
+
+        threads = [
+            threading.Thread(target=_run, name=f"ccm-mediator-peer-{idx}")
+            for idx in range(5)
+        ]
+        for thread in threads:
+            thread.start()
+        barrier.wait(timeout=5)
+        for thread in threads:
+            thread.join(timeout=5)
+            assert thread.is_alive() is False
+
+        assert len(failures) == 5
+        assert all(isinstance(exc, RuntimeError) for exc in failures)
+        assert manager.transaction_manager().get_in_flight(request.request_id) is request
+        assert session.status == session.STATUS_OPEN
+
+        manager.transaction_mediator().end_frame(success=True)
+        assert manager.transaction_manager().get_in_flight(request.request_id) is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_change_control_transaction_mediator_queue_turn_taking() -> None:
+    """
+    Purpose:
+        Validate queued turn-taking on the real frame-owned mediator surface.
+    Contract:
+        - A competing thread waits while the active root session is open.
+        - After the owning thread ends the root session, the waiting thread
+          begins and commits its own root session successfully.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If queueing or wakeup behavior drifts.
+    """
+    frame = AethericFrame(Aether(), "component-ccm-mediator-queue")
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id=None,
+        system_state="automatic",
+        ai_native_enabled=False,
+        rift_enabled=False,
+        queue_competing_root_transactions=True,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+    frame.bind_frame_configuration(frame_configuration)
+    bound_configuration = frame.frame_configuration
+    assert bound_configuration is not None
+    manager = frame.dev_ops_manager.change_control_manager
+    try:
+        manager.transaction_mediator().configure(
+            change_control_mode=bound_configuration.change_control_mode,
+            allow_multiple_root_transactions=(
+                bound_configuration.allow_multiple_root_transactions
+            ),
+            queue_competing_root_transactions=(
+                bound_configuration.queue_competing_root_transactions
+            ),
+            max_transaction_wait_time_in_seconds=(
+                bound_configuration.max_transaction_wait_time_in_seconds
+            ),
+        )
+
+        request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+            scope_keys=["scope:spellbook:spellbook-1"],
+        )
+        admission = manager.admit_request(request)
+        assert admission.admitted is True
+        staged = manager.orchestrator().get_staged(request.request_id)
+        assert staged is not None
+
+        manager.transaction_mediator().begin_frame(
+            request=request,
+            staged=staged,
+            capabilities=("bind",),
+        )
+
+        other_request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.LINK,
+            initiator_conduit_id="conduit-2",
+            spellbook_id="spellbook-2",
+            scope_keys=["scope:spellbook:spellbook-2"],
+        )
+        other_admission = manager.admit_request(other_request)
+        assert other_admission.admitted is True
+        other_staged = manager.orchestrator().get_staged(other_request.request_id)
+        assert other_staged is not None
+
+        finished = threading.Event()
+        failures: list[BaseException] = []
+
+        def _run() -> None:
+            try:
+                manager.transaction_mediator().begin_frame(
+                    request=other_request,
+                    staged=other_staged,
+                )
+                manager.transaction_mediator().end_frame(success=True)
+            except BaseException as exc:
+                failures.append(exc)
+            finally:
+                finished.set()
+
+        thread = threading.Thread(target=_run, name="ccm-mediator-queue-peer")
+        thread.start()
+        assert finished.wait(timeout=0.05) is False
+        manager.transaction_mediator().end_frame(success=True)
+        assert finished.wait(timeout=1.0) is True
+        thread.join(timeout=5)
+        assert thread.is_alive() is False
+        assert failures == []
     finally:
         frame.cleanup()
 

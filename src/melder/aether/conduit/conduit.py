@@ -14,10 +14,25 @@ from typing import (
     Generator,
     ClassVar,
 )
-
-
+# Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.helpers.init_helpers import InitHelpers
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
+from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-
 if TYPE_CHECKING:
     from melder.nexus.nexus import Nexus
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -29,40 +44,10 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
+    from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import CreationGateController
-# Melder Imports
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.aether.spellbook.existence.existence import Existence
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.meld.meld import Meld
-from melder.utilities.synchronization.creation_gate import CreationGate
-from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
-from melder.aether.conduit.creations.creations import Creations
-from melder.aether.conduit.spell_space.spell_space import SpellSpace
-from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-    ChangeTransactionType,
-)
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region Conduit
-
-def _is_conduit_surface(value: Any) -> bool:
-    """
-    Return whether one object exposes the runtime conduit surface.
-    """
-    return (
-        value is not None
-        and hasattr(value, "_id")
-        and hasattr(value, "_conduit_ward")
-    )
-
-
 
 class Conduit(Cleanable):
     """
@@ -1900,7 +1885,7 @@ class Conduit(Cleanable):
         conduit_values: list[str] = []
         if conduits:
             for conduit in conduits:
-                if not _is_conduit_surface(conduit):
+                if not isinstance(conduit, Conduit):
                     self._logger.error(
                         "begin_transaction received non-conduit object",
                         "begin_transaction",
@@ -2231,13 +2216,18 @@ class Conduit(Cleanable):
         submodules. Any object marked with `scan_bind` must originate from the
         scanned module, otherwise the scan fails.
 
+        If a binding transaction is already active on the owning Spellbook,
+        this call reuses that transaction window. Otherwise the conduit opens
+        and closes its own binding transaction around the scan so direct
+        conduit-side scans remain transaction-correct.
+
         Args:
             module (ModuleType): The module to scan for decorated spell targets.
         Returns:
             list[str]: Spell IDs bound during the scan, in module dict order.
         Raises:
             RuntimeError: If the Conduit is cleaned or not normal.
-            RuntimeError: If no binding transaction is active for this Spellbook.
+            RuntimeError: If an incompatible change transaction is already active.
             TypeError: If `module` is not a module or metadata is invalid.
             ValueError: If a decorated object is not owned by the module.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
@@ -2247,7 +2237,16 @@ class Conduit(Cleanable):
             self._logger.error("scan called when conduit not normal", "scan")
             raise RuntimeError("Only normal conduits can scan modules.")
         with self._lock:
-            return self._spellbook.scan(module)
+            spellbook = self._spellbook
+        with spellbook._lock:
+            active_request = spellbook._active_change_request
+        if (
+            active_request is not None
+            and active_request.request_type is ChangeTransactionType.BIND
+        ):
+            return spellbook.scan(module)
+        with self.binding_transaction():
+            return spellbook.scan(module)
 
 
     def get_spell_permissions(self, spell_id: str) -> Optional[str]:
@@ -2787,7 +2786,7 @@ class Conduit(Cleanable):
         if not self.__dynamic_environment__:
             self._logger.error("link in non-dynamic env", "link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
-        if not _is_conduit_surface(target_conduit):
+        if not isinstance(target_conduit, Conduit):
             self._logger.error("link target not Conduit-compatible", "link")
             raise TypeError(f"Expected Conduit-compatible object, got {type(target_conduit).__name__}")
         if not target_conduit._id:

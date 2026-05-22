@@ -5,6 +5,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
+    TransactionMediator,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
@@ -45,6 +48,8 @@ def test_init_success(manager, mock_sss):
     assert isinstance(manager._pending_changes, dict)
     assert len(manager._pending_changes) == 0
     assert not manager._monitor_active_by_conduit
+    assert isinstance(manager.transaction_mediator(), TransactionMediator)
+    assert manager.transaction_mediator() is manager.transaction_mediator()
 
 def test_init_validates_args():
     with pytest.raises(ValueError, match="spell_system_states cannot be None"):

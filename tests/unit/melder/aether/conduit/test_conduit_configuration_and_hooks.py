@@ -185,7 +185,6 @@ def test_init_registers_existing_creation_gate_for_current_root(
     with patch.object(
         Conduit,
         "_register_existing_gate_for_current_root",
-        autospec=True,
     ) as register_existing_gate:
         conduit = _build_conduit(
             spellbook=spellbook_stub,
@@ -196,7 +195,7 @@ def test_init_registers_existing_creation_gate_for_current_root(
             creation_gate=gate,
         )
     try:
-        register_existing_gate.assert_called_once_with(conduit, conduit._id, gate)
+        register_existing_gate.assert_called_once_with(conduit._id, gate)
         assert conduit._creation_gate is gate
     finally:
         conduit.cleanup()

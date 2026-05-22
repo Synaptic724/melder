@@ -315,7 +315,7 @@ def test_attach_owner_registers_spell_id_and_sets_owner() -> None:
     idx._attach_owner(spellbook, spell)
 
     assert idx._owner_spellbook is spellbook
-    assert idx._owner_spell is spell
+    assert idx._active_spell is spell
     assert spellbook.owned_by_id["v1"] is spell
 
 
@@ -351,7 +351,7 @@ def test_attach_owner_rejects_different_spell() -> None:
 
     idx._attach_owner(spellbook, spell_a)
 
-    with pytest.raises(RuntimeError, match="Owner spell already attached"):
+    with pytest.raises(RuntimeError, match="Active spell already attached"):
         idx._attach_owner(spellbook, spell_b)
 
 
@@ -473,7 +473,7 @@ def test_update_raises_when_owner_spell_missing() -> None:
     spellbook = _SpellbookStub()
     idx._owner_spellbook = spellbook
 
-    with pytest.raises(RuntimeError, match="owner spell is missing"):
+    with pytest.raises(RuntimeError, match="active spell is missing"):
         idx.update("v2")
 
 
@@ -497,7 +497,7 @@ def test_cleanup_clears_attachment_references() -> None:
     idx.cleanup()
 
     assert not hasattr(idx, "_owner_spellbook")
-    assert not hasattr(idx, "_owner_spell")
+    assert not hasattr(idx, "_active_spell")
     assert not hasattr(idx, "_owner_conduit_id")
     assert not hasattr(idx, "_contracted_spellbooks")
 

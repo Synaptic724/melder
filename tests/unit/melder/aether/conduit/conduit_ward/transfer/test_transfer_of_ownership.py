@@ -1078,7 +1078,6 @@ def build_spell(
         _owner_conduit_id=owner_id,
         _owner_conduit_name=None,
         _owner_creations=None,
-        owned_spell=False,
         _spellbook=None,
         _spell_system_states=None,
         _cleanup_creation_context=lambda: None,
@@ -1113,7 +1112,6 @@ def build_spell(
         spell._owner_creations = creations
         spell._dynamic_environment = dynamic_environment
         spell._creation_gate_controller = creation_gate_controller
-        spell.owned_spell = True
 
     spell._add_owned_conduit = _add_owned_conduit
     return spell
@@ -1213,7 +1211,7 @@ def build_environment(
     spell_obj._spellbook = source_book
     spell_obj._spell_system_states = states_system
     spell_index._owner_spellbook = source_book
-    spell_index._owner_spell = spell_obj
+    spell_index._active_spell = spell_obj
     spell_index._owner_conduit_id = SOURCE_ID
 
     source_book._spells[spell_index] = spell_obj
@@ -1237,7 +1235,7 @@ def build_environment(
             dep_spell._spellbook = source_book
             dep_spell._spell_system_states = states_system
             dep_index._owner_spellbook = source_book
-            dep_index._owner_spell = dep_spell
+            dep_index._active_spell = dep_spell
             dep_index._owner_conduit_id = SOURCE_ID
             source_book._spells[dep_index] = dep_spell
             source_book._lookup_spells[dep_spell._key] = dep_index
@@ -1255,7 +1253,7 @@ def build_environment(
             dep_spell._spellbook = target_book
             dep_spell._spell_system_states = states_system
             dep_index._owner_spellbook = target_book
-            dep_index._owner_spell = dep_spell
+            dep_index._active_spell = dep_spell
             dep_index._owner_conduit_id = TARGET_ID
             target_book._spells[dep_index] = dep_spell
             target_book._lookup_spells[dep_spell._key] = dep_index
@@ -3439,7 +3437,7 @@ def test_flip_registry_and_spellbooks_moves_spell_id_map() -> None:
     assert spell_id not in env.source._spellbook._spells_by_id
     assert env.target._spellbook._spells_by_id[spell_id] is env.spell
     assert env.spell.spell_index._owner_spellbook is env.target._spellbook
-    assert env.spell.spell_index._owner_spell is env.spell
+    assert env.spell.spell_index._active_spell is env.spell
     assert env.spell.spell_index._owner_conduit_id == TARGET_ID
 
 
@@ -3695,7 +3693,7 @@ def test_flip_registry_and_spellbooks_raises_on_spellindex_owner_spell_mismatch(
     - A non-matching owner spell raises a RuntimeError.
     """
     env = build_environment()
-    env.spell.spell_index._owner_spell = build_spell(
+    env.spell.spell_index._active_spell = build_spell(
         spell_id="other-spell",
         owner_id=SOURCE_ID,
         spell_index=SpellIndex("other-spell"),
@@ -3707,7 +3705,7 @@ def test_flip_registry_and_spellbooks_raises_on_spellindex_owner_spell_mismatch(
         spell=env.spell,
     )
 
-    with pytest.raises(RuntimeError, match="SpellIndex owner spell mismatch during transfer"):
+    with pytest.raises(RuntimeError, match="SpellIndex active spell mismatch during transfer"):
         transfer._flip_registry_and_spellbooks(env.spell)
 
 

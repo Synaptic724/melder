@@ -36,7 +36,7 @@ class SpellIndex(Cleanable):
         "_cleaned",     # Flag for Cleanable interface.
         "_versions",    # Set of all versions seen.
         "_owner_spellbook",
-        "_owner_spell",
+        "_active_spell",
         "_owner_conduit_id",
         "_contracted_spellbooks",
     )
@@ -72,7 +72,7 @@ class SpellIndex(Cleanable):
         self._current_id: str = initial_id
         self._versions: set = {initial_id}  # Optional: Track all versions seen.
         self._owner_spellbook: Optional[Spellbook] = None
-        self._owner_spell: Optional[Spell] = None
+        self._active_spell: Optional[Spell] = None
         self._owner_conduit_id: Optional[str] = None #Owner root conduit
         self._contracted_spellbooks: Dict[Tuple[Spellbook, str], Spell] = {}
 
@@ -101,7 +101,7 @@ class SpellIndex(Cleanable):
 
             del self._versions
             del self._owner_spellbook
-            del self._owner_spell
+            del self._active_spell
             del self._owner_conduit_id
             del self._contracted_spellbooks
             del self._current_id
@@ -150,22 +150,22 @@ class SpellIndex(Cleanable):
             self._current_id = new_id
             self._versions.add(new_id)
             owner_spellbook = self._owner_spellbook
-            owner_spell = self._owner_spell
+            active_spell = self._active_spell
             # Capture attachments to avoid calling into Spellbook while holding this lock.
             contracted_items = list(self._contracted_spellbooks.items())
 
         # Commented out as not fully sure how mutations will work and if original spell is substituted or not
         # we could even take a codegen version of the spell and store it and substitute, I
         # am not sure how I plan to do this.
-        # if owner_spell is not None:
-        #     owner_spell.spell_id = new_id
+        # if active_spell is not None:
+        #     active_spell.spell_id = new_id
         # for (_, _), spell in contracted_items:
         #     spell.spell_id = new_id
 
         if owner_spellbook is not None:
-            if owner_spell is None:
-                raise RuntimeError("Owner spellbook is set but owner spell is missing.")
-            owner_spellbook._update_owned_spell_id(old_id, new_id, owner_spell)
+            if active_spell is None:
+                raise RuntimeError("Owner spellbook is set but active spell is missing.")
+            owner_spellbook._update_owned_spell_id(old_id, new_id, active_spell)
 
         for (spellbook, conduit_id), spell in contracted_items:
             spellbook._update_contracted_spell_id(conduit_id, old_id, new_id, spell)
@@ -193,10 +193,10 @@ class SpellIndex(Cleanable):
         with self._lock:
             if self._owner_spellbook is not None and self._owner_spellbook is not spellbook:
                 raise RuntimeError("Owner spellbook already attached for this SpellIndex.")
-            if self._owner_spell is not None and self._owner_spell is not spell:
-                raise RuntimeError("Owner spell already attached for this SpellIndex.")
+            if self._active_spell is not None and self._active_spell is not spell:
+                raise RuntimeError("Active spell already attached for this SpellIndex.")
             self._owner_spellbook = spellbook
-            self._owner_spell = spell
+            self._active_spell = spell
             spell_id = self._current_id
 
         # Call Spellbook update outside the lock to avoid lock inversion.

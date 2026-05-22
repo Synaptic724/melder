@@ -138,7 +138,6 @@ def _assert_owner_metadata(spell: object, conduit: _ConduitStub) -> None:
     assert spell._owner_conduit_id == conduit._id
     assert spell._owner_conduit_name == conduit._name
     assert spell._owner_creations is conduit._creations
-    assert spell.owned_spell is True
 
 
 def test_component_spellbook_define_conduit_into_spells_stamps_ownership_and_registers_existing() -> None:

@@ -218,7 +218,6 @@ class Spell(Cleanable):
         "existence",
         "has_disposal_methods",
         "metadata",
-        "owned_spell",
         "permissions",
         "profile",
         "resolution_required",
@@ -386,7 +385,6 @@ class Spell(Cleanable):
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None
         self._owner_conduit_name: Optional[str] = None
-        self.owned_spell: Optional[bool] = None
         self._owner_creations: Any = None  # Scope level creations for singletons
 
         # Spell System State
@@ -519,7 +517,6 @@ class Spell(Cleanable):
             del self._is_lambda_spell
             del self._owner_conduit_id
             del self._owner_conduit_name
-            del self.owned_spell
             del self._creation_context
             del self._creation_context_factory
             del self._creation_context_switch
@@ -1048,7 +1045,6 @@ class Spell(Cleanable):
             )
             self._owner_conduit_id = conduit_id
             self._owner_conduit_name = conduit_name
-            self.owned_spell = True
             self._owner_creations = creations
 
     def _add_build_details(

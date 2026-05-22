@@ -4,6 +4,9 @@ import pytest
 
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 
@@ -131,14 +134,40 @@ def test_scan_forwards_to_spellbook_for_normal_conduit(
     conduit_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """scan should delegate to the Spellbook for normal conduits."""
+    """scan should open a binding transaction before delegating."""
     module = MagicMock()
     spellbook_stub.scan.return_value = ["spell-1", "spell-2"]
+    spellbook_stub.begin_transaction = MagicMock()
+    spellbook_stub.end_binding_transaction = MagicMock()
 
     result = conduit_normal.scan(module)
 
+    spellbook_stub.begin_transaction.assert_called_once()
     spellbook_stub.scan.assert_called_once_with(module)
+    spellbook_stub.end_binding_transaction.assert_called_once_with()
     assert result == ["spell-1", "spell-2"]
+
+
+def test_scan_reuses_active_binding_transaction(
+    conduit_normal: Conduit,
+    spellbook_stub: MagicMock,
+) -> None:
+    """scan should reuse an active bind transaction instead of nesting one."""
+    module = MagicMock()
+    spellbook_stub.scan.return_value = ["spell-1"]
+    spellbook_stub.begin_transaction = MagicMock()
+    spellbook_stub.end_binding_transaction = MagicMock()
+
+    active_request = MagicMock()
+    active_request.request_type = ChangeTransactionType.BIND
+    spellbook_stub._active_change_request = active_request
+
+    result = conduit_normal.scan(module)
+
+    spellbook_stub.begin_transaction.assert_not_called()
+    spellbook_stub.scan.assert_called_once_with(module)
+    spellbook_stub.end_binding_transaction.assert_not_called()
+    assert result == ["spell-1"]
 
 
 def test_inspect_spell_delegates_to_spellbook(

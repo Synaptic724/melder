@@ -479,7 +479,6 @@ and logging.
         This is useful after bulk mutation or research operations that may
         have changed the version lists on SpellIndex instances.
         """
-
         with self._lock:
             if self._spell_versions is None or self._spells is None:
                 return
@@ -533,15 +532,6 @@ and logging.
         """
         self._refresh_local_spell_versions()
         self._refresh_contracted_spell_versions()
-
-    @staticmethod
-    def _get_required_spell_index_surface(
-            spell_index: SpellIndex,
-    ) -> SpellIndex:
-        """
-        Return the live SpellIndex surface used by Spellbook.
-        """
-        return spell_index
 
     def _get_required_conduit_surface(self) -> Conduit:
         """
@@ -1859,9 +1849,7 @@ and logging.
             lookup_map = self._lookup_contracted_spells[conduit_id]
             versions_set = self._contracted_versions[conduit_id]
 
-            spell_index = self._get_required_spell_index_surface(
-                spell.spell_index
-            )
+            spell_index = spell.spell_index
             spell_index._attach_contracted(self, conduit_id, spell)
 
             # Main maps: SpellIndex? Spell and key? SpellIndex
@@ -1934,10 +1922,7 @@ and logging.
                 )
                 raise RuntimeError(f"Spell version {spell_id} not found for conduit ID {conduit_id}.")
 
-            spell_index_surface = self._get_required_spell_index_surface(
-                spell_index
-            )
-            spell_index_surface._detach_contracted(self, conduit_id)
+            spell_index._detach_contracted(self, conduit_id)
 
             # Remove from main map
             spell_map.pop(spell_index, None)
@@ -1947,7 +1932,7 @@ and logging.
             lookup_map.pop(key, None)
 
             # Remove *all* versions for this SpellIndex from the version cache
-            versions = spell_index_surface._versions
+            versions = spell_index._versions
             if versions:
                 for version_id in versions:
                     versions_set.discard(version_id)
@@ -1993,10 +1978,7 @@ and logging.
             spell_map = self._contracted_spells[conduit_id]
             removed_spells = list(spell_map.values())
             for spell in spell_map.values():
-                spell_index_surface = self._get_required_spell_index_surface(
-                    spell.spell_index
-                )
-                spell_index_surface._detach_contracted(self, conduit_id)
+                spell.spell_index._detach_contracted(self, conduit_id)
 
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
@@ -2867,9 +2849,7 @@ and logging.
             self._add_hooks_to_spell(new_spell, **kwargs)
 
             # Register into local spell maps
-            spell_index = self._get_required_spell_index_surface(
-                new_spell.spell_index
-            )
+            spell_index = new_spell.spell_index
             self._lookup_spells[new_spell._key] = spell_index
             self._spells[spell_index] = new_spell
             spell_index._attach_owner(self, new_spell)

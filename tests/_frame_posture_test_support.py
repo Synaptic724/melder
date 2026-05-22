@@ -54,6 +54,39 @@ def _sync_detached_frame_posture_to_aether(
     frame_configuration.with_shared_framewide_spellbook_configuration(
         detached_configuration.shared_framewide_spellbook_configuration
     )
+    frame_configuration.with_change_control_mode(
+        detached_configuration.change_control_mode
+    )
+    frame_configuration.with_allow_multiple_root_transactions(
+        detached_configuration.allow_multiple_root_transactions
+    )
+    frame_configuration.with_disable_all_transactions_after_conjure(
+        detached_configuration.disable_all_transactions_after_conjure
+    )
+    frame_configuration.with_disable_mutations(
+        detached_configuration.disable_mutations
+    )
+    frame_configuration.with_disable_linking(
+        detached_configuration.disable_linking
+    )
+    frame_configuration.with_disable_bind(
+        detached_configuration.disable_bind
+    )
+    frame_configuration.with_disable_conduit_cluster(
+        detached_configuration.disable_conduit_cluster
+    )
+    frame_configuration.with_disable_transfer_of_ownership(
+        detached_configuration.disable_transfer_of_ownership
+    )
+    frame_configuration.with_disable_contract_mutation(
+        detached_configuration.disable_contract_mutation
+    )
+    frame_configuration.with_queue_competing_root_transactions(
+        detached_configuration.queue_competing_root_transactions
+    )
+    frame_configuration.with_max_transaction_wait_time_in_seconds(
+        detached_configuration.max_transaction_wait_time_in_seconds
+    )
     return typing.cast(AethericFrameConfiguration, frame_configuration)
 
 
@@ -219,5 +252,28 @@ def build_aetheric_frame_configuration_for_spellbook_configuration(
         rift_enabled=frame_configuration.rift_enabled,
         shared_framewide_spellbook_configuration=(
             frame_configuration.shared_framewide_spellbook_configuration
+        ),
+        change_control_mode=frame_configuration.change_control_mode,
+        allow_multiple_root_transactions=(
+            frame_configuration.allow_multiple_root_transactions
+        ),
+        disable_all_transactions_after_conjure=(
+            frame_configuration.disable_all_transactions_after_conjure
+        ),
+        disable_mutations=frame_configuration.disable_mutations,
+        disable_linking=frame_configuration.disable_linking,
+        disable_bind=frame_configuration.disable_bind,
+        disable_conduit_cluster=frame_configuration.disable_conduit_cluster,
+        disable_transfer_of_ownership=(
+            frame_configuration.disable_transfer_of_ownership
+        ),
+        disable_contract_mutation=(
+            frame_configuration.disable_contract_mutation
+        ),
+        queue_competing_root_transactions=(
+            frame_configuration.queue_competing_root_transactions
+        ),
+        max_transaction_wait_time_in_seconds=(
+            frame_configuration.max_transaction_wait_time_in_seconds
         ),
     )

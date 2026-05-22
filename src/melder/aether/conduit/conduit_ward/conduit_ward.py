@@ -14,9 +14,6 @@ from typing import (
     Optional,
     ClassVar,
 )
-
-
-
 # Melder Imports
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
@@ -25,11 +22,6 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.spellbook.spell import Spell
-if TYPE_CHECKING:
-    from melder.aether.conduit.conduit import Conduit
-    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
-    from melder.utilities.logger.safe_logger import SafeLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
@@ -39,6 +31,13 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import TransferOfOwnership
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.utilities.logger.safe_logger import SafeLogger
 
 def _is_conduit_surface(value: Any) -> bool:
     """
@@ -2949,7 +2948,6 @@ class ConduitWard(Cleanable):
         Returns:
             dict: Preflight summary of the transfer plan.
         """
-        from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import TransferOfOwnership
         if not self._dynamic:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
 

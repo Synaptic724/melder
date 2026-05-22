@@ -26,9 +26,15 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.or
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
+    TransactionMediator,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
     ChangeTransactionType,
+)
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.utilities.general_base.cleanable import Cleanable
@@ -92,6 +98,7 @@ class ChangeControlManager(Cleanable):
         "_revalidate_fn_by_conduit",
         "_change_control_enabled",
         "_transaction_manager",
+        "_transaction_mediator",
         "_conflict_manager",
         "_embargo_manager",
         "_orchestrator",
@@ -143,6 +150,39 @@ class ChangeControlManager(Cleanable):
         self._conflict_manager: ChangeControlConflictManager = ChangeControlConflictManager()
         self._embargo_manager: ChangeControlEmbargoManager = ChangeControlEmbargoManager()
         self._orchestrator: ChangeControlOrchestrator = ChangeControlOrchestrator()
+        frame_configuration = None
+        try:
+            frame = spell_system_states._frame
+            if frame is not None:
+                frame_configuration = frame.frame_configuration
+        except Exception:
+            frame_configuration = None
+        change_control_mode = "strict"
+        allow_multiple_root_transactions = False
+        queue_competing_root_transactions = False
+        max_transaction_wait_time_in_seconds = 30.0
+        if isinstance(frame_configuration, AethericFrameConfiguration):
+            change_control_mode = frame_configuration.change_control_mode
+            allow_multiple_root_transactions = (
+                frame_configuration.allow_multiple_root_transactions
+            )
+            queue_competing_root_transactions = (
+                frame_configuration.queue_competing_root_transactions
+            )
+            max_transaction_wait_time_in_seconds = (
+                frame_configuration.max_transaction_wait_time_in_seconds
+            )
+        self._transaction_mediator: TransactionMediator = TransactionMediator(
+            transaction_manager=self._transaction_manager,
+            embargo_manager=self._embargo_manager,
+            orchestrator=self._orchestrator,
+            change_control_mode=change_control_mode,
+            allow_multiple_root_transactions=allow_multiple_root_transactions,
+            queue_competing_root_transactions=queue_competing_root_transactions,
+            max_transaction_wait_time_in_seconds=(
+                max_transaction_wait_time_in_seconds
+            ),
+        )
         self._commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
@@ -210,6 +250,9 @@ class ChangeControlManager(Cleanable):
             if self._transaction_manager is not None:
                 self._transaction_manager.cleanup()
 
+            if self._transaction_mediator is not None:
+                self._transaction_mediator.cleanup()
+
             if self._conflict_manager is not None:
                 self._conflict_manager.cleanup()
 
@@ -227,6 +270,7 @@ class ChangeControlManager(Cleanable):
             del self._revalidate_fn_by_conduit
             del self._change_control_enabled
             del self._transaction_manager
+            del self._transaction_mediator
             del self._conflict_manager
             del self._embargo_manager
             del self._orchestrator
@@ -749,6 +793,16 @@ class ChangeControlManager(Cleanable):
         """
         self.check_cleaned()
         return self._transaction_manager
+
+    def transaction_mediator(self) -> TransactionMediator:
+        """
+        Return the owned live transaction mediator.
+
+        Returns:
+            TransactionMediator: Frame-local live transaction/session surface.
+        """
+        self.check_cleaned()
+        return self._transaction_mediator
 
     def conflict_manager(self) -> ChangeControlConflictManager:
         """

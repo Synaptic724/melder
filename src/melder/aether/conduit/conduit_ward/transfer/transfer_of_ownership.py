@@ -795,7 +795,7 @@ class TransferOfOwnership(Cleanable):
         try:
             with SafeGuard(spell_obj.spell_index._lock):
                 spell_obj.spell_index._owner_spellbook = src_book
-                spell_obj.spell_index._owner_spell = spell_obj
+                spell_obj.spell_index._active_spell = spell_obj
                 spell_obj.spell_index._owner_conduit_id = self.source_conduit._id
         except Exception:
             pass
@@ -1330,13 +1330,13 @@ class TransferOfOwnership(Cleanable):
             try:
                 with SafeGuard(spell_obj.spell_index._lock):
                     owner_book = spell_obj.spell_index._owner_spellbook
-                    owner_spell = spell_obj.spell_index._owner_spell
+                    active_spell = spell_obj.spell_index._active_spell
                     if owner_book is not None and owner_book is not src_book:
                         raise RuntimeError("SpellIndex owner mismatch during transfer.")
-                    if owner_spell is not None and owner_spell is not spell_obj:
-                        raise RuntimeError("SpellIndex owner spell mismatch during transfer.")
+                    if active_spell is not None and active_spell is not spell_obj:
+                        raise RuntimeError("SpellIndex active spell mismatch during transfer.")
                     spell_obj.spell_index._owner_spellbook = tgt_book
-                    spell_obj.spell_index._owner_spell = spell_obj
+                    spell_obj.spell_index._active_spell = spell_obj
                     spell_obj.spell_index._owner_conduit_id = self.target_conduit._id
             except Exception as e:
                 raise RuntimeError(f"Failed to update SpellIndex owner: {e}")

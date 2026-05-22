@@ -61,7 +61,7 @@ def _attach_index_owner(index: SpellIndex, spell: Spell) -> SpellIndex:
     Mirror the live Spellbook bind path by stamping owner references onto the index.
     """
     index._owner_spellbook = spell._spellbook
-    index._owner_spell = spell
+    index._active_spell = spell
     return index
 
 

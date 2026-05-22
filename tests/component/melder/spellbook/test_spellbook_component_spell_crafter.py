@@ -558,7 +558,7 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell_index._owner_spell))
+        self.registered_lineages.append((spell_index, spell_index._active_spell))
 
     def update_dependencies(self, spell_index: object, dependency_spell_ids: list[str]) -> None:
         """

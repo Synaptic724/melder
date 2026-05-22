@@ -104,13 +104,13 @@ class _SpellSystemStatesStub:
         Purpose:
             Record a lineage registration from Spellbook.bind.
         Contract:
-            - Appends (spell_index, owner_spell) to registered_lineages.
+            - Appends (spell_index, active_spell) to registered_lineages.
         Args:
             spell_index: SpellIndex registered for the lineage.
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell_index._owner_spell))
+        self.registered_lineages.append((spell_index, spell_index._active_spell))
 
     def unregister_index(self, spell_index: object) -> None:
         """
@@ -289,7 +289,6 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
         assert bound_spell is not None
         assert registered_spell is bound_spell
         assert bound_spell.user_created_object is existing
-        assert bound_spell.owned_spell is True
         assert bound_spell._owner_conduit_id == conduit._id
         assert bound_spell._owner_conduit_name == conduit._name
     finally:
@@ -848,7 +847,7 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     Purpose:
         Validate binding after conjure stamps owner metadata on new spells.
     Contract:
-        - New spells receive owner conduit id/name and owned_spell flag.
+        - New spells receive owner conduit id/name and conduit-owned creations.
         - No creation registration occurs for class-based spells.
     Returns:
         None.
@@ -873,7 +872,6 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
         bound_spell = _get_spell_by_version_id(spellbook, spell_id)
         assert bound_spell is not None
         assert bound_spell.user_created_object is None
-        assert bound_spell.owned_spell is True
         assert bound_spell._owner_conduit_id == conduit._id
         assert bound_spell._owner_conduit_name == conduit._name
     finally:

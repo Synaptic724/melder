@@ -157,17 +157,17 @@ def test_scan_bind_integration_reimport_raises() -> None:
 def test_conduit_scan_integration_binds_after_conjure() -> None:
     """
     Purpose:
-        Validate Conduit.scan binds decorated objects after conjure.
+        Validate direct conduit-side scan binds decorated objects after conjure.
     Contract:
-        Conduit.scan delegates to Spellbook.scan and returns spell ids.
+        Conduit.scan opens its own binding transaction when one is not already
+        active, then returns spell ids.
     Returns:
         None.
     """
     spellbook = _make_spellbook()
     conduit = spellbook.conjure(name="scan_root")
     try:
-        with conduit.binding_transaction():
-            spell_ids = conduit.scan(scan_bind_module_core)
+        spell_ids = conduit.scan(scan_bind_module_core)
         assert len(spell_ids) == 3
         assert len(spellbook.spells) == 3
         spell = conduit.get_spell_by_id(spell_ids[0])

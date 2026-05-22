@@ -102,7 +102,6 @@ class FakeSpell:
         self.__name__ = spell_name
         self._owner_conduit_id = owner_id
         self._owner_conduit_name = None
-        self.owned_spell = True
         self.dependencies = dependencies or []
         self.dependency_graph = None
         self._spellbook = None

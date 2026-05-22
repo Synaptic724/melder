@@ -198,6 +198,17 @@ def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
         "ai_native_enabled": True,
         "rift_enabled": False,
         "shared_framewide_spellbook_configuration": False,
+        "change_control_mode": "strict",
+        "allow_multiple_root_transactions": False,
+        "disable_all_transactions_after_conjure": False,
+        "disable_mutations": True,
+        "disable_linking": False,
+        "disable_bind": False,
+        "disable_conduit_cluster": False,
+        "disable_transfer_of_ownership": False,
+        "disable_contract_mutation": False,
+        "queue_competing_root_transactions": False,
+        "max_transaction_wait_time_in_seconds": 30.0,
     }
 
 
@@ -226,4 +237,85 @@ def test_cleanup_is_idempotent_for_frame_configuration() -> None:
     frame_configuration.cleanup()
 
     assert frame_configuration._cleaned is True
+
+
+def test_aetheric_frame_configuration_change_control_defaults() -> None:
+    """Frame change-control defaults should match the requested posture."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    assert frame_configuration.change_control_mode == "strict"
+    assert frame_configuration.allow_multiple_root_transactions is False
+    assert frame_configuration.disable_all_transactions_after_conjure is False
+    assert frame_configuration.disable_mutations is True
+    assert frame_configuration.disable_linking is False
+    assert frame_configuration.disable_bind is False
+    assert frame_configuration.disable_conduit_cluster is False
+    assert frame_configuration.disable_transfer_of_ownership is False
+    assert frame_configuration.disable_contract_mutation is False
+    assert frame_configuration.queue_competing_root_transactions is False
+    assert frame_configuration.max_transaction_wait_time_in_seconds == 30.0
+
+
+def test_aetheric_frame_configuration_rejects_invalid_change_control_mode() -> None:
+    """Constructor should reject unsupported change-control modes."""
+    with pytest.raises(ValueError, match="change_control_mode"):
+        AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-alpha",
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=False,
+            change_control_mode="garbage",
+        )
+
+
+def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags() -> None:
+    """with_defaults should restore the requested change-control defaults."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=True,
+        change_control_mode="warn",
+        allow_multiple_root_transactions=True,
+        disable_all_transactions_after_conjure=True,
+        disable_mutations=False,
+        disable_linking=True,
+        disable_bind=True,
+        disable_conduit_cluster=True,
+        disable_transfer_of_ownership=True,
+        disable_contract_mutation=True,
+        queue_competing_root_transactions=True,
+        max_transaction_wait_time_in_seconds=5.0,
+    )
+
+    frame_configuration.with_defaults()
+
+    assert frame_configuration.change_control_mode == "strict"
+    assert frame_configuration.allow_multiple_root_transactions is False
+    assert frame_configuration.disable_all_transactions_after_conjure is False
+    assert frame_configuration.disable_mutations is True
+    assert frame_configuration.disable_linking is False
+    assert frame_configuration.disable_bind is False
+    assert frame_configuration.disable_conduit_cluster is False
+    assert frame_configuration.disable_transfer_of_ownership is False
+    assert frame_configuration.disable_contract_mutation is False
+    assert frame_configuration.queue_competing_root_transactions is False
+    assert frame_configuration.max_transaction_wait_time_in_seconds == 30.0
+
+
+def test_aetheric_frame_configuration_rejects_invalid_transaction_wait_time() -> None:
+    """Constructor should reject non-positive transaction wait times."""
+    with pytest.raises(ValueError, match="greater than 0"):
+        AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-alpha",
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=False,
+            max_transaction_wait_time_in_seconds=0,
+        )
 

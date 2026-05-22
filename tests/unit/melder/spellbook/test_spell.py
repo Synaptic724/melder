@@ -767,7 +767,7 @@ def test_owner_conduit_info_before_and_after_assignment():
         creation_gate_controller=CreationGateController(),
     )
     assert spell.owner_conduit_info == ("conduit-1", "c1")
-    assert spell.owned_spell is True
+    assert spell._owner_creations == "creations"
 
 
 def test_add_build_details_sets_dependencies_and_graph():
@@ -1217,7 +1217,7 @@ def test_cleanup_swallows_profile_spellindex_switch_and_tags_clear_failures() ->
     assert not hasattr(spell, "_creation_context_switch")
 
 
-def test_owned_conduit_marks_owned_spell_true():
+def test_owned_conduit_stamps_runtime_ownership_state():
     spell = _make_spell()
     spell._add_owned_conduit(
         "cid",
@@ -1226,7 +1226,7 @@ def test_owned_conduit_marks_owned_spell_true():
         dynamic_environment=False,
         creation_gate_controller=CreationGateController(),
     )
-    assert spell.owned_spell is True
+    assert spell.owner_conduit_info == ("cid", "cname")
     assert spell._owner_creations == "creations"
 
 

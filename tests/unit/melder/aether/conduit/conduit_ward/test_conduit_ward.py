@@ -1995,7 +1995,7 @@ def test_transfer_spell_ownership_calls_transfer_flow(ward):
     summary = {"ok": True}
 
     with patch(
-        "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership"
+        "melder.aether.conduit.conduit_ward.conduit_ward.TransferOfOwnership"
     ) as mock_transfer:
         transfer_instance = MagicMock()
         transfer_instance.preflight.return_value = summary
@@ -2386,11 +2386,11 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     index_b = SpellIndex("spell-b")
     index_none = SpellIndex("spell-c")
     index_a._owner_spellbook = spellbook
-    index_a._owner_spell = spell_a
+    index_a._active_spell = spell_a
     index_b._owner_spellbook = spellbook
-    index_b._owner_spell = spell_b
+    index_b._active_spell = spell_b
     index_none._owner_spellbook = spellbook
-    index_none._owner_spell = spell_none
+    index_none._active_spell = spell_none
     states.register_index(index_a)
     states.register_index(index_b)
     states.register_index(index_none)
@@ -2497,9 +2497,9 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
     index_a._owner_spellbook = spellbook
-    index_a._owner_spell = spell_a
+    index_a._active_spell = spell_a
     index_b._owner_spellbook = spellbook
-    index_b._owner_spell = spell_b
+    index_b._active_spell = spell_b
     states.register_index(index_a)
     states.register_index(index_b)
 

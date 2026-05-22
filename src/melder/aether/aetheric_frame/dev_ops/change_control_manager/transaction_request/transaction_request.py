@@ -29,7 +29,7 @@ class ChangeTransactionType(str, Enum):
     Lifecycle:
         No cleanup required.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __melder_internal__ = _mrg.sentinel
     BIND = "bind"
     LINK = "link"
     TRANSFER_OWNERSHIP = "transfer_ownership"

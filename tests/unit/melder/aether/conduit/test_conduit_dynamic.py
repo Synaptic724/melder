@@ -151,16 +151,16 @@ def test_set_new_policy_delegates_for_dynamic(conduit_dynamic_normal: Conduit) -
     )
 
 
-def test_conduit_no_longer_exposes_get_conduit_cloud_surface(
+def test_conduit_exposes_get_conduit_cloud_surface(
     conduit_lesser: Conduit,
     conduit_normal: Conduit,
     conduit_dynamic_normal: Conduit,
 ) -> None:
     """
-    Verify the public conduit cloud accessor is removed from the conduit surface.
+    Verify the public conduit cloud accessor remains available on the conduit surface.
     """
     for conduit in (conduit_lesser, conduit_normal, conduit_dynamic_normal):
-        assert not hasattr(conduit, "get_conduit_cloud")
+        assert hasattr(conduit, "get_conduit_cloud")
 
 
 def test_transfer_spell_ownership_raises_when_not_dynamic(
@@ -604,9 +604,8 @@ def test_conduit_no_longer_exposes_cloud_or_cluster_surface(
     conduit_dynamic_normal: Conduit,
     conduit_dynamic_lesser: Conduit,
 ) -> None:
-    """Conduit should no longer expose public cloud or cluster helper methods."""
+    """Conduit should keep the cloud accessor but not expose cluster mutator helpers."""
     removed_methods = (
-        "get_conduit_cloud",
         "register_conduit_cloud",
         "unregister_conduit_cloud",
         "create_cluster",
@@ -622,5 +621,6 @@ def test_conduit_no_longer_exposes_cloud_or_cluster_surface(
         conduit_dynamic_normal,
         conduit_dynamic_lesser,
     ):
+        assert hasattr(conduit, "get_conduit_cloud")
         for method_name in removed_methods:
             assert not hasattr(conduit, method_name)
