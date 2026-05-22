@@ -1,6 +1,6 @@
 import threading
 from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING, ClassVar
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
 from melder.utilities.general_base.cleanable import Cleanable
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     )
 
 
-@mypyc_attr(native_class=True)
+
 class IncidentManager(Cleanable):
     """
     Frame-local registry of `Incident` records.

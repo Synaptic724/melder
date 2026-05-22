@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         InjectionPlan,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanBuilder,
@@ -28,7 +28,7 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase11:
     """
     Compiler phase 11 surface.

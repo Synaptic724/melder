@@ -2,7 +2,7 @@ import inspect
 from inspect import Parameter
 from typing import Any, Dict, Type, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
@@ -12,7 +12,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 #region ClassInspector
 
-@mypyc_attr(native_class=True)
+
 class ClassInspector(Cleanable):
     """
     Inspect a class object and emit a structured, tool-ready inventory.

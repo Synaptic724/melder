@@ -6,7 +6,7 @@ import typing
 import types
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-@mypyc_attr(native_class=True)
+
 class SpellRequirementsFinder(Cleanable):
     """
     Build the Phase 1 requirement artifact for one bound: class: 'Spell`.

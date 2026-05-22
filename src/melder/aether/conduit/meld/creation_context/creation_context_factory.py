@@ -8,14 +8,14 @@ if TYPE_CHECKING:
         CreationGateController,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
-@mypyc_attr(native_class=True)
+
 class CreationContextFactory(Cleanable):
     """
     Produce spell-shaped `CreationContext` instances.

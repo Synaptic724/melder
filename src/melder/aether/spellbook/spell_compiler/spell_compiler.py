@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_1 import (
     CompilerPhase1,
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 
 
 
-@mypyc_attr(native_class=True)
+
 class SpellCompiler(Cleanable):
     """
     Compiler-owned facade over the extracted spell compiler phase surfaces.

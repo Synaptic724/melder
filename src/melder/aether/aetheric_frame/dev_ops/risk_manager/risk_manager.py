@@ -1,6 +1,6 @@
 from threading import RLock
 from typing import Dict, Optional, Set, List, TYPE_CHECKING, ClassVar
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.aether.spellbook.spellbook import Spellbook
 
-@mypyc_attr(native_class=True)
+
 class _ConduitRiskState:
     """
     Per-conduit bucket of risk-tracking state.
@@ -47,7 +47,7 @@ class _ConduitRiskState:
         self.risky_structural: Set[str] = set()
         self.risky_resolution: Set[str] = set()
 
-@mypyc_attr(native_class=True)
+
 class RiskManager(Cleanable):
     """
     DevOps risk tracking for meld validation gating.

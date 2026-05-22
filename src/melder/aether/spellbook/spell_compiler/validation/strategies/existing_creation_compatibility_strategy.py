@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
         SpellValidationContext,
     )
 
-@mypyc_attr(native_class=True)
+
 class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
     """
     Validate existing-creation spells are wired with valid instances and policies.

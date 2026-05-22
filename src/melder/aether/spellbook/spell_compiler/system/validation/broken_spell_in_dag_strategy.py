@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -24,7 +24,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
-@mypyc_attr(native_class=True)
+
 class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
     """
     Guard that broken Phase 4 spells do not silently survive into root DAGs.

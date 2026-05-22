@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     )
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -26,7 +26,7 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
-@mypyc_attr(native_class=True)
+
 class BindingResolutionCycleStrategy(SpellValidationStrategy):
     """
     Detect binding-key cycles implied by spell requirements.

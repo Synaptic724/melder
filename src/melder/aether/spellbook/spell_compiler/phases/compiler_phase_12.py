@@ -10,7 +10,7 @@ if TYPE_CHECKING:
         SpellCompilerArtifact,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -19,7 +19,7 @@ from melder.aether.spellbook.spell_compiler.blueprints.phase12_no_overrides_exec
     compile_phase12_no_overrides_executor,
     compile_phase12_no_overrides_executor_from_plan,
 )
-@mypyc_attr(native_class=True)
+
 class CompilerPhase12:
     """
     Compiler phase 12 surface.

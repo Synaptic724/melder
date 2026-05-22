@@ -1,6 +1,6 @@
 ﻿from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
 
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     )
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-@mypyc_attr(native_class=True)
+
 class CycleDetectionStrategy(SpellSystemValidationStrategy):
     """
     Guard that the frame-level dependency graph remains acyclic.

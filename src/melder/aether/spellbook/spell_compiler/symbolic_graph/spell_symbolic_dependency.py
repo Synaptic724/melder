@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Optional, Tuple, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -9,7 +9,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
     ParameterDIShape,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class SpellSymbolicDependency(Cleanable):
     """
     Phase 2 representation of a **single constructor socket** for a spell.

@@ -1,7 +1,7 @@
 import time
 from typing import TYPE_CHECKING, Optional
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import (
     SpellState,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase4:
     """
     Compiler phase 4 surface.

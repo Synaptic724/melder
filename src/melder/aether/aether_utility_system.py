@@ -1,12 +1,12 @@
 import logging
 import threading
 from typing import Any, Callable, Dict, Iterable, Optional, Union, ClassVar
-from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.logger.safe_logger import SafeLogger
-@mypyc_attr(native_class=True)
+
 
 class AetherUtilitySystem(Cleanable):
     """

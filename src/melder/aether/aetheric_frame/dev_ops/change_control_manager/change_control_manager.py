@@ -12,7 +12,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     )
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-@mypyc_attr(native_class=True)
+
 class ChangeControlManager(Cleanable):
     """
     Change-control registry for an Aetheric Frame.

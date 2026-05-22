@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -20,7 +20,7 @@ class SpellBindingKind(Enum):
     INSTANCE = auto()
     OTHER = auto()
 
-@mypyc_attr(native_class=True)
+
 class SpellBindingProfile(Cleanable):
     """
     Base class for all binding profiles.
@@ -65,7 +65,7 @@ class SpellBindingProfile(Cleanable):
         del self.original_object
 
 
-@mypyc_attr(native_class=True)
+
 class ClassBindingProfile(SpellBindingProfile):
     """
     Binding-time view of a class candidate.
@@ -186,7 +186,7 @@ class ClassBindingProfile(SpellBindingProfile):
         del self.method_names
         super().cleanup()
 
-@mypyc_attr(native_class=True)
+
 class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
@@ -222,7 +222,7 @@ class CallableParameterBindingSummary:
         self.default_repr: Optional[str] = default_repr
         self.annotation_repr: Optional[str] = annotation_repr
 
-@mypyc_attr(native_class=True)
+
 class CallableBindingProfile(SpellBindingProfile):
     """
     Binding-time view of a function, method, or lambda spell candidate.
@@ -344,7 +344,7 @@ class CallableBindingProfile(SpellBindingProfile):
 
         super().cleanup()
 
-@mypyc_attr(native_class=True)
+
 class InstanceBindingProfile(SpellBindingProfile):
     """
     Binding-time view of an existing object instance bound as an EXISTING_CREATION spell.
@@ -404,7 +404,7 @@ class InstanceBindingProfile(SpellBindingProfile):
 
         super().cleanup()
 
-@mypyc_attr(native_class=True)
+
 class OtherBindingProfile(SpellBindingProfile):
     """
     Fallback binding profile for anything that does not fit normal shapes.

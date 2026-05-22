@@ -1,4 +1,4 @@
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from enum import IntEnum
@@ -27,7 +27,7 @@ class _Specificity(IntEnum):
     UNIQUE = 2
     BROADCAST = 1
 
-@mypyc_attr(native_class=True)
+
 class SpellOverrider(Cleanable):
     """
     Runtime helper that turns a raw spell_override dict into a socket-aware

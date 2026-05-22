@@ -4,7 +4,7 @@ from functools import update_wrapper
 from threading import RLock
 from types import SimpleNamespace
 import ulid
-from mypy_extensions import mypyc_attr
+
 
 from typing import (
     Callable,
@@ -47,7 +47,7 @@ def _is_async_callable(
     return inspect.iscoroutinefunction(task)
 
 
-@mypyc_attr(native_class=True)
+
 
 class Package(Generic[P, R]):
     """

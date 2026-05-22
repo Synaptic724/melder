@@ -1,6 +1,6 @@
 import threading
 from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
-from mypy_extensions import mypyc_attr
+
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.bind.spell_index import SpellIndex
-@mypyc_attr(native_class=True)
+
 class ConduitCluster(Cleanable):
     """
     Cluster-local registry for conduit membership and shared-root policy.

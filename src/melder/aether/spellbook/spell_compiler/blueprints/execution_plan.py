@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
@@ -21,7 +21,7 @@ InstanceKey = Tuple[str, Optional[int]]
 FastPlanData = Tuple[Any, ...]
 FastTransientPlan = Tuple[Any, ...]
 
-@mypyc_attr(native_class=True)
+
 class ExecutionPlanVariant:
     """
     Internal
@@ -38,7 +38,7 @@ class ExecutionPlanVariant:
     OVERRIDES: ClassVar[str] = "overrides"
     OVERRIDES_WITH_MUTATIONS: ClassVar[str] = "overrides_with_mutations"
 
-@mypyc_attr(native_class=True)
+
 class ExecutionPlanTargetKind:
     """
     Internal
@@ -55,7 +55,7 @@ class ExecutionPlanTargetKind:
     OWNER: ClassVar[int] = 2
     SPELLSPACE: ClassVar[int] = 3
 
-@mypyc_attr(native_class=True)
+
 class ExecutionPlanCallMode:
     """
     Internal
@@ -79,7 +79,7 @@ class ExecutionPlanCallMode:
     CALL8: ClassVar[int] = 8
     CALLN: ClassVar[int] = 9
 
-@mypyc_attr(native_class=True)
+
 class ExecutionPlanStep:
     """
     Internal
@@ -376,7 +376,7 @@ class ExecutionPlanStep:
         """Return disposal-method names carried into runtime registration."""
         return self._disposal_method_names
 
-@mypyc_attr(native_class=True)
+
 class ExecutionPlan(Cleanable):
     """
     Internal
@@ -1039,7 +1039,7 @@ class ExecutionPlan(Cleanable):
         """
         return bool(self._fast_has_existing_creations)
 
-@mypyc_attr(native_class=True)
+
 class ExecutionPlanBuilder:
     """
     Internal

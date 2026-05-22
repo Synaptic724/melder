@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
@@ -8,7 +8,7 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
-@mypyc_attr(native_class=True)
+
 class SelfDependencyStrategy(SpellValidationStrategy):
     """
     Detect trivial self-dependencies (a spell depending on itself).

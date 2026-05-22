@@ -2,7 +2,7 @@ import threading
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, Tuple, Type
 
 import ulid
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -10,7 +10,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.utilities.general_base.cleanable import Cleanable
 
 
-@mypyc_attr(native_class=True)
+
 class SpellbookConfiguration(Cleanable):
     """
     Mutable build-time configuration surface for one spellbook/runtime context.

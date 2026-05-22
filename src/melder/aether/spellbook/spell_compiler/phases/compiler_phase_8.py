@@ -13,7 +13,7 @@ if TYPE_CHECKING:
         SpellCompilerArtifact,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -23,7 +23,7 @@ from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase8:
     """
     Compiler phase 8 surface.

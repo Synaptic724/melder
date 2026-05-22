@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence, Class
 import ulid
 from threading import RLock
 from types import TracebackType
-from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
 
 #region Spell
-@mypyc_attr(native_class=True)
+
 class Spell(Cleanable):
     """
     Internal

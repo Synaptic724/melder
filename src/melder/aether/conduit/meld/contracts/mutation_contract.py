@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, ClassVar
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -12,7 +12,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
-@mypyc_attr(native_class=True)
+
 class MutationContract(Cleanable):
     """
     Declarative mutation socket for mutation-research and AI-native experiments.

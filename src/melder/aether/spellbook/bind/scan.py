@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -48,7 +48,7 @@ def _normalize_hooks(
             raise TypeError(f"{hook_name} must contain only callables.")
     return tuple(hooks)
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True, slots=True)
 class ScanBindMetadata:
     """
@@ -199,7 +199,7 @@ def scan_bind(
 
     return decorator
 
-@mypyc_attr(native_class=True)
+
 class Scan:
     """
     Public API

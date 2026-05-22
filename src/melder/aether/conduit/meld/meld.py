@@ -13,7 +13,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.creations.creations import Creations
 
-@mypyc_attr(native_class=True)
+
 class Meld(Cleanable):
     """
     ## Meld: Spell Activation and Dependency Resolution

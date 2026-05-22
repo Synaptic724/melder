@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional, Set, Tuple, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_compiler import (
     SpellCompiler,
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 
-@mypyc_attr(native_class=True)
+
 class SpellCompilerSystem(Cleanable):
     """
     Compiler-owned orchestration surface for spell compilation phases.

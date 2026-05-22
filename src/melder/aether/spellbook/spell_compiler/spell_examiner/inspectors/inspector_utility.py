@@ -1,13 +1,13 @@
 import inspect
 from typing import Any, Optional, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region InspectorUtility
 
-@mypyc_attr(native_class=True)
+
 class InspectorUtility:
     """
     Shared low-level helpers for the spell examiner inspector layer.

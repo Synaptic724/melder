@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
@@ -12,7 +12,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
-@mypyc_attr(native_class=True)
+
 class SpellExaminer(Cleanable):
     """
     Purpose:

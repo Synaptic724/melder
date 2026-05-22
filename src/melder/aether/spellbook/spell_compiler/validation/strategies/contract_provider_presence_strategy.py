@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
         SpellValidationContext,
     )
 
-@mypyc_attr(native_class=True)
+
 class ContractProviderPresenceStrategy(SpellValidationStrategy):
     """
     Validate that contract sockets have a resolvable provider in the Spellbook.

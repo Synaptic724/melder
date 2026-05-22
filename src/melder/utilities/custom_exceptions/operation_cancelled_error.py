@@ -1,6 +1,6 @@
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=False)
+
+
 class OperationCancelledError(RuntimeError):
     """
     Raised when cooperative cancellation has been observed and execution stops.

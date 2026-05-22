@@ -3,7 +3,7 @@ from threading import RLock
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
 import ulid
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
-@mypyc_attr(native_class=True)
+
 class Aether(Cleanable):
     """
     The global singleton root that owns all `AethericFrame` instances.

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, 
 import threading
 import time
 
-from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from melder.utilities.logger.safe_logger import SafeLogger
 
 #region Spellbook
-@mypyc_attr(native_class=True)
+
 class Spellbook(Cleanable):
     """
     Public API

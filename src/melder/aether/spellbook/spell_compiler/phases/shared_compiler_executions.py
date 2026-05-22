@@ -8,7 +8,7 @@ if TYPE_CHECKING:
         SpellCompilerArtifact,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
@@ -16,7 +16,7 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanVariant,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
-@mypyc_attr(native_class=True)
+
 class SharedCompilerExecutions:
     """
     Shared static execution helper surface for compiler phases.

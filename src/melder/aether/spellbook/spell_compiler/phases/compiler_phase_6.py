@@ -19,7 +19,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
@@ -105,7 +105,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_str
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase6:
     """
     Compiler phase 6 surface.

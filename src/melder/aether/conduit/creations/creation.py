@@ -3,14 +3,14 @@ import ulid
 from types import TracebackType
 from typing import Any, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
-@mypyc_attr(native_class=True)
+
 class Creation(Cleanable):
     """
     Wrapper for one live runtime object tracked by `Creations`.

@@ -1,6 +1,6 @@
 from typing import Any, Optional, Union, Tuple, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -9,7 +9,7 @@ from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 
-@mypyc_attr(native_class=True)
+
 class SpellMap(Cleanable):
     """
     Declarative DI descriptor for normal spellbook-local resolution.

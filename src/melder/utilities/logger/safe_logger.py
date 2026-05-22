@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Iterable, Dict, Any, Union, ClassVar, List
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -10,7 +10,7 @@ from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
-@mypyc_attr(native_class=True)
+
 class SafeLogger(Cleanable):
     """
     Unified logger adapter over channel loggers and stdlib loggers.

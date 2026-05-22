@@ -9,14 +9,14 @@ if TYPE_CHECKING:
         SpellCompilerArtifact,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
     InjectionPlanBuilder,
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase9:
     """
     Compiler phase 9 surface.

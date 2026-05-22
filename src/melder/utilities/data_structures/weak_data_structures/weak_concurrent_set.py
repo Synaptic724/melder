@@ -14,7 +14,7 @@ from typing import (
 )
 
 import ulid
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
@@ -23,7 +23,7 @@ from melder.utilities.data_structures.weak_data_structures.weak_ref_node import 
 
 _T = TypeVar("_T")
 
-@mypyc_attr(native_class=True)
+
 class WeakConcurrentSet(Generic[_T], Cleanable):
     """
     WeakConcurrentSet

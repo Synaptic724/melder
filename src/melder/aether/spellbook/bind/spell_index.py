@@ -2,7 +2,7 @@ import threading
 import ulid
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Dict, Tuple, ClassVar
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
 
 
-@mypyc_attr(native_class=True)
+
 class SpellIndex(Cleanable):
     """
     A stable SpellIndex identity that points to a mutable version ID.

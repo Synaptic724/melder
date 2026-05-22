@@ -2,7 +2,7 @@ import threading
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, \
     ClassVar
 
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
@@ -38,7 +38,7 @@ def _get_structural_risk_manager_callback(
     if risk_manager is None:
         return None
     return risk_manager.on_structural_validity_change
-@mypyc_attr(native_class=True)
+
 class SpellSystemStates(Cleanable):
     """
     Per-frame registry for all SpellSystemState instances.

@@ -3,9 +3,9 @@ from collections import deque
 from typing import Deque, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=True)
+
+
 class CounterSwitch(Cleanable):
     """
     Deque-backed selector latch with minimal leader election.

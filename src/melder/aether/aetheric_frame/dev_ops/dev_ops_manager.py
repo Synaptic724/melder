@@ -1,7 +1,7 @@
 from threading import RLock
 from typing import Optional, TYPE_CHECKING, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
-@mypyc_attr(native_class=True)
+
 class DevOpsManager(Cleanable):
     """
     Frame-level ownership root for DevOps and admission-control subsystems.

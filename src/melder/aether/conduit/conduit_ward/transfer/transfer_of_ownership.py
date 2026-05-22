@@ -13,7 +13,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 
-@mypyc_attr(native_class=True)
+
 class TransferOfOwnership(Cleanable):
     """
     Control-plane helper that migrates a spell lineage between conduit owners.

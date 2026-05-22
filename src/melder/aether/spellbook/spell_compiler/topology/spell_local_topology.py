@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from typing import Sequence, Tuple, Dict, List, Optional, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True, slots=True)
 class SpellSocketDescriptor:
     """
@@ -78,7 +78,7 @@ class SpellSocketDescriptor:
     contract_key: Optional[Tuple[str, str]] = None
     contract_late_binding: Optional[bool] = None
 
-@mypyc_attr(native_class=True)
+
 class SpellLocalTopology(Cleanable):
     """
     Local topology view for a single spell's constructor.

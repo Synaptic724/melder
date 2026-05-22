@@ -1,8 +1,8 @@
 import threading
 from typing import Any, Callable, ClassVar, Dict, Tuple
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=True)
+
+
 class Sync:
     """
     Abstract helper mix-in for thread-safe sync-value wrappers.

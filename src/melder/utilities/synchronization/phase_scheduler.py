@@ -13,7 +13,7 @@ from typing import (
 )
 from queue import SimpleQueue, Empty as QueueEmpty
 
-from mypy_extensions import mypyc_attr
+
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.configuration.spellbook_configuration import (
@@ -34,7 +34,7 @@ from melder.utilities.synchronization.unit_of_work import UnitOfWork
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
-@mypyc_attr(native_class=True)
+
 class PhaseScheduler(Cleanable):
     """
     Coordinated, multiphase scheduler for Spellbook resolution.

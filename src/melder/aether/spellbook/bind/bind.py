@@ -9,7 +9,7 @@ if TYPE_CHECKING:
         SpellBindingProfile,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.aether.spellbook.spell_types.spell_types import SpellType
@@ -33,7 +33,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_prof
 
 
 #region Bind
-@mypyc_attr(native_class=True)
+
 class Bind(Cleanable):
     """
     Spellbook registration gateway for classes, callables, and concrete objects.

@@ -1,7 +1,7 @@
 import threading
 from typing import Callable, Iterable, Optional, Set, TYPE_CHECKING, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -11,7 +11,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 
-@mypyc_attr(native_class=True)
+
 class SpellSystemState(Cleanable):
     """
     System-level state for a single spell lineage: topology, validity, and flags.

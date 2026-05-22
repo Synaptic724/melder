@@ -15,7 +15,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.utilities.synchronization.safeguard import SafeGuard
@@ -56,7 +56,7 @@ def _is_conduit_surface(value: Any) -> bool:
 # TODO: Please ensure that locking dynamics properly ensure state management between contracts and to use SafeGuard where we need to in order to ensure we grab all the locks to properly manage state
 
 #region ConduitWard
-@mypyc_attr(native_class=True)
+
 class ConduitWard(Cleanable):
     """
     Control-plane for a single Conduit: contracts, index, and policy.

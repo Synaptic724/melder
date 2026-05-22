@@ -1,7 +1,7 @@
 import threading
 from typing import List, Optional, Sequence, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -10,7 +10,7 @@ from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph impo
 )
 from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class RootResolutionBlueprint(Cleanable):
     """
     Phase 5 rooted deep-DAG artifact for one spell.

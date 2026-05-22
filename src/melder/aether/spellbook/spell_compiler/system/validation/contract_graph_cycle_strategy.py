@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
@@ -27,7 +27,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 )
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
-@mypyc_attr(native_class=True)
+
 class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
     """
     Guard that contract-only edges do not introduce cycles outside the normal DAG.

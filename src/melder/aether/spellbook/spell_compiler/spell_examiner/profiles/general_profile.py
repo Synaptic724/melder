@@ -1,6 +1,6 @@
 from typing import Any, Optional, Type, TypeVar, TYPE_CHECKING, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 GeneralProfileT = TypeVar("GeneralProfileT", bound="SpellGeneralProfile")
 
-@mypyc_attr(native_class=True)
+
 class SpellGeneralProfile(Cleanable):
     """
     Purpose:

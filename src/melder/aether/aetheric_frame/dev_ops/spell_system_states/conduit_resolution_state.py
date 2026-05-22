@@ -11,7 +11,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -42,7 +42,7 @@ def _get_resolution_risk_manager_callback(
         return None
     return risk_manager.on_resolution_validity_change
 
-@mypyc_attr(native_class=True)
+
 class ConduitResolutionState(Cleanable):
     """
     Per-conduit resolution validity container.

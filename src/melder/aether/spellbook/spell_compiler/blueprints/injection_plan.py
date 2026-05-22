@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, ClassVar
-from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.general_base.cleanable import Cleanable
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
-@mypyc_attr(native_class=True)
+
 class ParamSource:
     """
     Internal
@@ -129,7 +129,7 @@ class ParamSource:
         """
         return self._contract_key
 
-@mypyc_attr(native_class=True)
+
 class InjectionSpec:
     """
     Internal
@@ -344,7 +344,7 @@ def build_kwargs_from_injection_spec(
 
     return kwargs
 
-@mypyc_attr(native_class=True)
+
 class InjectionPlan(Cleanable):
     """
     Internal
@@ -482,7 +482,7 @@ class InjectionPlan(Cleanable):
             return None
         return self._instance_injections
 
-@mypyc_attr(native_class=True)
+
 class InjectionPlanBuilder(object):
     """
     Internal

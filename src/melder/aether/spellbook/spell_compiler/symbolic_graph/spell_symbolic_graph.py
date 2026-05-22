@@ -1,7 +1,7 @@
 import threading
 from typing import List, Optional, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency import (
@@ -9,7 +9,7 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_depend
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class SpellSymbolicGraph(Cleanable):
     """
     Phase 2 **per-spell symbolic graph**.

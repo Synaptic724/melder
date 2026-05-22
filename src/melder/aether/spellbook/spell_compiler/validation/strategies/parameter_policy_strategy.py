@@ -4,7 +4,7 @@ import inspect
 import typing
 from typing import TYPE_CHECKING, Any
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
         SpellValidationContext,
     )
 
-@mypyc_attr(native_class=True)
+
 class ParameterPolicyStrategy(SpellValidationStrategy):
     """
     Enforce parameter policies around DI usage.

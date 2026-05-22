@@ -1,7 +1,7 @@
 import threading
 from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Type, \
     ClassVar
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 
-@mypyc_attr(native_class=True)
+
 class SpellbookCreationSystem(Cleanable):
     """
     Internal conjure orchestration system for Spellbook.

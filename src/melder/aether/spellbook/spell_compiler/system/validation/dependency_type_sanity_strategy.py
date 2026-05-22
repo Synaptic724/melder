@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
@@ -27,7 +27,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 
-@mypyc_attr(native_class=True)
+
 class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
     """
     Guard against unexpected callable-style dependency types in the system graph.

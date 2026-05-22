@@ -1,6 +1,6 @@
 import threading
 from typing import TYPE_CHECKING, Optional, Union, ClassVar
-from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from melder.aether.conduit.meld.meld import Meld
 
 
-@mypyc_attr(native_class=True)
+
 class SpellSpace(Cleanable):
     """
     Explicit scope handle for `Existence.unique_per_spell_space`.

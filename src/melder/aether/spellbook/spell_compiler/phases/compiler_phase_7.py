@@ -1,5 +1,5 @@
 ﻿from typing import TYPE_CHECKING, Optional, Set, Dict
-from mypy_extensions import mypyc_attr
+
 #Melder Imports
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_5 import (
     CompilerPhase5,
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase7:
     """
     Compiler phase 7 surface.

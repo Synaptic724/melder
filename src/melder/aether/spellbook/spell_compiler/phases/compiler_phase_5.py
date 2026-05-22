@@ -22,7 +22,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -44,7 +44,7 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_b
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase5:
     """
     Compiler phase 5 surface.

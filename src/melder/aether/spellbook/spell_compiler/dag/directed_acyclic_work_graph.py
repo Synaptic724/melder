@@ -2,14 +2,14 @@ import heapq
 from threading import RLock
 from typing import Any, Dict, Iterable, List, Optional, Tuple, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 from melder.aether.spellbook.spell_compiler.dag.dag_node import DagNode
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class DirectedAcyclicWorkGraph(Cleanable):
     """
     Internal

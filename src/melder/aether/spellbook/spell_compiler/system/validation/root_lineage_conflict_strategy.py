@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
@@ -26,7 +26,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
     SpellSystemValidationStrategy,
 )
 
-@mypyc_attr(native_class=True)
+
 class RootLineageConflictStrategy(SpellSystemValidationStrategy):
     """
     Guard that one lineage does not fan out into multiple structural roots.

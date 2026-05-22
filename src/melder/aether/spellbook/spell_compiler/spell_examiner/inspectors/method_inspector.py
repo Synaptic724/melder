@@ -2,7 +2,7 @@ import inspect
 from inspect import Parameter
 from typing import Any, Dict, Callable, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
@@ -11,7 +11,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 #region MethodInspector
-@mypyc_attr(native_class=True)
+
 class MethodInspector(Cleanable):
     """
     Inspect a callable object and emit a structured, tool-ready record.

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
@@ -27,7 +27,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
     SpellSystemValidationStrategy,
 )
 
-@mypyc_attr(native_class=True)
+
 class SocketRefSanityStrategy(SpellSystemValidationStrategy):
     """
     Guard that blueprint socket references and `DagIndex` stay perfectly aligned.

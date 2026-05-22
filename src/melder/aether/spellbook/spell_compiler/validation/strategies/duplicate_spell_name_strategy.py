@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, List, Any
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
@@ -9,7 +9,7 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validati
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
-@mypyc_attr(native_class=True)
+
 class DuplicateSpellNameStrategy(SpellValidationStrategy):
     """
     Detect spells that share the same ``spell_name`` within the visible Spellbook

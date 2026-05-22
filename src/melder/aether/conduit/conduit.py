@@ -14,7 +14,7 @@ from typing import (
     Generator,
     ClassVar,
 )
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
@@ -50,7 +50,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region Conduit
-@mypyc_attr(native_class=True)
+
 def _is_conduit_surface(value: Any) -> bool:
     """
     Return whether one object exposes the runtime conduit surface.
@@ -62,7 +62,7 @@ def _is_conduit_surface(value: Any) -> bool:
     )
 
 
-@mypyc_attr(native_class=True)
+
 class Conduit(Cleanable):
     """
     A `Conduit` is the runtime scope, execution boundary, and contract-aware access

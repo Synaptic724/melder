@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -25,7 +25,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
     SpellSystemValidationStrategy,
 )
 
-@mypyc_attr(native_class=True)
+
 class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     """
     Guard that the visible system index does not drift onto stale lineage versions.

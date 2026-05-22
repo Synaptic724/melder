@@ -4,14 +4,14 @@ from typing import TYPE_CHECKING, ClassVar
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import SpellResolutionProfile
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class ResolutionProfileStrategy:
     """
     Strategy for producing **SpellResolutionProfile** instances from

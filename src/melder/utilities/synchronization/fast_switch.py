@@ -3,9 +3,9 @@ from typing import Deque, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=True)
+
+
 class FastSwitch(Cleanable):
     """
     Ultra-light ticket-backed boolean switch for hot paths.

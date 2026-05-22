@@ -1,7 +1,7 @@
 import inspect
 from typing import TYPE_CHECKING, Any, List, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
         SpellBindingProfile,
     )
-@mypyc_attr(native_class=True)
+
 class BindingProfileStrategy:
     """
     Strategy for producing **binding profiles** from raw user objects.

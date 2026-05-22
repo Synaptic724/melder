@@ -1,6 +1,6 @@
 from typing import Any, Dict, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
@@ -14,7 +14,7 @@ from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph impo
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
-@mypyc_attr(native_class=True)
+
 class GraphMutator(Cleanable):
     """
     Runtime helper for applying mutation overrides to a root blueprint.

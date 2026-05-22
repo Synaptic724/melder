@@ -1,6 +1,6 @@
 from threading import RLock
 from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING, ClassVar
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
         IncidentSeverity,
     )
 
-@mypyc_attr(native_class=True)
+
 class Incident(Cleanable):
     """
     Mutable incident record with controlled status transitions.

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from mypy_extensions import mypyc_attr
+
 
 if TYPE_CHECKING:
     from melder.utilities.synchronization.cancellation_event_signal import (
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhaseUtility:
     """
     Shared static generic helper surface for compiler phases.

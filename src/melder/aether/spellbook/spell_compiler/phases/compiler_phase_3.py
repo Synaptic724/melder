@@ -25,7 +25,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -51,7 +51,7 @@ from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase3:
     """
     Compiler phase 3 surface.

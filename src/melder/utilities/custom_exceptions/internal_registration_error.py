@@ -1,6 +1,6 @@
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=False)
+
+
 class InternalRegistrationError(RuntimeError):
     """
     Raised when code tries to register a Melder-owned object that is intentionally protected.

@@ -1,7 +1,7 @@
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING, ClassVar
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
         ChangeTransactionType,
     )
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True)
 class ChangeControlStagedMutation:
     """

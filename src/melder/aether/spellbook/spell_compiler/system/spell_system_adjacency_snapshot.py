@@ -1,12 +1,12 @@
 from typing import Collection, Dict, Optional, Set, TYPE_CHECKING, ClassVar
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
 
-@mypyc_attr(native_class=True)
+
 class SpellSystemAdjacencySnapshot(Cleanable):
     """
     Frame-wide structural view of SpellSystemStates.

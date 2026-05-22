@@ -31,7 +31,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -47,7 +47,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
-@mypyc_attr(native_class=True)
+
 class SpellSystemValidationSystem(Cleanable):
     """
     Orchestrates system-level validation strategies over Phase 5 artifacts and Phase 4 outcomes.

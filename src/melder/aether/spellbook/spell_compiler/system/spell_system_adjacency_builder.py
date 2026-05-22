@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, Optional, Set, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
         SpellSystemStates,
     )
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
-@mypyc_attr(native_class=True)
+
 class SpellSystemAdjacencyBuilder:
     """
     Builder for: class:`SpellSystemAdjacencySnapshot`.

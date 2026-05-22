@@ -2,7 +2,7 @@ import inspect
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, ClassVar
 from types import MappingProxyType
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
         SpellBindingProfile,
     )
-@mypyc_attr(native_class=True)
+
 class SpellDetailedProfile(SpellGeneralProfile):
     """
     Purpose:

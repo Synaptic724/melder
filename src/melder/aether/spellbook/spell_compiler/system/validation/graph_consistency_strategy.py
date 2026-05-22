@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
             
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
@@ -25,7 +25,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
-@mypyc_attr(native_class=True)
+
 class GraphConsistencyStrategy(SpellSystemValidationStrategy):
     """
     Guard that rooted blueprint DAGs and the frame-level index describe the

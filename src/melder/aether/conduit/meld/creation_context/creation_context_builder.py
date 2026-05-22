@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.utilities.synchronization.creation_gate import CreationGate
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
@@ -15,7 +15,7 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 )
 from melder.aether.spellbook.existence.existence import Existence
 
-@mypyc_attr(native_class=True)
+
 class CreationContextBuilder:
     """
     Build spell-shaped `CreationContext` instances.

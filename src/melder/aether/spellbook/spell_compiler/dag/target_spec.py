@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Tuple, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -21,7 +21,7 @@ class TargetSpecKind(Enum):
     UNIQUE = auto()
     BROADCAST = auto()
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True, slots=True)
 class TargetSpec:
     """

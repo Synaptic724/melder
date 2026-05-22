@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from typing import TYPE_CHECKING
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
@@ -28,7 +28,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
     SpellGeneralProfile,
 )
 
-@mypyc_attr(native_class=True)
+
 class CallableProfileHygieneStrategy(SpellValidationStrategy):
     """
     Validate that the bound spell target matches its binding profile and type.

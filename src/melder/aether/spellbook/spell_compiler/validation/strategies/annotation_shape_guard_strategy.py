@@ -2,7 +2,7 @@ import inspect
 import typing
 from typing import TYPE_CHECKING, Any, Tuple, get_args, get_origin
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
         SpellValidationContext,
     )
 
-@mypyc_attr(native_class=True)
+
 class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     """
     Validate DI annotation shapes for unsupported collection forms.

@@ -1,11 +1,11 @@
 from typing import Optional, Dict, Any, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class SpellValidationIssue(Cleanable):
     """
     Single validation issue (error or warning) produced by a strategy.

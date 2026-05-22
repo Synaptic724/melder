@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Optional, List, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.existence.existence import Existence
@@ -8,7 +8,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
-@mypyc_attr(native_class=True)
+
 class SpellSymbolicNode(Cleanable):
     """
     Placeholder representation of a symbolic node in a spell's dependency graph.
@@ -58,7 +58,7 @@ class SpellSymbolicNode(Cleanable):
         del self.node_id
         del self.kind
         del self.metadata
-@mypyc_attr(native_class=True)
+
 
 class SpellSymbolicEdge(Cleanable):
     """
@@ -104,7 +104,7 @@ class SpellSymbolicEdge(Cleanable):
         del self.to_node
         del self.via_parameter
 
-@mypyc_attr(native_class=True)
+
 class SpellSymbolicGraph(Cleanable):
     """
     Phase 2 artifact: local, symbolic dependency graph for a single spell.
@@ -168,7 +168,7 @@ class SpellSymbolicGraph(Cleanable):
         del self.edges
         del self.spell_id
 
-@mypyc_attr(native_class=True)
+
 class SpellResolutionFrame(Cleanable):
     """
     Phase 3 artifact: concrete, executable resolution DAG for a spell.
@@ -212,7 +212,7 @@ class SpellResolutionFrame(Cleanable):
         del self.ordered_node_ids
         del self.spell_id
 
-@mypyc_attr(native_class=True)
+
 class SpellValidationIssue(Cleanable):
     """
     One validation warning or error associated with a spell's resolution state.
@@ -256,7 +256,7 @@ class SpellValidationIssue(Cleanable):
         del self.code
         del self.message
 
-@mypyc_attr(native_class=True)
+
 class SpellValidationResult(Cleanable):
     """
     Phase 4 artifact: readiness / health summary for a spell's resolution
@@ -318,7 +318,7 @@ class SpellValidationResult(Cleanable):
         del self.errors
         del self.warnings
 
-@mypyc_attr(native_class=True)
+
 class SpellResolutionProfile(Cleanable):
     """
     Canonical, in-memory representation of **how to resolve** a single Spell.

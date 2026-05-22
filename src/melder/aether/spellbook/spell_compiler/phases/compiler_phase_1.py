@@ -9,7 +9,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
@@ -19,7 +19,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requ
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase1:
     """
     Compiler phase 1 surface.

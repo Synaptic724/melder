@@ -23,7 +23,7 @@ if TYPE_CHECKING:
         SocketRef,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -40,7 +40,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 OccurrenceKey = Tuple[str, int]
 InstanceKey = Tuple[str, Optional[int]]
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True, slots=True)
 class OccurrencePlanSelection:
     """
@@ -116,7 +116,7 @@ def select_occurrence_plan(
         contract_overrides_by_spell_id=plan.contract_overrides_by_spell_id,
     )
 
-@mypyc_attr(native_class=True)
+
 class OccurrencePlan(Cleanable):
     """
     Phase 8 occurrence-expansion artifact for one root blueprint.
@@ -412,7 +412,7 @@ class OccurrencePlan(Cleanable):
         self.check_cleaned()
         return self._path_registry
 
-@mypyc_attr(native_class=True)
+
 class OccurrencePlanBuilder(object):
     """
     Internal

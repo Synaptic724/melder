@@ -2,7 +2,7 @@ import threading
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Set, Dict, Type, ClassVar
 import ulid
-from mypy_extensions import mypyc_attr
+
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
     from melder.aether.aether import Aether
 
-@mypyc_attr(native_class=True)
+
 class AethericFrame(Cleanable):
     """
     Manage one isolated runtime frame within `Aether`.

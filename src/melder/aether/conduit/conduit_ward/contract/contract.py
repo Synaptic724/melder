@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict, ClassVar
 from threading import RLock
 from types import TracebackType
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.conduit.conduit_ward.contract.details import Detail
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class Contract(Cleanable):
     """
     Bidirectional contract between two conduit wards.

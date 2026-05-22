@@ -11,7 +11,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
@@ -23,7 +23,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec
 
-@mypyc_attr(native_class=True)
+
 class PathRegistry(Cleanable):
     """
     Internal
@@ -237,7 +237,7 @@ class PathRegistry(Cleanable):
         cloned._formatted_path_by_id = dict(self._formatted_path_by_id)
         return cloned
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True, slots=True)
 class SocketRef:
     """
@@ -278,7 +278,7 @@ class SocketRef:
         """Return the precomputed stable hash for this socket reference."""
         return self._hash
 
-@mypyc_attr(native_class=True)
+
 class DagIndex(Cleanable):
     """
     Internal
@@ -439,7 +439,7 @@ class DagIndex(Cleanable):
                 seen[socket] = None
                 yield socket
 
-@mypyc_attr(native_class=True)
+
 class DagTargetingEngine(Cleanable):
     """
     Internal
@@ -587,7 +587,7 @@ class DagTargetingEngine(Cleanable):
             )
         return matches
 
-@mypyc_attr(native_class=True)
+
 class DagIndexBuilder:
     """
     Internal

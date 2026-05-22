@@ -9,7 +9,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -30,7 +30,7 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph 
 )
 
 
-@mypyc_attr(native_class=True)
+
 class CompilerPhase2:
     """
     Compiler phase 2 surface.

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, ClassVar
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
 import ulid
-from mypy_extensions import mypyc_attr
+
 from types import TracebackType
 
 # Melder imports
@@ -12,7 +12,7 @@ from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-@mypyc_attr(native_class=True)
+
 class ConduitCloud(Cleanable):
     """
     Frame-scoped conduit and cluster service facade.

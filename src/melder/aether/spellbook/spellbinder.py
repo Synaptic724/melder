@@ -1,6 +1,6 @@
 import threading
 from typing import TYPE_CHECKING, Any, Optional, Callable, ClassVar
-from mypy_extensions import mypyc_attr
+
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -11,7 +11,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-@mypyc_attr(native_class=True)
+
 class SpellBinder(Cleanable):
     """
     Fluent registration helper for configuring one Spellbook bind operation at a time.

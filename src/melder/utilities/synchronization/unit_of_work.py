@@ -8,9 +8,9 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=True)
+
+
 class UnitOfWork(Cleanable, Future):
     """
     Future-based encapsulation of a single unit of work, with integrated

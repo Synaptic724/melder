@@ -9,12 +9,12 @@ if TYPE_CHECKING:
         SpellCompilerArtifact,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import (
     PatchMapBuilder,
 )
-@mypyc_attr(native_class=True)
+
 class CompilerPhase10:
     """
     Compiler phase 10 surface.

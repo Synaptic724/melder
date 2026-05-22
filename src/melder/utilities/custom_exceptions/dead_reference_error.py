@@ -1,6 +1,6 @@
-from mypy_extensions import mypyc_attr
 
-@mypyc_attr(native_class=False)
+
+
 class DeadReferenceError(ReferenceError):
     """
     Raised when code tries to use a weak-reference target that no longer exists.

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         CancellationEvent,
     )
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
@@ -24,7 +24,7 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class SpellValidationContext(Cleanable):
     """
     Per-spell context passed to each validation strategy.

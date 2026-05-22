@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Optional, Sequence, List, Iterable, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 
 # Melder imports
 from melder.aether.spellbook.existence.existence import Existence
@@ -12,7 +12,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-@mypyc_attr(native_class=True)
+
 class SpellRequirements(Cleanable):
     """
     Phase 1 **per-spell requirements artifact**.

@@ -12,7 +12,7 @@ from typing import (
     ClassVar,
 )
 
-from mypy_extensions import mypyc_attr
+
 
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
         SpellLocalTopology,
     )
-@mypyc_attr(native_class=True)
+
 class SpellSystemRootBlueprintBuilder:
     """
     Phase-5 structural builder.

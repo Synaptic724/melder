@@ -1,5 +1,5 @@
 from typing import Dict, Mapping, Tuple, ClassVar
-from mypy_extensions import mypyc_attr
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
@@ -41,7 +41,7 @@ def _expand_spell_type_matrix(
         }
     return matrix
 
-@mypyc_attr(native_class=True)
+
 class ResolutionStyleMatrix:
     """
     Canonical resolution-style support matrix for Melder.

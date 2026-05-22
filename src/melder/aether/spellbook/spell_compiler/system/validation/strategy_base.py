@@ -1,6 +1,6 @@
 ﻿from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, Mapping, Optional, List, Set, ClassVar
-from mypy_extensions import mypyc_attr
+
 #Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
 
 
-@mypyc_attr(native_class=True)
+
 class SpellSystemValidationStrategy(ABC):
     """
     Contract for one Phase 6 system-validation strategy.

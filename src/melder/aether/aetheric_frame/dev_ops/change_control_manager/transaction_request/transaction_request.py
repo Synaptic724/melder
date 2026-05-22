@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple, ClassVar
 
-from mypy_extensions import mypyc_attr
+
 # Melder imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -36,7 +36,7 @@ class ChangeTransactionType(str, Enum):
     MUTATION = "mutation"
     CLUSTER_LINK = "cluster_link"
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True)
 class ChangeControlTransactionRequest:
     """
@@ -98,7 +98,7 @@ class ChangeControlTransactionRequest:
     contract_keys: Tuple[Tuple[str, str, str], ...] = ()
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-@mypyc_attr(native_class=True)
+
 @dataclass(frozen=True)
 class ChangeControlAdmissionResult:
     """
