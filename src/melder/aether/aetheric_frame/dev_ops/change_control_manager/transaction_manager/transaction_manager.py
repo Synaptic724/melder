@@ -258,6 +258,45 @@ class ChangeControlTransactionManager(Cleanable):
             raise ValueError("spellbook_id cannot be empty")
         return f"scope:spellbook:{spellbook_id}"
 
+    def make_scope_key_transaction_owner(
+            self,
+            *,
+            owner_kind: str,
+            owner_id: str,
+            transaction_name: str,
+    ) -> str:
+        """
+        Build one normalized transaction-owner scope key.
+
+        Purpose:
+            Provide a strategy-side scope helper for transaction families that
+            need to embargo or conflict on a specific owner + transaction kind
+            pair rather than only on the broad spellbook/conduit scope.
+
+        Args:
+            owner_kind:
+                Owner kind label such as `spellbook` or `conduit`.
+            owner_id:
+                Stable owner identifier.
+            transaction_name:
+                Lower-level transaction name tied to the embargoed action.
+
+        Returns:
+            str:
+                Scope key in the form
+                `"scope:transaction:<owner_kind>:<owner_id>:<transaction_name>"`.
+        """
+        self.check_cleaned()
+        if not owner_kind:
+            raise ValueError("owner_kind cannot be empty")
+        if not owner_id:
+            raise ValueError("owner_id cannot be empty")
+        if not transaction_name:
+            raise ValueError("transaction_name cannot be empty")
+        return (
+            f"scope:transaction:{owner_kind}:{owner_id}:{transaction_name}"
+        )
+
     def make_scope_key_conduit(self, conduit_id: str) -> str:
         """
         Build a normalized conduit scope key.

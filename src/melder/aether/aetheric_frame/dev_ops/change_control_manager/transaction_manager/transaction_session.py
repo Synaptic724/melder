@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
         ChangeControlStagedMutation,
     )
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_identity import (
-        TransactionIdentity,
+    from melder.aether.aetheric_frame.dev_ops.devops_identity import (
+        DevopsIdentity,
     )
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
         ChangeControlTransactionRequest,
@@ -86,7 +86,7 @@ class TransactionSession(Cleanable):
             *,
             request: "ChangeControlTransactionRequest",
             staged: "ChangeControlStagedMutation",
-            submitter_identity: Optional["TransactionIdentity"] = None,
+            submitter_identity: Optional["DevopsIdentity"] = None,
             owner_thread_id: int,
             capabilities: Optional[Iterable[str]] = None,
     ) -> None:
@@ -120,7 +120,7 @@ class TransactionSession(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._request: ChangeControlTransactionRequest = request
         self._staged: ChangeControlStagedMutation = staged
-        self._submitter_identity: Optional[TransactionIdentity] = submitter_identity
+        self._submitter_identity: Optional[DevopsIdentity] = submitter_identity
         self._owner_thread_id: int = owner_thread_id
         self._capabilities: Set[str] = set(capabilities or ())
         self._depth: int = 1
@@ -193,7 +193,7 @@ class TransactionSession(Cleanable):
         return self._owner_thread_id
 
     @property
-    def submitter_identity(self) -> Optional["TransactionIdentity"]:
+    def submitter_identity(self) -> Optional["DevopsIdentity"]:
         """
         Return the identity surface that originated this root session.
         """

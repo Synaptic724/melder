@@ -1,6 +1,7 @@
 import threading
 import time
 import warnings
+import sys
 from enum import Enum
 from typing import (
     Iterable,
@@ -17,14 +18,20 @@ from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
 )
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_identity import (
-    TransactionIdentity,
+from melder.aether.aetheric_frame.dev_ops.devops_identity import (
+    DevopsIdentity,
 )
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_session import (
     TransactionSession,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder import (
+    TransactionStrategyBuilder,
 )
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
@@ -45,8 +52,8 @@ if TYPE_CHECKING:
     )
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
         ChangeControlTransactionRequest,
+        ChangeTransactionType,
     )
-
 
 class TransactionMediator(Cleanable):
     """
@@ -83,11 +90,13 @@ class TransactionMediator(Cleanable):
         "_conflict_manager",
         "_embargo_manager",
         "_orchestrator",
+        "_devops_information_registry",
         "_change_control_mode",
         "_allow_multiple_root_transactions",
         "_queue_competing_root_transactions",
         "_max_transaction_wait_time_in_seconds",
         "_admit_request",
+        "_strategy_builder",
         "_sessions_by_request_id",
         "_pending_root_starts",
         "_thread_local",
@@ -100,6 +109,7 @@ class TransactionMediator(Cleanable):
             conflict_manager: "ChangeControlConflictManager",
             embargo_manager: "ChangeControlEmbargoManager",
             orchestrator: "ChangeControlOrchestrator",
+            devops_information_registry: Optional[DevopsInformationRegistry],
             change_control_mode: str = "strict",
             allow_multiple_root_transactions: bool = False,
             queue_competing_root_transactions: bool = False,
@@ -167,6 +177,9 @@ class TransactionMediator(Cleanable):
         self._conflict_manager: ChangeControlConflictManager = conflict_manager
         self._embargo_manager: ChangeControlEmbargoManager = embargo_manager
         self._orchestrator: ChangeControlOrchestrator = orchestrator
+        self._devops_information_registry: Optional[DevopsInformationRegistry] = (
+            devops_information_registry
+        )
         self._change_control_mode: str = self._normalize_mode(
             change_control_mode
         )
@@ -180,6 +193,9 @@ class TransactionMediator(Cleanable):
             max_transaction_wait_time_in_seconds
         )
         self._admit_request = admit_request_fn
+        self._strategy_builder: TransactionStrategyBuilder = (
+            TransactionStrategyBuilder(transaction_manager)
+        )
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
         self._pending_root_starts: List[int] = []
         self._thread_local: threading.local = threading.local()
@@ -218,6 +234,7 @@ class TransactionMediator(Cleanable):
             del self._queue_competing_root_transactions
             del self._max_transaction_wait_time_in_seconds
             del self._admit_request
+            del self._strategy_builder
             del self._thread_local
             del self._wait_condition
         del self._lock
@@ -339,15 +356,17 @@ class TransactionMediator(Cleanable):
                 capabilities=capabilities,
             )
             self._sessions_by_request_id[request.request_id] = session
+            self._register_transaction_session_locked(session)
         self._get_stack().append(request.request_id)
         return session
 
     def begin_transaction(
             self,
             *,
-            identity: TransactionIdentity,
+            identity: DevopsIdentity,
             transaction_type: Any,
             existing_request_id: Optional[str] = None,
+            initiator_conduit_id: Optional[str] = None,
             spellbook_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
             scope_keys: Optional[Iterable[str]] = None,
@@ -379,6 +398,10 @@ class TransactionMediator(Cleanable):
                 Requested transaction kind (enum or string).
             existing_request_id:
                 Existing root request id to join for same-owner recursion.
+            initiator_conduit_id:
+                Optional explicit initiator id used when the submitter
+                identity is not itself the conduit id that should appear on the
+                request payload.
             spellbook_id:
                 Optional spellbook id associated with the request.
             conduit_ids:
@@ -408,7 +431,7 @@ class TransactionMediator(Cleanable):
         transaction_name = self._normalize_transaction_name(transaction_type)
         if not identity.supports_transaction(transaction_name):
             raise RuntimeError(
-                f"TransactionIdentity does not declare support for '{transaction_name}'."
+                f"DevopsIdentity does not declare support for '{transaction_name}'."
             )
 
         current_thread_id = threading.get_ident()
@@ -446,7 +469,11 @@ class TransactionMediator(Cleanable):
             )
             request = self._transaction_manager.build_request(
                 request_type=transaction_type,
-                initiator_conduit_id=identity.owner_id,
+                initiator_conduit_id=(
+                    initiator_conduit_id
+                    if initiator_conduit_id is not None
+                    else identity.owner_id
+                ),
                 spellbook_id=spellbook_id,
                 conduit_ids=conduit_ids,
                 scope_keys=scope_keys,
@@ -499,8 +526,161 @@ class TransactionMediator(Cleanable):
                 capabilities=capabilities,
             )
             self._sessions_by_request_id[request.request_id] = session
+            self._register_transaction_session_locked(session)
         self._get_stack().append(request.request_id)
         return session
+
+    def get_session_for_identity(
+            self,
+            *,
+            identity: DevopsIdentity,
+            transaction_type: Any,
+    ) -> Optional[TransactionSession]:
+        """
+        Return the newest local session matching one identity and transaction kind.
+        """
+        self.check_cleaned()
+        if identity is None:
+            raise ValueError("identity must not be None.")
+        transaction_name = self._normalize_transaction_name(transaction_type)
+        stack = self._get_stack()
+        for request_id in reversed(stack):
+            session = self.get_session_by_request_id(request_id)
+            if session is None:
+                continue
+            submitter_identity = session.submitter_identity
+            if submitter_identity is None:
+                continue
+            if submitter_identity.owner_id != identity.owner_id:
+                continue
+            if submitter_identity.owner_kind != identity.owner_kind:
+                continue
+            session_transaction_name = self._normalize_transaction_name(
+                session.request.request_type,
+            )
+            if session_transaction_name != transaction_name:
+                continue
+            return session
+        return None
+
+    def update_transaction_for_identity(
+            self,
+            *,
+            identity: DevopsIdentity,
+            transaction_type: Any,
+            scope_keys: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> bool:
+        """
+        Update staged metadata for the active session matching one identity.
+
+        Purpose:
+            Give thin runtime callers a mediator-owned way to extend staged
+            metadata for an already-active transaction without reaching through
+            to `ChangeControlManager` directly.
+
+        Contract:
+            - Returns `False` when no matching session is active.
+            - Delegates staged metadata and embargo extension through the same
+              internal path used for same-thread join widening.
+            - Does not create or end sessions.
+
+        Args:
+            identity:
+                Submitter identity that owns the active transaction.
+            transaction_type:
+                Transaction kind whose active session should be updated.
+            scope_keys:
+                Optional additional normalized scope keys.
+            binding_keys:
+                Optional additional binding keys.
+            contract_keys:
+                Optional additional contract keys.
+            metadata:
+                Optional metadata merged into the staged request.
+
+        Returns:
+            bool:
+                `True` when an active matching session was found and updated,
+                otherwise `False`.
+        """
+        self.check_cleaned()
+        if identity is None:
+            raise ValueError("identity must not be None.")
+        session = self.get_session_for_identity(
+            identity=identity,
+            transaction_type=transaction_type,
+        )
+        if session is None:
+            return False
+        self._update_active_staged_metadata(
+            session=session,
+            scope_keys=scope_keys,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=metadata,
+        )
+        return True
+
+    def start_transaction(
+            self,
+            *,
+            identity: DevopsIdentity,
+            transaction_type: Any,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> TransactionSession:
+        """
+        Start one high-level transaction using mediator-owned resolution logic.
+
+        Purpose:
+            Provide the thin generic API callers should use. Resolver-specific
+            request shaping and bind lifecycle registration stay in the
+            mediator rather than in the caller.
+        """
+        self.check_cleaned()
+        transaction_name = self._normalize_transaction_name(transaction_type)
+        if transaction_name == "bind":
+            return self._start_bind_transaction(
+                identity=identity,
+                transaction_type=ChangeTransactionType.BIND,
+                metadata=dict(metadata) if metadata is not None else {},
+            )
+        raise NotImplementedError(
+            f"High-level mediator resolution is not implemented for '{transaction_name}'."
+        )
+
+    def end_transaction_for_identity(
+            self,
+            *,
+            identity: DevopsIdentity,
+            transaction_type: Any,
+    ) -> TransactionSession:
+        """
+        End one high-level transaction by identity and transaction kind.
+        """
+        self.check_cleaned()
+        session = self.get_session_for_identity(
+            identity=identity,
+            transaction_type=transaction_type,
+        )
+        if session is None:
+            raise RuntimeError("No active transaction session exists for this identity.")
+        transaction_name = self._normalize_transaction_name(transaction_type)
+        exc_type, _exc, _tb = sys.exc_info()
+        success = exc_type is None and session.status != TransactionSession.STATUS_ABORT_ONLY
+        try:
+            return self.end_transaction_by_request_id(
+                session.request.request_id,
+                expected_type=transaction_type,
+                success=success,
+            )
+        finally:
+            self._strategy_builder.on_end(
+                transaction_type=transaction_name,
+                metadata=dict(session.request.metadata),
+            )
 
     def get_session_by_request_id(
             self,
@@ -586,6 +766,7 @@ class TransactionMediator(Cleanable):
             self._finalize_root_session(session)
         finally:
             with self._lock:
+                self._unregister_transaction_session_locked(request_id)
                 self._sessions_by_request_id.pop(request_id, None)
                 self._wait_condition.notify_all()
         return session
@@ -620,6 +801,7 @@ class TransactionMediator(Cleanable):
             self._finalize_root_session(session)
         finally:
             with self._lock:
+                self._unregister_transaction_session_locked(request_id)
                 self._sessions_by_request_id.pop(request_id, None)
                 self._wait_condition.notify_all()
         return session
@@ -859,6 +1041,46 @@ class TransactionMediator(Cleanable):
             raise RuntimeError("Active transaction session could not be resolved.")
         return session
 
+    def _register_transaction_session_locked(
+            self,
+            session: TransactionSession,
+    ) -> None:
+        """
+        Register one live root session in the dev-ops information registry.
+
+        Caller contract:
+            The mediator lock must already be held.
+        """
+        registry = self._devops_information_registry
+        if registry is None:
+            return
+        identity_keys = set()
+        submitter_identity = session.submitter_identity
+        if submitter_identity is not None:
+            identity_keys.add(
+                (submitter_identity.owner_kind, submitter_identity.owner_id)
+            )
+        registry.register_transaction(
+            transaction_id=session.request.request_id,
+            transaction_object=session,
+            transaction_type=self._normalize_transaction_name(
+                session.request.request_type,
+            ),
+            identity_keys=identity_keys,
+        )
+
+    def _unregister_transaction_session_locked(self, request_id: str) -> None:
+        """
+        Remove one live root session from the dev-ops information registry.
+
+        Caller contract:
+            The mediator lock must already be held.
+        """
+        registry = self._devops_information_registry
+        if registry is None:
+            return
+        registry.unregister_transaction(request_id)
+
     @classmethod
     def _normalize_mode(cls, mode: str) -> str:
         """
@@ -896,3 +1118,62 @@ class TransactionMediator(Cleanable):
         if not normalized_value:
             raise ValueError("transaction_type must not be empty.")
         return normalized_value
+
+    def _start_bind_transaction(
+            self,
+            *,
+            identity: DevopsIdentity,
+            transaction_type: ChangeTransactionType,
+            metadata: Dict[str, object],
+    ) -> TransactionSession:
+        """
+        Resolve and start one bind transaction for the supplied Spellbook identity.
+        """
+        self.check_cleaned()
+        active = self.get_active_session()
+        if active is not None:
+            active.join(
+                thread_id=threading.get_ident(),
+                required_capabilities=None,
+            )
+            self._get_stack().append(active.request.request_id)
+            return active
+
+        bind_request = self._strategy_builder.build_start_plan(
+            transaction_type=transaction_type,
+            identity=identity,
+            metadata=metadata,
+        )
+        session = self.begin_transaction(
+            identity=identity,
+            transaction_type=transaction_type,
+            initiator_conduit_id=bind_request["initiator_conduit_id"],
+            spellbook_id=bind_request["spellbook_id"],
+            conduit_ids=bind_request["conduit_ids"],
+            scope_keys=bind_request["scope_keys"],
+            scope_hashes=bind_request["scope_hashes"],
+            binding_keys=bind_request["binding_keys"],
+            metadata=bind_request["metadata"],
+            capabilities=("bind",),
+            required_capabilities=("bind",),
+        )
+        try:
+            self._strategy_builder.on_start(
+                transaction_type=transaction_type,
+                metadata=dict(bind_request["metadata"]),
+            )
+            return session
+        except Exception:
+            session.mark_abort_only(
+                "Bind transaction start strategy failed.",
+            )
+            self.end_transaction_by_request_id(
+                session.request.request_id,
+                expected_type=transaction_type,
+                success=False,
+            )
+            self._strategy_builder.on_end(
+                transaction_type=transaction_type,
+                metadata=dict(bind_request["metadata"]),
+            )
+            raise
