@@ -2,6 +2,9 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanCallMode,
     ExecutionPlanTargetKind,
@@ -503,11 +506,20 @@ def _compile_emitted_no_overrides_executor(
     Contract:
         - Raises RuntimeError when source compilation/execution fails.
         - Raises RuntimeError when `_phase12_executor` is not callable.
+        - Resolves the code object through the process-wide executor code
+          cache: identity-free source that has been compiled before (this
+          conjure, an earlier conjure, or another Spellbook) reuses the cached
+          code object instead of recompiling. `exec` still runs per call
+          against the supplied per-spell `namespace`.
     """
     local_namespace: Dict[str, Any] = {}
     try:
+        code_object = get_or_compile_executor_code(
+            source=source,
+            source_name=source_name,
+        )
         exec(
-            compile(source, source_name, "exec"),
+            code_object,
             namespace,
             local_namespace,
         )

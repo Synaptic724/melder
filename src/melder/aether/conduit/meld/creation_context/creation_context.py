@@ -169,7 +169,6 @@ class CreationContext(Cleanable):
         "_override_empty_shape_key",
         "_override_specialization_cache",
         "_override_executor_source_cache_by_plan_signature",
-        "_override_executor_code_object_cache_by_plan_signature",
         "_override_prefilter_step_targets_cache",
         "_override_prefilter_path_metadata_cache",
         "_override_socket_shape_cache",
@@ -274,10 +273,6 @@ class CreationContext(Cleanable):
             Callable[..., Any],
         ] = {}
         self._override_executor_source_cache_by_plan_signature: Dict[Tuple[Any, ...], str] = {}
-        self._override_executor_code_object_cache_by_plan_signature: Dict[
-            Tuple[Any, ...],
-            Any,
-        ] = {}
         self._override_prefilter_step_targets_cache: Dict[
             Tuple[Any, ...],
             Tuple[Tuple[Any, ...], ...],
@@ -374,10 +369,6 @@ class CreationContext(Cleanable):
             self._override_executor_source_cache_by_plan_signature
         )
         override_executor_source_cache.clear()
-        override_executor_code_object_cache = (
-            self._override_executor_code_object_cache_by_plan_signature
-        )
-        override_executor_code_object_cache.clear()
         override_prefilter_step_targets_cache = self._override_prefilter_step_targets_cache
         override_prefilter_step_targets_cache.clear()
         override_prefilter_path_metadata_cache = self._override_prefilter_path_metadata_cache
@@ -421,7 +412,6 @@ class CreationContext(Cleanable):
         del self._override_empty_shape_key
         del self._override_specialization_cache
         del self._override_executor_source_cache_by_plan_signature
-        del self._override_executor_code_object_cache_by_plan_signature
         del self._override_prefilter_step_targets_cache
         del self._override_prefilter_path_metadata_cache
         del self._override_socket_shape_cache
@@ -1249,8 +1239,7 @@ class CreationContext(Cleanable):
             override_target_counts_by_step=override_target_counts_by_step,
             has_root_positional_override=has_root_positional_override,
         )
-        code_object = self._get_or_build_override_executor_code_object(
-            source_cache_key=shape_key,
+        code_object = compile_phase12_overrides_executor_code_object(
             source=source,
         )
         return _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache(
@@ -1303,32 +1292,3 @@ class CreationContext(Cleanable):
         )
         override_executor_source_cache[source_cache_key] = emitted_source
         return emitted_source
-
-    def _get_or_build_override_executor_code_object(
-            self,
-            *,
-            source_cache_key: Tuple[Any, ...],
-            source: str,
-    ) -> Any:
-        """
-        Return the compiled code object for one specialization shape.
-
-        This is the second stage of specialization caching: emitted source is
-        compiled once per shape key, then reused by later executor builds that
-        need to bind fresh runtime namespaces against the same program body.
-        """
-        override_executor_code_object_cache = (
-            self._override_executor_code_object_cache_by_plan_signature
-        )
-        cached_code_object = override_executor_code_object_cache.get(
-            source_cache_key,
-        )
-        if cached_code_object is not None:
-            return cached_code_object
-        compiled_code_object = compile_phase12_overrides_executor_code_object(
-            source=source,
-        )
-        override_executor_code_object_cache[source_cache_key] = (
-            compiled_code_object
-        )
-        return compiled_code_object

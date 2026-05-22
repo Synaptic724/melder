@@ -10,6 +10,9 @@ from melder.aether.spellbook.spell_compiler.blueprints.phase12_no_overrides_exec
     _get_existing_creation,
     _register_spell_instance_prebound,
 )
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 _MISSING = object()
@@ -127,14 +130,16 @@ def compile_phase12_overrides_executor_code_object(
         - Source must be a non-empty string.
         - Returned code object is safe to execute against different namespaces.
         - Uses the same synthetic filename as direct override compilation.
+        - Resolves the code object through the process-wide executor code
+          cache, so identity-free override source compiled before (this
+          conjure/meld, an earlier one, or another Spellbook) is reused.
     """
     if not isinstance(source, str) or not source:
         raise ValueError("source must be a non-empty string.")
     try:
-        return compile(
-            source,
-            "<melder_phase12_overrides_executor>",
-            "exec",
+        return get_or_compile_executor_code(
+            source=source,
+            source_name="<melder_phase12_overrides_executor>",
         )
     except Exception as exc:
         raise RuntimeError(
