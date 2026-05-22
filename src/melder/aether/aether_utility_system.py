@@ -46,8 +46,6 @@ class AetherUtilitySystem(Cleanable):
         "_channel_logger_resolver",
         "_default_logger",
     ]
-    _cleaned: bool
-
     def __new__(
             cls,
             *args: object,

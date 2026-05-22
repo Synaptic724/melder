@@ -238,6 +238,44 @@ def test_name_setter_rejects_second_assignment(conduit_normal: Conduit) -> None:
         conduit_normal.name = "second"
 
 
+def test_get_conduit_cloud_returns_aetheric_frame_cloud(conduit_normal: Conduit) -> None:
+    """
+    Verify get_conduit_cloud returns the conduit frame’s ConduitCloud.
+
+    Contract:
+        - The method returns the same object owned by the owning frame.
+
+    Args:
+        conduit_normal (Conduit): Normal conduit instance.
+
+    Raises:
+        AssertionError: If the returned cloud is not the frame cloud.
+    """
+    expected_cloud = conduit_normal._aetheric_frame._conduit_cloud
+    assert conduit_normal.get_conduit_cloud() is expected_cloud
+
+
+def test_get_conduit_cloud_raises_after_cleanup(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify get_conduit_cloud is blocked once the conduit is cleaned.
+
+    Contract:
+        - cleanup marks the Conduit as cleaned.
+        - Accessor calls that include `check_cleaned()` raise.
+
+    Args:
+        conduit_normal (Conduit): Normal conduit instance.
+
+    Raises:
+        RuntimeError: When accessing the conduit cloud after cleanup.
+    """
+    conduit_normal.cleanup()
+    with pytest.raises(RuntimeError):
+        conduit_normal.get_conduit_cloud()
+
+
 def test_get_active_spellspace_returns_none_when_empty(conduit_lesser: Conduit) -> None:
     """
     Verify get_active_spellspace returns None with an empty stack.

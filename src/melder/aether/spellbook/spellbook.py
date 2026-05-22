@@ -209,7 +209,7 @@ and logging.
         self._initialize_logging(logger)
 
         # Core spell storage (SpellIndex Maps)
-        self._spells: Dict[SpellIndex, Spell] = {}
+        self._spells: Dict[SpellIndex, Spell] = {} # Active Spells not all spell indexed spells
         self._spell_versions: Set[str] = set()
         self._lookup_spells: Dict[tuple, SpellIndex]  = {}
         self._spells_by_id: Dict[str, Spell] = {}
@@ -217,7 +217,7 @@ and logging.
 
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}
+        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}  # Active Contracted Spells not all spell indexed spells
         self._contracted_versions: Dict[str, Set[str]] = {}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}

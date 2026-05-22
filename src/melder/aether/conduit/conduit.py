@@ -21,6 +21,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 if TYPE_CHECKING:
     from melder.nexus.nexus import Nexus
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spellbook import Spellbook
@@ -980,6 +981,22 @@ class Conduit(Cleanable):
             self._logger.error("Attempt to rename conduit after name set", "name")
             raise RuntimeError("Conduit name is set.")
         self._name = name
+
+    def get_conduit_cloud(self) -> "ConduitCloud":
+        """
+        Public API
+
+        Return the frame-owned conduit cloud tied to this conduit.
+
+        Returns:
+            ConduitCloud: The `ConduitCloud` managed by this conduit’s
+              `AethericFrame`.
+
+        Raises:
+            RuntimeError: If the conduit is cleaned.
+        """
+        self.check_cleaned()
+        return self._aetheric_frame._conduit_cloud
 
     #endregion
 

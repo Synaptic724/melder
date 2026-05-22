@@ -73,7 +73,7 @@ class SpellIndex(Cleanable):
         self._versions: set = {initial_id}  # Optional: Track all versions seen.
         self._owner_spellbook: Optional[Spellbook] = None
         self._owner_spell: Optional[Spell] = None
-        self._owner_conduit_id: Optional[str] = None
+        self._owner_conduit_id: Optional[str] = None #Owner root conduit
         self._contracted_spellbooks: Dict[Tuple[Spellbook, str], Spell] = {}
 
     # ------------------------------------------------------------
