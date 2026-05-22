@@ -1,21 +1,33 @@
 import threading
 import time
 import warnings
+from enum import Enum
 from typing import (
     Iterable,
     Optional,
     Dict,
     List,
+    Callable,
     TYPE_CHECKING,
     ClassVar,
+    Any,
 )
 
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
+    ChangeControlConflictManager,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_identity import (
+    TransactionIdentity,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_session import (
     TransactionSession,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeControlAdmissionResult,
 )
 
 if TYPE_CHECKING:
@@ -68,12 +80,14 @@ class TransactionMediator(Cleanable):
         "_lock",
         "_wait_condition",
         "_transaction_manager",
+        "_conflict_manager",
         "_embargo_manager",
         "_orchestrator",
         "_change_control_mode",
         "_allow_multiple_root_transactions",
         "_queue_competing_root_transactions",
         "_max_transaction_wait_time_in_seconds",
+        "_admit_request",
         "_sessions_by_request_id",
         "_pending_root_starts",
         "_thread_local",
@@ -83,12 +97,14 @@ class TransactionMediator(Cleanable):
             self,
             *,
             transaction_manager: "ChangeControlTransactionManager",
+            conflict_manager: "ChangeControlConflictManager",
             embargo_manager: "ChangeControlEmbargoManager",
             orchestrator: "ChangeControlOrchestrator",
             change_control_mode: str = "strict",
             allow_multiple_root_transactions: bool = False,
             queue_competing_root_transactions: bool = False,
             max_transaction_wait_time_in_seconds: float = 30.0,
+            admit_request_fn: Optional[Callable[["ChangeControlTransactionRequest"], ChangeControlAdmissionResult]] = None,
     ) -> None:
         """
         Initialize the live transaction mediator.
@@ -96,6 +112,8 @@ class TransactionMediator(Cleanable):
         Args:
             transaction_manager:
                 In-flight request registry helper.
+            conflict_manager:
+                Conflict helper used during admission.
             embargo_manager:
                 Embargo helper used by orchestrator commit/abort paths.
             orchestrator:
@@ -108,6 +126,11 @@ class TransactionMediator(Cleanable):
                 Whether competing root starts should wait in FIFO order.
             max_transaction_wait_time_in_seconds:
                 Maximum seconds a competing root start may wait for the slot.
+            admit_request_fn:
+                Optional frame-owned admission facade. When supplied, root
+                transaction admission goes through that facade instead of
+                calling the orchestrator directly so manager-level policy like
+                change-control disablement still applies.
 
         Raises:
             ValueError: If required collaborators are missing or mode is invalid.
@@ -116,6 +139,8 @@ class TransactionMediator(Cleanable):
         super().__init__()
         if transaction_manager is None:
             raise ValueError("transaction_manager must not be None.")
+        if conflict_manager is None:
+            raise ValueError("conflict_manager must not be None.")
         if embargo_manager is None:
             raise ValueError("embargo_manager must not be None.")
         if orchestrator is None:
@@ -139,6 +164,7 @@ class TransactionMediator(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._wait_condition: threading.Condition = threading.Condition(self._lock)
         self._transaction_manager: ChangeControlTransactionManager = transaction_manager
+        self._conflict_manager: ChangeControlConflictManager = conflict_manager
         self._embargo_manager: ChangeControlEmbargoManager = embargo_manager
         self._orchestrator: ChangeControlOrchestrator = orchestrator
         self._change_control_mode: str = self._normalize_mode(
@@ -153,6 +179,7 @@ class TransactionMediator(Cleanable):
         self._max_transaction_wait_time_in_seconds: float = float(
             max_transaction_wait_time_in_seconds
         )
+        self._admit_request = admit_request_fn
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
         self._pending_root_starts: List[int] = []
         self._thread_local: threading.local = threading.local()
@@ -183,12 +210,14 @@ class TransactionMediator(Cleanable):
             del self._sessions_by_request_id
             del self._pending_root_starts
             del self._transaction_manager
+            del self._conflict_manager
             del self._embargo_manager
             del self._orchestrator
             del self._change_control_mode
             del self._allow_multiple_root_transactions
             del self._queue_competing_root_transactions
             del self._max_transaction_wait_time_in_seconds
+            del self._admit_request
             del self._thread_local
             del self._wait_condition
         del self._lock
@@ -305,11 +334,260 @@ class TransactionMediator(Cleanable):
             session = TransactionSession(
                 request=request,
                 staged=staged,
+                submitter_identity=None,
                 owner_thread_id=current_thread_id,
                 capabilities=capabilities,
             )
             self._sessions_by_request_id[request.request_id] = session
         self._get_stack().append(request.request_id)
+        return session
+
+    def begin_transaction(
+            self,
+            *,
+            identity: TransactionIdentity,
+            transaction_type: Any,
+            existing_request_id: Optional[str] = None,
+            spellbook_id: Optional[str] = None,
+            conduit_ids: Optional[Iterable[str]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
+            scope_hashes: Optional[Iterable[str]] = None,
+            binding_keys: Optional[Iterable[tuple[str, str]]] = None,
+            contract_keys: Optional[Iterable[tuple[str, str, str]]] = None,
+            metadata: Optional[Dict[str, object]] = None,
+            capabilities: Optional[Iterable[str]] = None,
+            required_capabilities: Optional[Iterable[str]] = None,
+    ) -> TransactionSession:
+        """
+        Route one transaction start through root-session creation or same-thread join.
+
+        Purpose:
+            Provide the first live transaction ingress surface that callers can
+            use without manually building and admitting requests outside the
+            mediator. This method handles:
+            - identity validation
+            - same-thread nested joins for one already-active local request
+            - queued waiting for competing root starts
+            - request building
+            - orchestrator admission
+            - root session creation
+
+        Args:
+            identity:
+                Submitter identity entering the frame mutation domain.
+            transaction_type:
+                Requested transaction kind (enum or string).
+            existing_request_id:
+                Existing root request id to join for same-owner recursion.
+            spellbook_id:
+                Optional spellbook id associated with the request.
+            conduit_ids:
+                Optional participating conduits.
+            scope_keys:
+                Optional normalized scope keys.
+            scope_hashes:
+                Optional normalized scope hashes.
+            binding_keys:
+                Optional binding keys.
+            contract_keys:
+                Optional contract keys.
+            metadata:
+                Optional structured metadata.
+            capabilities:
+                Granted capabilities for a new root session.
+            required_capabilities:
+                Capability requirements for nested same-thread joins.
+
+        Returns:
+            TransactionSession: The active root session for this frame.
+        """
+        self.check_cleaned()
+        if identity is None:
+            raise ValueError("identity must not be None.")
+
+        transaction_name = self._normalize_transaction_name(transaction_type)
+        if not identity.supports_transaction(transaction_name):
+            raise RuntimeError(
+                f"TransactionIdentity does not declare support for '{transaction_name}'."
+            )
+
+        current_thread_id = threading.get_ident()
+        normalized_metadata: Dict[str, object] = {}
+        if metadata is not None:
+            normalized_metadata.update(metadata)
+        normalized_metadata.setdefault("transaction_identity", identity.describe())
+
+        if existing_request_id is not None:
+            active = self._get_session_or_raise(existing_request_id)
+            join_requirements = required_capabilities
+            if join_requirements is None:
+                join_requirements = capabilities
+            # Same-thread recursion is explicit. Callers must pass the current
+            # local request id when they intend to keep working inside the same
+            # root transaction instead of starting a parallel root.
+            active.join(
+                thread_id=current_thread_id,
+                required_capabilities=join_requirements,
+            )
+            self._get_stack().append(active.request.request_id)
+            self._update_active_staged_metadata(
+                session=active,
+                scope_keys=scope_keys,
+                binding_keys=binding_keys,
+                contract_keys=contract_keys,
+                metadata=normalized_metadata,
+            )
+            return active
+
+        with self._lock:
+            self._wait_for_turn_locked(
+                current_thread_id,
+                allow_same_thread_parallel=True,
+            )
+            request = self._transaction_manager.build_request(
+                request_type=transaction_type,
+                initiator_conduit_id=identity.owner_id,
+                spellbook_id=spellbook_id,
+                conduit_ids=conduit_ids,
+                scope_keys=scope_keys,
+                scope_hashes=scope_hashes,
+                binding_keys=binding_keys,
+                contract_keys=contract_keys,
+                metadata=normalized_metadata,
+            )
+            if self._admit_request is not None:
+                admission = self._admit_request(request)
+            else:
+                admission = self._orchestrator.admit_request(
+                    request,
+                    transaction_manager=self._transaction_manager,
+                    conflict_manager=self._conflict_manager,
+                    embargo_manager=self._embargo_manager,
+                )
+            if not admission.admitted:
+                details: list[str] = []
+                if admission.conflicts:
+                    details.append(f"conflicts={admission.conflicts}")
+                if admission.embargoes:
+                    details.append(f"embargoes={admission.embargoes}")
+                detail_msg = "; ".join(details) if details else "no conflict metadata available"
+                raise RuntimeError(
+                    "[TRANSACTION_MEDIATOR] Change-control admission denied "
+                    f"(reasons={admission.reasons}). {detail_msg}"
+                )
+            staged = self._orchestrator.get_staged(request.request_id)
+            if staged is None:
+                from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+                    ChangeControlStagedMutation,
+                )
+                staged = ChangeControlStagedMutation.from_request(
+                    request_id=request.request_id,
+                    request_type=request.request_type,
+                    initiator_conduit_id=request.initiator_conduit_id,
+                    spellbook_id=request.spellbook_id,
+                    conduit_ids=request.conduit_ids,
+                    scope_keys=request.scope_keys,
+                    binding_keys=request.binding_keys,
+                    contract_keys=request.contract_keys,
+                    metadata=request.metadata,
+                )
+            session = TransactionSession(
+                request=request,
+                staged=staged,
+                submitter_identity=identity,
+                owner_thread_id=current_thread_id,
+                capabilities=capabilities,
+            )
+            self._sessions_by_request_id[request.request_id] = session
+        self._get_stack().append(request.request_id)
+        return session
+
+    def get_session_by_request_id(
+            self,
+            request_id: str,
+    ) -> Optional[TransactionSession]:
+        """
+        Return one live session by request id, if present.
+        """
+        self.check_cleaned()
+        if not isinstance(request_id, str):
+            raise TypeError("request_id must be a string.")
+        if not request_id.strip():
+            raise ValueError("request_id must not be empty.")
+        with self._lock:
+            return self._sessions_by_request_id.get(request_id)
+
+    def end_transaction(
+            self,
+            *,
+            expected_type: Optional[Any] = None,
+            success: bool = True,
+    ) -> TransactionSession:
+        """
+        End the active transaction frame for the current thread.
+
+        Args:
+            expected_type:
+                Optional transaction kind assertion for the active root request.
+            success:
+                Whether the current frame exited successfully.
+
+        Returns:
+            TransactionSession: The session whose frame was ended.
+        """
+        self.check_cleaned()
+        session = self.get_active_session()
+        if session is None:
+            raise RuntimeError("No active transaction session exists on this thread.")
+        if expected_type is not None:
+            expected_name = self._normalize_transaction_name(expected_type)
+            active_name = self._normalize_transaction_name(
+                session.request.request_type
+            )
+            if active_name != expected_name:
+                raise RuntimeError(
+                    "Active transaction session does not match the requested type."
+                )
+        return self.end_frame(success=success)
+
+    def end_transaction_by_request_id(
+            self,
+            request_id: str,
+            *,
+            expected_type: Optional[Any] = None,
+            success: bool = True,
+    ) -> TransactionSession:
+        """
+        End one specific active transaction frame identified by request id.
+        """
+        self.check_cleaned()
+        session = self._get_session_or_raise(request_id)
+        current_thread_id = threading.get_ident()
+        if session.owner_thread_id != current_thread_id:
+            raise RuntimeError(
+                "Only the owner thread may end an active transaction session."
+            )
+        if expected_type is not None:
+            expected_name = self._normalize_transaction_name(expected_type)
+            active_name = self._normalize_transaction_name(
+                session.request.request_type
+            )
+            if active_name != expected_name:
+                raise RuntimeError(
+                    "Active transaction session does not match the requested type."
+                )
+        self._remove_request_id_from_stack(request_id)
+        if not success:
+            session.mark_abort_only("Nested transaction frame exited with failure.")
+        remaining_depth = session.leave()
+        if remaining_depth > 0:
+            return session
+        try:
+            self._finalize_root_session(session)
+        finally:
+            with self._lock:
+                self._sessions_by_request_id.pop(request_id, None)
+                self._wait_condition.notify_all()
         return session
 
     def end_frame(self, *, success: bool = True) -> TransactionSession:
@@ -372,6 +650,16 @@ class TransactionMediator(Cleanable):
         request_id = stack[-1]
         with self._lock:
             return self._sessions_by_request_id.get(request_id)
+
+    def get_active_request(self) -> Optional["ChangeControlTransactionRequest"]:
+        """
+        Return the active root request for the current thread, if any.
+        """
+        self.check_cleaned()
+        session = self.get_active_session()
+        if session is None:
+            return None
+        return session.request
 
     def has_active_session(self) -> bool:
         """
@@ -440,13 +728,19 @@ class TransactionMediator(Cleanable):
         """
         Return the thread-local request-id stack for the current thread.
         """
-        stack = getattr(self._thread_local, "request_stack", None)
-        if stack is None:
+        try:
+            stack = self._thread_local.request_stack
+        except AttributeError:
             stack = []
             self._thread_local.request_stack = stack
         return stack
 
-    def _wait_for_turn_locked(self, thread_id: int) -> None:
+    def _wait_for_turn_locked(
+            self,
+            thread_id: int,
+            *,
+            allow_same_thread_parallel: bool = False,
+    ) -> None:
         """
         Wait in FIFO order for a root-session slot when queueing is enabled.
 
@@ -459,6 +753,17 @@ class TransactionMediator(Cleanable):
         """
         if self._allow_multiple_root_transactions or not self._sessions_by_request_id:
             return
+        if allow_same_thread_parallel:
+            # Distinct local roots on the same thread should still be allowed
+            # to reach normal admission/conflict handling. The block/wait
+            # policy only applies when another thread currently owns the frame
+            # mutation domain.
+            owner_thread_ids = {
+                session.owner_thread_id
+                for session in self._sessions_by_request_id.values()
+            }
+            if owner_thread_ids == {thread_id}:
+                return
         if not self._queue_competing_root_transactions:
             if self._change_control_mode == "strict":
                 raise RuntimeError(
@@ -495,6 +800,55 @@ class TransactionMediator(Cleanable):
             self._wait_condition.notify_all()
             raise
 
+    def _remove_request_id_from_stack(self, request_id: str) -> None:
+        """
+        Remove the most recent occurrence of one request id from the thread stack.
+        """
+        stack = self._get_stack()
+        for index in range(len(stack) - 1, -1, -1):
+            if stack[index] == request_id:
+                del stack[index]
+                return
+        raise RuntimeError(
+            "Active transaction request id is not present on this thread stack."
+        )
+
+    def _update_active_staged_metadata(
+            self,
+            *,
+            session: TransactionSession,
+            scope_keys: Optional[Iterable[str]],
+            binding_keys: Optional[Iterable[tuple[str, str]]],
+            contract_keys: Optional[Iterable[tuple[str, str, str]]],
+            metadata: Optional[Dict[str, object]],
+    ) -> None:
+        """
+        Extend staged metadata for the current root request after a same-thread join.
+        """
+        request_id = session.request.request_id
+        normalized_scope_keys = tuple(scope_keys) if scope_keys is not None else None
+        normalized_binding_keys = tuple(binding_keys) if binding_keys is not None else None
+        normalized_contract_keys = tuple(contract_keys) if contract_keys is not None else None
+        updated = self._orchestrator.update_staged(
+            request_id,
+            scope_keys=normalized_scope_keys,
+            binding_keys=normalized_binding_keys,
+            contract_keys=normalized_contract_keys,
+            metadata=metadata,
+        )
+        if not updated:
+            return
+        staged = self._orchestrator.get_staged(request_id)
+        if staged is None:
+            return
+        scope_key_values = self._embargo_manager.collect_scope_keys_from_staged(staged)
+        if scope_key_values:
+            self._embargo_manager.extend_embargoes(
+                owner_request_id=request_id,
+                scope_keys=scope_key_values,
+                reason_tag=staged.request_type.value,
+            )
+
     def _get_session_or_raise(self, request_id: str) -> TransactionSession:
         """
         Resolve one session by request id or raise if missing.
@@ -519,3 +873,26 @@ class TransactionMediator(Cleanable):
                 f"{sorted(cls.AVAILABLE_MODES)}."
             )
         return normalized_mode
+
+    @staticmethod
+    def _normalize_transaction_name(transaction_type: Any) -> str:
+        """
+        Normalize one transaction type value into a lowercase string name.
+        """
+        value = transaction_type
+        if not isinstance(transaction_type, str):
+            if isinstance(transaction_type, Enum):
+                value = transaction_type.value
+            else:
+                try:
+                    value = transaction_type.value
+                except AttributeError as exc:
+                    raise TypeError(
+                        "transaction_type must be a string-like value."
+                    ) from exc
+        if not isinstance(value, str):
+            raise TypeError("transaction_type must be a string-like value.")
+        normalized_value = value.strip().lower()
+        if not normalized_value:
+            raise ValueError("transaction_type must not be empty.")
+        return normalized_value

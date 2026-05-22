@@ -423,7 +423,7 @@ class SpellbookCreationSystem(Cleanable):
         """
         spellbook._conjured = True
         spellbook._conduit = conduit
-        spellbook._binding_transaction_active = False
+        spellbook._transaction_identity.update_metadata(conjured=True)
         spellbook._pending_binding_frame_keys.clear()
 
         SpellbookCreationSystem.fire_conjure_hooks(
