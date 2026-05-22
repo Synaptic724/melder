@@ -2,6 +2,9 @@ import threading
 from typing import Dict, List, Optional, Any, Iterable, TYPE_CHECKING, ClassVar
 
 # Melder imports
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import (
@@ -38,21 +41,32 @@ class IncidentManager(Cleanable):
         "_lock",
         "_incidents_by_id",
         "_next_numeric_id",
+        "_devops_information_registry",
     ]
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            devops_information_registry: DevopsInformationRegistry,
+    ) -> None:
         """
         Initialize the incident registry.
 
         Contract:
         - Starts with an empty `incident_id -> Incident` map.
         - Numeric incident ids begin at `inc-1` for a fresh manager lifetime.
+        - Borrows the frame-owned dev-ops information registry for future
+          reporting/enrichment consumers.
         """
         super().__init__()
+        if devops_information_registry is None:
+            raise ValueError("devops_information_registry cannot be None")
         self._lock: threading.RLock = threading.RLock()
         # incident_id -> Incident
         self._incidents_by_id: Dict[str, Incident] = {}
         self._next_numeric_id: int = 1
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
 
     def cleanup(self) -> None:
         """
@@ -80,8 +94,22 @@ class IncidentManager(Cleanable):
                 self._incidents_by_id.clear()
                 del self._incidents_by_id
             self._next_numeric_id = 0
+            del self._devops_information_registry
 
         del self._lock
+
+    @property
+    def devops_information_registry(self) -> DevopsInformationRegistry:
+        """
+        Return the borrowed frame-owned dev-ops information registry.
+
+        Returns:
+            DevopsInformationRegistry:
+                Borrowed topology/transaction registry for this frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._devops_information_registry
 
     def _allocate_id(self) -> str:
         """

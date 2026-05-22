@@ -110,9 +110,14 @@ class ChangeControlManager(Cleanable):
         "_abort_hook",
         "_structural_validator",
         "_dirty_marker",
+        "_devops_information_registry",
     ]
 
-    def __init__(self, spell_system_states: SpellSystemStates) -> None:
+    def __init__(
+            self,
+            spell_system_states: SpellSystemStates,
+            devops_information_registry: Optional[DevopsInformationRegistry] = None,
+    ) -> None:
         """
         Initialize a ChangeControlManager.
 
@@ -136,6 +141,9 @@ class ChangeControlManager(Cleanable):
 
         self._lock: RLock = RLock()
         self._spell_system_states: SpellSystemStates = spell_system_states
+        self._devops_information_registry: Optional[DevopsInformationRegistry] = (
+            devops_information_registry
+        )
 
         # spell_index_id -> Dict[str, Any]
         self._pending_changes: Dict[str, Dict[str, Any]] = {}
@@ -289,6 +297,7 @@ class ChangeControlManager(Cleanable):
             del self._abort_hook
             del self._structural_validator
             del self._dirty_marker
+            del self._devops_information_registry
 
             # We do *not* own spell_system_states' lifecycle here; that will
             # be cleaned by the Aetheric Frame / DevOpsManager. We only drop
@@ -846,6 +855,18 @@ class ChangeControlManager(Cleanable):
         """
         self.check_cleaned()
         return self._orchestrator
+
+    def devops_information_registry(self) -> Optional[DevopsInformationRegistry]:
+        """
+        Return the borrowed frame-owned dev-ops information registry.
+
+        Returns:
+            Optional[DevopsInformationRegistry]:
+                Borrowed topology/transaction registry for this frame, or
+                `None` when not available.
+        """
+        self.check_cleaned()
+        return self._devops_information_registry
 
     # ----------------------------------------------------------------------
     # Admission facade

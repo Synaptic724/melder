@@ -3,6 +3,9 @@ from typing import Dict, Optional, Set, List, TYPE_CHECKING, ClassVar
 
 
 # Melder imports
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
@@ -86,11 +89,16 @@ class RiskManager(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",
+        "_devops_information_registry",
         "_conduit_states",
         "_lineage_conduits",
     ]
 
-    def __init__(self, spell_system_states: SpellSystemStates) -> None:
+    def __init__(
+            self,
+            spell_system_states: SpellSystemStates,
+            devops_information_registry: DevopsInformationRegistry,
+    ) -> None:
         """
         Initialize the RiskManager.
 
@@ -105,14 +113,21 @@ class RiskManager(Cleanable):
         - Starts with empty conduit-state and lineage-to-conduit indexes.
         - Treats `spell_system_states` as the source of truth for structural and
           resolution validity lookups.
+        - Borrows the frame-owned dev-ops information registry for future
+          risk/reporting consumers.
         - Does not snapshot spell state; all risk evaluation stays live against
           the supplied `SpellSystemStates` registry.
         """
         super().__init__()
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
+        if devops_information_registry is None:
+            raise ValueError("devops_information_registry cannot be None")
         self._lock: RLock = RLock()
         self._spell_system_states: SpellSystemStates = spell_system_states
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
         self._conduit_states: Dict[str, _ConduitRiskState] = {}
         self._lineage_conduits: Dict[str, Set[str]] = {}
 
@@ -137,7 +152,20 @@ class RiskManager(Cleanable):
             if self._lineage_conduits is not None:
                 self._lineage_conduits.clear()
             del self._spell_system_states
+            del self._devops_information_registry
         del self._lock
+
+    @property
+    def devops_information_registry(self) -> DevopsInformationRegistry:
+        """
+        Return the borrowed frame-owned dev-ops information registry.
+
+        Returns:
+            DevopsInformationRegistry:
+                Borrowed topology/transaction registry for this frame.
+        """
+        self.check_cleaned()
+        return self._devops_information_registry
 
     def register_conduit(self, conduit_id: str, spellbook: Spellbook) -> None:
         """

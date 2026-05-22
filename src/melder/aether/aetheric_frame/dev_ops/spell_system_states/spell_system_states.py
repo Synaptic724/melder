@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapp
 
 
 # Melder imports
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
     ConduitResolutionState,
 )
@@ -71,6 +74,7 @@ class SpellSystemStates(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame",
+        "_devops_information_registry",
         "_states_by_index_id",
         "_states_by_spell_id",
         "_dirty_indexes",
@@ -84,7 +88,11 @@ class SpellSystemStates(Cleanable):
         "_risk_manager",
     ]
 
-    def __init__(self, frame: AethericFrame) -> None:
+    def __init__(
+            self,
+            frame: AethericFrame,
+            devops_information_registry: DevopsInformationRegistry,
+    ) -> None:
         """
         Initialize the SpellSystemStates registry for a given AethericFrame.
 
@@ -96,9 +104,14 @@ class SpellSystemStates(Cleanable):
 
         if frame is None:
             raise ValueError("frame cannot be None")
+        if devops_information_registry is None:
+            raise ValueError("devops_information_registry cannot be None")
 
         self._lock: threading.RLock = threading.RLock()
         self._frame: Optional[AethericFrame] = frame
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
 
         self._states_by_index_id: Optional[Dict[str, SpellSystemState]] = {}
         self._states_by_spell_id: Optional[Dict[str, SpellSystemState]] = {}
@@ -221,6 +234,7 @@ class SpellSystemStates(Cleanable):
             del self._contract_keys_by_index
             del self._index_owner_spellbook_id
             del self._frame
+            del self._devops_information_registry
             del self._risk_manager
 
         # Drop lock last
@@ -641,6 +655,18 @@ class SpellSystemStates(Cleanable):
             if self._states_by_index_id is None:
                 return []
             return list(self._states_by_index_id.values())
+
+    @property
+    def devops_information_registry(self) -> DevopsInformationRegistry:
+        """
+        Return the borrowed frame-owned dev-ops information registry.
+
+        Returns:
+            DevopsInformationRegistry:
+                Borrowed topology/transaction registry for this frame.
+        """
+        self.check_cleaned()
+        return self._devops_information_registry
 
     # ------------------------------------------------------------------
     # Per-conduit resolution state (Phases 5-7)

@@ -101,11 +101,17 @@ class DevOpsManager(Cleanable):
         self._devops_information_registry: DevopsInformationRegistry = (
             devops_information_registry
         )
-        self._incident_manager: IncidentManager = IncidentManager()
-        self._change_control_manager: ChangeControlManager = ChangeControlManager(
-            spell_system_states=spell_system_states
+        self._incident_manager: IncidentManager = IncidentManager(
+            devops_information_registry
         )
-        self._risk_manager: RiskManager = RiskManager(spell_system_states)
+        self._change_control_manager: ChangeControlManager = ChangeControlManager(
+            spell_system_states=spell_system_states,
+            devops_information_registry=devops_information_registry,
+        )
+        self._risk_manager: RiskManager = RiskManager(
+            spell_system_states,
+            devops_information_registry,
+        )
         self._creation_gate_controller: CreationGateController = CreationGateController()
         spell_system_states.set_risk_manager(self._risk_manager)
 
