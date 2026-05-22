@@ -1,12 +1,16 @@
 import threading
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Set, Dict, Type, ClassVar
+from typing import TYPE_CHECKING, Optional, Set, Dict, Type, ClassVar, Any
 import ulid
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -54,6 +58,7 @@ class AethericFrame(Cleanable):
         "_spell_registry",
         "_version_registry",
         "_conduit_cloud",
+        "_devops_information_registry",
         "_spell_system_states",
         "_dev_ops_manager",
         "_configuration",
@@ -101,18 +106,28 @@ class AethericFrame(Cleanable):
         #   conduit_id -> Set[str]
         self._version_registry: Dict[str, Set[str]] = {}
 
+        # Frame-local topology and transaction registry used by DevOps-facing
+        # reporting and future transaction resolution.
+        self._devops_information_registry: DevopsInformationRegistry = (
+            DevopsInformationRegistry(self.name)
+        )
+
         # Frame-local conduit facade over the borrowed frame-owned root stores.
         self._conduit_cloud: ConduitCloud = ConduitCloud(
             name=name,
             conduits=self._conduits,
             conduit_ids_by_name=self._conduit_ids_by_name,
+            devops_information_registry=self._devops_information_registry,
         )
 
         # Per-frame graph + dirtiness registry for all spell lineages.
         self._spell_system_states: SpellSystemStates = SpellSystemStates(self)
 
         # Per-frame DevOps hub: incidents + change-control over this frame.
-        self._dev_ops_manager: DevOpsManager = DevOpsManager(self._spell_system_states)
+        self._dev_ops_manager: DevOpsManager = DevOpsManager(
+            self._spell_system_states,
+            self._devops_information_registry,
+        )
 
         # Optional explicit frame-owned shared rich Spellbook configuration.
         self._configuration: Optional[SpellbookConfiguration] = None
@@ -214,11 +229,15 @@ class AethericFrame(Cleanable):
         if self._dev_ops_manager is not None:
             self._dev_ops_manager.cleanup()
 
+        if self._devops_information_registry is not None:
+            self._devops_information_registry.cleanup()
+
         del self._conduits
         del self._conduit_ids_by_name
         del self._spell_registry
         del self._version_registry
         del self._conduit_cloud
+        del self._devops_information_registry
         del self._spell_system_states
         del self._dev_ops_manager
 
@@ -349,6 +368,50 @@ class AethericFrame(Cleanable):
         """
         self.check_cleaned()
         return self._dev_ops_manager
+
+    @property
+    def devops_information_registry(self) -> DevopsInformationRegistry:
+        """
+        Frame-owned topology and transaction registry.
+
+        Returns:
+            DevopsInformationRegistry:
+                The registry owned by this frame.
+        """
+        self.check_cleaned()
+        return self._devops_information_registry
+
+    def register_devops_identity(
+            self,
+            identity: DevopsIdentity,
+            *,
+            object_ref: Optional[Any] = None,
+    ) -> None:
+        """
+        Register one object identity into the frame-owned dev-ops registry.
+
+        Args:
+            identity:
+                Identity surface to register.
+            object_ref:
+                Optional live object reference to store beside the identity.
+        """
+        self.check_cleaned()
+        self._devops_information_registry.register_identity(
+            identity,
+            object_ref=object_ref,
+        )
+
+    def unregister_devops_identity(self, identity: DevopsIdentity) -> None:
+        """
+        Remove one object identity from the frame-owned dev-ops registry.
+
+        Args:
+            identity:
+                Identity surface to remove.
+        """
+        self.check_cleaned()
+        self._devops_information_registry.unregister_identity(identity)
 
     @property
     def frame_configuration(self) -> Optional[AethericFrameConfiguration]:
