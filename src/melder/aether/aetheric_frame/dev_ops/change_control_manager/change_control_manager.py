@@ -174,6 +174,7 @@ class ChangeControlManager(Cleanable):
             )
         self._transaction_mediator: TransactionMediator = TransactionMediator(
             transaction_manager=self._transaction_manager,
+            conflict_manager=self._conflict_manager,
             embargo_manager=self._embargo_manager,
             orchestrator=self._orchestrator,
             change_control_mode=change_control_mode,
@@ -182,6 +183,7 @@ class ChangeControlManager(Cleanable):
             max_transaction_wait_time_in_seconds=(
                 max_transaction_wait_time_in_seconds
             ),
+            admit_request_fn=self.admit_request,
         )
         self._commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
