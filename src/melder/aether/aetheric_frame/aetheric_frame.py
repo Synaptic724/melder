@@ -36,6 +36,8 @@ class AethericFrame(Cleanable):
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
       - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns one `DevOpsInformationRegistry` as the frame-local topology and
+        transaction mirror for reporting and future strategy resolution.
       - Owns one `ConduitCloud` over the frame-local conduit registries.
       - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
       - Owns one narrow frame-level AR posture object distinct from the richer
@@ -75,6 +77,14 @@ class AethericFrame(Cleanable):
                 and detachment of this frame.
             name: Human-readable name for this frame. Used for identification
                   and logging; uniqueness is expected but not enforced here.
+
+        Contract:
+            - Creates the frame-owned dev-ops information registry before
+              child dev-ops services that borrow it.
+            - Passes that registry into `ConduitCloud` and `DevOpsManager`
+              during construction.
+            - Keeps frame-local ownership centralized here so runtime objects
+              can unregister against the frame boundary during cleanup.
         """
         super().__init__()
 
@@ -188,6 +198,8 @@ class AethericFrame(Cleanable):
 
         Contract:
         - Cleans child conduits before clearing conduit registries.
+        - Cleans the frame-owned dev-ops registry after child objects and
+          after `DevOpsManager` drops its borrowed reference.
         - Clears spell and version registries owned by the frame.
         - Cleans conduit cloud, spell-system-state, and DevOps services when
           present.
@@ -374,6 +386,11 @@ class AethericFrame(Cleanable):
         """
         Frame-owned topology and transaction registry.
 
+        Purpose:
+            Expose the frame-local registry that runtime objects and dev-ops
+            services use for identity, relation, and live-transaction
+            bookkeeping.
+
         Returns:
             DevopsInformationRegistry:
                 The registry owned by this frame.
@@ -395,6 +412,13 @@ class AethericFrame(Cleanable):
                 Identity surface to register.
             object_ref:
                 Optional live object reference to store beside the identity.
+
+        Contract:
+            - Delegates registration directly into the frame-owned registry.
+            - Does not mutate any other frame-owned registries.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._devops_information_registry.register_identity(
@@ -409,6 +433,14 @@ class AethericFrame(Cleanable):
         Args:
             identity:
                 Identity surface to remove.
+
+        Contract:
+            - Delegates unregister work directly into the frame-owned registry.
+            - Safe for identity cleanup flows that need a stable frame entry
+              point for detachment.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._devops_information_registry.unregister_identity(identity)

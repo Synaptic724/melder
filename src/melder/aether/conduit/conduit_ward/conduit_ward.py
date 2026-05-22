@@ -27,6 +27,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
@@ -124,6 +125,7 @@ class ConduitWard(Cleanable):
         "_root_conduit",
         "_lesser_conduits",
         "_policy",
+        "_devops_identity",
     ]
     def __init__(
             self,
@@ -187,6 +189,21 @@ class ConduitWard(Cleanable):
             conduit if conduit_type == ConduitState.normal else None
         )
         self._lesser_conduits: Dict[str, Conduit] = {} # [Lesser ConduitID] -> Lesser Conduit
+        self._devops_identity: DevopsIdentity = DevopsIdentity(
+            owner_kind="conduit_ward",
+            owner_id=self._id,
+            aetheric_frame_name=conduit._aetheric_frame_name,
+            metadata={
+                "conduit_id": conduit._id,
+                "dynamic": self._dynamic,
+                "conduit_state": self._conduit_type.value,
+            },
+            available_transactions=tuple(),
+        )
+        aetheric_frame.register_devops_identity(
+            self._devops_identity,
+            object_ref=self,
+        )
 
         try:
             self._policy = self._set_initial_policy(policy)
@@ -242,6 +259,8 @@ class ConduitWard(Cleanable):
             del self._parent_conduit
             del self._root_conduit
             del self._policy
+            self._devops_identity.cleanup()
+            del self._devops_identity
             del self._conduit
             del self._conduit_cloud
             del self._dynamic

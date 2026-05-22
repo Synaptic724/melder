@@ -9,6 +9,10 @@ from types import TracebackType
 
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -39,6 +43,8 @@ class ConduitCloud(Cleanable):
         "_conduit_ids_by_name",
         "_conduit_clusters",
         "_id",
+        "_devops_identity",
+        "_devops_information_registry",
     ]
 
 
@@ -47,6 +53,7 @@ class ConduitCloud(Cleanable):
             name: str,
             conduits: Dict[str, "Conduit"],
             conduit_ids_by_name: Dict[str, str],
+            devops_information_registry: DevopsInformationRegistry,
     ) -> None:
         """
         Initialize the frame-scoped conduit and cluster service facade.
@@ -61,6 +68,9 @@ class ConduitCloud(Cleanable):
                 Borrowed root-conduit registry owned by the frame.
             conduit_ids_by_name (Dict[str, str]):
                 Borrowed root-conduit name registry owned by the frame.
+            devops_information_registry:
+                Frame-owned dev-ops registry used for cloud identity and
+                cluster-relation tracking.
         Contract:
             - Starts with an empty owned cluster registry.
             - Stores the owning frame name for later diagnostics/identity.
@@ -74,6 +84,22 @@ class ConduitCloud(Cleanable):
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
         self._id: str = str(ulid.ULID())
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
+        self._devops_identity: DevopsIdentity = DevopsIdentity(
+            owner_kind="conduit_cloud",
+            owner_id=self._id,
+            aetheric_frame_name=self._name,
+            metadata={
+                "cloud_name": self._name,
+            },
+            available_transactions=tuple(),
+        )
+        self._devops_identity.attach_registry(
+            self._devops_information_registry,
+            object_ref=self,
+        )
 
     def cleanup(self) -> None:
         """
@@ -102,9 +128,13 @@ class ConduitCloud(Cleanable):
             self._conduit_clusters.clear()
             self._cleaned = True
 
+            self._devops_identity.cleanup()
+
             del self._conduits
             del self._conduit_ids_by_name
             del self._conduit_clusters
+            del self._devops_information_registry
+            del self._devops_identity
             del self._name
             del self._id
         del self._lock
@@ -326,6 +356,7 @@ class ConduitCloud(Cleanable):
                 cluster_name,
                 self._conduits,
                 self._name,
+                self._devops_information_registry,
             )
 
     def delete_cluster(self, cluster_name: str) -> None:

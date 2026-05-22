@@ -105,29 +105,38 @@ class DevopsIdentity(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently retire this identity and unregister it from the registry.
+        Idempotently retire this identity and unregister it from its registry.
+
+        Purpose:
+            Tear down the identity surface in the correct order so any attached
+            registry loses the identity entry before this object deletes the
+            fields needed to resolve its owner key.
+
+        Contract:
+            - Safe to call multiple times.
+            - If a registry is attached, unregisters using the last known
+              owner key before marking the identity cleaned.
+            - Clears metadata and deletes owned fields after external
+              unregister work has finished.
+            - After cleanup, all public accessors fail through
+              `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
-        registry = None
-        owner_kind = None
-        owner_id = None
         with self._lock:
             if self._cleaned:
                 return
-            registry = self._registry
-            owner_kind = self._owner_kind
-            owner_id = self._owner_id
-            self._registry = None
-        if registry is not None:
-            try:
-                registry.unregister_identity(
-                    owner_kind=owner_kind,
-                    owner_id=owner_id,
-                )
-            except Exception:
-                pass
-        with self._lock:
+            if self._registry is not None:
+                try:
+                    self._registry.unregister_identity(
+                        owner_kind=self._owner_kind,
+                        owner_id=self._owner_id,
+                    )
+                except Exception:
+                    pass
             self._cleaned = True
             self._metadata.clear()
             del self._owner_kind
@@ -142,6 +151,9 @@ class DevopsIdentity(Cleanable):
     def owner_kind(self) -> str:
         """
         Return the normalized owner kind label.
+
+        Returns:
+            str: Stable lowercased owner kind for this identity.
         """
         self.check_cleaned()
         return self._owner_kind
@@ -150,6 +162,9 @@ class DevopsIdentity(Cleanable):
     def owner_id(self) -> str:
         """
         Return the stable owner identifier.
+
+        Returns:
+            str: Stable owner id registered for this identity.
         """
         self.check_cleaned()
         return self._owner_id
@@ -158,6 +173,9 @@ class DevopsIdentity(Cleanable):
     def aetheric_frame_name(self) -> str:
         """
         Return the owning frame name for this identity.
+
+        Returns:
+            str: Frame name this identity is scoped to.
         """
         self.check_cleaned()
         return self._aetheric_frame_name
@@ -166,6 +184,13 @@ class DevopsIdentity(Cleanable):
     def metadata(self) -> Dict[str, Any]:
         """
         Return a detached metadata snapshot.
+
+        Contract:
+            - Returns a new dictionary snapshot.
+            - Callers cannot mutate the identity-owned metadata in place.
+
+        Returns:
+            Dict[str, Any]: Copy of the current metadata payload.
         """
         self.check_cleaned()
         with self._lock:
@@ -175,6 +200,13 @@ class DevopsIdentity(Cleanable):
     def available_transactions(self) -> Tuple[str, ...]:
         """
         Return the declared transaction kinds for this identity.
+
+        Contract:
+            - Returned tuple is already normalized to lowercase values.
+            - Ordering is stable because values are sorted during mutation.
+
+        Returns:
+            Tuple[str, ...]: Declared transaction kinds for this identity.
         """
         self.check_cleaned()
         with self._lock:
@@ -183,6 +215,17 @@ class DevopsIdentity(Cleanable):
     def supports_transaction(self, transaction_name: str) -> bool:
         """
         Return whether this identity declares the given transaction kind.
+
+        Args:
+            transaction_name:
+                Transaction name to normalize and check.
+
+        Returns:
+            bool: `True` when the normalized transaction name is declared.
+
+        Raises:
+            TypeError: If `transaction_name` is not a string.
+            ValueError: If `transaction_name` is empty after normalization.
         """
         self.check_cleaned()
         if not isinstance(transaction_name, str):
@@ -199,6 +242,22 @@ class DevopsIdentity(Cleanable):
     ) -> None:
         """
         Replace the declared available transaction kinds.
+
+        Purpose:
+            Refresh the identity's transaction-origin surface when runtime
+            posture changes, such as lesser-to-normal conduit upgrades.
+
+        Contract:
+            - Normalizes values to lowercase strings.
+            - Drops empty values.
+            - Replaces the whole tuple rather than mutating it incrementally.
+
+        Args:
+            transaction_names:
+                Iterable of transaction names to normalize and store.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         normalized = tuple(
@@ -216,10 +275,25 @@ class DevopsIdentity(Cleanable):
     def update_metadata(self, **metadata: Any) -> None:
         """
         Merge descriptive metadata into this identity.
+
+        Contract:
+            - Later keys overwrite earlier values.
+            - Mutation happens under the identity lock.
+
+        Args:
+            **metadata:
+                Key/value metadata updates to merge into the stored payload.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
+        registry = None
         with self._lock:
             self._metadata.update(metadata)
+            registry = self._registry
+        if registry is not None:
+            registry.refresh_identity(self)
 
     def attach_registry(
             self,
@@ -241,6 +315,14 @@ class DevopsIdentity(Cleanable):
                 If registry is None.
             RuntimeError:
                 If already attached to a different registry.
+
+        Contract:
+            - Stores the registry reference before attempting registration.
+            - Rolls that reference back out if registry registration fails.
+            - Does not allow silent migration to a different registry.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if registry is None:
@@ -262,6 +344,14 @@ class DevopsIdentity(Cleanable):
     def detach_registry(self) -> None:
         """
         Detach this identity from the currently attached registry, if any.
+
+        Contract:
+            - Safe when no registry is attached.
+            - Clears the local registry reference before asking the registry to
+              remove the identity entry.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         registry = None
@@ -274,6 +364,13 @@ class DevopsIdentity(Cleanable):
     def describe(self) -> Dict[str, Any]:
         """
         Return a detached diagnostic description of this identity.
+
+        Contract:
+            - Returns only detached scalar/tuple/dict data.
+            - Does not expose the attached registry object reference.
+
+        Returns:
+            Dict[str, Any]: Diagnostic snapshot of the identity surface.
         """
         self.check_cleaned()
         with self._lock:

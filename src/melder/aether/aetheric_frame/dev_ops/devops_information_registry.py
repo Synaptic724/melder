@@ -286,6 +286,7 @@ class DevopsInformationRegistry(Cleanable):
             elif key not in self._objects_by_key:
                 self._objects_by_key[key] = None
             self._identity_keys_by_kind.setdefault(identity.owner_kind, set()).add(key)
+            self._rebuild_spellbook_conduit_relations_locked()
 
     def unregister_identity(
             self,
@@ -316,7 +317,6 @@ class DevopsInformationRegistry(Cleanable):
         - If the key is incomplete, no action is taken.
         - Deletes identity/object entries and the kind index entry.
         - Also removes any dependent graph edges:
-          - spellbook-to-conduit ownership and reverse conduit-to-spellbook mapping,
           - conduit borrower/provider links,
           - conduit-cluster memberships,
           - transaction-by-identity references.
@@ -342,20 +342,7 @@ class DevopsInformationRegistry(Cleanable):
                 if not kind_keys:
                     self._identity_keys_by_kind.pop(key[0], None)
 
-            if key[0] == "spellbook":
-                conduit_ids = set(self._spellbook_to_conduits.pop(key[1], set()))
-                for conduit_id in conduit_ids:
-                    mapped_spellbook_id = self._conduit_to_spellbook.get(conduit_id)
-                    if mapped_spellbook_id == key[1]:
-                        self._conduit_to_spellbook.pop(conduit_id, None)
-            elif key[0] == "conduit":
-                spellbook_id = self._conduit_to_spellbook.pop(key[1], None)
-                if spellbook_id is not None:
-                    conduit_ids = self._spellbook_to_conduits.get(spellbook_id)
-                    if conduit_ids is not None:
-                        conduit_ids.discard(key[1])
-                        if not conduit_ids:
-                            self._spellbook_to_conduits.pop(spellbook_id, None)
+            if key[0] == "conduit":
                 borrower_ids = set(self._provider_to_borrowers.pop(key[1], set()))
                 for borrower_id in borrower_ids:
                     provider_ids = self._borrower_to_providers.get(borrower_id)
@@ -391,6 +378,51 @@ class DevopsInformationRegistry(Cleanable):
                 identity_keys = self._transaction_identity_keys_by_id.get(transaction_id)
                 if identity_keys is not None:
                     identity_keys.discard(key)
+            self._rebuild_spellbook_conduit_relations_locked()
+
+    def refresh_identity(
+            self,
+            identity: "DevopsIdentity",
+            *,
+            object_ref: Optional[Any] = None,
+    ) -> None:
+        """
+        Refresh stored identity snapshots and metadata-derived relations.
+
+        Purpose:
+            Re-run any registry-side derivation that depends on an identity's
+            current metadata, such as spellbook<->conduit ownership.
+
+        Contract:
+            - Identity must already belong to this frame.
+            - Updates the optional object reference when supplied.
+            - Rebuilds metadata-derived spellbook/conduit relations from the
+              full current identity set under the registry lock.
+
+        Args:
+            identity:
+                Registered identity whose metadata changed.
+            object_ref:
+                Optional updated live object reference.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if identity is None:
+            raise ValueError("identity must not be None.")
+        if identity.aetheric_frame_name != self._aetheric_frame_name:
+            raise ValueError(
+                "Identity frame name does not match this registry's frame."
+            )
+        key = (identity.owner_kind, identity.owner_id)
+        with self._lock:
+            if key not in self._identities_by_key:
+                raise RuntimeError("Identity is not registered in this registry.")
+            self._identities_by_key[key] = identity
+            if object_ref is not None:
+                self._objects_by_key[key] = object_ref
+            self._rebuild_spellbook_conduit_relations_locked()
 
     def get_identity(
             self,
@@ -454,83 +486,6 @@ class DevopsInformationRegistry(Cleanable):
             return None
         with self._lock:
             return self._objects_by_key.get((owner_kind.strip().lower(), owner_id))
-
-    def register_spellbook_conduit_relation(
-            self,
-            *,
-            spellbook_id: str,
-            conduit_id: str,
-    ) -> None:
-        """
-        Register a spellbook -> conduit ownership relation.
-
-        Parameters
-        ----------
-        spellbook_id:
-            The owning spellbook id.
-        conduit_id:
-            The conduit id that belongs to the spellbook.
-
-        Returns
-        -------
-        None
-
-        Raises
-        ------
-        ValueError
-            If either id is missing/empty.
-
-        Notes
-        -----
-        Updates both:
-        - "_spellbook_to_conduits[spellbook_id]"
-        - "_conduit_to_spellbook[conduit_id]"
-        """
-        self.check_cleaned()
-        if not spellbook_id or not conduit_id:
-            raise ValueError("spellbook_id and conduit_id are required.")
-        with self._lock:
-            self._spellbook_to_conduits.setdefault(spellbook_id, set()).add(conduit_id)
-            self._conduit_to_spellbook[conduit_id] = spellbook_id
-
-    def unregister_spellbook_conduit_relation(
-            self,
-            *,
-            spellbook_id: str,
-            conduit_id: str,
-    ) -> None:
-        """
-        Remove a spellbook -> conduit ownership relation.
-
-        Parameters
-        ----------
-        spellbook_id:
-            Spellbook id key.
-        conduit_id:
-            Conduit id key.
-
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        The reverse map "_conduit_to_spellbook" is only cleared when it still
-        points to the same "spellbook_id" so unrelated concurrent updates are
-        not clobbered.
-        """
-        self.check_cleaned()
-        if not spellbook_id or not conduit_id:
-            return
-        with self._lock:
-            conduit_ids = self._spellbook_to_conduits.get(spellbook_id)
-            if conduit_ids is not None:
-                conduit_ids.discard(conduit_id)
-                if not conduit_ids:
-                    self._spellbook_to_conduits.pop(spellbook_id, None)
-            mapped_spellbook_id = self._conduit_to_spellbook.get(conduit_id)
-            if mapped_spellbook_id == spellbook_id:
-                self._conduit_to_spellbook.pop(conduit_id, None)
 
     def get_conduits_for_spellbook(self, spellbook_id: str) -> Tuple[str, ...]:
         """
@@ -991,6 +946,34 @@ class DevopsInformationRegistry(Cleanable):
         normalized_type = transaction_type.strip().lower()
         with self._lock:
             return tuple(sorted(self._transaction_ids_by_type.get(normalized_type, set())))
+
+    def _rebuild_spellbook_conduit_relations_locked(self) -> None:
+        """
+        Rebuild spellbook<->conduit ownership relations from identity metadata.
+
+        Caller contract:
+            The registry lock must already be held.
+        """
+        self._spellbook_to_conduits.clear()
+        self._conduit_to_spellbook.clear()
+        for identity in self._identities_by_key.values():
+            metadata = identity.metadata
+            if identity.owner_kind == "spellbook":
+                conduit_id = metadata.get("conduit_id")
+                if isinstance(conduit_id, str) and conduit_id:
+                    self._spellbook_to_conduits.setdefault(
+                        identity.owner_id,
+                        set(),
+                    ).add(conduit_id)
+                    self._conduit_to_spellbook[conduit_id] = identity.owner_id
+            elif identity.owner_kind == "conduit":
+                spellbook_id = metadata.get("spellbook_id")
+                if isinstance(spellbook_id, str) and spellbook_id:
+                    self._spellbook_to_conduits.setdefault(
+                        spellbook_id,
+                        set(),
+                    ).add(identity.owner_id)
+                    self._conduit_to_spellbook[identity.owner_id] = spellbook_id
 
     def describe(self) -> Dict[str, Any]:
         """

@@ -36,6 +36,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 from melder.aether.aetheric_frame.aetheric_frame_configuration import (
     AethericFrameConfiguration,
 )
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -161,6 +164,7 @@ class ChangeControlManager(Cleanable):
         allow_multiple_root_transactions = False
         queue_competing_root_transactions = False
         max_transaction_wait_time_in_seconds = 30.0
+        devops_information_registry: Optional[DevopsInformationRegistry] = None
         if isinstance(frame_configuration, AethericFrameConfiguration):
             change_control_mode = frame_configuration.change_control_mode
             allow_multiple_root_transactions = (
@@ -172,11 +176,15 @@ class ChangeControlManager(Cleanable):
             max_transaction_wait_time_in_seconds = (
                 frame_configuration.max_transaction_wait_time_in_seconds
             )
+        frame = self._spell_system_states._frame
+        if frame is not None:
+            devops_information_registry = frame.devops_information_registry
         self._transaction_mediator: TransactionMediator = TransactionMediator(
             transaction_manager=self._transaction_manager,
             conflict_manager=self._conflict_manager,
             embargo_manager=self._embargo_manager,
             orchestrator=self._orchestrator,
+            devops_information_registry=devops_information_registry,
             change_control_mode=change_control_mode,
             allow_multiple_root_transactions=allow_multiple_root_transactions,
             queue_competing_root_transactions=queue_competing_root_transactions,

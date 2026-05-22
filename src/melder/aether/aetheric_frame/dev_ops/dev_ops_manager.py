@@ -4,6 +4,9 @@ from typing import Optional, TYPE_CHECKING, ClassVar
 
 
 # Melder Imports
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
@@ -30,14 +33,19 @@ class DevOpsManager(Cleanable):
     - `RiskManager`: risk posture tied back into spell-system state
     - `CreationGateController`: conduit and lineage admission governance
     - `SpellSystemStates`: frame-local state registry surfaced through this hub
+    - borrowed `DevOpsInformationRegistry`: frame-owned topology and
+      transaction mirror exposed through the manager boundary
 
     Contract:
     - One `DevOpsManager` owns one coherent set of frame-local operational
       managers.
+    - The information registry is borrowed from the owning frame rather than
+      created here, so runtime-object unregister flows are not coupled to
+      manager cleanup order.
     - The manager is the intended boundary for higher-level tools or AI agents
       that need to inspect or manipulate frame health.
     - Cleanup is responsible for tearing down the owned manager graph in a
-      deterministic order.
+      deterministic order and then dropping the borrowed registry reference.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -47,9 +55,14 @@ class DevOpsManager(Cleanable):
         "_change_control_manager",
         "_risk_manager",
         "_creation_gate_controller",
+        "_devops_information_registry",
     ]
 
-    def __init__(self, spell_system_states: SpellSystemStates) -> None:
+    def __init__(
+            self,
+            spell_system_states: SpellSystemStates,
+            devops_information_registry: DevopsInformationRegistry,
+    ) -> None:
         """
         Initialize the frame-level DevOps manager and owned subsystems.
 
@@ -66,20 +79,28 @@ class DevOpsManager(Cleanable):
         Args:
             spell_system_states:
                 Frame-level spell system state registry.
+            devops_information_registry:
+                Frame-owned topology and transaction registry borrowed by this
+                manager for downstream consumers.
 
         Returns:
             None.
 
         Raises:
             ValueError:
-                If spell_system_states is None.
+                If spell_system_states or devops_information_registry is None.
         """
         super().__init__()
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
+        if devops_information_registry is None:
+            raise ValueError("devops_information_registry cannot be None")
 
         self._lock: RLock = RLock()
         self._spell_system_states: SpellSystemStates = spell_system_states
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
         self._incident_manager: IncidentManager = IncidentManager()
         self._change_control_manager: ChangeControlManager = ChangeControlManager(
             spell_system_states=spell_system_states
@@ -98,7 +119,8 @@ class DevOpsManager(Cleanable):
         Contract:
             - Cleanup is idempotent.
             - Owned managers are cleaned in deterministic order.
-            - Owned references and lock are nulled after cleanup.
+            - The frame-owned registry is not cleaned here; this manager only
+              drops its borrowed reference after owned-manager teardown.
 
         Returns:
             None.
@@ -122,6 +144,7 @@ class DevOpsManager(Cleanable):
             del self._change_control_manager
             del self._risk_manager
             del self._creation_gate_controller
+            del self._devops_information_registry
             del self._spell_system_states
 
         del self._lock
@@ -190,6 +213,22 @@ class DevOpsManager(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._creation_gate_controller
+
+    @property
+    def devops_information_registry(self) -> DevopsInformationRegistry:
+        """
+        Return the frame-owned dev-ops information registry.
+
+        This is a borrowed frame-owned registry surface exposed through the
+        DevOps root for consumers that already operate through `DevOpsManager`.
+
+        Returns:
+            DevopsInformationRegistry:
+                The borrowed frame-owned registry.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._devops_information_registry
 
     def revalidate_dirty_roots(
             self,

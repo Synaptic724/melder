@@ -2,6 +2,10 @@ import threading
 from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -48,6 +52,8 @@ class ConduitCluster(Cleanable):
         "auto_link_dependencies",
         "_cleaned",
         "_id",
+        "_devops_identity",
+        "_devops_information_registry",
     ]
 
     def __init__(
@@ -55,6 +61,7 @@ class ConduitCluster(Cleanable):
             name: str,
             registry: Dict[str, Conduit],
             aetheric_frame_name: str,
+            devops_information_registry: DevopsInformationRegistry,
             auto_link_dependencies: bool = True,
     ):
         """
@@ -64,6 +71,9 @@ class ConduitCluster(Cleanable):
             name: Cluster name.
             registry: Borrowed frame-local conduit registry keyed by conduit id.
             aetheric_frame_name: Owning frame name for contract operations.
+            devops_information_registry:
+                Frame-owned dev-ops registry used for cluster identity and
+                membership tracking.
             auto_link_dependencies: If True, sharing pulls dependency closure.
         """
         super().__init__()
@@ -72,9 +82,26 @@ class ConduitCluster(Cleanable):
         self._name: str = name
         self._registry: Dict[str, Conduit] = registry
         self._aetheric_frame_name: str = aetheric_frame_name
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
         self.members: Set[str] = set()
         self.shared_spells: Dict[str, Set[SpellIndex]] = {}
         self.auto_link_dependencies: bool = auto_link_dependencies
+        self._devops_identity: DevopsIdentity = DevopsIdentity(
+            owner_kind="conduit_cluster",
+            owner_id=self._id,
+            aetheric_frame_name=self._aetheric_frame_name,
+            metadata={
+                "cluster_name": self._name,
+                "auto_link_dependencies": self.auto_link_dependencies,
+            },
+            available_transactions=("cluster_link",),
+        )
+        self._devops_identity.attach_registry(
+            self._devops_information_registry,
+            object_ref=self,
+        )
 
     def cleanup(self) -> None:
         """
@@ -92,6 +119,7 @@ class ConduitCluster(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            member_ids = list(self.members)
             if self.members is not None:
                 self.members.clear()
             if self.shared_spells is not None:
@@ -101,7 +129,15 @@ class ConduitCluster(Cleanable):
                     except Exception:
                         pass
                 self.shared_spells.clear()
+            for conduit_id in member_ids:
+                self._devops_information_registry.unregister_cluster_membership(
+                    cluster_id=self._id,
+                    conduit_id=conduit_id,
+                )
+            self._devops_identity.cleanup()
             del self.auto_link_dependencies
+            del self._devops_information_registry
+            del self._devops_identity
             del self._registry
             del self._aetheric_frame_name
             del self._name
@@ -131,6 +167,10 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         with self._lock:
             self.members.add(conduit_id)
+            self._devops_information_registry.register_cluster_membership(
+                cluster_id=self._id,
+                conduit_id=conduit_id,
+            )
 
     def remove_member(self, conduit_id: str) -> None:
         """
@@ -143,6 +183,10 @@ class ConduitCluster(Cleanable):
         with self._lock:
             self.members.discard(conduit_id)
             self.shared_spells.pop(conduit_id, None)
+            self._devops_information_registry.unregister_cluster_membership(
+                cluster_id=self._id,
+                conduit_id=conduit_id,
+            )
 
     def add_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
         """
