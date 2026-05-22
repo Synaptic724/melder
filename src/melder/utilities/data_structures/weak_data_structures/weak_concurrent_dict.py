@@ -18,7 +18,6 @@ from typing import (
     TypeGuard,
     TypeVar,
     Union,
-    ClassVar,
 )
 
 import ulid

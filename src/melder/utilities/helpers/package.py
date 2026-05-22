@@ -4,7 +4,6 @@ from functools import update_wrapper
 from threading import RLock
 from types import SimpleNamespace
 import ulid
-from mypy_extensions import mypyc_attr
 
 from melder.utilities.general_base.cleanable import Cleanable
 from typing import (
@@ -48,7 +47,6 @@ def _is_async_callable(
     return inspect.iscoroutinefunction(task)
 
 
-@mypyc_attr(native_class=True)
 
 class Package(Cleanable, Generic[P, R]):
     """
@@ -104,7 +102,6 @@ class Package(Cleanable, Generic[P, R]):
     """
 
     __slots__ = Cleanable.__slots__ + ["_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
-    __deletable__: ClassVar[list[str]] = ["_func", "_wrapped_func", "_async_func", "_args", "_kwargs", "_signature_cache", "_frozen", "_lock", "_is_async", "_id"]
 
     def __init__(self, func: Callable[..., R], *args: Any, **kwargs: Any):
         """
