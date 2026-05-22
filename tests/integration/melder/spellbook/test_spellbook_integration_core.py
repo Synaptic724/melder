@@ -642,7 +642,7 @@ def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
     try:
         spellbook.begin_transaction("bind")
         transaction_started = True
-        request = spellbook._active_change_request
+        request = spellbook._get_active_change_request_surface()
         assert request is not None
 
         staged_before = change_control.orchestrator().get_staged(request.request_id)
