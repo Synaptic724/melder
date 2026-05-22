@@ -439,6 +439,39 @@ class AethericFrame(Cleanable):
                     existing_frame_configuration.with_shared_framewide_spellbook_configuration(
                         frame_configuration.shared_framewide_spellbook_configuration
                     )
+                    existing_frame_configuration.with_change_control_mode(
+                        frame_configuration.change_control_mode
+                    )
+                    existing_frame_configuration.with_allow_multiple_root_transactions(
+                        frame_configuration.allow_multiple_root_transactions
+                    )
+                    existing_frame_configuration.with_disable_all_transactions_after_conjure(
+                        frame_configuration.disable_all_transactions_after_conjure
+                    )
+                    existing_frame_configuration.with_disable_mutations(
+                        frame_configuration.disable_mutations
+                    )
+                    existing_frame_configuration.with_disable_linking(
+                        frame_configuration.disable_linking
+                    )
+                    existing_frame_configuration.with_disable_bind(
+                        frame_configuration.disable_bind
+                    )
+                    existing_frame_configuration.with_disable_conduit_cluster(
+                        frame_configuration.disable_conduit_cluster
+                    )
+                    existing_frame_configuration.with_disable_transfer_of_ownership(
+                        frame_configuration.disable_transfer_of_ownership
+                    )
+                    existing_frame_configuration.with_disable_contract_mutation(
+                        frame_configuration.disable_contract_mutation
+                    )
+                    existing_frame_configuration.with_queue_competing_root_transactions(
+                        frame_configuration.queue_competing_root_transactions
+                    )
+                    existing_frame_configuration.with_max_transaction_wait_time_in_seconds(
+                        frame_configuration.max_transaction_wait_time_in_seconds
+                    )
                     frame_configuration.cleanup()
                 existing_frame_configuration.freeze(
                     origin_spellbook_id=origin_spellbook_id
