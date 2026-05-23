@@ -162,7 +162,7 @@ def test_aether_add_remove_conduit_duplicate_errors() -> None:
     frame_name = "frame-duplicates"
     spellbook = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     spellbook.bind(
         spell=BasicService,
@@ -241,7 +241,7 @@ def test_aether_remove_single_spell_index_updates_registry() -> None:
     frame_name = "frame-remove-index"
     spellbook = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     service_id = spellbook.bind(
         spell=BasicService,

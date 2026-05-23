@@ -645,7 +645,9 @@ def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
     try:
         spellbook.begin_transaction("bind")
         transaction_started = True
-        request = spellbook._get_active_change_request_surface()
+        request = (
+            spellbook._get_required_transaction_mediator().get_active_request()
+        )
         assert request is not None
 
         staged_before = change_control.orchestrator().get_staged(request.request_id)
@@ -684,12 +686,12 @@ def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_sc
     spellbook_a = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
 
-    spellbook_a.begin_transaction("link", scope_keys=["shared-scope"])
+    spellbook_a.begin_transaction("bind", scope_keys=["shared-scope"])
     try:
         with pytest.raises(RuntimeError, match="Change-control admission denied"):
-            spellbook_b.begin_transaction("link", scope_keys=["shared-scope"])
+            spellbook_b.begin_transaction("bind", scope_keys=["shared-scope"])
     finally:
-        spellbook_a.end_transaction("link")
+        spellbook_a.end_transaction("bind")
 
 
 def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> None:
@@ -778,6 +780,7 @@ def test_spellbook_integration_fluent_binding_case_insensitive_keys() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     binder = SpellBinder(spellbook, )
@@ -852,6 +855,7 @@ def test_spellbook_integration_fluent_binding_hooks_execute() -> None:
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     binder = SpellBinder(spellbook, )
@@ -935,6 +939,7 @@ def test_spellbook_integration_fluent_binding_hooks_execute_from_kwargs() -> Non
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     binder = SpellBinder(spellbook, )
@@ -972,6 +977,7 @@ def test_spellbook_integration_fluent_binding_reuse_registers_multiple_spells() 
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     binder = SpellBinder(spellbook, )
@@ -1054,6 +1060,7 @@ def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() 
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     conduit = spellbook.conjure(name="root")
@@ -1294,9 +1301,9 @@ def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() ->
 
     owner = owner_book.conjure(automatic=False, name="owner")
     borrower = borrower_book.conjure(automatic=False, name="borrower")
-    transaction_manager = borrower_book._aether._get_change_control_manager(
+    change_control = borrower_book._aether._get_change_control_manager(
         borrower_book._aetheric_frame
-    ).transaction_manager()
+    )
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -1306,12 +1313,12 @@ def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() ->
                 permissions="create",
             )
 
-        assert transaction_manager.list_borrowers_for_provider(owner.id) == {
-            borrower.id
-        }
+        registry = change_control.devops_information_registry()
+        assert registry is not None
+        assert registry.list_borrowers_for_provider(owner.id) == (borrower.id,)
 
         assert owner.sever_link(borrower) is True
-        assert transaction_manager.list_borrowers_for_provider(owner.id) == set()
+        assert registry.list_borrowers_for_provider(owner.id) == ()
     finally:
         borrower.cleanup()
         owner.cleanup()

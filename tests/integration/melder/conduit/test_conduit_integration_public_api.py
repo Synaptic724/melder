@@ -121,6 +121,7 @@ def test_conduit_public_api_context_manager_allows_meld() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spell_id = spellbook.bind(
         spell=BasicService,
@@ -152,6 +153,7 @@ def test_conduit_meld_with_spell_override_round_trip() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spell_id = spellbook.bind(
         spell=BuiltArtifact,
@@ -186,6 +188,7 @@ def test_conduit_public_api_spellspace_lifecycle() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spell_id = spellbook.bind(
         spell=BasicService,
@@ -228,6 +231,7 @@ def test_conduit_public_api_spell_lookup_helpers() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spell_id = spellbook.bind(
         spell=BasicService,
@@ -268,6 +272,7 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -277,12 +282,12 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        with conduit.transaction("bind"):
-            config_id = conduit.bind(
-                spell=BasicConfig,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        config_id = conduit.bind(
+            spell=BasicConfig,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        with spellbook.transaction("bind"):
             logger_id = SpellBinder(conduit._spellbook, ).bind(BasicLogger).as_unique().finalize()
 
         config_spell = conduit.get_spell_by_id(config_id)
@@ -311,6 +316,7 @@ def test_conduit_public_api_begin_transaction_bind_allows_post_conjure_bind() ->
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -359,7 +365,11 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
     try:
         conduit_a.begin_transaction("link", conduits=[conduit_a, conduit_peer])
         with pytest.raises(RuntimeError, match="Change-control admission denied"):
-            spellbook_b.begin_transaction("link", scope_keys=[scope_key])
+            conduit_peer.begin_transaction(
+                "link",
+                conduits=[conduit_peer, conduit_a],
+                scope_keys=[scope_key],
+            )
     finally:
         conduit_a.end_transaction("link")
         conduit_peer.cleanup()

@@ -1039,7 +1039,11 @@ class TransactionMediator(Cleanable):
             self._embargo_manager.extend_embargoes(
                 owner_request_id=request_id,
                 scope_keys=scope_key_values,
-                reason_tag=staged.request_type.value,
+                reason_tag=(
+                    staged.request_type.value
+                    if hasattr(staged.request_type, "value")
+                    else str(staged.request_type)
+                ),
             )
 
     def _get_session_or_raise(self, request_id: str) -> TransactionSession:
@@ -1141,7 +1145,10 @@ class TransactionMediator(Cleanable):
         Resolve and start one strategy-owned transaction.
         """
         self.check_cleaned()
-        active = self.get_active_session()
+        active = self.get_session_for_identity(
+            identity=identity,
+            transaction_type=transaction_type,
+        )
         if active is not None:
             active.join(
                 thread_id=threading.get_ident(),

@@ -19,6 +19,7 @@ from tests.mocks.spellbook import scan_bind_module_wrapped
 
 
 from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
     set_frame_rift_enabled_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)

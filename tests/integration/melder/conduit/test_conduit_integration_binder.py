@@ -11,6 +11,9 @@ from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -49,6 +52,7 @@ def test_conduit_binder_finalize_requires_bind() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -80,6 +84,7 @@ def test_conduit_binder_reuse_and_named_binding() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -115,6 +120,7 @@ def test_conduit_binder_cleanup_blocks_usage() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -146,6 +152,7 @@ def test_conduit_binder_defaults_apply_permissions_and_existence() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -185,6 +192,7 @@ def test_conduit_binder_named_spellframe_resolution_and_lookup() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicLogger,
@@ -267,6 +275,7 @@ def test_conduit_binder_hooks_execute_in_order() -> None:
 
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicLogger,

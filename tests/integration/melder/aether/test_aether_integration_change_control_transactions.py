@@ -179,7 +179,7 @@ def test_change_control_disable_allows_overlapping_requests() -> None:
     spellbook_a.begin_transaction("bind", scope_keys=["scope-shared"])
     spellbook_b.begin_transaction("bind", scope_keys=["scope-shared"])
     transaction_manager = change_control.transaction_manager()
-    assert len(transaction_manager.list_in_flight()) == 1
+    assert len(transaction_manager.list_in_flight()) == 2
     spellbook_a.end_transaction("bind")
     spellbook_b.end_transaction("bind")
     assert transaction_manager.list_in_flight() == []
@@ -212,13 +212,13 @@ def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
 
     spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
     try:
-        spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
+        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+            spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
         assert len(
             Aether()._get_change_control_manager(frame_name).transaction_manager().list_in_flight()
         ) == 1
     finally:
         spellbook_a.end_transaction("bind")
-        spellbook_b.end_transaction("bind")
 
     conduit_a.cleanup()
     conduit_b.cleanup()

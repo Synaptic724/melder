@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, call
+from types import ModuleType
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -94,7 +95,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
     """
     spell = object()
     extra = object()
-    spellbook_stub.bind.return_value = "spell-id"
+    spellbook_stub._bind_under_active_transaction.return_value = "spell-id"
 
     result = conduit_dynamic_normal.bind(
         spell=spell,
@@ -105,7 +106,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
         extra=extra,
     )
 
-    spellbook_stub.bind.assert_called_once_with(
+    spellbook_stub._bind_under_active_transaction.assert_called_once_with(
         spell=spell,
         existence=Existence.unique,
         spellframe="frame",
@@ -135,13 +136,14 @@ def test_scan_forwards_to_spellbook_for_normal_conduit(
     spellbook_stub: MagicMock,
 ) -> None:
     """scan should route through the conduit bind transaction wrapper before delegating."""
-    module = MagicMock()
-    spellbook_stub.scan.return_value = ["spell-1", "spell-2"]
-    mediator = spellbook_stub._get_required_transaction_mediator.return_value
+    module = ModuleType("scan_facade_module")
+    with patch(
+        "melder.aether.conduit.conduit.Scan.scan_module",
+        return_value=["spell-1", "spell-2"],
+    ) as scan_module:
+        result = conduit_dynamic_normal.scan(module)
 
-    result = conduit_dynamic_normal.scan(module)
-
-    spellbook_stub.scan.assert_called_once_with(module)
+    scan_module.assert_called_once_with(module)
     spellbook_stub._get_required_transaction_mediator.assert_called()
     assert result == ["spell-1", "spell-2"]
 
@@ -151,13 +153,14 @@ def test_scan_reuses_active_binding_transaction(
     spellbook_stub: MagicMock,
 ) -> None:
     """scan should still use the conduit-owned bind transaction path."""
-    module = MagicMock()
-    spellbook_stub.scan.return_value = ["spell-1"]
-    mediator = spellbook_stub._get_required_transaction_mediator.return_value
+    module = ModuleType("scan_facade_module_active")
+    with patch(
+        "melder.aether.conduit.conduit.Scan.scan_module",
+        return_value=["spell-1"],
+    ) as scan_module:
+        result = conduit_dynamic_normal.scan(module)
 
-    result = conduit_dynamic_normal.scan(module)
-
-    spellbook_stub.scan.assert_called_once_with(module)
+    scan_module.assert_called_once_with(module)
     spellbook_stub._get_required_transaction_mediator.assert_called()
     assert result == ["spell-1"]
 

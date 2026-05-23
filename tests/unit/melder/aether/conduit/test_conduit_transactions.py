@@ -258,22 +258,19 @@ def test_conduit_begin_transaction_appends_explicit_conduit_ids_for_non_link_req
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """Non-link transactions should merge explicit conduit_ids and include the local conduit."""
-    mediator = MagicMock(
-        get_active_request=lambda: None,
-        begin_transaction=MagicMock(),
-    )
-    conduit_type = type(conduit_dynamic_normal)
-    original_getter = conduit_type._get_required_transaction_mediator
-    conduit_type._get_required_transaction_mediator = lambda self: mediator
-    try:
-        conduit_dynamic_normal.begin_transaction("bind", conduit_ids=["peer-1"])
+    """Bind-family transactions should delegate through the owning spellbook."""
+    spellbook_stub.begin_transaction = MagicMock()
 
-        conduit_ids = mediator.begin_transaction.call_args.kwargs["conduit_ids"]
-        assert "peer-1" in conduit_ids
-        assert conduit_dynamic_normal._id in conduit_ids
-    finally:
-        conduit_type._get_required_transaction_mediator = original_getter
+    conduit_dynamic_normal.begin_transaction("bind", conduit_ids=["peer-1"])
+
+    spellbook_stub.begin_transaction.assert_called_once_with(
+        "bind",
+        conduit_id=conduit_dynamic_normal._id,
+        scope_keys=None,
+        scope_hashes=None,
+        binding_keys=None,
+        metadata=None,
+    )
 
 
 def test_begin_binding_transaction_delegates_to_begin_transaction(
@@ -308,20 +305,15 @@ def test_end_binding_transaction_delegates_for_normal_conduit(
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """Normal conduits should forward bind-family end to the mediator path."""
-    mediator = MagicMock()
-    conduit_type = type(conduit_dynamic_normal)
-    original_getter = conduit_type._get_required_transaction_mediator
-    conduit_type._get_required_transaction_mediator = lambda self: mediator
-    try:
-        conduit_dynamic_normal.end_transaction("bind")
+    """Normal conduits should forward bind-family end to the owning spellbook."""
+    spellbook_stub.end_transaction = MagicMock()
 
-        mediator.end_transaction.assert_called_once_with(
-            expected_type="bind",
-            success=True,
-        )
-    finally:
-        conduit_type._get_required_transaction_mediator = original_getter
+    conduit_dynamic_normal.end_transaction("bind")
+
+    spellbook_stub.end_transaction.assert_called_once_with(
+        "bind",
+        success=True,
+    )
 
 
 def test_binding_transaction_ends_on_exception(
@@ -373,22 +365,25 @@ def test_conduit_transaction_context_ends_on_exception(
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """The transaction context manager should always end the transaction, even on exceptions."""
-    mediator = MagicMock()
-    conduit_type = type(conduit_dynamic_normal)
-    original_getter = conduit_type._get_required_transaction_mediator
-    conduit_type._get_required_transaction_mediator = lambda self: mediator
-    try:
-        with pytest.raises(RuntimeError, match="boom"):
-            with conduit_dynamic_normal.transaction("bind"):
-                raise RuntimeError("boom")
+    """The bind transaction context manager should always end the transaction, even on exceptions."""
+    spellbook_stub.begin_transaction = MagicMock()
+    spellbook_stub.end_transaction = MagicMock()
 
-        mediator.begin_transaction.assert_called_once()
-        mediator.end_transaction.assert_called_once_with(
-            expected_type="bind",
-            success=False,
-        )
-    finally:
-        conduit_type._get_required_transaction_mediator = original_getter
+    with pytest.raises(RuntimeError, match="boom"):
+        with conduit_dynamic_normal.transaction("bind"):
+            raise RuntimeError("boom")
+
+    spellbook_stub.begin_transaction.assert_called_once_with(
+        "bind",
+        conduit_id=conduit_dynamic_normal._id,
+        scope_keys=None,
+        scope_hashes=None,
+        binding_keys=None,
+        metadata=None,
+    )
+    spellbook_stub.end_transaction.assert_called_once_with(
+        "bind",
+        success=False,
+    )
 
 

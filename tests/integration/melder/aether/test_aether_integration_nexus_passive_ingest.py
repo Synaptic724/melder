@@ -12,6 +12,7 @@ from tests.mocks.spellbook.core_classes import BasicService
 
 from tests._frame_posture_test_support import (
     apply_automatic_defaults_for_spellbook_configuration,
+    apply_dynamic_defaults_for_spellbook_configuration,
     set_frame_rift_enabled_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)
@@ -119,6 +120,8 @@ def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_r
         None.
     """
     configuration = _make_rift_publishable_configuration(aether_frame="ops")
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    set_frame_rift_enabled_for_spellbook_configuration(configuration, True)
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
     spellbook_id = spellbook.id
 
