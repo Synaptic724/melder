@@ -194,7 +194,10 @@ class TransactionMediator(Cleanable):
         )
         self._admit_request = admit_request_fn
         self._strategy_builder: TransactionStrategyBuilder = (
-            TransactionStrategyBuilder(transaction_manager)
+            TransactionStrategyBuilder(
+                transaction_manager,
+                devops_information_registry,
+            )
         )
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
         self._pending_root_starts: List[int] = []
@@ -1160,6 +1163,7 @@ class TransactionMediator(Cleanable):
         try:
             self._strategy_builder.on_start(
                 transaction_type=transaction_type,
+                identity=identity,
                 metadata=dict(bind_request["metadata"]),
             )
             return session
@@ -1174,6 +1178,7 @@ class TransactionMediator(Cleanable):
             )
             self._strategy_builder.on_end(
                 transaction_type=transaction_type,
+                identity=identity,
                 metadata=dict(bind_request["metadata"]),
             )
             raise

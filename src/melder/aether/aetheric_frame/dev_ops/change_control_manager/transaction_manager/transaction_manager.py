@@ -258,6 +258,37 @@ class ChangeControlTransactionManager(Cleanable):
             raise ValueError("spellbook_id cannot be empty")
         return f"scope:spellbook:{spellbook_id}"
 
+    def make_scope_key_identity(
+            self,
+            *,
+            owner_kind: str,
+            owner_id: str,
+    ) -> str:
+        """
+        Build a normalized broad object scope key for one identity.
+
+        Purpose:
+            Provide a generic scope helper for runtime assets that should be
+            locked as objects, but do not have their own narrower helper like
+            spellbook, conduit, or cluster.
+
+        Args:
+            owner_kind:
+                Identity kind label such as `conduit_ward`.
+            owner_id:
+                Stable owner identifier for that object.
+
+        Returns:
+            str:
+                Scope key in the form `"scope:<owner_kind>:<owner_id>"`.
+        """
+        self.check_cleaned()
+        if not owner_kind:
+            raise ValueError("owner_kind cannot be empty")
+        if not owner_id:
+            raise ValueError("owner_id cannot be empty")
+        return f"scope:{owner_kind}:{owner_id}"
+
     def make_scope_key_transaction_owner(
             self,
             *,
