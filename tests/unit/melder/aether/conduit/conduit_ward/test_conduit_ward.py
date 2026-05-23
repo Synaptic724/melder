@@ -1,6 +1,9 @@
 ﻿import pytest
 import threading
 from unittest.mock import MagicMock, patch
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.conduit_ward.contract.contract import Contract
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -2287,7 +2290,10 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     spell_b._spellbook = spellbook
     spell_none._spellbook = spellbook
 
-    states = SpellSystemStates(MagicMock())
+    states = SpellSystemStates(
+        MagicMock(),
+        DevopsInformationRegistry("test-frame"),
+    )
     spellbook._spell_system_states = states
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
@@ -2399,7 +2405,10 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
     spell_a._spellbook = spellbook
     spell_b._spellbook = spellbook
 
-    states = SpellSystemStates(MagicMock())
+    states = SpellSystemStates(
+        MagicMock(),
+        DevopsInformationRegistry("test-frame"),
+    )
     spellbook._spell_system_states = states
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")

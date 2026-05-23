@@ -397,7 +397,11 @@ class ChangeControlEmbargoManager(Cleanable):
             return
         self.open_embargo(
             scope_keys=scope_keys,
-            reason_tag=request.request_type.value,
+            reason_tag=(
+                request.request_type.value
+                if hasattr(request.request_type, "value")
+                else str(request.request_type)
+            ),
             owner_request_id=request.request_id,
         )
 

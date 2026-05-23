@@ -19,6 +19,7 @@ from tests.mocks.spellbook.deep_layers import get_depth_3_classes
 
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
+    get_frame_posture_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_integration() -> None:
@@ -57,6 +58,7 @@ def _make_dynamic_configuration(workers: int = 1) -> SpellbookConfiguration:
     """
     configuration = SpellbookConfiguration()
     apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    get_frame_posture_for_spellbook_configuration(configuration).with_disable_mutations(False)
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration
 

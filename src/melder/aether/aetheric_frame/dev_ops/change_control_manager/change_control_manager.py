@@ -970,7 +970,11 @@ class ChangeControlManager(Cleanable):
             self._embargo_manager.extend_embargoes(
                 owner_request_id=request_id,
                 scope_keys=scope_keys,
-                reason_tag=staged.request_type.value,
+                reason_tag=(
+                    staged.request_type.value
+                    if hasattr(staged.request_type, "value")
+                    else str(staged.request_type)
+                ),
             )
         return True
 

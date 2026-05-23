@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -180,7 +180,7 @@ def test_transfer_spell_ownership_raises_when_not_dynamic(
     Raises:
         AssertionError: If transfer does not raise.
     """
-    with pytest.raises(RuntimeError, match="Ownership transfer requires dynamic mode"):
+    with pytest.raises(RuntimeError, match="Ownership transfer is disabled for the current frame posture|Ownership transfer requires dynamic mode"):
         conduit_normal.transfer_spell_ownership(
             spell="sha-1",
             target_conduit=conduit_lesser,
@@ -209,16 +209,20 @@ def test_transfer_spell_ownership_delegates_when_dynamic(
     conduit_dynamic_normal._conduit_ward._transfer_spell_ownership.return_value = {
         "ok": True
     }
-
-    result = conduit_dynamic_normal.transfer_spell_ownership(
-        spell="sha-1",
-        target_conduit=conduit_lesser,
-        move_creations=True,
-        include_dependencies=True,
-        force_unshare=False,
-        invalidate_after_transfer=False,
-        mark_dependencies_dirty=True,
-    )
+    with patch.object(
+        Conduit,
+        "_transaction_blocked_for_current_posture",
+        return_value=False,
+    ):
+        result = conduit_dynamic_normal.transfer_spell_ownership(
+            spell="sha-1",
+            target_conduit=conduit_lesser,
+            move_creations=True,
+            include_dependencies=True,
+            force_unshare=False,
+            invalidate_after_transfer=False,
+            mark_dependencies_dirty=True,
+        )
 
     conduit_dynamic_normal._conduit_ward._transfer_spell_ownership.assert_called_once_with(
         spell="sha-1",

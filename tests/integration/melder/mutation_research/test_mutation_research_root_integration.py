@@ -13,6 +13,7 @@ from tests.mocks.spellbook.core_classes import BasicService
 
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
+    get_frame_posture_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)
 def reset_runtime_singletons() -> None:
@@ -46,6 +47,9 @@ def _make_dynamic_configuration(frame_name: str) -> SpellbookConfiguration:
     """
     configuration = SpellbookConfiguration(aether_frame=frame_name)
     apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    get_frame_posture_for_spellbook_configuration(
+        configuration
+    ).with_disable_mutations(False)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     return configuration
 

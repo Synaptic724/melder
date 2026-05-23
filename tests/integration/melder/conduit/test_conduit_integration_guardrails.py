@@ -76,7 +76,7 @@ def test_conduit_link_and_get_links_reject_automatic_mode() -> None:
     peer_book = Spellbook()
     peer = peer_book.conjure(name="peer")
     try:
-        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled. Cannot manage link services."):
+        with pytest.raises(RuntimeError, match="Linking is disabled for the current frame posture|Dynamic environment is not enabled. Cannot manage link services."):
             owner.link(peer)
         with pytest.raises(RuntimeError, match="Dynamic environment is not enabled. Cannot manage link services."):
             owner.get_links()
