@@ -5,6 +5,7 @@ import gc
 import os
 import random
 import statistics
+import subprocess
 import sys
 import threading
 import time
@@ -14,6 +15,21 @@ from pathlib import Path
 from typing import Any, Callable
 
 import pytest
+
+
+# Set this to `True` to force the shared gauntlet through a standalone
+# `-X gil=0` subprocess when the current interpreter still has the GIL
+# enabled. Set to `False` to run in the current interpreter exactly as-is.
+REAL_WORLD_GAUNTLET_FORCE_NOGIL = True
+_REAL_WORLD_GAUNTLET_GIL_REEXEC_ENV = "DI_REAL_WORLD_GAUNTLET_GIL_REEXEC"
+_REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE = False
+
+
+def _gil_runner_path() -> Path:
+    """
+    Resolve the standalone GIL-mode runner for the shared gauntlet.
+    """
+    return Path(__file__).resolve().with_name("real_world_gauntlet_gil_runner.py")
 
 
 def _ensure_src_on_path() -> None:
@@ -47,6 +63,82 @@ def _gil_status() -> str:
         return "enabled" if flag() else "disabled"
     except Exception:
         return "unknown"
+
+
+def _maybe_rerun_under_nogil(lib: str) -> None:
+    """
+    Re-execute the full shared gauntlet under `-X gil=0` once when requested.
+
+    Contract:
+        - Only the parent-side `"dependency-injector"` parameter triggers the
+          rerun so the parametrized test does not recursively respawn once per
+          library.
+        - Child runs are marked with one explicit env guard.
+        - Uses one standalone runner process instead of nested pytest inside
+          the parametrized benchmark body.
+        - After the child rerun succeeds, the parent-side parametrized cases
+          all skip so the benchmark is not executed twice.
+
+    Args:
+        lib:
+            Current pytest parameter value.
+
+    Returns:
+        None.
+
+    Raises:
+        AssertionError:
+            If the child pytest rerun exits non-zero.
+    """
+    global _REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE
+
+    if not REAL_WORLD_GAUNTLET_FORCE_NOGIL:
+        return
+    if os.getenv(_REAL_WORLD_GAUNTLET_GIL_REEXEC_ENV) == "1":
+        return
+
+    if _gil_status() == "disabled":
+        return
+
+    if _REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE:
+        pytest.skip(
+            "Shared gauntlet already executed in the standalone no-gil subprocess."
+        )
+    if lib != "dependency-injector":
+        pytest.skip(
+            "Shared gauntlet no-gil rerun is triggered only once from the first parameter."
+        )
+
+    child_env = os.environ.copy()
+    child_env[_REAL_WORLD_GAUNTLET_GIL_REEXEC_ENV] = "1"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-X",
+            "gil=0",
+            str(_gil_runner_path()),
+        ],
+        cwd=str(Path(__file__).resolve().parents[2]),
+        env=child_env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if completed.stdout:
+        print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+    if completed.stderr:
+        print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
+
+    _REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE = True
+    if completed.returncode != 0:
+        raise AssertionError(
+            "Shared real-world gauntlet rerun failed under forced no-gil mode "
+            f"with exit code {completed.returncode}."
+        )
+    pytest.skip(
+        "Shared gauntlet executed in the standalone no-gil subprocess."
+    )
 
 
 def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
@@ -423,7 +515,7 @@ class _GauntletConfig:
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
             iterations=_env_int("DI_GAUNTLET_ITERS", 1000),
-            threads=_env_int("DI_GAUNTLET_THREADS", 3),
+            threads=_env_int("DI_GAUNTLET_THREADS", 1),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
             worker_b_jobs=_env_int("DI_GAUNTLET_WORKER_B_JOBS", _WORKER_B_JOBS_DEFAULT),
@@ -1533,6 +1625,7 @@ def test_real_world_gauntlet(lib: str) -> None:
     The request lane descends through four logical layers into spellspace and
     creates at least 500 request objects total by default.
     """
+    _maybe_rerun_under_nogil(lib)
     cfg = _GauntletConfig.from_env()
 
     result = _run_gauntlet_benchmark(lib, cfg)

@@ -70,7 +70,7 @@ class SpellbookCreationSystem(Cleanable):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __slots__ = Cleanable.__slots__ + [
-        "_automatic",
+        "_dynamic",
         "_conduit_logger",
         "_lock",
         "_name",
@@ -84,7 +84,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             policy: Optional[str],
-            automatic: bool,
+            dynamic: bool,
             name: Optional[str],
             conduit_logger: Optional[Any],
             phase_scheduler_cls: Type[PhaseScheduler],
@@ -99,7 +99,7 @@ class SpellbookCreationSystem(Cleanable):
         Args:
             spellbook: Owning a Spellbook instance for this run.
             policy: Requested conduit policy string.
-            automatic: Automatic-mode flag.
+            dynamic: Dynamic-mode flag.
             name: Optional conduit name.
             conduit_logger: Optional conduit logger.
             phase_scheduler_cls:
@@ -112,7 +112,7 @@ class SpellbookCreationSystem(Cleanable):
         super().__init__()
         self._spellbook: Spellbook = spellbook
         self._policy: Optional[str] = policy
-        self._automatic: bool = automatic
+        self._dynamic: bool = dynamic
         self._name: Optional[str] = name
         self._conduit_logger = conduit_logger
         self._phase_scheduler_cls: Type[PhaseScheduler] = phase_scheduler_cls
@@ -144,7 +144,7 @@ class SpellbookCreationSystem(Cleanable):
             self._cleaned = True
             del self._spellbook
             del self._policy
-            del self._automatic
+            del self._dynamic
             del self._name
             del self._conduit_logger
             del self._phase_scheduler_cls
@@ -180,7 +180,7 @@ class SpellbookCreationSystem(Cleanable):
         policy_enum = SpellbookCreationSystem._resolve_conjure_policy(
             spellbook=spellbook,
             policy=self._policy,
-            automatic=self._automatic,
+            dynamic=self._dynamic,
         )
         hook_map = SpellbookCreationSystem.get_conjure_hook_map(spellbook)
         SpellbookCreationSystem.fire_conjure_hooks(
@@ -200,7 +200,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             name=self._name,
             conduit_logger=self._conduit_logger,
-            automatic=self._automatic,
+            dynamic=self._dynamic,
             policy=policy_enum,
             conduit_id=conduit_id,
             creation_gate_controller=creation_gate_controller,
@@ -276,18 +276,18 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             policy: Optional[str],
-            automatic: bool,
+            dynamic: bool,
     ) -> Policies:
         """
         Purpose:
             Validate the requested conjure policy and convert it to `Policies`.
         Contract:
-            - Applies system-state/automatic-mode policy gating.
+            - Applies system-state/dynamic-mode policy gating.
             - Ensures spell-level validation gate is satisfied before returning.
         Args:
             spellbook: Owning Spellbook instance.
             policy: Requested policy value.
-            automatic: Automatic-mode flag.
+            dynamic: Dynamic-mode flag.
         Returns:
             Policies: Resolved policy enum.
         Raises:
@@ -298,7 +298,7 @@ class SpellbookCreationSystem(Cleanable):
         SpellbookCreationSystem.check_system_state(
             spellbook=spellbook,
             policy=resolved_policy,
-            automatic=automatic,
+            dynamic=dynamic,
         )
         policy_enum: Policies = EnumHelpers.convert_enum_and_check(
             resolved_policy,
@@ -312,7 +312,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Spellbook,
             name: Optional[str],
             conduit_logger: Optional[Any],
-            automatic: bool,
+            dynamic: bool,
             policy: Policies,
             conduit_id: str,
             creation_gate_controller: "CreationGateController",
@@ -328,7 +328,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Owning Spellbook instance.
             name: Optional conduit name.
             conduit_logger: Optional conduit logger.
-            automatic: Automatic-mode flag.
+            dynamic: Dynamic-mode flag.
             policy: Resolved policy enum.
             conduit_id: Generated conduit id.
             creation_gate_controller:
@@ -351,7 +351,7 @@ class SpellbookCreationSystem(Cleanable):
             aetheric_frame_name=spellbook._aetheric_frame,
             aetheric_frame=aetheric_frame,
             policy=policy,
-            automatic=automatic,
+            dynamic=dynamic,
             logger=conduit_logger,
             conduit_id=conduit_id,
             creation_gate_controller=creation_gate_controller,
@@ -452,18 +452,18 @@ class SpellbookCreationSystem(Cleanable):
         )
 
     @staticmethod
-    def check_system_state(spellbook: Spellbook, policy: str, automatic: bool) -> None:
+    def check_system_state(spellbook: Spellbook, policy: str, dynamic: bool) -> None:
         """
         Purpose:
             Validate requested policy compatibility with the current system state.
         Contract:
-            - Automatic mode only allows "Policies.default".
+            - Non-dynamic mode only allows "Policies.default".
             - Dynamic policy usage requires "SystemState.dynamic".
             - Raises RuntimeError with diagnostic context on policy/state mismatch.
         Args:
             spellbook: Owning Spellbook instance.
             policy: Requested policy value.
-            automatic: Automatic-mode flag.
+            dynamic: Dynamic-mode flag.
         Returns:
             None.
         Raises:
@@ -474,21 +474,21 @@ class SpellbookCreationSystem(Cleanable):
         if aetheric_frame_configuration is None:
             raise RuntimeError(
                 "Cannot check system state without an AethericFrameConfiguration. "
-                f"(policy={policy}, automatic={automatic})"
+                f"(policy={policy}, dynamic={dynamic})"
             )
         system_state = aetheric_frame_configuration.system_state
 
-        if automatic:
+        if not dynamic:
             if policy_enum != Policies.default:
                 spellbook._logger.error(
-                    "Dynamic-only policy requested while automatic=True "
+                    "Dynamic-only policy requested while dynamic=False "
                     f"(policy={policy_enum}, system_state={system_state}).",
                     "_check_system_state",
                     exc_info=True,
                 )
                 raise RuntimeError(
-                    "Dynamic-only policies are not allowed when automatic mode is requested. "
-                    f"(policy={policy_enum}, automatic={automatic}, "
+                    "Dynamic-only policies are not allowed when dynamic mode is disabled. "
+                    f"(policy={policy_enum}, dynamic={dynamic}, "
                     f"system_state={system_state}, allowed=default)"
                 )
             return
@@ -496,15 +496,15 @@ class SpellbookCreationSystem(Cleanable):
         if system_state == SystemState.automatic:
             spellbook._logger.error(
                 "Dynamic policy requested while system_state is automatic "
-                f"(policy={policy_enum}, automatic={automatic}, "
+                f"(policy={policy_enum}, dynamic={dynamic}, "
                 f"system_state={system_state}).",
                 "_check_system_state",
                 exc_info=True,
             )
             raise RuntimeError(
-                "Cannot use dynamic policies in automatic system_state. "
-                f"(policy={policy_enum}, automatic={automatic}, system_state={system_state}). "
-                "Set system_state to 'dynamic' in the configuration or set automatic=True."
+                "Cannot enable dynamic conduit mode in automatic system_state. "
+                f"(policy={policy_enum}, dynamic={dynamic}, system_state={system_state}). "
+                "Set system_state to 'dynamic' in the configuration or call conjure(dynamic=False)."
             )
 
     @staticmethod

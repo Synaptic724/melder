@@ -2217,7 +2217,7 @@ def test_check_system_state_allows_default_in_automatic():
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
     with pytest.raises(RuntimeError):
-        SpellbookCreationSystem.check_system_state(sb, Policies.default, automatic=False)
+        SpellbookCreationSystem.check_system_state(sb, Policies.default, dynamic=True)
 
 
 def test_check_system_state_dynamic_in_automatic_raises():
@@ -2235,14 +2235,14 @@ def test_check_system_state_dynamic_in_automatic_raises():
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
     with pytest.raises(RuntimeError) as excinfo:
-        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, automatic=False)
+        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, dynamic=True)
     message = str(excinfo.value)
     assert "policy=Policies.whitelist_all" in message
-    assert "automatic=False" in message
+    assert "dynamic=True" in message
     assert "system_state=SystemState.automatic" in message
 
 
-def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
+def test_check_system_state_dynamic_policy_rejected_when_dynamic_disabled():
     """
     Purpose:
         Confirm automatic flag does not override rejection for dynamic policy.
@@ -2257,7 +2257,7 @@ def test_check_system_state_dynamic_allowed_when_automatic_flag_true():
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
     with pytest.raises(RuntimeError) as excinfo:
-        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, automatic=True)
+        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, dynamic=False)
     message = str(excinfo.value)
     assert "policy=Policies.whitelist_all" in message
     assert "allowed=default" in message
@@ -3020,9 +3020,9 @@ def test_check_system_state_matrix(policy, automatic, expect_raises):
     sb._logger = DummySafeLogger()
     if expect_raises:
         with pytest.raises(RuntimeError):
-            SpellbookCreationSystem.check_system_state(sb, policy, automatic=automatic)
+            SpellbookCreationSystem.check_system_state(sb, policy, dynamic=not automatic)
     else:
-        SpellbookCreationSystem.check_system_state(sb, policy, automatic=automatic)
+        SpellbookCreationSystem.check_system_state(sb, policy, dynamic=not automatic)
 
 
 @pytest.mark.parametrize(
@@ -4839,6 +4839,7 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 aetheric_frame_name=None,
                 aetheric_frame=None,
                 policy=None,
+                dynamic=None,
                 automatic=None,
                 logger=None,
                 conduit_id=None,
@@ -4857,7 +4858,8 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 aetheric_frame_name: Aetheric frame name.
                 aetheric_frame: Live frame object.
                 policy: Conduit policy value.
-                automatic: Automatic mode flag.
+                dynamic: Dynamic mode flag.
+                automatic: Backward-compatible automatic mode flag.
                 logger: Logger instance.
                 conduit_id: Optional conduit id override for tests.
                 creation_gate_controller: Optional creation-gate controller dependency.

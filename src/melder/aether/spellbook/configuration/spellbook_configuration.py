@@ -41,7 +41,8 @@ class SpellbookConfiguration(Cleanable):
         "_properties",
         "available_properties",
         "_idempotent_keys",
-        "_hooks",
+        "_conduit_hooks",
+        "_meld_hooks",
     ]
     _ALLOWED_HOOKS: ClassVar[Tuple[str, ...]] = (
         # Meld pipeline hooks
@@ -62,6 +63,21 @@ class SpellbookConfiguration(Cleanable):
         # Contract hooks
         "on_contract_created",
         "on_contract_removed",
+    )
+    _CONDUIT_HOOK_NAMES: ClassVar[Tuple[str, ...]] = (
+        "on_conduit_pre_created",
+        "on_conduit_post_created",
+        "on_conduit_activated",
+        "on_conduit_cleanup_start",
+        "on_conduit_cleanup_complete",
+        "on_conduit_post_link",
+        "on_conduit_post_unlink",
+        "on_contract_created",
+        "on_contract_removed",
+    )
+    _MELD_HOOK_NAMES: ClassVar[Tuple[str, ...]] = (
+        "on_meld_pre_resolve",
+        "on_meld_post_resolve",
     )
     def __init__(self, aether_frame: str = "default"):
         """
@@ -102,7 +118,8 @@ class SpellbookConfiguration(Cleanable):
         #   - Conduit lifecycle (pre/post created, activated, cleanup start/complete)
         #   - Linking (on_conduit_post_link / on_conduit_post_unlink)
         #   - Contract events (on_contract_created / on_contract_removed)
-        self._hooks: Dict[str, Dict[str, list[Callable[..., Any]]]] = {}
+        self._conduit_hooks: Dict[str, Dict[str, list[Callable[..., Any]]]] = {}
+        self._meld_hooks: Dict[str, Dict[str, list[Callable[..., Any]]]] = {}
 
     def cleanup(self) -> None:
         """
@@ -135,9 +152,12 @@ class SpellbookConfiguration(Cleanable):
                 self.available_properties.clear()
             del self.available_properties
 
-            if self._hooks is not None:
-                self._hooks.clear()
-            del self._hooks
+            if self._conduit_hooks is not None:
+                self._conduit_hooks.clear()
+            if self._meld_hooks is not None:
+                self._meld_hooks.clear()
+            del self._conduit_hooks
+            del self._meld_hooks
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -410,11 +430,17 @@ class SpellbookConfiguration(Cleanable):
         if not callable(hook):
             raise TypeError("hook must be callable.")
 
+        target_registry = (
+            self._meld_hooks
+            if hook_name in self._MELD_HOOK_NAMES
+            else self._conduit_hooks
+        )
+
         with self._lock:
-            per_spellbook = self._hooks.get(spellbook_id)
+            per_spellbook = target_registry.get(spellbook_id)
             if per_spellbook is None:
                 per_spellbook = {}
-                self._hooks[spellbook_id] = per_spellbook
+                target_registry[spellbook_id] = per_spellbook
 
             hooks_list = per_spellbook.get(hook_name)
             if hooks_list is None:
@@ -480,12 +506,11 @@ class SpellbookConfiguration(Cleanable):
                         )
                     self.add_hook(spellbook_id, name, fn)
 
-    def get_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
+    def get_conduit_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
         """
-        Retrieve the live hook map for a specific Spellbook.
+        Retrieve the live conduit hook map for a specific Spellbook.
 
-        This returns the internal hook map for "spellbook_id" so callers
-        (e.g., Conduit / Meld wiring) can share a single hook registry.
+        This returns the internal conduit hook map for `spellbook_id`.
 
         Shape:
 
@@ -493,26 +518,72 @@ class SpellbookConfiguration(Cleanable):
 
         Args:
             spellbook_id (str):
-                The ID of the Spellbook whose hooks should be retrieved.
+                The ID of the Spellbook whose conduit hooks should be retrieved.
 
         Returns:
             Dict[str, list[Callable[..., Any]]]:
                 Mapping of hook name -> list of callables currently registered
-                for that Spellbook. Returns an empty dict if no hooks exist yet.
+                for that Spellbook. Returns an empty dict if no conduit hooks exist.
 
         Raises:
             RuntimeError: If the configuration is cleaned.
         """
         self.check_cleaned()
         with self._lock:
-            if self._hooks is None:
+            if self._conduit_hooks is None:
                 return {}
-
-            per_spellbook = self._hooks.get(spellbook_id)
+            per_spellbook = self._conduit_hooks.get(spellbook_id)
             if per_spellbook is None:
-                per_spellbook = {}
-                self._hooks[spellbook_id] = per_spellbook
+                return {}
             return per_spellbook
+
+    def get_meld_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
+        """
+        Retrieve the live meld hook map for a specific Spellbook.
+
+        This returns the internal meld hook map for `spellbook_id`.
+
+        Args:
+            spellbook_id (str):
+                The ID of the Spellbook whose meld hooks should be retrieved.
+
+        Returns:
+            Dict[str, list[Callable[..., Any]]]:
+                Mapping of hook name -> list of callables currently registered
+                for that Spellbook. Returns an empty dict if no meld hooks exist.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._meld_hooks is None:
+                return {}
+            per_spellbook = self._meld_hooks.get(spellbook_id)
+            if per_spellbook is None:
+                return {}
+            return per_spellbook
+
+    def get_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
+        """
+        Retrieve a merged detached hook map for compatibility callers.
+
+        Returns:
+            Dict[str, list[Callable[..., Any]]]:
+                Detached merged view of conduit and meld hooks.
+        """
+        self.check_cleaned()
+        merged: Dict[str, list[Callable[..., Any]]] = {}
+        with self._lock:
+            conduit_hooks = self._conduit_hooks.get(spellbook_id)
+            if conduit_hooks:
+                for hook_name, hook_list in conduit_hooks.items():
+                    merged[hook_name] = list(hook_list)
+            meld_hooks = self._meld_hooks.get(spellbook_id)
+            if meld_hooks:
+                for hook_name, hook_list in meld_hooks.items():
+                    merged[hook_name] = list(hook_list)
+        return merged
 
 
     # ---------------------------

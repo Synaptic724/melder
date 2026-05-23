@@ -3594,7 +3594,15 @@ and logging.
         return Spellbook(self._aetheric_frame, self._configuration)
 
 
-    def conjure(self, policy: Optional[str] = "default", automatic: bool = True, name: Optional[str] = None, conduit_logger: Optional[Any] = None) -> Conduit:
+    def conjure(
+            self,
+            policy: Optional[str] = "default",
+            dynamic: bool = False,
+            name: Optional[str] = None,
+            conduit_logger: Optional[Any] = None,
+            *,
+            automatic: Optional[bool] = None,
+    ) -> Conduit:
         """
         Public API
 
@@ -3610,24 +3618,27 @@ and logging.
             policy (str, optional):
                 Access control policy for this conduit (dynamic-only modes). Must match a `Policies` enum member.
                 Defaults to "default".
-            automatic (bool, optional):
-                If True, operate in automatic (non-dynamic) mode. If False, require `system_state` to be dynamic.
+            dynamic (bool, optional):
+                If True, operate in dynamic mode and require `system_state` to
+                be dynamic. Defaults to False.
             name (str, optional):
                 An optional name for the conduit.
             conduit_logger (Any, optional):
                 An optional logger instance to attach to the conduit for logging purposes.
+            automatic (Optional[bool], optional):
+                Backward-compatible alias for the older posture flag.
 
         Returns:
             Conduit: The newly created Conduit instance.
 
         Raises:
             RuntimeError: If this Spellbook has already conjured a Conduit (only one is allowed).
-            RuntimeError: If dynamic-only policies are used when `system_state` is "automatic" or when `automatic` is True.
+            RuntimeError: If dynamic-only policies are used when `system_state` is "automatic" or when `dynamic` is False.
             ValueError: If the configuration fails validation or the policy string is invalid.
 
         Policies:
-            - **Automatic mode (automatic=True)**: only `"default"` is allowed (linking disabled).
-            - **Dynamic mode (automatic=False and `system_state` is dynamic)**:
+            - **Non-dynamic mode (dynamic=False)**: only `"default"` is allowed (linking disabled).
+            - **Dynamic mode (dynamic=True and `system_state` is dynamic)**:
                 * `"default"`: normal per-spell rules.
                 * `"whitelist_all"` / `"block_all"`: override per-spell whitelist behaviour.
                 * `"inbound_only"` / `"outbound_only"`: directional link restrictions.
@@ -3681,10 +3692,17 @@ and logging.
                     f"conduit_name={conduit_name})"
                 )
 
+            if automatic is not None:
+                if dynamic and automatic:
+                    raise ValueError(
+                        "Cannot request both dynamic=True and automatic=True."
+                    )
+                dynamic = not automatic
+
             spellbook_creation_system = SpellbookCreationSystem(
                 spellbook=self,
                 policy=policy,
-                automatic=automatic,
+                dynamic=dynamic,
                 name=name,
                 conduit_logger=conduit_logger,
                 phase_scheduler_cls=PhaseScheduler,

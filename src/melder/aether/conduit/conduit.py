@@ -103,7 +103,6 @@ class Conduit(Cleanable):
        "_name",
        "__dynamic_environment__",
        "_nexus_publish_enabled",
-       "_automatic",
        "_aetheric_frame_name",
        "_aetheric_frame",
        "_configuration",
@@ -126,23 +125,6 @@ class Conduit(Cleanable):
     ]
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _CONDUIT_HOOK_NAMES_FROM_CONFIGURATION: ClassVar[Tuple[str, ...]] = (
-        "on_conduit_pre_created",
-        "on_conduit_post_created",
-        "on_conduit_activated",
-        "on_conduit_cleanup_start",
-        "on_conduit_cleanup_complete",
-        "on_conduit_post_link",
-        "on_conduit_post_unlink",
-        "on_contract_created",
-        "on_contract_removed",
-    )
-    _MELD_HOOK_NAMES_FROM_CONFIGURATION: ClassVar[Tuple[str, ...]] = (
-        "on_meld_pre_resolve",
-        "on_meld_post_resolve",
-    )
-
-
     def __init__(
             self,
             spellbook: Spellbook,
@@ -152,12 +134,16 @@ class Conduit(Cleanable):
             aetheric_frame: AethericFrame,
             policy: Policies,
             creation_gate_controller: CreationGateController,
-            automatic: bool = True,
+            dynamic: bool = False,
             name: Optional[str] = None,
             logger: Any | None = None,
             conduit_id: Optional[str] = None,
             root_conduit_id: Optional[str] = None,
             creation_gate: CreationGate | None = None,
+            conduit_hooks: Optional[dict[str, list[Any]]] = None,
+            meld_hooks: Optional[dict[str, list[Callable[..., Any]]]] = None,
+            *,
+            automatic: Optional[bool] = None,
     ):
         """
         Public API
@@ -178,8 +164,8 @@ class Conduit(Cleanable):
                 cloud services for this conduit.
             policy (Policies):
                 The Conduit policy that governs linking and contract behavior.
-            automatic (bool, optional):
-                If True, operate in automatic (non-dynamic) mode.
+            dynamic (bool, optional):
+                If True, operate in dynamic mode.
             name (str, optional):
                 An optional name for easier identification.
             logger (Any | None, optional):
@@ -196,6 +182,12 @@ class Conduit(Cleanable):
                 Optional CreationGate to register for this conduit. When None,
                 a new gate is created via the injected frame-owned
                 CreationGateController.
+            conduit_hooks (Optional[dict[str, list[Any]]], optional):
+                Optional shared conduit hook map to attach by reference.
+            meld_hooks (Optional[dict[str, list[Callable[..., Any]]]], optional):
+                Optional shared meld hook map to attach by reference.
+            automatic (Optional[bool], optional):
+                Backward-compatible alias for the older posture flag.
 
         Raises:
             TypeError:
@@ -219,9 +211,14 @@ class Conduit(Cleanable):
 
         self._id: str = conduit_id
         self._name: Optional[str] = name
-        self.__dynamic_environment__: bool = False
+        if automatic is not None:
+            if dynamic and automatic:
+                raise ValueError(
+                    "Cannot request both dynamic=True and automatic=True."
+                )
+            dynamic = not automatic
+        self.__dynamic_environment__: bool = bool(dynamic)
         self._nexus_publish_enabled: bool = False
-        self._automatic: bool = automatic
         self._aetheric_frame_name: str = aetheric_frame_name
         self._aetheric_frame: AethericFrame = aetheric_frame
         # Special Configuration
@@ -238,11 +235,6 @@ class Conduit(Cleanable):
             creation_gate_controller
         )
         self._logger: SafeLogger = self._configure_logger(logger)
-        # Now that configuration/logger are set, apply flags.
-        self._apply_configuration_flags()
-        # Override dynamic environment if caller requested automatic/dynamic explicitly.
-        if automatic is not None:
-            self.__dynamic_environment__ = not automatic
 
         if conduit_state is ConduitState.lesser:
             if root_conduit_id is None:
@@ -274,11 +266,20 @@ class Conduit(Cleanable):
             self._register_existing_gate_for_current_root(conduit_id, creation_gate)
         self._creation_gate: CreationGate = creation_gate
 
-        # Split hook maps into conduit-owned copies so runtime behavior does not
-        # depend on future Configuration hook-map mutations.
-        conduit_hooks, meld_hooks = self._snapshot_split_hook_maps_from_configuration()
-        self._conduit_hooks: dict[str, list[Any]] | None = conduit_hooks
-        self._meld_hooks: dict[str, list[Any]] | None = meld_hooks
+        if conduit_hooks is None:
+            resolved_conduit_hooks = self._configuration.get_conduit_hooks(
+                self._spellbook._id,
+            )
+            self._conduit_hooks = resolved_conduit_hooks or None
+        else:
+            self._conduit_hooks = conduit_hooks
+        if meld_hooks is None:
+            resolved_meld_hooks = self._configuration.get_meld_hooks(
+                self._spellbook._id,
+            )
+            self._meld_hooks = resolved_meld_hooks or None
+        else:
+            self._meld_hooks = meld_hooks
 
         # Local hook overlays for this conduit only.
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
@@ -771,7 +772,6 @@ class Conduit(Cleanable):
             conduit_state=self._conduit_state.value,
             root_conduit_id=self._root_conduit_id,
             dynamic_environment=self.__dynamic_environment__,
-            automatic=self._automatic,
         )
 
     def _bind_family_blocked_for_current_posture(self) -> bool:
@@ -938,34 +938,6 @@ class Conduit(Cleanable):
             disposal_methods=spell.disposal_method_names,
         )
 
-
-
-    def _snapshot_split_hook_maps_from_configuration(
-            self,
-    ) -> tuple[dict[str, list[Any]], dict[str, list[Any]]]:
-        """
-        Internal
-
-        Build detached conduit/meld hook maps from the current Configuration.
-
-        Contract:
-            - Reads hooks from Configuration for this Conduit's Spellbook id.
-            - Pulls only explicitly supported Conduit/Meld hook names.
-            - Splits meld pre/post hooks from conduit hooks.
-            - Returns copied lists owned by this Conduit.
-        """
-        raw_hook_map = self._configuration.get_hooks(self._spellbook._id)
-        conduit_hooks: dict[str, list[Any]] = {}
-        meld_hooks: dict[str, list[Any]] = {}
-        for hook_name in self._CONDUIT_HOOK_NAMES_FROM_CONFIGURATION:
-            hook_list = raw_hook_map.get(hook_name)
-            if hook_list:
-                conduit_hooks[hook_name] = list(hook_list)
-        for hook_name in self._MELD_HOOK_NAMES_FROM_CONFIGURATION:
-            hook_list = raw_hook_map.get(hook_name)
-            if hook_list:
-                meld_hooks[hook_name] = list(hook_list)
-        return conduit_hooks, meld_hooks
 
 
     #region Context Management
@@ -1136,26 +1108,6 @@ class Conduit(Cleanable):
             raise RuntimeError("Local conduit hooks were not initialized.")
         self._merge_conduit_hooks(local_conduit_hooks, hooks)
 
-    def _apply_configuration_flags(self) -> None:
-        """
-        Internal
-
-        Sets the environment mode for this Conduit based on the configuration
-        instance passed.
-        """
-        frame_configuration = self._spellbook._aetheric_frame_configuration
-        if frame_configuration is None:
-            raise RuntimeError(
-                "Spellbook frame configuration is not available for this conduit."
-            )
-        try:
-            state = frame_configuration.system_state
-            self.__dynamic_environment__ = (state == SystemState.dynamic)
-        except Exception as e:
-            self._logger.error(f"_apply_configuration_flags failed: {e}", "__init__", exc_info=True)
-            raise
-
-
     def _add_root_conduit(self) -> None:
         """
         Internal
@@ -1252,23 +1204,21 @@ class Conduit(Cleanable):
         Collect the effective hook sequence for a hook name.
 
         Contract:
-            - Shared lineage hooks are collected first.
-            - Local conduit hooks are collected second.
-            - Returned list is detached from internal maps.
+            - Local conduit hooks override shared conduit hooks for the same
+              hook name.
+            - Returned list is detached from internal maps only when needed.
         """
-        hook_chain: list[Callable[..., Any]] = []
+        if self._local_conduit_hooks is not None:
+            local_hooks = self._local_conduit_hooks.get(hook_name)
+            if local_hooks:
+                return list(local_hooks)
 
         if self._conduit_hooks is not None:
             shared_hooks = self._conduit_hooks.get(hook_name)
             if shared_hooks:
-                hook_chain.extend(list(shared_hooks))
+                return list(shared_hooks)
 
-        if self._local_conduit_hooks is not None:
-            local_hooks = self._local_conduit_hooks.get(hook_name)
-            if local_hooks:
-                hook_chain.extend(list(local_hooks))
-
-        return hook_chain
+        return []
 
     def _create_gate_for_current_root(self, conduit_id: str) -> CreationGate:
         """
@@ -1631,10 +1581,12 @@ class Conduit(Cleanable):
                 aetheric_frame_name=self._aetheric_frame_name,
                 aetheric_frame=self._aetheric_frame,
                 policy=Policies.default,
-                automatic=self._automatic,
+                dynamic=self.__dynamic_environment__,
                 logger=logger,
                 root_conduit_id=root_conduit_id,
                 creation_gate_controller=self._creation_gate_controller,
+                conduit_hooks=root_conduit._conduit_hooks,
+                meld_hooks=root_conduit._meld_hooks,
             )
             if new_conduit._conduit_ward is not None:
                 new_conduit._conduit_ward._root_conduit = root_conduit
