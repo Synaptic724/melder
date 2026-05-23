@@ -88,16 +88,20 @@ def test_conduit_begin_transaction_link_accepts_conduits_list(
         automatic=False,
     )
     try:
-        spellbook_stub.begin_transaction = MagicMock()
+        mediator = MagicMock(get_active_request=lambda: None)
+        conduit_type = type(conduit_dynamic_normal)
+        original_getter = conduit_type._get_required_transaction_mediator
+        conduit_type._get_required_transaction_mediator = lambda self: mediator
         conduit_dynamic_normal.begin_transaction(
             ChangeTransactionType.LINK,
             conduits=[conduit_dynamic_normal, peer],
         )
-        spellbook_stub.begin_transaction.assert_called_once()
-        conduit_ids = spellbook_stub.begin_transaction.call_args.kwargs["conduit_ids"]
+        mediator.start_transaction.assert_called_once()
+        conduit_ids = mediator.start_transaction.call_args.kwargs["metadata"]["conduit_ids"]
         assert conduit_dynamic_normal._id in conduit_ids
         assert peer._id in conduit_ids
     finally:
+        conduit_type._get_required_transaction_mediator = original_getter
         peer.cleanup()
 
 
@@ -117,13 +121,19 @@ def test_conduit_begin_transaction_link_requires_peer(
     Returns:
         None.
     """
-    spellbook_stub.begin_transaction = MagicMock()
-    with pytest.raises(RuntimeError, match="peer conduit"):
-        conduit_dynamic_normal.begin_transaction(
-            ChangeTransactionType.LINK,
-            conduits=[conduit_dynamic_normal],
-        )
-    spellbook_stub.begin_transaction.assert_not_called()
+    mediator = MagicMock(get_active_request=lambda: None)
+    conduit_type = type(conduit_dynamic_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        with pytest.raises(RuntimeError, match="peer conduit"):
+            conduit_dynamic_normal.begin_transaction(
+                ChangeTransactionType.LINK,
+                conduits=[conduit_dynamic_normal],
+            )
+        mediator.start_transaction.assert_not_called()
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
 def test_conduit_begin_transaction_link_requires_conduits_argument(
@@ -131,12 +141,17 @@ def test_conduit_begin_transaction_link_requires_conduits_argument(
     spellbook_stub: MagicMock,
 ) -> None:
     """Link transactions should fail when the conduits list is omitted."""
-    spellbook_stub.begin_transaction = MagicMock()
+    mediator = MagicMock(get_active_request=lambda: None)
+    conduit_type = type(conduit_dynamic_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        with pytest.raises(RuntimeError, match="at least one peer conduit"):
+            conduit_dynamic_normal.begin_transaction(ChangeTransactionType.LINK)
 
-    with pytest.raises(RuntimeError, match="require conduits"):
-        conduit_dynamic_normal.begin_transaction(ChangeTransactionType.LINK)
-
-    spellbook_stub.begin_transaction.assert_not_called()
+        mediator.start_transaction.assert_not_called()
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
 def test_conduit_begin_transaction_rejects_non_normal_conduits(
@@ -144,12 +159,17 @@ def test_conduit_begin_transaction_rejects_non_normal_conduits(
     spellbook_stub: MagicMock,
 ) -> None:
     """Only normal conduits may begin change transactions."""
-    spellbook_stub.begin_transaction = MagicMock()
+    mediator = MagicMock(get_active_request=lambda: None)
+    conduit_type = type(conduit_lesser)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        with pytest.raises(RuntimeError, match="Only normal conduits"):
+            conduit_lesser.begin_transaction(ChangeTransactionType.BIND)
 
-    with pytest.raises(RuntimeError, match="Only normal conduits"):
-        conduit_lesser.begin_transaction(ChangeTransactionType.BIND)
-
-    spellbook_stub.begin_transaction.assert_not_called()
+        mediator.begin_transaction.assert_not_called()
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
 def test_conduit_begin_transaction_dynamic_only_string_requires_dynamic_mode(
@@ -157,12 +177,17 @@ def test_conduit_begin_transaction_dynamic_only_string_requires_dynamic_mode(
     spellbook_stub: MagicMock,
 ) -> None:
     """Dynamic-only transaction strings should be rejected in non-dynamic mode."""
-    spellbook_stub.begin_transaction = MagicMock()
+    mediator = MagicMock(get_active_request=lambda: None)
+    conduit_type = type(conduit_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        with pytest.raises(RuntimeError, match="require dynamic mode"):
+            conduit_normal.begin_transaction("link")
 
-    with pytest.raises(RuntimeError, match="require dynamic mode"):
-        conduit_normal.begin_transaction("link")
-
-    spellbook_stub.begin_transaction.assert_not_called()
+        mediator.start_transaction.assert_not_called()
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
 def test_conduit_begin_transaction_rejects_non_conduit_objects_in_link_list(
@@ -170,23 +195,28 @@ def test_conduit_begin_transaction_rejects_non_conduit_objects_in_link_list(
     spellbook_stub: MagicMock,
 ) -> None:
     """Link transactions should reject non-conduit objects in the conduits list."""
-    spellbook_stub.begin_transaction = MagicMock()
+    mediator = MagicMock(get_active_request=lambda: None)
+    conduit_type = type(conduit_dynamic_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        with pytest.raises(TypeError, match="Conduit"):
+            conduit_dynamic_normal.begin_transaction(
+                ChangeTransactionType.LINK,
+                conduits=[conduit_dynamic_normal, object()],
+            )
 
-    with pytest.raises(TypeError, match="Conduit"):
-        conduit_dynamic_normal.begin_transaction(
-            ChangeTransactionType.LINK,
-            conduits=[conduit_dynamic_normal, object()],
-        )
-
-    spellbook_stub.begin_transaction.assert_not_called()
+        mediator.start_transaction.assert_not_called()
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
-def test_conduit_begin_transaction_link_requires_local_conduit_presence(
+def test_conduit_begin_transaction_link_auto_adds_local_conduit(
     conduit_dynamic_normal: Conduit,
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
-    """Link transactions should require the local conduit in the conduits list."""
+    """Link transactions should automatically include the local conduit id."""
     peer = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -196,13 +226,20 @@ def test_conduit_begin_transaction_link_requires_local_conduit_presence(
         automatic=False,
     )
     try:
-        spellbook_stub.begin_transaction = MagicMock()
-        with pytest.raises(RuntimeError, match="local conduit"):
+        mediator = MagicMock(get_active_request=lambda: None)
+        conduit_type = type(conduit_dynamic_normal)
+        original_getter = conduit_type._get_required_transaction_mediator
+        conduit_type._get_required_transaction_mediator = lambda self: mediator
+        try:
             conduit_dynamic_normal.begin_transaction(
                 ChangeTransactionType.LINK,
                 conduits=[peer],
             )
-        spellbook_stub.begin_transaction.assert_not_called()
+            conduit_ids = mediator.start_transaction.call_args.kwargs["metadata"]["conduit_ids"]
+            assert conduit_dynamic_normal._id in conduit_ids
+            assert peer._id in conduit_ids
+        finally:
+            conduit_type._get_required_transaction_mediator = original_getter
     finally:
         peer.cleanup()
 
@@ -225,13 +262,21 @@ def test_conduit_begin_transaction_appends_explicit_conduit_ids_for_non_link_req
     spellbook_stub: MagicMock,
 ) -> None:
     """Non-link transactions should merge explicit conduit_ids and include the local conduit."""
-    spellbook_stub.begin_transaction = MagicMock()
+    mediator = MagicMock(
+        get_active_request=lambda: None,
+        begin_transaction=MagicMock(),
+    )
+    conduit_type = type(conduit_dynamic_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        conduit_dynamic_normal.begin_transaction("bind", conduit_ids=["peer-1"])
 
-    conduit_dynamic_normal.begin_transaction("bind", conduit_ids=["peer-1"])
-
-    conduit_ids = spellbook_stub.begin_transaction.call_args.kwargs["conduit_ids"]
-    assert "peer-1" in conduit_ids
-    assert conduit_dynamic_normal._id in conduit_ids
+        conduit_ids = mediator.begin_transaction.call_args.kwargs["conduit_ids"]
+        assert "peer-1" in conduit_ids
+        assert conduit_dynamic_normal._id in conduit_ids
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
 def test_begin_binding_transaction_delegates_to_begin_transaction(
@@ -268,14 +313,18 @@ def test_end_binding_transaction_delegates_for_normal_conduit(
 ) -> None:
     """Normal conduits should forward bind-family end to the mediator path."""
     mediator = MagicMock()
-    conduit_dynamic_normal._get_required_transaction_mediator = lambda: mediator
+    conduit_type = type(conduit_dynamic_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        conduit_dynamic_normal.end_transaction("bind")
 
-    conduit_dynamic_normal.end_transaction("bind")
-
-    mediator.end_transaction.assert_called_once_with(
-        expected_type="bind",
-        success=True,
-    )
+        mediator.end_transaction.assert_called_once_with(
+            expected_type="bind",
+            success=True,
+        )
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 
 def test_binding_transaction_ends_on_exception(
@@ -307,7 +356,16 @@ def test_binding_transaction_ends_on_exception(
         with conduit_dynamic_normal.transaction("bind"):
             raise RuntimeError("boom")
 
-    begin_transaction.assert_called_once_with("bind")
+    begin_transaction.assert_called_once_with(
+        "bind",
+        conduit_ids=None,
+        conduits=None,
+        scope_keys=None,
+        scope_hashes=None,
+        binding_keys=None,
+        contract_keys=None,
+        metadata=None,
+    )
     end_transaction.assert_called_once_with(
         transaction_type="bind",
         success=False,
@@ -319,17 +377,21 @@ def test_conduit_transaction_context_ends_on_exception(
     spellbook_stub: MagicMock,
 ) -> None:
     """The transaction context manager should always end the transaction, even on exceptions."""
-    spellbook_stub.begin_transaction = MagicMock()
-    spellbook_stub.end_transaction = MagicMock()
+    mediator = MagicMock()
+    conduit_type = type(conduit_dynamic_normal)
+    original_getter = conduit_type._get_required_transaction_mediator
+    conduit_type._get_required_transaction_mediator = lambda self: mediator
+    try:
+        with pytest.raises(RuntimeError, match="boom"):
+            with conduit_dynamic_normal.transaction("bind"):
+                raise RuntimeError("boom")
 
-    with pytest.raises(RuntimeError, match="boom"):
-        with conduit_dynamic_normal.transaction("bind"):
-            raise RuntimeError("boom")
-
-    spellbook_stub.begin_transaction.assert_called_once()
-    spellbook_stub.end_transaction.assert_called_once_with(
-        transaction_type="bind",
-        success=False,
-    )
+        mediator.begin_transaction.assert_called_once()
+        mediator.end_transaction.assert_called_once_with(
+            expected_type="bind",
+            success=False,
+        )
+    finally:
+        conduit_type._get_required_transaction_mediator = original_getter
 
 

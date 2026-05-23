@@ -1296,13 +1296,13 @@ def test_get_spell_by_index_id_prefers_local_then_contracted() -> None:
     assert sb.get_spell_by_index_id("missing-lineage") is None
 
 
-def test_link_contract_registers_link_mirror() -> None:
+def test_link_contract_manages_only_spellbook_contract_buckets() -> None:
     """
     Purpose:
-        Validate link mirror registration during link contract lifecycle.
+        Validate link-contract bucket lifecycle on the Spellbook surface.
     Contract:
-        - _create_link_contract registers borrower->provider in the mirror.
-        - _sever_link_contract unregisters the mirror entry.
+        - _create_link_contract creates the four contracted-spell bucket maps.
+        - _sever_link_contract removes those bucket maps again.
     Returns:
         None.
     Raises:
@@ -1311,43 +1311,18 @@ def test_link_contract_registers_link_mirror() -> None:
     spellbook = Spellbook()
     spellbook._conduit = types.SimpleNamespace(_id="owner-1")
 
-    register_calls: list[tuple[str, str]] = []
-    unregister_calls: list[tuple[str, str]] = []
-
-    class _TransactionManagerStub:
-        def register_link(self, *, borrower_conduit_id: str, provider_conduit_id: str) -> None:
-            register_calls.append((borrower_conduit_id, provider_conduit_id))
-
-        def unregister_link(self, *, borrower_conduit_id: str, provider_conduit_id: str) -> None:
-            unregister_calls.append((borrower_conduit_id, provider_conduit_id))
-
-    class _ChangeControlStub:
-        def __init__(self, manager: _TransactionManagerStub) -> None:
-            self._manager = manager
-
-        def transaction_manager(self) -> _TransactionManagerStub:
-            return self._manager
-
-        def transaction_mediator(self) -> Any:
-            return types.SimpleNamespace(
-                get_session_for_identity=lambda **kwargs: None,
-            )
-
-    class _AetherStub:
-        def __init__(self, change_control: _ChangeControlStub) -> None:
-            self._change_control = change_control
-
-        def _get_change_control_manager(self, frame_name: str = "default") -> _ChangeControlStub:
-            return self._change_control
-
-    spellbook._aether = _AetherStub(_ChangeControlStub(_TransactionManagerStub()))
-
     try:
         spellbook._create_link_contract("peer-1")
-        assert register_calls == [("owner-1", "peer-1")]
+        assert "peer-1" in spellbook._contracted_spells
+        assert "peer-1" in spellbook._lookup_contracted_spells
+        assert "peer-1" in spellbook._contracted_versions
+        assert "peer-1" in spellbook._contracted_spells_by_id
 
         spellbook._sever_link_contract("peer-1")
-        assert unregister_calls == [("owner-1", "peer-1")]
+        assert "peer-1" not in spellbook._contracted_spells
+        assert "peer-1" not in spellbook._lookup_contracted_spells
+        assert "peer-1" not in spellbook._contracted_versions
+        assert "peer-1" not in spellbook._contracted_spells_by_id
     finally:
         spellbook.cleanup()
 
@@ -1495,7 +1470,7 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
     sb = Spellbook(configuration=_TxnConfig(SystemState.automatic))
     sb._logger = DummySafeLogger()
 
-    with pytest.raises(RuntimeError, match="dynamic mode"):
+    with pytest.raises(RuntimeError, match="does not declare support for 'link'"):
         sb.begin_transaction("link")
 
     sb._aetheric_frame_configuration = AethericFrameConfiguration(
@@ -1514,7 +1489,7 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
         ),
         transaction_mediator=lambda: types.SimpleNamespace(
             has_active_session=lambda: False,
-            begin_transaction=lambda **kwargs: (_ for _ in ()).throw(
+            start_transaction=lambda **kwargs: (_ for _ in ()).throw(
                 RuntimeError(
                     "[TRANSACTION_MEDIATOR] Change-control admission denied "
                     "(reasons=['embargo']). conflicts=['c1']; embargoes=['e1']"
@@ -1531,7 +1506,7 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
     )
 
     with pytest.raises(RuntimeError, match="admission denied"):
-        sb.begin_transaction("link")
+        sb.begin_transaction("bind")
 
 
 def test_spellbook_builds_transaction_identity_at_init() -> None:
@@ -1559,7 +1534,15 @@ def test_end_transaction_guard_and_abort_paths(monkeypatch):
     mediator_state = {"session": None}
     mediator = types.SimpleNamespace(
         get_active_session=lambda: mediator_state["session"],
-        get_session_for_identity=lambda **kwargs: None,
+        get_session_for_identity=lambda **kwargs: (
+            mediator_state["session"]
+            if (
+                mediator_state["session"] is not None
+                and kwargs.get("transaction_type") == "bind"
+                and mediator_state["session"].request.request_type == "bind"
+            )
+            else None
+        ),
         get_session_by_request_id=lambda request_id: (
             mediator_state["session"]
             if mediator_state["session"] is not None
@@ -1569,7 +1552,11 @@ def test_end_transaction_guard_and_abort_paths(monkeypatch):
         mark_active_session_abort_only=lambda reason, error=None: None,
         end_transaction_for_identity=lambda identity, transaction_type, success=True: mediator_state.update(session=None),
         end_transaction_by_request_id=lambda request_id, expected_type=None, success=True: mediator_state.update(session=None),
-        get_active_request=lambda: None,
+        get_active_request=lambda: (
+            mediator_state["session"].request
+            if mediator_state["session"] is not None
+            else None
+        ),
     )
     monkeypatch.setattr(
         sb,
@@ -1664,23 +1651,9 @@ def test_end_transaction_commit_path_and_context_manager() -> None:
     ]
 
 
-def test_binding_transaction_helpers_and_staged_binding_key_updates(monkeypatch):
+def test_bind_state_helpers_and_staged_binding_key_updates(monkeypatch):
     sb = Spellbook()
     sb._logger = DummySafeLogger()
-
-    calls = []
-    sb.begin_transaction = lambda transaction_type, **kwargs: calls.append(
-        ("begin", transaction_type)
-    )
-    sb.end_transaction = lambda transaction_type=None, success=True: calls.append(
-        ("end", transaction_type, success)
-    )
-
-    sb.begin_transaction("bind")
-    assert calls == [("begin", "bind")]
-
-    spellbook_module.Spellbook.end_transaction(sb, "bind")
-    assert calls[-1] == ("end", "bind", True)
 
     sb._prepare_bind_transaction_state()
     sb._pending_binding_frame_keys = {"frame-a"}
@@ -2373,6 +2346,8 @@ def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatc
     sb._logger = DummySafeLogger()
     sb._conjured = True
     sb._conduit = DummyConduit(cid="jit-cid", name="jit-conduit")
+    sb._bind_family_disabled_for_current_posture = lambda: False
+    sb._binding_transaction_is_active = lambda: True
     sb._ensure_binding_transaction_active = lambda action: None
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
@@ -2438,6 +2413,8 @@ def test_bind_after_conjure_keeps_resolution_required_false_when_aot_enabled(mon
     sb._logger = DummySafeLogger()
     sb._conjured = True
     sb._conduit = DummyConduit(cid="aot-cid", name="aot-conduit")
+    sb._bind_family_disabled_for_current_posture = lambda: False
+    sb._binding_transaction_is_active = lambda: True
     sb._ensure_binding_transaction_active = lambda action: None
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
@@ -4865,8 +4842,8 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 automatic=None,
                 logger=None,
                 conduit_id=None,
-                dev_ops_manager=None,
-        ):
+                creation_gate_controller=None,
+            ):
             """
             Purpose:
                 Initialize the stub conduit.
@@ -4883,7 +4860,7 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 automatic: Automatic mode flag.
                 logger: Logger instance.
                 conduit_id: Optional conduit id override for tests.
-                dev_ops_manager: Optional DevOps manager dependency.
+                creation_gate_controller: Optional creation-gate controller dependency.
             Returns:
                 None.
             """

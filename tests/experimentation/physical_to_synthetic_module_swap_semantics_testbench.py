@@ -256,7 +256,7 @@ def _bind_only(
         except RuntimeError as exc:
             if "requires an active binding transaction" not in str(exc):
                 raise
-            with spellbook.binding_transaction():
+            with spellbook.transaction("bind"):
                 spell_id = spellbook.bind(
                     spell=root_type,
                     existence=Existence.unique,
@@ -301,7 +301,7 @@ def _bind_and_meld(
         except RuntimeError as exc:
             if "requires an active binding transaction" not in str(exc):
                 raise
-            with spellbook.binding_transaction():
+            with spellbook.transaction("bind"):
                 spell_id = spellbook.bind(
                     spell=root_type,
                     existence=Existence.unique,

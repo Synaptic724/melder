@@ -322,6 +322,7 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
     conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")
     spellbook._conduit = conduit
     spellbook._conjured = True
+    spellbook._bind_family_disabled_for_current_posture = lambda: False
     spellbook._run_post_conjure_structural_phases = lambda spells: None
     existing = BasicService(marker="existing")
 
@@ -363,29 +364,22 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
     conduit = spellbook.conjure(automatic=False, name="root")
     try:
-        with pytest.raises(
-                RuntimeError,
-                match="disabled after conjure|requires an active binding transaction",
-        ):
-            spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        first_spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
 
         with spellbook.transaction("bind"):
-            spellbook.bind(
+            second_spell_id = spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,
                 permissions="create",
+                binding_name="second",
             )
 
-        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
-            spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        assert first_spell_id is not None
+        assert second_spell_id is not None
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -494,7 +488,8 @@ def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -
         AssertionError: If binding window closes on a mismatched end.
     """
     spellbook = _make_spellbook()
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     try:
         spellbook.begin_transaction("bind")
         with pytest.raises(RuntimeError, match="does not match"):
@@ -507,12 +502,12 @@ def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -
         )
 
         spellbook.end_transaction("bind")
-        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
-            spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            binding_name="after-close",
+        )
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -530,18 +525,19 @@ def test_component_spellbook_transaction_context_closes_on_exception() -> None:
         AssertionError: If binding remains active after an exception.
     """
     spellbook = _make_spellbook()
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     try:
         with pytest.raises(RuntimeError, match="boom"):
             with spellbook.transaction("bind"):
                 raise RuntimeError("boom")
 
-        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
-            spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            binding_name="after-error",
+        )
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -579,7 +575,8 @@ def test_component_spellbook_begin_transaction_disabled_change_control_tracks_re
         AssertionError: If in-flight tracking is missing.
     """
     spellbook = _make_spellbook()
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
         change_control.disable_change_control()
@@ -608,7 +605,8 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
         AssertionError: If conduit ids or scopes are missing.
     """
     spellbook = _make_spellbook()
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
         spellbook.begin_transaction("bind", conduit_id="conduit-1")
@@ -689,14 +687,13 @@ def test_component_spellbook_conjure_registers_and_cleanup_unregisters_risk_mana
         spellbook.cleanup()
 
 
-def test_component_spellbook_link_contract_updates_live_transaction_manager_mirror() -> None:
+def test_component_spellbook_link_contract_updates_spellbook_contract_buckets() -> None:
     """
     Purpose:
-        Validate link-contract helpers update the live change-control mirror.
+        Validate link-contract helpers manage only spellbook bucket state.
     Contract:
-        - _create_link_contract registers borrower->provider in the real
-          transaction manager mirror.
-        - _sever_link_contract clears the live mirror entry again.
+        - _create_link_contract creates contracted spell buckets for the peer.
+        - _sever_link_contract removes those buckets again.
     Returns:
         None.
     Raises:
@@ -704,19 +701,18 @@ def test_component_spellbook_link_contract_updates_live_transaction_manager_mirr
     """
     spellbook = _make_spellbook()
     conduit = spellbook.conjure(name="root")
-    transaction_manager = Aether()._get_change_control_manager(
-        spellbook._aetheric_frame
-    ).transaction_manager()
     try:
-        assert transaction_manager.list_borrowers_for_provider("provider-1") == set()
-
         spellbook._create_link_contract("provider-1")
-        assert transaction_manager.list_borrowers_for_provider("provider-1") == {
-            conduit.id
-        }
+        assert "provider-1" in spellbook._contracted_spells
+        assert "provider-1" in spellbook._lookup_contracted_spells
+        assert "provider-1" in spellbook._contracted_versions
+        assert "provider-1" in spellbook._contracted_spells_by_id
 
         spellbook._sever_link_contract("provider-1")
-        assert transaction_manager.list_borrowers_for_provider("provider-1") == set()
+        assert "provider-1" not in spellbook._contracted_spells
+        assert "provider-1" not in spellbook._lookup_contracted_spells
+        assert "provider-1" not in spellbook._contracted_versions
+        assert "provider-1" not in spellbook._contracted_spells_by_id
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -920,6 +916,7 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     conduit = _ConduitStub(conduit_id="owner-id", name="owner-name")
     spellbook._conduit = conduit
     spellbook._conjured = True
+    spellbook._bind_family_disabled_for_current_posture = lambda: False
     spellbook._run_post_conjure_structural_phases = lambda spells: None
 
     try:

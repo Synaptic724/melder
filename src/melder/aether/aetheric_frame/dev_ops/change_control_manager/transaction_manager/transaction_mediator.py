@@ -687,6 +687,7 @@ class TransactionMediator(Cleanable):
         finally:
             self._strategy_builder.on_end(
                 transaction_type=transaction_name,
+                identity=identity,
                 metadata=dict(session.request.metadata),
             )
 
