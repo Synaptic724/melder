@@ -37,6 +37,7 @@ def _make_frame_with_cloud() -> MagicMock:
     cloud.get_conduit_by_id.return_value = None
     frame = MagicMock()
     frame._conduit_cloud = cloud
+    frame.devops_information_registry = DevopsInformationRegistry("default")
     return frame
 
 def _make_conduit_with_ward(
@@ -369,6 +370,7 @@ def test_link_lesser_conduit(ward):
     """
     child = MagicMock()
     child._id = "child-1"
+    child._aetheric_frame_name = "default"
     child._logger = MagicMock()
     child._conduit_state = ConduitState.lesser
     child._ward_frame = _make_frame_with_cloud()
@@ -397,6 +399,7 @@ def test_link_lesser_conduit_requires_root_conduit() -> None:
     """
     parent = MagicMock()
     parent._id = "parent-1"
+    parent._aetheric_frame_name = "default"
     parent._logger = MagicMock()
     parent._conduit_state = ConduitState.lesser
     parent._ward_frame = _make_frame_with_cloud()
@@ -426,6 +429,7 @@ def test_link_lesser_conduit_rejects_non_normal_root() -> None:
     """
     parent = MagicMock()
     parent._id = "parent-2"
+    parent._aetheric_frame_name = "default"
     parent._logger = MagicMock()
     parent._conduit_state = ConduitState.lesser
     parent._ward_frame = _make_frame_with_cloud()
@@ -455,6 +459,7 @@ def test_root_conduit_property_raises_when_missing_for_lesser_lineage() -> None:
     """
     conduit = MagicMock()
     conduit._id = "lesser-1"
+    conduit._aetheric_frame_name = "default"
     conduit._logger = MagicMock()
     conduit._conduit_state = ConduitState.lesser
     conduit._ward_frame = _make_frame_with_cloud()
@@ -475,6 +480,7 @@ def test_root_conduit_property_raises_when_root_not_normal() -> None:
     """
     conduit = MagicMock()
     conduit._id = "lesser-2"
+    conduit._aetheric_frame_name = "default"
     conduit._logger = MagicMock()
     conduit._conduit_state = ConduitState.lesser
     conduit._ward_frame = _make_frame_with_cloud()
@@ -508,6 +514,7 @@ def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
 
     parent = MagicMock()
     parent._id = "parent-3"
+    parent._aetheric_frame_name = "default"
     parent._logger = MagicMock()
     parent._conduit_state = ConduitState.lesser
     parent._ward_frame = _make_frame_with_cloud()
@@ -523,6 +530,7 @@ def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
 
     child = MagicMock()
     child._id = "child-3"
+    child._aetheric_frame_name = "default"
     child._logger = MagicMock()
     child._conduit_state = ConduitState.lesser
     child._ward_frame = _make_frame_with_cloud()
@@ -622,6 +630,7 @@ def test_add_spell_to_contract_flow(ward):
     # Setup Contract
     target_conduit = MagicMock()
     target_conduit._id = "conduit-2"
+    target_conduit._aetheric_frame_name = "default"
     target_conduit._logger = MagicMock()
     target_conduit._ward_frame = _make_frame_with_cloud()
     target_ward = ConduitWard(
@@ -1113,6 +1122,7 @@ def test_init_rejects_invalid_policy_type():
     """
     conduit = MagicMock()
     conduit._id = "conduit-1"
+    conduit._aetheric_frame_name = "default"
     conduit._logger = MagicMock()
     conduit._conduit_state = ConduitState.normal
     conduit._ward_frame = _make_frame_with_cloud()

@@ -23,6 +23,9 @@ from tests.component.melder.spellbook.spell_compiler_runtime_test_support import
     run_structural_phases,
     run_structural_phases_with_compiler,
 )
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
 from tests.mocks.spellbook.core_classes import BasicConfig, BasicService
 from tests.mocks.spellbook.protocols import IService
 
@@ -278,7 +281,10 @@ def test_integration_spell_compiler_system_post_conjure_local_phases_scope_to_ne
     compiler_system = SpellCompilerSystem()
     try:
         spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
+        apply_dynamic_defaults_for_spellbook_configuration(
+            spellbook.get_configuration()
+        )
+        conduit = spellbook.conjure(automatic=False, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")
@@ -309,7 +315,10 @@ def test_integration_spell_compiler_system_post_conjure_local_plan_phases_build_
     compiler_system = SpellCompilerSystem()
     try:
         spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
+        apply_dynamic_defaults_for_spellbook_configuration(
+            spellbook.get_configuration()
+        )
+        conduit = spellbook.conjure(automatic=False, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")
@@ -343,7 +352,10 @@ def test_integration_spell_compiler_system_local_scope_helpers_work_after_post_c
     compiler_system = SpellCompilerSystem()
     try:
         spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
+        apply_dynamic_defaults_for_spellbook_configuration(
+            spellbook.get_configuration()
+        )
+        conduit = spellbook.conjure(automatic=False, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")
@@ -374,7 +386,10 @@ def test_integration_spell_compiler_system_local_scope_spell_ids_include_depende
     compiler_system = SpellCompilerSystem()
     try:
         spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
+        apply_dynamic_defaults_for_spellbook_configuration(
+            spellbook.get_configuration()
+        )
+        conduit = spellbook.conjure(automatic=False, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")

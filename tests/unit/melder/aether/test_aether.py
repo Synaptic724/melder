@@ -784,13 +784,15 @@ def test_aether_conduit_discovery_helpers_validate_custom_frame(
 
 def test_bind_configuration(aether_with_mocks):
     """
-    Verify `_bind_configuration` attaches configuration to the frame.
+    Verify `_bind_configuration` attaches configuration on the first bind.
 
     Contract:
-    - The configuration object is stored on the target frame's `_configuration` field.
+    - A frame with no shared configuration yet accepts the supplied
+      configuration object.
     """
     a = aether_with_mocks
     frame_mock = a._default_frame
+    frame_mock._configuration = None
     config = MagicMock()
     
     a._bind_configuration(config)

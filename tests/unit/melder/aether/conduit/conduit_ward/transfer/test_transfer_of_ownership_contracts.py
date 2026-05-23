@@ -395,6 +395,15 @@ class FakeCluster:
             for owner_id, indices in self.shared_spells.items()
         }
 
+    def get_members(self) -> Set[str]:
+        """
+        Return a detached snapshot of current cluster members.
+
+        Returns:
+            Set[str]: Member conduit ids currently recorded on the cluster.
+        """
+        return set(self.members)
+
 
 class FakeFrame:
     """

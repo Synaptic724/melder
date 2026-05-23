@@ -149,7 +149,10 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(name="post_conjure_snapshot")
+    apply_dynamic_defaults_for_spellbook_configuration(
+        spellbook.get_configuration()
+    )
+    conduit = spellbook.conjure(automatic=False, name="post_conjure_snapshot")
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
@@ -306,8 +309,14 @@ def test_post_conjure_bind_collection_dependencies_isolated_by_spellbook() -> No
         permissions="create",
     )
 
-    conduit_a = spellbook_a.conjure(name="conduit_a")
-    conduit_b = spellbook_b.conjure(name="conduit_b")
+    apply_dynamic_defaults_for_spellbook_configuration(
+        spellbook_a.get_configuration()
+    )
+    apply_dynamic_defaults_for_spellbook_configuration(
+        spellbook_b.get_configuration()
+    )
+    conduit_a = spellbook_a.conjure(automatic=False, name="conduit_a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="conduit_b")
     try:
         consumer_a_spell = conduit_a.get_spell_by_id(consumer_a_id, aetheric_frame_name="shared")
         consumer_b_spell = conduit_b.get_spell_by_id(consumer_b_id, aetheric_frame_name="shared")

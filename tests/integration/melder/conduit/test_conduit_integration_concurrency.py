@@ -78,6 +78,39 @@ def _make_dynamic_spellbook(
     return Spellbook(configuration=configuration)
 
 
+def _enable_queued_root_transactions(spellbook: Spellbook) -> None:
+    """
+    Enable queued root transactions for worker-thread mutation tests.
+
+    Purpose:
+        Align concurrency tests to the live mediator contract, where each
+        worker thread owns its own root transaction and competing roots may
+        queue for their turn.
+
+    Args:
+        spellbook: Spellbook whose frame-owned posture should enable queueing.
+
+    Returns:
+        None.
+    """
+    frame_configuration = spellbook._aetheric_frame_configuration
+    frame_configuration.with_queue_competing_root_transactions(True)
+    change_control_manager = Spellbook._aether._get_change_control_manager(
+        spellbook._aetheric_frame
+    )
+    mediator = change_control_manager.transaction_mediator()
+    mediator.configure(
+        change_control_mode=frame_configuration.change_control_mode,
+        allow_multiple_root_transactions=(
+            frame_configuration.allow_multiple_root_transactions
+        ),
+        queue_competing_root_transactions=True,
+        max_transaction_wait_time_in_seconds=(
+            frame_configuration.max_transaction_wait_time_in_seconds
+        ),
+    )
+
+
 def _bind_graph(
     spellbook: Spellbook,
     classes: Iterable[type],
@@ -670,48 +703,50 @@ def test_conduit_concurrent_contract_additions_idempotent() -> None:
         get_depth_3_classes(),
         existence=Existence.unique,
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
     borrower_book = _make_dynamic_spellbook()
+    _enable_queued_root_transactions(borrower_book)
+    owner = owner_book.conjure(automatic=False, name="owner")
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
-        with borrower.transaction("link", conduits=[borrower, owner]):
-            barrier = Barrier(4)
-            lock = Lock()
-            errors: list[Exception] = []
+        barrier = Barrier(4)
+        lock = Lock()
+        errors: list[Exception] = []
 
-            def worker() -> None:
-                """
-                Purpose:
-                    Concurrently attempt to add the same spell to a contract.
-                Contract:
-                    - Any exception is captured for assertions.
-                Returns:
-                    None.
-                """
-                try:
-                    barrier.wait(timeout=5)
+        def worker() -> None:
+            """
+            Purpose:
+                Concurrently attempt to add the same spell to a contract.
+            Contract:
+                - Any exception is captured for assertions.
+                - Each worker opens its own queued link transaction.
+            Returns:
+                None.
+            """
+            try:
+                barrier.wait(timeout=5)
+                with borrower.transaction("link", conduits=[borrower, owner]):
                     borrower.add_spell_to_contract(
                         spell_id=depth3_ids[Depth3Root],
                         conduit=owner,
                         permissions="create",
                         link_dependencies=True,
                     )
-                except Exception as exc:
-                    with lock:
-                        errors.append(exc)
+            except Exception as exc:
+                with lock:
+                    errors.append(exc)
 
-            threads = [Thread(target=worker) for _ in range(4)]
-            for thread in threads:
-                thread.start()
-            for thread in threads:
-                thread.join()
+        threads = [Thread(target=worker) for _ in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
 
-            assert errors == []
-            spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
-            assert spells_by_conduit is not None
-            inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
-            assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
+        assert errors == []
+        spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
+        assert spells_by_conduit is not None
+        inbound_ids = _get_inbound_spell_ids(spells_by_conduit)
+        assert inbound_ids.count(depth3_ids[Depth3Root]) == 1
     finally:
         borrower.cleanup()
         owner.cleanup()
@@ -1002,8 +1037,9 @@ def test_conduit_concurrent_contract_additions_multiple_spells() -> None:
         get_depth_5_classes(),
         existence=Existence.unique,
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
     borrower_book = _make_dynamic_spellbook()
+    _enable_queued_root_transactions(borrower_book)
+    owner = owner_book.conjure(automatic=False, name="owner")
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
@@ -1017,12 +1053,13 @@ def test_conduit_concurrent_contract_additions_multiple_spells() -> None:
             Returns:
                 None.
             """
-            borrower.add_spell_to_contract(
-                spell_id=depth3_ids[Depth3Root],
-                conduit=owner,
-                permissions="create",
-                link_dependencies=True,
-            )
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                borrower.add_spell_to_contract(
+                    spell_id=depth3_ids[Depth3Root],
+                    conduit=owner,
+                    permissions="create",
+                    link_dependencies=True,
+                )
 
         def add_depth5() -> None:
             """
@@ -1033,15 +1070,15 @@ def test_conduit_concurrent_contract_additions_multiple_spells() -> None:
             Returns:
                 None.
             """
-            borrower.add_spell_to_contract(
-                spell_id=depth5_ids[Depth5Root],
-                conduit=owner,
-                permissions="create",
-                link_dependencies=True,
-            )
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                borrower.add_spell_to_contract(
+                    spell_id=depth5_ids[Depth5Root],
+                    conduit=owner,
+                    permissions="create",
+                    link_dependencies=True,
+                )
 
-        with borrower.transaction("link", conduits=[borrower, owner]):
-            _results, errors = _run_concurrent_calls(functions=[add_depth3, add_depth5])
+        _results, errors = _run_concurrent_calls(functions=[add_depth3, add_depth5])
         assert errors == []
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
         assert spells_by_conduit is not None
@@ -1512,8 +1549,9 @@ def test_conduit_concurrent_bulk_contract_additions() -> None:
         get_depth_5_classes(),
         existence=Existence.unique,
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
     borrower_book = _make_dynamic_spellbook()
+    _enable_queued_root_transactions(borrower_book)
+    owner = owner_book.conjure(automatic=False, name="owner")
     borrower = borrower_book.conjure(automatic=False, name="borrower")
     try:
         owner.link(borrower)
@@ -1529,11 +1567,12 @@ def test_conduit_concurrent_bulk_contract_additions() -> None:
             Returns:
                 dict[str, bool]: Result mapping from add_spells_to_contract.
             """
-            return borrower.add_spells_to_contract(
-                spell_ids=spell_ids_a,
-                conduit=owner,
-                permissions="create",
-            )
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                return borrower.add_spells_to_contract(
+                    spell_ids=spell_ids_a,
+                    conduit=owner,
+                    permissions="create",
+                )
 
         def add_batch_b() -> dict[str, bool]:
             """
@@ -1544,14 +1583,14 @@ def test_conduit_concurrent_bulk_contract_additions() -> None:
             Returns:
                 dict[str, bool]: Result mapping from add_spells_to_contract.
             """
-            return borrower.add_spells_to_contract(
-                spell_ids=spell_ids_b,
-                conduit=owner,
-                permissions="create",
-            )
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                return borrower.add_spells_to_contract(
+                    spell_ids=spell_ids_b,
+                    conduit=owner,
+                    permissions="create",
+                )
 
-        with borrower.transaction("link", conduits=[borrower, owner]):
-            _results, errors = _run_concurrent_calls(functions=[add_batch_a, add_batch_b])
+        _results, errors = _run_concurrent_calls(functions=[add_batch_a, add_batch_b])
         assert errors == []
         spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
         assert spells_by_conduit is not None

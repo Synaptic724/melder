@@ -763,7 +763,10 @@ class Aether(Cleanable):
             frame-level AR posture object.
 
         Contract:
-            - Replaces the frame's `_configuration` reference directly.
+            - Binds the first shared rich configuration published for the
+              frame.
+            - Leaves an existing shared rich configuration in place instead of
+              overwriting it during later concurrent binds.
             - Does not validate or merge posture fields here; frame posture is
               owned separately by `AethericFrame`.
 
@@ -779,13 +782,16 @@ class Aether(Cleanable):
         with self._lock:
             if aetheric_frame_name != "default":
                 try:
-                    self._aetheric_frames[aetheric_frame_name]._configuration = configuration
+                    frame = self._aetheric_frames[aetheric_frame_name]
                 except KeyError:
                     self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_bind_configuration", exc_info=True)
                     raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+                if frame._configuration is None:
+                    frame._configuration = configuration
             else:
                 frame = self._ensure_default_frame()
-                frame._configuration = configuration
+                if frame._configuration is None:
+                    frame._configuration = configuration
 
 
     def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[SpellbookConfiguration]:

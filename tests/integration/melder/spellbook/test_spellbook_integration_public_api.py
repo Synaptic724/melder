@@ -213,8 +213,9 @@ def test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_du
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    apply_dynamic_defaults_for_spellbook_configuration(config)
 
-    conduit = spellbook.conjure(name="root")
+    conduit = spellbook.conjure(automatic=False, name="root")
     try:
         with spellbook.transaction("bind"):
             spellbook.bind(
