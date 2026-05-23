@@ -341,6 +341,178 @@ class DevopsIdentity(Cleanable):
                     self._registry = None
             raise
 
+    def refresh_registry(self, *, object_ref: Optional[Any] = None) -> None:
+        """
+        Refresh the attached registry entry for this identity.
+
+        Purpose:
+            Give owning runtime objects one identity-owned way to push updated
+            metadata or object references back into the frame registry without
+            reaching into the registry surface directly.
+
+        Args:
+            object_ref:
+                Optional updated live object reference to store beside this
+                identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If no registry is attached.
+        """
+        self.check_cleaned()
+        registry = None
+        with self._lock:
+            registry = self._registry
+        if registry is None:
+            raise RuntimeError("DevopsIdentity is not attached to a registry.")
+        registry.refresh_identity(self, object_ref=object_ref)
+
+    def register_provider_conduit(self, provider_conduit_id: str) -> None:
+        """
+        Register a provider->borrower conduit relation through this identity.
+
+        Purpose:
+            Let a conduit-owned identity publish provider/borrower link edges
+            into the frame registry without the conduit or ward reaching into
+            the registry directly.
+
+        Args:
+            provider_conduit_id:
+                Provider conduit id linked to this conduit.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If this identity is not a conduit identity or has no registry.
+            ValueError:
+                If provider_conduit_id is empty.
+        """
+        self.check_cleaned()
+        if self._owner_kind != "conduit":
+            raise RuntimeError(
+                "Only conduit identities may publish provider conduit relations."
+            )
+        if not provider_conduit_id:
+            raise ValueError("provider_conduit_id must not be empty.")
+        registry = None
+        with self._lock:
+            registry = self._registry
+        if registry is None:
+            raise RuntimeError("DevopsIdentity is not attached to a registry.")
+        registry.register_conduit_link(
+            provider_conduit_id=provider_conduit_id,
+            borrower_conduit_id=self._owner_id,
+        )
+
+    def unregister_provider_conduit(self, provider_conduit_id: str) -> None:
+        """
+        Remove a provider->borrower conduit relation through this identity.
+
+        Args:
+            provider_conduit_id:
+                Provider conduit id previously linked to this conduit.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If this identity is not a conduit identity or has no registry.
+        """
+        self.check_cleaned()
+        if self._owner_kind != "conduit":
+            raise RuntimeError(
+                "Only conduit identities may remove provider conduit relations."
+            )
+        if not provider_conduit_id:
+            return
+        registry = None
+        with self._lock:
+            registry = self._registry
+        if registry is None:
+            raise RuntimeError("DevopsIdentity is not attached to a registry.")
+        registry.unregister_conduit_link(
+            provider_conduit_id=provider_conduit_id,
+            borrower_conduit_id=self._owner_id,
+        )
+
+    def register_cluster_member(self, conduit_id: str) -> None:
+        """
+        Register one conduit membership under this cluster identity.
+
+        Purpose:
+            Let a cluster-owned identity publish member edges into the frame
+            registry without the cluster reaching into the registry directly.
+
+        Args:
+            conduit_id:
+                Conduit id joining this cluster.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If this identity is not a conduit-cluster identity or has no
+                registry.
+            ValueError:
+                If conduit_id is empty.
+        """
+        self.check_cleaned()
+        if self._owner_kind != "conduit_cluster":
+            raise RuntimeError(
+                "Only conduit-cluster identities may publish cluster membership."
+            )
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        registry = None
+        with self._lock:
+            registry = self._registry
+        if registry is None:
+            raise RuntimeError("DevopsIdentity is not attached to a registry.")
+        registry.register_cluster_membership(
+            cluster_id=self._owner_id,
+            conduit_id=conduit_id,
+        )
+
+    def unregister_cluster_member(self, conduit_id: str) -> None:
+        """
+        Remove one conduit membership from this cluster identity.
+
+        Args:
+            conduit_id:
+                Conduit id leaving this cluster.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If this identity is not a conduit-cluster identity or has no
+                registry.
+        """
+        self.check_cleaned()
+        if self._owner_kind != "conduit_cluster":
+            raise RuntimeError(
+                "Only conduit-cluster identities may remove cluster membership."
+            )
+        if not conduit_id:
+            return
+        registry = None
+        with self._lock:
+            registry = self._registry
+        if registry is None:
+            raise RuntimeError("DevopsIdentity is not attached to a registry.")
+        registry.unregister_cluster_membership(
+            cluster_id=self._owner_id,
+            conduit_id=conduit_id,
+        )
+
     def detach_registry(self) -> None:
         """
         Detach this identity from the currently attached registry, if any.

@@ -507,6 +507,30 @@ class DevopsInformationRegistry(Cleanable):
         with self._lock:
             return tuple(sorted(self._spellbook_to_conduits.get(spellbook_id, set())))
 
+    def get_conduit_objects_for_spellbook(self, spellbook_id: str) -> Tuple[Any, ...]:
+        """
+        Return live conduit objects currently mapped to one spellbook.
+
+        Parameters
+        ----------
+        spellbook_id:
+            Spellbook id to resolve through the derived ownership relation.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live conduit objects currently known for the spellbook. Missing
+            object references are skipped.
+        """
+        self.check_cleaned()
+        conduit_ids = self.get_conduits_for_spellbook(spellbook_id)
+        objects: List[Any] = []
+        for conduit_id in conduit_ids:
+            conduit = self.get_object(owner_kind="conduit", owner_id=conduit_id)
+            if conduit is not None:
+                objects.append(conduit)
+        return tuple(objects)
+
     def get_spellbook_for_conduit(self, conduit_id: str) -> Optional[str]:
         """
         Resolve the spellbook currently mapped to the conduit.
@@ -526,6 +550,27 @@ class DevopsInformationRegistry(Cleanable):
             return None
         with self._lock:
             return self._conduit_to_spellbook.get(conduit_id)
+
+    def get_spellbook_object_for_conduit(self, conduit_id: str) -> Optional[Any]:
+        """
+        Return the live spellbook object currently mapped to one conduit.
+
+        Parameters
+        ----------
+        conduit_id:
+            Conduit id whose owning spellbook should be resolved.
+
+        Returns
+        -------
+        Any | None
+            Live spellbook object when both the ownership relation and object
+            reference are present, otherwise `None`.
+        """
+        self.check_cleaned()
+        spellbook_id = self.get_spellbook_for_conduit(conduit_id)
+        if spellbook_id is None:
+            return None
+        return self.get_object(owner_kind="spellbook", owner_id=spellbook_id)
 
     def register_conduit_link(
             self,
@@ -632,6 +677,33 @@ class DevopsInformationRegistry(Cleanable):
                 sorted(self._provider_to_borrowers.get(provider_conduit_id, set()))
             )
 
+    def list_borrower_conduit_objects_for_provider(
+            self,
+            provider_conduit_id: str,
+    ) -> Tuple[Any, ...]:
+        """
+        Return live borrower conduit objects for one provider conduit id.
+
+        Parameters
+        ----------
+        provider_conduit_id:
+            Provider conduit id used to resolve borrower edges.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live borrower conduit objects. Missing object references are
+            skipped.
+        """
+        self.check_cleaned()
+        borrower_ids = self.list_borrowers_for_provider(provider_conduit_id)
+        borrowers: List[Any] = []
+        for borrower_id in borrower_ids:
+            borrower = self.get_object(owner_kind="conduit", owner_id=borrower_id)
+            if borrower is not None:
+                borrowers.append(borrower)
+        return tuple(borrowers)
+
     def list_providers_for_borrower(self, borrower_conduit_id: str) -> Tuple[str, ...]:
         """
         List all providers registered for a given borrower conduit.
@@ -653,6 +725,33 @@ class DevopsInformationRegistry(Cleanable):
             return tuple(
                 sorted(self._borrower_to_providers.get(borrower_conduit_id, set()))
             )
+
+    def list_provider_conduit_objects_for_borrower(
+            self,
+            borrower_conduit_id: str,
+    ) -> Tuple[Any, ...]:
+        """
+        Return live provider conduit objects for one borrower conduit id.
+
+        Parameters
+        ----------
+        borrower_conduit_id:
+            Borrower conduit id used to resolve provider edges.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live provider conduit objects. Missing object references are
+            skipped.
+        """
+        self.check_cleaned()
+        provider_ids = self.list_providers_for_borrower(borrower_conduit_id)
+        providers: List[Any] = []
+        for provider_id in provider_ids:
+            provider = self.get_object(owner_kind="conduit", owner_id=provider_id)
+            if provider is not None:
+                providers.append(provider)
+        return tuple(providers)
 
     def register_cluster_membership(
             self,
@@ -764,6 +863,33 @@ class DevopsInformationRegistry(Cleanable):
             return tuple()
         with self._lock:
             return tuple(sorted(self._conduit_to_clusters.get(conduit_id, set())))
+
+    def get_cluster_objects_for_conduit(self, conduit_id: str) -> Tuple[Any, ...]:
+        """
+        Return live cluster objects currently associated with one conduit.
+
+        Parameters
+        ----------
+        conduit_id:
+            Conduit id whose cluster memberships should be resolved.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live cluster objects for the conduit. Missing object references are
+            skipped.
+        """
+        self.check_cleaned()
+        cluster_ids = self.get_clusters_for_conduit(conduit_id)
+        clusters: List[Any] = []
+        for cluster_id in cluster_ids:
+            cluster = self.get_object(
+                owner_kind="conduit_cluster",
+                owner_id=cluster_id,
+            )
+            if cluster is not None:
+                clusters.append(cluster)
+        return tuple(clusters)
 
     def register_transaction(
             self,
@@ -926,6 +1052,40 @@ class DevopsInformationRegistry(Cleanable):
                 sorted(self._transaction_ids_by_identity.get(identity_key, set()))
             )
 
+    def list_live_transactions_for_identity(
+            self,
+            *,
+            owner_kind: str,
+            owner_id: str,
+    ) -> Tuple[Any, ...]:
+        """
+        Return live transaction objects currently indexed under one identity.
+
+        Parameters
+        ----------
+        owner_kind:
+            Identity namespace.
+        owner_id:
+            Identity id within that namespace.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live transaction objects currently indexed to that identity.
+            Missing transaction objects are skipped.
+        """
+        self.check_cleaned()
+        transaction_ids = self.list_transaction_ids_for_identity(
+            owner_kind=owner_kind,
+            owner_id=owner_id,
+        )
+        transactions: List[Any] = []
+        for transaction_id in transaction_ids:
+            transaction = self.get_transaction(transaction_id)
+            if transaction is not None:
+                transactions.append(transaction)
+        return tuple(transactions)
+
     def list_transaction_ids_for_type(self, transaction_type: str) -> Tuple[str, ...]:
         """
         List transaction ids associated with one transaction type.
@@ -946,6 +1106,30 @@ class DevopsInformationRegistry(Cleanable):
         normalized_type = transaction_type.strip().lower()
         with self._lock:
             return tuple(sorted(self._transaction_ids_by_type.get(normalized_type, set())))
+
+    def list_live_transactions_for_type(self, transaction_type: str) -> Tuple[Any, ...]:
+        """
+        Return live transaction objects currently indexed under one type.
+
+        Parameters
+        ----------
+        transaction_type:
+            Transaction type label to resolve.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live transaction objects currently indexed to that type. Missing
+            transaction objects are skipped.
+        """
+        self.check_cleaned()
+        transaction_ids = self.list_transaction_ids_for_type(transaction_type)
+        transactions: List[Any] = []
+        for transaction_id in transaction_ids:
+            transaction = self.get_transaction(transaction_id)
+            if transaction is not None:
+                transactions.append(transaction)
+        return tuple(transactions)
 
     def _rebuild_spellbook_conduit_relations_locked(self) -> None:
         """
