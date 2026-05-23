@@ -114,8 +114,9 @@ class DevopsIdentity(Cleanable):
 
         Contract:
             - Safe to call multiple times.
-            - If a registry is attached, unregisters using the last known
-              owner key before marking the identity cleaned.
+            - If a registry is attached, captures the owner key and then
+              unregisters outside the identity lock to avoid lock-order
+              inversion with registry-side relation rebuilds.
             - Clears metadata and deletes owned fields after external
               unregister work has finished.
             - After cleanup, all public accessors fail through
@@ -126,17 +127,17 @@ class DevopsIdentity(Cleanable):
         """
         if self._cleaned:
             return
+        if self._registry is not None:
+            try:
+                self._registry.unregister_identity(
+                    owner_kind=self._owner_kind,
+                    owner_id=self._owner_id,
+                )
+            except Exception:
+                pass
         with self._lock:
             if self._cleaned:
                 return
-            if self._registry is not None:
-                try:
-                    self._registry.unregister_identity(
-                        owner_kind=self._owner_kind,
-                        owner_id=self._owner_id,
-                    )
-                except Exception:
-                    pass
             self._cleaned = True
             self._metadata.clear()
             del self._owner_kind

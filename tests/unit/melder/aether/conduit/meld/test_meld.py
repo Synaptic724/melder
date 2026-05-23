@@ -1,5 +1,4 @@
 """Contract tests for Meld resolution, gating, and activation flow."""
-from contextvars import ContextVar
 from threading import RLock
 from types import SimpleNamespace
 from typing import Any, Callable, Iterable, Dict
@@ -11,6 +10,9 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.spell_space.spell_space_thread_state import (
+    SpellSpaceThreadState,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -748,12 +750,12 @@ def _make_creations(
         conduit_state=ConduitState.normal,
         active_spellspace=active_spellspace,
     )
+    spellspace_state = SpellSpaceThreadState()
+    if active_spellspace is not None:
+        spellspace_state.set([active_spellspace])
     return Creations(
         conduit_id=conduit._id,
-        spellspace_stack=ContextVar(
-            "spellspace_stack_{0}".format(conduit._id),
-            default=[],
-        ),
+        spellspace_stack=spellspace_state,
     ), conduit
 
 
@@ -2306,12 +2308,11 @@ def test_meld_existing_spell_uses_active_spellspace_bucket() -> None:
         owner_conduit_id=conduit._id,
     )
     conduit._active_spellspace = spellspace
+    spellspace_state = SpellSpaceThreadState()
+    spellspace_state.set([spellspace])
     creations = Creations(
         conduit_id=conduit._id,
-        spellspace_stack=ContextVar(
-            "spellspace_stack_{0}".format(conduit._id),
-            default=[spellspace],
-        ),
+        spellspace_stack=spellspace_state,
     )
     live_instance = object()
     creations.register_spellspace_creation("space-1", "spell-1", live_instance)
@@ -2389,12 +2390,11 @@ def test_has_live_creation_uses_active_spellspace_bucket() -> None:
         owner_conduit_id=conduit._id,
     )
     conduit._active_spellspace = spellspace
+    spellspace_state = SpellSpaceThreadState()
+    spellspace_state.set([spellspace])
     creations = Creations(
         conduit_id=conduit._id,
-        spellspace_stack=ContextVar(
-            "spellspace_stack_probe_{0}".format(conduit._id),
-            default=[spellspace],
-        ),
+        spellspace_stack=spellspace_state,
     )
     creations.register_spellspace_creation("space-1", "spell-1", object())
     spell = _SpellStub(

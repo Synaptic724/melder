@@ -259,10 +259,11 @@ class Conduit(Cleanable):
             metadata={},
             available_transactions=tuple(),
         )
-        self._transaction_identity.attach_registry(
-            self._aetheric_frame.devops_information_registry,
-            object_ref=self,
-        )
+        if conduit_state is ConduitState.normal:
+            self._transaction_identity.attach_registry(
+                self._aetheric_frame.devops_information_registry,
+                object_ref=self,
+            )
         self._refresh_devops_identity_state()
         self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
@@ -1464,6 +1465,11 @@ class Conduit(Cleanable):
                 self._conduit_state = ConduitState.normal
                 self._root_conduit_id = self._id
                 self._name = name
+                if self._transaction_identity._registry is None:
+                    self._transaction_identity.attach_registry(
+                        self._aetheric_frame.devops_information_registry,
+                        object_ref=self,
+                    )
                 self._refresh_devops_identity_state()
 
                 # Step 2: Keep the current creations object.

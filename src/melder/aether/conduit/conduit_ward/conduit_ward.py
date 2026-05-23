@@ -195,10 +195,11 @@ class ConduitWard(Cleanable):
             },
             available_transactions=tuple(),
         )
-        self._devops_identity.attach_registry(
-            aetheric_frame.devops_information_registry,
-            object_ref=self,
-        )
+        if conduit_type is ConduitState.normal:
+            self._devops_identity.attach_registry(
+                aetheric_frame.devops_information_registry,
+                object_ref=self,
+            )
 
         try:
             self._policy = self._set_initial_policy(policy)

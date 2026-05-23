@@ -41,7 +41,8 @@ def test_melder_gauntlet_cprofile() -> None:
         Run the Melder-only cProfile harness in a standalone subprocess.
     Contract:
         - Avoids running cProfile inside pytest-owned execution state.
-        - Does not force the interpreter back onto the GIL.
+        - Forces the child interpreter onto `gil=1` so cProfile runs through
+          the GIL-enabled path the user requested.
         - Streams child stdout/stderr back into the pytest terminal output for
           artifact visibility and failure diagnosis.
     Returns:
@@ -50,7 +51,7 @@ def test_melder_gauntlet_cprofile() -> None:
         AssertionError: If the standalone runner returns a non-zero exit code.
     """
     completed = subprocess.run(
-        [sys.executable, str(_runner_path())],
+        [sys.executable, "-X", "gil=1", str(_runner_path())],
         cwd=str(_repo_root()),
         env=os.environ.copy(),
         capture_output=True,

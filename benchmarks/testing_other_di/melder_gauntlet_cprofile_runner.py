@@ -3,8 +3,9 @@ import io
 import os
 import pstats
 import sys
+from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Tuple
 
 
 def _ensure_repo_root_on_path() -> None:
@@ -148,59 +149,39 @@ def main() -> int:
     Purpose:
         Run the standalone Melder-only cProfile harness.
     Contract:
-        - Profiles setup separately from hot iterations so hotspot analysis is
-          split between build cost and steady-state gauntlet work.
+        - Profiles the full standalone Melder-only gauntlet through the
+          current standalone benchmark surface.
         - Does not modify the interpreter's GIL posture.
-        - Cleans the prepared runtime bundle even when profiling fails.
     Returns:
         Process exit code.
     """
-    cfg = melder_gauntlet._melder_cprofile_cfg_from_env()
+    base_cfg = melder_gauntlet._melder_config_from_env()
+    cfg = replace(
+        base_cfg,
+        iterations=_env_int("MELDER_GAUNTLET_PROFILE_ITERS", 25),
+    )
     top = _env_int("MELDER_GAUNTLET_PROFILE_TOP", 25)
 
-    def build_runtime() -> Any:
+    def run_full_benchmark() -> Any:
         """
         Purpose:
-            Build and prime the Melder runtime once for isolated profiling.
+            Run the full standalone Melder-only benchmark once under cProfile.
         Contract:
-            - Returns the prepared runtime ops after the singleton warm-up step.
-            - Leaves hot iteration work for the second profile block.
+            - Uses the current standalone Melder-only benchmark file and its
+              local support module.
+            - Builds only Melder runtime ops.
         Returns:
-            Prepared `_RuntimeOps` bundle.
+            Completed Melder benchmark result payload.
         """
-        ops = melder_gauntlet._build_melder_ops()
-        ops.spawn_singletons()
-        return ops
+        ops = melder_gauntlet._build_runtime_melder()
+        return melder_gauntlet._support.run_gauntlet_benchmark(ops, cfg)
 
-    ops: Optional[melder_gauntlet.gauntlet._RuntimeOps] = None
-    try:
-        ops, _ = _profile_call(
-            "melder_gauntlet_setup",
-            build_runtime,
-            top=top,
-        )
-
-        def run_hot_iterations() -> Any:
-            """
-            Purpose:
-                Run only the hot Melder gauntlet iterations under cProfile.
-            Contract:
-                - Reuses the already-built runtime bundle.
-                - Executes only the configured hot iteration loop.
-            Returns:
-                Iteration result list from the shared hot path runner.
-            """
-            return melder_gauntlet._run_melder_profiled_iterations(ops, cfg)
-
-        iterations, _ = _profile_call(
-            "melder_gauntlet_hot",
-            run_hot_iterations,
-            top=top,
-        )
-        melder_gauntlet._print_melder_iteration_summary(cfg, iterations)
-    finally:
-        if ops is not None:
-            ops.cleanup()
+    result, _ = _profile_call(
+        "melder_gauntlet_full",
+        run_full_benchmark,
+        top=top,
+    )
+    melder_gauntlet._support.print_benchmark_result(result)
     return 0
 
 
