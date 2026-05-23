@@ -534,6 +534,111 @@ def _compile_emitted_no_overrides_executor(
     )
 
 
+def _inlinable_common_shape(
+        plan_step: Any,
+) -> Optional[Tuple[Tuple[str, Any], ...]]:
+    """
+    Return inlinable ``(param_name, dependency_key)`` pairs for a step, or
+    ``None`` when the step must use the generic ``_construct_spell_instance``.
+
+    A step is inlinable when its construction is exactly
+    ``spell.spell(**{param: instance_results[key] ...})`` -- the common shape:
+    a callable (class/method/lambda) spell that is not an existing-creation,
+    carries no contract payload, no positional ``__args__`` override, and whose
+    every constructor parameter resolves to exactly one dependency (no
+    collection DI). Any other shape returns ``None`` so the proven generic
+    helper handles it.
+
+    Returned pairs are in constructor-argument order; an empty tuple means an
+    inlinable spell with no dependency arguments (``spell.spell()``).
+    """
+    spell = plan_step.spell
+    if not (
+            spell.is_class_spell
+            or spell.is_method_spell
+            or spell.is_lambda_spell
+    ):
+        return None
+    if spell.is_existing_creation:
+        return None
+    if plan_step.has_contract_payload:
+        return None
+    if plan_step.contract_positional_override is not None:
+        return None
+    if plan_step.uses_positional_override:
+        return None
+    params: list[Tuple[str, Any]] = []
+    for param_name, dependency_keys in plan_step.dependency_resolution_order:
+        dependency_count = len(dependency_keys)
+        if dependency_count == 0:
+            continue
+        if dependency_count != 1:
+            return None
+        params.append((param_name, dependency_keys[0]))
+    return tuple(params)
+
+
+def _raise_meld_construction_error(spell: Any, exc: BaseException) -> None:
+    """
+    Raise the ``MeldExecutionError`` for a failed inlined constructor call.
+
+    Mirrors the error wrapping in ``_construct_spell_instance`` so the inlined
+    fast path and the generic fallback report construction failures
+    identically. Lives off the hot path: only the failure branch calls it.
+    """
+    raise MeldExecutionError(
+        spell_id=spell.spell_index.current,
+        spell_name=spell.spell_name,
+        message=f"Error invoking spell '{spell.spell_name}'.",
+        inner=exc,
+    ) from exc
+
+
+def _emit_construct_instance(
+        *,
+        lines: list[str],
+        step_index: int,
+        inlinable_params: Optional[Tuple[Tuple[str, Any], ...]],
+        indent: str,
+) -> None:
+    """
+    Append the construction source for one step at ``indent``.
+
+    For the common shape (``inlinable_params`` is not ``None``) this emits a
+    direct ``spell.spell(**kwargs)`` call, so no per-meld recipe interpretation
+    happens. For every other shape it emits the generic
+    ``_construct_spell_instance`` call unchanged.
+    """
+    if inlinable_params is None:
+        lines.append(
+            f"{indent}instance_{step_index} = _construct_spell_instance("
+            f"plan_step=plan_step_{step_index}, "
+            f"instance_results=instance_results)"
+        )
+        return
+    lines.append(f"{indent}try:")
+    if inlinable_params:
+        lines.append(
+            f"{indent}    instance_{step_index} = spell_{step_index}.spell("
+        )
+        for arg_index, (param_name, _dependency_key) in enumerate(
+                inlinable_params,
+        ):
+            lines.append(
+                f"{indent}        {param_name}="
+                f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
+            )
+        lines.append(f"{indent}    )")
+    else:
+        lines.append(
+            f"{indent}    instance_{step_index} = spell_{step_index}.spell()"
+        )
+    lines.extend([
+        f"{indent}except Exception as exc:",
+        f"{indent}    _raise_meld_construction_error(spell_{step_index}, exc)",
+    ])
+
+
 def _build_step_plan_executor_source(
         *,
         steps: Tuple[Any, ...],
@@ -544,6 +649,8 @@ def _build_step_plan_executor_source(
     Contract:
         - Emits one direct step-resolution block per plan step.
         - Inlines existence/lock/reuse/register routing in generated source.
+        - Inlines the constructor call for the common spell shape; other
+          shapes keep the generic `_construct_spell_instance` path.
         - Preserves root-instance verification semantics.
     """
     step_count = len(steps)
@@ -559,9 +666,11 @@ def _build_step_plan_executor_source(
         "        step_disposal_methods=step_disposal_methods,",
         "        step_existences=step_existences,",
         "        step_instance_keys=step_instance_keys,",
+        "        step_dep_keys=step_dep_keys,",
         "        root_instance_key=root_instance_key,",
         "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
+        "        _raise_meld_construction_error=_raise_meld_construction_error,",
         "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        MeldExecutionError=MeldExecutionError,",
@@ -647,7 +756,10 @@ def _append_step_resolution_source(
         - Emits deterministic variable names per step index.
         - Mirrors `_resolve_step_instance` semantics for all existence modes.
         - Emits static creations-target routing from plan metadata.
+        - Emits an inlined constructor call for the common spell shape and
+          falls back to `_construct_spell_instance` for every other shape.
     """
+    inlinable_params = _inlinable_common_shape(plan_step)
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
@@ -662,6 +774,10 @@ def _append_step_resolution_source(
         ),
         f"    existence_{step_index} = step_existences[{step_index}]",
     ])
+    if inlinable_params:
+        lines.append(
+            f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
+        )
     _append_step_creations_target_source(
         lines=lines,
         step_index=step_index,
@@ -670,10 +786,11 @@ def _append_step_resolution_source(
 
     existence = plan_step.existence
     if existence is Existence.many:
-        lines.append(
-            f"    instance_{step_index} = _construct_spell_instance("
-            f"plan_step=plan_step_{step_index}, "
-            f"instance_results=instance_results)"
+        _emit_construct_instance(
+            lines=lines,
+            step_index=step_index,
+            inlinable_params=inlinable_params,
+            indent="    ",
         )
         lines.append(f"    with creations_{step_index}._lock:")
         _append_step_register_source(
@@ -705,12 +822,13 @@ def _append_step_resolution_source(
                 f"existence=existence_{step_index})"
             ),
             f"            if instance_{step_index} is None:",
-            (
-                f"                instance_{step_index} = _construct_spell_instance("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results)"
-            ),
         ])
+        _emit_construct_instance(
+            lines=lines,
+            step_index=step_index,
+            inlinable_params=inlinable_params,
+            indent="                ",
+        )
         _append_step_register_source(
             lines=lines,
             step_index=step_index,
@@ -747,12 +865,13 @@ def _append_step_resolution_source(
                 f"existence=existence_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
-            (
-                f"                    instance_{step_index} = _construct_spell_instance("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results)"
-            ),
         ])
+        _emit_construct_instance(
+            lines=lines,
+            step_index=step_index,
+            inlinable_params=inlinable_params,
+            indent="                    ",
+        )
         lines.append(f"                    with creations_{step_index}._lock:")
         _append_step_register_source(
             lines=lines,
@@ -770,12 +889,13 @@ def _append_step_resolution_source(
                 f"existence=existence_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
-            (
-                f"                    instance_{step_index} = _construct_spell_instance("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results)"
-            ),
         ])
+        _emit_construct_instance(
+            lines=lines,
+            step_index=step_index,
+            inlinable_params=inlinable_params,
+            indent="                    ",
+        )
         _append_step_register_source(
             lines=lines,
             step_index=step_index,
@@ -801,12 +921,13 @@ def _append_step_resolution_source(
             f"existence=existence_{step_index})"
         ),
         f"            if instance_{step_index} is None:",
-        (
-            f"                instance_{step_index} = _construct_spell_instance("
-            f"plan_step=plan_step_{step_index}, "
-            f"instance_results=instance_results)"
-        ),
     ])
+    _emit_construct_instance(
+        lines=lines,
+        step_index=step_index,
+        inlinable_params=inlinable_params,
+        indent="                ",
+    )
     _append_step_register_source(
         lines=lines,
         step_index=step_index,
@@ -933,6 +1054,7 @@ def _build_step_executor_namespace(
         "SpellSpaceScopeError": SpellSpaceScopeError,
         "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
         "_construct_spell_instance": _construct_spell_instance,
+        "_raise_meld_construction_error": _raise_meld_construction_error,
         "_get_existing_creation": _get_existing_creation,
         "_register_spell_instance_prebound": _register_spell_instance_prebound,
         "_register_spell_instance": _register_spell_instance,
@@ -958,6 +1080,15 @@ def _build_step_executor_namespace(
         ),
         "step_instance_keys": tuple(
             plan_step.instance_key
+            for plan_step in steps
+        ),
+        "step_dep_keys": tuple(
+            tuple(
+                dependency_key
+                for _param_name, dependency_key in (
+                    _inlinable_common_shape(plan_step) or ()
+                )
+            )
             for plan_step in steps
         ),
         "steps": steps,
