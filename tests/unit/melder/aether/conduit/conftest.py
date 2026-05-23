@@ -341,7 +341,7 @@ def conduit_dynamic_normal(
     Build a dynamic, normal Conduit for contract and link tests.
 
     Contract:
-        - Dynamic environment is forced via automatic=False.
+        - Dynamic environment is forced via dynamic=True.
         - Normal state enables contract qualification paths.
 
     Args:
@@ -363,7 +363,7 @@ def conduit_dynamic_normal(
         aetheric_frame_name="default",
         aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
         creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
     yield conduit
@@ -383,7 +383,7 @@ def conduit_dynamic_lesser(
     Build a dynamic, lesser Conduit for upgrade tests.
 
     Contract:
-        - Dynamic environment is forced via automatic=False.
+        - Dynamic environment is forced via dynamic=True.
         - Conduit remains in lesser state until upgraded.
 
     Args:
@@ -405,7 +405,7 @@ def conduit_dynamic_lesser(
         aetheric_frame_name="default",
         aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
         root_conduit_id="root-1",
         creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )

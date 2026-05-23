@@ -28,6 +28,7 @@ def _build_conduit(
     """
     Build a Conduit with the current injected-service constructor contract.
     """
+    dynamic = not automatic
     aetheric_frame_object = MagicMock()
     conduit_cloud = MagicMock()
     conduit_cloud.create_cluster.return_value = None
@@ -54,7 +55,7 @@ def _build_conduit(
         aetheric_frame=aetheric_frame_object,
         policy=policy,
         creation_gate_controller=CreationGateController(),
-        automatic=automatic,
+        dynamic=dynamic,
         root_conduit_id=root_conduit_id,
     )
 

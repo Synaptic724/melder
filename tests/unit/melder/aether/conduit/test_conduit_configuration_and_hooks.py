@@ -67,6 +67,8 @@ def _build_conduit(
           current conduit runtime expects.
         - Provides a default root_conduit_id for lesser-conduit construction.
     """
+    if automatic is not None:
+        dynamic = not automatic
     if dev_ops_manager is None:
         creation_gate_controller = CreationGateController()
     else:
@@ -110,7 +112,6 @@ def _build_conduit(
         policy=policy,
         creation_gate_controller=creation_gate_controller,
         dynamic=dynamic,
-        automatic=automatic,
         name=name,
         logger=logger,
         conduit_id=conduit_id,
