@@ -519,11 +519,9 @@ class AethericFrame(Cleanable):
             existing_frame_configuration = self._frame_configuration
             if existing_frame_configuration is None:
                 self._frame_configuration = frame_configuration
-                frozen = self.freeze_frame_configuration(
+                return self.freeze_frame_configuration(
                     origin_spellbook_id=frame_configuration.origin_spellbook_id
                 )
-                self._conduit_cloud._ensure_devops_identity_attached_if_dynamic()
-                return frozen
 
             if not existing_frame_configuration._frozen:
                 origin_spellbook_id = frame_configuration.origin_spellbook_id
@@ -577,13 +575,11 @@ class AethericFrame(Cleanable):
                 existing_frame_configuration.freeze(
                     origin_spellbook_id=origin_spellbook_id
                 )
-                self._conduit_cloud._ensure_devops_identity_attached_if_dynamic()
                 return existing_frame_configuration
 
             if existing_frame_configuration.matches_posture(frame_configuration):
                 if existing_frame_configuration is not frame_configuration:
                     frame_configuration.cleanup()
-                self._conduit_cloud._ensure_devops_identity_attached_if_dynamic()
                 return existing_frame_configuration
 
             if self._aether._logger is not None:
