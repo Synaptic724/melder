@@ -13,6 +13,10 @@ from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types i
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
+from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell import Spell
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -358,12 +362,14 @@ class FakeConduit:
         self._configuration = None
         self._logger = FakeLogger()
         self._spellbook = FakeSpellbook()
+        self._devops_information_registry = DevopsInformationRegistry("default")
         self._ward_frame = SimpleNamespace(
             _conduit_cloud=SimpleNamespace(
                 get_conduit_by_id=lambda conduit_id: self._known_conduits.get(
                     conduit_id
                 )
-            )
+            ),
+            devops_information_registry=self._devops_information_registry,
         )
         self._conduit_state = ConduitState.normal
         self._creations = None
@@ -372,6 +378,17 @@ class FakeConduit:
         self._known_conduits: dict[str, "FakeConduit"] = {}
         self._spell_by_id: dict[str, FakeSpell] = {}
         self._spell_owners: dict[str, "FakeConduit"] = {}
+        self._transaction_identity = DevopsIdentity(
+            owner_kind="conduit",
+            owner_id=self._id,
+            aetheric_frame_name=self._aetheric_frame_name,
+            metadata={},
+            available_transactions=("link", "transfer_ownership"),
+        )
+        self._transaction_identity.attach_registry(
+            self._devops_information_registry,
+            object_ref=self,
+        )
         self._conduit_ward = ConduitWard(
             self,
             dynamic,
@@ -397,6 +414,18 @@ class FakeConduit:
 
     def cleanup(self) -> None:
         """Mark the conduit as cleaned for test teardown."""
+        try:
+            self._conduit_ward.cleanup()
+        except Exception:
+            pass
+        try:
+            self._transaction_identity.cleanup()
+        except Exception:
+            pass
+        try:
+            self._devops_information_registry.cleanup()
+        except Exception:
+            pass
         self._cleaned = True
 
     async def async_cleanup(self) -> None:

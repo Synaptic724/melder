@@ -189,13 +189,13 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
                 conduit=owner,
                 permissions="create",
             )
-        borrower_book.begin_binding_transaction()
+        borrower_book.begin_transaction("bind")
         consumer_id = borrower_book.bind(
             spell=Consumer,
             existence=Existence.unique,
             permissions="create",
         )
-        borrower_book.end_binding_transaction()
+        borrower_book.end_transaction("bind")
         consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
@@ -283,13 +283,13 @@ def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -
                 permissions="create",
             )
 
-        borrower_book.begin_binding_transaction()
+        borrower_book.begin_transaction("bind")
         consumer_id = borrower_book.bind(
             spell=Consumer,
             existence=Existence.unique,
             permissions="create",
         )
-        borrower_book.end_binding_transaction()
+        borrower_book.end_transaction("bind")
         consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
         assert consumer_spell is not None
         _run_spell_to_phase5(consumer_spell)
@@ -405,7 +405,7 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
                 permissions="create",
             )
 
-        with borrower_book.binding_transaction() as txn:
+        with borrower_book.transaction("bind") as txn:
             consumer_id = txn.bind(
                 spell=Consumer,
                 existence=Existence.unique,

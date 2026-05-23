@@ -216,7 +216,7 @@ def test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_du
 
     conduit = spellbook.conjure(name="root")
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,

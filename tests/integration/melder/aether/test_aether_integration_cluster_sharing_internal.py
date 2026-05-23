@@ -96,7 +96,7 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
     try:
         cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             shareable_id = spellbook.bind(
                 spell=BasicConfig,
                 existence=Existence.unique_per_conduit_cluster,
@@ -148,7 +148,7 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
     try:
         cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             non_shareable_id = spellbook.bind(
                 spell=BasicConfig,
                 existence=Existence.unique,
@@ -196,7 +196,7 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
     try:
         cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             config_id = spellbook.bind(
                 spell=BasicConfig,
                 existence=Existence.unique_per_conduit_cluster,

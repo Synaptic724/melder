@@ -488,7 +488,7 @@ def test_component_meld_revalidation_uses_local_phase_lane(
         counters["system_validation_local"] = 0
         counters["change_control_local"] = 0
 
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = spellbook.bind(
                 spell=BasicConfig,
                 existence=Existence.unique,

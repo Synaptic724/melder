@@ -166,7 +166,7 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
         assert spell_states is not None
         spell_states.consume_dirty_indexes()
 
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             service_b_id = spellbook.bind(
                 spell=ServiceB,
                 existence=Existence.unique,
@@ -324,7 +324,7 @@ def test_post_conjure_bind_collection_dependencies_isolated_by_spellbook() -> No
 
         spellbook_a._spell_system_states.consume_dirty_indexes()
 
-        with spellbook_a.binding_transaction():
+        with spellbook_a.transaction("bind"):
             spellbook_a.bind(
                 spell=ServiceAExtra,
                 existence=Existence.unique,

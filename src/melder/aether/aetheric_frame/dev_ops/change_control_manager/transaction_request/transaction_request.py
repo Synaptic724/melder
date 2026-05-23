@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Dict, Optional, Tuple, ClassVar
 
 
@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Tuple, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
-class ChangeTransactionType(str, Enum):
+class ChangeTransactionType(StrEnum):
     """
     Change-control transaction types.
 
@@ -17,6 +17,8 @@ class ChangeTransactionType(str, Enum):
     Contract:
         - Values must remain stable because they become part of transaction
           request payloads and logs.
+        - Uses `StrEnum` so runtime callers can pass members through normal
+          string-oriented APIs without special casing.
         - No "scan" or "embargo" transaction types are modeled here.
     Args:
         None.

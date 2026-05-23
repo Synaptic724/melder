@@ -6,6 +6,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.nexus.nexus import Nexus
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -113,6 +116,15 @@ def spellbook_stub() -> MagicMock:
     spellbook._contracted_spells = {}
     spellbook._lookup_spells = {}
     spellbook._lookup_contracted_spells = {}
+    spellbook._aetheric_frame_configuration = MagicMock(
+        system_state="automatic",
+        disable_bind=False,
+        disable_all_transactions_after_conjure=False,
+        disable_linking=False,
+        disable_transfer_of_ownership=False,
+        disable_conduit_cluster=False,
+        disable_mutations=False,
+    )
     spellbook._find_contracted_spell_by_id = MagicMock(return_value=None)
     spellbook.bind = MagicMock()
     spellbook.create_binder = MagicMock()
@@ -214,6 +226,7 @@ def aetheric_frame_stub(conduit_cloud_stub: MagicMock) -> MagicMock:
     """
     stub = MagicMock()
     stub._conduit_cloud = conduit_cloud_stub
+    stub.devops_information_registry = DevopsInformationRegistry("default")
     stub.register_root_conduit.return_value = None
     stub.unregister_root_conduit.return_value = None
     stub.register_dynamic_conduit.return_value = None
@@ -251,7 +264,7 @@ def conduit_lesser(
         aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
         root_conduit_id="root-1",
-        dev_ops_manager=dev_ops_manager_stub,
+        creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)
@@ -288,7 +301,7 @@ def conduit_normal(
         aetheric_frame_name="default",
         aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
-        dev_ops_manager=dev_ops_manager_stub,
+        creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)
@@ -326,7 +339,7 @@ def conduit_dynamic_normal(
         aetheric_frame=aetheric_frame_stub,
         policy=Policies.default,
         automatic=False,
-        dev_ops_manager=dev_ops_manager_stub,
+        creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)
@@ -365,7 +378,7 @@ def conduit_dynamic_lesser(
         policy=Policies.default,
         automatic=False,
         root_conduit_id="root-1",
-        dev_ops_manager=dev_ops_manager_stub,
+        creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
     yield conduit
     _cleanup_conduit_if_alive(conduit)

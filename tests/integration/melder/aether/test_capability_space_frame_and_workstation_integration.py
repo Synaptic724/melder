@@ -213,7 +213,7 @@ def _bind_service_in_conduit(
     Returns:
         str: Newly bound spell id.
     """
-    with conduit.binding_transaction():
+    with conduit.transaction("bind"):
         return conduit.bind(
             spell=CapabilityWorkspaceService(kind_name),
             spellframe=spellframe_name,

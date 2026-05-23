@@ -35,6 +35,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 )
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
+    ChangeTransactionType,
 )
 
 if TYPE_CHECKING:
@@ -52,7 +53,6 @@ if TYPE_CHECKING:
     )
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
         ChangeControlTransactionRequest,
-        ChangeTransactionType,
     )
 
 class TransactionMediator(Cleanable):

@@ -275,7 +275,7 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        with conduit.binding_transaction():
+        with conduit.transaction("bind"):
             config_id = conduit.bind(
                 spell=BasicConfig,
                 existence=Existence.unique,

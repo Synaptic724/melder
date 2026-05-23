@@ -326,7 +326,7 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
     existing = BasicService(marker="existing")
 
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = spellbook.bind(
                 spell=existing,
                 existence=Existence.unique,
@@ -360,9 +360,13 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
         AssertionError: If post-conjure bind gating is incorrect.
     """
     spellbook = _make_spellbook()
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     try:
-        with pytest.raises(RuntimeError, match="requires an active binding transaction"):
+        with pytest.raises(
+                RuntimeError,
+                match="disabled after conjure|requires an active binding transaction",
+        ):
             spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,
@@ -582,9 +586,10 @@ def test_component_spellbook_begin_transaction_disabled_change_control_tracks_re
         spellbook.begin_transaction("bind", scope_keys=["scope:custom"])
         in_flight = change_control.transaction_manager().list_in_flight()
         assert len(in_flight) == 1
-        assert spellbook._active_change_request in in_flight
+        active_request = spellbook._get_required_transaction_mediator().get_active_request()
+        assert active_request in in_flight
     finally:
-        if spellbook._active_change_request is not None:
+        if spellbook._get_required_transaction_mediator().get_active_request() is not None:
             spellbook.end_transaction("bind")
         conduit.cleanup()
         spellbook.cleanup()
@@ -735,9 +740,10 @@ def test_component_spellbook_describe_spells_runtime_dump_includes_owner_and_sha
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,
@@ -801,10 +807,11 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
     spellbook_id = spellbook.id
 
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     late_spell_id = None
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             late_spell_id = spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,
@@ -841,10 +848,11 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
     spellbook_id = spellbook.id
 
-    conduit = spellbook.conjure(name="root")
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
     spell_ids = []
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_ids = spellbook.scan(scan_bind_module_core)
 
         descriptor = Nexus()._get_required_frame_descriptor("ops")
@@ -915,7 +923,7 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     spellbook._run_post_conjure_structural_phases = lambda spells: None
 
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,

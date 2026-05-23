@@ -125,7 +125,7 @@ def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_r
     conduit = spellbook.conjure(name="root")
     late_spell_id = None
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             late_spell_id = spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,

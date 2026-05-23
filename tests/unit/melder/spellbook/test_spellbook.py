@@ -1453,35 +1453,29 @@ def test_remove_link_contract_inconsistent_state_raises() -> None:
 def test_try_update_staged_contract_keys_rebuilds_peer_scope(monkeypatch):
     sb = Spellbook()
     sb._aetheric_frame = "default"
-    sb._active_change_request = types.SimpleNamespace(
-        request_id="req-1",
-        request_type=spellbook_module.ChangeTransactionType.LINK,
-        contract_keys=[("old-frame", "old-binding", "peer"), ("stay", "binding", "other")],
-    )
     idx = DummySpellIndex()
     sb._lookup_contracted_spells = {"peer": {("new-frame", "new-binding"): idx}}
     updated = []
 
-    staged = types.SimpleNamespace(contract_keys=[("staged-frame", "staged-binding", "peer")])
-    change_control = types.SimpleNamespace(
-        orchestrator=lambda: types.SimpleNamespace(get_staged=lambda request_id: staged),
-        update_staged_request=lambda request_id, contract_keys=None: updated.append(
-            (request_id, contract_keys)
+    session = types.SimpleNamespace(
+        staged=types.SimpleNamespace(
+            contract_keys=[("staged-frame", "staged-binding", "peer")]
+        )
+    )
+    mediator = types.SimpleNamespace(
+        get_session_for_identity=lambda **kwargs: session,
+        update_transaction_for_identity=lambda **kwargs: updated.append(
+            kwargs["contract_keys"]
         ),
     )
-    monkeypatch.setattr(spellbook_module.Spellbook, "_aether", types.SimpleNamespace(
-        _get_change_control_manager=lambda frame: change_control
-    ))
+    monkeypatch.setattr(sb, "_get_required_transaction_mediator", lambda: mediator)
 
     sb._try_update_staged_contract_keys("peer")
 
     assert updated == [
-        (
-            "req-1",
-            [
-                ("new-frame", "new-binding", "peer"),
-            ],
-        )
+        [
+            ("new-frame", "new-binding", "peer"),
+        ]
     ]
 
 
@@ -1502,7 +1496,7 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
     sb._logger = DummySafeLogger()
 
     with pytest.raises(RuntimeError, match="dynamic mode"):
-        sb.begin_transaction(spellbook_module.ChangeTransactionType.LINK)
+        sb.begin_transaction("link")
 
     sb._aetheric_frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-id",
@@ -1537,7 +1531,7 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
     )
 
     with pytest.raises(RuntimeError, match="admission denied"):
-        sb.begin_transaction(spellbook_module.ChangeTransactionType.LINK)
+        sb.begin_transaction("link")
 
 
 def test_spellbook_builds_transaction_identity_at_init() -> None:
@@ -1547,13 +1541,13 @@ def test_spellbook_builds_transaction_identity_at_init() -> None:
     try:
         assert identity.owner_kind == "spellbook"
         assert identity.owner_id == sb._id
-        assert identity.frame_name == sb._aetheric_frame
+        assert identity.aetheric_frame_name == sb._aetheric_frame
         assert identity.supports_transaction("bind") is True
         assert identity.supports_transaction("scan") is True
-        assert identity.supports_transaction("link") is True
-        assert identity.supports_transaction("transfer_ownership") is True
-        assert identity.supports_transaction("mutation") is True
-        assert identity.supports_transaction("cluster_link") is True
+        assert identity.supports_transaction("link") is False
+        assert identity.supports_transaction("transfer_ownership") is False
+        assert identity.supports_transaction("mutation") is False
+        assert identity.supports_transaction("cluster_link") is False
     finally:
         sb.cleanup()
 
@@ -1589,18 +1583,17 @@ def test_end_transaction_guard_and_abort_paths(monkeypatch):
     mediator_state["session"] = types.SimpleNamespace(
         request=types.SimpleNamespace(
             request_id="req-1",
-            request_type=spellbook_module.ChangeTransactionType.LINK,
+            request_type="link",
         ),
         depth=1,
     )
-    sb._active_change_request = mediator_state["session"].request
     with pytest.raises(RuntimeError, match="does not match the requested type"):
-        sb.end_transaction(spellbook_module.ChangeTransactionType.BIND)
+        sb.end_transaction("bind")
 
     abort_calls = []
     bind_request = types.SimpleNamespace(
         request_id="req-bind",
-        request_type=spellbook_module.ChangeTransactionType.BIND,
+        request_type="bind",
     )
     mediator.end_transaction_for_identity = lambda identity, transaction_type, success=True: (
         abort_calls.append(bind_request.request_id),
@@ -1610,10 +1603,8 @@ def test_end_transaction_guard_and_abort_paths(monkeypatch):
         request=bind_request,
         depth=1,
     )
-    sb._active_change_request = bind_request
-
     with pytest.raises(RuntimeError, match="end bind boom"):
-        sb.end_transaction(spellbook_module.ChangeTransactionType.BIND)
+        sb.end_transaction("bind")
 
     assert abort_calls == ["req-bind"]
 
@@ -1625,15 +1616,19 @@ def test_end_transaction_commit_path_and_context_manager() -> None:
     session = types.SimpleNamespace(
         request=types.SimpleNamespace(
             request_id="req-link",
-            request_type=spellbook_module.ChangeTransactionType.LINK,
+            request_type="link",
         ),
         depth=1,
     )
     mediator_state = {"session": session}
-    sb._active_change_request = session.request
     sb._get_required_transaction_mediator = lambda: types.SimpleNamespace(
         get_active_session=lambda: mediator_state["session"],
         get_session_for_identity=lambda **kwargs: None,
+        get_active_request=lambda: (
+            mediator_state["session"].request
+            if mediator_state["session"] is not None
+            else None
+        ),
         get_session_by_request_id=lambda request_id: (
             mediator_state["session"]
             if mediator_state["session"] is not None
@@ -1644,30 +1639,28 @@ def test_end_transaction_commit_path_and_context_manager() -> None:
             commit_calls.append((request_id, expected_type, success)),
             mediator_state.update(session=None),
         ),
-        get_active_request=lambda: None,
     )
-    sb.end_transaction(spellbook_module.ChangeTransactionType.LINK)
+    sb.end_transaction("link")
 
     assert commit_calls == [
         (
             "req-link",
-            spellbook_module.ChangeTransactionType.LINK,
+            "link",
             True,
         )
     ]
-    assert sb._active_change_request is None
 
     calls = []
     sb.begin_transaction = lambda *args, **kwargs: calls.append(("begin", args[0]))
     sb.end_transaction = lambda transaction_type=None, success=True: calls.append(("end", transaction_type, success))
 
     with pytest.raises(RuntimeError, match="boom"):
-        with sb.transaction(spellbook_module.ChangeTransactionType.LINK):
+        with sb.transaction("link"):
             raise RuntimeError("boom")
 
     assert calls == [
-        ("begin", spellbook_module.ChangeTransactionType.LINK),
-        ("end", spellbook_module.ChangeTransactionType.LINK, False),
+        ("begin", "link"),
+        ("end", "link", False),
     ]
 
 
@@ -1683,11 +1676,11 @@ def test_binding_transaction_helpers_and_staged_binding_key_updates(monkeypatch)
         ("end", transaction_type, success)
     )
 
-    sb.begin_binding_transaction()
-    assert calls == [("begin", spellbook_module.ChangeTransactionType.BIND)]
+    sb.begin_transaction("bind")
+    assert calls == [("begin", "bind")]
 
-    spellbook_module.Spellbook.end_binding_transaction(sb)
-    assert calls[-1] == ("end", spellbook_module.ChangeTransactionType.BIND, True)
+    spellbook_module.Spellbook.end_transaction(sb, "bind")
+    assert calls[-1] == ("end", "bind", True)
 
     sb._prepare_bind_transaction_state()
     sb._pending_binding_frame_keys = {"frame-a"}
@@ -1697,25 +1690,24 @@ def test_binding_transaction_helpers_and_staged_binding_key_updates(monkeypatch)
     assert sb._pending_binding_frame_keys == set()
     assert sb._pending_structural_spells == []
 
-    sb._get_active_transaction_session = lambda: None
-    sb._active_change_request = None
+    mediator = types.SimpleNamespace(
+        get_session_for_identity=lambda **kwargs: None,
+        update_transaction_for_identity=lambda **kwargs: None,
+    )
+    monkeypatch.setattr(sb, "_get_required_transaction_mediator", lambda: mediator)
     sb._conjured = True
     with pytest.raises(RuntimeError, match="requires an active binding transaction"):
         sb._ensure_binding_transaction_active(action="bind")
 
     updated = []
-    change_control = types.SimpleNamespace(
-        update_staged_request=lambda request_id, binding_keys=None: updated.append(
-            (request_id, binding_keys)
-        )
+    session = types.SimpleNamespace(staged=types.SimpleNamespace(contract_keys=[]))
+    mediator = types.SimpleNamespace(
+        get_session_for_identity=lambda **kwargs: session,
+        update_transaction_for_identity=lambda **kwargs: updated.append(
+            kwargs["binding_keys"]
+        ),
     )
-    spellbook_module.Spellbook._aether = types.SimpleNamespace(
-        _get_change_control_manager=lambda frame: change_control,
-    )
-    sb._active_change_request = types.SimpleNamespace(
-        request_id="req-bind",
-        request_type=spellbook_module.ChangeTransactionType.BIND,
-    )
+    monkeypatch.setattr(sb, "_get_required_transaction_mediator", lambda: mediator)
     spell_a = types.SimpleNamespace(key=("frame-a", "binding-a"))
     spell_dup = types.SimpleNamespace(key=("frame-a", "binding-a"))
     spell_b = types.SimpleNamespace(key=("frame-b", "binding-b"))
@@ -1724,10 +1716,7 @@ def test_binding_transaction_helpers_and_staged_binding_key_updates(monkeypatch)
     sb._try_update_staged_binding_keys()
 
     assert updated == [
-        (
-            "req-bind",
-            [("frame-a", "binding-a"), ("frame-b", "binding-b")],
-        )
+        [("frame-a", "binding-a"), ("frame-b", "binding-b")]
     ]
 
 

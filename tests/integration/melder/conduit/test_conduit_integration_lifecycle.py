@@ -338,7 +338,7 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
     lesser = root.create_lesser_conduit()
     try:
         lesser.upgrade_to_normal(name="upgraded")
-        with lesser.binding_transaction():
+        with lesser.transaction("bind"):
             config_id = lesser.bind(
                 spell=BasicConfig,
                 existence=Existence.unique,

@@ -153,7 +153,7 @@ class GeneratedService:
     def read(self) -> int:
         return self.value
 
-conduit.begin_binding_transaction()
+conduit.begin_transaction("bind")
 try:
     spell_id = conduit.bind(
         spell=GeneratedService,
@@ -163,7 +163,7 @@ try:
         binding_name="generated_service",
     )
 finally:
-    conduit.end_binding_transaction()
+    conduit.end_transaction("bind")
 
 result = inspect.getsource(GeneratedService)
 """.strip()
@@ -212,7 +212,7 @@ class GeneratedService:
     def read(self) -> int:
         return self.value
 
-conduit.begin_binding_transaction()
+conduit.begin_transaction("bind")
 try:
     spell_id = conduit.bind(
         spell=GeneratedService,
@@ -222,7 +222,7 @@ try:
         binding_name="generated_service",
     )
 finally:
-    conduit.end_binding_transaction()
+    conduit.end_transaction("bind")
 
 result = spell_id
 """.strip()

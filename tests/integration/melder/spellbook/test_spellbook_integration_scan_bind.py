@@ -436,7 +436,7 @@ def test_conduit_scan_integration_melds_after_scan() -> None:
     spellbook = _make_spellbook()
     conduit = spellbook.conjure(name="scan_root_meld")
     try:
-        with conduit.binding_transaction():
+        with conduit.transaction("bind"):
             spell_ids = conduit.scan(scan_bind_module_core)
         instance = conduit.meld(spell=spell_ids[1])
         assert instance.marker == "beta"
@@ -456,7 +456,7 @@ def test_scan_bind_integration_spellbook_scan_after_conjure_registers_in_aether(
     spellbook = _make_spellbook()
     conduit = spellbook.conjure(name="scan_root_after_conjure")
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_ids = spellbook.scan(scan_bind_module_core)
         found_id = spellbook.inspect_spell(scan_bind_module_core.ScanCoreAlpha)
         assert found_id == spell_ids[0]
@@ -478,7 +478,7 @@ def test_conduit_scan_after_conjure_registers_in_aether() -> None:
     spellbook = _make_spellbook()
     conduit = spellbook.conjure(name="scan_root_after_conduit_scan")
     try:
-        with conduit.binding_transaction():
+        with conduit.transaction("bind"):
             spell_ids = conduit.scan(scan_bind_module_core)
         found_id = spellbook.inspect_spell(scan_bind_module_core.ScanCoreBeta)
         assert found_id == spell_ids[1]
@@ -506,7 +506,7 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
     conduit = spellbook.conjure(name="scan_root_nexus")
     spell_ids = []
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_ids = spellbook.scan(scan_bind_module_core)
 
         descriptor = Nexus()._get_required_frame_descriptor(frame_name)

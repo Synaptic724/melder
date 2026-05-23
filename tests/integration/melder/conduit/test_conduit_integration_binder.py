@@ -90,7 +90,7 @@ def test_conduit_binder_reuse_and_named_binding() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         binder = SpellBinder(conduit._spellbook, )
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             config_id = binder.bind(BasicConfig).named("primary").finalize()
             logger_id = binder.bind(BasicLogger).as_unique().finalize()
 
@@ -159,7 +159,7 @@ def test_conduit_binder_defaults_apply_permissions_and_existence() -> None:
             default_existence=Existence.many,
             default_permissions="read",
         )
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = binder.bind(BasicConfig).finalize()
 
         first = conduit.meld(spell=spell_id)
@@ -195,7 +195,7 @@ def test_conduit_binder_named_spellframe_resolution_and_lookup() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         binder = SpellBinder(conduit._spellbook, )
-        with conduit.binding_transaction():
+        with conduit.transaction("bind"):
             spell_id = (
                 binder.bind(BasicService)
                 .under_spellframe(IService)
@@ -276,7 +276,7 @@ def test_conduit_binder_hooks_execute_in_order() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = (
                 SpellBinder(conduit._spellbook, )
                 .bind(BasicService)

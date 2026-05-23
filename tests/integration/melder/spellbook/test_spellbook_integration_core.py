@@ -566,7 +566,7 @@ def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instanc
     conduit = spellbook.conjure(name="root")
     try:
         existing = BasicConfig(label="existing")
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = spellbook.bind(
                 spell=existing,
                 existence=Existence.unique,
@@ -706,7 +706,7 @@ def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = spellbook.bind(
                 spell=BasicService,
                 existence=Existence.unique,
@@ -1055,7 +1055,7 @@ def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() 
     try:
         existing = BasicConfig(label="binder-existing")
         binder = SpellBinder(spellbook, )
-        with spellbook.binding_transaction():
+        with spellbook.transaction("bind"):
             spell_id = binder.bind(existing).as_unique().finalize()
         assert conduit.meld(spell=spell_id) is existing
     finally:

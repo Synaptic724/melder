@@ -178,7 +178,7 @@ def test_conduit_cluster_refresh_shares_after_new_bind() -> None:
         inbound_ids = set(_inbound_spell_ids(borrower.get_spells_in_contract_by_conduit(owner.id)))
         assert inbound_ids == {service_id}
 
-        with owner.binding_transaction():
+        with owner.transaction("bind"):
             config_id = owner.bind(
                 spell=BasicConfig,
                 existence=Existence.unique_per_conduit_cluster,

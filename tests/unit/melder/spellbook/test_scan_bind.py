@@ -259,7 +259,7 @@ def test_conduit_scan_after_conjure() -> None:
     ConduitSpell.__module__ = module.__name__
     module.ConduitSpell = ConduitSpell
 
-    with conduit.binding_transaction():
+    with conduit.transaction("bind"):
         spell_ids = conduit.scan(module)
 
     assert len(spell_ids) == 1

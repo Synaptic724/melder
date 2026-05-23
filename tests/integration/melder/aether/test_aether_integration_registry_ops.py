@@ -249,7 +249,7 @@ def test_aether_remove_single_spell_index_updates_registry() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
-    with spellbook.binding_transaction():
+    with spellbook.transaction("bind"):
         config_id = spellbook.bind(
             spell=BasicConfig,
             existence=Existence.unique,

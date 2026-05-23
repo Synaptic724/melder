@@ -461,7 +461,7 @@ def test_multithreading_bind_transaction_then_contract_uncontract_recontract() -
         assert isinstance(primary_pre, ContractConsumerPrimary)
         assert isinstance(primary_pre.service, ContractServicePrimary)
 
-        with owner.binding_transaction():
+        with owner.transaction("bind"):
             secondary_service_id = owner.bind(
                 spell=ContractServiceSecondary,
                 existence=Existence.unique,
@@ -469,7 +469,7 @@ def test_multithreading_bind_transaction_then_contract_uncontract_recontract() -
                 spellframe=IService,
                 binding_name="secondary",
             )
-        with borrower.binding_transaction():
+        with borrower.transaction("bind"):
             secondary_consumer_id = borrower.bind(
                 spell=ContractConsumerSecondary,
                 existence=Existence.many,
