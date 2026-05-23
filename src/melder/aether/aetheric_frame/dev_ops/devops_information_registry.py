@@ -507,6 +507,47 @@ class DevopsInformationRegistry(Cleanable):
         with self._lock:
             return tuple(sorted(self._spellbook_to_conduits.get(spellbook_id, set())))
 
+    def get_primary_conduit_id_for_spellbook(
+            self,
+            spellbook_id: str,
+    ) -> Optional[str]:
+        """
+        Return the single paired conduit id for one spellbook, if present.
+
+        Purpose
+        -------
+        Provide the direct spellbook -> root conduit lookup used by bind-family
+        transaction planning, where the runtime contract expects at most one
+        paired conduit after conjure.
+
+        Parameters
+        ----------
+        spellbook_id:
+            Spellbook id to resolve.
+
+        Returns
+        -------
+        str | None
+            The paired conduit id when present, otherwise `None`.
+
+        Raises
+        ------
+        RuntimeError
+            If more than one conduit id is currently registered for the
+            spellbook, because that violates the current bind-family topology
+            assumption.
+        """
+        self.check_cleaned()
+        conduit_ids = self.get_conduits_for_spellbook(spellbook_id)
+        if not conduit_ids:
+            return None
+        if len(conduit_ids) > 1:
+            raise RuntimeError(
+                "Bind-family resolution expected one paired conduit for the spellbook, "
+                f"but found {len(conduit_ids)}."
+            )
+        return conduit_ids[0]
+
     def get_conduit_objects_for_spellbook(self, spellbook_id: str) -> Tuple[Any, ...]:
         """
         Return live conduit objects currently mapped to one spellbook.

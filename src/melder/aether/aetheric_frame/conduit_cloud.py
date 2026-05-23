@@ -2,6 +2,7 @@ import threading
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, ClassVar
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.conduit.conduit import Conduit
 import ulid
 
@@ -13,6 +14,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -39,6 +41,7 @@ class ConduitCloud(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",
+        "_aetheric_frame",
         "_conduits",
         "_conduit_ids_by_name",
         "_conduit_clusters",
@@ -51,6 +54,7 @@ class ConduitCloud(Cleanable):
     def __init__(
             self,
             name: str,
+            aetheric_frame: "AethericFrame",
             conduits: Dict[str, "Conduit"],
             conduit_ids_by_name: Dict[str, str],
             devops_information_registry: DevopsInformationRegistry,
@@ -64,6 +68,9 @@ class ConduitCloud(Cleanable):
 
         Args:
             name (str): The name of the AethericFrame this cloud serves.
+            aetheric_frame (AethericFrame):
+                Owning frame used to inspect current posture when dynamic-only
+                cluster features are requested.
             conduits (Dict[str, Conduit]):
                 Borrowed root-conduit registry owned by the frame.
             conduit_ids_by_name (Dict[str, str]):
@@ -80,6 +87,7 @@ class ConduitCloud(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._name: str = name
+        self._aetheric_frame: AethericFrame = aetheric_frame
         self._conduits: Dict[str, "Conduit"] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
@@ -135,9 +143,37 @@ class ConduitCloud(Cleanable):
             del self._conduit_clusters
             del self._devops_information_registry
             del self._devops_identity
+            del self._aetheric_frame
             del self._name
             del self._id
         del self._lock
+
+    def _assert_cluster_operations_allowed(self) -> None:
+        """
+        Raise when conduit-cluster operations are disabled for the current frame.
+
+        Contract:
+            - Rejects cluster work when the frame posture is not dynamic.
+            - Rejects cluster work when cluster features are explicitly
+              disabled.
+            - Rejects cluster work when all post-conjure transactions are
+              disabled at the frame level.
+        """
+        frame_configuration = self._aetheric_frame.frame_configuration
+        if frame_configuration is None:
+            raise RuntimeError("Frame configuration is unavailable.")
+        if frame_configuration.disable_conduit_cluster:
+            raise RuntimeError(
+                "Conduit-cluster operations are disabled for this frame."
+            )
+        if frame_configuration.disable_all_transactions_after_conjure:
+            raise RuntimeError(
+                "Conduit-cluster operations are disabled after conjure for this frame."
+            )
+        if frame_configuration.system_state is not SystemState.dynamic:
+            raise RuntimeError(
+                "Conduit-cluster operations require dynamic mode."
+            )
 
 
     #region Context Manager
@@ -347,6 +383,7 @@ class ConduitCloud(Cleanable):
             ValueError: If the cluster already exists.
         """
         self.check_cleaned()
+        self._assert_cluster_operations_allowed()
         with self._lock:
             if cluster_name in self._conduit_clusters:
                 raise ValueError(
@@ -370,6 +407,7 @@ class ConduitCloud(Cleanable):
             ValueError: If the cluster does not exist.
         """
         self.check_cleaned()
+        self._assert_cluster_operations_allowed()
         with self._lock:
             cluster = self._conduit_clusters.pop(cluster_name, None)
         if cluster is None:
@@ -387,6 +425,7 @@ class ConduitCloud(Cleanable):
             cluster_name (str): Target cluster.
         """
         self.check_cleaned()
+        self._assert_cluster_operations_allowed()
         cluster = self._get_cluster(cluster_name)
         cluster.add_member(conduit.id)
         cluster.handle_join(conduit)
@@ -404,6 +443,7 @@ class ConduitCloud(Cleanable):
             cluster_name (str): Target cluster.
         """
         self.check_cleaned()
+        self._assert_cluster_operations_allowed()
         cluster = self._get_cluster(cluster_name)
         cluster.remove_member(conduit.id)
         cluster.handle_leave(conduit)
@@ -434,6 +474,7 @@ class ConduitCloud(Cleanable):
             conduit (Conduit): Target conduit.
         """
         self.check_cleaned()
+        self._assert_cluster_operations_allowed()
         cluster_names = self.get_clusters_for_conduit(conduit.id)
         for cluster_name in cluster_names:
             cluster = self._get_cluster(cluster_name)

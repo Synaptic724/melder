@@ -1,58 +1,214 @@
-from enum import Enum
-from typing import Any, Dict
+"""
+Transaction-strategy registry for live change-control resolution.
+
+This module does one job: own the mapping from transaction kind to strategy
+class so `TransactionMediator` can ask one object, "given this transaction
+type, which strategy class should resolve it?".
+
+Why this exists
+---------------
+The mediator should not carry per-transaction policy branches inline. Once the
+runtime has more than one meaningful transaction family, the transaction-kind
+to strategy-class mapping needs one explicit owner. This builder is that owner.
+
+What this file is responsible for
+---------------------------------
+- store the strategy registry
+- normalize transaction-type input
+- resolve one registered strategy class
+- provide a small convenience layer around the three strategy operations:
+  - `build_start_plan(...)`
+  - `on_start(...)`
+  - `on_end(...)`
+
+What this file is not responsible for
+-------------------------------------
+- it does not perform admission
+- it does not open embargoes
+- it does not commit or abort requests
+- it does not own transaction policy itself
+
+Those responsibilities stay in the mediator and change-control layers. This
+builder is only the registry and dispatch seam for strategy classes.
+"""
+
+from typing import TYPE_CHECKING, Dict, Type, Union
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy import (
     BindTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
+    TransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
 )
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
 
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
+        ChangeControlTransactionManager,
+    )
 
 class TransactionStrategyBuilder:
     """
-    Builder and resolver for transaction strategies.
+    Registry-backed resolver for transaction strategies.
 
     Purpose:
-        Centralize transaction-kind policy resolution in change-control land so
-        callers only submit `transaction_type + DevopsIdentity + metadata`
-        and do not carry strategy logic themselves.
+        Centralize transaction-kind to strategy-class resolution in
+        change-control land so callers only submit:
+        - `transaction_type`
+        - `DevopsIdentity`
+        - `metadata`
+
+        and do not carry strategy-selection logic themselves.
+
+    Contract:
+        - Owns one internal strategy registry keyed by normalized transaction
+          name.
+        - Registers the built-in strategy set during initialization.
+        - Accepts either `ChangeTransactionType` or plain string transaction
+          identifiers.
+        - Uses the same builder-owned collaborators for every resolved
+          strategy:
+          - `ChangeControlTransactionManager`
+          - `DevopsInformationRegistry`
+
+    Threading:
+        - The builder stores only immutable references plus a strategy map that
+          is populated during initialization.
+        - It is read-only during normal runtime use and does not require its
+          own lock.
     """
 
     __slots__ = [
         "_transaction_manager",
+        "_devops_information_registry",
+        "_strategies_by_transaction_name",
     ]
 
-    def __init__(self, transaction_manager: Any) -> None:
+    def __init__(
+            self,
+            transaction_manager: "ChangeControlTransactionManager",
+            devops_information_registry: DevopsInformationRegistry,
+    ) -> None:
         """
-        Build one strategy builder over the change-control transaction manager.
-        """
-        self._transaction_manager = transaction_manager
+        Initialize one strategy registry over the live change-control surfaces.
 
-    def resolve(self, transaction_type: Any) -> Any:
+        Args:
+            transaction_manager:
+                Frame-local transaction manager whose scope helpers and request
+                utilities will be shared by registered strategies.
+            devops_information_registry:
+                Frame-local topology and transaction mirror used by registered
+                strategies for object and relationship resolution.
+
+        Contract:
+            - Starts with an empty registry map.
+            - Immediately registers the built-in strategy set through
+              `_register_default_strategies()`.
+            - Does not instantiate strategy objects; the registry stores
+              strategy classes directly.
         """
-        Resolve the static strategy class for one transaction kind.
+        self._transaction_manager: ChangeControlTransactionManager = (
+            transaction_manager
+        )
+        self._devops_information_registry: DevopsInformationRegistry = (
+            devops_information_registry
+        )
+        self._strategies_by_transaction_name: Dict[str, Type[TransactionStrategy]] = {}
+        self._register_default_strategies()
+
+    def register_strategy(
+            self,
+            transaction_type: Union[ChangeTransactionType, str],
+            strategy_class: Type[TransactionStrategy],
+    ) -> None:
+        """
+        Register one strategy class for a transaction kind.
+
+        Args:
+            transaction_type:
+                Transaction kind to normalize and use as the registry key.
+            strategy_class:
+                Strategy class implementing the `TransactionStrategyClass`
+                contract.
+
+        Contract:
+            - Later registrations for the same normalized transaction name
+              replace earlier ones.
+            - Registration stores the class directly; no instance lifecycle is
+              introduced here.
         """
         transaction_name = self._normalize_transaction_name(transaction_type)
-        if transaction_name == "bind":
-            return BindTransactionStrategy
-        raise NotImplementedError(
-            f"Transaction strategy is not implemented for '{transaction_name}'."
+        self._strategies_by_transaction_name[transaction_name] = strategy_class
+
+    def resolve(
+            self,
+            transaction_type: Union[ChangeTransactionType, str],
+    ) -> Type[TransactionStrategy]:
+        """
+        Resolve the registered strategy class for one transaction kind.
+
+        Args:
+            transaction_type:
+                Transaction kind expressed as either enum or normalized string.
+
+        Returns:
+            Type[TransactionStrategyClass]:
+                Registered strategy class for the supplied transaction kind.
+
+        Raises:
+            NotImplementedError:
+                If no strategy class has been registered for the supplied
+                transaction kind.
+        """
+        transaction_name = self._normalize_transaction_name(transaction_type)
+        strategy_class = self._strategies_by_transaction_name.get(
+            transaction_name
         )
+        if strategy_class is None:
+            raise NotImplementedError(
+                f"Transaction strategy is not implemented for '{transaction_name}'."
+            )
+        return strategy_class
 
     def build_start_plan(
             self,
             *,
-            transaction_type: Any,
+            transaction_type: Union[ChangeTransactionType, str],
             identity: DevopsIdentity,
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
         Build the start plan for one transaction request.
+
+        Purpose:
+            Give callers one registry-backed entrypoint for the pure strategy
+            resolution step without exposing the strategy registry details.
+
+        Args:
+            transaction_type:
+                Transaction kind to resolve.
+            identity:
+                Submitter identity entering the transaction system.
+            metadata:
+                Caller-supplied metadata for strategy resolution.
+
+        Returns:
+            Dict[str, object]:
+                Strategy-produced normalized request inputs for mediator
+                admission.
         """
-        strategy = self.resolve(transaction_type)
-        return strategy.build_start_plan(
+        strategy_class = self.resolve(transaction_type)
+        return strategy_class.build_start_plan(
             transaction_manager=self._transaction_manager,
+            devops_information_registry=self._devops_information_registry,
             identity=identity,
             metadata=metadata,
         )
@@ -60,45 +216,88 @@ class TransactionStrategyBuilder:
     def on_start(
             self,
             *,
-            transaction_type: Any,
+            transaction_type: Union[ChangeTransactionType, str],
+            identity: DevopsIdentity,
             metadata: Dict[str, object],
     ) -> None:
         """
         Run strategy-owned start side effects for one transaction kind.
+
+        Purpose:
+            Keep the mediator from needing to know which concrete strategy
+            class owns the transaction's start-side local consequences.
         """
-        strategy = self.resolve(transaction_type)
-        strategy.on_start(metadata)
+        strategy_class = self.resolve(transaction_type)
+        strategy_class.on_start(
+            devops_information_registry=self._devops_information_registry,
+            identity=identity,
+            metadata=metadata,
+        )
 
     def on_end(
             self,
             *,
-            transaction_type: Any,
+            transaction_type: Union[ChangeTransactionType, str],
+            identity: DevopsIdentity,
             metadata: Dict[str, object],
     ) -> None:
         """
         Run strategy-owned end side effects for one transaction kind.
+
+        Purpose:
+            Keep the mediator from needing to know which concrete strategy
+            class owns the transaction's end-side local consequences.
         """
-        strategy = self.resolve(transaction_type)
-        strategy.on_end(metadata)
+        strategy_class = self.resolve(transaction_type)
+        strategy_class.on_end(
+            devops_information_registry=self._devops_information_registry,
+            identity=identity,
+            metadata=metadata,
+        )
+
+    def _register_default_strategies(self) -> None:
+        """
+        Register the built-in strategy set for this builder instance.
+
+        Contract:
+            - Bind-family requests are registered under the `bind` transaction
+              name.
+            - Additional strategy classes should be registered here as they
+              become real runtime surfaces.
+        """
+        self.register_strategy(ChangeTransactionType.BIND, BindTransactionStrategy)
 
     @staticmethod
-    def _normalize_transaction_name(transaction_type: Any) -> str:
+    def _normalize_transaction_name(
+            transaction_type: Union[ChangeTransactionType, str],
+    ) -> str:
         """
-        Normalize one transaction kind to its lowercase string value.
+        Normalize one transaction kind into the registry key form.
+
+        Args:
+            transaction_type:
+                Transaction kind supplied as enum or string.
+
+        Returns:
+            str:
+                Lowercase normalized transaction name used by the strategy
+                registry.
+
+        Raises:
+            TypeError:
+                If `transaction_type` is neither a string nor a
+                `ChangeTransactionType`.
+            ValueError:
+                If the normalized transaction name is empty.
         """
-        value = transaction_type
-        if not isinstance(transaction_type, str):
-            if isinstance(transaction_type, Enum):
-                value = transaction_type.value
-            else:
-                try:
-                    value = transaction_type.value
-                except AttributeError as exc:
-                    raise TypeError(
-                        "transaction_type must be a string-like value."
-                    ) from exc
-        if not isinstance(value, str):
-            raise TypeError("transaction_type must be a string-like value.")
+        if isinstance(transaction_type, ChangeTransactionType):
+            value = transaction_type.value
+        elif isinstance(transaction_type, str):
+            value = transaction_type
+        else:
+            raise TypeError(
+                "transaction_type must be a ChangeTransactionType or string."
+            )
         normalized_value = value.strip().lower()
         if not normalized_value:
             raise ValueError("transaction_type must not be empty.")

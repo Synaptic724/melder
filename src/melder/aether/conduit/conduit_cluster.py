@@ -130,10 +130,7 @@ class ConduitCluster(Cleanable):
                         pass
                 self.shared_spells.clear()
             for conduit_id in member_ids:
-                self._devops_information_registry.unregister_cluster_membership(
-                    cluster_id=self._id,
-                    conduit_id=conduit_id,
-                )
+                self._devops_identity.unregister_cluster_member(conduit_id)
             self._devops_identity.cleanup()
             del self.auto_link_dependencies
             del self._devops_information_registry
@@ -167,10 +164,7 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         with self._lock:
             self.members.add(conduit_id)
-            self._devops_information_registry.register_cluster_membership(
-                cluster_id=self._id,
-                conduit_id=conduit_id,
-            )
+            self._devops_identity.register_cluster_member(conduit_id)
 
     def remove_member(self, conduit_id: str) -> None:
         """
@@ -183,10 +177,7 @@ class ConduitCluster(Cleanable):
         with self._lock:
             self.members.discard(conduit_id)
             self.shared_spells.pop(conduit_id, None)
-            self._devops_information_registry.unregister_cluster_membership(
-                cluster_id=self._id,
-                conduit_id=conduit_id,
-            )
+            self._devops_identity.unregister_cluster_member(conduit_id)
 
     def add_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
         """
