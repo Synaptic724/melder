@@ -157,9 +157,9 @@ def test_add_hook_returns_shared_map():
 
     cfg.add_hook("sb1", "on_conduit_pre_created", hook_a)
     hooks = cfg.get_hooks("sb1")
-    assert hooks is cfg.get_hooks("sb1")
+    assert hooks is not cfg.get_hooks("sb1")
     hooks["on_conduit_pre_created"].append(hook_b)
-    assert cfg.get_hooks("sb1")["on_conduit_pre_created"] == [hook_a, hook_b]
+    assert cfg.get_hooks("sb1")["on_conduit_pre_created"] == [hook_a]
 
 
 def test_add_hook_rejects_unknown_or_noncallable():

@@ -154,8 +154,6 @@ class Meld(Cleanable):
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = (
             spellbook._lookup_contracted_spells
         )
-
-
         # Conduit-local instantiation manager.
         self._creations: Creations = creations
 

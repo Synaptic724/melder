@@ -1007,6 +1007,34 @@ def test_create_lesser_conduit_skips_dispatch_when_hookless(
         lesser.cleanup()
 
 
+def test_create_lesser_conduit_ignores_local_meld_only_hooks(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify lesser lifecycle bypasses conduit dispatch for meld-only local hooks.
+
+    Contract:
+        - Local `on_meld_*` hooks must not force conduit lifecycle dispatch.
+    """
+    conduit_dynamic_normal._conduit_hooks = {}
+    conduit_dynamic_normal._local_conduit_hooks = {
+        "on_meld_pre_resolve": [lambda conduit: None],
+    }
+    fire_conduit_hooks = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_fire_conduit_hooks",
+        lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
+    )
+
+    lesser = conduit_dynamic_normal.create_lesser_conduit()
+    try:
+        fire_conduit_hooks.assert_not_called()
+    finally:
+        lesser.cleanup()
+
+
 def test_cleanup_skips_dispatch_when_hookless(
     conduit_lesser: Conduit,
     monkeypatch: pytest.MonkeyPatch,
@@ -1029,6 +1057,57 @@ def test_cleanup_skips_dispatch_when_hookless(
 
     conduit_lesser.cleanup()
 
+    fire_conduit_hooks.assert_not_called()
+
+
+def test_add_spell_to_contract_skips_peer_resolution_without_contract_hook(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify contract peer resolution is skipped when no contract hook exists.
+
+    Contract:
+        - A hookless contract-created path does not resolve the peer conduit.
+        - No conduit hook dispatcher call is made.
+    """
+    conduit_dynamic_normal._conduit_hooks = {}
+    conduit_dynamic_normal._local_conduit_hooks = {
+        "on_meld_pre_resolve": [lambda conduit: None],
+    }
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._add_spell_to_contract.return_value = True
+    monkeypatch.setattr(
+        Conduit,
+        "_qualify_contracts",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        Conduit,
+        "_require_link_transaction_for_contract",
+        lambda self, *args, **kwargs: None,
+    )
+    resolve_peer = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_resolve_peer_conduit_for_contract_hooks",
+        lambda self, *args, **kwargs: resolve_peer(*args, **kwargs),
+    )
+    fire_conduit_hooks = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_fire_conduit_hooks",
+        lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
+    )
+
+    result = conduit_dynamic_normal.add_spell_to_contract(
+        spell_id="spell-1",
+        conduit=MagicMock(),
+        permissions="create",
+    )
+
+    assert result is True
+    resolve_peer.assert_not_called()
     fire_conduit_hooks.assert_not_called()
 
 

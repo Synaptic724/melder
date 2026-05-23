@@ -630,6 +630,7 @@ class Conduit(Cleanable):
         Returns:
             SpellSpace | None: The top-of-stack SpellSpace, or None if no spellspace is active.
         """
+        self.check_cleaned()
         return self._spellspace_stack.get_active()
 
     def create_spellspace(self) -> SpellSpace:
@@ -647,6 +648,7 @@ class Conduit(Cleanable):
         Returns:
             SpellSpace: A new SpellSpace owned by this Conduit.
         """
+        self.check_cleaned()
         space = SpellSpace(
             owner_conduit_id=self._id,
             meld=self._meld,
@@ -670,9 +672,6 @@ class Conduit(Cleanable):
         Args:
             space (SpellSpace): The spellspace to track.
         """
-        self.check_cleaned()
-        if space is None:
-            return
         self._spellspace_registry.add(space)
 
     def _unregister_spellspace(self, space: SpellSpace) -> None:
@@ -689,10 +688,6 @@ class Conduit(Cleanable):
         Args:
             space (SpellSpace): The spellspace to untrack.
         """
-        if space is None:
-            return
-        if self._spellspace_registry is None:
-            return
         self._spellspace_registry.discard(space)
 
     @contextmanager
@@ -3007,7 +3002,10 @@ class Conduit(Cleanable):
 
         if linked:
             # Fire post-link hook with both ends of the relationship.
-            if self._conduit_hooks or self._local_conduit_hooks:
+            if (
+                (self._local_conduit_hooks and self._local_conduit_hooks.get("on_conduit_post_link"))
+                or (self._conduit_hooks and self._conduit_hooks.get("on_conduit_post_link"))
+            ):
                 self._fire_conduit_hooks(
                     "on_conduit_post_link",
                     self,
@@ -3643,9 +3641,12 @@ class Conduit(Cleanable):
                 normalized = {spell_id: bool(value) for spell_id, value in report.items()}
 
         # Fire hook only if at least one contract addition succeeded.
-        if normalized and any(value is True for value in normalized.values()):
+        if normalized and any(value is True for value in normalized.values()) and (
+            (self._local_conduit_hooks and self._local_conduit_hooks.get("on_contract_created"))
+            or (self._conduit_hooks and self._conduit_hooks.get("on_contract_created"))
+        ):
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
+            if peer is not None:
                 self._fire_conduit_hooks(
                     "on_contract_created",
                     self,
