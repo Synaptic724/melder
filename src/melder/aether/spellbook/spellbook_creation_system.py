@@ -36,10 +36,12 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.utilities.synchronization.creation_gate_controller import (
+        CreationGateController,
+    )
 
 
 class SpellbookCreationSystem(Cleanable):
@@ -186,9 +188,10 @@ class SpellbookCreationSystem(Cleanable):
             hook_map,
             "on_conduit_pre_created",
         )
-        dev_ops_manager = SpellbookCreationSystem._resolve_frame_dev_ops_manager(
+        creation_gate_controller = (
+            SpellbookCreationSystem._resolve_frame_creation_gate_controller(
             spellbook=spellbook,
-        )
+        ))
         aetheric_frame = SpellbookCreationSystem._resolve_existing_frame(
             spellbook=spellbook,
         )
@@ -200,7 +203,7 @@ class SpellbookCreationSystem(Cleanable):
             automatic=self._automatic,
             policy=policy_enum,
             conduit_id=conduit_id,
-            dev_ops_manager=dev_ops_manager,
+            creation_gate_controller=creation_gate_controller,
             aetheric_frame=aetheric_frame,
         )
         SpellbookCreationSystem._activate_conjured_conduit(
@@ -312,7 +315,7 @@ class SpellbookCreationSystem(Cleanable):
             automatic: bool,
             policy: Policies,
             conduit_id: str,
-            dev_ops_manager: DevOpsManager,
+            creation_gate_controller: "CreationGateController",
             aetheric_frame: AethericFrame,
     ) -> Conduit:
         """
@@ -328,7 +331,8 @@ class SpellbookCreationSystem(Cleanable):
             automatic: Automatic-mode flag.
             policy: Resolved policy enum.
             conduit_id: Generated conduit id.
-            dev_ops_manager: Frame-owned DevOpsManager for the conduit frame.
+            creation_gate_controller:
+                Frame-owned CreationGateController for the conduit frame.
             aetheric_frame: Live frame object for the conduit frame.
         Returns:
             Conduit: Newly constructed conduit instance.
@@ -350,32 +354,34 @@ class SpellbookCreationSystem(Cleanable):
             automatic=automatic,
             logger=conduit_logger,
             conduit_id=conduit_id,
-            dev_ops_manager=dev_ops_manager,
+            creation_gate_controller=creation_gate_controller,
         )
 
     @staticmethod
-    def _resolve_frame_dev_ops_manager(
+    def _resolve_frame_creation_gate_controller(
             *,
             spellbook: Spellbook,
-    ) -> DevOpsManager:
+    ) -> "CreationGateController":
         """
         Purpose:
-            Resolve the frame-owned DevOpsManager required for root conduit creation.
+            Resolve the frame-owned CreationGateController required for root
+            conduit creation.
 
         Contract:
             - Delegates through the owning Spellbook's shared Aether surface.
-            - Returns the live DevOpsManager owned by the target frame.
+            - Returns the live CreationGateController owned by the target frame.
 
         Args:
             spellbook: Owning Spellbook for this conjure run.
 
         Returns:
-            DevOpsManager: Frame-owned DevOpsManager for the target frame.
+            CreationGateController:
+                Frame-owned gate controller for the target frame.
         """
-        manager: DevOpsManager = spellbook._aether._get_devops_manager(
+        manager = spellbook._aether._get_devops_manager(
             spellbook._aetheric_frame
         )
-        return manager
+        return manager.creation_gate_controller
 
     @staticmethod
     def _resolve_existing_frame(

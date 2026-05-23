@@ -37,6 +37,12 @@ from typing import TYPE_CHECKING, Dict, Type, Union
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy import (
     BindTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy import (
+    ClusterLinkTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy import (
+    LinkTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
@@ -262,10 +268,18 @@ class TransactionStrategyBuilder:
         Contract:
             - Bind-family requests are registered under the `bind` transaction
               name.
+            - Link requests are registered under the `link` transaction name.
+            - Cluster-owned share/unshare requests are registered under the
+              `cluster_link` transaction name.
             - Additional strategy classes should be registered here as they
               become real runtime surfaces.
         """
         self.register_strategy(ChangeTransactionType.BIND, BindTransactionStrategy)
+        self.register_strategy(ChangeTransactionType.LINK, LinkTransactionStrategy)
+        self.register_strategy(
+            ChangeTransactionType.CLUSTER_LINK,
+            ClusterLinkTransactionStrategy,
+        )
 
     @staticmethod
     def _normalize_transaction_name(

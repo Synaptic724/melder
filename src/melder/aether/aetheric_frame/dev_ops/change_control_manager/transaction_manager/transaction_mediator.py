@@ -644,10 +644,10 @@ class TransactionMediator(Cleanable):
         """
         self.check_cleaned()
         transaction_name = self._normalize_transaction_name(transaction_type)
-        if transaction_name == "bind":
-            return self._start_bind_transaction(
+        if transaction_name in ("bind", "link", "cluster_link"):
+            return self._start_strategy_transaction(
                 identity=identity,
-                transaction_type=ChangeTransactionType.BIND,
+                transaction_type=ChangeTransactionType(transaction_name),
                 metadata=dict(metadata) if metadata is not None else {},
             )
         raise NotImplementedError(
@@ -1026,6 +1026,8 @@ class TransactionMediator(Cleanable):
         staged = self._orchestrator.get_staged(request_id)
         if staged is None:
             return
+        with session._lock:
+            session._staged = staged
         scope_key_values = self._embargo_manager.collect_scope_keys_from_staged(staged)
         if scope_key_values:
             self._embargo_manager.extend_embargoes(
@@ -1122,7 +1124,7 @@ class TransactionMediator(Cleanable):
             raise ValueError("transaction_type must not be empty.")
         return normalized_value
 
-    def _start_bind_transaction(
+    def _start_strategy_transaction(
             self,
             *,
             identity: DevopsIdentity,
@@ -1130,7 +1132,7 @@ class TransactionMediator(Cleanable):
             metadata: Dict[str, object],
     ) -> TransactionSession:
         """
-        Resolve and start one bind transaction for the supplied Spellbook identity.
+        Resolve and start one strategy-owned transaction.
         """
         self.check_cleaned()
         active = self.get_active_session()
@@ -1156,9 +1158,10 @@ class TransactionMediator(Cleanable):
             scope_keys=bind_request["scope_keys"],
             scope_hashes=bind_request["scope_hashes"],
             binding_keys=bind_request["binding_keys"],
+            contract_keys=bind_request["contract_keys"],
             metadata=bind_request["metadata"],
-            capabilities=("bind",),
-            required_capabilities=("bind",),
+            capabilities=bind_request.get("granted_capabilities"),
+            required_capabilities=bind_request.get("required_capabilities"),
         )
         try:
             self._strategy_builder.on_start(
@@ -1169,7 +1172,7 @@ class TransactionMediator(Cleanable):
             return session
         except Exception:
             session.mark_abort_only(
-                "Bind transaction start strategy failed.",
+                f"{transaction_type.value} transaction start strategy failed.",
             )
             self.end_transaction_by_request_id(
                 session.request.request_id,

@@ -142,6 +142,9 @@ class BindTransactionStrategy(TransactionStrategy):
             "scope_keys": tuple(sorted(scope_keys.union(explicit_scope_keys))),
             "scope_hashes": explicit_scope_hashes,
             "binding_keys": explicit_binding_keys,
+            "contract_keys": tuple(),
+            "granted_capabilities": ("bind",),
+            "required_capabilities": ("bind",),
             "metadata": normalized_metadata,
         }
 
@@ -236,6 +239,9 @@ class BindTransactionStrategy(TransactionStrategy):
             "scope_keys": tuple(sorted(scope_keys.union(explicit_scope_keys))),
             "scope_hashes": explicit_scope_hashes,
             "binding_keys": explicit_binding_keys,
+            "contract_keys": tuple(),
+            "granted_capabilities": ("bind",),
+            "required_capabilities": ("bind",),
             "metadata": normalized_metadata,
         }
 
