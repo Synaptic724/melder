@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from typing import Optional
 
 import pytest
 
@@ -68,6 +69,29 @@ def _make_configuration(
         apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", workers)
     return configuration
+
+
+def _get_local_spell_by_version_id(
+        spellbook: Spellbook,
+        spell_id: str,
+) -> Optional[object]:
+    """
+    Purpose:
+        Resolve one locally owned spell by its current version id.
+    Contract:
+        - Returns the first local spell whose SpellIndex.current matches the
+          supplied version id.
+        - Returns None when no local spell matches.
+    Args:
+        spellbook: Spellbook whose local spell map should be searched.
+        spell_id: Current version id to resolve.
+    Returns:
+        Optional[object]: Matching local spell object, or None when absent.
+    """
+    for spell_index, spell in spellbook.spells.items():
+        if spell_index.current == spell_id:
+            return spell
+    return None
 
 
 def test_change_control_bind_transaction_opens_and_closes_embargoes() -> None:
@@ -304,6 +328,56 @@ def test_change_control_link_contract_registers_link_mirror() -> None:
         borrower.cleanup()
 
 
+def test_change_control_sever_link_clears_link_registry_mirror() -> None:
+    """
+    Purpose:
+        Validate sever_link removes live borrower/provider registry mirrors after a real contract existed.
+    Contract:
+        - A linked contracted spell registers borrower/provider mirror state.
+        - sever_link removes those mirror edges and contracted spell visibility.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If link teardown leaves registry mirror residue behind.
+    """
+    frame_name = "frame-cc-link-mirror-sever"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+    try:
+        assert owner.link(borrower) is True
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+                aetheric_frame=frame_name,
+            )
+
+        assert borrower.id in registry.list_borrowers_for_provider(owner.id)
+        assert owner.id in registry.list_providers_for_borrower(borrower.id)
+        assert borrower.find_contracted_spell(spell_id) is not None
+
+        assert borrower.sever_link(owner) is True
+
+        assert registry.list_borrowers_for_provider(owner.id) == ()
+        assert registry.list_providers_for_borrower(borrower.id) == ()
+        assert borrower.find_contracted_spell(spell_id) is None
+    finally:
+        owner.cleanup()
+        borrower.cleanup()
+
+
 def test_change_control_bind_transaction_registers_live_registry_session() -> None:
     """
     Purpose:
@@ -375,7 +449,7 @@ def test_change_control_post_conjure_bind_updates_staged_binding_keys() -> None:
             owner_id=spellbook._id,
         )
         assert len(sessions) == 1
-            assert sessions[0].staged.binding_keys == (("basicservice", "__default__"),)
+        assert sessions[0].staged.binding_keys == (("basicservice", "__default__"),)
     finally:
         spellbook.end_transaction("bind")
 
@@ -505,3 +579,835 @@ def test_change_control_bind_transaction_abort_clears_registry_session() -> None
     ) == ()
     conduit.cleanup()
     spellbook.cleanup()
+
+
+def test_change_control_link_transaction_abort_clears_registry_session() -> None:
+    """
+    Purpose:
+        Validate aborted link transactions clear the live registry mirror.
+    Contract:
+        - A raised exception inside the link transaction aborts the root session.
+        - The registry mirror is empty after abort.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort leaves a live mirrored link session behind.
+    """
+    frame_name = "frame-cc-link-abort-registry"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            raise RuntimeError("boom")
+
+    assert registry.list_live_transactions_for_identity(
+        owner_kind="conduit",
+        owner_id=borrower.id,
+    ) == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_linking",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_link_transaction_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live link transaction entry respects frame posture disable flags.
+    Contract:
+        - The public link transaction entry raises when the matching frame gate
+          is disabled.
+        - No live link session is mirrored into the registry on failure.
+    Args:
+        flag_name: Frame configuration flag that should block link entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If link entry bypasses the frame posture gate.
+    """
+    frame_name = f"frame-cc-link-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(borrower_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        borrower.begin_transaction("link", conduits=[borrower, owner])
+
+    assert registry.list_live_transactions_for_type("link") == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_bind",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_conduit_bind_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live conduit.bind respects frame posture disable flags.
+    Contract:
+        - Public conduit.bind raises when the matching frame gate is disabled.
+        - No live bind session is mirrored into the registry on failure.
+    Args:
+        flag_name: Frame configuration flag that should block bind entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit.bind bypasses the frame posture gate.
+    """
+    frame_name = f"frame-cc-bind-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        conduit.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+
+    assert registry.list_live_transactions_for_type("bind") == ()
+    conduit.cleanup()
+
+
+def test_change_control_transfer_transaction_registers_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate transfer transactions are mirrored through the live dev-ops registry.
+    Contract:
+        - A conduit-side transfer transaction creates one live session visible
+          by conduit identity and type.
+        - The staged metadata retains the target conduit and stable spell lineage.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live transfer-session mirror is incorrect.
+    """
+    frame_name = "frame-cc-transfer-registry"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+    spell = _get_local_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+
+    owner.begin_transaction(
+        "transfer_ownership",
+        metadata={
+            "target_conduit_id": target.id,
+            "spell_id": spell_id,
+            "spell_index_id": spell.spell_index.id,
+        },
+    )
+    try:
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="conduit",
+            owner_id=owner.id,
+        )
+        assert len(sessions) == 1
+        session = sessions[0]
+        assert str(session.request.request_type) == "transfer_ownership"
+        assert set(session.request.conduit_ids) == {owner.id, target.id}
+        assert session.staged.binding_keys == (spell.key,)
+        assert session.staged.metadata["target_conduit_id"] == target.id
+        assert session.staged.metadata["spell_index_id"] == spell.spell_index.id
+    finally:
+        owner.end_transaction("transfer_ownership")
+
+    assert registry.list_live_transactions_for_identity(
+        owner_kind="conduit",
+        owner_id=owner.id,
+    ) == ()
+    owner.cleanup()
+    target.cleanup()
+
+
+def test_change_control_transfer_spell_ownership_moves_lineage_and_clears_registry() -> None:
+    """
+    Purpose:
+        Validate the public transfer surface moves the lineage and clears live registry state.
+    Contract:
+        - transfer_spell_ownership moves the SpellIndex lineage to the target spellbook.
+        - The moved spell reports the target conduit as owner.
+        - No live transfer session remains after success.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If stewardship or registry cleanup is wrong.
+    """
+    frame_name = "frame-cc-transfer-runtime"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+    spell = _get_local_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+    spell_index_id = spell.spell_index.id
+
+    summary = owner.transfer_spell_ownership(
+        spell=spell_id,
+        target_conduit=target,
+    )
+
+    assert summary["spell_id"] == spell_id
+    assert summary["source"] == owner.id
+    assert summary["target"] == target.id
+    assert owner_book.get_spell_by_index_id(spell_index_id) is None
+    transferred_spell = target_book.get_spell_by_index_id(spell_index_id)
+    assert transferred_spell is not None
+    assert transferred_spell._owner_conduit_id == target.id
+    assert registry.list_live_transactions_for_type("transfer_ownership") == ()
+    owner.cleanup()
+    target.cleanup()
+
+
+def test_change_control_transfer_transaction_abort_clears_registry_and_preserves_lineage() -> None:
+    """
+    Purpose:
+        Validate aborted transfer transactions clear live registry state.
+    Contract:
+        - A raised exception inside the transfer transaction aborts the root session.
+        - The source lineage remains on the source spellbook.
+        - No live transfer session remains mirrored after abort.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort cleanup or lineage preservation is wrong.
+    """
+    frame_name = "frame-cc-transfer-abort"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+    spell = _get_local_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+    spell_index_id = spell.spell_index.id
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with owner.transaction(
+                "transfer_ownership",
+                metadata={
+                    "target_conduit_id": target.id,
+                    "spell_id": spell_id,
+                    "spell_index_id": spell.spell_index.id,
+                },
+        ):
+            raise RuntimeError("boom")
+
+    assert registry.list_live_transactions_for_type("transfer_ownership") == ()
+    assert owner_book.get_spell_by_index_id(spell_index_id) is not None
+    assert target_book.get_spell_by_index_id(spell_index_id) is None
+    owner.cleanup()
+    target.cleanup()
+
+
+def test_change_control_cluster_link_transaction_registers_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate cluster-link transactions are mirrored through the live registry.
+    Contract:
+        - A conduit-side cluster-link transaction creates one live session visible
+          by conduit identity.
+        - Ending the transaction clears the registry mirror.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live cluster-link session mirror is incorrect.
+    """
+    frame_name = "frame-cc-cluster-link-registry"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+
+    borrower.begin_transaction(
+        "cluster_link",
+        conduit_ids=[owner.id],
+        metadata={
+            "cluster_id": "cluster-a",
+            "conduit_ids": (borrower.id, owner.id),
+        },
+    )
+    try:
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="conduit",
+            owner_id=borrower.id,
+        )
+        assert len(sessions) == 1
+        assert str(sessions[0].request.request_type) == "cluster_link"
+        assert set(sessions[0].request.conduit_ids) == {borrower.id, owner.id}
+    finally:
+        borrower.end_transaction("cluster_link")
+
+    assert registry.list_live_transactions_for_identity(
+        owner_kind="conduit",
+        owner_id=borrower.id,
+    ) == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+def test_change_control_cluster_link_transaction_abort_clears_registry_session() -> None:
+    """
+    Purpose:
+        Validate aborted cluster-link transactions clear live registry state.
+    Contract:
+        - A raised exception inside the cluster-link transaction aborts the root session.
+        - No live cluster-link session remains mirrored after abort.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort leaves a live cluster-link session behind.
+    """
+    frame_name = "frame-cc-cluster-link-abort"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with borrower.transaction(
+                "cluster_link",
+                conduit_ids=[owner.id],
+                metadata={
+                    "cluster_id": "cluster-a",
+                    "conduit_ids": (borrower.id, owner.id),
+                },
+        ):
+            raise RuntimeError("boom")
+
+    assert registry.list_live_transactions_for_type("cluster_link") == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+def test_change_control_cluster_join_shares_spell_and_tracks_registry_membership() -> None:
+    """
+    Purpose:
+        Validate cluster join shares a cluster-scoped spell and mirrors membership.
+    Contract:
+        - Joining the borrower into the cluster shares the owner's
+          unique_per_conduit_cluster spell.
+        - The dev-ops registry mirrors cluster membership by conduit id.
+        - No live cluster-link session remains after the join work completes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If share or membership mirroring is wrong.
+    """
+    frame_name = "frame-cc-cluster-join"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner_spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+    cloud = owner.get_conduit_cloud()
+    assert owner.link(borrower) is True
+
+    cloud.create_cluster("cluster-a")
+    cluster = cloud.get_cluster("cluster-a")
+    cloud.add_conduit_to_cluster(owner, "cluster-a")
+    cloud.add_conduit_to_cluster(borrower, "cluster-a")
+
+    assert borrower.find_contracted_spell(owner_spell_id) is not None
+    assert registry.get_clusters_for_conduit(owner.id) == (cluster.id,)
+    assert registry.get_clusters_for_conduit(borrower.id) == (cluster.id,)
+    assert registry.list_live_transactions_for_type("cluster_link") == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+def test_change_control_refresh_cluster_shares_propagates_new_cluster_spell() -> None:
+    """
+    Purpose:
+        Validate refresh_cluster_shares_for_conduit propagates a late cluster spell.
+    Contract:
+        - A post-join unique_per_conduit_cluster bind is not visible to the peer
+          until refresh_cluster_shares_for_conduit runs.
+        - The refresh leaves no live cluster-link session behind.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If late cluster shares do not propagate cleanly.
+    """
+    frame_name = "frame-cc-cluster-refresh"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+    cloud = owner.get_conduit_cloud()
+    assert owner.link(borrower) is True
+
+    cloud.create_cluster("cluster-a")
+    cloud.add_conduit_to_cluster(owner, "cluster-a")
+    cloud.add_conduit_to_cluster(borrower, "cluster-a")
+
+    with owner.transaction("bind"):
+        late_spell_id = owner.bind(
+            spell=BasicService,
+            existence=Existence.unique_per_conduit_cluster,
+            permissions="create",
+            binding_name="late-cluster",
+        )
+
+    assert borrower.find_contracted_spell(late_spell_id) is None
+
+    cloud.refresh_cluster_shares_for_conduit(owner)
+
+    assert borrower.find_contracted_spell(late_spell_id) is not None
+    assert registry.list_live_transactions_for_type("cluster_link") == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+def test_change_control_remove_conduit_from_cluster_strips_contracts_and_membership() -> None:
+    """
+    Purpose:
+        Validate cluster removal strips borrower contracts and membership state.
+    Contract:
+        - Removing the borrower from the cluster removes the borrowed
+          cluster-scoped spell.
+        - The dev-ops registry no longer reports cluster membership for the
+          removed borrower.
+        - No live cluster-link session remains after removal.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cluster teardown leaves runtime residue behind.
+    """
+    frame_name = "frame-cc-cluster-remove"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner_spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+    cloud = owner.get_conduit_cloud()
+    assert owner.link(borrower) is True
+
+    cloud.create_cluster("cluster-a")
+    cloud.add_conduit_to_cluster(owner, "cluster-a")
+    cloud.add_conduit_to_cluster(borrower, "cluster-a")
+    cluster = cloud.get_cluster("cluster-a")
+    assert borrower.find_contracted_spell(owner_spell_id) is not None
+
+    cloud.remove_conduit_from_cluster(borrower, "cluster-a")
+
+    assert borrower.find_contracted_spell(owner_spell_id) is None
+    assert registry.get_clusters_for_conduit(borrower.id) == ()
+    assert registry.get_clusters_for_conduit(owner.id) == (cluster.id,)
+    assert registry.list_live_transactions_for_type("cluster_link") == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_transfer_of_ownership",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_transfer_transaction_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live transfer transaction entry respects frame posture disable flags.
+    Contract:
+        - The public transfer transaction entry raises when the matching frame
+          gate is disabled.
+        - No live transfer session is mirrored into the registry on failure.
+    Args:
+        flag_name: Frame configuration flag that should block transfer entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If transfer entry bypasses the frame posture gate.
+    """
+    frame_name = f"frame-cc-transfer-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    getattr(owner_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+    spell = _get_local_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        owner.begin_transaction(
+            "transfer_ownership",
+            metadata={
+                "target_conduit_id": target.id,
+                "spell_id": spell_id,
+                "spell_index_id": spell.spell_index.id,
+            },
+        )
+
+    assert registry.list_live_transactions_for_type("transfer_ownership") == ()
+    owner.cleanup()
+    target.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_conduit_cluster",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_cluster_link_transaction_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live cluster-link transaction entry respects frame posture disable flags.
+    Contract:
+        - The public cluster-link transaction entry raises when the matching
+          frame gate is disabled.
+        - No live cluster-link session is mirrored into the registry on failure.
+    Args:
+        flag_name: Frame configuration flag that should block cluster-link entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cluster-link entry bypasses the frame posture gate.
+    """
+    frame_name = f"frame-cc-cluster-link-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(borrower_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        borrower.begin_transaction(
+            "cluster_link",
+            conduit_ids=[owner.id],
+            metadata={
+                "cluster_id": "cluster-a",
+                "conduit_ids": (borrower.id, owner.id),
+            },
+        )
+
+    assert registry.list_live_transactions_for_type("cluster_link") == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_conduit_cluster",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_create_cluster_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live cloud cluster creation respects frame posture disable flags.
+    Contract:
+        - create_cluster raises when the matching frame gate is disabled.
+    Args:
+        flag_name: Frame configuration flag that should block cluster creation.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If create_cluster bypasses the frame posture gate.
+    """
+    frame_name = f"frame-cc-cloud-create-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    cloud = conduit.get_conduit_cloud()
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        cloud.create_cluster("cluster-a")
+
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_conduit_cluster",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_refresh_cluster_shares_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live cloud share refresh respects frame posture disable flags.
+    Contract:
+        - refresh_cluster_shares_for_conduit raises when the matching frame
+          gate is disabled, even after the cluster has already been created.
+    Args:
+        flag_name: Frame configuration flag that should block share refresh.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If refresh_cluster_shares_for_conduit bypasses the frame gate.
+    """
+    frame_name = f"frame-cc-cloud-refresh-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    cloud = conduit.get_conduit_cloud()
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        cloud.refresh_cluster_shares_for_conduit(conduit)
+
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_conduit_cluster",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_add_conduit_to_cluster_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live cloud member-add respects frame posture disable flags.
+    Contract:
+        - add_conduit_to_cluster raises when the matching frame gate is disabled.
+    Args:
+        flag_name: Frame configuration flag that should block membership add.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If add_conduit_to_cluster bypasses the frame gate.
+    """
+    frame_name = f"frame-cc-cloud-add-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    cloud = conduit.get_conduit_cloud()
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        cloud.add_conduit_to_cluster(conduit, "cluster-a")
+
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_conduit_cluster",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_remove_conduit_from_cluster_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live cloud member-remove respects frame posture disable flags.
+    Contract:
+        - remove_conduit_from_cluster raises when the matching frame gate is disabled.
+    Args:
+        flag_name: Frame configuration flag that should block membership removal.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If remove_conduit_from_cluster bypasses the frame gate.
+    """
+    frame_name = f"frame-cc-cloud-remove-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    cloud = conduit.get_conduit_cloud()
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        cloud.remove_conduit_from_cluster(conduit, "cluster-a")
+
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+@pytest.mark.parametrize(
+    "flag_name",
+    (
+        "disable_conduit_cluster",
+        "disable_all_transactions_after_conjure",
+    ),
+)
+def test_change_control_delete_cluster_respects_frame_disable_flags(
+        flag_name: str,
+) -> None:
+    """
+    Purpose:
+        Validate live cloud cluster delete respects frame posture disable flags.
+    Contract:
+        - delete_cluster raises when the matching frame gate is disabled.
+    Args:
+        flag_name: Frame configuration flag that should block cluster deletion.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If delete_cluster bypasses the frame gate.
+    """
+    frame_name = f"frame-cc-cloud-delete-gate-{flag_name}"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    cloud = conduit.get_conduit_cloud()
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        cloud.delete_cluster("cluster-a")
+
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    (
+        {"spell_id": "spell-only"},
+        {"target_conduit_id": "target-only"},
+    ),
+)
+def test_change_control_transfer_transaction_requires_complete_metadata(
+        metadata: dict[str, object],
+) -> None:
+    """
+    Purpose:
+        Validate live transfer entry rejects incomplete planning metadata.
+    Contract:
+        - Missing target metadata or missing spell metadata causes transfer
+          planning to raise before a live session is mirrored into the registry.
+    Args:
+        metadata: Incomplete transfer metadata payload under test.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If incomplete transfer metadata is accepted.
+    """
+    frame_name = "frame-cc-transfer-metadata"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
+    assert registry is not None
+    normalized_metadata = dict(metadata)
+    if normalized_metadata.get("target_conduit_id") == "target-only":
+        normalized_metadata["target_conduit_id"] = target.id
+
+    with pytest.raises(RuntimeError):
+        owner.begin_transaction(
+            "transfer_ownership",
+            metadata=normalized_metadata,
+        )
+
+    assert registry.list_live_transactions_for_type("transfer_ownership") == ()
+    owner.cleanup()
+    target.cleanup()

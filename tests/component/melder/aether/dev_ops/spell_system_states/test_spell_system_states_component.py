@@ -59,6 +59,67 @@ def _build_topology(spell_id: str, dependency_id: str) -> SpellLocalTopology:
     )
 
 
+def _build_collection_topology(spell_id: str, frame_key: str) -> SpellLocalTopology:
+    """
+    Purpose:
+        Build a topology with one collection DI socket.
+    Contract:
+        - The socket is NORMAL and collection-shaped.
+        - dependency_key carries the supplied frame key.
+    Args:
+        spell_id: Owning spell id for the topology.
+        frame_key: Collection frame key to record.
+    Returns:
+        SpellLocalTopology: The constructed topology.
+    """
+    return SpellLocalTopology(
+        spell_id=spell_id,
+        sockets=(
+            SpellSocketDescriptor(
+                spell_id=spell_id,
+                param_name="services",
+                position=0,
+                socket_kind=SocketKind.NORMAL,
+                is_collection=True,
+                is_optional=False,
+                target_spell_ids=(),
+                dependency_key=(frame_key, "__default__"),
+            ),
+        ),
+    )
+
+
+def _build_contract_topology(spell_id: str, frame_key: str, binding_key: str) -> SpellLocalTopology:
+    """
+    Purpose:
+        Build a topology with one spell-contract socket.
+    Contract:
+        - The socket is SPELL_CONTRACT-shaped.
+        - contract_key carries the supplied frame and binding keys.
+    Args:
+        spell_id: Owning spell id for the topology.
+        frame_key: Contract frame key to record.
+        binding_key: Contract binding key to record.
+    Returns:
+        SpellLocalTopology: The constructed topology.
+    """
+    return SpellLocalTopology(
+        spell_id=spell_id,
+        sockets=(
+            SpellSocketDescriptor(
+                spell_id=spell_id,
+                param_name="service",
+                position=0,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(),
+                contract_key=(frame_key, binding_key),
+            ),
+        ),
+    )
+
+
 def test_component_spell_system_states_registers_local_topology_round_trip() -> None:
     """
     Purpose:
@@ -533,6 +594,193 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
         assert SpellState.structure_changed not in flags
         assert SpellState.dependencies_changed not in flags
         assert SpellState.impacted_by_dependency not in flags
+    finally:
+        frame.cleanup()
+
+
+def test_component_spell_system_states_register_local_topology_builds_collection_dependents_index() -> None:
+    """
+    Purpose:
+        Validate collection topologies feed the spellbook-scoped collection index.
+    Contract:
+        - mark_collection_dependents_dirty marks the owner lineage for the matching frame key.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If collection-dependent indexing is missing.
+    """
+    frame = AethericFrame(Aether(), "component-states-collection-index")
+    states = frame.spell_system_states
+    index = SpellIndex("spell-collection-index")
+    index._owner_spellbook = type("SpellbookStub", (), {"_id": "spellbook-1"})()
+    states.register_index(index)
+    topology = _build_collection_topology("spell-collection-index", "svc")
+    states.register_local_topology(index, topology)
+    states.consume_dirty_indexes()
+    try:
+        impacted = states.mark_collection_dependents_dirty(
+            spellbook_id="spellbook-1",
+            frame_keys={"svc"},
+        )
+        assert impacted == {index.id}
+        state = states.get_by_index_id(index.id)
+        assert state is not None
+        assert SpellState.dependencies_changed in state.flags
+    finally:
+        frame.cleanup()
+
+
+def test_component_spell_system_states_register_local_topology_builds_contract_dependents_index() -> None:
+    """
+    Purpose:
+        Validate contract topologies feed the spellbook-scoped contract index.
+    Contract:
+        - mark_contract_dependents_dirty marks the owner lineage for the matching contract key.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contract-dependent indexing is missing.
+    """
+    frame = AethericFrame(Aether(), "component-states-contract-index")
+    states = frame.spell_system_states
+    index = SpellIndex("spell-contract-index")
+    index._owner_spellbook = type("SpellbookStub", (), {"_id": "spellbook-1"})()
+    states.register_index(index)
+    topology = _build_contract_topology("spell-contract-index", "svc", "primary")
+    states.register_local_topology(index, topology)
+    states.consume_dirty_indexes()
+    try:
+        impacted = states.mark_contract_dependents_dirty(
+            spellbook_id="spellbook-1",
+            contract_keys={("svc", "primary")},
+        )
+        assert impacted == {index.id}
+        state = states.get_by_index_id(index.id)
+        assert state is not None
+        assert SpellState.contract_unvalidated in state.flags
+        assert state.change_reason is SpellStateChangeReason.contract_unvalidated
+    finally:
+        frame.cleanup()
+
+
+def test_component_spell_system_states_mark_contract_dependents_dirty_without_keys_marks_all_for_spellbook() -> None:
+    """
+    Purpose:
+        Validate missing contract-key filters mark every contract consumer in the spellbook scope.
+    Contract:
+        - All registered contract consumers in the spellbook bucket are impacted.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If some contract consumers are skipped.
+    """
+    frame = AethericFrame(Aether(), "component-states-contract-all")
+    states = frame.spell_system_states
+    index_a = SpellIndex("spell-contract-all-a")
+    index_b = SpellIndex("spell-contract-all-b")
+    spellbook_stub = type("SpellbookStub", (), {"_id": "spellbook-1"})()
+    index_a._owner_spellbook = spellbook_stub
+    index_b._owner_spellbook = spellbook_stub
+    states.register_index(index_a)
+    states.register_index(index_b)
+    states.register_local_topology(
+        index_a,
+        _build_contract_topology("spell-contract-all-a", "svc", "primary"),
+    )
+    states.register_local_topology(
+        index_b,
+        _build_contract_topology("spell-contract-all-b", "svc", "secondary"),
+    )
+    states.consume_dirty_indexes()
+    try:
+        impacted = states.mark_contract_dependents_dirty(
+            spellbook_id="spellbook-1",
+            contract_keys=None,
+        )
+        assert impacted == {index_a.id, index_b.id}
+    finally:
+        frame.cleanup()
+
+
+def test_component_spell_system_states_drop_conduit_resolution_state_cleans_removed_state() -> None:
+    """
+    Purpose:
+        Validate dropping conduit resolution state removes and cleans the bucket.
+    Contract:
+        - Removed conduit state is cleaned and no longer retrievable.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit resolution state survives drop.
+    """
+    frame = AethericFrame(Aether(), "component-states-drop-conduit")
+    states = frame.spell_system_states
+    state = states.get_or_create_conduit_resolution_state("conduit-1")
+    try:
+        states.drop_conduit_resolution_state("conduit-1")
+        assert state.cleaned is True
+        assert states.get_conduit_resolution_state("conduit-1") is None
+    finally:
+        frame.cleanup()
+
+
+def test_component_spell_system_states_set_risk_manager_propagates_to_existing_states() -> None:
+    """
+    Purpose:
+        Validate setting the risk manager propagates to already-created child states.
+    Contract:
+        - Existing spell-index and conduit-resolution states receive the same risk manager reference.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If risk manager propagation is incomplete.
+    """
+    frame = AethericFrame(Aether(), "component-states-risk-manager")
+    states = frame.spell_system_states
+    index = _register_index(states, "spell-risk-manager")
+    spell_state = states.get_by_index_id(index.id)
+    conduit_state = states.get_or_create_conduit_resolution_state("conduit-1")
+    risk_manager = frame.dev_ops_manager.risk_manager
+    try:
+        states.set_risk_manager(risk_manager)
+        assert spell_state is not None
+        assert spell_state._risk_manager is risk_manager
+        assert conduit_state._risk_manager is risk_manager
+    finally:
+        frame.cleanup()
+
+
+def test_component_spell_system_states_bulk_set_conduit_validity_round_trip() -> None:
+    """
+    Purpose:
+        Validate bulk conduit spell/root validity publishing through the live registry.
+    Contract:
+        - Bulk spell and root validity writes are readable through the conduit bucket.
+        - clear_conduit_dirty resets the dirty marker after validation.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit validity round-trip fails.
+    """
+    frame = AethericFrame(Aether(), "component-states-conduit-validity")
+    states = frame.spell_system_states
+    try:
+        states.bulk_set_conduit_spell_validity(
+            "conduit-1",
+            {"spell-a": SpellValidity.valid, "spell-b": SpellValidity.gated},
+        )
+        states.bulk_set_conduit_root_validity(
+            "conduit-1",
+            {"root-a": SpellValidity.valid},
+        )
+        state = states.get_conduit_resolution_state("conduit-1")
+        assert state is not None
+        assert state.get_spell_validity("spell-a") is SpellValidity.valid
+        assert state.get_spell_validity("spell-b") is SpellValidity.gated
+        assert state.get_root_validity("root-a") is SpellValidity.valid
+        assert state.is_dirty() is True
+        states.clear_conduit_dirty("conduit-1", 10.0)
+        assert state.is_dirty() is False
     finally:
         frame.cleanup()
 

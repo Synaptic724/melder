@@ -110,7 +110,7 @@ class Incident(Cleanable):
         self._spell_index_id: Optional[str] = spell_index_id
         self._summary: str = summary
         self._root_ids: List[str] = list(root_ids or [])
-        self._details: Dict[str, Any] = details or {}
+        self._details: Dict[str, Any] = dict(details) if details else {}
 
     def cleanup(self) -> None:
         """

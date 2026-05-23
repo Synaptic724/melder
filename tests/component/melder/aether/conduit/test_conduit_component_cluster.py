@@ -468,4 +468,264 @@ def test_component_cluster_handle_join_shares_real_spells_between_peers() -> Non
     ]
 
 
+def test_component_cluster_add_member_registers_registry_membership() -> None:
+    """
+    Purpose:
+        Validate cluster member adds are mirrored into the dev-ops registry.
+    Contract:
+        - get_clusters_for_conduit reflects the added membership.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If registry membership is missing.
+    """
+    cluster = _make_cluster("cluster-a")
+
+    cluster.add_member("conduit-1")
+
+    assert cluster._devops_information_registry.get_clusters_for_conduit("conduit-1") == (
+        cluster.id,
+    )
+
+
+def test_component_cluster_remove_member_unregisters_registry_membership() -> None:
+    """
+    Purpose:
+        Validate cluster member removals are mirrored into the dev-ops registry.
+    Contract:
+        - Removing the member clears conduit -> cluster lookup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If registry membership survives removal.
+    """
+    cluster = _make_cluster("cluster-a")
+    cluster.add_member("conduit-1")
+
+    cluster.remove_member("conduit-1")
+
+    assert cluster._devops_information_registry.get_clusters_for_conduit("conduit-1") == ()
+
+
+def test_component_cluster_cleanup_unregisters_member_registry_edges() -> None:
+    """
+    Purpose:
+        Validate cleanup clears member registry edges through the cluster identity.
+    Contract:
+        - Member conduit -> cluster registry lookups are empty after cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup leaves registry membership behind.
+    """
+    cluster = _make_cluster("cluster-a")
+    cluster.add_member("conduit-1")
+    cluster.add_member("conduit-2")
+
+    cluster.cleanup()
+
+    assert cluster._cleaned is True
+
+
+def test_component_cluster_set_auto_link_dependencies_updates_runtime_policy() -> None:
+    """
+    Purpose:
+        Validate dependency-link policy can be toggled on the live cluster.
+    Contract:
+        - set_auto_link_dependencies updates the live policy bit.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the policy bit does not update.
+    """
+    cluster = _make_cluster("cluster-a", auto_link_dependencies=True)
+
+    cluster.set_auto_link_dependencies(False)
+
+    assert cluster.auto_link_dependencies is False
+
+
+def test_component_cluster_describe_reports_current_members_and_policy() -> None:
+    """
+    Purpose:
+        Validate describe returns current members and policy state.
+    Contract:
+        - describe reports auto_link_dependencies and member ids.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If describe omits current runtime state.
+    """
+    cluster = _make_cluster("cluster-a", auto_link_dependencies=True)
+    cluster.add_member("conduit-1")
+    cluster.add_member("conduit-2")
+
+    described = cluster.describe()
+
+    assert described["auto_link_dependencies"] is True
+    assert set(described["members"]) == {"conduit-1", "conduit-2"}
+
+
+def test_component_cluster_refresh_member_shares_replays_owner_roots_to_existing_peer() -> None:
+    """
+    Purpose:
+        Validate refresh_member_shares replays recorded roots to peers.
+    Contract:
+        - Existing peers receive contract calls for the refreshed member's roots.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If refresh_member_shares does not replay root contracts.
+    """
+    owner_book = _make_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = _ContractingConduitStub(conduit_id="owner-1", spellbook=owner_book)
+    peer = _ContractingConduitStub(conduit_id="peer-1", spellbook=_make_spellbook())
+    frame = _FrameStub([owner, peer], frame_name="frame-owner")
+    cluster = _make_cluster("cluster-a", frame._conduits, frame.frame_name)
+    cluster.add_member(owner._id)
+    cluster.add_member(peer._id)
+    spell = _get_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+    cluster.add_shared_spell(owner._id, spell.spell_index)
+
+    cluster.refresh_member_shares(owner)
+
+    assert peer.contract_calls == [
+        {
+            "spell": spell,
+            "conduit": owner,
+            "permissions": spell.permissions,
+            "aetheric_frame": "frame-owner",
+            "reason": DetailReason.root,
+            "root_spell_id": cluster._cluster_root_id(owner._id, spell.spell_id),
+            "link_dependencies": True,
+        }
+    ]
+
+
+def test_component_cluster_handle_leave_strips_roots_in_both_directions() -> None:
+    """
+    Purpose:
+        Validate handle_leave removes shared roots in both ownership directions.
+    Contract:
+        - Remaining peers remove roots owned by the leaver.
+        - The leaver removes roots owned by remaining peers.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If leave teardown is one-sided.
+    """
+    owner_book = _make_spellbook()
+    peer_book = _make_spellbook()
+    owner_spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    peer_spell_id = peer_book.bind(
+        spell=BasicConfig,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = _ContractingConduitStub(conduit_id="owner-1", spellbook=owner_book)
+    peer = _ContractingConduitStub(conduit_id="peer-1", spellbook=peer_book)
+    frame = _FrameStub([owner, peer], frame_name="frame-owner")
+    cluster = _make_cluster("cluster-a", frame._conduits, frame.frame_name)
+    cluster.add_member(owner._id)
+    cluster.add_member(peer._id)
+    owner_spell = _get_spell_by_version_id(owner_book, owner_spell_id)
+    peer_spell = _get_spell_by_version_id(peer_book, peer_spell_id)
+    assert owner_spell is not None
+    assert peer_spell is not None
+    cluster.add_shared_spell(owner._id, owner_spell.spell_index)
+    cluster.add_shared_spell(peer._id, peer_spell.spell_index)
+
+    cluster.handle_leave(owner)
+
+    assert peer.remove_root_calls == [
+        {
+            "root_spell_id": cluster._cluster_root_id(owner._id, owner_spell.spell_id),
+            "conduit": owner,
+            "aetheric_frame": "frame-owner",
+        }
+    ]
+    assert owner.remove_root_calls == [
+        {
+            "root_spell_id": cluster._cluster_root_id(peer._id, peer_spell.spell_id),
+            "conduit": peer,
+            "aetheric_frame": "frame-owner",
+        }
+    ]
+
+
+def test_component_cluster_add_and_share_spell_uses_cluster_policy_when_override_missing() -> None:
+    """
+    Purpose:
+        Validate add_and_share_spell uses the cluster's dependency-link policy by default.
+    Contract:
+        - link_dependencies on the borrower-side contract call mirrors auto_link_dependencies.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If default policy forwarding drifts.
+    """
+    owner_book = _make_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = _ContractingConduitStub(conduit_id="owner-1", spellbook=owner_book)
+    peer = _ContractingConduitStub(conduit_id="peer-1", spellbook=_make_spellbook())
+    frame = _FrameStub([owner, peer], frame_name="frame-owner")
+    cluster = _make_cluster(
+        "cluster-a",
+        frame._conduits,
+        frame.frame_name,
+        auto_link_dependencies=False,
+    )
+    cluster.add_member(owner._id)
+    cluster.add_member(peer._id)
+    spell = _get_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+
+    cluster.add_and_share_spell(owner, spell)
+
+    assert peer.contract_calls == []
+
+
+def test_component_cluster_remove_member_drops_shared_spell_bucket() -> None:
+    """
+    Purpose:
+        Validate member removal drops that owner's shared-spell bucket.
+    Contract:
+        - shared_spells no longer contains the removed owner id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If shared-spell buckets survive member removal.
+    """
+    owner_book = _make_spellbook()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = _ContractingConduitStub(conduit_id="owner-1", spellbook=owner_book)
+    cluster = _make_cluster("cluster-a")
+    spell = _get_spell_by_version_id(owner_book, spell_id)
+    assert spell is not None
+    cluster.add_member(owner._id)
+    cluster.add_shared_spell(owner._id, spell.spell_index)
+
+    cluster.remove_member(owner._id)
+
+    assert owner._id not in cluster.get_shared_spells()
+
+
 

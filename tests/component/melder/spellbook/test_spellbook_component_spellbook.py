@@ -2,6 +2,9 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.nexus.nexus import Nexus
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -385,6 +388,160 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
         spellbook.cleanup()
 
 
+def test_component_spellbook_bind_respects_disable_bind_before_conjure() -> None:
+    """
+    Purpose:
+        Validate the public Spellbook.bind surface respects disable_bind before conjure.
+    Contract:
+        - Pre-conjure bind is rejected when the frame posture disables bind-family entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pre-conjure bind bypasses the disable_bind gate.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_disable_bind(True)
+
+    try:
+        with pytest.raises(RuntimeError, match="disabled"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_scan_respects_disable_bind_before_conjure() -> None:
+    """
+    Purpose:
+        Validate the public Spellbook.scan surface respects disable_bind before conjure.
+    Contract:
+        - Pre-conjure scan is rejected when the frame posture disables bind-family entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pre-conjure scan bypasses the disable_bind gate.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_disable_bind(True)
+
+    try:
+        with pytest.raises(RuntimeError, match="disabled"):
+            spellbook.scan(scan_bind_module_core)
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_begin_transaction_bind_respects_disable_bind_before_conjure() -> None:
+    """
+    Purpose:
+        Validate Spellbook.begin_transaction("bind") respects disable_bind before conjure.
+    Contract:
+        - Pre-conjure bind transactions are rejected when disable_bind is enabled.
+        - No live bind session is mirrored into the registry on failure.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If begin_transaction("bind") bypasses the disable gate.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_disable_bind(True)
+    registry = Spellbook._aether._get_existing_frame(
+        spellbook._aetheric_frame
+    ).devops_information_registry
+
+    try:
+        with pytest.raises(RuntimeError, match="disabled"):
+            spellbook.begin_transaction("bind")
+        assert registry.list_live_transactions_for_type("bind") == ()
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_bind_respects_disable_all_transactions_after_conjure() -> None:
+    """
+    Purpose:
+        Validate the public Spellbook.bind surface respects the post-conjure transaction gate.
+    Contract:
+        - Post-conjure bind is rejected when disable_all_transactions_after_conjure is enabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If post-conjure bind bypasses the frame posture gate.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
+        True
+    )
+    conduit = spellbook.conjure(automatic=False, name="root")
+    try:
+        with pytest.raises(RuntimeError, match="disabled"):
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_scan_respects_disable_all_transactions_after_conjure() -> None:
+    """
+    Purpose:
+        Validate the public Spellbook.scan surface respects the post-conjure transaction gate.
+    Contract:
+        - Post-conjure scan is rejected when disable_all_transactions_after_conjure is enabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If post-conjure scan bypasses the frame posture gate.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
+        True
+    )
+    conduit = spellbook.conjure(automatic=False, name="root")
+    try:
+        with pytest.raises(RuntimeError, match="disabled"):
+            spellbook.scan(scan_bind_module_core)
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_begin_transaction_bind_respects_disable_all_transactions_after_conjure() -> None:
+    """
+    Purpose:
+        Validate Spellbook.begin_transaction("bind") respects the post-conjure transaction gate.
+    Contract:
+        - Post-conjure bind transactions are rejected when disable_all_transactions_after_conjure is enabled.
+        - No live bind session is mirrored into the registry on failure.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If begin_transaction("bind") bypasses the frame posture gate.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
+        True
+    )
+    conduit = spellbook.conjure(automatic=False, name="root")
+    registry = conduit._aetheric_frame.devops_information_registry
+    try:
+        with pytest.raises(RuntimeError, match="disabled"):
+            spellbook.begin_transaction("bind")
+        assert registry.list_live_transactions_for_type("bind") == ()
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
 def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
     """
     Purpose:
@@ -615,6 +772,152 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
         assert f"scope:spellbook:{spellbook._id}" in request.scope_keys
     finally:
         spellbook.end_transaction("bind")
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_begin_transaction_registers_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate bind transactions are mirrored through the live dev-ops registry.
+    Contract:
+        - begin_transaction("bind") creates one live bind session visible by spellbook identity and type.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live bind session is not mirrored correctly.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
+    registry = conduit._aetheric_frame.devops_information_registry
+    try:
+        spellbook.begin_transaction("bind")
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="spellbook",
+            owner_id=spellbook._id,
+        )
+        assert len(sessions) == 1
+        assert sessions[0].request.request_type is ChangeTransactionType.BIND
+        assert registry.list_live_transactions_for_type("bind") == sessions
+    finally:
+        spellbook.end_transaction("bind")
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_end_transaction_clears_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate ending a bind transaction clears the live registry mirror.
+    Contract:
+        - No live spellbook bind session remains after end_transaction.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the registry mirror survives transaction end.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
+    registry = conduit._aetheric_frame.devops_information_registry
+    try:
+        spellbook.begin_transaction("bind")
+        spellbook.end_transaction("bind")
+        assert registry.list_live_transactions_for_identity(
+            owner_kind="spellbook",
+            owner_id=spellbook._id,
+        ) == ()
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_post_conjure_bind_updates_staged_binding_keys() -> None:
+    """
+    Purpose:
+        Validate late bind updates staged binding metadata on the live session.
+    Contract:
+        - Binding during an active bind transaction refreshes staged binding keys.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If staged binding keys are not updated.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
+    registry = conduit._aetheric_frame.devops_information_registry
+    try:
+        spellbook.begin_transaction("bind")
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="spellbook",
+            owner_id=spellbook._id,
+        )
+        assert len(sessions) == 1
+        assert sessions[0].staged.binding_keys == (("basicservice", "__default__"),)
+    finally:
+        spellbook.end_transaction("bind")
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_transaction_context_exposes_active_request() -> None:
+    """
+    Purpose:
+        Validate the Spellbook bind context exposes the active request.
+    Contract:
+        - The mediator active request is a bind request while the context is live.
+        - The active request clears after context exit.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If active request visibility drifts.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
+    mediator = spellbook._get_required_transaction_mediator()
+    try:
+        with spellbook.transaction("bind"):
+            request = mediator.get_active_request()
+            assert request is not None
+            assert request.request_type is ChangeTransactionType.BIND
+        assert mediator.get_active_request() is None
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_transaction_context_abort_clears_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate errors inside the bind context abort and clear the live registry mirror.
+    Contract:
+        - The live spellbook bind session is removed after the exception unwinds.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort leaves a live registry session behind.
+    """
+    spellbook = _make_spellbook()
+    spellbook._aetheric_frame_configuration.with_system_state("dynamic")
+    conduit = spellbook.conjure(automatic=False, name="root")
+    registry = conduit._aetheric_frame.devops_information_registry
+    try:
+        with pytest.raises(RuntimeError, match="boom"):
+            with spellbook.transaction("bind"):
+                raise RuntimeError("boom")
+        assert registry.list_live_transactions_for_identity(
+            owner_kind="spellbook",
+            owner_id=spellbook._id,
+        ) == ()
+    finally:
         conduit.cleanup()
         spellbook.cleanup()
 

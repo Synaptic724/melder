@@ -158,6 +158,15 @@ def test_list_cloud_names_reflects_borrowed_dynamic_registry(
     assert cloud.list_cloud_names() == ("test_conduit",)
 
 
+def test_frame_name_property_returns_configured_name(conduit_cloud) -> None:
+    """
+    Verify frame_name exposes the configured owning frame name.
+    """
+    cloud, _, _ = conduit_cloud
+
+    assert cloud.frame_name == "test_frame"
+
+
 def test_cluster_lifecycle_and_membership_apis(conduit_cloud, mock_conduit) -> None:
     """
     Verify cluster APIs still work on the cloud-owned cluster registry.
@@ -174,6 +183,195 @@ def test_cluster_lifecycle_and_membership_apis(conduit_cloud, mock_conduit) -> N
     cloud.delete_cluster("cluster-1")
 
     assert cloud.list_cluster_names() == ()
+
+
+def test_get_cluster_returns_created_cluster(conduit_cloud) -> None:
+    """
+    Verify get_cluster returns the created cluster instance.
+    """
+    cloud, _, _ = conduit_cloud
+
+    cloud.create_cluster("cluster-1")
+
+    cluster = cloud.get_cluster("cluster-1")
+    assert cluster.name == "cluster-1"
+
+
+def test_create_cluster_duplicate_raises(conduit_cloud) -> None:
+    """
+    Verify duplicate cluster creation fails fast.
+    """
+    cloud, _, _ = conduit_cloud
+
+    cloud.create_cluster("cluster-1")
+
+    with pytest.raises(ValueError, match="already exists"):
+        cloud.create_cluster("cluster-1")
+
+
+def test_delete_cluster_missing_raises(conduit_cloud) -> None:
+    """
+    Verify deleting a missing cluster fails fast.
+    """
+    cloud, _, _ = conduit_cloud
+
+    with pytest.raises(ValueError, match="does not exist"):
+        cloud.delete_cluster("missing")
+
+
+def test_add_conduit_to_cluster_missing_cluster_raises(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify add_conduit_to_cluster raises for a missing cluster.
+    """
+    cloud, _, _ = conduit_cloud
+
+    with pytest.raises(ValueError, match="does not exist"):
+        cloud.add_conduit_to_cluster(mock_conduit, "missing")
+
+
+def test_remove_conduit_from_cluster_missing_cluster_raises(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify remove_conduit_from_cluster raises for a missing cluster.
+    """
+    cloud, _, _ = conduit_cloud
+
+    with pytest.raises(ValueError, match="does not exist"):
+        cloud.remove_conduit_from_cluster(mock_conduit, "missing")
+
+
+def test_get_clusters_for_conduit_returns_empty_when_missing(conduit_cloud) -> None:
+    """
+    Verify get_clusters_for_conduit returns an empty list for unknown conduits.
+    """
+    cloud, _, _ = conduit_cloud
+
+    assert cloud.get_clusters_for_conduit("missing") == []
+
+
+def test_cluster_operations_require_dynamic_mode(conduit_cloud, mock_frame) -> None:
+    """
+    Verify public cluster operations reject automatic posture.
+    """
+    cloud, _, _ = conduit_cloud
+    mock_frame.frame_configuration.system_state = SystemState.automatic
+
+    with pytest.raises(RuntimeError, match="dynamic mode"):
+        cloud.create_cluster("cluster-1")
+
+
+def test_cluster_operations_reject_disable_all_transactions_flag(
+        conduit_cloud,
+        mock_frame,
+) -> None:
+    """
+    Verify public cluster operations reject the post-conjure transaction gate.
+    """
+    cloud, _, _ = conduit_cloud
+    mock_frame.frame_configuration.disable_all_transactions_after_conjure = True
+
+    with pytest.raises(RuntimeError, match="disabled after conjure"):
+        cloud.create_cluster("cluster-1")
+
+
+def test_cluster_operations_reject_disable_conduit_cluster_flag(
+        conduit_cloud,
+        mock_frame,
+) -> None:
+    """
+    Verify public cluster operations reject the conduit-cluster disable flag.
+    """
+    cloud, _, _ = conduit_cloud
+    mock_frame.frame_configuration.disable_conduit_cluster = True
+
+    with pytest.raises(RuntimeError, match="disabled"):
+        cloud.create_cluster("cluster-1")
+
+
+def test_add_conduit_to_cluster_delegates_to_cluster(conduit_cloud, mock_conduit) -> None:
+    """
+    Verify add_conduit_to_cluster delegates membership and join handling.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+
+    cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+
+    cluster.add_member.assert_called_once_with("conduit-1")
+    cluster.handle_join.assert_called_once_with(mock_conduit)
+
+
+def test_remove_conduit_from_cluster_delegates_to_cluster(conduit_cloud, mock_conduit) -> None:
+    """
+    Verify remove_conduit_from_cluster delegates membership removal and leave handling.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+
+    cloud.remove_conduit_from_cluster(mock_conduit, "cluster-1")
+
+    cluster.remove_member.assert_called_once_with("conduit-1")
+    cluster.handle_leave.assert_called_once_with(mock_conduit)
+
+
+def test_refresh_cluster_shares_for_conduit_only_hits_matching_clusters(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify refresh_cluster_shares_for_conduit calls refresh only on matching clusters.
+    """
+    cloud, _, _ = conduit_cloud
+    matching_cluster = MagicMock()
+    matching_cluster.get_members.return_value = {"conduit-1"}
+    other_cluster = MagicMock()
+    other_cluster.get_members.return_value = {"other"}
+    cloud._conduit_clusters["cluster-1"] = matching_cluster
+    cloud._conduit_clusters["cluster-2"] = other_cluster
+
+    cloud.refresh_cluster_shares_for_conduit(mock_conduit)
+
+    matching_cluster.refresh_member_shares.assert_called_once_with(mock_conduit)
+    other_cluster.refresh_member_shares.assert_not_called()
+
+
+def test_cleanup_unregisters_cloud_identity_from_registry(conduit_cloud, registry) -> None:
+    """
+    Verify cleanup removes the cloud identity from the dev-ops registry.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud_id = cloud._id
+
+    assert registry.get_identity(owner_kind="conduit_cloud", owner_id=cloud_id) is not None
+
+    cloud.cleanup()
+
+    assert registry.get_identity(owner_kind="conduit_cloud", owner_id=cloud_id) is None
+
+
+def test_cleanup_cleans_owned_clusters_best_effort(conduit_cloud) -> None:
+    """
+    Verify cleanup attempts to clean owned clusters without propagating failures.
+    """
+    cloud, _, _ = conduit_cloud
+    good_cluster = MagicMock()
+    bad_cluster = MagicMock()
+    bad_cluster.cleanup.side_effect = RuntimeError("boom")
+    cloud._conduit_clusters["good"] = good_cluster
+    cloud._conduit_clusters["bad"] = bad_cluster
+
+    cloud.cleanup()
+
+    good_cluster.cleanup.assert_called_once()
+    bad_cluster.cleanup.assert_called_once()
+    assert cloud._cleaned is True
 
 
 def test_cleanup_drops_fields_but_does_not_clear_borrowed_registries(

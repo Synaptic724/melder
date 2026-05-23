@@ -319,3 +319,278 @@ def test_aetheric_frame_configuration_rejects_invalid_transaction_wait_time() ->
             max_transaction_wait_time_in_seconds=0,
         )
 
+
+@pytest.mark.parametrize(
+    ("setter_name", "property_name"),
+    (
+        ("with_allow_multiple_root_transactions", "allow_multiple_root_transactions"),
+        (
+            "with_disable_all_transactions_after_conjure",
+            "disable_all_transactions_after_conjure",
+        ),
+        ("with_disable_mutations", "disable_mutations"),
+        ("with_disable_linking", "disable_linking"),
+        ("with_disable_bind", "disable_bind"),
+        ("with_disable_conduit_cluster", "disable_conduit_cluster"),
+        ("with_disable_transfer_of_ownership", "disable_transfer_of_ownership"),
+        ("with_disable_contract_mutation", "disable_contract_mutation"),
+        (
+            "with_queue_competing_root_transactions",
+            "queue_competing_root_transactions",
+        ),
+    ),
+)
+def test_aetheric_frame_configuration_boolean_mutators_update_flags(
+        setter_name: str,
+        property_name: str,
+) -> None:
+    """Boolean posture mutators should update the matching frame flag."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    getattr(frame_configuration, setter_name)(True)
+    assert getattr(frame_configuration, property_name) is True
+
+    getattr(frame_configuration, setter_name)(False)
+    assert getattr(frame_configuration, property_name) is False
+
+
+@pytest.mark.parametrize(
+    ("setter_name", "error_message"),
+    (
+        ("with_allow_multiple_root_transactions", "allow_multiple_root_transactions must be a bool."),
+        (
+            "with_disable_all_transactions_after_conjure",
+            "disable_all_transactions_after_conjure must be a bool.",
+        ),
+        ("with_disable_mutations", "disable_mutations must be a bool."),
+        ("with_disable_linking", "disable_linking must be a bool."),
+        ("with_disable_bind", "disable_bind must be a bool."),
+        ("with_disable_conduit_cluster", "disable_conduit_cluster must be a bool."),
+        (
+            "with_disable_transfer_of_ownership",
+            "disable_transfer_of_ownership must be a bool.",
+        ),
+        (
+            "with_disable_contract_mutation",
+            "disable_contract_mutation must be a bool.",
+        ),
+        (
+            "with_queue_competing_root_transactions",
+            "queue_competing_root_transactions must be a bool.",
+        ),
+    ),
+)
+def test_aetheric_frame_configuration_boolean_mutators_reject_non_bool(
+        setter_name: str,
+        error_message: str,
+) -> None:
+    """Boolean posture mutators should reject non-bool inputs."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    with pytest.raises(TypeError, match=error_message):
+        getattr(frame_configuration, setter_name)("yes")
+
+
+@pytest.mark.parametrize(
+    "setter_name",
+    (
+        "with_system_state",
+        "with_ai_native",
+        "with_rift_enabled",
+        "with_shared_framewide_spellbook_configuration",
+        "with_change_control_mode",
+        "with_allow_multiple_root_transactions",
+        "with_disable_all_transactions_after_conjure",
+        "with_disable_mutations",
+        "with_disable_linking",
+        "with_disable_bind",
+        "with_disable_conduit_cluster",
+        "with_disable_transfer_of_ownership",
+        "with_disable_contract_mutation",
+        "with_queue_competing_root_transactions",
+        "with_max_transaction_wait_time_in_seconds",
+        "with_defaults",
+    ),
+)
+def test_aetheric_frame_configuration_mutators_reject_after_freeze(
+        setter_name: str,
+) -> None:
+    """All posture mutators should reject writes after freeze."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+    frame_configuration.freeze(origin_spellbook_id="spellbook-alpha")
+
+    with pytest.raises(RuntimeError, match="after it is frozen"):
+        if setter_name == "with_system_state":
+            frame_configuration.with_system_state(SystemState.dynamic)
+        elif setter_name == "with_ai_native":
+            frame_configuration.with_ai_native(True)
+        elif setter_name == "with_rift_enabled":
+            frame_configuration.with_rift_enabled(True)
+        elif setter_name == "with_shared_framewide_spellbook_configuration":
+            frame_configuration.with_shared_framewide_spellbook_configuration(True)
+        elif setter_name == "with_change_control_mode":
+            frame_configuration.with_change_control_mode("warn")
+        elif setter_name == "with_allow_multiple_root_transactions":
+            frame_configuration.with_allow_multiple_root_transactions(True)
+        elif setter_name == "with_disable_all_transactions_after_conjure":
+            frame_configuration.with_disable_all_transactions_after_conjure(True)
+        elif setter_name == "with_disable_mutations":
+            frame_configuration.with_disable_mutations(False)
+        elif setter_name == "with_disable_linking":
+            frame_configuration.with_disable_linking(True)
+        elif setter_name == "with_disable_bind":
+            frame_configuration.with_disable_bind(True)
+        elif setter_name == "with_disable_conduit_cluster":
+            frame_configuration.with_disable_conduit_cluster(True)
+        elif setter_name == "with_disable_transfer_of_ownership":
+            frame_configuration.with_disable_transfer_of_ownership(True)
+        elif setter_name == "with_disable_contract_mutation":
+            frame_configuration.with_disable_contract_mutation(True)
+        elif setter_name == "with_queue_competing_root_transactions":
+            frame_configuration.with_queue_competing_root_transactions(True)
+        elif setter_name == "with_max_transaction_wait_time_in_seconds":
+            frame_configuration.with_max_transaction_wait_time_in_seconds(5.0)
+        else:
+            frame_configuration.with_defaults()
+
+
+@pytest.mark.parametrize(
+    ("raw_mode", "expected_mode"),
+    (
+        ("strict", "strict"),
+        (" Warn ", "warn"),
+        ("DISABLED", "disabled"),
+    ),
+)
+def test_aetheric_frame_configuration_change_control_mode_normalizes_input(
+        raw_mode: str,
+        expected_mode: str,
+) -> None:
+    """Change-control mode mutator should normalize whitespace and case."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    frame_configuration.with_change_control_mode(raw_mode)
+
+    assert frame_configuration.change_control_mode == expected_mode
+
+
+def test_aetheric_frame_configuration_transaction_wait_mutator_normalizes_int_to_float() -> None:
+    """Transaction wait mutator should normalize ints to floats."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    frame_configuration.with_max_transaction_wait_time_in_seconds(5)
+
+    assert frame_configuration.max_transaction_wait_time_in_seconds == 5.0
+
+
+@pytest.mark.parametrize(
+    ("field_name", "mutator_name", "mutator_value"),
+    (
+        ("change_control_mode", "with_change_control_mode", "warn"),
+        (
+            "disable_all_transactions_after_conjure",
+            "with_disable_all_transactions_after_conjure",
+            True,
+        ),
+        ("disable_linking", "with_disable_linking", True),
+        ("disable_bind", "with_disable_bind", True),
+        ("disable_conduit_cluster", "with_disable_conduit_cluster", True),
+        (
+            "disable_transfer_of_ownership",
+            "with_disable_transfer_of_ownership",
+            True,
+        ),
+        (
+            "disable_contract_mutation",
+            "with_disable_contract_mutation",
+            True,
+        ),
+        (
+            "queue_competing_root_transactions",
+            "with_queue_competing_root_transactions",
+            True,
+        ),
+        (
+            "max_transaction_wait_time_in_seconds",
+            "with_max_transaction_wait_time_in_seconds",
+            5.0,
+        ),
+    ),
+)
+def test_aetheric_frame_configuration_matches_posture_detects_transaction_field_drift(
+        field_name: str,
+        mutator_name: str,
+        mutator_value,
+) -> None:
+    """matches_posture should return False when any transaction posture field differs."""
+    left = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+    right = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-beta",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    getattr(right, mutator_name)(mutator_value)
+
+    assert left.matches_posture(right) is False
+
+
+def test_aetheric_frame_configuration_freeze_sets_origin_spellbook_id_when_supplied() -> None:
+    """freeze should record the supplied origin spellbook id."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id=None,
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    frame_configuration.freeze(origin_spellbook_id="spellbook-omega")
+
+    assert frame_configuration.origin_spellbook_id == "spellbook-omega"
+
+
+def test_aetheric_frame_configuration_freeze_is_idempotent() -> None:
+    """freeze should be safe to call repeatedly after the first success."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+    frame_configuration.freeze(origin_spellbook_id="spellbook-alpha")
+    frame_configuration.freeze(origin_spellbook_id="spellbook-beta")
+
+    assert frame_configuration.origin_spellbook_id == "spellbook-alpha"
+

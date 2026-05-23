@@ -155,4 +155,210 @@ def test_component_dev_ops_cleanup_cleans_children_and_states() -> None:
         frame.cleanup()
 
 
+def test_component_dev_ops_properties_expose_frame_owned_surfaces() -> None:
+    """
+    Purpose:
+        Validate DevOpsManager property accessors expose stable frame-owned surfaces.
+    Contract:
+        - incident_manager, change_control_manager, risk_manager, creation_gate_controller,
+          devops_information_registry, and spell_system_states are stable references.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If property accessors drift from frame-owned objects.
+    """
+    frame = AethericFrame(Aether(), "component-devops-properties")
+    devops = frame.dev_ops_manager
+    try:
+        assert devops.incident_manager is devops.incident_manager
+        assert devops.change_control_manager is devops.change_control_manager
+        assert devops.risk_manager is devops.risk_manager
+        assert devops.creation_gate_controller is devops.creation_gate_controller
+        assert devops.devops_information_registry is frame.devops_information_registry
+        assert devops.spell_system_states is frame.spell_system_states
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_enable_conduit_gate_noops_for_unknown_gate() -> None:
+    """
+    Purpose:
+        Validate enabling a missing conduit gate is a no-op.
+    Contract:
+        - Missing gate lookups do not raise.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing gates raise.
+    """
+    frame = AethericFrame(Aether(), "component-devops-enable-missing")
+    devops = frame.dev_ops_manager
+    try:
+        devops.enable_conduit_gate("missing-conduit")
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_disable_conduit_gate_noops_for_unknown_gate() -> None:
+    """
+    Purpose:
+        Validate disabling a missing conduit gate is a no-op.
+    Contract:
+        - Missing gate lookups do not raise.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If missing gates raise.
+    """
+    frame = AethericFrame(Aether(), "component-devops-disable-missing")
+    devops = frame.dev_ops_manager
+    try:
+        devops.disable_conduit_gate("missing-conduit")
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_enable_conduit_gate_opens_registered_gate() -> None:
+    """
+    Purpose:
+        Validate enable_conduit_gate opens a real registered gate.
+    Contract:
+        - Registered conduit gates are reopened through the facade.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If enable_conduit_gate does not open the gate.
+    """
+    frame = AethericFrame(Aether(), "component-devops-enable-gate")
+    devops = frame.dev_ops_manager
+    controller = devops.creation_gate_controller
+    gate = controller.create_conduit_gate("conduit-1", root_conduit_id="root-1")
+    try:
+        gate.close()
+        assert gate.enabled is False
+        devops.enable_conduit_gate("conduit-1")
+        assert gate.enabled is True
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_disable_conduit_gate_closes_registered_gate() -> None:
+    """
+    Purpose:
+        Validate disable_conduit_gate closes a real registered gate.
+    Contract:
+        - Registered conduit gates are closed through the facade.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disable_conduit_gate does not close the gate.
+    """
+    frame = AethericFrame(Aether(), "component-devops-disable-gate")
+    devops = frame.dev_ops_manager
+    controller = devops.creation_gate_controller
+    gate = controller.create_conduit_gate("conduit-1", root_conduit_id="root-1")
+    try:
+        assert gate.enabled is True
+        devops.disable_conduit_gate("conduit-1")
+        assert gate.enabled is False
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_enable_conduit_lineage_opens_all_registered_gates() -> None:
+    """
+    Purpose:
+        Validate enable_conduit_lineage reopens every gate in a lineage snapshot.
+    Contract:
+        - All lineage gates transition to enabled through the facade.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lineage gates remain closed.
+    """
+    frame = AethericFrame(Aether(), "component-devops-enable-lineage")
+    devops = frame.dev_ops_manager
+    controller = devops.creation_gate_controller
+    gate_a = controller.create_conduit_gate("conduit-a", root_conduit_id="root-1")
+    gate_b = controller.create_conduit_gate("conduit-b", root_conduit_id="root-1")
+    try:
+        gate_a.close()
+        gate_b.close()
+        devops.enable_conduit_lineage("root-1")
+        assert gate_a.enabled is True
+        assert gate_b.enabled is True
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_disable_conduit_lineage_closes_all_registered_gates() -> None:
+    """
+    Purpose:
+        Validate disable_conduit_lineage closes every gate in a lineage snapshot.
+    Contract:
+        - All lineage gates transition to disabled through the facade.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lineage gates remain open.
+    """
+    frame = AethericFrame(Aether(), "component-devops-disable-lineage")
+    devops = frame.dev_ops_manager
+    controller = devops.creation_gate_controller
+    gate_a = controller.create_conduit_gate("conduit-a", root_conduit_id="root-1")
+    gate_b = controller.create_conduit_gate("conduit-b", root_conduit_id="root-1")
+    try:
+        devops.disable_conduit_lineage("root-1")
+        assert gate_a.enabled is False
+        assert gate_b.enabled is False
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_close_and_wait_conduit_terminally_closes_gate() -> None:
+    """
+    Purpose:
+        Validate close_and_wait_conduit terminally closes a registered gate.
+    Contract:
+        - The gate is terminally closed after drain completes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the gate is not terminally closed.
+    """
+    frame = AethericFrame(Aether(), "component-devops-close-conduit")
+    devops = frame.dev_ops_manager
+    controller = devops.creation_gate_controller
+    gate = controller.create_conduit_gate("conduit-1", root_conduit_id="root-1")
+    try:
+        devops.close_and_wait_conduit("conduit-1", timeout=0.01, interval=0.001)
+        assert gate.is_closed() is True
+    finally:
+        frame.cleanup()
+
+
+def test_component_dev_ops_close_and_wait_conduit_lineage_terminally_closes_all_gates() -> None:
+    """
+    Purpose:
+        Validate close_and_wait_conduit_lineage terminally closes every gate in the lineage.
+    Contract:
+        - All lineage gates are terminally closed after drain completes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any lineage gate stays open.
+    """
+    frame = AethericFrame(Aether(), "component-devops-close-lineage")
+    devops = frame.dev_ops_manager
+    controller = devops.creation_gate_controller
+    gate_a = controller.create_conduit_gate("conduit-a", root_conduit_id="root-1")
+    gate_b = controller.create_conduit_gate("conduit-b", root_conduit_id="root-1")
+    try:
+        devops.close_and_wait_conduit_lineage("root-1", timeout=0.01, interval=0.001)
+        assert gate_a.is_closed() is True
+        assert gate_b.is_closed() is True
+    finally:
+        frame.cleanup()
+
+
 

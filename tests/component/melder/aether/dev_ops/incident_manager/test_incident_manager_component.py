@@ -152,3 +152,138 @@ def test_component_incident_manager_get_unknown_returns_none() -> None:
     finally:
         frame.cleanup()
 
+
+def test_component_incident_manager_allocates_sequential_ids() -> None:
+    """
+    Purpose:
+        Validate manager-owned incident ids advance sequentially.
+    Contract:
+        - Fresh managers allocate `inc-1`, `inc-2`, ... in order.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If incident ids drift from the sequential contract.
+    """
+    frame = AethericFrame(Aether(), "component-incident-sequence")
+    manager = frame.dev_ops_manager.incident_manager
+    try:
+        inc_a = manager.create_incident(
+            kind="first",
+            severity=IncidentSeverity.info,
+            summary="first",
+        )
+        inc_b = manager.create_incident(
+            kind="second",
+            severity=IncidentSeverity.info,
+            summary="second",
+        )
+        assert inc_a.id == "inc-1"
+        assert inc_b.id == "inc-2"
+    finally:
+        frame.cleanup()
+
+
+def test_component_incident_manager_details_and_root_ids_are_detached_snapshots() -> None:
+    """
+    Purpose:
+        Validate incident details and root ids are detached from caller mutation.
+    Contract:
+        - The incident copies incoming details/root ids at creation.
+        - Returned snapshots are detached from incident-owned state.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If caller mutation leaks into incident state.
+    """
+    frame = AethericFrame(Aether(), "component-incident-detached")
+    manager = frame.dev_ops_manager.incident_manager
+    details = {"phase": 4}
+    root_ids = ["root-a"]
+    try:
+        incident = manager.create_incident(
+            kind="detached",
+            severity=IncidentSeverity.warning,
+            summary="detached",
+            root_ids=root_ids,
+            details=details,
+        )
+        details["phase"] = 5
+        root_ids.append("root-b")
+
+        detail_snapshot = incident.details
+        roots_snapshot = incident.root_ids
+        detail_snapshot["phase"] = 6
+        roots_snapshot.append("root-c")
+
+        assert incident.details == {"phase": 4}
+        assert incident.root_ids == ["root-a"]
+    finally:
+        frame.cleanup()
+
+
+def test_component_incident_manager_status_transitions_flow_through_filters() -> None:
+    """
+    Purpose:
+        Validate incident status transitions flow through real manager filters.
+    Contract:
+        - Acknowledged, resolved, and suppressed incidents leave the open filter.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If status transitions are not reflected in filters.
+    """
+    frame = AethericFrame(Aether(), "component-incident-status-flow")
+    manager = frame.dev_ops_manager.incident_manager
+    try:
+        inc_open = manager.create_incident(
+            kind="open",
+            severity=IncidentSeverity.info,
+            summary="open",
+        )
+        inc_ack = manager.create_incident(
+            kind="ack",
+            severity=IncidentSeverity.info,
+            summary="ack",
+        )
+        inc_resolved = manager.create_incident(
+            kind="resolved",
+            severity=IncidentSeverity.info,
+            summary="resolved",
+        )
+        inc_suppressed = manager.create_incident(
+            kind="suppressed",
+            severity=IncidentSeverity.info,
+            summary="suppressed",
+        )
+
+        inc_ack.acknowledge()
+        inc_resolved.resolve()
+        inc_suppressed.suppress()
+
+        open_ids = {
+            incident.id
+            for incident in manager.list_incidents(status=IncidentStatus.open)
+        }
+        assert open_ids == {inc_open.id}
+    finally:
+        frame.cleanup()
+
+
+def test_component_incident_manager_devops_registry_property_matches_frame_registry() -> None:
+    """
+    Purpose:
+        Validate IncidentManager exposes the borrowed frame-owned registry surface.
+    Contract:
+        - devops_information_registry is the same object owned by the frame.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the borrowed registry reference drifts.
+    """
+    frame = AethericFrame(Aether(), "component-incident-registry")
+    manager = frame.dev_ops_manager.incident_manager
+    try:
+        assert manager.devops_information_registry is frame.devops_information_registry
+    finally:
+        frame.cleanup()
+

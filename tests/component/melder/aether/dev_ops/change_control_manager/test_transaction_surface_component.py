@@ -764,3 +764,255 @@ def test_component_transaction_surface_cluster_link_session_registers_live_trans
         )
     finally:
         frame.cleanup()
+
+
+def test_component_transaction_surface_bind_session_exposes_active_request() -> None:
+    """
+    Purpose:
+        Validate bind sessions expose the current active root request.
+    Contract:
+        - get_active_request returns the bind request while the session is live.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live bind request is not exposed.
+    """
+    frame = _make_frame("component-tx-surface-bind-active")
+    try:
+        identity, _spellbook = _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-1",
+            conjured=False,
+        )
+        mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
+
+        session = mediator.start_transaction(
+            identity=identity,
+            transaction_type="bind",
+            metadata={},
+        )
+
+        assert mediator.get_active_request() is session.request
+        mediator.end_transaction_for_identity(
+            identity=identity,
+            transaction_type="bind",
+        )
+    finally:
+        frame.cleanup()
+
+
+def test_component_transaction_surface_link_session_exposes_active_request() -> None:
+    """
+    Purpose:
+        Validate link sessions expose the current active root request.
+    Contract:
+        - get_active_request returns the live link request while the session is active.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live link request is not exposed.
+    """
+    frame = _make_frame("component-tx-surface-link-active")
+    try:
+        conduit_identity, _source = _register_conduit_identity(
+            frame,
+            conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+        )
+        _register_conduit_identity(
+            frame,
+            conduit_id="conduit-2",
+            spellbook_id="spellbook-2",
+        )
+        _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-1",
+            conjured=True,
+            conduit_id="conduit-1",
+        )
+        _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-2",
+            conjured=True,
+            conduit_id="conduit-2",
+        )
+        mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
+
+        session = mediator.start_transaction(
+            identity=conduit_identity,
+            transaction_type="link",
+            metadata={"conduit_ids": ("conduit-2",)},
+        )
+
+        assert mediator.get_active_request() is session.request
+        mediator.end_transaction_for_identity(
+            identity=conduit_identity,
+            transaction_type="link",
+        )
+    finally:
+        frame.cleanup()
+
+
+def test_component_transaction_surface_bind_session_describe_updates_after_binding_key_extension() -> None:
+    """
+    Purpose:
+        Validate bind session describe reflects a live updated request id set.
+    Contract:
+        - describe keeps the active request id visible after binding-key extension.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If mediator describe drifts after staged updates.
+    """
+    frame = _make_frame("component-tx-surface-bind-describe")
+    try:
+        identity, _spellbook = _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-1",
+            conjured=False,
+        )
+        mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
+
+        session = mediator.start_transaction(
+            identity=identity,
+            transaction_type="bind",
+            metadata={},
+        )
+        mediator.update_transaction_for_identity(
+            identity=identity,
+            transaction_type="bind",
+            binding_keys=(("frame", "__default__"),),
+        )
+
+        assert mediator.describe()["request_ids"] == (session.request.request_id,)
+        assert session.staged.binding_keys == (("frame", "__default__"),)
+        mediator.end_transaction_for_identity(
+            identity=identity,
+            transaction_type="bind",
+        )
+    finally:
+        frame.cleanup()
+
+
+def test_component_transaction_surface_link_session_describe_updates_after_contract_extension() -> None:
+    """
+    Purpose:
+        Validate link session describe remains stable after staged contract updates.
+    Contract:
+        - describe keeps the active request id visible after contract-key extension.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If mediator describe drifts after contract updates.
+    """
+    frame = _make_frame("component-tx-surface-link-describe")
+    try:
+        conduit_identity, _source = _register_conduit_identity(
+            frame,
+            conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+        )
+        _register_conduit_identity(
+            frame,
+            conduit_id="conduit-2",
+            spellbook_id="spellbook-2",
+        )
+        _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-1",
+            conjured=True,
+            conduit_id="conduit-1",
+        )
+        _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-2",
+            conjured=True,
+            conduit_id="conduit-2",
+        )
+        mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
+
+        session = mediator.start_transaction(
+            identity=conduit_identity,
+            transaction_type="link",
+            metadata={"conduit_ids": ("conduit-2",)},
+        )
+        mediator.update_transaction_for_identity(
+            identity=conduit_identity,
+            transaction_type="link",
+            contract_keys=(("frame", "__default__", "conduit-2"),),
+        )
+
+        assert mediator.describe()["request_ids"] == (session.request.request_id,)
+        assert session.staged.contract_keys == (("frame", "__default__", "conduit-2"),)
+        mediator.end_transaction_for_identity(
+            identity=conduit_identity,
+            transaction_type="link",
+        )
+    finally:
+        frame.cleanup()
+
+
+def test_component_transaction_surface_cluster_link_describe_reports_active_request() -> None:
+    """
+    Purpose:
+        Validate cluster-link sessions keep the active request visible in describe.
+    Contract:
+        - describe includes the active cluster-link request id while the session is live.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If active cluster-link requests disappear from describe.
+    """
+    frame = _make_frame("component-tx-surface-cluster-describe")
+    try:
+        cluster_identity = DevopsIdentity(
+            owner_kind="conduit_cluster",
+            owner_id="cluster-1",
+            aetheric_frame_name=frame.name,
+            metadata={"cluster_name": "alpha"},
+            available_transactions=("cluster_link",),
+        )
+        cluster_identity.attach_registry(
+            frame.devops_information_registry,
+            object_ref=_FakeCluster(("conduit-1", "conduit-2")),
+        )
+        _register_conduit_identity(
+            frame,
+            conduit_id="conduit-1",
+            spellbook_id="spellbook-1",
+        )
+        _register_conduit_identity(
+            frame,
+            conduit_id="conduit-2",
+            spellbook_id="spellbook-2",
+        )
+        _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-1",
+            conjured=True,
+            conduit_id="conduit-1",
+        )
+        _register_spellbook_identity(
+            frame,
+            spellbook_id="spellbook-2",
+            conjured=True,
+            conduit_id="conduit-2",
+        )
+        mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
+
+        session = mediator.start_transaction(
+            identity=cluster_identity,
+            transaction_type="cluster_link",
+            metadata={
+                "cluster_id": "cluster-1",
+                "conduit_ids": ("conduit-1", "conduit-2"),
+            },
+        )
+
+        assert mediator.describe()["request_ids"] == (session.request.request_id,)
+        mediator.end_transaction_for_identity(
+            identity=cluster_identity,
+            transaction_type="cluster_link",
+        )
+    finally:
+        frame.cleanup()

@@ -2,6 +2,9 @@ import pytest
 from threading import RLock
 from unittest.mock import MagicMock
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
 )
@@ -54,6 +57,25 @@ def test_init_success(manager, mock_sss):
 def test_init_validates_args():
     with pytest.raises(ValueError, match="spell_system_states cannot be None"):
         ChangeControlManager(None)
+
+
+def test_init_keeps_devops_information_registry_reference() -> None:
+    """
+    Verify initialization retains the supplied dev-ops information registry.
+    """
+    spell_system_states = MagicMock()
+    registry = DevopsInformationRegistry("frame")
+    try:
+        manager = ChangeControlManager(
+            spell_system_states,
+            devops_information_registry=registry,
+        )
+        try:
+            assert manager.devops_information_registry() is registry
+        finally:
+            manager.cleanup()
+    finally:
+        registry.cleanup()
 
 # ----------------------------------------------------------------------
 # 2. Pending Changes Registry
@@ -108,6 +130,14 @@ def test_list_pending_changes(manager):
     assert "s1" in all_changes
     assert "s2" in all_changes
 
+
+def test_get_pending_change_validates_spell_index_id(manager) -> None:
+    """
+    Verify get_pending_change rejects empty ids.
+    """
+    with pytest.raises(ValueError, match="spell_index_id cannot be empty"):
+        manager.get_pending_change("")
+
 def test_clear_pending_change(manager, mock_spell_index):
     manager.register_pending_change(mock_spell_index, "r1")
     manager.clear_pending_change("spell-123")
@@ -115,6 +145,14 @@ def test_clear_pending_change(manager, mock_spell_index):
 
 def test_clear_non_existent_is_safe(manager):
     manager.clear_pending_change("unknown")
+
+
+def test_clear_pending_change_validates_spell_index_id(manager) -> None:
+    """
+    Verify clear_pending_change rejects empty ids.
+    """
+    with pytest.raises(ValueError, match="spell_index_id cannot be empty"):
+        manager.clear_pending_change("")
 
 # ----------------------------------------------------------------------
 # 3. Dirty State & Component Tracking
@@ -516,6 +554,13 @@ def test_default_dirty_marker_marks_collection_and_contract_dependents(manager, 
     )
 
 
+def test_devops_information_registry_property_returns_none_when_unwired(manager) -> None:
+    """
+    Verify the manager reports None for the registry when none was supplied.
+    """
+    assert manager.devops_information_registry() is None
+
+
 # ----------------------------------------------------------------------
 # 4. Change-Control Admission Facade
 # ----------------------------------------------------------------------
@@ -572,6 +617,53 @@ def test_change_control_manager_admit_request_enabled_tracks_in_flight(manager) 
     assert manager.transaction_manager().get_in_flight(request.request_id) is None
 
 
+def test_change_control_manager_admit_request_reports_conflict_reason(manager) -> None:
+    """
+    Verify conflicting scope requests are rejected with explicit conflict evidence.
+    """
+    first = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.LINK,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:shared"],
+    )
+    second = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.LINK,
+        initiator_conduit_id="conduit-2",
+        scope_keys=["scope:shared"],
+    )
+
+    assert manager.admit_request(first).admitted is True
+    admission = manager.admit_request(second)
+
+    assert admission.admitted is False
+    assert admission.reasons == ("conflict", "embargo")
+    assert admission.conflicts == (first.request_id,)
+    assert "scope:shared" in admission.embargoes
+
+
+def test_change_control_manager_admit_request_reports_embargo_without_conflict(manager) -> None:
+    """
+    Verify embargo-only rejection is surfaced when no conflicting in-flight request exists.
+    """
+    manager.embargo_manager().open_embargo(
+        scope_keys=("scope:embargoed",),
+        reason_tag="bind",
+        owner_request_id="req-existing",
+    )
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope:embargoed"],
+    )
+
+    admission = manager.admit_request(request)
+
+    assert admission.admitted is False
+    assert admission.reasons == ("embargo",)
+    assert admission.conflicts == ()
+    assert admission.embargoes == ("scope:embargoed",)
+
+
 def test_change_control_manager_commit_hook_invoked(manager) -> None:
     """
     Purpose:
@@ -599,6 +691,40 @@ def test_change_control_manager_commit_hook_invoked(manager) -> None:
 
     manager.commit_request(request.request_id)
     assert called == [request.request_id]
+
+
+def test_change_control_manager_commit_request_disabled_clears_in_flight(manager) -> None:
+    """
+    Verify disabled change control still clears in-flight requests on commit.
+    """
+    manager.disable_change_control()
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope-disabled"],
+    )
+    assert manager.admit_request(request).admitted is True
+
+    manager.commit_request(request.request_id)
+
+    assert manager.transaction_manager().get_in_flight(request.request_id) is None
+
+
+def test_change_control_manager_abort_request_disabled_clears_in_flight(manager) -> None:
+    """
+    Verify disabled change control still clears in-flight requests on abort.
+    """
+    manager.disable_change_control()
+    request = manager.transaction_manager().build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        scope_keys=["scope-disabled"],
+    )
+    assert manager.admit_request(request).admitted is True
+
+    manager.abort_request(request.request_id)
+
+    assert manager.transaction_manager().get_in_flight(request.request_id) is None
 
 
 def test_change_control_manager_commit_validator_failure_aborts(manager) -> None:
@@ -749,6 +875,21 @@ def test_change_control_manager_update_staged_request_updates_metadata(manager) 
     assert staged.metadata["note"] == "test"
 
 
+def test_change_control_manager_update_staged_request_validates_request_id(manager) -> None:
+    """
+    Verify update_staged_request rejects empty request ids.
+    """
+    with pytest.raises(ValueError, match="request_id cannot be empty"):
+        manager.update_staged_request("")
+
+
+def test_change_control_manager_update_staged_request_returns_false_when_missing(manager) -> None:
+    """
+    Verify update_staged_request returns False for unknown request ids.
+    """
+    assert manager.update_staged_request("missing-request") is False
+
+
 def test_change_control_manager_update_staged_request_extends_embargoes(manager) -> None:
     """
     Purpose:
@@ -808,6 +949,25 @@ def test_change_control_manager_update_staged_request_noops_when_disabled(manage
         binding_keys=[("frame", "__default__")],
     )
     assert updated is False
+
+
+def test_change_control_manager_has_revalidator_for_conduit(manager) -> None:
+    """
+    Verify has_revalidator_for_conduit reflects registration state.
+    """
+    assert manager.has_revalidator_for_conduit(CONDUIT_ID) is False
+
+    manager.set_revalidator(CONDUIT_ID, MagicMock())
+
+    assert manager.has_revalidator_for_conduit(CONDUIT_ID) is True
+
+
+def test_change_control_manager_has_revalidator_for_conduit_validates_input(manager) -> None:
+    """
+    Verify has_revalidator_for_conduit rejects empty conduit ids.
+    """
+    with pytest.raises(ValueError, match="conduit_id cannot be empty."):
+        manager.has_revalidator_for_conduit("")
 
 
 
