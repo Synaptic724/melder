@@ -75,7 +75,7 @@ def test_bind_raises_for_lesser_conduit(
 
 
 def test_bind_forwards_to_spellbook_for_normal_conduit(
-    conduit_normal: Conduit,
+    conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
     """
@@ -96,7 +96,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
     extra = object()
     spellbook_stub.bind.return_value = "spell-id"
 
-    result = conduit_normal.bind(
+    result = conduit_dynamic_normal.bind(
         spell=spell,
         existence=Existence.unique,
         permissions="read",
@@ -131,42 +131,34 @@ def test_scan_raises_for_lesser_conduit(
 
 
 def test_scan_forwards_to_spellbook_for_normal_conduit(
-    conduit_normal: Conduit,
+    conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """scan should open a binding transaction before delegating."""
+    """scan should route through the conduit bind transaction wrapper before delegating."""
     module = MagicMock()
     spellbook_stub.scan.return_value = ["spell-1", "spell-2"]
-    spellbook_stub.begin_transaction = MagicMock()
-    spellbook_stub.end_binding_transaction = MagicMock()
+    mediator = spellbook_stub._get_required_transaction_mediator.return_value
 
-    result = conduit_normal.scan(module)
+    result = conduit_dynamic_normal.scan(module)
 
-    spellbook_stub.begin_transaction.assert_called_once()
     spellbook_stub.scan.assert_called_once_with(module)
-    spellbook_stub.end_binding_transaction.assert_called_once_with()
+    spellbook_stub._get_required_transaction_mediator.assert_called()
     assert result == ["spell-1", "spell-2"]
 
 
 def test_scan_reuses_active_binding_transaction(
-    conduit_normal: Conduit,
+    conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """scan should still route through conduit-side bind tracking."""
+    """scan should still use the conduit-owned bind transaction path."""
     module = MagicMock()
     spellbook_stub.scan.return_value = ["spell-1"]
-    spellbook_stub.begin_transaction = MagicMock()
-    spellbook_stub.end_binding_transaction = MagicMock()
+    mediator = spellbook_stub._get_required_transaction_mediator.return_value
 
-    active_request = MagicMock()
-    active_request.request_type = ChangeTransactionType.BIND
-    spellbook_stub._active_change_request = active_request
+    result = conduit_dynamic_normal.scan(module)
 
-    result = conduit_normal.scan(module)
-
-    spellbook_stub.begin_transaction.assert_called_once()
     spellbook_stub.scan.assert_called_once_with(module)
-    spellbook_stub.end_binding_transaction.assert_called_once_with()
+    spellbook_stub._get_required_transaction_mediator.assert_called()
     assert result == ["spell-1"]
 
 

@@ -15,6 +15,9 @@ from tests.mocks.spellbook.core_classes import RepositoryWithLogger
 from tests.mocks.spellbook.core_classes import ServiceWithRepository
 from tests.mocks.spellbook.protocols import ILogger
 from tests.mocks.spellbook.protocols import IRepository
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -50,6 +53,7 @@ def _make_spellbook() -> Spellbook:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     return spellbook
 

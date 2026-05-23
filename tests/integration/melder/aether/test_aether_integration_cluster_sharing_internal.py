@@ -80,12 +80,10 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
     aether = Aether()
     frame_name = "frame-share-new"
     frame = aether._ensure_frame(frame_name)
-    cloud = frame._conduit_cloud
-    cloud.create_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     spellbook.bind(
         spell=BasicService,
@@ -94,6 +92,8 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
     )
     conduit = spellbook.conjure(name="owner")
     try:
+        cloud = frame._conduit_cloud
+        cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
         with spellbook.transaction("bind"):
@@ -132,12 +132,10 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
     aether = Aether()
     frame_name = "frame-share-ignore"
     frame = aether._ensure_frame(frame_name)
-    cloud = frame._conduit_cloud
-    cloud.create_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     spellbook.bind(
         spell=BasicService,
@@ -146,6 +144,8 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
     )
     conduit = spellbook.conjure(name="owner")
     try:
+        cloud = frame._conduit_cloud
+        cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
         with spellbook.transaction("bind"):
@@ -180,12 +180,10 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
     aether = Aether()
     frame_name = "frame-refresh-shares"
     frame = aether._ensure_frame(frame_name)
-    cloud = frame._conduit_cloud
-    cloud.create_cluster("cluster-a")
 
     spellbook = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     spellbook.bind(
         spell=BasicService,
@@ -194,6 +192,8 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
     )
     conduit = spellbook.conjure(name="owner")
     try:
+        cloud = frame._conduit_cloud
+        cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(conduit, "cluster-a")
 
         with spellbook.transaction("bind"):

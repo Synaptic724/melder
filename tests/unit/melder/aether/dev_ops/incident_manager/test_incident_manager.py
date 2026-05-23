@@ -1,6 +1,9 @@
 import threading
 
 import pytest
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
@@ -11,8 +14,15 @@ from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status impor
 # ----------------------------------------------------------------------
 
 @pytest.fixture
-def manager():
-    return IncidentManager()
+def registry():
+    registry = DevopsInformationRegistry("test-frame")
+    yield registry
+    registry.cleanup()
+
+
+@pytest.fixture
+def manager(registry):
+    return IncidentManager(registry)
 
 # ----------------------------------------------------------------------
 # 1. Initialization

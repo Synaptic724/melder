@@ -549,6 +549,9 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                                     cluster_name,
                                 ],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
+                                "expect_error_contains": "require dynamic mode",
+                                "expect_error_type": "RuntimeError",
+                                "save_as": "create_cluster_error",
                             },
                             {
                                 "surface": "command",
@@ -558,6 +561,9 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                                     cluster_name,
                                 ],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
+                                "expect_error_contains": "require dynamic mode",
+                                "expect_error_type": "RuntimeError",
+                                "save_as": "join_cluster_error",
                             },
                             {
                                 "surface": "command",
@@ -574,7 +580,7 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                                     "@manifest.conduits.right.id",
                                 ],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "expect_error_contains": "Dynamic environment is not enabled",
+                                "expect_error_contains": "disabled for the current frame posture",
                                 "expect_error_type": "RuntimeError",
                                 "save_as": "link_error",
                             },
@@ -1023,7 +1029,9 @@ def _assert_capability_turn_script_result(
             saved_results["created_lesser"].id
             != bench.manifest["conduits"]["left"]["id"]
         )
-        assert saved_results["joined_clusters"] == (scenario["cluster_name"],)
+        assert saved_results["joined_clusters"] == tuple()
+        assert saved_results["create_cluster_error"]["error_type"] == "RuntimeError"
+        assert saved_results["join_cluster_error"]["error_type"] == "RuntimeError"
         assert saved_results["link_error"]["error_type"] == "RuntimeError"
         return
     if kind == "meld_cycle":

@@ -6,6 +6,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.nexus.nexus import Nexus
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
@@ -112,6 +113,18 @@ def spellbook_stub() -> MagicMock:
     spellbook._id = "spellbook-1"
     spellbook._lock = threading.RLock()
     spellbook._active_change_request = None
+    transaction_mediator = MagicMock()
+    transaction_mediator.get_active_request.return_value = None
+    transaction_mediator.get_session_for_identity.return_value = None
+    transaction_mediator.start_transaction.return_value = None
+    transaction_mediator.begin_transaction.return_value = None
+    transaction_mediator.end_transaction.return_value = None
+    transaction_mediator.end_transaction_by_request_id.return_value = None
+    transaction_mediator.update_transaction_for_identity.return_value = False
+    spellbook._transaction_mediator = transaction_mediator
+    spellbook._get_required_transaction_mediator = MagicMock(
+        return_value=transaction_mediator,
+    )
     spellbook._spells = {}
     spellbook._contracted_spells = {}
     spellbook._lookup_spells = {}
@@ -256,6 +269,10 @@ def conduit_lesser(
     Returns:
         Conduit: A lesser conduit instance.
     """
+    spellbook_stub._aetheric_frame_configuration.system_state = SystemState.automatic
+    aetheric_frame_stub.frame_configuration = (
+        spellbook_stub._aetheric_frame_configuration
+    )
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -294,6 +311,10 @@ def conduit_normal(
     Returns:
         Conduit: A normal conduit instance.
     """
+    spellbook_stub._aetheric_frame_configuration.system_state = SystemState.automatic
+    aetheric_frame_stub.frame_configuration = (
+        spellbook_stub._aetheric_frame_configuration
+    )
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -331,6 +352,10 @@ def conduit_dynamic_normal(
     Returns:
         Conduit: A dynamic normal conduit instance.
     """
+    spellbook_stub._aetheric_frame_configuration.system_state = SystemState.dynamic
+    aetheric_frame_stub.frame_configuration = (
+        spellbook_stub._aetheric_frame_configuration
+    )
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -369,6 +394,10 @@ def conduit_dynamic_lesser(
     Returns:
         Conduit: A dynamic lesser conduit instance.
     """
+    spellbook_stub._aetheric_frame_configuration.system_state = SystemState.dynamic
+    aetheric_frame_stub.frame_configuration = (
+        spellbook_stub._aetheric_frame_configuration
+    )
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,

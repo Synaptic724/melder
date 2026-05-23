@@ -53,6 +53,7 @@ def _build_admitted_bundle():
         conflict_manager=conflict_manager,
         embargo_manager=embargo_manager,
         orchestrator=orchestrator,
+        devops_information_registry=None,
     )
     return transaction_manager, embargo_manager, orchestrator, request, staged, mediator
 

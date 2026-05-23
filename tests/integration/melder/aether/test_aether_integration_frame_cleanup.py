@@ -78,13 +78,9 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
     """
     aether = Aether()
     frame_name = "frame-cleanup"
-    frame = aether._ensure_frame(frame_name)
-    frame._conduit_cloud.create_cluster("cluster-a")
-    cluster = frame._conduit_cloud._get_cluster("cluster-a")
-
     spellbook = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     spellbook.bind(
         spell=BasicService,
@@ -92,6 +88,9 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
+    frame = aether._ensure_frame(frame_name)
+    frame._conduit_cloud.create_cluster("cluster-a")
+    cluster = frame._conduit_cloud._get_cluster("cluster-a")
 
     cloud = frame._conduit_cloud
     mutation = frame._aether._mutation_research

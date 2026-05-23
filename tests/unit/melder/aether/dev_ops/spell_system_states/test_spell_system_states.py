@@ -1,5 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, call
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
@@ -24,11 +27,20 @@ from melder.aether.spellbook.spell import Spell
 
 @pytest.fixture
 def mock_frame():
-    return MagicMock()
+    frame = MagicMock()
+    frame.name = "test-frame"
+    return frame
+
 
 @pytest.fixture
-def states_manager(mock_frame):
-    return SpellSystemStates(mock_frame)
+def registry():
+    registry = DevopsInformationRegistry("test-frame")
+    yield registry
+    registry.cleanup()
+
+@pytest.fixture
+def states_manager(mock_frame, registry):
+    return SpellSystemStates(mock_frame, registry)
 
 @pytest.fixture
 def mock_spell_index():
@@ -112,9 +124,9 @@ def test_init_success(states_manager, mock_frame):
     assert states_manager._frame is mock_frame
     assert len(states_manager._states_by_index_id) == 0
 
-def test_init_validation():
+def test_init_validation(registry):
     with pytest.raises(ValueError):
-        SpellSystemStates(None)
+        SpellSystemStates(None, registry)
 
 # ----------------------------------------------------------------------
 # 2. Registration & Lookup

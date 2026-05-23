@@ -57,6 +57,7 @@ def _make_spellbook() -> Spellbook:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     return spellbook
 

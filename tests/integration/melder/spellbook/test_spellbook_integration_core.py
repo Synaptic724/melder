@@ -561,6 +561,7 @@ def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instanc
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     conduit = spellbook.conjure(name="root")
@@ -592,6 +593,7 @@ def test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind()
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -629,6 +631,7 @@ def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook.bind(
         spell=BasicService,
@@ -702,6 +705,7 @@ def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> Non
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     conduit = spellbook.conjure(name="root")
@@ -738,6 +742,7 @@ def test_spellbook_integration_fluent_binding_resolves_by_spellframe_and_name() 
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
+    apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     binder = SpellBinder(spellbook, )

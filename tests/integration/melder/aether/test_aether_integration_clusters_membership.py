@@ -80,17 +80,13 @@ def test_aether_cluster_membership_tracks_conduits() -> None:
     """
     aether = Aether()
     frame_name = "frame-membership"
-    frame = aether._ensure_frame(frame_name)
-    cloud = frame._conduit_cloud
-    cloud.create_cluster("cluster-a")
-
     book_a = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     book_b = Spellbook(
         aetheric_frame=frame_name,
-        configuration=_make_configuration(aether_frame=frame_name),
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
     )
     book_a.bind(
         spell=BasicService,
@@ -105,6 +101,9 @@ def test_aether_cluster_membership_tracks_conduits() -> None:
     conduit_a = book_a.conjure(name="root-a")
     conduit_b = book_b.conjure(name="root-b")
     try:
+        frame = aether._ensure_frame(frame_name)
+        cloud = frame._conduit_cloud
+        cloud.create_cluster("cluster-a")
         cloud.add_conduit_to_cluster(conduit_a, "cluster-a")
         cloud.add_conduit_to_cluster(conduit_b, "cluster-a")
 
@@ -142,6 +141,10 @@ def test_aether_cluster_lookup_missing_cluster_raises() -> None:
     """
     aether = Aether()
     frame_name = "frame-missing-cluster"
+    spellbook = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
+    )
     frame = aether._ensure_frame(frame_name)
     cloud = frame._conduit_cloud
     with pytest.raises(ValueError, match="does not exist"):
@@ -151,6 +154,7 @@ def test_aether_cluster_lookup_missing_cluster_raises() -> None:
             conduit=object(),
             cluster_name="missing",
         )
+    spellbook.cleanup()
 
 
 def test_aether_get_clusters_for_conduit_empty_when_none() -> None:

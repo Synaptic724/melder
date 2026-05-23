@@ -1,6 +1,9 @@
 import pytest
 import threading
 from unittest.mock import MagicMock, patch
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -35,15 +38,21 @@ def mock_sss():
     return MagicMock()
 
 @pytest.fixture
-def manager(mock_dependencies, mock_sss):
+def registry():
+    registry = DevopsInformationRegistry("test-frame")
+    yield registry
+    registry.cleanup()
+
+@pytest.fixture
+def manager(mock_dependencies, mock_sss, registry):
     """Returns a fresh DevOpsManager with mocked dependencies."""
-    return DevOpsManager(mock_sss)
+    return DevOpsManager(mock_sss, registry)
 
 # ----------------------------------------------------------------------
 # 1. Initialization Tests
 # ----------------------------------------------------------------------
 
-def test_init_success(manager, mock_dependencies, mock_sss):
+def test_init_success(manager, mock_dependencies, mock_sss, registry):
     """
     Verify successful initialization wires up all components.
 
@@ -53,8 +62,11 @@ def test_init_success(manager, mock_dependencies, mock_sss):
     - Internal state is set correctly (not cleaned, locked).
     """
     # Verify sub-managers were instantiated
-    mock_dependencies["IncidentManager"].assert_called_once()
-    mock_dependencies["ChangeControlManager"].assert_called_once_with(spell_system_states=mock_sss)
+    mock_dependencies["IncidentManager"].assert_called_once_with(registry)
+    mock_dependencies["ChangeControlManager"].assert_called_once_with(
+        spell_system_states=mock_sss,
+        devops_information_registry=registry,
+    )
     
     # Verify internal state
     assert manager._spell_system_states is mock_sss
@@ -63,10 +75,10 @@ def test_init_success(manager, mock_dependencies, mock_sss):
     assert manager._creation_gate_controller is not None
     assert not manager._cleaned
 
-def test_init_validates_sss_not_none():
+def test_init_validates_sss_not_none(registry):
     """Verify ValueError if `spell_system_states` dependency is missing."""
     with pytest.raises(ValueError, match="cannot be None"):
-        DevOpsManager(None)
+        DevOpsManager(None, registry)
 
 def test_init_creates_lock(manager):
     """Verify an RLock is created for thread safety."""
@@ -478,18 +490,18 @@ def test_cleanup_uses_lock(manager):
 # 9. Lifecycle & Interaction Edge Cases
 # ----------------------------------------------------------------------
 
-def test_init_fails_if_incident_manager_fails(mock_sss):
+def test_init_fails_if_incident_manager_fails(mock_sss, registry):
     """Verify init fails if sub-manager construction fails."""
     with patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.IncidentManager", side_effect=ValueError("Init fail")):
         with pytest.raises(ValueError, match="Init fail"):
-            DevOpsManager(mock_sss)
+            DevOpsManager(mock_sss, registry)
 
-def test_init_fails_if_ccm_fails(mock_sss):
+def test_init_fails_if_ccm_fails(mock_sss, registry):
     """Verify init fails if CCM construction fails."""
     with patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.IncidentManager"), \
          patch("melder.aether.aetheric_frame.dev_ops.dev_ops_manager.ChangeControlManager", side_effect=ValueError("CCM fail")):
         with pytest.raises(ValueError, match="CCM fail"):
-            DevOpsManager(mock_sss)
+            DevOpsManager(mock_sss, registry)
 
 def test_access_after_partial_cleanup(manager):
     """
@@ -556,9 +568,9 @@ def test_inheritance_check():
     from melder.utilities.general_base.cleanable import Cleanable
     assert issubclass(DevOpsManager, Cleanable)
 
-def test_full_lifecycle_flow(mock_sss, mock_dependencies):
+def test_full_lifecycle_flow(mock_sss, mock_dependencies, registry):
     """Integration-lite: Create, use, clean, verify."""
-    mgr = DevOpsManager(mock_sss)
+    mgr = DevOpsManager(mock_sss, registry)
     assert mgr.incident_manager is not None
     mgr.revalidate_dirty_roots("conduit-1")
     mgr.cleanup()

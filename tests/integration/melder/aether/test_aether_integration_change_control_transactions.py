@@ -83,9 +83,9 @@ def test_change_control_bind_transaction_opens_and_closes_embargoes() -> None:
         AssertionError: If embargo or in-flight state is incorrect.
     """
     frame_name = "frame-cc-bind"
-    configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(name="root")
+    conduit = spellbook.conjure(automatic=False, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -126,9 +126,9 @@ def test_change_control_update_staged_request_extends_embargo_scopes() -> None:
         AssertionError: If staged updates do not extend embargo scopes.
     """
     frame_name = "frame-cc-staged"
-    configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(name="root")
+    conduit = spellbook.conjure(automatic=False, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -156,28 +156,30 @@ def test_change_control_update_staged_request_extends_embargo_scopes() -> None:
 def test_change_control_disable_allows_overlapping_requests() -> None:
     """
     Purpose:
-        Validate disabled change-control admits overlapping requests.
+        Validate disabled change-control stops conflict rejection.
     Contract:
-        - Overlapping scope keys are admitted when change-control is disabled.
-        - In-flight requests are cleared after end_transaction.
+        - Overlapping scope keys do not cause admission failure when
+          change-control is disabled.
+        - Strategy-owned same-thread bind starts still join the active root
+          session instead of creating a second independent root request.
     Returns:
         None.
     Raises:
         AssertionError: If overlapping requests are rejected when disabled.
     """
     frame_name = "frame-cc-disabled"
-    configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(name="root-a")
-    conduit_b = spellbook_b.conjure(name="root-b")
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.disable_change_control()
 
     spellbook_a.begin_transaction("bind", scope_keys=["scope-shared"])
     spellbook_b.begin_transaction("bind", scope_keys=["scope-shared"])
     transaction_manager = change_control.transaction_manager()
-    assert len(transaction_manager.list_in_flight()) == 2
+    assert len(transaction_manager.list_in_flight()) == 1
     spellbook_a.end_transaction("bind")
     spellbook_b.end_transaction("bind")
     assert transaction_manager.list_in_flight() == []
@@ -191,28 +193,32 @@ def test_change_control_disable_allows_overlapping_requests() -> None:
 def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
     """
     Purpose:
-        Validate scope-hash overlaps trigger conflict rejection.
+        Validate same-thread bind starts join before conflict admission.
     Contract:
-        - Shared scope_hashes cause admission rejection.
+        - A second same-thread bind start does not open a second root request.
+        - The active bind root remains the single in-flight request.
     Returns:
         None.
     Raises:
-        AssertionError: If scope-hash conflicts are not enforced.
+        AssertionError: If the second bind opens another root request.
     """
     frame_name = "frame-cc-hash"
-    configuration = _make_configuration(aether_frame=frame_name, dynamic=False)
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(name="root-a")
-    conduit_b = spellbook_b.conjure(name="root-b")
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
     scope_hash = hashlib.sha256("shared-scope".encode("utf-8")).hexdigest()
 
     spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
     try:
-        with pytest.raises(RuntimeError, match="Change-control admission denied"):
-            spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
+        spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
+        assert len(
+            Aether()._get_change_control_manager(frame_name).transaction_manager().list_in_flight()
+        ) == 1
     finally:
         spellbook_a.end_transaction("bind")
+        spellbook_b.end_transaction("bind")
 
     conduit_a.cleanup()
     conduit_b.cleanup()
@@ -290,7 +296,9 @@ def test_change_control_link_contract_registers_link_mirror() -> None:
                 permissions="create",
                 aetheric_frame=frame_name,
             )
-        assert borrower.id in transaction_manager.list_borrowers_for_provider(owner.id)
+        registry = change_control.devops_information_registry()
+        assert registry is not None
+        assert borrower.id in registry.list_borrowers_for_provider(owner.id)
     finally:
         owner.cleanup()
         borrower.cleanup()

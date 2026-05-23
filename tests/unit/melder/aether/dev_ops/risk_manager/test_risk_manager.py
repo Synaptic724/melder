@@ -1,7 +1,12 @@
 import threading
 from typing import Optional
 
-from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
+from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import (
+    RiskManager as _RuntimeRiskManager,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 
 
@@ -196,6 +201,33 @@ class _SpellbookStub:
             None.
         """
         self._spellbook_validation_required = bool(required)
+
+
+class RiskManager(_RuntimeRiskManager):
+    """
+    Local constructor shim for the current registry-aware runtime contract.
+
+    Purpose:
+        Keep the unit tests focused on risk behavior while still honoring the
+        production constructor requirement for a frame-owned registry.
+    """
+
+    def __init__(self, spell_system_states) -> None:
+        super().__init__(
+            spell_system_states,
+            DevopsInformationRegistry("test-frame"),
+        )
+
+
+def _build_risk_manager(states: _SpellSystemStatesStub) -> RiskManager:
+    """
+    Build a RiskManager with the current frame-owned registry requirement.
+
+    Contract:
+        - Supplies a real DevopsInformationRegistry for constructor parity.
+        - Leaves the tests focused on risk behavior rather than registry wiring.
+    """
+    return RiskManager(states)
 
 
 def test_register_spell_structural_validity_clears_risk_when_valid() -> None:

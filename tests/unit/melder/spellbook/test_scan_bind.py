@@ -9,6 +9,9 @@ from melder.aether.spellbook.bind.scan import scan_bind
 from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +47,11 @@ def _make_spellbook() -> Spellbook:
         Spellbook: A new Spellbook instance.
     """
     frame = f"scan_bind_test_{uuid.uuid4().hex}"
-    return Spellbook(aetheric_frame=frame)
+    spellbook = Spellbook(aetheric_frame=frame)
+    apply_dynamic_defaults_for_spellbook_configuration(
+        spellbook.get_configuration()
+    )
+    return spellbook
 
 
 def _make_module(name: str) -> types.ModuleType:

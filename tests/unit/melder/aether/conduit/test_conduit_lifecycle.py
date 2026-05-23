@@ -4,6 +4,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -44,8 +47,7 @@ def _build_conduit(
     """
     Build a Conduit with the current injected-service constructor contract.
     """
-    dev_ops_manager = MagicMock()
-    dev_ops_manager.creation_gate_controller = CreationGateController()
+    creation_gate_controller = CreationGateController()
     aetheric_frame_object = MagicMock()
     conduit_cloud = MagicMock()
     conduit_cloud.create_cluster.return_value = None
@@ -57,8 +59,22 @@ def _build_conduit(
     conduit_cloud.get_conduit_by_id.return_value = None
     conduit_cloud.get_conduit_by_name.return_value = None
     aetheric_frame_object._conduit_cloud = conduit_cloud
+    aetheric_frame_object.devops_information_registry = DevopsInformationRegistry(
+        aetheric_frame
+    )
     aetheric_frame_object.register_root_conduit.return_value = None
     aetheric_frame_object.unregister_root_conduit.return_value = None
+    transaction_mediator = MagicMock()
+    transaction_mediator.get_active_request.return_value = None
+    transaction_mediator.get_session_for_identity.return_value = None
+    transaction_mediator.start_transaction.return_value = None
+    transaction_mediator.begin_transaction.return_value = None
+    transaction_mediator.end_transaction.return_value = None
+    transaction_mediator.end_transaction_by_request_id.return_value = None
+    transaction_mediator.update_transaction_for_identity.return_value = False
+    spellbook._get_required_transaction_mediator = MagicMock(
+        return_value=transaction_mediator,
+    )
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
     return Conduit(
@@ -68,7 +84,7 @@ def _build_conduit(
         aetheric_frame_name=aetheric_frame,
         aetheric_frame=aetheric_frame_object,
         policy=policy,
-        dev_ops_manager=dev_ops_manager,
+        creation_gate_controller=creation_gate_controller,
         automatic=automatic,
         name=name,
         logger=logger,

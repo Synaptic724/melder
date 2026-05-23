@@ -17,6 +17,9 @@ import pytest
 from unittest.mock import MagicMock
 
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
@@ -231,6 +234,7 @@ def _make_cluster(
         name,
         registry,
         aetheric_frame_name,
+        DevopsInformationRegistry(aetheric_frame_name),
         auto_link_dependencies,
     )
 

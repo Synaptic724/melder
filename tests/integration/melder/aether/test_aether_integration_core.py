@@ -188,20 +188,27 @@ def test_aether_cluster_lifecycle_create_get_remove() -> None:
     """
     aether = Aether()
     frame_name = "frame-cluster"
-    frame = aether._ensure_frame(frame_name)
-    cloud = frame._conduit_cloud
+    spellbook = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name, dynamic=True),
+    )
+    try:
+        frame = aether._ensure_frame(frame_name)
+        cloud = frame._conduit_cloud
 
-    cloud.create_cluster("cluster-a")
-    cluster = cloud._get_cluster("cluster-a")
-    assert cluster._name == "cluster-a"
-    with pytest.raises(ValueError, match="already exists"):
         cloud.create_cluster("cluster-a")
+        cluster = cloud._get_cluster("cluster-a")
+        assert cluster._name == "cluster-a"
+        with pytest.raises(ValueError, match="already exists"):
+            cloud.create_cluster("cluster-a")
 
-    cloud.delete_cluster("cluster-a")
-    with pytest.raises(ValueError, match="does not exist"):
-        cloud._get_cluster("cluster-a")
-    with pytest.raises(ValueError, match="does not exist"):
         cloud.delete_cluster("cluster-a")
+        with pytest.raises(ValueError, match="does not exist"):
+            cloud._get_cluster("cluster-a")
+        with pytest.raises(ValueError, match="does not exist"):
+            cloud.delete_cluster("cluster-a")
+    finally:
+        spellbook.cleanup()
 
 
 def test_aether_cleanup_aetheric_frames_cleans_conduits() -> None:

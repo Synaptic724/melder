@@ -64,6 +64,7 @@ def test_component_conduit_returns_aether_owned_mutation_research(case_index: in
         aetheric_frame=frame_name,
         configuration=_make_dynamic_configuration(frame_name),
     )
+    spellbook._aetheric_frame_configuration.with_disable_mutations(False)
     spellbook.bind(
         spell=BasicService,
         existence=Existence.unique,
@@ -90,6 +91,7 @@ def test_component_root_create_mutation_conduit_returns_placeholder(case_index: 
         aetheric_frame=frame_name,
         configuration=_make_dynamic_configuration(frame_name),
     )
+    spellbook._aetheric_frame_configuration.with_disable_mutations(False)
     spellbook.bind(
         spell=BasicService,
         existence=Existence.unique,
@@ -118,6 +120,7 @@ def test_component_root_create_mutation_frame_returns_placeholder(case_index: in
         aetheric_frame=frame_name,
         configuration=_make_dynamic_configuration(frame_name),
     )
+    spellbook._aetheric_frame_configuration.with_disable_mutations(False)
     spellbook.bind(
         spell=BasicService,
         existence=Existence.unique,

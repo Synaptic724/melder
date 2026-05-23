@@ -1,8 +1,11 @@
 ﻿import time
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -29,8 +32,7 @@ def _build_conduit(
     """
     Build a Conduit with the current injected-service constructor contract.
     """
-    dev_ops_manager = MagicMock()
-    dev_ops_manager.creation_gate_controller = CreationGateController()
+    creation_gate_controller = CreationGateController()
     aetheric_frame_object = MagicMock()
     conduit_cloud = MagicMock()
     conduit_cloud.create_cluster.return_value = None
@@ -42,8 +44,22 @@ def _build_conduit(
     conduit_cloud.get_conduit_by_id.return_value = None
     conduit_cloud.get_conduit_by_name.return_value = None
     aetheric_frame_object._conduit_cloud = conduit_cloud
+    aetheric_frame_object.devops_information_registry = DevopsInformationRegistry(
+        aetheric_frame
+    )
     aetheric_frame_object.register_root_conduit.return_value = None
     aetheric_frame_object.unregister_root_conduit.return_value = None
+    transaction_mediator = MagicMock()
+    transaction_mediator.get_active_request.return_value = None
+    transaction_mediator.get_session_for_identity.return_value = None
+    transaction_mediator.start_transaction.return_value = None
+    transaction_mediator.begin_transaction.return_value = None
+    transaction_mediator.end_transaction.return_value = None
+    transaction_mediator.end_transaction_by_request_id.return_value = None
+    transaction_mediator.update_transaction_for_identity.return_value = False
+    spellbook._get_required_transaction_mediator = MagicMock(
+        return_value=transaction_mediator,
+    )
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
     return Conduit(
@@ -53,7 +69,7 @@ def _build_conduit(
         aetheric_frame_name=aetheric_frame,
         aetheric_frame=aetheric_frame_object,
         policy=policy,
-        dev_ops_manager=dev_ops_manager,
+        creation_gate_controller=creation_gate_controller,
         automatic=automatic,
         name=name,
         root_conduit_id=root_conduit_id,
@@ -76,7 +92,7 @@ def _set_active_link_transaction(conduit: Conduit, peer_id: str) -> None:
         None.
     """
     spellbook = conduit._spellbook
-    spellbook._active_change_request = ChangeControlTransactionRequest(
+    request = ChangeControlTransactionRequest(
         request_id="tx-test-link",
         request_type=ChangeTransactionType.LINK,
         created_at=time.time(),
@@ -89,6 +105,8 @@ def _set_active_link_transaction(conduit: Conduit, peer_id: str) -> None:
         contract_keys=(),
         metadata={},
     )
+    mediator = spellbook._get_required_transaction_mediator()
+    mediator.get_active_request.return_value = request
 
 
 def test_link_raises_when_not_dynamic(
@@ -108,7 +126,7 @@ def test_link_raises_when_not_dynamic(
     Raises:
         AssertionError: If link does not raise in non-dynamic mode.
     """
-    with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+    with pytest.raises(RuntimeError, match="Linking is disabled for the current frame posture|Dynamic environment is not enabled"):
         conduit_normal.link(conduit_lesser)
 
 
@@ -282,7 +300,12 @@ def test_link_false_does_not_fire_hook(
 
     conduit_dynamic_normal._conduit_hooks = {"on_conduit_post_link": [hook]}
 
-    conduit_dynamic_normal.link(conduit_lesser)
+    with patch.object(
+        Conduit,
+        "_transaction_blocked_for_current_posture",
+        return_value=False,
+    ):
+        conduit_dynamic_normal.link(conduit_lesser)
 
     assert events == []
 
@@ -304,7 +327,7 @@ def test_sever_link_raises_when_not_dynamic(
     Raises:
         AssertionError: If sever_link does not raise in non-dynamic mode.
     """
-    with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+    with pytest.raises(RuntimeError, match="Linking is disabled for the current frame posture|Dynamic environment is not enabled"):
         conduit_normal.sever_link(conduit_lesser)
 
 
@@ -345,7 +368,12 @@ def test_sever_link_delegates_and_fires_hook(
 
     conduit_dynamic_normal._conduit_hooks = {"on_conduit_post_unlink": [hook]}
 
-    result = conduit_dynamic_normal.sever_link(conduit_lesser)
+    with patch.object(
+        Conduit,
+        "_transaction_blocked_for_current_posture",
+        return_value=False,
+    ):
+        result = conduit_dynamic_normal.sever_link(conduit_lesser)
 
     assert result is True
     conduit_dynamic_normal._conduit_ward._sever_link.assert_called_once_with(conduit_lesser)
@@ -1240,7 +1268,8 @@ def test_require_link_transaction_for_contract_raises_when_no_active_request(
 ) -> None:
     """_require_link_transaction_for_contract should fail when there is no active request."""
     conduit_dynamic_normal._logger = MagicMock()
-    conduit_dynamic_normal._spellbook._active_change_request = None
+    mediator = conduit_dynamic_normal._spellbook._get_required_transaction_mediator()
+    mediator.get_active_request.return_value = None
 
     with pytest.raises(RuntimeError, match="requires an active link transaction"):
         conduit_dynamic_normal._require_link_transaction_for_contract(
@@ -1260,7 +1289,8 @@ def test_require_link_transaction_for_contract_raises_when_wrong_request_type(
     request = MagicMock()
     request.request_type = ChangeTransactionType.BIND
     request.conduit_ids = [conduit_dynamic_normal._id, "peer-1"]
-    conduit_dynamic_normal._spellbook._active_change_request = request
+    mediator = conduit_dynamic_normal._spellbook._get_required_transaction_mediator()
+    mediator.get_active_request.return_value = request
 
     with pytest.raises(RuntimeError, match="not a link transaction"):
         conduit_dynamic_normal._require_link_transaction_for_contract(
@@ -1280,7 +1310,8 @@ def test_require_link_transaction_for_contract_raises_when_required_ids_missing(
     request = MagicMock()
     request.request_type = ChangeTransactionType.LINK
     request.conduit_ids = [conduit_dynamic_normal._id]
-    conduit_dynamic_normal._spellbook._active_change_request = request
+    mediator = conduit_dynamic_normal._spellbook._get_required_transaction_mediator()
+    mediator.get_active_request.return_value = request
 
     with pytest.raises(RuntimeError, match="missing conduit ids"):
         conduit_dynamic_normal._require_link_transaction_for_contract(
@@ -1300,7 +1331,8 @@ def test_require_link_transaction_for_contract_raises_when_local_id_missing(
     request = MagicMock()
     request.request_type = ChangeTransactionType.LINK
     request.conduit_ids = ["peer-1"]
-    conduit_dynamic_normal._spellbook._active_change_request = request
+    mediator = conduit_dynamic_normal._spellbook._get_required_transaction_mediator()
+    mediator.get_active_request.return_value = request
 
     with pytest.raises(RuntimeError, match="missing conduit ids"):
         conduit_dynamic_normal._require_link_transaction_for_contract(

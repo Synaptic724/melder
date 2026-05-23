@@ -1,14 +1,36 @@
-﻿import threading
+import threading
 from unittest.mock import MagicMock
 
 import pytest
 
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+    DevopsInformationRegistry,
+)
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.system_state import SystemState
 
 
 @pytest.fixture
-def conduit_cloud():
+def registry():
+    registry = DevopsInformationRegistry("test_frame")
+    yield registry
+    registry.cleanup()
+
+
+@pytest.fixture
+def mock_frame():
+    frame = MagicMock()
+    frame_configuration = MagicMock()
+    frame_configuration.disable_conduit_cluster = False
+    frame_configuration.disable_all_transactions_after_conjure = False
+    frame_configuration.system_state = SystemState.dynamic
+    frame.frame_configuration = frame_configuration
+    return frame
+
+
+@pytest.fixture
+def conduit_cloud(mock_frame, registry):
     """
     Provide a fresh ConduitCloud plus its borrowed backing stores.
 
@@ -20,8 +42,10 @@ def conduit_cloud():
     conduit_ids_by_name: dict[str, str] = {}
     cloud = ConduitCloud(
         "test_frame",
+        mock_frame,
         root_conduits,
         conduit_ids_by_name,
+        registry,
     )
     yield cloud, root_conduits, conduit_ids_by_name
     cloud.cleanup()
@@ -41,6 +65,7 @@ def mock_conduit():
     conduit.name = "test_conduit"
     conduit._name = "test_conduit"
     conduit.__dynamic_environment__ = True
+    conduit._spellbook = None
     return conduit
 
 
@@ -229,5 +254,3 @@ def test_methods_raise_after_cleanup(conduit_cloud, mock_conduit) -> None:
 
     with pytest.raises(RuntimeError):
         cloud.create_cluster("cluster-1")
-
-

@@ -323,16 +323,16 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
     spellbook._conduit = conduit
     spellbook._conjured = True
     spellbook._bind_family_disabled_for_current_posture = lambda: False
+    spellbook._binding_transaction_is_active = lambda: True
     spellbook._run_post_conjure_structural_phases = lambda spells: None
     existing = BasicService(marker="existing")
 
     try:
-        with spellbook.transaction("bind"):
-            spell_id = spellbook.bind(
-                spell=existing,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        spell_id = spellbook.bind(
+            spell=existing,
+            existence=Existence.unique,
+            permissions="create",
+        )
 
         assert len(conduit.registered) == 1
         registered_spell, registered_obj = conduit.registered[0]
@@ -372,7 +372,7 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
 
         with spellbook.transaction("bind"):
             second_spell_id = spellbook.bind(
-                spell=BasicService,
+                spell=BasicConfig,
                 existence=Existence.unique,
                 permissions="create",
                 binding_name="second",
@@ -503,7 +503,7 @@ def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -
 
         spellbook.end_transaction("bind")
         spellbook.bind(
-            spell=BasicService,
+            spell=BasicConfig,
             existence=Existence.unique,
             permissions="create",
             binding_name="after-close",
@@ -533,7 +533,7 @@ def test_component_spellbook_transaction_context_closes_on_exception() -> None:
                 raise RuntimeError("boom")
 
         spellbook.bind(
-            spell=BasicService,
+            spell=BasicConfig,
             existence=Existence.unique,
             permissions="create",
             binding_name="after-error",
@@ -609,9 +609,9 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
     conduit = spellbook.conjure(automatic=False, name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
-        spellbook.begin_transaction("bind", conduit_id="conduit-1")
+        spellbook.begin_transaction("bind", conduit_id=conduit.id)
         request = change_control.transaction_manager().list_in_flight()[0]
-        assert "conduit-1" in request.conduit_ids
+        assert conduit.id in request.conduit_ids
         assert f"scope:spellbook:{spellbook._id}" in request.scope_keys
     finally:
         spellbook.end_transaction("bind")
@@ -917,15 +917,15 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     spellbook._conduit = conduit
     spellbook._conjured = True
     spellbook._bind_family_disabled_for_current_posture = lambda: False
+    spellbook._binding_transaction_is_active = lambda: True
     spellbook._run_post_conjure_structural_phases = lambda spells: None
 
     try:
-        with spellbook.transaction("bind"):
-            spell_id = spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-            )
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
         assert conduit.registered == []
 
         bound_spell = _get_spell_by_version_id(spellbook, spell_id)

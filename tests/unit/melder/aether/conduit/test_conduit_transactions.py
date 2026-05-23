@@ -105,16 +105,16 @@ def test_conduit_begin_transaction_link_accepts_conduits_list(
         peer.cleanup()
 
 
-def test_conduit_begin_transaction_link_requires_peer(
+def test_conduit_begin_transaction_link_defers_peer_validation_to_strategy(
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
     """
     Purpose:
-        Validate link transactions require explicit peer conduits.
+        Validate conduit-side link entry only normalizes metadata.
     Contract:
-        - begin_transaction raises when only the local conduit is provided.
-        - Spellbook begin_transaction is not invoked on failure.
+        - begin_transaction does not reject the local-only case itself.
+        - Peer validation is deferred to the strategy layer.
     Args:
         conduit_dynamic_normal: Dynamic normal conduit under test.
         spellbook_stub: Spellbook stub fixture used by the conduit.
@@ -126,30 +126,27 @@ def test_conduit_begin_transaction_link_requires_peer(
     original_getter = conduit_type._get_required_transaction_mediator
     conduit_type._get_required_transaction_mediator = lambda self: mediator
     try:
-        with pytest.raises(RuntimeError, match="peer conduit"):
-            conduit_dynamic_normal.begin_transaction(
-                ChangeTransactionType.LINK,
-                conduits=[conduit_dynamic_normal],
-            )
-        mediator.start_transaction.assert_not_called()
+        conduit_dynamic_normal.begin_transaction(
+            ChangeTransactionType.LINK,
+            conduits=[conduit_dynamic_normal],
+        )
+        mediator.start_transaction.assert_called_once()
     finally:
         conduit_type._get_required_transaction_mediator = original_getter
 
 
-def test_conduit_begin_transaction_link_requires_conduits_argument(
+def test_conduit_begin_transaction_link_allows_empty_peer_metadata_at_boundary(
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
-    """Link transactions should fail when the conduits list is omitted."""
+    """Link entry should pass empty peer metadata through to the strategy layer."""
     mediator = MagicMock(get_active_request=lambda: None)
     conduit_type = type(conduit_dynamic_normal)
     original_getter = conduit_type._get_required_transaction_mediator
     conduit_type._get_required_transaction_mediator = lambda self: mediator
     try:
-        with pytest.raises(RuntimeError, match="at least one peer conduit"):
-            conduit_dynamic_normal.begin_transaction(ChangeTransactionType.LINK)
-
-        mediator.start_transaction.assert_not_called()
+        conduit_dynamic_normal.begin_transaction(ChangeTransactionType.LINK)
+        mediator.start_transaction.assert_called_once()
     finally:
         conduit_type._get_required_transaction_mediator = original_getter
 
@@ -216,7 +213,7 @@ def test_conduit_begin_transaction_link_auto_adds_local_conduit(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
-    """Link transactions should automatically include the local conduit id."""
+    """Conduit-side link entry should pass peer ids only; strategy adds local later."""
     peer = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -236,8 +233,8 @@ def test_conduit_begin_transaction_link_auto_adds_local_conduit(
                 conduits=[peer],
             )
             conduit_ids = mediator.start_transaction.call_args.kwargs["metadata"]["conduit_ids"]
-            assert conduit_dynamic_normal._id in conduit_ids
             assert peer._id in conduit_ids
+            assert conduit_dynamic_normal._id not in conduit_ids
         finally:
             conduit_type._get_required_transaction_mediator = original_getter
     finally:
