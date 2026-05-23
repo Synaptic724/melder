@@ -240,7 +240,40 @@ class TransferOfOwnership(Cleanable):
         self._assert_dynamic_mode()
         spell_obj = self._resolve_spell()
         self._assert_ownership(spell_obj)
-        self._preflight_summary = {
+        self._preflight_summary = self._build_preflight_summary(spell_obj)
+        self._record_change_intent(self._preflight_summary)
+        if not self.include_dependencies and not self._deps_resolvable_on_target(self._preflight_summary["dependencies"]):
+            raise RuntimeError("Dependencies are not resolvable on target; set include_dependencies=True or fix target.")
+        return self._preflight_summary
+
+    def _build_preflight_summary(self, spell_obj: Any) -> Dict[str, Any]:
+        """
+        Build the pure preflight summary for one transfer candidate.
+
+        Purpose:
+            Produce the structured transfer plan payload without mutating any
+            external control-plane state. This is the planning-only helper used
+            both by `preflight()` and by transaction strategies that need the
+            same participant/dependency/creation inventory before admission.
+
+        Contract:
+            - Does not record pending-change intent.
+            - Does not emit incidents.
+            - Does not mutate spellbooks, conduits, contracts, clusters, or
+              registry state.
+            - Returns the same structural shape later persisted into
+              `self._preflight_summary` by `preflight()`.
+
+        Args:
+            spell_obj:
+                Resolved live spell object owned by the source conduit.
+
+        Returns:
+            Dict[str, Any]:
+                Structured pure preflight summary for the candidate transfer.
+        """
+        self.check_cleaned()
+        return {
             "spell_id": spell_obj.spell_id,
             "spell_index": spell_obj.spell_index,
             "source": self.source_conduit._id,
@@ -258,10 +291,6 @@ class TransferOfOwnership(Cleanable):
             },
             "snapshot": self._snapshot_current_state(spell_obj),
         }
-        self._record_change_intent(self._preflight_summary)
-        if not self.include_dependencies and not self._deps_resolvable_on_target(self._preflight_summary["dependencies"]):
-            raise RuntimeError("Dependencies are not resolvable on target; set include_dependencies=True or fix target.")
-        return self._preflight_summary
 
     # ------------------------------------------------------------------
     # Execute
@@ -420,7 +449,18 @@ class TransferOfOwnership(Cleanable):
                 continue
             for detail_map in (contract._details_a, contract._details_b):
                 if spell_id in detail_map:
-                    borrowers.append({"type": "contract", "contract_id": contract._id})
+                    borrower_conduit_id = None
+                    try:
+                        borrower_conduit_id = contract._get_peer(ward)._conduit._id
+                    except Exception:
+                        borrower_conduit_id = None
+                    borrowers.append(
+                        {
+                            "type": "contract",
+                            "contract_id": contract._id,
+                            "borrower_conduit_id": borrower_conduit_id,
+                        }
+                    )
                     seen_contracts.add(contract_id)
                     break
         # Clusters: scan cluster registries
@@ -433,7 +473,15 @@ class TransferOfOwnership(Cleanable):
             for owner_id, indices in cluster.get_shared_spells().items():
                 for idx in indices:
                     if idx.has_version(spell_id) or idx.current == spell_id:
-                        borrowers.append({"type": "cluster", "cluster": cname, "owner_id": owner_id})
+                        borrowers.append(
+                            {
+                                "type": "cluster",
+                                "cluster": cname,
+                                "cluster_id": cluster.id,
+                                "owner_id": owner_id,
+                                "member_conduit_ids": tuple(sorted(cluster.get_members())),
+                            }
+                        )
                         break
         return borrowers
 

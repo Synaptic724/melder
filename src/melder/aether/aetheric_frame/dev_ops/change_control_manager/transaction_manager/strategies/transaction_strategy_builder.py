@@ -43,6 +43,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy import (
     LinkTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy import (
+    TransferOwnershipTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
@@ -271,6 +274,8 @@ class TransactionStrategyBuilder:
             - Link requests are registered under the `link` transaction name.
             - Cluster-owned share/unshare requests are registered under the
               `cluster_link` transaction name.
+            - Ownership-transfer requests are registered under the
+              `transfer_ownership` transaction name.
             - Additional strategy classes should be registered here as they
               become real runtime surfaces.
         """
@@ -279,6 +284,10 @@ class TransactionStrategyBuilder:
         self.register_strategy(
             ChangeTransactionType.CLUSTER_LINK,
             ClusterLinkTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.TRANSFER_OWNERSHIP,
+            TransferOwnershipTransactionStrategy,
         )
 
     @staticmethod

@@ -6,12 +6,11 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
-from melder.aether.aetheric_frame.devops_identity import DevopsIdentity
-
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
         ChangeControlTransactionManager,
     )
+    from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 
 
 class ClusterLinkTransactionStrategy(TransactionStrategy):

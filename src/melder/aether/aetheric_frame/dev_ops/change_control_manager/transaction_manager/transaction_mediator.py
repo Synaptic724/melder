@@ -644,7 +644,12 @@ class TransactionMediator(Cleanable):
         """
         self.check_cleaned()
         transaction_name = self._normalize_transaction_name(transaction_type)
-        if transaction_name in ("bind", "link", "cluster_link"):
+        if transaction_name in (
+                "bind",
+                "link",
+                "cluster_link",
+                "transfer_ownership",
+        ):
             return self._start_strategy_transaction(
                 identity=identity,
                 transaction_type=ChangeTransactionType(transaction_name),
