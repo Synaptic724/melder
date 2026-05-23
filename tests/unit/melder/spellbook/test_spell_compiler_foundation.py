@@ -119,12 +119,15 @@ def test_spell_compiler_system_owns_spell_compiler() -> None:
     assert isinstance(compiler_system._spell_compiler, SpellCompiler)
 
 
-def test_meld_initializes_spell_compiler_system_foundation() -> None:
-    """Meld should own the compiler-system foundation surface."""
+def test_meld_creates_spell_compiler_system_on_first_demand() -> None:
+    """Meld should lazily create the compiler-system foundation surface."""
     spellbook = _SpellbookStub()
     creations = _CreationStoreStub()
 
     meld = Meld(creations=creations, spellbook=spellbook)
 
-    assert isinstance(meld._spell_compiler_system, SpellCompilerSystem)
+    assert meld._spell_compiler_system is None
+    compiler_system = meld._get_spell_compiler_system()
+    assert isinstance(compiler_system, SpellCompilerSystem)
+    assert meld._spell_compiler_system is compiler_system
 

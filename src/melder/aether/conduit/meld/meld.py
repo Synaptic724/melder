@@ -172,9 +172,7 @@ class Meld(Cleanable):
         )
         # Foundation runtime compiler owner surface for later spell compiler
         # ownership decomposition.
-        self._spell_compiler_system: SpellCompilerSystem = (
-            SpellCompilerSystem()
-        )
+        self._spell_compiler_system: Optional[SpellCompilerSystem] = None
 
 
     def cleanup(self) -> None:
@@ -226,7 +224,8 @@ class Meld(Cleanable):
             del self._spell_id_resolution_cache
             del self._max_resolution_cache_size
             del self._change_control_manager_by_frame
-            self._spell_compiler_system.cleanup()
+            if self._spell_compiler_system is not None:
+                self._spell_compiler_system.cleanup()
             del self._spell_compiler_system
 
 
@@ -738,7 +737,7 @@ class Meld(Cleanable):
         if self._gated_validation_required(spell):
             with spell._lock:
                 if self._gated_validation_required(spell):
-                    self._spell_compiler_system.run_structural_phases(
+                    self._get_spell_compiler_system().run_structural_phases(
                         self._spellbook,
                         spell,
                     )
@@ -1339,7 +1338,7 @@ class Meld(Cleanable):
         spell_id = spell.spell_index.current
         if spell_id is None:
             raise RuntimeError("SpellIndex.current is required for resolution revalidation.")
-        use_root = self._spell_compiler_system.is_current_spell_phase5_root(
+        use_root = self._get_spell_compiler_system().is_current_spell_phase5_root(
             spell
         )
 
@@ -1376,10 +1375,37 @@ class Meld(Cleanable):
         spell_id = spell.spell_index.current
         if spell_id is None:
             return SpellValidity.unknown
-        if self._spell_compiler_system.is_current_spell_phase5_root(spell):
+        if self._get_spell_compiler_system().is_current_spell_phase5_root(spell):
             return resolution_state.get_root_validity(spell_id)
 
         return resolution_state.get_spell_validity(spell_id)
+
+    def _get_spell_compiler_system(self) -> SpellCompilerSystem:
+        """
+        Return the compiler-system helper, creating it on first demand.
+
+        Purpose:
+            Keep the heavy compiler/validation foundation off the hot lesser-
+            conduit path until one actual validation or root-check path needs
+            it.
+
+        Contract:
+            - Creates exactly one SpellCompilerSystem per Meld instance.
+            - Reuses the same helper for subsequent accesses.
+
+        Returns:
+            SpellCompilerSystem: Lazily created compiler-system helper.
+        """
+        self.check_cleaned()
+        compiler_system = self._spell_compiler_system
+        if compiler_system is not None:
+            return compiler_system
+        with self._lock:
+            compiler_system = self._spell_compiler_system
+            if compiler_system is None:
+                compiler_system = SpellCompilerSystem()
+                self._spell_compiler_system = compiler_system
+        return compiler_system
 
 
     def set_meld_hooks(
