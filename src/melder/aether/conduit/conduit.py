@@ -1,6 +1,5 @@
 import threading
 import time
-from contextvars import ContextVar
 from contextlib import contextmanager
 from types import ModuleType, TracebackType
 from typing import (
@@ -28,6 +27,9 @@ from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.conduit.spell_space.spell_space_thread_state import (
+    SpellSpaceThreadState,
+)
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
@@ -262,9 +264,7 @@ class Conduit(Cleanable):
             object_ref=self,
         )
         self._refresh_devops_identity_state()
-        self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
-            f"_spellspace_stack_{self._id}", default=[]
-        )
+        self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
         self._creations: Creations = self._creations_configuration(configuration)
         if creation_gate is None:
@@ -609,10 +609,7 @@ class Conduit(Cleanable):
         Returns:
             SpellSpace | None: The top-of-stack SpellSpace, or None if no spellspace is active.
         """
-        stack = self._spellspace_stack.get()
-        if not stack:
-            return None
-        return stack[-1]
+        return self._spellspace_stack.get_active()
 
     def create_spellspace(self) -> SpellSpace:
         """
@@ -680,31 +677,35 @@ class Conduit(Cleanable):
     @contextmanager
     def enter_spellspace(self) -> Generator[SpellSpace, None, None]:
         """
-        Context-managed SpellSpace. Pushes onto the stack, yields it, and cleans it on exit.
+        Context-managed SpellSpace. Pushes one thread-local scope, yields it,
+        and cleans it on exit.
 
         Usage:
             with conduit.enter_spellspace() as space:
                 space.meld(...)
 
         Ensures:
-            - SpellSpace is activated before use (top of stack).
+            - SpellSpace is activated before use as the current top-of-stack.
             - SpellSpace is cleaned on exit, even on exceptions.
+            - Nested spellspace activation on the same thread is supported by
+              push/pop stack semantics.
             - Stack integrity is validated to detect misuse.
 
         Yields:
             SpellSpace: The newly created, active spellspace for the duration of the context.
 
         Raises:
-            SpellSpaceScopeError: If stack integrity is violated on exit.
+            SpellSpaceScopeError:
+                If stack integrity is violated on exit.
         """
         space = self.create_spellspace()
-        stack = list(self._spellspace_stack.get())
+        stack = self._spellspace_stack.get()
         stack.append(space)
         self._spellspace_stack.set(stack)
         try:
             yield space
         finally:
-            stack = list(self._spellspace_stack.get())
+            stack = self._spellspace_stack.get()
             if not stack or stack[-1] is not space:
                 raise SpellSpaceScopeError(
                     "SpellSpace stack corruption detected while exiting."

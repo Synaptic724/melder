@@ -166,17 +166,15 @@ def test_spellspace_direct_use_without_any_active_scope_fails_across_threads() -
         conduit.cleanup()
 
 
-def test_spellspace_active_context_is_inherited_by_spawned_threads() -> None:
+def test_spellspace_active_context_is_not_inherited_by_spawned_threads() -> None:
     """
-    Validate that spawned threads inherit an active spellspace context.
+    Validate that spawned threads do not inherit an active spellspace context.
 
     Contract:
         - The main thread enters one active spellspace context.
         - Five worker threads are spawned while that context is active.
-        - Every worker should successfully meld through the shared active scope.
-        - Because the spell is unique_per_spell_space and all workers resolve
-          through the same spellspace id, the returned object identity should
-          collapse to one shared instance.
+        - Every worker should still fail because active spellspace state is
+          isolated per thread.
     """
     _spellbook, conduit, spell_id = _build_spellspace_runtime()
     try:
@@ -193,11 +191,11 @@ def test_spellspace_active_context_is_inherited_by_spawned_threads() -> None:
             outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
-        object_ids = {
-            obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
-        }
-        assert len(object_ids) == 1
+        assert all(kind == "err" for kind, _payload, _obj_id in outcomes)
+        assert all(
+            payload == SpellSpaceScopeError.__name__
+            for _kind, payload, _obj_id in outcomes
+        )
     finally:
         conduit.cleanup()
 

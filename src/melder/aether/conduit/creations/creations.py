@@ -1,11 +1,13 @@
 from collections import deque
-from contextvars import ContextVar
 from threading import RLock
 from typing import List, Optional, Dict, Any, ClassVar
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.creations.creation import Creation
+from melder.aether.conduit.spell_space.spell_space_thread_state import (
+    SpellSpaceThreadState,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # TODO: Narrow this manager's public surface so storage/disposal internals are
@@ -47,7 +49,7 @@ class Creations(Cleanable):
             self,
             *,
             conduit_id: str,
-            spellspace_stack: ContextVar[list[Any]],
+            spellspace_stack: SpellSpaceThreadState,
     ) -> None:
         """
         Purpose:
@@ -78,7 +80,7 @@ class Creations(Cleanable):
             raise ValueError("spellspace_stack must not be None.")
         self._owner_conduit_id: str = conduit_id
         self._id: str = conduit_id
-        self._spellspace_stack: ContextVar[list[Any]] = spellspace_stack
+        self._spellspace_stack: SpellSpaceThreadState = spellspace_stack
 
         self._lock = RLock()
         self._disposal_stack: deque = deque()
@@ -583,10 +585,7 @@ class Creations(Cleanable):
         Return the current active spellspace for this creations owner, if any.
         """
         self.check_cleaned()
-        stack = self._spellspace_stack.get()
-        if not stack:
-            return None
-        return stack[-1]
+        return self._spellspace_stack.get_active()
 
     def register_spellspace_creation(
             self,

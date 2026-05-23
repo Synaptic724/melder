@@ -231,7 +231,7 @@ class Meld(Cleanable):
 
 
     # region Context Manager
-    def __enter__(self) -> Meld:
+    def __enter__(self) -> "Meld":
         """
         Enter the meld lock context.
 
