@@ -29,18 +29,21 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-    ChangeTransactionType,
+from melder.aether.aetheric_frame.dev_ops.devops_identity import (
+    DevopsIdentity,
 )
+from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 if TYPE_CHECKING:
     from melder.nexus.nexus import Nexus
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
+        TransactionMediator,
+    )
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spellbook import Spellbook
-    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
@@ -82,8 +85,8 @@ class Conduit(Cleanable):
           and lineage-aware gate control.
         - Delegates current-frame registration to the injected AethericFrame and
           reads lookup/cluster coordination through the frame-owned cloud service.
-        - Delegates gate governance to the injected DevOpsManager and
-          CreationGateController.
+        - Delegates gate governance to the injected frame-owned
+          `CreationGateController`.
 
     Lifecycle / Cleanup:
         - Normal and lesser conduits follow different cleanup paths.
@@ -105,9 +108,9 @@ class Conduit(Cleanable):
        "_conduit_state",
        "_spellbook",
        "_nexus",
-       "_dev_ops_manager",
        "_logger",
        "_root_conduit_id",
+       "_transaction_identity",
        "_spellspace_stack",
        "_spellspace_registry",
        "_creations",
@@ -146,7 +149,7 @@ class Conduit(Cleanable):
             aetheric_frame_name: str,
             aetheric_frame: AethericFrame,
             policy: Policies,
-            dev_ops_manager: DevOpsManager,
+            creation_gate_controller: CreationGateController,
             automatic: bool = True,
             name: Optional[str] = None,
             logger: Any | None = None,
@@ -184,8 +187,8 @@ class Conduit(Cleanable):
                 via IDBuilder.create_id().
             root_conduit_id (str | None, optional):
                 Root conduit id for this lineage. Required for lesser conduits.
-            dev_ops_manager (DevOpsManager):
-                Frame-owned DevOpsManager injected into this conduit at
+            creation_gate_controller (CreationGateController):
+                Frame-owned CreationGateController injected into this conduit at
                 construction time.
             creation_gate (CreationGate | None, optional):
                 Optional CreationGate to register for this conduit. When None,
@@ -227,7 +230,11 @@ class Conduit(Cleanable):
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._spellbook: Spellbook = spellbook
         self._nexus: Nexus = spellbook._nexus
-        self._dev_ops_manager: DevOpsManager = dev_ops_manager
+        if creation_gate_controller is None:
+            raise ValueError("creation_gate_controller cannot be None.")
+        self._creation_gate_controller: CreationGateController = (
+            creation_gate_controller
+        )
         self._logger: SafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()
@@ -243,14 +250,23 @@ class Conduit(Cleanable):
             self._root_conduit_id: str = root_conduit_id
         else:
             self._root_conduit_id = self._id
+        self._transaction_identity: DevopsIdentity = DevopsIdentity(
+            owner_kind="conduit",
+            owner_id=self._id,
+            aetheric_frame_name=self._aetheric_frame_name,
+            metadata={},
+            available_transactions=tuple(),
+        )
+        self._transaction_identity.attach_registry(
+            self._aetheric_frame.devops_information_registry,
+            object_ref=self,
+        )
+        self._refresh_devops_identity_state()
         self._spellspace_stack: ContextVar[list[SpellSpace]] = ContextVar(
             f"_spellspace_stack_{self._id}", default=[]
         )
         self._spellspace_registry: set[SpellSpace] = set()
         self._creations: Creations = self._creations_configuration(configuration)
-        self._creation_gate_controller: CreationGateController = (
-            self._dev_ops_manager.creation_gate_controller
-        )
         if creation_gate is None:
             creation_gate = self._create_gate_for_current_root(conduit_id)
         else:
@@ -381,9 +397,10 @@ class Conduit(Cleanable):
         del self._meld
         del self._creation_gate
         del self._creation_gate_controller
-        del self._dev_ops_manager
-        del self._aetheric_frame
         del self._creations
+        del self._aetheric_frame
+        self._transaction_identity.cleanup()
+        del self._transaction_identity
         del self._spellspace_stack
         del self._spellspace_registry
         del self._spellbook
@@ -460,11 +477,12 @@ class Conduit(Cleanable):
         del self._meld
         del self._creation_gate
         del self._creation_gate_controller
-        del self._dev_ops_manager
         del self._aetheric_frame
         del self._creations
         del self._spellbook
         del self._configuration
+        self._transaction_identity.cleanup()
+        del self._transaction_identity
         del self._spellspace_stack
         del self._spellspace_registry
         del self._aetheric_frame_name
@@ -720,6 +738,105 @@ class Conduit(Cleanable):
             },
             channels="system",
         )
+
+    def _refresh_devops_identity_state(self) -> None:
+        """
+        Internal
+
+        Refresh the conduit dev-ops identity to match current runtime posture.
+
+        Purpose:
+            Keep the identity metadata and declared transaction surface aligned
+            with the conduit role and dynamic posture, including lesser ->
+            normal upgrade.
+        """
+        available_transactions: Tuple[str, ...] = tuple()
+        if self._conduit_state is ConduitState.normal:
+            available_transactions = (
+                "bind",
+                "scan",
+                "link",
+                "cluster_link",
+                "mutation",
+                "transfer_ownership",
+            )
+        self._transaction_identity.set_available_transactions(
+            available_transactions
+        )
+        self._transaction_identity.update_metadata(
+            conduit_id=self._id,
+            spellbook_id=self._spellbook._id,
+            conduit_state=self._conduit_state.value,
+            root_conduit_id=self._root_conduit_id,
+            dynamic_environment=self.__dynamic_environment__,
+            automatic=self._automatic,
+        )
+
+    def _bind_family_blocked_for_current_posture(self) -> bool:
+        """
+        Internal
+
+        Return whether bind-family entry is disabled for this live conduit.
+
+        Contract:
+            - Conduits are post-conjure runtime objects, so
+              `disable_all_transactions_after_conjure` applies immediately.
+            - Non-dynamic posture blocks bind-family entry here even if the
+              narrow disable flag is not set explicitly.
+        """
+        frame_configuration = self._spellbook._aetheric_frame_configuration
+        if frame_configuration is None:
+            return not self.__dynamic_environment__
+        if frame_configuration.disable_bind:
+            return True
+        if frame_configuration.disable_all_transactions_after_conjure:
+            return True
+        return frame_configuration.system_state is not SystemState.dynamic
+
+    def _transaction_blocked_for_current_posture(
+            self,
+            transaction_name: Optional[str],
+    ) -> bool:
+        """
+        Internal
+
+        Return whether one conduit transaction kind is blocked by frame posture.
+
+        Contract:
+            - Bind-family requests use the narrower bind/scan gate.
+            - All other dynamic transaction families are blocked when the frame
+              is not dynamic or when their specific disable flag is set.
+        """
+        if not transaction_name:
+            return False
+        frame_configuration = self._spellbook._aetheric_frame_configuration
+        if frame_configuration is None:
+            return transaction_name != "bind" and not self.__dynamic_environment__
+        if transaction_name == "bind":
+            return self._bind_family_blocked_for_current_posture()
+        if frame_configuration.disable_all_transactions_after_conjure:
+            return True
+        if transaction_name == "link":
+            return (
+                frame_configuration.disable_linking
+                or frame_configuration.system_state is not SystemState.dynamic
+            )
+        if transaction_name == "transfer_ownership":
+            return (
+                frame_configuration.disable_transfer_of_ownership
+                or frame_configuration.system_state is not SystemState.dynamic
+            )
+        if transaction_name == "cluster_link":
+            return (
+                frame_configuration.disable_conduit_cluster
+                or frame_configuration.system_state is not SystemState.dynamic
+            )
+        if transaction_name == "mutation":
+            return (
+                frame_configuration.disable_mutations
+                or frame_configuration.system_state is not SystemState.dynamic
+            )
+        return False
 
     def _resolve_logger_from_config(self, configuration: SpellbookConfiguration) -> SafeLogger:
         """
@@ -1346,6 +1463,7 @@ class Conduit(Cleanable):
                 self._conduit_state = ConduitState.normal
                 self._root_conduit_id = self._id
                 self._name = name
+                self._refresh_devops_identity_state()
 
                 # Step 2: Keep the current creations object.
                 # The creations owner id already matches this conduit id, so
@@ -1509,7 +1627,7 @@ class Conduit(Cleanable):
                 automatic=self._automatic,
                 logger=logger,
                 root_conduit_id=root_conduit_id,
-                dev_ops_manager=self._dev_ops_manager,
+                creation_gate_controller=self._creation_gate_controller,
             )
             if new_conduit._conduit_ward is not None:
                 new_conduit._conduit_ward._root_conduit = root_conduit
@@ -1771,6 +1889,19 @@ class Conduit(Cleanable):
             raise ValueError(f"Spell '{spell_name}' not found in the spellbook.")
         return spell_key
 
+    def _get_required_transaction_mediator(self) -> "TransactionMediator":
+        """
+        Internal
+
+        Return the frame-owned live transaction mediator.
+
+        Returns:
+            TransactionMediator:
+                Transaction mediator instance owned by the frame control plane.
+        """
+        self.check_cleaned()
+        return self._spellbook._get_required_transaction_mediator()
+
     def inspect_spell(
             self,
             spell: Any,
@@ -1796,7 +1927,7 @@ class Conduit(Cleanable):
 
     def begin_transaction(
             self,
-            transaction_type: ChangeTransactionType | str,
+            transaction_type: str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -1812,17 +1943,19 @@ class Conduit(Cleanable):
         Begin a change-control transaction for this Conduit.
 
         Purpose:
-            Admit a mutation request through the ChangeControlManager and,
-            for bind transactions, open the binding transaction window.
+            Admit a mutation request through the frame-owned transaction
+            mediator and, for bind transactions, open the bind-family
+            transaction window.
         Contract:
             - Only normal conduits may begin change-control transactions.
-            - Admission is serialized by the ChangeControlOrchestrator.
+            - Admission is serialized by the mediator-owned change-control
+              pipeline.
             - Bind transactions open the binding transaction window.
             - Link transactions must explicitly include the local conduit and peers.
-            - Link, transfer, mutation, and cluster link require dynamic mode.
+            - Link and transfer transactions require dynamic mode.
         Args:
             transaction_type:
-                Transaction type enum or string value (e.g. "bind", "link").
+                Transaction type string value (e.g. "bind", "link").
             conduit_ids:
                 Optional list of conduits participating in non-link requests.
                 Link transactions require explicit conduit objects.
@@ -1854,18 +1987,18 @@ class Conduit(Cleanable):
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("begin_transaction called when conduit not normal", "begin_transaction")
             raise RuntimeError("Only normal conduits can start change transactions.")
+        mediator = self._get_required_transaction_mediator()
+        existing_request = mediator.get_active_request()
 
         request_type_value: Optional[str] = None
-        if isinstance(transaction_type, ChangeTransactionType):
-            request_type_value = transaction_type.value
-        elif isinstance(transaction_type, str):
+        if isinstance(transaction_type, str):
             request_type_value = transaction_type.strip().lower()
 
         dynamic_only = {
-            ChangeTransactionType.LINK.value,
-            ChangeTransactionType.TRANSFER_OWNERSHIP.value,
-            ChangeTransactionType.MUTATION.value,
-            ChangeTransactionType.CLUSTER_LINK.value,
+            "link",
+            "transfer_ownership",
+            "mutation",
+            "cluster_link",
         }
         if request_type_value in dynamic_only and not self.__dynamic_environment__:
             self._logger.error(
@@ -1876,11 +2009,15 @@ class Conduit(Cleanable):
                 "[CONDUIT] Change transactions require dynamic mode. "
                 f"transaction_type='{request_type_value}'."
             )
-
-        scope_values = list(scope_keys) if scope_keys else []
-        base_scope = f"scope:conduit:{self._id}"
-        if base_scope not in scope_values:
-            scope_values.append(base_scope)
+        if self._transaction_blocked_for_current_posture(request_type_value):
+            self._logger.error(
+                "begin_transaction denied by current frame posture",
+                "begin_transaction",
+            )
+            raise RuntimeError(
+                "[CONDUIT] Change transaction is disabled for the current frame posture. "
+                f"transaction_type='{request_type_value}'."
+            )
 
         conduit_values: list[str] = []
         if conduits:
@@ -1896,43 +2033,69 @@ class Conduit(Cleanable):
                 if conduit._id not in conduit_values:
                     conduit_values.append(conduit._id)
 
-        if request_type_value == ChangeTransactionType.LINK.value:
-            if not conduits:
-                self._logger.error(
-                    "link transaction missing conduit list",
-                    "begin_transaction",
-                )
-                raise RuntimeError(
-                    "[CONDUIT] Link transactions require conduits=[borrower, peer, ...]."
-                )
-            if self._id not in conduit_values:
-                self._logger.error(
-                    "link transaction missing local conduit",
-                    "begin_transaction",
-                )
-                raise RuntimeError(
-                    "[CONDUIT] Link transactions must include the local conduit."
-                )
-            peer_ids = [conduit_id for conduit_id in conduit_values if conduit_id != self._id]
-            if not peer_ids:
-                self._logger.error(
-                    "link transaction missing peer conduits",
-                    "begin_transaction",
-                )
-                raise RuntimeError(
-                    "[CONDUIT] Link transactions must include at least one peer conduit."
-                )
-        else:
+        if request_type_value == "link":
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
                         conduit_values.append(conduit_id)
-            if self._id not in conduit_values:
-                conduit_values.append(self._id)
+            link_metadata = dict(metadata) if metadata is not None else {}
+            link_metadata.update({
+                "origin_surface": "conduit.link",
+                "conduit_ids": tuple(conduit_values),
+                "scope_keys": tuple(scope_keys) if scope_keys is not None else tuple(),
+                "scope_hashes": tuple(scope_hashes) if scope_hashes is not None else tuple(),
+                "binding_keys": tuple(binding_keys) if binding_keys is not None else tuple(),
+                "contract_keys": tuple(contract_keys) if contract_keys is not None else tuple(),
+            })
+            mediator.start_transaction(
+                identity=self._transaction_identity,
+                transaction_type="link",
+                metadata=link_metadata,
+            )
+            return
+        if request_type_value == "bind":
+            self._spellbook.begin_transaction(
+                "bind",
+                conduit_id=self._id,
+                scope_keys=scope_keys,
+                scope_hashes=scope_hashes,
+                binding_keys=binding_keys,
+                metadata=metadata,
+            )
+            return
+        if request_type_value == "transfer_ownership":
+            transfer_metadata = dict(metadata) if metadata is not None else {}
+            transfer_metadata.setdefault(
+                "origin_surface",
+                "conduit.transfer_spell_ownership",
+            )
+            mediator.start_transaction(
+                identity=self._transaction_identity,
+                transaction_type="transfer_ownership",
+                metadata=transfer_metadata,
+            )
+            return
 
-        self._spellbook.begin_transaction(
-            transaction_type,
-            conduit_id=self._id,
+        scope_values = list(scope_keys) if scope_keys else []
+        base_scope = f"scope:conduit:{self._id}"
+        if base_scope not in scope_values:
+            scope_values.append(base_scope)
+        if conduit_ids:
+            for conduit_id in conduit_ids:
+                if conduit_id not in conduit_values:
+                    conduit_values.append(conduit_id)
+        if self._id not in conduit_values:
+            conduit_values.append(self._id)
+        mediator.begin_transaction(
+            identity=self._transaction_identity,
+            transaction_type=transaction_type,
+            existing_request_id=(
+                existing_request.request_id
+                if existing_request is not None
+                else None
+            ),
+            initiator_conduit_id=self._id,
+            spellbook_id=self._spellbook._id,
             conduit_ids=conduit_values,
             scope_keys=scope_values,
             scope_hashes=scope_hashes,
@@ -1943,7 +2106,9 @@ class Conduit(Cleanable):
 
     def end_transaction(
             self,
-            transaction_type: ChangeTransactionType | str | None = None,
+            transaction_type: Optional[str] = None,
+            *,
+            success: bool = True,
     ) -> None:
         """
         Public API
@@ -1951,8 +2116,8 @@ class Conduit(Cleanable):
         End the active change-control transaction for this Conduit.
 
         Purpose:
-            Finalize an admitted change-control request and release any
-            implicit embargo state tracked by the ChangeControlManager.
+            Finalize an admitted change-control request through the
+            mediator-owned transaction pipeline.
         Contract:
             - Only normal conduits may end change-control transactions.
             - Raises if no change transaction is active.
@@ -1974,12 +2139,21 @@ class Conduit(Cleanable):
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("end_transaction called when conduit not normal", "end_transaction")
             raise RuntimeError("Only normal conduits can end change transactions.")
-        self._spellbook.end_transaction(transaction_type=transaction_type)
+        request_type_value: Optional[str] = None
+        if isinstance(transaction_type, str):
+            request_type_value = transaction_type.strip().lower()
+        if request_type_value == "bind":
+            self._spellbook.end_transaction("bind", success=success)
+            return
+        self._get_required_transaction_mediator().end_transaction(
+            expected_type=transaction_type,
+            success=success,
+        )
 
     @contextmanager
     def transaction(
             self,
-            transaction_type: ChangeTransactionType | str,
+            transaction_type: str,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -2001,10 +2175,10 @@ class Conduit(Cleanable):
             - Ends the transaction on exit, even if an exception is raised.
             - Only normal conduits may enter this context.
             - Link transactions must explicitly include the local conduit and peers.
-            - Link, transfer, mutation, and cluster link require dynamic mode.
+            - Link and transfer transactions require dynamic mode.
         Args:
             transaction_type:
-                Transaction type enum or string value (e.g. "bind", "link").
+                Transaction type string value (e.g. "bind", "link").
             conduit_ids:
                 Optional list of conduits participating in non-link requests.
                 Link transactions require explicit conduit objects.
@@ -2043,80 +2217,11 @@ class Conduit(Cleanable):
         )
         try:
             yield self
-        finally:
-            self.end_transaction(transaction_type=transaction_type)
-
-    def begin_binding_transaction(self) -> None:
-        """
-        Public API
-
-        Begin a binding transaction for this Conduit.
-
-        Purpose:
-            Enable binding operations (bind/scan) through this Conduit.
-        Contract:
-            - Only normal conduits may begin a binding transaction.
-            - Binding transactions must be explicitly ended.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the Conduit is cleaned or not normal.
-            RuntimeError: If a binding transaction is already active.
-        """
-        self.begin_transaction(ChangeTransactionType.BIND)
-
-    def end_binding_transaction(self) -> None:
-        """
-        Public API
-
-        End the active binding transaction for this Conduit.
-
-        Purpose:
-            Disable binding operations until a new transaction is started.
-        Contract:
-            - Only normal conduits may end a binding transaction.
-            - The transaction must be active when ending.
-            - Ending the transaction gates list[Frame] consumers for targeted
-              revalidation when this conduit owns the Spellbook.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the Conduit is cleaned or not normal.
-            RuntimeError: If no binding transaction is active.
-        """
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("end_binding_transaction called when conduit not normal", "end_binding_transaction")
-            raise RuntimeError("Only normal conduits can end binding transactions.")
-        self._spellbook.end_binding_transaction()
-
-    @contextmanager
-    def binding_transaction(self) -> Generator["Conduit", None, None]:
-        """
-        Public API
-
-        Context-managed binding transaction for this Conduit.
-
-        Usage:
-            with conduit.binding_transaction():
-                conduit.bind(...)
-                conduit.scan(...)
-
-        Contract:
-            - Starts a binding transaction on entry.
-            - Ends the transaction on exit, even if an exception is raised.
-            - Only normal conduits may enter this context.
-
-        Yields:
-            Conduit: The current Conduit instance for the duration of the binding context.
-        Raises:
-            RuntimeError: If the Conduit is cleaned or not normal.
-            RuntimeError: If a binding transaction is already active.
-        """
-        self.begin_binding_transaction()
-        try:
-            yield self
-        finally:
-            self.end_binding_transaction()
+        except Exception:
+            self.end_transaction(transaction_type=transaction_type, success=False)
+            raise
+        else:
+            self.end_transaction(transaction_type=transaction_type, success=True)
 
     def bind(
             self,
@@ -2194,16 +2299,22 @@ class Conduit(Cleanable):
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("bind called when conduit not normal", "bind")
             raise RuntimeError("Only normal conduits can bind spells.")
-        with self._lock:
-            return self._spellbook.bind(
-                spell=spell,
-                existence=existence,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                profile=profile,
-                permissions=permissions,
-                **kwargs,
+        if self._bind_family_blocked_for_current_posture():
+            self._logger.error("bind denied by current frame posture", "bind")
+            raise RuntimeError(
+                "[CONDUIT] Bind is disabled for the current frame posture."
             )
+        with self.transaction("bind"):
+            with self._lock:
+                return self._spellbook._bind_under_active_transaction(
+                    spell=spell,
+                    existence=existence,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    profile=profile,
+                    permissions=permissions,
+                    **kwargs,
+                )
 
     def scan(self, module: ModuleType) -> list[str]:
         """
@@ -2236,17 +2347,14 @@ class Conduit(Cleanable):
         if not self._conduit_state == ConduitState.normal:
             self._logger.error("scan called when conduit not normal", "scan")
             raise RuntimeError("Only normal conduits can scan modules.")
-        with self._lock:
-            spellbook = self._spellbook
-        with spellbook._lock:
-            active_request = spellbook._active_change_request
-        if (
-            active_request is not None
-            and active_request.request_type is ChangeTransactionType.BIND
-        ):
-            return spellbook.scan(module)
-        with self.binding_transaction():
-            return spellbook.scan(module)
+        if self._bind_family_blocked_for_current_posture():
+            self._logger.error("scan denied by current frame posture", "scan")
+            raise RuntimeError(
+                "[CONDUIT] Scan is disabled for the current frame posture."
+            )
+        with self.transaction("bind"):
+            with self._lock:
+                return Scan(self._spellbook).scan_module(module)
 
 
     def get_spell_permissions(self, spell_id: str) -> Optional[str]:
@@ -2306,7 +2414,17 @@ class Conduit(Cleanable):
                 is unavailable.
         """
         self.check_cleaned()
-        if not self.__dynamic_environment__:
+        frame_configuration = self._spellbook._aetheric_frame_configuration
+        if (
+                not self.__dynamic_environment__
+                or (
+                    frame_configuration is not None
+                    and (
+                        frame_configuration.disable_mutations
+                        or frame_configuration.disable_all_transactions_after_conjure
+                    )
+                )
+        ):
             raise RuntimeError(
                 "Dynamic environment is not enabled. Cannot access MutationResearch."
             )
@@ -2337,6 +2455,13 @@ class Conduit(Cleanable):
 
         Transfer stewardship of a spell to another conduit.
 
+        Contract:
+            - Uses the normal `TRANSFER_OWNERSHIP` transaction path before the
+              existing `TransferOfOwnership` execution helper runs.
+            - Keeps request planning and admission in the mediator/strategy
+              layer while leaving the irreversible runtime move in the transfer
+              helper for now.
+
         Args:
             spell: Spell object, spell_id, or SpellIndex to transfer.
             target_conduit: The conduit that will become the new steward.
@@ -2350,17 +2475,119 @@ class Conduit(Cleanable):
             dict: Preflight summary of the transfer plan.
         """
         self.check_cleaned()
+        if self._transaction_blocked_for_current_posture(
+                "transfer_ownership",
+        ):
+            raise RuntimeError(
+                "[CONDUIT] Ownership transfer is disabled for the current frame posture."
+            )
         if not self.__dynamic_environment__:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
-        return self._conduit_ward._transfer_spell_ownership(
-            spell=spell,
-            target_conduit=target_conduit,
-            move_creations=move_creations,
-            include_dependencies=include_dependencies,
-            force_unshare=force_unshare,
-            invalidate_after_transfer=invalidate_after_transfer,
-            mark_dependencies_dirty=mark_dependencies_dirty,
-        )
+        with self.transaction(
+                "transfer_ownership",
+                metadata=self._build_transfer_transaction_metadata(
+                    spell=spell,
+                    target_conduit=target_conduit,
+                    move_creations=move_creations,
+                    include_dependencies=include_dependencies,
+                    force_unshare=force_unshare,
+                    invalidate_after_transfer=invalidate_after_transfer,
+                    mark_dependencies_dirty=mark_dependencies_dirty,
+                ),
+        ):
+            return self._conduit_ward._transfer_spell_ownership(
+                spell=spell,
+                target_conduit=target_conduit,
+                move_creations=move_creations,
+                include_dependencies=include_dependencies,
+                force_unshare=force_unshare,
+                invalidate_after_transfer=invalidate_after_transfer,
+                mark_dependencies_dirty=mark_dependencies_dirty,
+            )
+
+    def _build_transfer_transaction_metadata(
+            self,
+            *,
+            spell: Spell | str | SpellIndex,
+            target_conduit: "Conduit",
+            move_creations: bool,
+            include_dependencies: bool,
+            force_unshare: bool,
+            invalidate_after_transfer: bool,
+            mark_dependencies_dirty: bool,
+    ) -> Dict[str, object]:
+        """
+        Build normalized metadata for one ownership-transfer transaction.
+
+        Purpose:
+            Keep the conduit public transfer surface thin by normalizing the
+            transfer request into metadata the strategy layer can validate and
+            plan around before the existing `TransferOfOwnership` execution
+            helper performs the runtime body.
+
+        Contract:
+            - Always records the target conduit id.
+            - Records whichever stable spell identifier forms are available:
+              current `spell_id` and/or stable `spell_index_id`.
+            - Preserves the exact transfer-option booleans supplied by the
+              caller.
+            - Raises when the caller supplies an unsupported spell handle.
+
+        Args:
+            spell:
+                Spell object, spell id string, or SpellIndex-like lineage
+                object being transferred.
+            target_conduit:
+                Conduit that should become the new owner.
+            move_creations:
+                Whether creation state should move to the target.
+            include_dependencies:
+                Whether owned dependency lineages should also transfer.
+            force_unshare:
+                Whether borrower visibility should be stripped instead of
+                repointed.
+            invalidate_after_transfer:
+                Whether the moved lineage should remain gated/dirty afterward.
+            mark_dependencies_dirty:
+                Whether dependencies should be dirtied when they are not moved.
+
+        Returns:
+            Dict[str, object]:
+                Normalized transfer metadata for the strategy layer.
+        """
+        spell_id: Optional[str] = None
+        spell_index_id: Optional[str] = None
+
+        if isinstance(spell, str):
+            spell_id = spell
+        else:
+            try:
+                spell_id = spell.spell_id
+                spell_index_id = spell.spell_index.id
+            except AttributeError:
+                try:
+                    spell_index_id = spell.id
+                    spell_id = spell.current
+                except AttributeError as exc:
+                    raise TypeError(
+                        "spell must be a Spell-compatible object, SpellIndex-compatible "
+                        "object, or spell_id string."
+                    ) from exc
+
+        metadata: Dict[str, object] = {
+            "origin_surface": "conduit.transfer_spell_ownership",
+            "target_conduit_id": target_conduit._id,
+            "move_creations": move_creations,
+            "include_dependencies": include_dependencies,
+            "force_unshare": force_unshare,
+            "invalidate_after_transfer": invalidate_after_transfer,
+            "mark_dependencies_dirty": mark_dependencies_dirty,
+        }
+        if spell_id:
+            metadata["spell_id"] = spell_id
+        if spell_index_id:
+            metadata["spell_index_id"] = spell_index_id
+        return metadata
     #endregion Cluster API
     #region Meld
 
@@ -2783,6 +3010,13 @@ class Conduit(Cleanable):
             RuntimeError: If the target conduit belongs to a different `AethericFrame`.
         """
         self.check_cleaned()
+        if self._transaction_blocked_for_current_posture(
+                "link",
+        ):
+            self._logger.error("link denied by current frame posture", "link")
+            raise RuntimeError(
+                "[CONDUIT] Linking is disabled for the current frame posture."
+            )
         if not self.__dynamic_environment__:
             self._logger.error("link in non-dynamic env", "link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -2836,6 +3070,16 @@ class Conduit(Cleanable):
             RuntimeError: If dynamic environment is not enabled.
         """
         self.check_cleaned()
+        if self._transaction_blocked_for_current_posture(
+                "link",
+        ):
+            self._logger.error(
+                "sever_link denied by current frame posture",
+                "sever_link",
+            )
+            raise RuntimeError(
+                "[CONDUIT] Linking is disabled for the current frame posture."
+            )
         if not self.__dynamic_environment__:
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
@@ -3235,8 +3479,8 @@ class Conduit(Cleanable):
             )
             raise RuntimeError("[CONDUIT] Spellbook is not available for contract operations.")
 
-        with spellbook._lock:
-            request = spellbook._active_change_request
+        mediator = spellbook._get_required_transaction_mediator()
+        request = mediator.get_active_request()
 
         if request is None:
             self._logger.error(
@@ -3248,7 +3492,7 @@ class Conduit(Cleanable):
                 "Call begin_transaction('link') on the borrower and include both "
                 "borrower and peer conduits."
             )
-        if request.request_type is not ChangeTransactionType.LINK:
+        if request.request_type not in ("link", "cluster_link"):
             self._logger.error(
                 "Contract mutation requires link transaction",
                 "_require_link_transaction_for_contract",

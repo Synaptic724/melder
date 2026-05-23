@@ -8,9 +8,6 @@ import time
 
 # Melder Imports
 from melder.aether.aether import Aether
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-    ChangeTransactionType,
-)
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
@@ -33,15 +30,14 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.nexus.nexus import Nexus
 
 if TYPE_CHECKING:
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-        ChangeControlTransactionRequest,
-    )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
         SpellSystemStates,
     )
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.bind.spell_index import SpellIndex
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
+        TransactionMediator,
+    )
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
     from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.utilities.logger.safe_logger import SafeLogger
@@ -116,7 +112,6 @@ and logging.
     __slots__ = Cleanable.__slots__ + [
         "__dict__",
         "__weakref__",
-        "_active_change_request",
         "_aetheric_frame",
         "_aetheric_frame_configuration",
         "_bind",
@@ -188,7 +183,6 @@ and logging.
         self._id: str = IDBuilder.create_id()
         self._nexus: Nexus = Nexus()
         self._conjured = False
-        self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
         self._conduit: Optional[Conduit] = None
@@ -439,7 +433,6 @@ and logging.
         del self._id
         del self._conduit
         del self._conjured
-        del self._active_change_request
         self._transaction_identity.cleanup()
         del self._transaction_identity
         del self._pending_binding_frame_keys
@@ -564,15 +557,6 @@ and logging.
         if conduit is None:
             raise RuntimeError("Spellbook requires a live conjured conduit.")
         return conduit
-
-    def _get_required_change_control_manager(
-            self,
-    ) -> ChangeControlManager:
-        """
-        Return the frame-local change-control manager surface used internally.
-        """
-        manager = self._aether._get_change_control_manager(self._aetheric_frame)
-        return manager
 
     def _get_required_configuration(self) -> SpellbookConfiguration:
         """
@@ -2049,41 +2033,45 @@ and logging.
             conduit_id=conduit_id,
         )
 
-    def _get_required_transaction_mediator(self) -> Any:
+    def _bind_family_disabled_for_current_posture(self) -> bool:
+        """
+        Internal
+
+        Return whether bind-family entry should be rejected for current posture.
+
+        Contract:
+            - Pre-conjure bind/scan remains allowed unless `disable_bind` is
+              explicitly set.
+            - Post-conjure bind/scan is rejected when bind is disabled, when
+              post-conjure transactions are disabled, or when the frame is not
+              dynamic.
+        """
+        frame_configuration = self._aetheric_frame_configuration
+        if frame_configuration is None:
+            return False
+        if frame_configuration.disable_bind:
+            return True
+        if not self._conjured:
+            return False
+        if frame_configuration.disable_all_transactions_after_conjure:
+            return True
+        return frame_configuration.system_state is not SystemState.dynamic
+
+    def _get_required_transaction_mediator(self) -> "TransactionMediator":
         """
         Internal
 
         Return the frame-owned live transaction mediator.
 
         Returns:
-            Any: TransactionMediator instance owned by the frame control plane.
+            TransactionMediator:
+                Transaction mediator instance owned by the frame control plane.
         """
         self.check_cleaned()
-        change_control = self._get_required_change_control_manager()
-        return change_control.transaction_mediator()
-
-    def _get_active_change_request_surface(
-            self,
-    ) -> Optional[ChangeControlTransactionRequest]:
-        """
-        Internal
-
-        Return the active root request for this thread and refresh the local mirror.
-
-        Returns:
-            Optional[ChangeControlTransactionRequest]: Active request, or None.
-        """
-        self.check_cleaned()
-        request = self._active_change_request
-        if request is not None:
-            return request
-        bind_session = self._get_required_transaction_mediator().get_session_for_identity(
-            identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.BIND,
+        change_control = self._aether._get_change_control_manager(
+            self._aetheric_frame,
         )
-        if bind_session is None:
-            return None
-        return bind_session.request
+        return change_control.transaction_mediator()
 
     def _binding_transaction_is_active(self) -> bool:
         """
@@ -2101,80 +2089,69 @@ and logging.
             return True
         session = self._get_required_transaction_mediator().get_session_for_identity(
             identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.BIND,
+            transaction_type="bind",
         )
+        if session is None and self._conduit is not None:
+            session = self._get_required_transaction_mediator().get_session_for_identity(
+                identity=self._conduit._transaction_identity,
+                transaction_type="bind",
+            )
         if session is None:
             return False
         return session.supports_capabilities(("bind",))
-
-    @staticmethod
-    def _capabilities_for_transaction_type(
-            transaction_type: ChangeTransactionType,
-    ) -> Tuple[str, ...]:
-        """
-        Return the initial capability set granted by one root transaction type.
-        """
-        if transaction_type is ChangeTransactionType.BIND:
-            return ("bind",)
-        if transaction_type is ChangeTransactionType.LINK:
-            return ("link", "contract_mutation")
-        if transaction_type is ChangeTransactionType.TRANSFER_OWNERSHIP:
-            return ("transfer_ownership", "contract_mutation")
-        if transaction_type is ChangeTransactionType.MUTATION:
-            return ("mutation",)
-        if transaction_type is ChangeTransactionType.CLUSTER_LINK:
-            return ("cluster_link", "contract_mutation")
-        return tuple()
-
-
 
     #endregion Contract API
     #region Binding API
 
     def _normalize_change_transaction_type(
             self,
-            value: ChangeTransactionType | str,
-    ) -> ChangeTransactionType:
+            value: str,
+    ) -> str:
         """
         Internal
 
-        Normalize a transaction type input to ChangeTransactionType.
+        Normalize a transaction type input to its lowercase string form.
 
         Purpose:
-            Convert string inputs into the canonical ChangeTransactionType enum.
+            Keep the public Spellbook transaction boundary string-based while
+            still validating supported transaction names early.
         Contract:
-            - Accepts ChangeTransactionType values or their string values.
+            - Accepts plain strings and StrEnum-backed string values.
             - Comparison is case-insensitive for string inputs.
         Args:
             value:
-                Transaction type as an enum or string.
+                Transaction type as a string-like value.
         Returns:
-            ChangeTransactionType:
-                Normalized transaction type.
+            str:
+                Lowercase normalized transaction type.
         Raises:
             ValueError: If the value is empty or not a valid transaction type.
-            TypeError: If the value is not a string or ChangeTransactionType.
+            TypeError: If the value is not a string-like value.
         """
-        if isinstance(value, ChangeTransactionType):
-            return value
         if isinstance(value, str):
             candidate = value.strip().lower()
             if not candidate:
                 raise ValueError("transaction_type cannot be empty.")
-            try:
-                return ChangeTransactionType(candidate)
-            except ValueError as exc:
-                valid = [item.value for item in ChangeTransactionType]
+            if candidate not in (
+                    "bind",
+                    "link",
+                    "transfer_ownership",
+                    "mutation",
+                    "cluster_link",
+            ):
                 raise ValueError(
-                    f"Invalid transaction_type '{value}'. Expected one of: {valid}."
-                ) from exc
+                    "Invalid transaction_type "
+                    f"'{value}'. Expected one of: "
+                    "['bind', 'link', 'transfer_ownership', 'mutation', 'cluster_link']."
+                )
+            return candidate
         raise TypeError(
-            "transaction_type must be a ChangeTransactionType or string."
+            "transaction_type must be a string-like value."
         )
 
     def begin_transaction(
             self,
-            transaction_type: ChangeTransactionType | str,
+            transaction_type: str,
             *,
             conduit_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
@@ -2190,11 +2167,13 @@ and logging.
         Begin a change-control transaction for this Spellbook.
 
         Purpose:
-            Admit a mutation request through the ChangeControlManager and,
-            for bind transactions, open the binding transaction window.
+            Admit a mutation request through the frame-owned transaction
+            mediator and, for bind transactions, open the binding transaction
+            window.
         Contract:
             - Only one change-control transaction may be active per Spellbook.
-            - Admission is serialized by the ChangeControlOrchestrator.
+            - Admission is serialized by the mediator-owned change-control
+              pipeline.
             - Bind transactions open the binding transaction window.
             - Scan is not a transaction type; it must run inside a bind transaction.
         Args:
@@ -2228,46 +2207,36 @@ and logging.
         """
         self.check_cleaned()
         request_type = self._normalize_change_transaction_type(transaction_type)
-        dynamic_only = {
-            ChangeTransactionType.LINK,
-            ChangeTransactionType.TRANSFER_OWNERSHIP,
-            ChangeTransactionType.MUTATION,
-            ChangeTransactionType.CLUSTER_LINK,
-        }
-        if request_type in dynamic_only:
-            system_state = None
-            if self._aetheric_frame_configuration is not None:
-                system_state = self._aetheric_frame_configuration.system_state
-            if system_state is None:
-                self._logger.error(
-                    "Change transaction requires dynamic mode with missing system_state",
-                    "begin_transaction",
-                )
-                raise RuntimeError(
-                    "[SPELLBOOK] Change transactions require dynamic mode, but system_state is unavailable."
-                )
-            state_enum = EnumHelpers.convert_enum_and_check(system_state, SystemState)
-            if state_enum is not SystemState.dynamic:
-                self._logger.error(
-                    "Change transaction denied in automatic mode",
-                    "begin_transaction",
-                )
-                raise RuntimeError(
-                    "[SPELLBOOK] Change transactions require dynamic mode. "
-                    f"transaction_type='{request_type.value}'."
-                )
-
         mediator = self._get_required_transaction_mediator()
-        if request_type is ChangeTransactionType.BIND:
-            self._begin_bind_family_transaction(
-                origin_surface="spellbook.bind",
-                conduit_id=conduit_id,
-                scope_keys=scope_keys,
-                scope_hashes=scope_hashes,
-                binding_keys=binding_keys,
+        if request_type == "bind":
+            if self._bind_family_disabled_for_current_posture():
+                self._logger.error(
+                    "Bind-family transaction denied by current frame posture",
+                    "begin_transaction",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Bind and scan are disabled for the current frame posture."
+                )
+            bind_metadata = dict(metadata) if metadata is not None else {}
+            bind_metadata.update(
+                self._build_bind_transaction_metadata(
+                    origin_surface="spellbook.bind",
+                    conduit_id=conduit_id,
+                    scope_keys=scope_keys,
+                    scope_hashes=scope_hashes,
+                    binding_keys=binding_keys,
+                )
+            )
+            mediator.start_transaction(
+                identity=self._transaction_identity,
+                transaction_type="bind",
+                metadata=bind_metadata,
             )
             return
-        existing_request = self._active_change_request
+        existing_session = mediator.get_session_for_identity(
+            identity=self._transaction_identity,
+            transaction_type=request_type,
+        )
 
         initiator = conduit_id
         if not initiator and self._conduit is not None:
@@ -2275,7 +2244,9 @@ and logging.
         if not initiator:
             initiator = f"spellbook:{self._id}"
 
-        transaction_manager = self._get_required_change_control_manager().transaction_manager()
+        transaction_manager = self._aether._get_change_control_manager(
+            self._aetheric_frame,
+        ).transaction_manager()
 
         scope_values = list(scope_keys) if scope_keys else []
         base_scope = transaction_manager.make_scope_key_spellbook(self._id)
@@ -2290,8 +2261,8 @@ and logging.
             identity=self._transaction_identity,
             transaction_type=request_type,
             existing_request_id=(
-                existing_request.request_id
-                if existing_request is not None
+                existing_session.request.request_id
+                if existing_session is not None
                 else None
             ),
             spellbook_id=self._id,
@@ -2301,14 +2272,11 @@ and logging.
             binding_keys=binding_keys,
             contract_keys=contract_keys,
             metadata=metadata,
-            capabilities=self._capabilities_for_transaction_type(request_type),
-            required_capabilities=self._capabilities_for_transaction_type(request_type),
         )
-        self._active_change_request = session.request
 
     def end_transaction(
             self,
-            transaction_type: ChangeTransactionType | str | None = None,
+            transaction_type: Optional[str] = None,
             *,
             success: bool = True,
     ) -> None:
@@ -2319,7 +2287,8 @@ and logging.
 
         Purpose:
             Finalize an admitted change-control request and release any
-            implicit embargo state tracked by the ChangeControlManager.
+            implicit transaction state tracked through the mediator-owned
+            change-control pipeline.
         Contract:
             - Ends the active request tracked by this Spellbook.
             - Bind transactions close the binding transaction window.
@@ -2341,28 +2310,23 @@ and logging.
         mediator = self._get_required_transaction_mediator()
         bind_session = mediator.get_session_for_identity(
             identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.BIND,
+            transaction_type="bind",
         )
         if transaction_type is not None:
             expected_type = self._normalize_change_transaction_type(
                 transaction_type,
             )
-            if bind_session is not None and expected_type is not ChangeTransactionType.BIND:
+            if bind_session is not None and expected_type != "bind":
                 raise RuntimeError(
                     "[SPELLBOOK] Active change transaction does not match the requested type."
                 )
-            if expected_type is ChangeTransactionType.BIND:
-                request = self._active_change_request
-                if (
-                    request is not None
-                    and request.request_type is not ChangeTransactionType.BIND
-                ):
-                    raise RuntimeError(
-                        "[SPELLBOOK] Active change transaction does not match the requested type."
-                    )
-                self._end_bind_family_transaction()
+            if expected_type == "bind" and bind_session is not None:
+                mediator.end_transaction_for_identity(
+                    identity=self._transaction_identity,
+                    transaction_type="bind",
+                )
                 return
-        request = self._active_change_request
+        request = mediator.get_active_request()
         if request is None:
             raise RuntimeError("[SPELLBOOK] No active change transaction to end.")
         session = mediator.get_session_by_request_id(request.request_id)
@@ -2371,7 +2335,7 @@ and logging.
 
         if transaction_type is not None:
             expected_type = self._normalize_change_transaction_type(transaction_type)
-            if request.request_type is not expected_type:
+            if request.request_type != expected_type:
                 raise RuntimeError(
                     "[SPELLBOOK] Active change transaction does not match the requested type."
                 )
@@ -2381,13 +2345,11 @@ and logging.
             expected_type=transaction_type,
             success=success,
         )
-        remaining_session = mediator.get_session_by_request_id(request.request_id)
-        self._active_change_request = request if remaining_session is not None else None
 
     @contextmanager
     def transaction(
             self,
-            transaction_type: ChangeTransactionType | str,
+            transaction_type: str,
             *,
             conduit_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
@@ -2452,72 +2414,6 @@ and logging.
         else:
             self.end_transaction(transaction_type, success=True)
 
-    def begin_binding_transaction(self) -> None:
-        """
-        Public API
-
-        Begin a binding transaction for this Spellbook.
-
-        Purpose:
-            Enable binding operations (bind/scan) in a controlled transaction window.
-        Contract:
-            - Only one binding transaction may be active at a time.
-            - While active, `bind(...)` and `scan(...)` are allowed.
-            - When inactive, `bind(...)` and `scan(...)` raise.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If a binding transaction is already active.
-        """
-        self._begin_bind_family_transaction(origin_surface="spellbook.bind")
-
-    def end_binding_transaction(self) -> None:
-        """
-        Public API
-
-        End the active binding transaction for this Spellbook.
-
-        Purpose:
-            Disable binding operations until a new transaction is started.
-        Contract:
-            - Binding transactions must be explicitly closed.
-            - When inactive, `bind(...)` and `scan(...)` raise.
-            - If the Spellbook has conjured a Conduit, ending a transaction
-              gates list[Frame] consumers and runs structural phases for new spells.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If no bind transaction is active for this Spellbook.
-        """
-        self.end_transaction(ChangeTransactionType.BIND)
-
-    @contextmanager
-    def binding_transaction(self) -> Generator["Spellbook", None, None]:
-        """
-        Public API
-
-        Context-managed binding transaction for this Spellbook.
-
-        Usage:
-            with spellbook.binding_transaction():
-                spellbook.bind(...)
-                spellbook.scan(...)
-
-        Contract:
-            - Starts a binding transaction on entry.
-            - Ends the transaction on exit, even if an exception is raised.
-            - Nested usage raises on begin (transaction already active).
-            - If the Spellbook has conjured a Conduit, exit gates list[Frame]
-              consumers and runs structural phases for new spells.
-
-        Yields:
-            Spellbook: The current Spellbook instance for the duration of the binding context.
-        Raises:
-            RuntimeError: If a binding transaction is already active.
-        """
-        with self._binding_transaction_for_surface(origin_surface="spellbook.bind"):
-            yield self
-
     def _prepare_bind_transaction_state(self) -> None:
         """
         Internal
@@ -2570,77 +2466,6 @@ and logging.
             "binding_keys": tuple(binding_keys) if binding_keys is not None else tuple(),
         }
 
-    def _begin_bind_family_transaction(
-            self,
-            *,
-            origin_surface: str,
-            conduit_id: Optional[str] = None,
-            scope_keys: Optional[Iterable[str]] = None,
-            scope_hashes: Optional[Iterable[str]] = None,
-            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
-    ) -> None:
-        """
-        Internal
-
-        Start one bind-family transaction through the mediator boundary.
-
-        Purpose:
-            Keep bind-family entry on one mediator-owned path whether the call
-            came from direct `bind()`, direct `scan()`, explicit begin/end
-            APIs, or the generic transaction facade.
-        """
-        self._get_required_transaction_mediator().start_transaction(
-            identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.BIND,
-            metadata=self._build_bind_transaction_metadata(
-                origin_surface=origin_surface,
-                conduit_id=conduit_id,
-                scope_keys=scope_keys,
-                scope_hashes=scope_hashes,
-                binding_keys=binding_keys,
-            ),
-        )
-
-    def _end_bind_family_transaction(self) -> None:
-        """
-        Internal
-
-        End the active bind-family transaction through the mediator boundary.
-
-        Purpose:
-            Keep bind-family completion on the same mediator-owned transaction
-            end path used by the explicit begin/end wrappers.
-        """
-        self._get_required_transaction_mediator().end_transaction_for_identity(
-            identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.BIND,
-        )
-
-    @contextmanager
-    def _binding_transaction_for_surface(
-            self,
-            *,
-            origin_surface: str,
-    ) -> Generator["Spellbook", None, None]:
-        """
-        Internal
-
-        Open a bind-family transaction for one direct spellbook surface.
-
-        Purpose:
-            Let direct spellbook-level bind or scan calls reuse the same
-            mediator-owned bind-family transaction path as the explicit public
-            binding-transaction helpers.
-        """
-        self._begin_bind_family_transaction(origin_surface=origin_surface)
-        try:
-            yield self
-        except Exception:
-            self._end_bind_family_transaction()
-            raise
-        else:
-            self._end_bind_family_transaction()
-
     def _clear_bind_transaction_state(
             self,
             _staged: Optional[Any] = None,
@@ -2680,7 +2505,8 @@ and logging.
             )
             raise RuntimeError(
                 f"[SPELLBOOK] {action} requires an active binding transaction. "
-                "Call begin_transaction('bind') or begin_binding_transaction() "
+                "Call begin_transaction('bind') or "
+                "transaction('bind') "
                 "before binding or scanning."
             )
 
@@ -2706,15 +2532,15 @@ and logging.
             update is performed without the Spellbook lock.
         """
         self.check_cleaned()
-        request: Optional[ChangeControlTransactionRequest] = None
         pending_spells: List[Spell] = []
         with self._lock:
-            request = self._get_active_change_request_surface()
             if self._pending_structural_spells is not None:
                 pending_spells = list(self._pending_structural_spells)
-        if request is None:
-            return
-        if request.request_type is not ChangeTransactionType.BIND:
+        session = self._get_required_transaction_mediator().get_session_for_identity(
+            identity=self._transaction_identity,
+            transaction_type="bind",
+        )
+        if session is None:
             return
         if not pending_spells:
             return
@@ -2728,7 +2554,7 @@ and logging.
             binding_keys.append(key)
         self._get_required_transaction_mediator().update_transaction_for_identity(
             identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.BIND,
+            transaction_type="bind",
             binding_keys=binding_keys,
         )
 
@@ -2754,34 +2580,33 @@ and logging.
         Raises:
             RuntimeError: If the Spellbook has been cleaned.
         Threading:
-            Captures current contracted lookup keys under the Spellbook lock;
-            change-control updates run without holding the Spellbook lock.
+            Captures current contracted lookup keys under the Spellbook lock
+            and uses mediator-owned session metadata as the source of truth for
+            the currently staged contract keys.
         """
         self.check_cleaned()
         if not conduit_id:
             return
-        request: Optional[ChangeControlTransactionRequest] = None
         lookup_keys: List[Tuple[str, str]] = []
         with self._lock:
-            request = self._get_active_change_request_surface()
             if self._lookup_contracted_spells is not None:
                 lookup_map = self._lookup_contracted_spells.get(conduit_id)
                 if lookup_map:
                     lookup_keys = list(lookup_map.keys())
-        if request is None:
+        session = self._get_required_transaction_mediator().get_session_for_identity(
+            identity=self._transaction_identity,
+            transaction_type="link",
+        )
+        if session is None:
             return
-        if request.request_type is not ChangeTransactionType.LINK:
-            return
-
-        change_control = self._get_required_change_control_manager()
-        staged = change_control.orchestrator().get_staged(request.request_id)
-        existing_keys = staged.contract_keys if staged is not None else request.contract_keys
+        existing_keys = session.staged.contract_keys
         filtered_keys = [key for key in existing_keys if key[2] != conduit_id]
         for frame_key, binding_key in lookup_keys:
             filtered_keys.append((frame_key, binding_key, conduit_id))
 
-        change_control.update_staged_request(
-            request.request_id,
+        self._get_required_transaction_mediator().update_transaction_for_identity(
+            identity=self._transaction_identity,
+            transaction_type="link",
             contract_keys=filtered_keys,
         )
 
@@ -3020,6 +2845,14 @@ and logging.
                 The unique SHA256 `spell_id` associated with the bound spell.
         """
         self.check_cleaned()
+        if self._bind_family_disabled_for_current_posture():
+            self._logger.error(
+                "bind denied by current frame posture",
+                "bind",
+            )
+            raise RuntimeError(
+                "[SPELLBOOK] Bind is disabled after conjure for the current frame posture."
+            )
         if self._binding_transaction_is_active():
             return self._bind_under_active_transaction(
                 spell=spell,
@@ -3030,7 +2863,16 @@ and logging.
                 profile=profile,
                 **kwargs,
             )
-        with self._binding_transaction_for_surface(origin_surface="spellbook.bind"):
+        with self.transaction(
+                "bind",
+                metadata=self._build_bind_transaction_metadata(
+                    origin_surface="spellbook.bind",
+                    conduit_id=None,
+                    scope_keys=None,
+                    scope_hashes=None,
+                    binding_keys=None,
+                ),
+        ):
             return self._bind_under_active_transaction(
                 spell=spell,
                 existence=existence,
@@ -3065,10 +2907,27 @@ and logging.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         self.check_cleaned()
+        if self._bind_family_disabled_for_current_posture():
+            self._logger.error(
+                "scan denied by current frame posture",
+                "scan",
+            )
+            raise RuntimeError(
+                "[SPELLBOOK] Scan is disabled after conjure for the current frame posture."
+            )
         scanner = Scan(self)
         if self._binding_transaction_is_active():
             return scanner.scan_module(module)
-        with self._binding_transaction_for_surface(origin_surface="spellbook.scan"):
+        with self.transaction(
+                "bind",
+                metadata=self._build_bind_transaction_metadata(
+                    origin_surface="spellbook.scan",
+                    conduit_id=None,
+                    scope_keys=None,
+                    scope_hashes=None,
+                    binding_keys=None,
+                ),
+        ):
             return scanner.scan_module(module)
 
     def _add_hooks_to_spell(self, spell: Spell, **kwargs: Any) -> None:
@@ -3441,6 +3300,11 @@ and logging.
 
         Bind the now-frozen rich configuration into Aether only when the
         effective frame posture permits explicit shared rich-config reuse.
+
+        Contract:
+            - The first shared rich configuration bound for the frame wins.
+            - Later concurrent binders adopt the frame-owned shared
+              configuration instead of overwriting it.
         """
         if self._configuration is None:
             self._logger.error(
@@ -3472,6 +3336,18 @@ and logging.
             return
         try:
             Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
+            shared_configuration = Spellbook._aether._get_configuration(
+                self._aetheric_frame
+            )
+            if (
+                    shared_configuration is not None
+                    and shared_configuration is not self._configuration
+            ):
+                local_configuration = self._configuration
+                self._configuration = shared_configuration
+                self._configuration_locked = True
+                if local_configuration is not None:
+                    local_configuration.cleanup()
         except Exception as e:
             self._logger.error(
                 f"Failed to bind configuration to Aether: {e}",
@@ -3726,7 +3602,9 @@ and logging.
 
         This method finalizes the configuration, validates all local spells, and instantiates the `Conduit`.
         Conjuring disables the default binding transaction; post-conjure bind/scan
-        requires an explicit `begin_binding_transaction()` call.
+        requires an explicit bind-family transaction through
+        `begin_transaction("bind")` or
+        `transaction("bind")`.
 
         Args:
             policy (str, optional):

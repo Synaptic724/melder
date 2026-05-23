@@ -302,3 +302,206 @@ def test_change_control_link_contract_registers_link_mirror() -> None:
     finally:
         owner.cleanup()
         borrower.cleanup()
+
+
+def test_change_control_bind_transaction_registers_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate bind transactions are mirrored through the live dev-ops registry.
+    Contract:
+        - The active bind session is discoverable by spellbook identity and type.
+        - Ending the transaction clears the registry mirror.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live registry mirror is incorrect.
+    """
+    frame_name = "frame-cc-bind-registry"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+
+    spellbook.begin_transaction("bind")
+    try:
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="spellbook",
+            owner_id=spellbook._id,
+        )
+        assert len(sessions) == 1
+        assert sessions[0].request.request_type is ChangeTransactionType.BIND
+        assert registry.list_live_transactions_for_type("bind") == sessions
+    finally:
+        spellbook.end_transaction("bind")
+
+    assert registry.list_live_transactions_for_identity(
+        owner_kind="spellbook",
+        owner_id=spellbook._id,
+    ) == ()
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+def test_change_control_post_conjure_bind_updates_staged_binding_keys() -> None:
+    """
+    Purpose:
+        Validate post-conjure bind updates staged binding metadata on the live session.
+    Contract:
+        - Binding during an active bind transaction updates the staged binding keys.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If staged binding metadata does not update.
+    """
+    frame_name = "frame-cc-bind-staged-keys"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+
+    spellbook.begin_transaction("bind")
+    try:
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="spellbook",
+            owner_id=spellbook._id,
+        )
+        assert len(sessions) == 1
+            assert sessions[0].staged.binding_keys == (("basicservice", "__default__"),)
+    finally:
+        spellbook.end_transaction("bind")
+
+    conduit.cleanup()
+    spellbook.cleanup()
+
+
+def test_change_control_link_transaction_registers_live_registry_session() -> None:
+    """
+    Purpose:
+        Validate link transactions are mirrored through the live dev-ops registry.
+    Contract:
+        - The active link session is discoverable by conduit identity and type.
+        - Ending the transaction clears the registry mirror.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live link-session mirror is incorrect.
+    """
+    frame_name = "frame-cc-link-registry"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+
+    borrower.begin_transaction("link", conduits=[borrower, owner])
+    try:
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="conduit",
+            owner_id=borrower.id,
+        )
+        assert len(sessions) == 1
+        assert sessions[0].request.request_type is ChangeTransactionType.LINK
+        assert registry.list_live_transactions_for_type("link") == sessions
+    finally:
+        borrower.end_transaction("link")
+
+    assert registry.list_live_transactions_for_identity(
+        owner_kind="conduit",
+        owner_id=borrower.id,
+    ) == ()
+    owner.cleanup()
+    borrower.cleanup()
+
+
+def test_change_control_link_transaction_session_stays_live_during_contract_add() -> None:
+    """
+    Purpose:
+        Validate the active link session stays live while contract mutation runs.
+    Contract:
+        - add_spell_to_contract does not terminate or replace the active link session.
+        - The active link request continues to advertise the borrower and peer conduits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If contract mutation disrupts the active link session.
+    """
+    frame_name = "frame-cc-link-staged-contracts"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+
+    assert owner.link(borrower) is True
+    borrower.begin_transaction("link", conduits=[borrower, owner])
+    try:
+        assert borrower.add_spell_to_contract(
+            spell_id=spell_id,
+            conduit=owner,
+            permissions="create",
+            aetheric_frame=frame_name,
+        )
+        sessions = registry.list_live_transactions_for_identity(
+            owner_kind="conduit",
+            owner_id=borrower.id,
+        )
+        assert len(sessions) == 1
+        assert sessions[0].request.request_type is ChangeTransactionType.LINK
+        assert set(sessions[0].request.conduit_ids) == {borrower.id, owner.id}
+    finally:
+        borrower.end_transaction("link")
+
+    owner.cleanup()
+    borrower.cleanup()
+
+
+def test_change_control_bind_transaction_abort_clears_registry_session() -> None:
+    """
+    Purpose:
+        Validate aborted bind transactions clear the live registry mirror.
+    Contract:
+        - A raised exception inside the bind transaction aborts the root session.
+        - The registry mirror is empty after abort.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If abort leaves a live mirrored session behind.
+    """
+    frame_name = "frame-cc-bind-abort-registry"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit = spellbook.conjure(automatic=False, name="root")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    registry = change_control.devops_information_registry()
+    assert registry is not None
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with spellbook.transaction("bind"):
+            raise RuntimeError("boom")
+
+    assert registry.list_live_transactions_for_identity(
+        owner_kind="spellbook",
+        owner_id=spellbook._id,
+    ) == ()
+    conduit.cleanup()
+    spellbook.cleanup()

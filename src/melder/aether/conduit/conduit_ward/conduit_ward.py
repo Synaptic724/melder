@@ -1,6 +1,5 @@
 import inspect
 import threading
-from contextlib import contextmanager
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -9,7 +8,6 @@ from typing import (
     Tuple,
     Dict,
     Iterable,
-    Generator,
     Type,
     Optional,
     ClassVar,
@@ -28,9 +26,6 @@ from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contrac
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-    ChangeTransactionType,
-)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import TransferOfOwnership
 
@@ -200,8 +195,8 @@ class ConduitWard(Cleanable):
             },
             available_transactions=tuple(),
         )
-        aetheric_frame.register_devops_identity(
-            self._devops_identity,
+        self._devops_identity.attach_registry(
+            aetheric_frame.devops_information_registry,
             object_ref=self,
         )
 
@@ -391,162 +386,6 @@ class ConduitWard(Cleanable):
         return root_conduit
     
     #endregion Properties
-    #region Change Control
-    def begin_transaction(
-            self,
-            transaction_type: ChangeTransactionType | str,
-            *,
-            conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[Conduit]] = None,
-            scope_keys: Optional[Iterable[str]] = None,
-            scope_hashes: Optional[Iterable[str]] = None,
-            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
-            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
-            metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """
-        Public API
-
-        Begin a change-control transaction through the owning Conduit.
-
-        Purpose:
-            Provide a ward-level facade for change-control transactions used by
-            link/contract operations.
-        Contract:
-            - Delegates to the owning Conduit transaction facade.
-            - Raises if the conduit is not in a normal state.
-        Args:
-            transaction_type:
-                Transaction type enum or string value (e.g. "link", "bind").
-            conduit_ids:
-                Optional list of conduits participating in non-link requests.
-            conduits:
-                Optional list of conduit objects participating in the request.
-            scope_keys:
-                Optional normalized scope keys for conflict checks.
-            scope_hashes:
-                Optional normalized scope hashes for conflict checks.
-            binding_keys:
-                Optional binding keys affected by the request.
-            contract_keys:
-                Optional contract keys affected by the request.
-            metadata:
-                Optional structured metadata for diagnostics.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the ConduitWard is cleaned.
-            RuntimeError: If the owning Conduit is not normal.
-            RuntimeError: If change-control admission is denied.
-            ValueError: If transaction_type is invalid.
-            TypeError: If transaction_type has an invalid type.
-        """
-        self.check_cleaned()
-        self._conduit.begin_transaction(
-            transaction_type,
-            conduit_ids=conduit_ids,
-            conduits=conduits,
-            scope_keys=scope_keys,
-            scope_hashes=scope_hashes,
-            binding_keys=binding_keys,
-            contract_keys=contract_keys,
-            metadata=metadata,
-        )
-
-    def end_transaction(
-            self,
-            transaction_type: ChangeTransactionType | str | None = None,
-    ) -> None:
-        """
-        Public API
-
-        End the active change-control transaction through the owning Conduit.
-
-        Purpose:
-            Provide a ward-level facade for terminating change-control requests.
-        Contract:
-            - Delegates to the owning Conduit transaction facade.
-        Args:
-            transaction_type:
-                Optional transaction type assertion for safety checks.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the ConduitWard is cleaned.
-            RuntimeError: If the owning Conduit is not normal.
-            RuntimeError: If no change transaction is active.
-            RuntimeError: If transaction_type does not match the active request.
-            ValueError: If transaction_type is invalid.
-            TypeError: If transaction_type has an invalid type.
-        """
-        self.check_cleaned()
-        self._conduit.end_transaction(transaction_type=transaction_type)
-
-    @contextmanager
-    def transaction(
-            self,
-            transaction_type: ChangeTransactionType | str,
-            *,
-            conduit_ids: Optional[Iterable[str]] = None,
-            conduits: Optional[Iterable[Conduit]] = None,
-            scope_keys: Optional[Iterable[str]] = None,
-            scope_hashes: Optional[Iterable[str]] = None,
-            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
-            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
-            metadata: Optional[Dict[str, Any]] = None,
-    ) -> Generator["ConduitWard", Any, None]:
-        """
-        Public API
-
-        Context-managed change-control transaction for this ConduitWard.
-
-        Purpose:
-            Provide a safe begin/end wrapper for ward-level change transactions.
-        Contract:
-            - Begins a change-control transaction on entry.
-            - Ends the transaction on exit, even if an exception is raised.
-        Args:
-            transaction_type:
-                Transaction type enum or string value (e.g. "link", "bind").
-            conduit_ids:
-                Optional list of conduits participating in non-link requests.
-            conduits:
-                Optional list of conduit objects participating in the request.
-            scope_keys:
-                Optional normalized scope keys for conflict checks.
-            scope_hashes:
-                Optional normalized scope hashes for conflict checks.
-            binding_keys:
-                Optional binding keys affected by the request.
-            contract_keys:
-                Optional contract keys affected by the request.
-            metadata:
-                Optional structured metadata for diagnostics.
-        Returns:
-            ConduitWard: The current ConduitWard instance.
-        Raises:
-            RuntimeError: If the ConduitWard is cleaned.
-            RuntimeError: If the owning Conduit is not normal.
-            RuntimeError: If change-control admission is denied.
-            ValueError: If transaction_type is invalid.
-            TypeError: If transaction_type has an invalid type.
-        """
-        self.begin_transaction(
-            transaction_type,
-            conduit_ids=conduit_ids,
-            conduits=conduits,
-            scope_keys=scope_keys,
-            scope_hashes=scope_hashes,
-            binding_keys=binding_keys,
-            contract_keys=contract_keys,
-            metadata=metadata,
-        )
-        try:
-            yield self
-        finally:
-            self.end_transaction(transaction_type=transaction_type)
-
-    #endregion Change Control
 
     #region Conduit Ward Configuration
     def _convert_to_normal_conduit(self) -> None:
@@ -802,6 +641,12 @@ class ConduitWard(Cleanable):
 
         Returns:
             bool: True if the contract was created successfully.
+
+        Contract:
+            - Contract storage and symmetric index updates happen under the
+              `SafeGuard` critical section.
+            - Link relation reporting originates here because this method is
+              the real source of truth for peer-contract creation.
         """
         ward_a = self
         ward_b = target_conduit._conduit_ward
@@ -973,11 +818,16 @@ class ConduitWard(Cleanable):
         """
         self.check_cleaned()
         self._check_conduit_id_and_conduit(conduit=target_conduit)
-
         if (contract := self._find_contract(target_conduit)) is not None:
             with contract._lock:
                 id_a = contract._ward_a._id
                 id_b = contract._ward_b._id
+                self_detail_map = contract._get_detail_map(self)
+                target_detail_map = contract._get_detail_map(
+                    target_conduit._conduit_ward
+                )
+                target_borrows_from_self = bool(self_detail_map)
+                self_borrows_from_target = bool(target_detail_map)
                 try:
                     contract._ward_a._conduit._spellbook._sever_link_contract(id_b)
                     contract._ward_b._conduit._spellbook._sever_link_contract(id_a)
@@ -1008,6 +858,15 @@ class ConduitWard(Cleanable):
                 elif target_conduit._id in self._received_index:
                     del self._received_index[target_conduit._id]
                     del target_conduit._conduit_ward._initiated_index[self._id]
+
+                if self_borrows_from_target:
+                    self._conduit._transaction_identity.unregister_provider_conduit(
+                        target_conduit._id,
+                    )
+                if target_borrows_from_self:
+                    target_conduit._transaction_identity.unregister_provider_conduit(
+                        self._id,
+                    )
 
                 try:
                     contract.cleanup()
@@ -1772,8 +1631,11 @@ class ConduitWard(Cleanable):
                     mask=True,
                     groups=self._log_groups,
                     system_groups=self._log_sysgroups,
-                )
+                    )
                 raise
+            self._conduit._transaction_identity.register_provider_conduit(
+                conduit_id,
+            )
             try:
                 invalidate_contract_key: Optional[tuple[str, str]] = None
                 spellbook = self._conduit._spellbook
@@ -2494,6 +2356,11 @@ class ConduitWard(Cleanable):
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
                     raise
+                with contract._lock:
+                    if not contract._get_detail_map(conduit._conduit_ward):
+                        self._conduit._transaction_identity.unregister_provider_conduit(
+                            conduit_id,
+                        )
                 try:
                     self._invalidate_contract_consumers(contract_key)
                 except Exception:
@@ -2612,6 +2479,12 @@ class ConduitWard(Cleanable):
         contract = self._find_contract_by_id(conduit_id)
         if contract is not None:
             with contract._lock:
+                self_detail_map = contract._get_detail_map(self)
+                target_detail_map = contract._get_detail_map(
+                    conduit._conduit_ward
+                )
+                target_borrows_from_self = bool(self_detail_map)
+                self_borrows_from_target = bool(target_detail_map)
                 ward_a = contract._ward_a
                 ward_b = contract._ward_b
                 try:
@@ -2626,6 +2499,14 @@ class ConduitWard(Cleanable):
                     )
                     raise
                 contract._clear_contract()
+            if self_borrows_from_target:
+                self._conduit._transaction_identity.unregister_provider_conduit(
+                    conduit_id,
+                )
+            if target_borrows_from_self:
+                conduit._transaction_identity.unregister_provider_conduit(
+                    self._id,
+                )
             try:
                 self._invalidate_contract_consumers()
             except Exception:

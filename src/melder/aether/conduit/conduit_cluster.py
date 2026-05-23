@@ -9,9 +9,6 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
-from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
-    ChangeTransactionType,
-)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
@@ -398,7 +395,7 @@ class ConduitCluster(Cleanable):
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 try:
                     with peer.transaction(
-                        ChangeTransactionType.LINK,
+                        "cluster_link",
                         conduits=[peer, owner],
                     ):
                         peer.add_spell_to_contract(
@@ -442,7 +439,7 @@ class ConduitCluster(Cleanable):
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with peer.transaction(
-                    ChangeTransactionType.LINK,
+                    "cluster_link",
                     conduits=[peer, owner],
                 ):
                     peer.remove_root_from_contracts(
@@ -455,7 +452,7 @@ class ConduitCluster(Cleanable):
             else:
                 try:
                     with peer.transaction(
-                        ChangeTransactionType.LINK,
+                        "cluster_link",
                         conduits=[peer, owner],
                     ):
                         peer.add_spell_to_contract(
@@ -499,7 +496,7 @@ class ConduitCluster(Cleanable):
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with borrower.transaction(
-                    ChangeTransactionType.LINK,
+                    "cluster_link",
                     conduits=[borrower, owner],
                 ):
                     borrower.add_spell_to_contract(
@@ -543,7 +540,7 @@ class ConduitCluster(Cleanable):
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with borrower.transaction(
-                    ChangeTransactionType.LINK,
+                    "cluster_link",
                     conduits=[borrower, owner],
                 ):
                     borrower.remove_root_from_contracts(

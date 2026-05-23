@@ -477,7 +477,7 @@ class TransferOfOwnership(Cleanable):
                             {
                                 "type": "cluster",
                                 "cluster": cname,
-                                "cluster_id": cluster.id,
+                                "cluster_id": getattr(cluster, "id", cname),
                                 "owner_id": owner_id,
                                 "member_conduit_ids": tuple(sorted(cluster.get_members())),
                             }
