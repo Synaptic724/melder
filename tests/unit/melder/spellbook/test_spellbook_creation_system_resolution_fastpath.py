@@ -225,7 +225,7 @@ class _HookConfiguration:
             raise KeyError(name)
         return self._property_value
 
-    def get_hooks(self, owner_id: str) -> Optional[Mapping[str, List[Callable]]]:
+    def get_conduit_hooks(self, owner_id: str) -> Optional[Mapping[str, List[Callable]]]:
         if self._hooks_error is not None:
             raise self._hooks_error
         return self._hook_map

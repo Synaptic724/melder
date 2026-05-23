@@ -183,11 +183,12 @@ class SpellbookCreationSystem(Cleanable):
             dynamic=self._dynamic,
         )
         hook_map = SpellbookCreationSystem.get_conjure_hook_map(spellbook)
-        SpellbookCreationSystem.fire_conjure_hooks(
-            spellbook,
-            hook_map,
-            "on_conduit_pre_created",
-        )
+        if hook_map:
+            SpellbookCreationSystem.fire_conjure_hooks(
+                spellbook,
+                hook_map,
+                "on_conduit_pre_created",
+            )
         creation_gate_controller = (
             SpellbookCreationSystem._resolve_frame_creation_gate_controller(
             spellbook=spellbook,
@@ -432,24 +433,26 @@ class SpellbookCreationSystem(Cleanable):
         spellbook._refresh_devops_identity_state()
         spellbook._pending_binding_frame_keys.clear()
 
-        SpellbookCreationSystem.fire_conjure_hooks(
-            spellbook,
-            hook_map,
-            "on_conduit_activated",
-            conduit,
-        )
+        if hook_map:
+            SpellbookCreationSystem.fire_conjure_hooks(
+                spellbook,
+                hook_map,
+                "on_conduit_activated",
+                conduit,
+            )
         SpellbookCreationSystem.define_conduit_into_spells(
             spellbook=spellbook,
             conduit=conduit,
         )
         spellbook._publish_nexus_state_for_conjure(conduit)
         spellbook._register_conduit_with_risk_manager(conduit)
-        SpellbookCreationSystem.fire_conjure_hooks(
-            spellbook,
-            hook_map,
-            "on_conduit_post_created",
-            conduit,
-        )
+        if hook_map:
+            SpellbookCreationSystem.fire_conjure_hooks(
+                spellbook,
+                hook_map,
+                "on_conduit_post_created",
+                conduit,
+            )
 
     @staticmethod
     def check_system_state(spellbook: Spellbook, policy: str, dynamic: bool) -> None:
@@ -669,7 +672,7 @@ class SpellbookCreationSystem(Cleanable):
             return None
 
         try:
-            hook_map = configuration.get_hooks(spellbook._id)
+            hook_map = configuration.get_conduit_hooks(spellbook._id)
         except AttributeError:
             return None
         except Exception as exc:

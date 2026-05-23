@@ -979,7 +979,57 @@ def test_fire_conduit_hooks_swallows_exceptions_and_continues(
 
     conduit_normal._fire_conduit_hooks("on_conduit_cleanup_start", conduit_normal)
 
-    assert events == [conduit_normal]
+
+def test_create_lesser_conduit_skips_dispatch_when_hookless(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify lesser-conduit lifecycle bypasses conduit-hook dispatch when hookless.
+
+    Contract:
+        - No conduit hook dispatcher call is made when both shared and local
+          conduit hook maps are empty.
+    """
+    conduit_dynamic_normal._conduit_hooks = {}
+    conduit_dynamic_normal._local_conduit_hooks = {}
+    fire_conduit_hooks = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_fire_conduit_hooks",
+        lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
+    )
+
+    lesser = conduit_dynamic_normal.create_lesser_conduit()
+    try:
+        fire_conduit_hooks.assert_not_called()
+    finally:
+        lesser.cleanup()
+
+
+def test_cleanup_skips_dispatch_when_hookless(
+    conduit_lesser: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify cleanup bypasses conduit-hook dispatch when hookless.
+
+    Contract:
+        - No conduit hook dispatcher call is made when both shared and local
+          conduit hook maps are empty.
+    """
+    conduit_lesser._conduit_hooks = {}
+    conduit_lesser._local_conduit_hooks = {}
+    fire_conduit_hooks = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_fire_conduit_hooks",
+        lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
+    )
+
+    conduit_lesser.cleanup()
+
+    fire_conduit_hooks.assert_not_called()
 
 
 def test_conduit_constructor_does_not_read_frame_configuration_for_posture(

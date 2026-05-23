@@ -249,7 +249,10 @@ class Conduit(Cleanable):
         self._refresh_devops_identity_state()
         self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
-        self._creations: Creations = self._creations_configuration(configuration)
+        self._creations: Creations = Creations(
+            conduit_id=self._id,
+            spellspace_stack=self._spellspace_stack,
+        )
         if creation_gate is None:
             creation_gate = self._create_gate_for_current_root(conduit_id)
         else:
@@ -320,28 +323,54 @@ class Conduit(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-            self._fire_conduit_hooks("on_conduit_cleanup_start", self)
-            self._cleaned = True
-            if self._conduit_state == ConduitState.lesser:
-                self._cleanup_lesser_conduit()
-            elif self._conduit_state == ConduitState.normal:
-                self._cleanup_normal_conduit()
+
+            if self._conduit_hooks or self._local_conduit_hooks:
+                self._fire_conduit_hooks("on_conduit_cleanup_start", self)
+                self._cleaned = True
+                if self._conduit_state == ConduitState.lesser:
+                    self._cleanup_lesser_conduit()
+                elif self._conduit_state == ConduitState.normal:
+                    self._cleanup_normal_conduit()
+                else:
+                    self._logger.error("Unknown Conduit state during cleanup", "cleanup")
+                    raise RuntimeError("Conduit state is unknown during cleanup")
+                if self._conduit_hooks or self._local_conduit_hooks:
+                    self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+
+                del self._conduit_hooks
+                del self._meld_hooks
+                del self._local_conduit_hooks
+
+                # Logger last
+                try:
+                    if hasattr(self._logger, "cleanup"):
+                        self._logger.cleanup()
+                except Exception:
+                    pass
+                del self._logger
             else:
-                self._logger.error("Unknown Conduit state during cleanup", "cleanup")
-                raise RuntimeError("Conduit state is unknown during cleanup")
-            self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+                self._fire_conduit_hooks("on_conduit_cleanup_start", self)
+                self._cleaned = True
+                if self._conduit_state == ConduitState.lesser:
+                    self._cleanup_lesser_conduit()
+                elif self._conduit_state == ConduitState.normal:
+                    self._cleanup_normal_conduit()
+                else:
+                    self._logger.error("Unknown Conduit state during cleanup", "cleanup")
+                    raise RuntimeError("Conduit state is unknown during cleanup")
+                self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
 
-            del self._conduit_hooks
-            del self._meld_hooks
-            del self._local_conduit_hooks
+                del self._conduit_hooks
+                del self._meld_hooks
+                del self._local_conduit_hooks
 
-        # Logger last
-            try:
-                if hasattr(self._logger, "cleanup"):
-                    self._logger.cleanup()
-            except Exception:
-                pass
-            del self._logger
+                # Logger last
+                try:
+                    if hasattr(self._logger, "cleanup"):
+                        self._logger.cleanup()
+                except Exception:
+                    pass
+                del self._logger
 
 
 
@@ -1121,29 +1150,6 @@ class Conduit(Cleanable):
         self._aetheric_frame.unregister_root_conduit(self)
 
 
-    def _creations_configuration(self, configuration: SpellbookConfiguration) -> Creations:
-        """
-        Internal
-
-        Returns the current creations configuration for this Conduit.
-
-        Args:
-            configuration (SpellbookConfiguration): The locked system configuration.
-
-        Returns:
-            Creations: The creation manager for this conduit.
-
-        Raises:
-            RuntimeError: If the Conduit state is unknown.
-        """
-        if self._conduit_state in (ConduitState.lesser, ConduitState.normal):
-            return Creations(
-                conduit_id=self._id,
-                spellspace_stack=self._spellspace_stack,
-            )
-        self._logger.error("Unknown Conduit state", "_creations_configuration")
-        raise RuntimeError("Conduit state is unknown")
-
     #endregion Conduit Configuration
     #region Conduit Management
     def _ensure_local_conduit_hooks(self) -> None:
@@ -1556,51 +1562,73 @@ class Conduit(Cleanable):
             if root_conduit._conduit_state != ConduitState.normal:
                 raise RuntimeError("Root conduit must be a normal conduit.")
             root_conduit_id = root_conduit._id
+            if self._conduit_hooks or self._local_conduit_hooks:
+                # 1) Pre-create hook on the parent, if any.
+                self._fire_conduit_hooks(
+                    "on_conduit_pre_created",
+                    self,  # parent_conduit
+                )
+                # 2) Construct the lesser conduit (activation point).
+                new_conduit = Conduit(
+                    spellbook=self._spellbook,
+                    configuration=self._configuration,
+                    conduit_state=ConduitState.lesser,
+                    aetheric_frame_name=self._aetheric_frame_name,
+                    aetheric_frame=self._aetheric_frame,
+                    policy=Policies.default,
+                    dynamic=self.__dynamic_environment__,
+                    logger=logger,
+                    root_conduit_id=root_conduit_id,
+                    creation_gate_controller=self._creation_gate_controller,
+                    conduit_hooks=root_conduit._conduit_hooks,
+                    meld_hooks=root_conduit._meld_hooks,
+                )
+                if new_conduit._conduit_ward is not None:
+                    new_conduit._conduit_ward._root_conduit = root_conduit
+                new_conduit._root_conduit_id = root_conduit_id
+                new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
+                if new_conduit._meld is not None:
+                    new_conduit._meld._resolution_conduit_id = root_conduit_id
 
-            # 1) Pre-create hook on the parent, if any.
-            self._fire_conduit_hooks(
-                "on_conduit_pre_created",
-                self,  # parent_conduit
-            )
+                # Fire activation hook with the new conduit instance.
+                self._fire_conduit_hooks(
+                    "on_conduit_activated",
+                    new_conduit,  # new lesser conduit
+                )
 
-            # 2) Construct the lesser conduit (activation point).
-            new_conduit = Conduit(
-                spellbook=self._spellbook,
-                configuration=self._configuration,
-                conduit_state=ConduitState.lesser,
-                aetheric_frame_name=self._aetheric_frame_name,
-                aetheric_frame=self._aetheric_frame,
-                policy=Policies.default,
-                dynamic=self.__dynamic_environment__,
-                logger=logger,
-                root_conduit_id=root_conduit_id,
-                creation_gate_controller=self._creation_gate_controller,
-                conduit_hooks=root_conduit._conduit_hooks,
-                meld_hooks=root_conduit._meld_hooks,
-            )
-            if new_conduit._conduit_ward is not None:
-                new_conduit._conduit_ward._root_conduit = root_conduit
-            new_conduit._root_conduit_id = root_conduit_id
-            new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
-            if new_conduit._meld is not None:
-                new_conduit._meld._resolution_conduit_id = root_conduit_id
+                # 3) Link the lesser conduit into the parent's ConduitWard.
+                self._conduit_ward._link_lesser_conduit(new_conduit)
 
-            # Fire activation hook with the new conduit instance.
-            self._fire_conduit_hooks(
-                "on_conduit_activated",
-                new_conduit,  # new lesser conduit
-            )
-
-            # 3) Link the lesser conduit into the parent's ConduitWard.
-            self._conduit_ward._link_lesser_conduit(new_conduit)
-
-            # Fire post-create hook with both parent and child.
-            self._fire_conduit_hooks(
-                "on_conduit_post_created",
-                self,         # parent_conduit
-                new_conduit,  # child_conduit
-            )
-            new_conduit._publish_conduit_record_to_nexus()
+                # Fire post-create hook with both parent and child.
+                self._fire_conduit_hooks(
+                    "on_conduit_post_created",
+                    self,         # parent_conduit
+                    new_conduit,  # child_conduit
+                )
+                new_conduit._publish_conduit_record_to_nexus()
+            else:
+                new_conduit = Conduit(
+                    spellbook=self._spellbook,
+                    configuration=self._configuration,
+                    conduit_state=ConduitState.lesser,
+                    aetheric_frame_name=self._aetheric_frame_name,
+                    aetheric_frame=self._aetheric_frame,
+                    policy=Policies.default,
+                    dynamic=self.__dynamic_environment__,
+                    logger=logger,
+                    root_conduit_id=root_conduit_id,
+                    creation_gate_controller=self._creation_gate_controller,
+                    conduit_hooks=root_conduit._conduit_hooks,
+                    meld_hooks=root_conduit._meld_hooks,
+                )
+                if new_conduit._conduit_ward is not None:
+                    new_conduit._conduit_ward._root_conduit = root_conduit
+                new_conduit._root_conduit_id = root_conduit_id
+                new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
+                if new_conduit._meld is not None:
+                    new_conduit._meld._resolution_conduit_id = root_conduit_id
+                self._conduit_ward._link_lesser_conduit(new_conduit)
+                new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
 
@@ -2979,11 +3007,12 @@ class Conduit(Cleanable):
 
         if linked:
             # Fire post-link hook with both ends of the relationship.
-            self._fire_conduit_hooks(
-                "on_conduit_post_link",
-                self,
-                target_conduit,
-            )
+            if self._conduit_hooks or self._local_conduit_hooks:
+                self._fire_conduit_hooks(
+                    "on_conduit_post_link",
+                    self,
+                    target_conduit,
+                )
             self._publish_conduit_record_to_nexus()
             if (
                 target_conduit._nexus_publish_enabled
@@ -3036,11 +3065,12 @@ class Conduit(Cleanable):
 
         if unlinked:
             # Fire post-unlink hook with both ends of the relationship.
-            self._fire_conduit_hooks(
-                "on_conduit_post_unlink",
-                self,
-                target_conduit,
-            )
+            if self._conduit_hooks or self._local_conduit_hooks:
+                self._fire_conduit_hooks(
+                    "on_conduit_post_unlink",
+                    self,
+                    target_conduit,
+                )
             self._publish_conduit_record_to_nexus()
             if (
                 target_conduit._nexus_publish_enabled
@@ -3538,7 +3568,7 @@ class Conduit(Cleanable):
 
         if result:
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None:
+            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
                 self._fire_conduit_hooks(
                     "on_contract_created",
                     self,
@@ -3615,7 +3645,7 @@ class Conduit(Cleanable):
         # Fire hook only if at least one contract addition succeeded.
         if normalized and any(value is True for value in normalized.values()):
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None:
+            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
                 self._fire_conduit_hooks(
                     "on_contract_created",
                     self,
@@ -3675,7 +3705,7 @@ class Conduit(Cleanable):
 
         if result:
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None:
+            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
                 self._fire_conduit_hooks(
                     "on_contract_removed",
                     self,
@@ -3743,7 +3773,7 @@ class Conduit(Cleanable):
 
         if normalized and any(value is True for value in normalized.values()):
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None:
+            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
                 self._fire_conduit_hooks(
                     "on_contract_removed",
                     self,
@@ -3848,7 +3878,7 @@ class Conduit(Cleanable):
 
         if result:
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None:
+            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
                 self._fire_conduit_hooks(
                     "on_contract_removed",
                     self,

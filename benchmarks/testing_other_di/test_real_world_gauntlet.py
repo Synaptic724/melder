@@ -17,19 +17,24 @@ from typing import Any, Callable
 import pytest
 
 
-# Set this to `True` to force the shared gauntlet through a standalone
-# `-X gil=0` subprocess when the current interpreter still has the GIL
-# enabled. Set to `False` to run in the current interpreter exactly as-is.
+# Keep this `True` so the shared gauntlet always runs through a standalone
+# `-X gil=0` subprocess when launched from pytest. Set to `False` only if you
+# explicitly want the wrapper to use the current interpreter mode instead.
 REAL_WORLD_GAUNTLET_FORCE_NOGIL = True
-_REAL_WORLD_GAUNTLET_GIL_REEXEC_ENV = "DI_REAL_WORLD_GAUNTLET_GIL_REEXEC"
-_REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE = False
 
 
-def _gil_runner_path() -> Path:
+def _runner_path() -> Path:
     """
-    Resolve the standalone GIL-mode runner for the shared gauntlet.
+    Resolve the standalone shared-gauntlet runner.
     """
     return Path(__file__).resolve().with_name("real_world_gauntlet_gil_runner.py")
+
+
+def _repo_root() -> Path:
+    """
+    Resolve the repository root for standalone runner execution.
+    """
+    return Path(__file__).resolve().parents[2]
 
 
 def _ensure_src_on_path() -> None:
@@ -63,82 +68,6 @@ def _gil_status() -> str:
         return "enabled" if flag() else "disabled"
     except Exception:
         return "unknown"
-
-
-def _maybe_rerun_under_nogil(lib: str) -> None:
-    """
-    Re-execute the full shared gauntlet under `-X gil=0` once when requested.
-
-    Contract:
-        - Only the parent-side `"dependency-injector"` parameter triggers the
-          rerun so the parametrized test does not recursively respawn once per
-          library.
-        - Child runs are marked with one explicit env guard.
-        - Uses one standalone runner process instead of nested pytest inside
-          the parametrized benchmark body.
-        - After the child rerun succeeds, the parent-side parametrized cases
-          all skip so the benchmark is not executed twice.
-
-    Args:
-        lib:
-            Current pytest parameter value.
-
-    Returns:
-        None.
-
-    Raises:
-        AssertionError:
-            If the child pytest rerun exits non-zero.
-    """
-    global _REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE
-
-    if not REAL_WORLD_GAUNTLET_FORCE_NOGIL:
-        return
-    if os.getenv(_REAL_WORLD_GAUNTLET_GIL_REEXEC_ENV) == "1":
-        return
-
-    if _gil_status() == "disabled":
-        return
-
-    if _REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE:
-        pytest.skip(
-            "Shared gauntlet already executed in the standalone no-gil subprocess."
-        )
-    if lib != "dependency-injector":
-        pytest.skip(
-            "Shared gauntlet no-gil rerun is triggered only once from the first parameter."
-        )
-
-    child_env = os.environ.copy()
-    child_env[_REAL_WORLD_GAUNTLET_GIL_REEXEC_ENV] = "1"
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-X",
-            "gil=0",
-            str(_gil_runner_path()),
-        ],
-        cwd=str(Path(__file__).resolve().parents[2]),
-        env=child_env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    if completed.stdout:
-        print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
-    if completed.stderr:
-        print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
-
-    _REAL_WORLD_GAUNTLET_PARENT_RERUN_DONE = True
-    if completed.returncode != 0:
-        raise AssertionError(
-            "Shared real-world gauntlet rerun failed under forced no-gil mode "
-            f"with exit code {completed.returncode}."
-        )
-    pytest.skip(
-        "Shared gauntlet executed in the standalone no-gil subprocess."
-    )
 
 
 def _ctor_param_types(cls: type) -> tuple[tuple[str, type], ...]:
@@ -515,7 +444,7 @@ class _GauntletConfig:
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
             iterations=_env_int("DI_GAUNTLET_ITERS", 1000),
-            threads=_env_int("DI_GAUNTLET_THREADS", 1),
+            threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
             worker_b_jobs=_env_int("DI_GAUNTLET_WORKER_B_JOBS", _WORKER_B_JOBS_DEFAULT),
@@ -1209,7 +1138,9 @@ def _build_ops(lib: str) -> _RuntimeOps:
     if lib == "dishka":
         return _build_runtime_dishka()
     if lib == "melder":
-        return _build_runtime_melder()
+        from benchmarks.testing_other_di import test_melder_gauntlet as melder_gauntlet
+
+        return melder_gauntlet._build_runtime_melder()
     raise AssertionError(f"Unknown lib: {lib}")
 
 
@@ -1608,25 +1539,39 @@ def _print_benchmark_result(result: _BenchmarkResult) -> None:
 
 
 @pytest.mark.timeout(3600)
-@pytest.mark.parametrize("lib", ("dependency-injector", "dishka", "melder"))
-def test_real_world_gauntlet(lib: str) -> None:
+def test_real_world_gauntlet() -> None:
     """
-    End-to-end gauntlet benchmark with mixed scoped work.
+    Run the shared real-world gauntlet through the standalone runner.
 
-    Workload per iteration:
-        - Build a fresh container / conduit.
-        - Resolve 5 cached singletons.
-        - Fan out 5 transient bootstrap objects from each singleton.
-        - Run up to 3 raw threads concurrently.
-          Each lane repeatedly creates and destroys a fresh scope, then performs
-          one of several random in-scope resolve patterns.
-        - Cleanup the runtime.
-
-    The request lane descends through four logical layers into spellspace and
-    creates at least 500 request objects total by default.
+    Contract:
+        - Uses the same standalone runner pattern as the working Melder-only
+          benchmark/cProfile wrappers.
+        - Forces `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is true.
+        - Streams child stdout/stderr back into pytest output for direct
+          visibility in IDE runs.
+        - Fails if the standalone runner exits non-zero.
     """
-    _maybe_rerun_under_nogil(lib)
-    cfg = _GauntletConfig.from_env()
+    command = [sys.executable]
+    if REAL_WORLD_GAUNTLET_FORCE_NOGIL:
+        command.extend(["-X", "gil=0"])
+    command.append(str(_runner_path()))
 
-    result = _run_gauntlet_benchmark(lib, cfg)
-    _print_benchmark_result(result)
+    completed = subprocess.run(
+        command,
+        cwd=str(_repo_root()),
+        env=os.environ.copy(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if completed.stdout:
+        print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+    if completed.stderr:
+        print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
+
+    if completed.returncode != 0:
+        raise AssertionError(
+            "Shared real-world gauntlet runner failed with exit code "
+            f"{completed.returncode}."
+        )

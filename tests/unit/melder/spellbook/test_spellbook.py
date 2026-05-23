@@ -460,6 +460,19 @@ class DummyConfig:
         """
         return self._hooks
 
+    def get_conduit_hooks(self, sid):
+        """
+        Purpose:
+            Return the configured conduit hook map.
+        Contract:
+            Returns the stored conduit hook mapping for any spellbook id.
+        Args:
+            sid: Spellbook id requested by caller.
+        Returns:
+            dict: Conduit hook mapping configured on the stub.
+        """
+        return self._hooks
+
     def get_property(self, name):
         """
         Purpose:
