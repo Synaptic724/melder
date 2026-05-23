@@ -665,8 +665,7 @@ class Conduit(Cleanable):
         Track a SpellSpace for cleanup bookkeeping.
 
         Contract:
-            - No-op if the spellspace, registry, or lock is unavailable.
-            - Adds the spellspace to the registry if present.
+            - Adds the spellspace to the registry.
             - Safe to call multiple times for the same spellspace.
 
         Args:
@@ -681,7 +680,6 @@ class Conduit(Cleanable):
         Remove a SpellSpace from cleanup bookkeeping.
 
         Contract:
-            - No-op if the spellspace, registry, or lock is unavailable.
             - Removes the spellspace from the registry if present.
             - Safe to call multiple times for the same spellspace.
 
@@ -1090,8 +1088,6 @@ class Conduit(Cleanable):
 
     #endregion
 
-
-
     #region Conduit Configuration
     def register_conduit_hooks(
             self,
@@ -1303,7 +1299,6 @@ class Conduit(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         creation_gate_controller = self._creation_gate_controller
         if self._creation_gate is None:
             existing = creation_gate_controller.get_conduit_gate(self._id)
@@ -1871,7 +1866,6 @@ class Conduit(Cleanable):
             TransactionMediator:
                 Transaction mediator instance owned by the frame control plane.
         """
-        self.check_cleaned()
         return self._spellbook._get_required_transaction_mediator()
 
     def inspect_spell(
@@ -3354,7 +3348,7 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is not a 'normal' conduit.
             RuntimeError: If dynamic environment is not enabled.
         """
-        self.check_cleaned()
+
         if self._conduit_state != ConduitState.normal:
             self._logger.error("_qualify_contracts: not normal state", "_qualify_contracts")
             raise RuntimeError("Only normal conduits can create spell contracts.")

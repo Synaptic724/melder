@@ -537,7 +537,7 @@ def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
     system = SpellbookCreationSystem(
         spellbook=object(),
         policy="default",
-        automatic=True,
+        dynamic=False,
         name="root",
         conduit_logger=object(),
         phase_scheduler_cls=object,
@@ -549,7 +549,7 @@ def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
     assert system.cleaned is True
     assert not hasattr(system, "_spellbook")
     assert not hasattr(system, "_policy")
-    assert not hasattr(system, "_automatic")
+    assert not hasattr(system, "_dynamic")
     assert system._lock is not None
 
 
@@ -568,7 +568,7 @@ def test_creation_system_cleanup_rechecks_cleaned_state_under_lock() -> None:
     system = SpellbookCreationSystem(
         spellbook=object(),
         policy="default",
-        automatic=True,
+        dynamic=False,
         name="root",
         conduit_logger=object(),
         phase_scheduler_cls=object,

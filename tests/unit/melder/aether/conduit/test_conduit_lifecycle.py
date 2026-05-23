@@ -827,36 +827,3 @@ def test_cleanup_spellspaces_logs_stack_flush_failure(
     conduit_lesser._logger.error.assert_called()
 
 
-def test_register_spellspace_ignores_none(
-    conduit_lesser: Conduit,
-) -> None:
-    """_register_spellspace should no-op when given None."""
-    before = set(conduit_lesser._spellspace_registry)
-
-    conduit_lesser._register_spellspace(None)
-
-    assert conduit_lesser._spellspace_registry == before
-
-
-def test_unregister_spellspace_ignores_none(
-    conduit_lesser: Conduit,
-) -> None:
-    """_unregister_spellspace should no-op when given None."""
-    before = set(conduit_lesser._spellspace_registry)
-
-    conduit_lesser._unregister_spellspace(None)
-
-    assert conduit_lesser._spellspace_registry == before
-
-
-def test_unregister_spellspace_ignores_missing_registry(
-    conduit_lesser: Conduit,
-) -> None:
-    """_unregister_spellspace should no-op when the registry is unavailable."""
-    conduit_lesser._spellspace_registry = None
-
-    conduit_lesser._unregister_spellspace(MagicMock())
-
-    assert conduit_lesser._spellspace_registry is None
-
-

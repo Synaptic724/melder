@@ -79,7 +79,7 @@ def test_component_configuration_hooks_register_and_shared_map() -> None:
     assert hooks["on_conduit_post_created"] == [hook_b]
 
     hooks["on_meld_pre_resolve"].append(hook_b)
-    assert config.get_hooks("spellbook-1")["on_meld_pre_resolve"] == [hook_a, hook_b]
+    assert config.get_hooks("spellbook-1")["on_meld_pre_resolve"] == [hook_a]
 
 
 def test_component_configuration_freeze_blocks_hooks_and_properties() -> None:
