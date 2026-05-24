@@ -285,7 +285,6 @@ class OccurrencePlan(Cleanable):
         Contract:
             - Raises if the plan has been cleaned.
         """
-        self.check_cleaned()
         return self._root_spell_id
 
     @property
@@ -297,7 +296,6 @@ class OccurrencePlan(Cleanable):
             - The returned mapping is owned by the plan and should be
               treated as read-only by callers.
         """
-        self.check_cleaned()
         return self._occurrence_graph
 
     @property
@@ -309,7 +307,6 @@ class OccurrencePlan(Cleanable):
             - The returned list is owned by the plan and should be treated
               as read-only by callers.
         """
-        self.check_cleaned()
         return self._execution_order
 
     @property
@@ -321,7 +318,6 @@ class OccurrencePlan(Cleanable):
             - The returned mapping is owned by the plan and should be
               treated as read-only by callers.
         """
-        self.check_cleaned()
         return self._instance_keys_by_spell_id
 
     @property
@@ -333,7 +329,6 @@ class OccurrencePlan(Cleanable):
             - The returned mapping is owned by the plan and should be
               treated as read-only by callers.
         """
-        self.check_cleaned()
         return self._canonical_occurrences_by_spell_id
 
     @property
@@ -344,7 +339,6 @@ class OccurrencePlan(Cleanable):
         Contract:
             - The key is stable for the lifetime of the plan.
         """
-        self.check_cleaned()
         return self._root_instance_key
 
     @property
@@ -356,7 +350,6 @@ class OccurrencePlan(Cleanable):
             - The returned set is owned by the plan and should be treated
               as read-only by callers.
         """
-        self.check_cleaned()
         return self._shared_spell_ids
 
     @property
@@ -369,7 +362,6 @@ class OccurrencePlan(Cleanable):
               as read-only by callers.
             - Missing occurrences imply no override payload for that provider.
         """
-        self.check_cleaned()
         return self._contract_overrides_by_occurrence
 
     @property
@@ -383,7 +375,6 @@ class OccurrencePlan(Cleanable):
             - The returned mapping is owned by the plan and should be treated
               as read-only by callers.
         """
-        self.check_cleaned()
         return self._contract_overrides_by_spell_id
 
     @property
@@ -397,7 +388,6 @@ class OccurrencePlan(Cleanable):
             - In automatic mode, missing providers raise during build, so this is
               expected to be True for valid plans.
         """
-        self.check_cleaned()
         return self._contract_dependencies_complete
 
     @property
@@ -409,7 +399,6 @@ class OccurrencePlan(Cleanable):
             - The registry is owned by the originating blueprint.
             - The plan does not clean the registry; it only holds a reference.
         """
-        self.check_cleaned()
         return self._path_registry
 
 

@@ -697,7 +697,6 @@ class Meld(Cleanable):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        self.check_cleaned()
         target_spell = self._resolve_spell_for_live_creation_probe(
             spell_name=spell_name,
             spell=spell,

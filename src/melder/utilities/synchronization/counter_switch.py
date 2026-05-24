@@ -103,7 +103,6 @@ class CounterSwitch(Cleanable):
 
         Return the raw deque-backed state value.
         """
-        self.check_cleaned()
         return len(self._tickets)
 
     def advance(self, delta: int) -> int:
@@ -120,7 +119,6 @@ class CounterSwitch(Cleanable):
             int:
                 Resulting state after the signed ticket mutation.
         """
-        self.check_cleaned()
         if delta == 0:
             return len(self._tickets)
         if delta > 0:
@@ -154,7 +152,6 @@ class CounterSwitch(Cleanable):
                 If a follower waits at pending state, and the event is not
                 signalled before `timeout_seconds` expires.
         """
-        self.check_cleaned()
         count = len(self._tickets)
         if count >= 2:
             return count

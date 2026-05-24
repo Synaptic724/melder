@@ -340,7 +340,7 @@ class Creations(Cleanable):
             ValueError:
                 If `key` already exists in the shared creations map.
         """
-        self.check_cleaned()
+        
         if key in self._creations:
             raise ValueError(f"Key {key} already exists in creations.")
         creation = Creation(
@@ -389,7 +389,7 @@ class Creations(Cleanable):
             ValueError:
                 If `key` already exists in the shared map with a non-list value.
         """
-        self.check_cleaned()
+        
         many_list = self._creations.setdefault(key, [])
         if not isinstance(many_list, list):
             raise ValueError(
@@ -424,7 +424,7 @@ class Creations(Cleanable):
             List[Dict[str, Any]]:
                 Serialized creation entries suitable for `restore_spell_creations`.
         """
-        self.check_cleaned()
+        
         extracted: List[Dict[str, Any]] = []
         with self._lock:
             # Root scope entry (singleton or many list).
@@ -484,7 +484,7 @@ class Creations(Cleanable):
                 If a `many` entry targets a non-list slot or a spellspace entry
                 targets a non-dict slot.
         """
-        self.check_cleaned()
+        
         if not creations:
             return
         with self._lock:
@@ -566,7 +566,7 @@ class Creations(Cleanable):
             Optional[Creation]:
                 Matching creation wrapper, or None when missing.
         """
-        self.check_cleaned()
+        
         bucket = self._creations.get(spellspace_id)
         if not isinstance(bucket, dict):
             return None
@@ -577,14 +577,14 @@ class Creations(Cleanable):
         """
         Return the stable owner conduit id for this creations manager.
         """
-        self.check_cleaned()
+        
         return self._owner_conduit_id
 
     def get_active_spellspace(self) -> Any:
         """
         Return the current active spellspace for this creations owner, if any.
         """
-        self.check_cleaned()
+        
         return self._spellspace_stack.get_active()
 
     def register_spellspace_creation(
@@ -621,7 +621,7 @@ class Creations(Cleanable):
                 If the spellspace slot collides with a non-dict slot or the spell id
                 already exists in the spellspace bucket.
         """
-        self.check_cleaned()
+        
         bucket = self._creations.setdefault(spellspace_id, {})
         if not isinstance(bucket, dict):
             raise ValueError(f"Key {spellspace_id} already exists in creations with non-spellspace scope.")
@@ -656,7 +656,7 @@ class Creations(Cleanable):
             ExceptionGroup:
                 If one or more disposal operations fail.
         """
-        self.check_cleaned()
+        
         bucket = self._creations.get(spellspace_id)
         if not isinstance(bucket, dict):
             return

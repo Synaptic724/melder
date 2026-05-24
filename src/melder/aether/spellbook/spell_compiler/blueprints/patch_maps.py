@@ -201,7 +201,7 @@ class OverridePatchMap(Cleanable):
             RuntimeError:
                 If the map has been cleaned.
         """
-        self.check_cleaned()
+
         return self._root_spell_id
 
     @property
@@ -213,7 +213,7 @@ class OverridePatchMap(Cleanable):
             - The returned mapping is owned by the patch map and should be
               treated as read-only by callers.
         """
-        self.check_cleaned()
+
         return self._targets_by_spec
 
     @property
@@ -225,7 +225,7 @@ class OverridePatchMap(Cleanable):
             - The returned mapping is owned by the patch map and should be
               treated as read-only by callers.
         """
-        self.check_cleaned()
+
         return self._specificity_by_spec
 
     def apply(self, spell_override: Dict[str, object]) -> Dict[SocketRef, object]:
@@ -285,7 +285,7 @@ class OverridePatchMap(Cleanable):
                 If no sockets match a key, if specificity is missing,
                 or if conflicting overrides share the same specificity.
         """
-        self.check_cleaned()
+
         return self._apply_with_socket_shape_prechecked(
             spell_override=spell_override,
         )
@@ -625,7 +625,7 @@ class MutationPatchMap(Cleanable):
             RuntimeError:
                 If the map has been cleaned.
         """
-        self.check_cleaned()
+
         return self._root_spell_id
 
     @property
@@ -637,7 +637,7 @@ class MutationPatchMap(Cleanable):
             - The returned mapping is owned by the patch map and should be
               treated as read-only by callers.
         """
-        self.check_cleaned()
+
         return self._targets_by_spec
 
     def apply(self, mutation_override: Dict[str, object]) -> List[MutationEdgePatch]:
@@ -664,7 +664,7 @@ class MutationPatchMap(Cleanable):
                 If no sockets match a key, if a unique key matches multiple
                 sockets, or if targets are invalid.
         """
-        self.check_cleaned()
+
         if not mutation_override:
             return []
         if not isinstance(mutation_override, dict):

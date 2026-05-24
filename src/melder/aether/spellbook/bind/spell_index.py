@@ -121,7 +121,6 @@ class SpellIndex(Cleanable):
             - Returns the live version pointer, not a historical value.
             - Reads are lock-guarded so callers never observe a torn update.
         """
-        self.check_cleaned()
         with self._lock:
             return self._current_id
 

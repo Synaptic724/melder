@@ -143,7 +143,6 @@ class CreationGate(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         with self._lock:
             self.enabled = True
             self._event.set()
@@ -172,7 +171,6 @@ class CreationGate(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         with self._lock:
             self.enabled = False
             self._event.clear()
@@ -204,7 +202,6 @@ class CreationGate(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         if self.enabled:
             return
         self._event.wait()
@@ -233,7 +230,6 @@ class CreationGate(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         self._tickets.append(None)
 
     def unregister_ticket(self) -> None:
@@ -258,7 +254,6 @@ class CreationGate(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         self._tickets.pop()
 
     def has_active_tickets(self) -> bool:
@@ -282,7 +277,6 @@ class CreationGate(Cleanable):
             This is the boolean view used by drain loops; callers that need an
             exact count should use: meth:`active_ticket_count`.
         """
-        self.check_cleaned()
         return bool(self._tickets)
 
     def active_ticket_count(self) -> int:
@@ -305,7 +299,6 @@ class CreationGate(Cleanable):
         Notes:
             This is the exact-count counterpart to: meth:`has_active_tickets`.
         """
-        self.check_cleaned()
         return len(self._tickets)
 
     def is_closed(self) -> bool:
@@ -330,7 +323,6 @@ class CreationGate(Cleanable):
         Notes:
             This reports terminal closure only. Temporary blocked state from: meth: 'close` is tracked separately through "enabled".
         """
-        self.check_cleaned()
         return self._closed
 
     def close_and_wait_until_free(
@@ -376,8 +368,6 @@ class CreationGate(Cleanable):
             Existing waiters are released so they can observe terminal closure;
             the method then waits only on the ticket drain, not on the waiter exit.
         """
-        self.check_cleaned()
-
         with self._lock:
             self._closed = True
             self.enabled = False
