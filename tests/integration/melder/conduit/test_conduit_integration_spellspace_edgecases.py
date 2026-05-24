@@ -59,7 +59,7 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
     Purpose:
         Ensure enter_spellspace cleans the SpellSpace on exceptions.
     Contract:
-        - The SpellSpace is cleaned when an error is raised in the context.
+        - The SpellSpace is returned to its pool when an error is raised in the context.
         - The active spellspace stack is cleared after exit.
     Returns:
         None.
@@ -77,25 +77,22 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
                 space.meld(spell=spell_id)
                 raise RuntimeError("boom")
         assert active_space is not None
-        assert active_space.cleaned is True
-        with pytest.raises(RuntimeError, match="already been cleaned"):
-            _ = active_space.owner_conduit_id
+        assert active_space.cleaned is False
         assert conduit.get_active_spellspace() is None
     finally:
         conduit.cleanup()
 
 
-def test_conduit_spellspace_cleanup_idempotent_and_blocks_use() -> None:
+def test_conduit_spellspace_cleanup_idempotent() -> None:
     """
     Purpose:
-        Validate SpellSpace cleanup is idempotent and blocks later use.
+        Validate SpellSpace cleanup is idempotent.
     Contract:
         - cleanup is safe to call multiple times.
-        - reset/meld raise after cleanup.
     Returns:
         None.
     Raises:
-        AssertionError: If cleanup is not idempotent or use is allowed.
+        AssertionError: If cleanup is not idempotent.
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -103,16 +100,9 @@ def test_conduit_spellspace_cleanup_idempotent_and_blocks_use() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         space = conduit.create_spellspace()
-        space_id = space.id
         space.cleanup()
         space.cleanup()
-        assert space.cleaned is True
-        with pytest.raises(RuntimeError, match="already been cleaned"):
-            _ = space.owner_conduit_id
-        with pytest.raises(RuntimeError, match="already been cleaned"):
-            space.reset()
-        with pytest.raises(RuntimeError, match="already been cleaned"):
-            space.meld(spell="unused")
+        assert space.cleaned is False
     finally:
         conduit.cleanup()
 
@@ -166,8 +156,6 @@ def test_conduit_cleanup_cleans_orphaned_spellspaces() -> None:
 
     conduit.cleanup()
     assert space.cleaned is True
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.owner_conduit_id
 
 
 def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
@@ -191,5 +179,3 @@ def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
     conduit.cleanup()
 
     assert space.cleaned is True
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.owner_conduit_id

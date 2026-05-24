@@ -12,6 +12,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.meld.meld import Meld
+    from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 
 
 
@@ -37,7 +38,8 @@ class SpellSpace(Cleanable):
 
     Lifecycle:
         - Created by `Conduit.create_spellspace(...)` or `Conduit.enter_spellspace(...)`.
-        - Cleanup is idempotent and drops all injected collaborators.
+        - Normal cleanup returns the spellspace to its conduit-local pool.
+        - Permanent cleanup drops all injected collaborators.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -48,7 +50,8 @@ class SpellSpace(Cleanable):
         "_meld",
         "_creations",
         "_spellspace_registry",
-        "_version",
+        "_spellspace_pool",
+        "_permanent_cleanup_requested",
     ]
 
     def __init__(
@@ -58,6 +61,7 @@ class SpellSpace(Cleanable):
             meld: Meld,
             creations: Creations,
             spellspace_registry: set["SpellSpace"],
+            spellspace_pool: SpellSpacePool,
     ) -> None:
         """
         Create one explicit spellspace scope.
@@ -73,53 +77,112 @@ class SpellSpace(Cleanable):
             spellspace_registry:
                 Conduit-owned registry set used for spellspace lifecycle
                 bookkeeping and self-unregistration.
+            spellspace_pool:
+                Conduit-local pool that should receive this spellspace on
+                normal cleanup.
 
         Raises:
             ValueError:
                 If any required collaborator is missing or invalid.
         """
         super().__init__()
-        if not owner_conduit_id:
-            raise ValueError("owner_conduit_id must not be empty.")
-        if meld is None:
-            raise ValueError("meld must not be None.")
-        if creations is None:
-            raise ValueError("creations must not be None.")
-        if spellspace_registry is None:
-            raise ValueError("spellspace_registry must not be None.")
-
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._owner_conduit_id: str = owner_conduit_id
         self._meld: Meld = meld
         self._creations: Creations = creations
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
-        self._version: int = 0
+        self._spellspace_pool: SpellSpacePool = spellspace_pool
+        self._permanent_cleanup_requested: bool = False
 
     def cleanup(self) -> None:
         """
-        Finalize this spellspace and clear its scoped instances.
+        Cleanup this spellspace through either the reusable or permanent lane.
 
         Contract:
             - Idempotent cleanup.
-            - Best-effort calls `reset()` before unregistering.
-            - Removes this spellspace from the injected registry.
-            - Releases all injected collaborators after cleanup.
+            - Normal cleanup returns this spellspace to the conduit-local pool
+              after reusable cleanup.
+            - `permanent_cleanup()` forces the destructive lane even when a
+              pool is attached.
         """
         if self._cleaned:
             return
         with self._lock:
             if self._cleaned:
                 return
-        try:
-            self.reset()
-        finally:
+            self._spellspace_pool.release(self)
             self._spellspace_registry.discard(self)
-            self._cleaned = True
-            del self._spellspace_registry
-            del self._owner_conduit_id
-            del self._meld
-            del self._creations
+            if self._permanent_cleanup_requested:
+                self._cleanup_for_destroy()
+                return
+
+    def permanent_cleanup(self) -> None:
+        """
+        Permanently destroy this spellspace instead of returning it to a pool.
+
+        Contract:
+            - Flips the permanent cleanup flag immediately.
+            - Reuses the normal cleanup entrypoint so all public teardown still
+              flows through one surface.
+        """
+        self._permanent_cleanup_requested = True
+        self.cleanup()
+        
+    def reset(self) -> None:
+        """
+        Clear all spellspace-bound instances for this scope.
+
+        Contract:
+            - Delegates spellspace bucket clearing to the injected creations
+              manager.
+        """
+        with self._lock:
+            self._creations.clear_spellspace_instances(self._id)
+
+
+    def prepare_for_reuse(self) -> None:
+        """
+        Reactivate this spellspace for another use in the same conduit.
+
+        Contract:
+            - Re-registers this spellspace in the owning registry when absent.
+            - Clears the permanent-cleanup request flag.
+        """
+        with self._lock:
+            self._spellspace_registry.add(self)
+
+    def _cleanup_for_pool_reuse(self) -> None:
+        """
+        Clear spellspace-scoped runtime state so this object can be retained.
+
+        Contract:
+            - Clears spellspace-scoped creations for this spellspace id.
+            - Resets the permanent-cleanup flag.
+            - Keeps collaborator references intact for later reuse.
+        """
+        with self._lock:
+            self._creations.clear_spellspace_instances(self._id)
+            self._spellspace_registry.discard(self)
+
+    def _cleanup_for_destroy(self) -> None:
+        """
+        Permanently destroy this spellspace and release collaborator references.
+
+        Contract:
+            - Clears spellspace-scoped creations before dropping references.
+            - Removes this spellspace from the current registry.
+            - Deletes the pool reference as part of final teardown.
+        """
+        self._creations.clear_spellspace_instances(self._id)
+        self._spellspace_registry.discard(self)
+        self._cleaned = True
+        del self._spellspace_registry
+        del self._owner_conduit_id
+        del self._meld
+        del self._creations
+        del self._spellspace_pool
+        del self._permanent_cleanup_requested
 
     @property
     def id(self) -> str:
@@ -140,16 +203,6 @@ class SpellSpace(Cleanable):
             str: Owner conduit id injected at construction time.
         """
         return self._owner_conduit_id
-
-    @property
-    def version(self) -> int:
-        """
-        Return the monotonic version counter for this scope.
-
-        Returns:
-            int: Current version, incremented by each successful `reset()`.
-        """
-        return self._version
 
     def meld(
             self,
@@ -175,8 +228,6 @@ class SpellSpace(Cleanable):
         Raises:
             SpellSpaceScopeError:
                 If this spellspace is not the active scope.
-            RuntimeError:
-                If this spellspace has already been cleaned.
         """
         if self._creations.get_active_spellspace() is not self:
             raise SpellSpaceScopeError(
@@ -190,20 +241,3 @@ class SpellSpace(Cleanable):
             binding_name=binding_name,
             spell_override=spell_override,
         )
-
-    def reset(self) -> None:
-        """
-        Clear all spellspace-bound instances for this scope and bump version.
-
-        Contract:
-            - Delegates spellspace bucket clearing to the injected creations
-              manager.
-            - Increments the local version counter after successful clearing.
-
-        Raises:
-            RuntimeError:
-                If this spellspace has already been cleaned.
-        """
-        with self._lock:
-            self._creations.clear_spellspace_instances(self._id)
-            self._version += 1

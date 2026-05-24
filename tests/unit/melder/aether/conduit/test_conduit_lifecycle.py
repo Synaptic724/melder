@@ -339,7 +339,7 @@ def test_enter_spellspace_pushes_active_and_cleans_on_exit(
 
     Contract:
         - The yielded SpellSpace is active during the context.
-        - The SpellSpace is cleaned after leaving the context.
+        - The SpellSpace is returned to its pool after leaving the context.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
@@ -351,7 +351,7 @@ def test_enter_spellspace_pushes_active_and_cleans_on_exit(
         assert conduit_lesser.get_active_spellspace() is space
         assert space.cleaned is False
     assert conduit_lesser.get_active_spellspace() is None
-    assert space.cleaned is True
+    assert space.cleaned is False
 
 
 def test_enter_spellspace_nested_restores_previous_active(
@@ -375,9 +375,9 @@ def test_enter_spellspace_nested_restores_previous_active(
         with conduit_lesser.enter_spellspace() as inner:
             assert conduit_lesser.get_active_spellspace() is inner
         assert conduit_lesser.get_active_spellspace() is outer
-        assert inner.cleaned is True
+        assert inner.cleaned is False
     assert conduit_lesser.get_active_spellspace() is None
-    assert outer.cleaned is True
+    assert outer.cleaned is False
 
 
 def test_enter_spellspace_cleans_on_exception(conduit_lesser: Conduit) -> None:
@@ -385,7 +385,8 @@ def test_enter_spellspace_cleans_on_exception(conduit_lesser: Conduit) -> None:
     Verify spellspace cleanup occurs even when the body raises.
 
     Contract:
-        - The spellspace is cleaned on exit even if an exception occurs.
+        - The spellspace is returned to its pool on exit even if an
+          exception occurs.
         - The active stack is cleared after the context.
 
     Args:
@@ -398,7 +399,7 @@ def test_enter_spellspace_cleans_on_exception(conduit_lesser: Conduit) -> None:
         with conduit_lesser.enter_spellspace() as space:
             raise ValueError("boom")
     assert conduit_lesser.get_active_spellspace() is None
-    assert space.cleaned is True
+    assert space.cleaned is False
 
 
 def test_enter_spellspace_raises_on_stack_corruption(
@@ -785,10 +786,10 @@ def test_remove_conduit_record_from_nexus_publishes_for_lesser(
 def test_cleanup_spellspaces_logs_and_continues_when_space_cleanup_fails(
     conduit_lesser: Conduit,
 ) -> None:
-    """_cleanup_spellspaces should log spellspace cleanup failures and still drain the stack."""
+    """_cleanup_spellspaces should log permanent cleanup failures and still drain the stack."""
     conduit_lesser._logger = MagicMock()
     bad_space = MagicMock()
-    bad_space.cleanup.side_effect = RuntimeError("space boom")
+    bad_space.permanent_cleanup.side_effect = RuntimeError("space boom")
     conduit_lesser._spellspace_stack.set([bad_space])
 
     conduit_lesser._cleanup_spellspaces()
@@ -800,11 +801,11 @@ def test_cleanup_spellspaces_logs_and_continues_when_space_cleanup_fails(
 def test_cleanup_spellspaces_logs_registry_cleanup_failures(
     conduit_lesser: Conduit,
 ) -> None:
-    """_cleanup_spellspaces should log registry spellspace cleanup failures and still clear the registry."""
+    """_cleanup_spellspaces should log registry permanent cleanup failures and still clear the registry."""
     conduit_lesser._logger = MagicMock()
     good_space = MagicMock()
     bad_space = MagicMock()
-    bad_space.cleanup.side_effect = RuntimeError("registry space boom")
+    bad_space.permanent_cleanup.side_effect = RuntimeError("registry space boom")
     conduit_lesser._spellspace_registry = {good_space, bad_space}
 
     conduit_lesser._cleanup_spellspaces()

@@ -27,6 +27,7 @@ from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.aether.conduit.spell_space.spell_space_thread_state import (
     SpellSpaceThreadState,
 )
@@ -114,6 +115,7 @@ class Conduit(Cleanable):
        "_transaction_identity",
        "_spellspace_stack",
        "_spellspace_registry",
+       "_spellspace_pool",
        "_creations",
        "_creation_gate_controller",
        "_creation_gate",
@@ -284,6 +286,14 @@ class Conduit(Cleanable):
             resolution_conduit_id=self._root_conduit_id,
             dynamic_environment=self.__dynamic_environment__,
             meld_hooks=self._meld_hooks,
+        )
+        self._spellspace_pool: SpellSpacePool = SpellSpacePool(
+            owner_conduit_id=self._id,
+            meld=self._meld,
+            creations=self._creations,
+            spellspace_registry=self._spellspace_registry,
+            baseline_idle=4,
+            max_idle=4,
         )
         self._configure_conduit_state()
         self._conduit_ward: ConduitWard = ConduitWard(
@@ -598,17 +608,19 @@ class Conduit(Cleanable):
             stack = list(self._spellspace_stack.get())
             for space in stack:
                 try:
-                    space.cleanup()
+                    space.permanent_cleanup()
                 except Exception:
                     self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
             self._spellspace_stack.set([])
             if self._spellspace_registry is not None:
                 for registered_space in list(self._spellspace_registry):
                     try:
-                        registered_space.cleanup()
+                        registered_space.permanent_cleanup()
                     except Exception:
                         self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
                 self._spellspace_registry.clear()
+            if self._spellspace_pool is not None:
+                self._spellspace_pool.cleanup()
         except Exception:
             self._logger.error("Error flushing spellspace stack", "_cleanup_spellspaces", exc_info=True)
 
@@ -646,14 +658,7 @@ class Conduit(Cleanable):
             SpellSpace: A new SpellSpace owned by this Conduit.
         """
         self.check_cleaned()
-        space = SpellSpace(
-            owner_conduit_id=self._id,
-            meld=self._meld,
-            creations=self._creations,
-            spellspace_registry=self._spellspace_registry,
-        )
-        self._register_spellspace(space)
-        return space
+        return self._spellspace_pool.acquire()
 
     def _register_spellspace(self, space: SpellSpace) -> None:
         """

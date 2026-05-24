@@ -14,6 +14,7 @@ from typing import Any, Optional, Union
 import pytest
 
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
@@ -81,6 +82,19 @@ class _MeldStub:
         return self._meld_result
 
 
+class _PoolStub:
+    """Minimal spellspace pool stub for direct SpellSpace tests."""
+
+    def __init__(self) -> None:
+        """Initialize the stub with empty release bookkeeping."""
+        self.released_ids: list[str] = []
+
+    def release(self, obj: SpellSpace) -> None:
+        """Record the release and run the reusable cleanup lane."""
+        self.released_ids.append(obj.id)
+        obj._cleanup_for_pool_reuse()
+
+
 @pytest.fixture
 def owner_conduit_id() -> str:
     """Provide a stable owner conduit id for SpellSpace tests."""
@@ -105,10 +119,17 @@ def spellspace_registry() -> set[SpellSpace]:
     return set()
 
 
+@pytest.fixture
+def pool_stub() -> _PoolStub:
+    """Provide a fresh direct pool stub for SpellSpace tests."""
+    return _PoolStub()
+
+
 def test_init_requires_owner_conduit_id(
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
     """Verify SpellSpace rejects an empty owner_conduit_id."""
     with pytest.raises(ValueError, match="owner_conduit_id must not be empty"):
@@ -117,21 +138,24 @@ def test_init_requires_owner_conduit_id(
             meld=meld_stub,
             creations=creations_stub,
             spellspace_registry=spellspace_registry,
+            spellspace_pool=pool_stub,
         )
 
 
-def test_properties_expose_id_owner_conduit_id_and_version(
+def test_properties_expose_id_and_owner_conduit_id(
         owner_conduit_id: str,
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
-    """Verify SpellSpace exposes stable id, owner id, and starting version."""
+    """Verify SpellSpace exposes stable id and owner id."""
     space = SpellSpace(
         owner_conduit_id=owner_conduit_id,
         meld=meld_stub,
         creations=creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_pool=pool_stub,
     )
 
     first_id = space.id
@@ -139,47 +163,27 @@ def test_properties_expose_id_owner_conduit_id_and_version(
     assert first_id != ""
     assert space.id == first_id
     assert space.owner_conduit_id == owner_conduit_id
-    assert space.version == 0
 
 
-def test_reset_clears_spellspace_instances_and_increments_version(
+def test_reset_clears_spellspace_instances(
         owner_conduit_id: str,
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
-    """Verify reset clears spellspace storage and increments version."""
+    """Verify reset clears spellspace storage."""
     space = SpellSpace(
         owner_conduit_id=owner_conduit_id,
         meld=meld_stub,
         creations=creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_pool=pool_stub,
     )
 
     space.reset()
 
     assert creations_stub.cleared_ids == [space.id]
-    assert space.version == 1
-
-
-def test_reset_raises_after_cleanup(
-        owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
-        spellspace_registry: set[SpellSpace],
-) -> None:
-    """Verify reset is blocked once SpellSpace is cleaned."""
-    space = SpellSpace(
-        owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
-        spellspace_registry=spellspace_registry,
-    )
-    spellspace_registry.add(space)
-    space.cleanup()
-
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        space.reset()
 
 
 def test_meld_raises_when_not_active(
@@ -187,6 +191,7 @@ def test_meld_raises_when_not_active(
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
     """Verify meld rejects calls when SpellSpace is not the active scope."""
     space = SpellSpace(
@@ -194,6 +199,7 @@ def test_meld_raises_when_not_active(
         meld=meld_stub,
         creations=creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_pool=pool_stub,
     )
 
     with pytest.raises(SpellSpaceScopeError, match="active scope"):
@@ -204,6 +210,7 @@ def test_meld_delegates_when_active_and_returns_result(
         owner_conduit_id: str,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
     """Verify meld delegates to the injected Meld runtime when active."""
     expected = object()
@@ -213,6 +220,7 @@ def test_meld_delegates_when_active_and_returns_result(
         meld=meld_stub,
         creations=creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_pool=pool_stub,
     )
     creations_stub.set_active_spellspace(space)
 
@@ -235,51 +243,30 @@ def test_meld_delegates_when_active_and_returns_result(
     }
 
 
-def test_meld_raises_after_cleanup(
-        owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
-        spellspace_registry: set[SpellSpace],
-) -> None:
-    """Verify meld is blocked once SpellSpace is cleaned."""
-    space = SpellSpace(
-        owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
-        spellspace_registry=spellspace_registry,
-    )
-    spellspace_registry.add(space)
-    space.cleanup()
-
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        space.meld(spell_name="spell-x")
-
-
 def test_cleanup_calls_reset_unregisters_and_marks_cleaned(
         owner_conduit_id: str,
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
-    """Verify cleanup clears instances, unregisters, and drops collaborators."""
+    """Verify normal cleanup returns the spellspace to the pool."""
     space = SpellSpace(
         owner_conduit_id=owner_conduit_id,
         meld=meld_stub,
         creations=creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_pool=pool_stub,
     )
     spellspace_registry.add(space)
     space_id = space.id
 
     space.cleanup()
 
-    assert space.cleaned is True
+    assert space.cleaned is False
     assert space not in spellspace_registry
     assert creations_stub.cleared_ids == [space_id]
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.owner_conduit_id
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.version
+    assert pool_stub.released_ids == [space_id]
 
 
 def test_cleanup_idempotent_no_double_reset(
@@ -287,6 +274,7 @@ def test_cleanup_idempotent_no_double_reset(
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
+        pool_stub: _PoolStub,
 ) -> None:
     """Verify cleanup is idempotent and does not re-clear spellspace storage."""
     space = SpellSpace(
@@ -294,6 +282,7 @@ def test_cleanup_idempotent_no_double_reset(
         meld=meld_stub,
         creations=creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_pool=pool_stub,
     )
     spellspace_registry.add(space)
     space_id = space.id
@@ -302,5 +291,83 @@ def test_cleanup_idempotent_no_double_reset(
     space.cleanup()
 
     assert creations_stub.cleared_ids == [space_id]
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        _ = space.version
+    assert pool_stub.released_ids == [space_id]
+
+
+def test_cleanup_returns_spellspace_to_pool(
+        owner_conduit_id: str,
+        meld_stub: _MeldStub,
+        creations_stub: _CreationsStub,
+        spellspace_registry: set[SpellSpace],
+) -> None:
+    """Verify normal cleanup returns a pooled spellspace to the idle pool."""
+    pool = SpellSpacePool(
+        owner_conduit_id=owner_conduit_id,
+        meld=meld_stub,
+        creations=creations_stub,
+        spellspace_registry=spellspace_registry,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    space = pool.acquire()
+    space_id = space.id
+
+    space.cleanup()
+
+    assert space.cleaned is False
+    assert pool.idle_count == 1
+    assert space not in spellspace_registry
+    assert creations_stub.cleared_ids == [space_id]
+
+
+def test_pool_reuses_spellspace_after_cleanup(
+        owner_conduit_id: str,
+        meld_stub: _MeldStub,
+        creations_stub: _CreationsStub,
+        spellspace_registry: set[SpellSpace],
+) -> None:
+    """Verify a pooled spellspace is reused after normal cleanup."""
+    pool = SpellSpacePool(
+        owner_conduit_id=owner_conduit_id,
+        meld=meld_stub,
+        creations=creations_stub,
+        spellspace_registry=spellspace_registry,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    first = pool.acquire()
+    first_id = first.id
+
+    first.cleanup()
+    second = pool.acquire()
+
+    assert second is first
+    assert second.id == first_id
+    assert second.cleaned is False
+    assert second in spellspace_registry
+
+
+def test_permanent_cleanup_bypasses_pool_reuse(
+        owner_conduit_id: str,
+        meld_stub: _MeldStub,
+        creations_stub: _CreationsStub,
+        spellspace_registry: set[SpellSpace],
+) -> None:
+    """Verify permanent cleanup destroys instead of retaining to the pool."""
+    pool = SpellSpacePool(
+        owner_conduit_id=owner_conduit_id,
+        meld=meld_stub,
+        creations=creations_stub,
+        spellspace_registry=spellspace_registry,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    space = pool.acquire()
+    space_id = space.id
+
+    space.permanent_cleanup()
+
+    assert space.cleaned is True
+    assert pool.idle_count == 0
+    assert space not in spellspace_registry
+    assert creations_stub.cleared_ids == [space_id]
