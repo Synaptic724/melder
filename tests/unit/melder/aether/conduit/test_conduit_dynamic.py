@@ -293,6 +293,7 @@ def test_upgrade_to_normal_transitions_and_registers(
         AssertionError: If the upgrade workflow is incomplete.
     """
     old_creations = conduit_dynamic_lesser._creations
+    old_root_pool = conduit_dynamic_lesser._conduit_pool
     conduit_dynamic_lesser._conduit_ward = MagicMock()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
     conduit_dynamic_lesser._nexus_publish_enabled = True
@@ -305,6 +306,9 @@ def test_upgrade_to_normal_transitions_and_registers(
     assert conduit_dynamic_lesser._creations is old_creations
     assert conduit_dynamic_lesser._meld._creations is old_creations
     assert conduit_dynamic_lesser._meld._resolution_conduit_id == conduit_dynamic_lesser._id
+    assert conduit_dynamic_lesser._conduit_pool is not old_root_pool
+    assert conduit_dynamic_lesser._conduit_pool.root_conduit is conduit_dynamic_lesser
+    assert conduit_dynamic_lesser._conduit_pool.root_conduit_id == conduit_dynamic_lesser._id
     conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.assert_called_once_with()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook.assert_called_once_with()
     aetheric_frame_stub.register_root_conduit.assert_called_once_with(
@@ -461,6 +465,29 @@ def test_create_lesser_conduit_inherits_root_conduit_pool(
         assert lesser._conduit_pool is conduit_dynamic_normal._conduit_pool
     finally:
         lesser.permanent_cleanup()
+
+
+def test_create_lesser_conduit_reopens_temporarily_closed_pooled_gate(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify pooled lesser reacquire re-enables a non-terminally closed gate.
+    """
+    lesser = conduit_dynamic_normal.create_lesser_conduit()
+    lesser._creation_gate.close()
+
+    assert lesser._creation_gate.enabled is False
+    assert lesser._creation_gate.is_closed() is False
+
+    lesser.cleanup()
+    reused = conduit_dynamic_normal.create_lesser_conduit()
+
+    try:
+        assert reused is lesser
+        assert reused._creation_gate.enabled is True
+        assert reused._creation_gate.is_closed() is False
+    finally:
+        reused.permanent_cleanup()
 
 
 def test_set_creation_gate_controller_for_lineage_uses_existing_gate_and_updates_lesser_conduits(
