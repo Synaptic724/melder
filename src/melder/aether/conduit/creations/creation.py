@@ -1,15 +1,8 @@
-import threading
-import ulid
-from types import TracebackType
 from typing import Any, ClassVar
-
-
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
-
 
 class Creation(Cleanable):
     """
@@ -28,11 +21,9 @@ class Creation(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_id",
         "_value",
         "_has_disposal_methods",
         "_disposal_methods",
-        "_lock",
     ]
 
     def __init__(
@@ -53,8 +44,6 @@ class Creation(Cleanable):
                 later by `Creations`.
         """
         super().__init__()
-        #self._id: str = str(ulid.ULID())
-        self._lock : threading.RLock = threading.RLock()
         self._has_disposal_methods: bool = bool(has_disposal_methods)
         self._disposal_methods: list[str] = list(disposal_methods) if disposal_methods else []
         self._value: Any = value
@@ -72,29 +61,16 @@ class Creation(Cleanable):
         if self._cleaned:
             return
 
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            del self._value   # Underlying object is not disposed here.
-            del self._has_disposal_methods
-            del self._disposal_methods
-        del self._lock
-
-    @property
-    def id(self) -> str:
-        """
-        Return the stable ULID assigned to this wrapper.
-        """
-        self.check_cleaned()
-        #return self._id
+        self._cleaned = True
+        del self._value   # Underlying object is not disposed here.
+        del self._has_disposal_methods
+        del self._disposal_methods
 
     @property
     def value(self) -> Any:
         """
         Return the wrapped runtime object.
         """
-        self.check_cleaned()
         return self._value
 
     @property
@@ -106,7 +82,6 @@ class Creation(Cleanable):
             - True/False while the Creation is active.
             - None after cleanup.
         """
-        self.check_cleaned()
         return self._has_disposal_methods
 
     @property
@@ -118,39 +93,5 @@ class Creation(Cleanable):
             - List of method names while the Creation is active.
             - None after cleanup.
         """
-        self.check_cleaned()
         return self._disposal_methods
 
-    def __repr__(self) -> str:
-        """
-        Return a debug-oriented representation of the wrapper.
-        """
-        self.check_cleaned()
-        #return f"<Creation id={self._id} value={self._value!r}>"
-
-    def __enter__(self) -> 'Creation':
-        """
-        Enter the wrapper lock context.
-
-        Returns:
-            Creation: The wrapper itself while its internal lock is held.
-        """
-        self.check_cleaned()
-        self._lock.acquire()
-        return self
-
-    def __exit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
-    ) -> None:
-        """
-        Exit the wrapper lock context.
-
-        Args:
-            exc_type: Exception type raised inside the context, if any.
-            exc_value: Exception instance raised inside the context.
-            traceback: Traceback for the exception, if any.
-        """
-        self._lock.release()

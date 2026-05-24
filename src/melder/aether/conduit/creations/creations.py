@@ -89,7 +89,7 @@ class Creations(Cleanable):
         # Single shared storage for all lifecycle scopes and spellspace buckets.
         # Non-spellspace entries are keyed by spell_id.
         # Spellspace entries are keyed by spellspace_id and hold nested buckets.
-        self._creations: Dict[str, Any] = {}
+        self._creations: Dict[str, Creation] = {}
 
 
     #region Destructor

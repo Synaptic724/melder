@@ -381,12 +381,51 @@ def test_link_lesser_conduit(ward):
         Policies.default,
         child._ward_frame,
     )
+    child._transaction_identity = MagicMock()
     
     ward._link_lesser_conduit(child)
     
     assert "child-1" in ward._lesser_conduits
     assert child._conduit_ward._parent_conduit == ward._conduit
     assert child._conduit_ward.root_conduit == ward._conduit
+    child._transaction_identity.register_lesser_parent.assert_called_once_with(
+        "conduit-1"
+    )
+
+
+def test_detach_for_pool_unregisters_lesser_parent_relation(ward) -> None:
+    """
+    Verify pooling detach removes the active lesser-parent relation.
+
+    Contract:
+        - The child is removed from the parent's lesser registry.
+        - The child ward clears its parent pointer.
+        - DevOps lineage ownership is removed through the child conduit identity.
+    """
+    child = MagicMock()
+    child._id = "child-2"
+    child._aetheric_frame_name = "default"
+    child._logger = MagicMock()
+    child._conduit_state = ConduitState.lesser
+    child._ward_frame = _make_frame_with_cloud()
+    child._transaction_identity = MagicMock()
+    child._conduit_ward = ConduitWard(
+        child,
+        True,
+        ConduitState.lesser,
+        Policies.default,
+        child._ward_frame,
+    )
+
+    ward._link_lesser_conduit(child)
+
+    child._conduit_ward._detach_for_pool()
+
+    assert "child-2" not in ward._lesser_conduits
+    assert child._conduit_ward._parent_conduit is None
+    child._transaction_identity.unregister_lesser_parent.assert_called_once_with(
+        parent_conduit_id="conduit-1"
+    )
 
 
 def test_link_lesser_conduit_requires_root_conduit() -> None:

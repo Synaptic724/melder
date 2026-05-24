@@ -379,6 +379,84 @@ def test_devops_information_registry_unregister_cluster_membership_prunes_empty_
     assert registry.get_clusters_for_conduit("conduit-1") == ()
 
 
+def test_devops_information_registry_lesser_membership_edges_are_bidirectional() -> None:
+    """
+    Purpose:
+        Verify lesser-parent membership registration stays bidirectional.
+    Contract:
+        - Parent -> lesser uses a set-backed relation.
+        - Lesser -> parent resolves the current parent id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lesser lineage mirrors diverge.
+    """
+    registry = DevopsInformationRegistry("frame-1")
+
+    registry.register_lesser_conduit_membership(
+        parent_conduit_id="parent-1",
+        lesser_conduit_id="lesser-1",
+    )
+
+    assert registry.list_lesser_conduits_for_parent("parent-1") == ("lesser-1",)
+    assert registry.get_parent_conduit_for_lesser("lesser-1") == "parent-1"
+
+
+def test_devops_information_registry_unregister_lesser_membership_prunes_empty_buckets() -> None:
+    """
+    Purpose:
+        Verify removing the last lesser-parent membership prunes both mirrors.
+    Contract:
+        - Parent bucket disappears when its lesser set becomes empty.
+        - Lesser -> parent mapping is removed too.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If stale lineage buckets survive.
+    """
+    registry = DevopsInformationRegistry("frame-1")
+    registry.register_lesser_conduit_membership(
+        parent_conduit_id="parent-1",
+        lesser_conduit_id="lesser-1",
+    )
+
+    registry.unregister_lesser_conduit_membership(
+        parent_conduit_id="parent-1",
+        lesser_conduit_id="lesser-1",
+    )
+
+    assert registry.list_lesser_conduits_for_parent("parent-1") == ()
+    assert registry.get_parent_conduit_for_lesser("lesser-1") is None
+
+
+def test_devops_information_registry_unregister_identity_clears_lesser_lineage_edges() -> None:
+    """
+    Purpose:
+        Verify conduit-identity teardown removes lineage relation indexes.
+    Contract:
+        - Removing a parent identity clears parent -> lesser edges.
+        - The paired lesser -> parent mapping is removed too.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lineage edges survive conduit identity teardown.
+    """
+    registry = DevopsInformationRegistry("frame-1")
+    parent_identity = _make_identity(owner_kind="conduit", owner_id="parent-1")
+    lesser_identity = _make_identity(owner_kind="conduit", owner_id="lesser-1")
+    registry.register_identity(parent_identity)
+    registry.register_identity(lesser_identity)
+    registry.register_lesser_conduit_membership(
+        parent_conduit_id="parent-1",
+        lesser_conduit_id="lesser-1",
+    )
+
+    registry.unregister_identity(parent_identity)
+
+    assert registry.list_lesser_conduits_for_parent("parent-1") == ()
+    assert registry.get_parent_conduit_for_lesser("lesser-1") is None
+
+
 def test_devops_information_registry_transaction_indexes_support_identity_and_type_queries() -> None:
     """
     Purpose:
