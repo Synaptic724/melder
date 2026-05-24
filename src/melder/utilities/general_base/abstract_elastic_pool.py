@@ -29,11 +29,11 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
 
     Contract:
         - `acquire(...)` either reuses an idle object or creates a new one.
-        - `release(obj)` decrements in-use count, resets the object, and either
-          retains it or destroys it based on the current elastic target.
+        - `release(obj)` decrements in-use count and either retains or destroys
+          it based on the current elastic target.
         - `cleanup()` destroys all retained idle objects and permanently retires
           the pool.
-        - Subclasses define object creation, reset, and destruction behavior.
+        - Subclasses define object creation and destruction behavior.
 
     Threading:
         - Internal policy state is protected by an `RLock`.
@@ -165,7 +165,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return whether this pool currently retains released objects.
         """
-        
+        self.check_cleaned()
         return self._enabled
 
     @property
@@ -173,7 +173,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the current retained idle object count.
         """
-        
+        self.check_cleaned()
         return len(self._idle)
 
     @property
@@ -181,7 +181,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the number of objects currently checked out of the pool.
         """
-        
+        self.check_cleaned()
         return self._in_use_count
 
     @property
@@ -189,7 +189,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the current elastic idle-retention target.
         """
-        
+        self.check_cleaned()
         return self._target_idle
 
     @property
@@ -197,7 +197,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the baseline idle-retention floor.
         """
-        
+        self.check_cleaned()
         return self._baseline_idle
 
     @property
@@ -205,7 +205,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the hard idle-retention ceiling.
         """
-        
+        self.check_cleaned()
         return self._max_idle
 
     def acquire(self, *args: Any, **kwargs: Any) -> _T:
@@ -243,7 +243,6 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Contract:
             - Decrements in-use count exactly once.
             - Applies decay before deciding whether to retain or destroy.
-            - Calls `reset_object(...)` before retaining.
             - Destroys returned objects when pooling is disabled or idle
               retention is already full.
 
@@ -254,14 +253,13 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             RuntimeError:
                 If release is called with no matching checked-out object count.
         """
-        
+        self.check_cleaned()
         with self._lock:
             if self._in_use_count <= 0:
                 raise RuntimeError("release() called with no in-use objects.")
             self._in_use_count -= 1
             now = self._time_func()
             self._apply_decay_locked(now)
-            self.reset_object(obj)
             if self._enabled and len(self._idle) < self._target_idle and len(self._idle) < self._max_idle:
                 self._idle.append(obj)
                 return
@@ -274,7 +272,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Returns:
             Dict[str, Any]: Current pool policy and live-count snapshot.
         """
-        
+        self.check_cleaned()
         with self._lock:
             return {
                 "enabled": self._enabled,
@@ -306,13 +304,6 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def create_object(self, *args: Any, **kwargs: Any) -> _T:
         """
         Create one new object for this pool.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def reset_object(self, obj: _T) -> None:
-        """
-        Reset one object so it can be safely retained for reuse.
         """
         raise NotImplementedError
 

@@ -15,14 +15,12 @@ class _TestElasticPool(AbstractElasticPool[Dict[str, Any]]):
         "created_ids",
         "destroyed_ids",
         "prepared_tags",
-        "reset_ids",
     ]
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._create_counter: int = 0
         self.created_ids: List[int] = []
-        self.reset_ids: List[int] = []
         self.destroyed_ids: List[int] = []
         self.prepared_tags: List[Any] = []
 
@@ -35,11 +33,6 @@ class _TestElasticPool(AbstractElasticPool[Dict[str, Any]]):
         }
         self.created_ids.append(obj["id"])
         return obj
-
-    def reset_object(self, obj: Dict[str, Any]) -> None:
-        obj["prepared_tag"] = None
-        obj["reset_count"] += 1
-        self.reset_ids.append(obj["id"])
 
     def destroy_object(self, obj: Dict[str, Any]) -> None:
         self.destroyed_ids.append(obj["id"])
@@ -106,9 +99,9 @@ def test_init_rejects_invalid_numeric_configuration() -> None:
         raise AssertionError("Expected ValueError for invalid pool kwargs.")
 
 
-def test_release_retains_reset_object_under_target() -> None:
+def test_release_retains_object_under_target() -> None:
     """
-    Release should reset and retain an object while idle capacity remains.
+    Release should retain an object while idle capacity remains.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -122,9 +115,8 @@ def test_release_retains_reset_object_under_target() -> None:
 
     assert pool.in_use_count == 0
     assert pool.idle_count == 1
-    assert pool.reset_ids == [1]
     assert pool.destroyed_ids == []
-    assert obj["prepared_tag"] is None
+    assert obj["prepared_tag"] == "first"
 
 
 def test_prepare_object_runs_on_reused_object() -> None:

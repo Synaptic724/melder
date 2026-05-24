@@ -264,3 +264,127 @@ def test_component_creations_extract_restore_unique_per_conduit_reuses_instance(
         assert restored is instance
     finally:
         conduit.cleanup()
+
+
+def test_component_conduit_create_spellspace_reuses_pooled_instance() -> None:
+    """
+    Purpose:
+        Validate conduit spellspace creation reuses pooled spellspace objects.
+    Contract:
+        - cleanup returns a spellspace to the conduit-local pool.
+        - the next create reuses the same spellspace object.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the spellspace object is not reused.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.create_spellspace()
+        first_id = first.id
+        first.cleanup()
+        second = conduit.create_spellspace()
+        assert second is first
+        assert second.id == first_id
+    finally:
+        conduit.cleanup()
+
+
+def test_component_conduit_pool_preserves_fixed_spellspace_collaborators() -> None:
+    """
+    Purpose:
+        Validate pooled spellspace reuse preserves conduit-owned collaborators.
+    Contract:
+        - pooled spellspaces keep the same owner conduit id
+        - pooled spellspaces keep the same meld and creations collaborators
+    Returns:
+        None.
+    Raises:
+        AssertionError: If fixed collaborators drift across reuse.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.create_spellspace()
+        first_meld = first._meld
+        first_creations = first._creations
+        first.cleanup()
+        second = conduit.create_spellspace()
+        assert second is first
+        assert second.owner_conduit_id == conduit._id
+        assert second._meld is first_meld
+        assert second._creations is first_creations
+    finally:
+        conduit.cleanup()
+
+
+def test_component_conduit_permanent_cleanup_drops_spellspace_from_reuse() -> None:
+    """
+    Purpose:
+        Validate permanent cleanup removes a spellspace from the reuse path.
+    Contract:
+        - permanent cleanup destroys the spellspace
+        - the next create returns a different object
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a permanently cleaned spellspace is reused.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.create_spellspace()
+        first_id = first.id
+        first.permanent_cleanup()
+        second = conduit.create_spellspace()
+        assert second is not first
+        assert second.id != first_id
+    finally:
+        conduit.cleanup()
+
+
+def test_component_conduit_cleanup_destroys_idle_pooled_spellspaces() -> None:
+    """
+    Purpose:
+        Validate conduit cleanup permanently destroys idle pooled spellspaces.
+    Contract:
+        - a spellspace returned to the pool remains live until conduit cleanup
+        - conduit cleanup permanently cleans the idle pooled spellspace
+    Returns:
+        None.
+    Raises:
+        AssertionError: If conduit cleanup leaves the pooled spellspace live.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    space = conduit.create_spellspace()
+    space.cleanup()
+
+    conduit.cleanup()
+
+    assert space.cleaned is True
+
+
+def test_component_spellspace_pool_cleanup_destroys_idle_spellspaces_directly() -> None:
+    """
+    Purpose:
+        Validate direct pool cleanup permanently destroys idle spellspaces.
+    Contract:
+        - idle spellspaces retained by the pool are destroyed by pool cleanup
+        - the spellspace registry remains empty afterward
+    Returns:
+        None.
+    Raises:
+        AssertionError: If direct pool cleanup leaves idle spellspaces live.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    try:
+        space = conduit.create_spellspace()
+        space.cleanup()
+        conduit._spellspace_pool.cleanup()
+        assert space.cleaned is True
+        assert conduit._spellspace_registry == set()
+    finally:
+        conduit.cleanup()

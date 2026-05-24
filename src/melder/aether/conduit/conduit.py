@@ -268,6 +268,7 @@ class Conduit(Cleanable):
             self._conduit_hooks = resolved_conduit_hooks or None
         else:
             self._conduit_hooks = conduit_hooks
+
         if meld_hooks is None:
             resolved_meld_hooks = self._configuration.get_meld_hooks(
                 self._spellbook._id,

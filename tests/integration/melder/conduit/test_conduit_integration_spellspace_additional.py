@@ -119,6 +119,81 @@ def test_conduit_spellspace_context_isolation_across_threads() -> None:
         conduit.cleanup()
 
 
+def test_conduit_spellspace_pool_reuses_ids_after_concurrent_threads() -> None:
+    """
+    Purpose:
+        Validate pooled spellspace ids are reused after concurrent thread use.
+    Contract:
+        - Two worker threads acquire distinct spellspaces through
+          `enter_spellspace()`.
+        - After both workers exit, the conduit-local pool retains those
+          spellspaces.
+        - Subsequent main-thread spellspace acquisition reuses ids from the
+          worker-thread set.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pooled spellspace ids are not reused after
+        concurrent use.
+    """
+    configuration = _make_dynamic_configuration(workers=4)
+    spellbook = Spellbook(configuration=configuration)
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(automatic=False, name="root")
+    barrier = Barrier(2)
+    lock = Lock()
+    errors: list[Exception] = []
+    worker_ids: list[str] = []
+
+    def worker() -> None:
+        """
+        Purpose:
+            Acquire and release one spellspace inside a worker thread.
+        Contract:
+            - Records the acquired spellspace id.
+            - Melds one spell through the active spellspace.
+            - Captures any failure for the main-thread assertion surface.
+        Returns:
+            None.
+        """
+        try:
+            with conduit.enter_spellspace() as space:
+                barrier.wait(timeout=5)
+                with lock:
+                    worker_ids.append(space.id)
+                _ = space.meld(spell=spell_id)
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [Thread(target=worker) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    try:
+        assert errors == []
+        assert len(worker_ids) == 2
+        assert len(set(worker_ids)) == 2
+
+        first = conduit.create_spellspace()
+        second = conduit.create_spellspace()
+        try:
+            assert first.id in set(worker_ids)
+            assert second.id in set(worker_ids)
+            assert first.id != second.id
+        finally:
+            first.cleanup()
+            second.cleanup()
+    finally:
+        conduit.cleanup()
+
+
 def test_conduit_spellspace_enforces_active_scope_between_nested_spaces() -> None:
     """
     Purpose:

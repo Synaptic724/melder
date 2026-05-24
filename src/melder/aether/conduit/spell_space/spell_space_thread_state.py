@@ -18,8 +18,6 @@ class _SpellSpaceLocal(threading.local):
         - The list is initialized eagerly on first access in each thread.
     """
 
-    __slots__ = ("spellspace_stack",)
-
     def __init__(self) -> None:
         """
         Initialize the current thread's spellspace stack.

@@ -22,7 +22,6 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     Contract:
         - Pool ownership is conduit-local in this slice.
         - Reused spellspaces stay attached to the configured conduit runtime.
-        - Reset uses the spellspace reusable cleanup lane.
         - Destruction uses the spellspace permanent cleanup lane.
     """
 
@@ -87,12 +86,6 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         """
         obj._spellspace_registry.add(obj)
         return obj
-
-    def reset_object(self, obj: SpellSpace) -> None:
-        """
-        Reset one spellspace so it can be retained for reuse.
-        """
-        return None
 
     def destroy_object(self, obj: SpellSpace) -> None:
         """
