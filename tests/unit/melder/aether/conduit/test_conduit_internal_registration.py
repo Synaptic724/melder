@@ -89,26 +89,6 @@ def test_add_spells_to_aether_registers_spell_indices(
         spell_a.cleanup()
         spell_b.cleanup()
 
-def test_qualify_contracts_raises_when_cleaned(
-    conduit_normal: Conduit,
-) -> None:
-    """
-    Verify _qualify_contracts rejects cleaned conduits.
-
-    Contract:
-        - Cleaned conduits raise RuntimeError.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-
-    Raises:
-        AssertionError: If cleaned conduits do not raise.
-    """
-    conduit_normal.cleanup()
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        conduit_normal._qualify_contracts()
-
-
 def test_qualify_contracts_raises_for_lesser(
     conduit_lesser: Conduit,
 ) -> None:

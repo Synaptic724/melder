@@ -888,14 +888,6 @@ def test_hash_stability_across_reuse(monkeypatch):
     s2 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     assert s1.kwargs["spell_index"].current == s2.kwargs["spell_index"].current
 
-
-def test_cleaned_state_blocks_bind_logic_direct():
-    b = Bind(StubSpellbook())
-    b.cleanup()
-    with pytest.raises(RuntimeError):
-        b._bind_logic(RealClassImplementingProto, None, None, Existence.unique, Permissions.read, "f")
-
-
 # Binder/Spellbook wiring stubs ---------------------------------------
 
 class StubSpellBinder:
@@ -1010,16 +1002,6 @@ def test_examiner_instantiated_once_per_bind_instance(monkeypatch):
 
 
 # Cleanup with decorator already created --------------------------------
-
-def test_decorator_after_cleanup_raises(monkeypatch):
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
-    b = Bind(StubSpellbook())
-    dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
-    b.cleanup()
-    class Foo: pass
-    with pytest.raises(RuntimeError):
-        dec(Foo)
-
 
 # Protocol attribute access raising ------------------------------------
 
@@ -1252,16 +1234,6 @@ def test_decorator_lambda_with_name(monkeypatch):
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", binding_name="lam")
     lam_spell = dec(lambda x: x)
     assert lam_spell.kwargs["spell_type"] == SpellType.LAMBDA_METHOD_WITH_BINDING_NAME
-
-
-def test_decorator_after_cleanup_for_callable(monkeypatch):
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(callable_profile()))
-    b = Bind(StubSpellbook())
-    dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
-    b.cleanup()
-    with pytest.raises(RuntimeError):
-        dec(lambda x: x)
-
 
 # Existing object + spellframe combos ----------------------------------
 

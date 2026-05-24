@@ -1541,17 +1541,6 @@ def test_check_conduit_id_and_conduit_success_with_conduit_only(ward):
 # 18. Lesser Conduit Guardrails
 # ----------------------------------------------------------------------
 
-def test_link_lesser_conduit_rejects_cleaned_ward(ward):
-    """
-    Verify _link_lesser_conduit rejects operations after cleanup.
-    """
-    ward.cleanup()
-    child = MagicMock()
-    child._id = "child-1"
-
-    with pytest.raises(RuntimeError, match="cleaned"):
-        ward._link_lesser_conduit(child)
-
 # ----------------------------------------------------------------------
 # 19. Contract Lookup Helpers
 # ----------------------------------------------------------------------

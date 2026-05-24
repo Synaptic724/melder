@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 # Melder Imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.existence.existence import Existence
+from melder.utilities.general_base.cleanable import Cleanable
 
 _SCAN_BIND_ATTR = "__melder_scan_bind__"
 
@@ -200,7 +201,7 @@ def scan_bind(
     return decorator
 
 
-class Scan:
+class Scan(Cleanable):
     """
     Public API
 
@@ -214,7 +215,7 @@ class Scan:
         - Rejects re-exports: the object's __module__`` must match the module name.
         - Delegates all validation to `Spellbook.bind`.
     """
-    __slots__ = ("_spellbook",)
+    __slots__ = tuple(Cleanable.__slots__) + ("_spellbook",)
 
     def __init__(self, spellbook: Spellbook) -> None:
         """
@@ -225,9 +226,27 @@ class Scan:
         Raises:
             ValueError: If spellbook is None.
         """
+        super().__init__()
         if spellbook is None:
             raise ValueError("Scan requires a valid Spellbook instance.")
         self._spellbook = spellbook
+
+    def cleanup(self) -> None:
+        """
+        Retire this scan helper and drop the owning Spellbook reference.
+
+        Contract:
+            - Idempotent.
+            - Deletes the strong Spellbook reference.
+            - Leaves future public calls to fail through `check_cleaned()`.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._spellbook
 
     def scan_module(self, module: ModuleType) -> list[str]:
         """

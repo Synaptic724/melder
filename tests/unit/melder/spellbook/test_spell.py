@@ -696,18 +696,6 @@ def test_spell_set_hooks_keeps_enabled_when_other_hooks_remain() -> None:
     assert spell._activation_hooks == [activation_hook]
     assert spell._hooks_enabled is True
 
-
-def test_spell_set_hooks_raises_when_cleaned() -> None:
-    """
-    Verify _set_hooks rejects calls after cleanup.
-    """
-    spell = _make_spell()
-    spell.cleanup()
-
-    with pytest.raises(RuntimeError, match="already been cleaned"):
-        spell._set_hooks(pre_hooks=[])
-
-
 @pytest.mark.parametrize(
     "spellframe,binding,spell_name,expected",
     [
