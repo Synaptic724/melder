@@ -87,7 +87,6 @@ class SpellSpaceThreadState(Cleanable):
             List[Any]:
                 Detached copy of the current thread's spellspace stack.
         """
-        self.check_cleaned()
         return list(self._local.spellspace_stack)
 
     def set(self, stack: List[Any]) -> None:
@@ -105,7 +104,6 @@ class SpellSpaceThreadState(Cleanable):
             TypeError:
                 If `stack` is not a list.
         """
-        self.check_cleaned()
         if not isinstance(stack, list):
             raise TypeError("spellspace stack must be a list.")
         self._local.spellspace_stack = list(stack)
@@ -118,7 +116,6 @@ class SpellSpaceThreadState(Cleanable):
             Optional[Any]:
                 Active spellspace object for the current thread, or `None`.
         """
-        self.check_cleaned()
         stack = self._local.spellspace_stack
         if not stack:
             return None

@@ -367,7 +367,6 @@ class Conduit(Cleanable):
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
         self._remove_conduit_record_from_nexus()
-        self._creation_gate.open()
         self._conduit_pool.return_lesser_conduit(self)
 
     def _cleanup_spellspaces_for_pool(self) -> None:
@@ -1523,6 +1522,11 @@ class Conduit(Cleanable):
                         object_ref=self,
                     )
                 self._refresh_devops_identity_state()
+                self._conduit_pool = ConduitPool(
+                    root_conduit=self,
+                    baseline_idle=10,
+                    max_idle=10,
+                )
 
                 # Step 2: Keep the current creations object.
                 # The creations owner id already matches this conduit id, so
@@ -1698,6 +1702,7 @@ class Conduit(Cleanable):
                 new_conduit._conduit_pool = root_conduit._conduit_pool
                 if new_conduit._meld is not None:
                     new_conduit._meld._resolution_conduit_id = root_conduit_id
+                new_conduit._creation_gate.open()
 
                 # Fire activation hook with the new conduit instance.
                 self._fire_conduit_hooks(
@@ -1739,6 +1744,7 @@ class Conduit(Cleanable):
                 new_conduit._conduit_pool = root_conduit._conduit_pool
                 if new_conduit._meld is not None:
                     new_conduit._meld._resolution_conduit_id = root_conduit_id
+                new_conduit._creation_gate.open()
                 self._conduit_ward._link_lesser_conduit(new_conduit)
                 new_conduit._publish_conduit_record_to_nexus()
 
