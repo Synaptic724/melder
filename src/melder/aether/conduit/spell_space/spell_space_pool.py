@@ -85,14 +85,14 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         """
         Reactivate one spellspace before use.
         """
-        obj.prepare_for_reuse()
+        obj._spellspace_registry.add(obj)
         return obj
 
     def reset_object(self, obj: SpellSpace) -> None:
         """
         Reset one spellspace so it can be retained for reuse.
         """
-        obj._cleanup_for_pool_reuse()
+        return None
 
     def destroy_object(self, obj: SpellSpace) -> None:
         """

@@ -129,13 +129,13 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
         conduit.cleanup()
 
 
-def test_component_spellspace_reset_disposes_and_clears_bucket() -> None:
+def test_component_spellspace_cleanup_disposes_and_clears_bucket() -> None:
     """
     Purpose:
-        Validate spellspace reset disposes instances and clears the bucket.
+        Validate spellspace cleanup disposes instances and clears the bucket.
     Contract:
-        - reset triggers disposal for spellspace instances.
-        - spellspace creation bucket is cleared after reset.
+        - cleanup triggers disposal for spellspace instances.
+        - spellspace creation bucket is cleared after cleanup.
     Returns:
         None.
     Raises:
@@ -155,19 +155,19 @@ def test_component_spellspace_reset_disposes_and_clears_bucket() -> None:
             creation = creations.get_spellspace_creation(space.id, spell_id)
             assert creation is not None
             assert creation.value is instance
-            space.reset()
-            assert instance.cleanup_calls == 1
-            assert creations.get_spellspace_creation(space.id, spell_id) is None
+            space_id = space.id
+        assert instance.cleanup_calls == 1
+        assert creations.get_spellspace_creation(space_id, spell_id) is None
     finally:
         conduit.cleanup()
 
 
-def test_component_spellspace_reset_preserves_other_spellspaces() -> None:
+def test_component_spellspace_cleanup_preserves_other_spellspaces() -> None:
     """
     Purpose:
-        Validate resetting one spellspace does not clear other buckets.
+        Validate cleaning one spellspace does not clear other buckets.
     Contract:
-        - reset clears only the active spellspace bucket.
+        - cleanup clears only the active spellspace bucket.
         - other spellspace buckets remain intact.
     Returns:
         None.
@@ -187,11 +187,11 @@ def test_component_spellspace_reset_preserves_other_spellspaces() -> None:
             outer_instance = outer.meld(spell=spell_id)
             with conduit.enter_spellspace() as inner:
                 inner.meld(spell=spell_id)
-                inner.reset()
-                assert creations.get_spellspace_creation(inner.id, spell_id) is None
-                outer_creation = creations.get_spellspace_creation(outer.id, spell_id)
-                assert outer_creation is not None
-                assert outer_creation.value is outer_instance
+                inner_id = inner.id
+            assert creations.get_spellspace_creation(inner_id, spell_id) is None
+            outer_creation = creations.get_spellspace_creation(outer.id, spell_id)
+            assert outer_creation is not None
+            assert outer_creation.value is outer_instance
     finally:
         conduit.cleanup()
 

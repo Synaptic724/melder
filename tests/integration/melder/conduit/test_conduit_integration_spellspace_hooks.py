@@ -52,15 +52,15 @@ def _make_dynamic_configuration() -> SpellbookConfiguration:
     return configuration
 
 
-def test_conduit_spellspace_nesting_and_reset() -> None:
+def test_conduit_spellspace_nesting_and_cleanup() -> None:
     """
     Purpose:
-        Validate SpellSpace nesting and reset behavior for unique_per_spell_space.
+        Validate SpellSpace nesting and cleanup behavior for unique_per_spell_space.
     Contract:
         - Nested spellspaces isolate instances.
         - Inner spellspace reuse is stable.
         - Outer spellspace reuse is preserved after inner exits.
-        - Reset clears spellspace instances and bumps version.
+        - Cleanup clears spellspace instances for the active spellspace.
     Returns:
         None.
     Raises:
@@ -94,13 +94,10 @@ def test_conduit_spellspace_nesting_and_reset() -> None:
             outer_after_inner = outer.meld(spell=spell_id)
             assert outer_after_inner is outer_instance
 
-            initial_version = outer.version
-            outer.reset()
-            assert outer.version == initial_version + 1
-            outer_after_reset = outer.meld(spell=spell_id)
-            assert outer_after_reset is not outer_instance
-
         assert conduit.get_active_spellspace() is None
+        with conduit.enter_spellspace() as next_space:
+            outer_after_cleanup = next_space.meld(spell=spell_id)
+            assert outer_after_cleanup is not outer_instance
     finally:
         conduit.cleanup()
 

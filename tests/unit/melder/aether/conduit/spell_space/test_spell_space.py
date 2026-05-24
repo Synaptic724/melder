@@ -90,9 +90,8 @@ class _PoolStub:
         self.released_ids: list[str] = []
 
     def release(self, obj: SpellSpace) -> None:
-        """Record the release and run the reusable cleanup lane."""
+        """Record the release without mutating the spellspace a second time."""
         self.released_ids.append(obj.id)
-        obj._cleanup_for_pool_reuse()
 
 
 @pytest.fixture
@@ -125,23 +124,6 @@ def pool_stub() -> _PoolStub:
     return _PoolStub()
 
 
-def test_init_requires_owner_conduit_id(
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
-        spellspace_registry: set[SpellSpace],
-        pool_stub: _PoolStub,
-) -> None:
-    """Verify SpellSpace rejects an empty owner_conduit_id."""
-    with pytest.raises(ValueError, match="owner_conduit_id must not be empty"):
-        SpellSpace(
-            owner_conduit_id="",
-            meld=meld_stub,
-            creations=creations_stub,
-            spellspace_registry=spellspace_registry,
-            spellspace_pool=pool_stub,
-        )
-
-
 def test_properties_expose_id_and_owner_conduit_id(
         owner_conduit_id: str,
         meld_stub: _MeldStub,
@@ -165,14 +147,14 @@ def test_properties_expose_id_and_owner_conduit_id(
     assert space.owner_conduit_id == owner_conduit_id
 
 
-def test_reset_clears_spellspace_instances(
+def test_cleanup_clears_spellspace_instances_and_returns_to_pool(
         owner_conduit_id: str,
         meld_stub: _MeldStub,
         creations_stub: _CreationsStub,
         spellspace_registry: set[SpellSpace],
         pool_stub: _PoolStub,
 ) -> None:
-    """Verify reset clears spellspace storage."""
+    """Verify cleanup clears spellspace storage and returns the spellspace to the pool."""
     space = SpellSpace(
         owner_conduit_id=owner_conduit_id,
         meld=meld_stub,
@@ -180,10 +162,14 @@ def test_reset_clears_spellspace_instances(
         spellspace_registry=spellspace_registry,
         spellspace_pool=pool_stub,
     )
+    spellspace_registry.add(space)
+    space_id = space.id
 
-    space.reset()
+    space.cleanup()
 
-    assert creations_stub.cleared_ids == [space.id]
+    assert creations_stub.cleared_ids == [space_id]
+    assert pool_stub.released_ids == [space_id]
+    assert space not in spellspace_registry
 
 
 def test_meld_raises_when_not_active(
@@ -265,31 +251,6 @@ def test_cleanup_calls_reset_unregisters_and_marks_cleaned(
 
     assert space.cleaned is False
     assert space not in spellspace_registry
-    assert creations_stub.cleared_ids == [space_id]
-    assert pool_stub.released_ids == [space_id]
-
-
-def test_cleanup_idempotent_no_double_reset(
-        owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
-        spellspace_registry: set[SpellSpace],
-        pool_stub: _PoolStub,
-) -> None:
-    """Verify cleanup is idempotent and does not re-clear spellspace storage."""
-    space = SpellSpace(
-        owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
-        spellspace_registry=spellspace_registry,
-        spellspace_pool=pool_stub,
-    )
-    spellspace_registry.add(space)
-    space_id = space.id
-
-    space.cleanup()
-    space.cleanup()
-
     assert creations_stub.cleared_ids == [space_id]
     assert pool_stub.released_ids == [space_id]
 

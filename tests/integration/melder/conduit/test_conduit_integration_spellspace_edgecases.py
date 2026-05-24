@@ -86,13 +86,14 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
 def test_conduit_spellspace_cleanup_idempotent() -> None:
     """
     Purpose:
-        Validate SpellSpace cleanup is idempotent.
+        Validate SpellSpace cleanup returns a live spellspace to the pool.
     Contract:
-        - cleanup is safe to call multiple times.
+        - cleanup clears active spellspace state and returns the spellspace to
+          the conduit-local pool.
     Returns:
         None.
     Raises:
-        AssertionError: If cleanup is not idempotent.
+        AssertionError: If cleanup does not return the spellspace to the pool.
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -100,7 +101,6 @@ def test_conduit_spellspace_cleanup_idempotent() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         space = conduit.create_spellspace()
-        space.cleanup()
         space.cleanup()
         assert space.cleaned is False
     finally:

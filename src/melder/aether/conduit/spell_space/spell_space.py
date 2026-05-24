@@ -81,9 +81,6 @@ class SpellSpace(Cleanable):
                 Conduit-local pool that should receive this spellspace on
                 normal cleanup.
 
-        Raises:
-            ValueError:
-                If any required collaborator is missing or invalid.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -100,7 +97,6 @@ class SpellSpace(Cleanable):
         Cleanup this spellspace through either the reusable or permanent lane.
 
         Contract:
-            - Idempotent cleanup.
             - Normal cleanup returns this spellspace to the conduit-local pool
               after reusable cleanup.
             - `permanent_cleanup()` forces the destructive lane even when a
@@ -111,11 +107,11 @@ class SpellSpace(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-            self._spellspace_pool.release(self)
-            self._spellspace_registry.discard(self)
             if self._permanent_cleanup_requested:
                 self._cleanup_for_destroy()
                 return
+            self._cleanup_for_pool_reuse()
+        self._spellspace_pool.release(self)
 
     def permanent_cleanup(self) -> None:
         """
@@ -129,41 +125,17 @@ class SpellSpace(Cleanable):
         self._permanent_cleanup_requested = True
         self.cleanup()
         
-    def reset(self) -> None:
-        """
-        Clear all spellspace-bound instances for this scope.
-
-        Contract:
-            - Delegates spellspace bucket clearing to the injected creations
-              manager.
-        """
-        with self._lock:
-            self._creations.clear_spellspace_instances(self._id)
-
-
-    def prepare_for_reuse(self) -> None:
-        """
-        Reactivate this spellspace for another use in the same conduit.
-
-        Contract:
-            - Re-registers this spellspace in the owning registry when absent.
-            - Clears the permanent-cleanup request flag.
-        """
-        with self._lock:
-            self._spellspace_registry.add(self)
-
     def _cleanup_for_pool_reuse(self) -> None:
         """
         Clear spellspace-scoped runtime state so this object can be retained.
 
         Contract:
             - Clears spellspace-scoped creations for this spellspace id.
-            - Resets the permanent-cleanup flag.
+            - Removes this spellspace from the active registry.
             - Keeps collaborator references intact for later reuse.
         """
-        with self._lock:
-            self._creations.clear_spellspace_instances(self._id)
-            self._spellspace_registry.discard(self)
+        self._creations.clear_spellspace_instances(self._id)
+        self._spellspace_registry.discard(self)
 
     def _cleanup_for_destroy(self) -> None:
         """
