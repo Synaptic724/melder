@@ -251,7 +251,6 @@ class Conduit(Cleanable):
             self._aetheric_frame.devops_information_registry,
             object_ref=self,
         )
-        self._refresh_devops_identity_state()
         self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
         self._creations: Creations = Creations(
@@ -321,6 +320,7 @@ class Conduit(Cleanable):
             policy=policy,
             aetheric_frame=self._aetheric_frame,
         )
+        self._refresh_devops_identity_state()
 
 
 
@@ -893,6 +893,7 @@ class Conduit(Cleanable):
             conduit_state=self._conduit_state.value,
             root_conduit_id=self._root_conduit_id,
             dynamic_environment=self.__dynamic_environment__,
+            parent_conduit_id=None,
         )
 
     def _bind_family_blocked_for_current_posture(self) -> bool:
@@ -1553,6 +1554,7 @@ class Conduit(Cleanable):
 
                 # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()
+                self._transaction_identity.update_metadata(parent_conduit_id=None)
 
                 # Step 3.5: Rebind gates for this lineage to the injected
                 # frame-owned DevOps controller.

@@ -380,6 +380,7 @@ class ConduitWard(Cleanable):
                 parent_conduit._conduit_ward._lesser_conduits.pop(self._id, None)
             self._parent_conduit = None
             self._lesser_conduits.clear()
+        self._conduit._transaction_identity.update_metadata(parent_conduit_id=None)
     #endregion Cleanup
 
     #region Context Manager
@@ -950,6 +951,9 @@ class ConduitWard(Cleanable):
             if child_ward is not None:
                 child_ward._parent_conduit = self._conduit
                 child_ward._root_conduit = root_conduit
+        lesser_conduit._transaction_identity.update_metadata(
+            parent_conduit_id=self._id,
+        )
         self._logger.info(
             f"link_lesser: {lesser_conduit._id}",
             method_name="_link_lesser_conduit",
