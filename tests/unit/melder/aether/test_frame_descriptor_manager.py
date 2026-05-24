@@ -242,6 +242,38 @@ def test_manager_publish_conduit_record_accepts_lesser_conduits() -> None:
     assert descriptor.conduit_records_by_id["conduit-1"].payload.lineage_depth == 1
 
 
+def test_manager_publish_conduit_record_accepts_pooled_lesser_conduits() -> None:
+    """
+    Verify conduit publication accepts pooled lesser conduits.
+    """
+    published_aether = _bind_frame_posture("ops", rift_enabled=True)
+    manager = FrameDescriptorManager(published_aether)
+    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    pooled_lesser = types.SimpleNamespace(
+        _id="conduit-1",
+        _root_conduit_id="root-1",
+        _name=None,
+        _aetheric_frame_name="ops",
+        _spellbook=spellbook,
+        _conduit_state=ConduitState.pooled_lesser,
+        _conduit_ward=types.SimpleNamespace(
+            _policy=Policies.default,
+            _parent_conduit=None,
+            _get_links=lambda: [],
+        ),
+    )
+
+    assert manager._publish_conduit_record(pooled_lesser) is True
+
+    descriptor = manager._get_required_frame_descriptor("ops")
+    assert (
+        descriptor.conduit_records_by_id["conduit-1"].payload.conduit_state
+        is ConduitState.pooled_lesser
+    )
+    assert descriptor.conduit_records_by_id["conduit-1"].payload.parent_conduit_id is None
+    assert descriptor.conduit_records_by_id["conduit-1"].payload.lineage_depth == 0
+
+
 def test_manager_publish_spell_record_requires_descriptor_payload_and_publishable_frame() -> None:
     """
     Verify spell publication rejects missing descriptor payloads and disabled frames.

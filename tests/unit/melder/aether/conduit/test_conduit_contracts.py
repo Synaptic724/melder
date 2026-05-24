@@ -155,7 +155,7 @@ def test_link_raises_when_source_conduit_is_lesser(
     Contract:
         - Lesser conduits are rejected before link transaction or ward logic.
     """
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot manage link services"):
+    with pytest.raises(RuntimeError, match="Only normal conduits can manage link services"):
         conduit_dynamic_lesser.link(conduit_normal)
 
 

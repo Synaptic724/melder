@@ -15,12 +15,15 @@ class ConduitState(Enum):
           frame/runtime surfaces.
         - `lesser` means a lineage child conduit that inherits state from a
           parent/root conduit until it is upgraded.
+        - `pooled_lesser` means an idle lesser shell retained for reuse and
+          not currently attached to an active parent lineage.
         - `cleaned` means teardown has completed and the conduit should be
           treated as unusable.
     """
     __melder_internal__ = _mrg.sentinel
     normal = auto()
     lesser = auto()
+    pooled_lesser = auto()
     cleaned = auto()
 
     def __str__(self) -> str:

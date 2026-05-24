@@ -176,7 +176,7 @@ def test_conduit_begin_transaction_rejects_non_normal_conduits(
     original_getter = conduit_type._get_required_transaction_mediator
     conduit_type._get_required_transaction_mediator = lambda self: mediator
     try:
-        with pytest.raises(RuntimeError, match="Lesser conduits cannot start change transactions"):
+        with pytest.raises(RuntimeError, match="Only normal conduits can start change transactions"):
             conduit_lesser.begin_transaction(ChangeTransactionType.BIND)
 
         mediator.begin_transaction.assert_not_called()
@@ -263,7 +263,7 @@ def test_conduit_end_transaction_rejects_non_normal_conduits(
     """Only normal conduits may end change transactions."""
     spellbook_stub.end_transaction = MagicMock()
 
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot end change transactions"):
+    with pytest.raises(RuntimeError, match="Only normal conduits can end change transactions"):
         conduit_lesser.end_transaction()
 
     spellbook_stub.end_transaction.assert_not_called()
@@ -311,7 +311,7 @@ def test_end_binding_transaction_rejects_non_normal_conduits(
 ) -> None:
     """Only normal conduits may end bind-family transactions."""
 
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot end change transactions"):
+    with pytest.raises(RuntimeError, match="Only normal conduits can end change transactions"):
         conduit_lesser.end_transaction("bind")
 
 

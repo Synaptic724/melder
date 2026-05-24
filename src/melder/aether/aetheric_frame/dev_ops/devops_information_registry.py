@@ -29,6 +29,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKIN
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -1193,7 +1194,12 @@ class DevopsInformationRegistry(Cleanable):
                     self._conduit_to_spellbook[conduit_id] = identity.owner_id
             elif identity.owner_kind == "conduit":
                 spellbook_id = metadata.get("spellbook_id")
-                if isinstance(spellbook_id, str) and spellbook_id:
+                conduit_state = metadata.get("conduit_state")
+                if (
+                    isinstance(spellbook_id, str)
+                    and spellbook_id
+                    and conduit_state == ConduitState.normal.value
+                ):
                     self._spellbook_to_conduits.setdefault(
                         spellbook_id,
                         set(),

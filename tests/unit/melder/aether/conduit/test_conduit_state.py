@@ -7,6 +7,7 @@ def test_conduit_state_str_returns_lowercase_name() -> None:
     """ConduitState stringification should expose lowercase member names."""
     assert str(ConduitState.normal) == "normal"
     assert str(ConduitState.lesser) == "lesser"
+    assert str(ConduitState.pooled_lesser) == "pooled_lesser"
     assert str(ConduitState.cleaned) == "cleaned"
 
 
@@ -14,12 +15,14 @@ def test_conduit_state_resolve_accepts_enum_members() -> None:
     """resolve should return enum members unchanged."""
     assert ConduitState.resolve(ConduitState.normal) is ConduitState.normal
     assert ConduitState.resolve(ConduitState.lesser) is ConduitState.lesser
+    assert ConduitState.resolve(ConduitState.pooled_lesser) is ConduitState.pooled_lesser
 
 
 def test_conduit_state_resolve_accepts_lowercase_strings() -> None:
     """resolve should normalize lowercase string names into enum members."""
     assert ConduitState.resolve("normal") is ConduitState.normal
     assert ConduitState.resolve("lesser") is ConduitState.lesser
+    assert ConduitState.resolve("pooled_lesser") is ConduitState.pooled_lesser
     assert ConduitState.resolve("cleaned") is ConduitState.cleaned
 
 

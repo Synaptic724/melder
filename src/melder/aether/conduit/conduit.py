@@ -247,11 +247,10 @@ class Conduit(Cleanable):
             metadata={},
             available_transactions=tuple(),
         )
-        if conduit_state is ConduitState.normal:
-            self._transaction_identity.attach_registry(
-                self._aetheric_frame.devops_information_registry,
-                object_ref=self,
-            )
+        self._transaction_identity.attach_registry(
+            self._aetheric_frame.devops_information_registry,
+            object_ref=self,
+        )
         self._refresh_devops_identity_state()
         self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
@@ -361,12 +360,18 @@ class Conduit(Cleanable):
         """
         This method will properly cleanup the conduit resources that must be reset for the pool uptake.
         """
+        if self._conduit_state is ConduitState.normal:
+            self._permanent_cleanup()
+            return
         self._cleanup_spellspaces_for_pool()
         self._creations.reset_non_spellspace_for_pool()
         self._conduit_ward._detach_for_pool()
+        self._conduit_state = ConduitState.pooled_lesser
+        self._conduit_ward._conduit_type = ConduitState.pooled_lesser
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
-        self._remove_conduit_record_from_nexus()
+        self._refresh_devops_identity_state()
+        self._publish_conduit_record_to_nexus()
         self._conduit_pool.return_lesser_conduit(self)
 
     def _cleanup_spellspaces_for_pool(self) -> None:
@@ -425,7 +430,10 @@ class Conduit(Cleanable):
         if self._conduit_hooks or self._local_conduit_hooks:
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
             self._cleaned = True
-            if self._conduit_state == ConduitState.lesser:
+            if self._conduit_state in (
+                    ConduitState.lesser,
+                    ConduitState.pooled_lesser,
+            ):
                 self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
                 self._cleanup_normal_conduit()
@@ -447,7 +455,10 @@ class Conduit(Cleanable):
             del self._logger
         else:
             self._cleaned = True
-            if self._conduit_state == ConduitState.lesser:
+            if self._conduit_state in (
+                    ConduitState.lesser,
+                    ConduitState.pooled_lesser,
+            ):
                 self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
                 self._cleanup_normal_conduit()
@@ -633,6 +644,7 @@ class Conduit(Cleanable):
         if self._conduit_state not in (
                 ConduitState.normal,
                 ConduitState.lesser,
+                ConduitState.pooled_lesser,
         ):
             return
 
@@ -685,6 +697,7 @@ class Conduit(Cleanable):
         if self._conduit_state not in (
                 ConduitState.normal,
                 ConduitState.lesser,
+                ConduitState.pooled_lesser,
         ):
             return
 
@@ -988,7 +1001,10 @@ class Conduit(Cleanable):
             except Exception as e:
                 self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
                 raise
-        elif self._conduit_state == ConduitState.lesser:
+        elif self._conduit_state in (
+                ConduitState.lesser,
+                ConduitState.pooled_lesser,
+        ):
             if self._name is not None:
                 self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
                 self._name = None
@@ -1695,7 +1711,9 @@ class Conduit(Cleanable):
                         conduit_hooks=root_conduit._conduit_hooks,
                         meld_hooks=root_conduit._meld_hooks,
                     )
+                new_conduit._conduit_state = ConduitState.lesser
                 if new_conduit._conduit_ward is not None:
+                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                     new_conduit._conduit_ward._root_conduit = root_conduit
                 new_conduit._root_conduit_id = root_conduit_id
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
@@ -1703,6 +1721,7 @@ class Conduit(Cleanable):
                 if new_conduit._meld is not None:
                     new_conduit._meld._resolution_conduit_id = root_conduit_id
                 new_conduit._creation_gate.open()
+                new_conduit._refresh_devops_identity_state()
 
                 # Fire activation hook with the new conduit instance.
                 self._fire_conduit_hooks(
@@ -1737,7 +1756,9 @@ class Conduit(Cleanable):
                         conduit_hooks=root_conduit._conduit_hooks,
                         meld_hooks=root_conduit._meld_hooks,
                     )
+                new_conduit._conduit_state = ConduitState.lesser
                 if new_conduit._conduit_ward is not None:
+                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                     new_conduit._conduit_ward._root_conduit = root_conduit
                 new_conduit._root_conduit_id = root_conduit_id
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
@@ -1745,6 +1766,7 @@ class Conduit(Cleanable):
                 if new_conduit._meld is not None:
                     new_conduit._meld._resolution_conduit_id = root_conduit_id
                 new_conduit._creation_gate.open()
+                new_conduit._refresh_devops_identity_state()
                 self._conduit_ward._link_lesser_conduit(new_conduit)
                 new_conduit._publish_conduit_record_to_nexus()
 
@@ -2078,9 +2100,9 @@ class Conduit(Cleanable):
             Uses the Spellbook lock for local state; orchestrator handles admission state.
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            self._logger.error("begin_transaction called when conduit is lesser", "begin_transaction")
-            raise RuntimeError("Lesser conduits cannot start change transactions.")
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("begin_transaction called when conduit is not normal", "begin_transaction")
+            raise RuntimeError("Only normal conduits can start change transactions.")
         mediator = self._get_required_transaction_mediator()
         existing_request = mediator.get_active_request()
 
@@ -2230,9 +2252,9 @@ class Conduit(Cleanable):
             Uses the Spellbook lock for local state; orchestrator handles admission state.
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            self._logger.error("end_transaction called when conduit is lesser", "end_transaction")
-            raise RuntimeError("Lesser conduits cannot end change transactions.")
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("end_transaction called when conduit is not normal", "end_transaction")
+            raise RuntimeError("Only normal conduits can end change transactions.")
         request_type_value: Optional[str] = None
         if isinstance(transaction_type, str):
             request_type_value = transaction_type.strip().lower()
@@ -2390,9 +2412,9 @@ class Conduit(Cleanable):
 
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            self._logger.error("bind called when conduit is lesser", "bind")
-            raise RuntimeError("Lesser conduits cannot bind spells.")
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("bind called when conduit is not normal", "bind")
+            raise RuntimeError("Only normal conduits can bind spells.")
         if self._bind_family_blocked_for_current_posture():
             self._logger.error("bind denied by current frame posture", "bind")
             raise RuntimeError(
@@ -2438,9 +2460,9 @@ class Conduit(Cleanable):
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            self._logger.error("scan called when conduit is lesser", "scan")
-            raise RuntimeError("Lesser conduits cannot scan modules.")
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("scan called when conduit is not normal", "scan")
+            raise RuntimeError("Only normal conduits can scan modules.")
         if self._bind_family_blocked_for_current_posture():
             self._logger.error("scan denied by current frame posture", "scan")
             raise RuntimeError(
@@ -2506,8 +2528,8 @@ class Conduit(Cleanable):
                 is unavailable.
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            raise RuntimeError("Lesser conduits cannot access MutationResearch.")
+        if self._conduit_state is not ConduitState.normal:
+            raise RuntimeError("Only normal conduits can access MutationResearch.")
         frame_configuration = self._spellbook._aetheric_frame_configuration
         if (
                 not self.__dynamic_environment__
@@ -2569,9 +2591,9 @@ class Conduit(Cleanable):
             dict: Preflight summary of the transfer plan.
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            self._logger.error("transfer_spell_ownership called when conduit is lesser", "transfer_spell_ownership")
-            raise RuntimeError("Lesser conduits cannot transfer spell ownership.")
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("transfer_spell_ownership called when conduit is not normal", "transfer_spell_ownership")
+            raise RuntimeError("Only normal conduits can transfer spell ownership.")
         if self._transaction_blocked_for_current_posture(
                 "transfer_ownership",
         ):
@@ -3107,9 +3129,9 @@ class Conduit(Cleanable):
             RuntimeError: If the target conduit belongs to a different `AethericFrame`.
         """
         self.check_cleaned()
-        if self._conduit_state is ConduitState.lesser:
-            self._logger.error("link called when conduit is lesser", "link")
-            raise RuntimeError("Lesser conduits cannot manage link services.")
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("link called when conduit is not normal", "link")
+            raise RuntimeError("Only normal conduits can manage link services.")
         if self._transaction_blocked_for_current_posture(
                 "link",
         ):

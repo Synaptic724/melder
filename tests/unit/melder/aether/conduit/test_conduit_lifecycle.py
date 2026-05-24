@@ -600,6 +600,11 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     conduit_lesser.cleanup()
     conduit_lesser.cleanup()
     assert conduit_lesser.cleaned is False
+    assert conduit_lesser._conduit_state is ConduitState.pooled_lesser
+    assert (
+        conduit_lesser._transaction_identity.metadata["conduit_state"]
+        == ConduitState.pooled_lesser.value
+    )
     assert hasattr(conduit_lesser, "_nexus")
 
 

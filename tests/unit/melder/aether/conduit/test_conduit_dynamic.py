@@ -197,7 +197,7 @@ def test_transfer_spell_ownership_raises_when_source_conduit_is_lesser(
     Contract:
         - Lesser conduits are rejected before transaction or ward logic.
     """
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot transfer spell ownership"):
+    with pytest.raises(RuntimeError, match="Only normal conduits can transfer spell ownership"):
         conduit_dynamic_lesser.transfer_spell_ownership(
             spell="sha-1",
             target_conduit=conduit_normal,
@@ -213,7 +213,7 @@ def test_get_mutation_research_raises_when_source_conduit_is_lesser(
     Contract:
         - Lesser conduits are rejected before mutation-runtime access.
     """
-    with pytest.raises(RuntimeError, match="Lesser conduits cannot access MutationResearch"):
+    with pytest.raises(RuntimeError, match="Only normal conduits can access MutationResearch"):
         conduit_dynamic_lesser.get_mutation_research()
 
 

@@ -332,6 +332,7 @@ class FrameDescriptorManager(Cleanable):
         if conduit is None or conduit._conduit_state not in (
                 ConduitState.normal,
                 ConduitState.lesser,
+                ConduitState.pooled_lesser,
         ):
             return False
 

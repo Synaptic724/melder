@@ -7,6 +7,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 
 
 def _make_identity(
@@ -204,19 +205,59 @@ def test_devops_information_registry_get_primary_conduit_for_spellbook_rejects_m
         _make_identity(
             owner_kind="conduit",
             owner_id="conduit-1",
-            metadata={"spellbook_id": "book-1"},
+            metadata={
+                "spellbook_id": "book-1",
+                "conduit_state": ConduitState.normal.value,
+            },
         )
     )
     registry.register_identity(
         _make_identity(
             owner_kind="conduit",
             owner_id="conduit-2",
-            metadata={"spellbook_id": "book-1"},
+            metadata={
+                "spellbook_id": "book-1",
+                "conduit_state": ConduitState.normal.value,
+            },
         )
     )
 
     with pytest.raises(RuntimeError, match="expected one paired conduit"):
         registry.get_primary_conduit_id_for_spellbook("book-1")
+
+
+def test_devops_information_registry_ignores_non_normal_conduit_state_for_spellbook_pairing() -> None:
+    """
+    Purpose:
+        Verify lesser and pooled lesser conduit identities do not become the
+        primary spellbook pairing.
+    """
+    registry = DevopsInformationRegistry("frame-1")
+    registry.register_identity(
+        _make_identity(
+            owner_kind="conduit",
+            owner_id="lesser-1",
+            metadata={
+                "spellbook_id": "book-1",
+                "conduit_state": ConduitState.lesser.value,
+            },
+        )
+    )
+    registry.register_identity(
+        _make_identity(
+            owner_kind="conduit",
+            owner_id="pooled-1",
+            metadata={
+                "spellbook_id": "book-1",
+                "conduit_state": ConduitState.pooled_lesser.value,
+            },
+        )
+    )
+
+    assert registry.get_conduits_for_spellbook("book-1") == tuple()
+    assert registry.get_primary_conduit_id_for_spellbook("book-1") is None
+    assert registry.get_spellbook_for_conduit("lesser-1") is None
+    assert registry.get_spellbook_for_conduit("pooled-1") is None
 
 
 def test_devops_information_registry_conduit_link_edges_are_bidirectional() -> None:

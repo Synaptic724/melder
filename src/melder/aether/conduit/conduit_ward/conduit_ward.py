@@ -543,7 +543,7 @@ class ConduitWard(Cleanable):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError("Dynamic environment is not enabled. Cannot set policy.")
-        if self._conduit_type == ConduitState.lesser:
+        if self._conduit_type is not ConduitState.normal:
             self._logger.error(
                 "set_new_policy: on lesser conduit",
                 method_name="_set_new_policy",
@@ -592,7 +592,10 @@ class ConduitWard(Cleanable):
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If policy forbids initiating outbound links or target forbids inbound links.
         """
-        if target_conduit._conduit_state == ConduitState.lesser:
+        if target_conduit._conduit_state in (
+                ConduitState.lesser,
+                ConduitState.pooled_lesser,
+        ):
             self._logger.error(
                 "link: target is lesser conduit",
                 method_name="_link",
