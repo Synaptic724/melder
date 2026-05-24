@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import threading
+import time
+import warnings
 from typing import Optional
 
 import pytest
@@ -248,6 +251,461 @@ def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
     conduit_b.cleanup()
     spellbook_a.cleanup()
     spellbook_b.cleanup()
+
+
+def test_change_control_disable_allows_overlapping_requests_for_three_roots() -> None:
+    """
+    Purpose:
+        Validate disabled change-control allows three rooted bind requests to overlap.
+    Contract:
+        - Three rooted spellbooks may hold overlapping bind transactions at once
+          when change-control is disabled.
+        - All three requests appear in the in-flight registry together.
+        - Ending all three clears in-flight state.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disabled mode still rejects overlapping three-root binds.
+    """
+    frame_name = "frame-cc-disabled-three-roots"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    change_control.disable_change_control()
+
+    spellbook_a.begin_transaction("bind", scope_keys=["scope-shared"])
+    spellbook_b.begin_transaction("bind", scope_keys=["scope-shared"])
+    spellbook_c.begin_transaction("bind", scope_keys=["scope-shared"])
+    transaction_manager = change_control.transaction_manager()
+    assert len(transaction_manager.list_in_flight()) == 3
+
+    spellbook_a.end_transaction("bind")
+    spellbook_b.end_transaction("bind")
+    spellbook_c.end_transaction("bind")
+    assert transaction_manager.list_in_flight() == []
+
+    conduit_a.cleanup()
+    conduit_b.cleanup()
+    conduit_c.cleanup()
+    spellbook_a.cleanup()
+    spellbook_b.cleanup()
+    spellbook_c.cleanup()
+
+
+def test_change_control_mediator_disabled_allows_three_threaded_root_binds_to_enter_without_queueing() -> None:
+    """
+    Purpose:
+        Validate mediator disabled mode stops cross-thread root-session gating.
+    Contract:
+        - Three rooted spellbooks on three threads can all enter bind
+          transactions with distinct scopes without queueing behind one
+          another.
+        - The proof is cross-thread, not same-thread recursion.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If disabled mode still blocks competing root threads.
+    """
+    frame_name = "frame-cc-disabled-three-threaded-roots"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    mediator = change_control.transaction_mediator()
+    mediator.configure(
+        change_control_mode="disabled",
+        allow_multiple_root_transactions=False,
+        queue_competing_root_transactions=False,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+
+    start_barrier = threading.Barrier(4)
+    release_event = threading.Event()
+    started_labels: list[str] = []
+    failures: list[BaseException] = []
+
+    def _run_bind(
+            label: str,
+            spellbook: Spellbook,
+            scope_key: str,
+    ) -> None:
+        try:
+            start_barrier.wait()
+            spellbook.begin_transaction("bind", scope_keys=[scope_key])
+            started_labels.append(label)
+            release_event.wait(timeout=1.0)
+            spellbook.end_transaction("bind")
+        except BaseException as exc:
+            failures.append(exc)
+
+    thread_a = threading.Thread(
+        target=_run_bind,
+        args=("a", spellbook_a, "scope-a"),
+        name="bind-root-a",
+    )
+    thread_b = threading.Thread(
+        target=_run_bind,
+        args=("b", spellbook_b, "scope-b"),
+        name="bind-root-b",
+    )
+    thread_c = threading.Thread(
+        target=_run_bind,
+        args=("c", spellbook_c, "scope-c"),
+        name="bind-root-c",
+    )
+    thread_a.start()
+    thread_b.start()
+    thread_c.start()
+
+    start_barrier.wait()
+
+    deadline = time.monotonic() + 1.0
+    while len(started_labels) < 3 and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    assert len(started_labels) == 3
+    assert failures == []
+    assert len(change_control.transaction_manager().list_in_flight()) == 3
+
+    release_event.set()
+    thread_a.join(timeout=5)
+    thread_b.join(timeout=5)
+    thread_c.join(timeout=5)
+    assert thread_a.is_alive() is False
+    assert thread_b.is_alive() is False
+    assert thread_c.is_alive() is False
+    assert failures == []
+    assert change_control.transaction_manager().list_in_flight() == []
+
+    conduit_a.cleanup()
+    conduit_b.cleanup()
+    conduit_c.cleanup()
+    spellbook_a.cleanup()
+    spellbook_b.cleanup()
+    spellbook_c.cleanup()
+
+
+def test_change_control_scope_hash_conflict_rejects_overlap_for_three_roots() -> None:
+    """
+    Purpose:
+        Validate strict-mode admission rejects overlapping three-root bind requests.
+    Contract:
+        - The first root bind is admitted.
+        - The second and third overlapping root binds are rejected.
+        - The active bind root remains the single in-flight request.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If strict mode admits overlapping three-root binds.
+    """
+    frame_name = "frame-cc-strict-three-roots"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    change_control.transaction_mediator().configure(
+        change_control_mode="strict",
+        allow_multiple_root_transactions=False,
+        queue_competing_root_transactions=False,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+    scope_hash = hashlib.sha256("shared-scope".encode("utf-8")).hexdigest()
+
+    spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
+    try:
+        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+            spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
+        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+            spellbook_c.begin_transaction("bind", scope_hashes=[scope_hash])
+        assert len(change_control.transaction_manager().list_in_flight()) == 1
+    finally:
+        spellbook_a.end_transaction("bind")
+
+    conduit_a.cleanup()
+    conduit_b.cleanup()
+    conduit_c.cleanup()
+    spellbook_a.cleanup()
+    spellbook_b.cleanup()
+    spellbook_c.cleanup()
+
+
+def test_change_control_queue_allows_three_roots_one_by_one_in_fifo_order() -> None:
+    """
+    Purpose:
+        Validate queued root-session policy serializes three rooted bind transactions.
+    Contract:
+        - Root A starts immediately.
+        - Root B and root C wait while A is active.
+        - After A ends, B starts first.
+        - After B ends, C starts next.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If queued three-root bind order is not FIFO.
+    """
+    frame_name = "frame-cc-queue-three-roots"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    change_control.transaction_mediator().configure(
+        change_control_mode="strict",
+        allow_multiple_root_transactions=False,
+        queue_competing_root_transactions=True,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+
+    spellbook_a.begin_transaction("bind", scope_keys=["scope-a"])
+    admitted_order: list[str] = []
+    failures: list[BaseException] = []
+    b_started = threading.Event()
+    c_started = threading.Event()
+    b_release = threading.Event()
+    c_release = threading.Event()
+
+    def _run_bind(
+            label: str,
+            spellbook: Spellbook,
+            scope_key: str,
+            started: threading.Event,
+            release: threading.Event,
+    ) -> None:
+        try:
+            spellbook.begin_transaction("bind", scope_keys=[scope_key])
+            admitted_order.append(label)
+            started.set()
+            release.wait(timeout=1.0)
+            spellbook.end_transaction("bind")
+        except BaseException as exc:
+            failures.append(exc)
+            started.set()
+
+    thread_b = threading.Thread(
+        target=_run_bind,
+        args=("b", spellbook_b, "scope-b", b_started, b_release),
+        name="bind-root-b",
+    )
+    thread_c = threading.Thread(
+        target=_run_bind,
+        args=("c", spellbook_c, "scope-c", c_started, c_release),
+        name="bind-root-c",
+    )
+    thread_b.start()
+    thread_c.start()
+
+    assert b_started.wait(timeout=0.05) is False
+    assert c_started.wait(timeout=0.05) is False
+
+    spellbook_a.end_transaction("bind")
+
+    assert b_started.wait(timeout=1.0) is True
+    assert admitted_order == ["b"]
+    assert c_started.wait(timeout=0.05) is False
+
+    b_release.set()
+    assert c_started.wait(timeout=1.0) is True
+    assert admitted_order == ["b", "c"]
+
+    c_release.set()
+    thread_b.join(timeout=5)
+    thread_c.join(timeout=5)
+    assert thread_b.is_alive() is False
+    assert thread_c.is_alive() is False
+    assert failures == []
+    assert change_control.transaction_manager().list_in_flight() == []
+
+    conduit_a.cleanup()
+    conduit_b.cleanup()
+    conduit_c.cleanup()
+    spellbook_a.cleanup()
+    spellbook_b.cleanup()
+    spellbook_c.cleanup()
+
+
+def test_change_control_warn_allows_three_threaded_root_binds_without_queueing() -> None:
+    """
+    Purpose:
+        Validate non-disabled warn mode allows concurrent three-root bind entry.
+    Contract:
+        - Three rooted spellbooks on three threads can all enter bind
+          transactions without queueing when mediator mode is `warn`.
+        - At least one RuntimeWarning is emitted for competing roots.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If warn mode still serializes or rejects competing roots.
+    """
+    frame_name = "frame-cc-warn-three-threaded-roots"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    mediator = change_control.transaction_mediator()
+    mediator.configure(
+        change_control_mode="warn",
+        allow_multiple_root_transactions=False,
+        queue_competing_root_transactions=False,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+
+    start_barrier = threading.Barrier(4)
+    release_event = threading.Event()
+    started_labels: list[str] = []
+    failures: list[BaseException] = []
+    captured_warnings: list[warnings.WarningMessage] = []
+
+    def _run_bind(
+            label: str,
+            spellbook: Spellbook,
+            scope_key: str,
+    ) -> None:
+        try:
+            start_barrier.wait()
+            with warnings.catch_warnings(record=True) as seen:
+                warnings.simplefilter("always")
+                spellbook.begin_transaction("bind", scope_keys=[scope_key])
+                captured_warnings.extend(seen)
+            started_labels.append(label)
+            release_event.wait(timeout=1.0)
+            spellbook.end_transaction("bind")
+        except BaseException as exc:
+            failures.append(exc)
+
+    thread_a = threading.Thread(
+        target=_run_bind,
+        args=("a", spellbook_a, "scope-a"),
+        name="warn-bind-root-a",
+    )
+    thread_b = threading.Thread(
+        target=_run_bind,
+        args=("b", spellbook_b, "scope-b"),
+        name="warn-bind-root-b",
+    )
+    thread_c = threading.Thread(
+        target=_run_bind,
+        args=("c", spellbook_c, "scope-c"),
+        name="warn-bind-root-c",
+    )
+    thread_a.start()
+    thread_b.start()
+    thread_c.start()
+
+    start_barrier.wait()
+
+    deadline = time.monotonic() + 1.0
+    while len(started_labels) < 3 and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    assert len(started_labels) == 3
+    assert failures == []
+    assert len(change_control.transaction_manager().list_in_flight()) == 3
+    assert captured_warnings
+
+    release_event.set()
+    thread_a.join(timeout=5)
+    thread_b.join(timeout=5)
+    thread_c.join(timeout=5)
+    assert thread_a.is_alive() is False
+    assert thread_b.is_alive() is False
+    assert thread_c.is_alive() is False
+    assert failures == []
+    assert change_control.transaction_manager().list_in_flight() == []
+
+    conduit_a.cleanup()
+    conduit_b.cleanup()
+    conduit_c.cleanup()
+    spellbook_a.cleanup()
+    spellbook_b.cleanup()
+    spellbook_c.cleanup()
+
+
+def test_change_control_queue_blocks_other_transaction_families_too() -> None:
+    """
+    Purpose:
+        Validate queued root-session policy is global, not bind-only.
+    Contract:
+        - A bind root on one thread blocks a link root on another thread when
+          queueing is enabled.
+        - The link root is admitted only after the bind root exits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If queueing applies only to bind-family work.
+    """
+    frame_name = "frame-cc-queue-cross-family"
+    configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+    spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
+    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    change_control = Aether()._get_change_control_manager(frame_name)
+    change_control.transaction_mediator().configure(
+        change_control_mode="strict",
+        allow_multiple_root_transactions=False,
+        queue_competing_root_transactions=True,
+        max_transaction_wait_time_in_seconds=1.0,
+    )
+
+    link_started = threading.Event()
+    link_release = threading.Event()
+    failures: list[BaseException] = []
+
+    spellbook_a.begin_transaction("bind", scope_keys=["scope-a"])
+
+    def _run_link() -> None:
+        try:
+            conduit_b.begin_transaction("link", conduits=[conduit_b, conduit_c])
+            link_started.set()
+            link_release.wait(timeout=1.0)
+            conduit_b.end_transaction("link")
+        except BaseException as exc:
+            failures.append(exc)
+            link_started.set()
+
+    link_thread = threading.Thread(target=_run_link, name="queued-link-root")
+    link_thread.start()
+
+    assert link_started.wait(timeout=0.05) is False
+    spellbook_a.end_transaction("bind")
+    assert link_started.wait(timeout=1.0) is True
+    assert failures == []
+    assert len(change_control.transaction_manager().list_in_flight()) == 1
+
+    link_release.set()
+    link_thread.join(timeout=5)
+    assert link_thread.is_alive() is False
+    assert failures == []
+    assert change_control.transaction_manager().list_in_flight() == []
+
+    conduit_a.cleanup()
+    conduit_b.cleanup()
+    conduit_c.cleanup()
+    spellbook_a.cleanup()
+    spellbook_b.cleanup()
+    spellbook_c.cleanup()
 
 
 def test_change_control_link_transaction_embargoes_conduit_scopes() -> None:

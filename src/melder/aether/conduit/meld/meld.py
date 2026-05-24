@@ -156,7 +156,7 @@ class Meld(Cleanable):
         self._spell_compiler_system: Optional[SpellCompilerSystem] = None
 
         # Front-door resolution caches.
-        self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], Spell] = {}
+        self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], str] = {}
         self._max_resolution_cache_size: int = 2048
 
         # Change-control state.
@@ -333,7 +333,7 @@ class Meld(Cleanable):
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
-                target_spell = input_resolution_cache.get(cache_key)
+                cached_spell_id = input_resolution_cache.get(cache_key)
             except TypeError:
                 cache_key = (
                     spell_name,
@@ -341,7 +341,14 @@ class Meld(Cleanable):
                     id(spellframe),
                     binding_name,
                 )
-                target_spell = input_resolution_cache.get(cache_key)
+                cached_spell_id = input_resolution_cache.get(cache_key)
+            if cached_spell_id is not None:
+                target_spell = self._spell_id_pool.get(cached_spell_id)
+                if target_spell is None:
+                    try:
+                        target_spell = self._resolve_spell_by_id(cached_spell_id)
+                    except KeyError:
+                        target_spell = None
             if target_spell is None:
                 target_spell = self._resolve_spell(
                     spell=spell,
@@ -354,7 +361,7 @@ class Meld(Cleanable):
                         next(iter(input_resolution_cache)),
                         None,
                     )
-                input_resolution_cache[cache_key] = target_spell
+                input_resolution_cache[cache_key] = target_spell.spell_id
 
         # 2) Normalize per-call overrides into a stable dict shape.
         if spell_override is None:
@@ -484,7 +491,7 @@ class Meld(Cleanable):
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
-                target_spell = input_resolution_cache.get(cache_key)
+                cached_spell_id = input_resolution_cache.get(cache_key)
             except TypeError:
                 cache_key = (
                     spell_name,
@@ -492,7 +499,14 @@ class Meld(Cleanable):
                     id(spellframe),
                     binding_name,
                 )
-                target_spell = input_resolution_cache.get(cache_key)
+                cached_spell_id = input_resolution_cache.get(cache_key)
+            if cached_spell_id is not None:
+                target_spell = self._spell_id_pool.get(cached_spell_id)
+                if target_spell is None:
+                    try:
+                        target_spell = self._resolve_spell_by_id(cached_spell_id)
+                    except KeyError:
+                        target_spell = None
             if target_spell is None:
                 target_spell = self._resolve_spell(
                     spell=spell,
@@ -505,7 +519,7 @@ class Meld(Cleanable):
                         next(iter(input_resolution_cache)),
                         None,
                     )
-                input_resolution_cache[cache_key] = target_spell
+                input_resolution_cache[cache_key] = target_spell.spell_id
 
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:
@@ -769,7 +783,7 @@ class Meld(Cleanable):
         input_resolution_cache = self._input_resolution_cache
         cache_key = (spell_name, spell, spellframe, binding_name)
         try:
-            target_spell = input_resolution_cache.get(cache_key)
+            cached_spell_id = input_resolution_cache.get(cache_key)
         except TypeError:
             cache_key = (
                 spell_name,
@@ -777,7 +791,14 @@ class Meld(Cleanable):
                 id(spellframe),
                 binding_name,
             )
-            target_spell = input_resolution_cache.get(cache_key)
+            cached_spell_id = input_resolution_cache.get(cache_key)
+        if cached_spell_id is not None:
+            target_spell = self._spell_id_pool.get(cached_spell_id)
+            if target_spell is None:
+                try:
+                    target_spell = self._resolve_spell_by_id(cached_spell_id)
+                except KeyError:
+                    target_spell = None
         if target_spell is None:
             target_spell = self._resolve_spell(
                 spell=spell,
@@ -790,7 +811,7 @@ class Meld(Cleanable):
                     next(iter(input_resolution_cache)),
                     None,
                 )
-            input_resolution_cache[cache_key] = target_spell
+            input_resolution_cache[cache_key] = target_spell.spell_id
         return target_spell
 
     def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:

@@ -858,6 +858,7 @@ def test_meld_non_string_cache_hit_reuses_input_resolution_entry(monkeypatch: py
         creation_context=context,
     )
     target_spell._hooks_enabled = False
+    meld._spell_id_pool[target_spell.spell_id] = target_spell
 
     spell_token = object()
     resolve_spell = MagicMock(return_value=target_spell)
@@ -897,6 +898,7 @@ def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key(monke
         creation_context=context,
     )
     target_spell._hooks_enabled = False
+    meld._spell_id_pool[target_spell.spell_id] = target_spell
 
     class _Unhashable:
         """
