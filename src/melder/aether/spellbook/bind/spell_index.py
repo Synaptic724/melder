@@ -189,7 +189,6 @@ class SpellIndex(Cleanable):
         Raises:
             RuntimeError: If a different owner is already attached.
         """
-        self.check_cleaned()
         with self._lock:
             if self._owner_spellbook is not None and self._owner_spellbook is not spellbook:
                 raise RuntimeError("Owner spellbook already attached for this SpellIndex.")
@@ -221,7 +220,6 @@ class SpellIndex(Cleanable):
         Raises:
             RuntimeError: If an owner conduit id is already set to a different value.
         """
-        self.check_cleaned()
         with self._lock:
             if self._owner_conduit_id is not None and self._owner_conduit_id != conduit_id:
                 raise RuntimeError("Owner conduit id already set for this SpellIndex.")
@@ -247,7 +245,6 @@ class SpellIndex(Cleanable):
         Raises:
             RuntimeError: If the same contract attachment already exists with a different spell.
         """
-        self.check_cleaned()
         key = (spellbook, conduit_id)
         with self._lock:
             existing = self._contracted_spellbooks.get(key)
@@ -278,7 +275,6 @@ class SpellIndex(Cleanable):
         Raises:
             RuntimeError: If the contract attachment is missing.
         """
-        self.check_cleaned()
         key = (spellbook, conduit_id)
         with self._lock:
             spell = self._contracted_spellbooks.pop(key, None)

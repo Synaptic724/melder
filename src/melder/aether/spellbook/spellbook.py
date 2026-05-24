@@ -591,7 +591,6 @@ and logging.
         Threading:
             - Acquires the Spellbook lock.
         """
-        self.check_cleaned()
         with self._lock:
             existing = self._spells_by_id.get(spell_id)
             if existing is not None and existing is not spell:
@@ -634,7 +633,6 @@ and logging.
         Threading:
             - Acquires the Spellbook lock.
         """
-        self.check_cleaned()
         if old_id == new_id:
             return
         with self._lock:
@@ -703,7 +701,6 @@ and logging.
         Threading:
             - Acquires the Spellbook lock.
         """
-        self.check_cleaned()
         with self._lock:
             if self._spells_by_id is None:
                 self._logger.error(
@@ -766,7 +763,6 @@ and logging.
         Threading:
             - Acquires the Spellbook lock.
         """
-        self.check_cleaned()
         with self._lock:
             if self._contracted_spells_by_id is None:
                 self._logger.error("Contracted spell_id map is not available.", "_register_contracted_spell_id")
@@ -829,7 +825,6 @@ and logging.
         Threading:
             - Acquires the Spellbook lock.
         """
-        self.check_cleaned()
         if old_id == new_id:
             return
         with self._lock:
@@ -908,7 +903,6 @@ and logging.
         Threading:
             - Acquires the Spellbook lock.
         """
-        self.check_cleaned()
         with self._lock:
             if self._contracted_spells_by_id is None:
                 self._logger.error("Contracted spell_id map is not available.", "_unregister_contracted_spell_id")
@@ -1177,7 +1171,6 @@ and logging.
         Raises:
             RuntimeError: If the contracted spell with the given ID is not found.
         """
-        self.check_cleaned()
         with self._lock:
             for contracted_spells in self._contracted_spells.values():
                 if spell_index in contracted_spells:
@@ -1202,7 +1195,6 @@ and logging.
             Optional[SpellIndex]:
                 Matching local SpellIndex when found, else "None".
         """
-        self.check_cleaned()
         with self._lock:
             for spell_index in self._spells.keys():
                 if spell_index.id == spell_index_id:
@@ -1226,7 +1218,6 @@ and logging.
             Optional[SpellIndex]:
                 Matching contracted SpellIndex when found, else "None".
         """
-        self.check_cleaned()
         with self._lock:
             for contracted_spells in self._contracted_spells.values():
                 for spell_index in contracted_spells.keys():
@@ -1385,8 +1376,6 @@ and logging.
         Raises:
             RuntimeError: If the lookup key is already bound to another spell.
         """
-        self.check_cleaned()
-
         if check_local:
             existing_local = self._lookup_spells.get(lookup_key)
             if existing_local is not None and existing_local is not spell_index:
@@ -2067,7 +2056,6 @@ and logging.
             TransactionMediator:
                 Transaction mediator instance owned by the frame control plane.
         """
-        self.check_cleaned()
         change_control = self._aether._get_change_control_manager(
             self._aetheric_frame,
         )
@@ -2084,7 +2072,6 @@ and logging.
               transaction window.
             - Post-conjure spellbooks require an active bind-capable session.
         """
-        self.check_cleaned()
         if not self._conjured:
             return True
         session = self._get_required_transaction_mediator().get_session_for_identity(
@@ -2531,7 +2518,6 @@ and logging.
             Captures staged inputs under the Spellbook lock; change-control
             update is performed without the Spellbook lock.
         """
-        self.check_cleaned()
         pending_spells: List[Spell] = []
         with self._lock:
             if self._pending_structural_spells is not None:
@@ -2584,7 +2570,6 @@ and logging.
             and uses mediator-owned session metadata as the source of truth for
             the currently staged contract keys.
         """
-        self.check_cleaned()
         if not conduit_id:
             return
         lookup_keys: List[Tuple[str, str]] = []
@@ -2677,7 +2662,6 @@ and logging.
             str:
                 The unique SHA256 `spell_id` associated with the bound spell.
         """
-        self.check_cleaned()
         self._ensure_binding_transaction_active(action="bind")
         try:
             permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)

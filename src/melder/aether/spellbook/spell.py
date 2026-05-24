@@ -564,7 +564,6 @@ class Spell(Cleanable):
         Raises:
             RuntimeError: If the Spell has already been cleaned.
         """
-        self.check_cleaned()
         with self._lock:
             if pre_hooks is not None:
                 self._pre_hooks = list(pre_hooks)

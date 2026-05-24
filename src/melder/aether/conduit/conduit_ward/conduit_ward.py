@@ -403,7 +403,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If no parent conduit link is found (unknown error state).
         """
-        self.check_cleaned()
         if self._conduit_type != ConduitState.lesser:
             self._logger.error(
                 "convert_to_normal: not a lesser conduit",
@@ -463,8 +462,6 @@ class ConduitWard(Cleanable):
             accepted, `_policy_set` prevents a second initialization pass from
             silently replacing the ward's starting policy.
         """
-        self.check_cleaned()
-
         if policy is not None:
             if not isinstance(policy, Policies):
                 self._logger.error(
@@ -497,7 +494,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is a lesser Conduit.
             RuntimeError: If attempting to set to `block_all` or `whitelist_all` while contracts exist.
         """
-        self.check_cleaned()
         if not self._dynamic:
             self._logger.error(
                 "set_new_policy: non-dynamic env",
@@ -555,7 +551,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If policy forbids initiating outbound links or target forbids inbound links.
         """
-        self.check_cleaned()
         if target_conduit._conduit_state == ConduitState.lesser:
             self._logger.error(
                 "link: target is lesser conduit",
@@ -700,7 +695,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             TypeError: If `target_conduit` is not an `Conduit` instance.
         """
-        self.check_cleaned()
         if not _is_conduit_surface(target_conduit):
             self._logger.error(
                 f"find_contract_id: target not Conduit-compatible ({type(target_conduit).__name__})",
@@ -730,7 +724,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             TypeError: If `target_conduit` is not an `Conduit` instance.
         """
-        self.check_cleaned()
         if not _is_conduit_surface(target_conduit):
             self._logger.error(
                 f"find_contract: target not Conduit-compatible ({type(target_conduit).__name__})",
@@ -764,7 +757,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         check_id = (
             self._initiated_index.get(conduit_id)
             or self._received_index.get(conduit_id)
@@ -790,7 +782,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract is found to sever.
         """
-        self.check_cleaned()
         with SafeGuard(self._lock, target_conduit._conduit_ward._lock):
             if self._find_contract(target_conduit):
                 return self._remove_contract(target_conduit)
@@ -817,7 +808,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         self._check_conduit_id_and_conduit(conduit=target_conduit)
         if (contract := self._find_contract(target_conduit)) is not None:
             with contract._lock:
@@ -901,7 +891,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         root_conduit: Optional[Conduit]
         if self._conduit_type == ConduitState.normal:
             root_conduit = self._conduit
@@ -942,7 +931,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         for conduit in self._lesser_conduits.values():
             if conduit._id == conduit_id:
                 return conduit
@@ -981,7 +969,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         result = [
             conduit for conduit_id in self._initiated_index.keys()
             if (conduit := self._get_initiated_conduit(conduit_id)) is not None
@@ -1001,7 +988,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         result = [
             conduit for conduit_id in self._received_index.keys()
             if (conduit := self._get_provider_conduit(conduit_id)) is not None
@@ -1023,7 +1009,7 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
+
         if conduit_id in self._initiated_index:
             contract_id = self._initiated_index[conduit_id]
             contract = self._contracts.get(contract_id, None)
@@ -1047,7 +1033,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         if conduit_id in self._received_index:
             contract_id = self._received_index[conduit_id]
             contract = self._contracts.get(contract_id, None)
@@ -1515,8 +1500,6 @@ class ConduitWard(Cleanable):
                 including dependency collisions when link_dependencies is True.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
-        self.check_cleaned()
-
         # Normalize permissions into the enum
         permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
 
@@ -1859,7 +1842,6 @@ class ConduitWard(Cleanable):
         This is the rollback/cleanup counterpart to dependency-linked contract
         expansion.
         """
-        self.check_cleaned()
         if not isinstance(root_spell_id, str):
             raise TypeError("root_spell_id must be a string.")
 
@@ -2090,8 +2072,6 @@ class ConduitWard(Cleanable):
         Threading:
             Read-only; no contract locks are acquired.
         """
-        self.check_cleaned()
-
         if root_spell is None:
             raise ValueError("root_spell must not be None.")
         if root_spell_id is None:
@@ -2225,7 +2205,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         success_spell_ids: list[str] = []
         failed_spell_ids: dict[str, str] = {}
         for sid in (spell_ids or []):
@@ -2288,7 +2267,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the spell ID is not found in the contract.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
-        self.check_cleaned()
         spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
         contract = self._find_contract_by_id(conduit_id)
@@ -2421,7 +2399,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         success_spell_ids: list[str] = []
         failed_spell_ids: dict[str, str] = {}
         for sid in (spell_ids or []):
@@ -2475,7 +2452,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If no contract is found.
             ValueError/TypeError/RuntimeError: From internal helper checks.
         """
-        self.check_cleaned()
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
         contract = self._find_contract_by_id(conduit_id)
         if contract is not None:
@@ -2551,8 +2527,6 @@ class ConduitWard(Cleanable):
             - Returns the current visible version for each contracted lineage,
               not the historical version captured at contract-creation time.
         """
-        self.check_cleaned()
-
         if validate:
             validation = self._validate_contracts_and_define()
             if not all(validation.values()):
@@ -2661,8 +2635,6 @@ class ConduitWard(Cleanable):
             lineage, not necessarily the historical version string the caller
             searched with.
         """
-        self.check_cleaned()
-
         with self._lock:
             for contract in self._contracts.values():
                 peer_ward = contract._get_peer(self)
@@ -2721,7 +2693,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         with self._lock:
             contract = self._find_contract_by_id(conduit_id)
             if not contract:
@@ -2773,7 +2744,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             ValueError: If `conduit_name` is empty or not a string.
         """
-        self.check_cleaned()
         if not conduit_name or not isinstance(conduit_name, str):
             self._logger.error(
                 "get_spells_in_contract_by_conduit_name: invalid name",
@@ -2808,7 +2778,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         contracted_conduits = []
         with self._lock:
             for contract_id, contract in self._contracts.items():
@@ -2897,7 +2866,6 @@ class ConduitWard(Cleanable):
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If no contract is found with the given conduit ID.
         """
-        self.check_cleaned()
         with self._lock:
             contract = self._find_contract_by_id(conduit_id)
             if not contract:
@@ -2953,7 +2921,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         results = {}
         with self._lock:
             for contract_id, contract in self._contracts.items():
@@ -3007,7 +2974,6 @@ class ConduitWard(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
         """
-        self.check_cleaned()
         results = self._validate_contracts_and_define()
         ok = all(results.values()) if results else False
         return ok

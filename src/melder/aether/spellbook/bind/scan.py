@@ -244,6 +244,7 @@ class Scan:
             ValueError: If a decorated object is not owned by the module.
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
+        self.check_cleaned()
         if not isinstance(module, ModuleType):
             raise TypeError("scan_module requires a Python module object.")
 

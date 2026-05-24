@@ -334,8 +334,7 @@ class Conduit(Cleanable):
                 else:
                     self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                     raise RuntimeError("Conduit state is unknown during cleanup")
-                if self._conduit_hooks or self._local_conduit_hooks:
-                    self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+                self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
 
                 del self._conduit_hooks
                 del self._meld_hooks

@@ -1394,7 +1394,6 @@ class Meld(Cleanable):
         Returns:
             SpellCompilerSystem: Lazily created compiler-system helper.
         """
-        self.check_cleaned()
         compiler_system = self._spell_compiler_system
         if compiler_system is not None:
             return compiler_system
