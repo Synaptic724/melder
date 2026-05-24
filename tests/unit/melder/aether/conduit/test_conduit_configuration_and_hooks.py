@@ -10,6 +10,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -74,6 +75,7 @@ def _build_conduit(
     else:
         creation_gate_controller = dev_ops_manager.creation_gate_controller
     aetheric_frame_object = MagicMock()
+    aetheric_frame_object._conduits = {}
     if conduit_cloud is None:
         conduit_cloud = MagicMock()
         conduit_cloud.create_cluster.return_value = None
@@ -103,7 +105,16 @@ def _build_conduit(
     )
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
-    return Conduit(
+    if conduit_state is ConduitState.lesser:
+        root = MagicMock()
+        root._id = root_conduit_id
+        root._conduit_pool = ConduitPool(
+            root_conduit=root,
+            baseline_idle=10,
+            max_idle=10,
+        )
+        aetheric_frame_object._conduits[root_conduit_id] = root
+    conduit = Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
@@ -118,6 +129,9 @@ def _build_conduit(
         root_conduit_id=root_conduit_id,
         creation_gate=creation_gate,
     )
+    if conduit_state is ConduitState.normal:
+        aetheric_frame_object._conduits[conduit._id] = conduit
+    return conduit
 
 
 def test_configure_logger_rejects_invalid_logger(
@@ -441,12 +455,12 @@ def test_configure_conduit_state_logs_and_reraises_normal_registration_failure(
     conduit_normal._logger.error.assert_called_once()
 
 
-def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup(
+def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_permanent_cleanup(
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
 ) -> None:
     """
-    Verify configuration hooks attach to normal conduits and fire on cleanup.
+    Verify configuration hooks attach to normal conduits and fire on hard cleanup.
 
     Contract:
         - Hooks registered under spellbook id are attached.
@@ -491,18 +505,18 @@ def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup
     try:
         assert conduit._conduit_hooks is not None
         assert conduit._conduit_hooks["on_conduit_cleanup_start"][0] is hook
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         assert events == [conduit]
     finally:
         if not conduit._cleaned:
-            conduit.cleanup()
+            conduit.permanent_cleanup()
 
 
-def test_initialize_conduit_hooks_attaches_for_lesser(
+def test_initialize_conduit_hooks_attaches_for_lesser_permanent_cleanup(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduits attach copied configuration hooks.
+    Verify lesser conduits attach copied configuration hooks on hard cleanup.
 
     Contract:
         - Lesser conduits receive the shared conduit hook refs.
@@ -546,11 +560,11 @@ def test_initialize_conduit_hooks_attaches_for_lesser(
     try:
         assert conduit._conduit_hooks is not None
         assert conduit._conduit_hooks is configuration.get_conduit_hooks(spellbook_stub._id)
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         assert events == [conduit]
     finally:
         if not conduit._cleaned:
-            conduit.cleanup()
+            conduit.permanent_cleanup()
 
 
 def test_initialize_conduit_hooks_shares_configuration_hook_refs_until_local_edit(
@@ -1403,12 +1417,12 @@ def test_cleanup_normal_unregisters_root_state_and_removes_spells(
     try:
         aetheric_frame = conduit._aetheric_frame
         aetheric_frame.reset_mock()
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook_stub._unregister_conduit_spells_from_aether.assert_called_once_with(conduit._id)
         aetheric_frame.unregister_root_conduit.assert_called_once_with(conduit)
     finally:
         if not conduit._cleaned:
-            conduit.cleanup()
+            conduit.permanent_cleanup()
 
 
 def test_cleanup_spellspaces_flushes_stack(
@@ -1431,6 +1445,6 @@ def test_cleanup_spellspaces_flushes_stack(
 
     conduit_lesser._cleanup_spellspaces()
 
-    assert space.cleanup.called is True
+    assert space.permanent_cleanup.called is True
     assert conduit_lesser._spellspace_stack.get() == []
 

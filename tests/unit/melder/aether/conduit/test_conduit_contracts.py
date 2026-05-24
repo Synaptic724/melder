@@ -7,6 +7,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -35,6 +36,7 @@ def _build_conduit(
     dynamic = not automatic
     creation_gate_controller = CreationGateController()
     aetheric_frame_object = MagicMock()
+    aetheric_frame_object._conduits = {}
     conduit_cloud = MagicMock()
     conduit_cloud.create_cluster.return_value = None
     conduit_cloud.delete_cluster.return_value = None
@@ -63,7 +65,16 @@ def _build_conduit(
     )
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
-    return Conduit(
+    if conduit_state is ConduitState.lesser:
+        root = MagicMock()
+        root._id = root_conduit_id
+        root._conduit_pool = ConduitPool(
+            root_conduit=root,
+            baseline_idle=10,
+            max_idle=10,
+        )
+        aetheric_frame_object._conduits[root_conduit_id] = root
+    conduit = Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
@@ -75,6 +86,9 @@ def _build_conduit(
         name=name,
         root_conduit_id=root_conduit_id,
     )
+    if conduit_state is ConduitState.normal:
+        aetheric_frame_object._conduits[conduit._id] = conduit
+    return conduit
 
 
 def _set_active_link_transaction(conduit: Conduit, peer_id: str) -> None:

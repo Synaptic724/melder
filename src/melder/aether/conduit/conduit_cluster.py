@@ -2,6 +2,7 @@ import threading
 from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -228,6 +229,20 @@ class ConduitCluster(Cleanable):
         with self._lock:
             return set(self.members)
 
+    @staticmethod
+    def _assert_normal_conduit(conduit: Conduit) -> None:
+        """
+        Raise when a cluster operation targets a non-normal conduit.
+
+        Contract:
+            - Cluster membership and share flows operate only on normal/root conduits.
+            - Lesser, pooled, or cleaned conduits are rejected before cluster state mutates.
+        """
+        if conduit._conduit_state is not ConduitState.normal:
+            raise RuntimeError(
+                "ConduitCluster operations require a normal conduit."
+            )
+
     # ------------------------------------------------------------------
     # Share helpers (operate on live conduit objects)
     # ------------------------------------------------------------------
@@ -249,6 +264,7 @@ class ConduitCluster(Cleanable):
             None
         """
         self.check_cleaned()
+        self._assert_normal_conduit(conduit)
         with self._lock:
             self.members.add(conduit._id)
             member_ids = set(self.members)
@@ -287,6 +303,7 @@ class ConduitCluster(Cleanable):
             None
         """
         self.check_cleaned()
+        self._assert_normal_conduit(conduit)
         with self._lock:
             self.members.discard(conduit._id)
             member_ids = set(self.members)
@@ -328,6 +345,7 @@ class ConduitCluster(Cleanable):
             None
         """
         self.check_cleaned()
+        self._assert_normal_conduit(owner)
         shareables = self._get_shareable_spells(owner)
         owner_id = owner._id
         for spell in shareables:
@@ -344,6 +362,7 @@ class ConduitCluster(Cleanable):
             None
         """
         self.check_cleaned()
+        self._assert_normal_conduit(conduit)
         with self._lock:
             member_ids = set(self.members)
         self.refresh_shareable_roots(conduit)
@@ -378,6 +397,7 @@ class ConduitCluster(Cleanable):
             link_dependencies: Override auto_link_dependencies if provided.
         """
         self.check_cleaned()
+        self._assert_normal_conduit(owner)
         owner_id = owner._id
         self.add_shared_spell(owner_id, spell.spell_index)
         # Decide dependency behaviour (explicit override beats cluster default)
@@ -425,6 +445,7 @@ class ConduitCluster(Cleanable):
             spell: Spell object to remove.
         """
         self.check_cleaned()
+        self._assert_normal_conduit(owner)
         owner_id = owner._id
         self.remove_shared_spell(owner_id, spell.spell_index)
 
@@ -485,6 +506,8 @@ class ConduitCluster(Cleanable):
             None
         """
         self.check_cleaned()
+        self._assert_normal_conduit(owner)
+        self._assert_normal_conduit(borrower)
         owner_id = owner._id
         with self._lock:
             indices = set(self.shared_spells.get(owner_id, set()))
@@ -530,6 +553,8 @@ class ConduitCluster(Cleanable):
             None
         """
         self.check_cleaned()
+        self._assert_normal_conduit(owner)
+        self._assert_normal_conduit(borrower)
         owner_id = owner._id
         with self._lock:
             indices = set(self.shared_spells.get(owner_id, set()))

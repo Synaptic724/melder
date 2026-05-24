@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
@@ -65,6 +66,7 @@ def mock_conduit():
     conduit.name = "test_conduit"
     conduit._name = "test_conduit"
     conduit.__dynamic_environment__ = True
+    conduit._conduit_state = ConduitState.normal
     conduit._spellbook = None
     return conduit
 
@@ -243,6 +245,51 @@ def test_remove_conduit_from_cluster_missing_cluster_raises(
 
     with pytest.raises(ValueError, match="does not exist"):
         cloud.remove_conduit_from_cluster(mock_conduit, "missing")
+
+
+def test_add_conduit_to_cluster_rejects_non_normal_conduit(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify cluster membership rejects lesser/pooled/non-normal conduits.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    mock_conduit._conduit_state = ConduitState.lesser
+
+    with pytest.raises(RuntimeError, match="normal conduit"):
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+
+
+def test_remove_conduit_from_cluster_rejects_non_normal_conduit(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify cluster removal rejects lesser/pooled/non-normal conduits.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    mock_conduit._conduit_state = ConduitState.lesser
+
+    with pytest.raises(RuntimeError, match="normal conduit"):
+        cloud.remove_conduit_from_cluster(mock_conduit, "cluster-1")
+
+
+def test_refresh_cluster_shares_rejects_non_normal_conduit(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify cluster share refresh rejects lesser/pooled/non-normal conduits.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    mock_conduit._conduit_state = ConduitState.lesser
+
+    with pytest.raises(RuntimeError, match="normal conduit"):
+        cloud.refresh_cluster_shares_for_conduit(mock_conduit)
 
 
 def test_get_clusters_for_conduit_returns_empty_when_missing(conduit_cloud) -> None:

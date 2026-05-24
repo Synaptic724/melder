@@ -11,6 +11,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.spellbook import Spellbook
@@ -38,6 +39,24 @@ def _cleanup_conduit_if_alive(conduit: Conduit) -> None:
     if not hasattr(conduit, "_creation_gate_controller"):
         return
     conduit.cleanup()
+
+
+def _attach_root_pool_stub(
+    frame_stub: MagicMock,
+    root_conduit_id: str = "root-1",
+) -> MagicMock:
+    """
+    Attach one root-conduit stub carrying a real ConduitPool to the frame stub.
+    """
+    root = MagicMock()
+    root._id = root_conduit_id
+    root._conduit_pool = ConduitPool(
+        root_conduit=root,
+        baseline_idle=10,
+        max_idle=10,
+    )
+    frame_stub._conduits[root_conduit_id] = root
+    return root
 
 
 @pytest.fixture(autouse=True)
@@ -239,6 +258,7 @@ def aetheric_frame_stub(conduit_cloud_stub: MagicMock) -> MagicMock:
     """
     stub = MagicMock()
     stub._conduit_cloud = conduit_cloud_stub
+    stub._conduits = {}
     stub.devops_information_registry = DevopsInformationRegistry("default")
     stub.register_root_conduit.return_value = None
     stub.unregister_root_conduit.return_value = None
@@ -273,6 +293,7 @@ def conduit_lesser(
     aetheric_frame_stub.frame_configuration = (
         spellbook_stub._aetheric_frame_configuration
     )
+    _attach_root_pool_stub(aetheric_frame_stub, "root-1")
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -324,6 +345,7 @@ def conduit_normal(
         policy=Policies.default,
         creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
+    aetheric_frame_stub._conduits[conduit._id] = conduit
     yield conduit
     _cleanup_conduit_if_alive(conduit)
 
@@ -366,6 +388,7 @@ def conduit_dynamic_normal(
         dynamic=True,
         creation_gate_controller=dev_ops_manager_stub.creation_gate_controller,
     )
+    aetheric_frame_stub._conduits[conduit._id] = conduit
     yield conduit
     _cleanup_conduit_if_alive(conduit)
 
@@ -398,6 +421,7 @@ def conduit_dynamic_lesser(
     aetheric_frame_stub.frame_configuration = (
         spellbook_stub._aetheric_frame_configuration
     )
+    _attach_root_pool_stub(aetheric_frame_stub, "root-1")
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,

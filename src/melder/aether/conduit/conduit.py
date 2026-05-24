@@ -26,6 +26,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.aether.conduit.spell_space.spell_space_thread_state import (
@@ -116,6 +117,7 @@ class Conduit(Cleanable):
        "_spellspace_stack",
        "_spellspace_registry",
        "_spellspace_pool",
+       "_conduit_pool",
        "_creations",
        "_creation_gate_controller",
        "_creation_gate",
@@ -124,6 +126,7 @@ class Conduit(Cleanable):
        "_local_conduit_hooks",
        "_meld",
        "_conduit_ward",
+        "_permanent_cleanup_requested",
     ]
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -208,6 +211,7 @@ class Conduit(Cleanable):
             raise ValueError("conduit_id cannot be empty.")
 
         self._id: str = conduit_id
+        self._permanent_cleanup_requested: bool = False
         self._name: Optional[str] = name
         self.__dynamic_environment__: bool = bool(dynamic)
         self._nexus_publish_enabled: bool = False
@@ -296,6 +300,20 @@ class Conduit(Cleanable):
             baseline_idle=4,
             max_idle=4,
         )
+        if conduit_state is ConduitState.normal:
+            self._conduit_pool: ConduitPool = ConduitPool(
+                root_conduit=self,
+                baseline_idle=10,
+                max_idle=10,
+            )
+        else:
+            root_conduits = self._aetheric_frame._conduits
+            root_conduit = root_conduits.get(self._root_conduit_id)
+            if root_conduit is None:
+                raise RuntimeError(
+                    "Root conduit is unavailable for conduit pool wiring."
+                )
+            self._conduit_pool = root_conduit._conduit_pool
         self._configure_conduit_state()
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -334,53 +352,81 @@ class Conduit(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-
-            if self._conduit_hooks or self._local_conduit_hooks:
-                self._fire_conduit_hooks("on_conduit_cleanup_start", self)
-                self._cleaned = True
-                if self._conduit_state == ConduitState.lesser:
-                    self._cleanup_lesser_conduit()
-                elif self._conduit_state == ConduitState.normal:
-                    self._cleanup_normal_conduit()
-                else:
-                    self._logger.error("Unknown Conduit state during cleanup", "cleanup")
-                    raise RuntimeError("Conduit state is unknown during cleanup")
-                self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
-
-                del self._conduit_hooks
-                del self._meld_hooks
-                del self._local_conduit_hooks
-
-                # Logger last
-                try:
-                    if hasattr(self._logger, "cleanup"):
-                        self._logger.cleanup()
-                except Exception:
-                    pass
-                del self._logger
+            if self._permanent_cleanup_requested:
+                self._permanent_cleanup()
             else:
-                self._cleaned = True
-                if self._conduit_state == ConduitState.lesser:
-                    self._cleanup_lesser_conduit()
-                elif self._conduit_state == ConduitState.normal:
-                    self._cleanup_normal_conduit()
-                else:
-                    self._logger.error("Unknown Conduit state during cleanup", "cleanup")
-                    raise RuntimeError("Conduit state is unknown during cleanup")
+                self._prepare_for_pool()
 
-                del self._conduit_hooks
-                del self._meld_hooks
-                del self._local_conduit_hooks
+    def _prepare_for_pool(self):
+        """
+        This method will properly cleanup the conduit resources that must be reset for the pool uptake.
+        """
+        if self._local_conduit_hooks is not None:
+            self._local_conduit_hooks.clear()
 
-                # Logger last
-                try:
-                    if hasattr(self._logger, "cleanup"):
-                        self._logger.cleanup()
-                except Exception:
-                    pass
-                del self._logger
+    def permanent_cleanup(self) -> None:
+        """
+        Permanently destroy this spellspace instead of returning it to a pool.
 
+        Contract:
+            - Flips the permanent cleanup flag immediately.
+            - Reuses the normal cleanup entrypoint so all public teardown still
+              flows through one surface.
+        """
+        self._permanent_cleanup_requested = True
+        self.cleanup()
 
+    def _permanent_cleanup(self):
+        """
+        Internal
+
+        Cleans up all resources associated with the Conduit, including
+        deregistering from Aether and Spellbook, and removing all references.
+        """
+        if self._conduit_hooks or self._local_conduit_hooks:
+            self._fire_conduit_hooks("on_conduit_cleanup_start", self)
+            self._cleaned = True
+            if self._conduit_state == ConduitState.lesser:
+                self._cleanup_lesser_conduit()
+            elif self._conduit_state == ConduitState.normal:
+                self._cleanup_normal_conduit()
+            else:
+                self._logger.error("Unknown Conduit state during cleanup", "cleanup")
+                raise RuntimeError("Conduit state is unknown during cleanup")
+            self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
+
+            del self._conduit_hooks
+            del self._meld_hooks
+            del self._local_conduit_hooks
+
+            # Logger last
+            try:
+                if hasattr(self._logger, "cleanup"):
+                    self._logger.cleanup()
+            except Exception:
+                pass
+            del self._logger
+        else:
+            self._cleaned = True
+            if self._conduit_state == ConduitState.lesser:
+                self._cleanup_lesser_conduit()
+            elif self._conduit_state == ConduitState.normal:
+                self._cleanup_normal_conduit()
+            else:
+                self._logger.error("Unknown Conduit state during cleanup", "cleanup")
+                raise RuntimeError("Conduit state is unknown during cleanup")
+
+            del self._conduit_hooks
+            del self._meld_hooks
+            del self._local_conduit_hooks
+
+            # Logger last
+            try:
+                if hasattr(self._logger, "cleanup"):
+                    self._logger.cleanup()
+            except Exception:
+                pass
+            del self._logger
 
     def _cleanup_lesser_conduit(self) -> None:
         """
@@ -432,6 +478,7 @@ class Conduit(Cleanable):
         del self._transaction_identity
         del self._spellspace_stack
         del self._spellspace_registry
+        del self._conduit_pool
         del self._spellbook
         del self._configuration
         del self._root_conduit_id
@@ -478,6 +525,12 @@ class Conduit(Cleanable):
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_normal_conduit", exc_info=True)
 
+        try:
+            if self._conduit_pool is not None:
+                self._conduit_pool.cleanup()
+        except Exception:
+            self._logger.error("Error cleaning conduit pool", "_cleanup_normal_conduit", exc_info=True)
+
         # 4) Unregister from Aether (spells + root conduit + cloud)
         try:
             if self._spellbook is not None:
@@ -514,6 +567,7 @@ class Conduit(Cleanable):
         del self._transaction_identity
         del self._spellspace_stack
         del self._spellspace_registry
+        del self._conduit_pool
         del self._aetheric_frame_name
         del self._root_conduit_id
         del self._nexus
@@ -1599,6 +1653,7 @@ class Conduit(Cleanable):
                     new_conduit._conduit_ward._root_conduit = root_conduit
                 new_conduit._root_conduit_id = root_conduit_id
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
+                new_conduit._conduit_pool = root_conduit._conduit_pool
                 if new_conduit._meld is not None:
                     new_conduit._meld._resolution_conduit_id = root_conduit_id
 
@@ -1637,6 +1692,7 @@ class Conduit(Cleanable):
                     new_conduit._conduit_ward._root_conduit = root_conduit
                 new_conduit._root_conduit_id = root_conduit_id
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
+                new_conduit._conduit_pool = root_conduit._conduit_pool
                 if new_conduit._meld is not None:
                     new_conduit._meld._resolution_conduit_id = root_conduit_id
                 self._conduit_ward._link_lesser_conduit(new_conduit)

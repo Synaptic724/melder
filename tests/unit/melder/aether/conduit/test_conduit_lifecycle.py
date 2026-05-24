@@ -8,6 +8,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
@@ -50,6 +51,7 @@ def _build_conduit(
     dynamic = not automatic
     creation_gate_controller = CreationGateController()
     aetheric_frame_object = MagicMock()
+    aetheric_frame_object._conduits = {}
     conduit_cloud = MagicMock()
     conduit_cloud.create_cluster.return_value = None
     conduit_cloud.delete_cluster.return_value = None
@@ -78,7 +80,16 @@ def _build_conduit(
     )
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
-    return Conduit(
+    if conduit_state is ConduitState.lesser:
+        root = MagicMock()
+        root._id = root_conduit_id
+        root._conduit_pool = ConduitPool(
+            root_conduit=root,
+            baseline_idle=10,
+            max_idle=10,
+        )
+        aetheric_frame_object._conduits[root_conduit_id] = root
+    conduit = Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
@@ -93,6 +104,9 @@ def _build_conduit(
         root_conduit_id=root_conduit_id,
         creation_gate=creation_gate,
     )
+    if conduit_state is ConduitState.normal:
+        aetheric_frame_object._conduits[conduit._id] = conduit
+    return conduit
 
 
 class _LockProbe:
@@ -288,7 +302,7 @@ def test_get_conduit_cloud_raises_after_cleanup(
     Raises:
         RuntimeError: When accessing the conduit cloud after cleanup.
     """
-    conduit_normal.cleanup()
+    conduit_normal.permanent_cleanup()
     with pytest.raises(RuntimeError):
         conduit_normal.get_conduit_cloud()
 
@@ -329,6 +343,26 @@ def test_create_spellspace_returns_owned_space_without_activation(
     assert isinstance(space, SpellSpace)
     assert space.owner_conduit_id == conduit_lesser._id
     assert conduit_lesser.get_active_spellspace() is None
+
+
+def test_normal_conduit_owns_root_conduit_pool(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify a normal/root conduit creates and owns a root conduit pool.
+    """
+    assert conduit_normal._conduit_pool is not None
+    assert conduit_normal._conduit_pool.root_conduit is conduit_normal
+    assert conduit_normal._conduit_pool.root_conduit_id == conduit_normal._id
+
+
+def test_lesser_conduit_inherits_root_conduit_pool(
+    conduit_lesser: Conduit,
+) -> None:
+    """
+    Verify a lesser conduit always has the shared root conduit pool.
+    """
+    assert conduit_lesser._conduit_pool is not None
 
 
 def test_enter_spellspace_pushes_active_and_cleans_on_exit(
@@ -548,11 +582,11 @@ def test_explicit_logger_skips_provider(
 
 def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> None:
     """
-    Verify cleanup is idempotent for a lesser conduit.
+    Verify soft cleanup is idempotent for a lesser conduit.
 
     Contract:
         - Multiple cleanup calls do not raise.
-        - cleaned flag is set after cleanup completes.
+        - cleaned flag remains unset because the lesser is prepared for pooling.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
@@ -565,8 +599,8 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     conduit_lesser._creations = MagicMock()
     conduit_lesser.cleanup()
     conduit_lesser.cleanup()
-    assert conduit_lesser.cleaned is True
-    assert not hasattr(conduit_lesser, "_nexus")
+    assert conduit_lesser.cleaned is False
+    assert hasattr(conduit_lesser, "_nexus")
 
 
 def test_cleanup_raises_for_unknown_conduit_state(conduit_normal: Conduit) -> None:
@@ -581,7 +615,7 @@ def test_cleanup_raises_for_unknown_conduit_state(conduit_normal: Conduit) -> No
     conduit_normal._logger = MagicMock()
 
     with pytest.raises(RuntimeError, match="unknown during cleanup"):
-        conduit_normal.cleanup()
+        conduit_normal.permanent_cleanup()
 
     conduit_normal._logger.error.assert_called_once()
 
@@ -590,7 +624,7 @@ def test_cleanup_lesser_conduit_tolerates_child_cleanup_errors(
     conduit_lesser: Conduit,
 ) -> None:
     """
-    Verify lesser conduit cleanup tolerates child cleanup failures and nulls state.
+    Verify hard cleanup for a lesser conduit tolerates child cleanup failures and nulls state.
 
     Contract:
         - unregister gate, meld, ward, and creations failures are logged and do not abort cleanup.
@@ -607,7 +641,7 @@ def test_cleanup_lesser_conduit_tolerates_child_cleanup_errors(
     conduit_lesser._creations.cleanup.side_effect = RuntimeError("creations boom")
     logger = conduit_lesser._logger
 
-    conduit_lesser.cleanup()
+    conduit_lesser.permanent_cleanup()
 
     assert not hasattr(conduit_lesser, "_conduit_ward")
     assert not hasattr(conduit_lesser, "_meld")
@@ -677,12 +711,15 @@ def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     conduit_normal._conduit_ward = MagicMock()
     conduit_normal._meld = MagicMock()
     conduit_normal._creations = MagicMock()
+    conduit_normal._conduit_pool = MagicMock()
     conduit_normal._nexus_publish_enabled = True
     conduit_normal._nexus = MagicMock()
     nexus = conduit_normal._nexus
     spellbook = conduit_normal._spellbook
-    conduit_normal.cleanup()
+    conduit_pool = conduit_normal._conduit_pool
+    conduit_normal.permanent_cleanup()
     assert spellbook.cleanup.called is True
+    conduit_pool.cleanup.assert_called_once()
     nexus._publish_frame_record.assert_called_once_with(spellbook)
     assert not hasattr(conduit_normal, "_nexus")
 
@@ -715,7 +752,7 @@ def test_cleanup_returns_early_when_cleaned_flips_inside_lock(
 def test_cleanup_swallows_logger_cleanup_failures(
     conduit_lesser: Conduit,
 ) -> None:
-    """cleanup should swallow logger cleanup failures and still clear the logger reference."""
+    """permanent_cleanup should swallow logger cleanup failures and still clear the logger reference."""
     conduit_lesser._conduit_ward = MagicMock()
     conduit_lesser._meld = MagicMock()
     conduit_lesser._creations = MagicMock()
@@ -723,7 +760,7 @@ def test_cleanup_swallows_logger_cleanup_failures(
     conduit_lesser._logger.cleanup.side_effect = RuntimeError("logger boom")
     logger = conduit_lesser._logger
 
-    conduit_lesser.cleanup()
+    conduit_lesser.permanent_cleanup()
 
     assert logger.cleanup.called is True
     assert not hasattr(conduit_lesser, "_logger")

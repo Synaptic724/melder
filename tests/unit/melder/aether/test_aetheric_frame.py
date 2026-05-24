@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 # ----------------------------------------------------------------------
@@ -270,6 +271,17 @@ def test_cleanup_tolerant_of_cluster_cleanup_errors(frame):
     frame.cleanup()
 
     assert frame._cleaned is True
+
+
+def test_register_root_conduit_rejects_non_normal_conduit(frame):
+    """register_root_conduit should only accept normal conduits."""
+    conduit = MagicMock()
+    conduit._id = "conduit-1"
+    conduit._name = "lesser-1"
+    conduit._conduit_state = ConduitState.lesser
+
+    with pytest.raises(ValueError, match="Only normal conduits"):
+        frame.register_root_conduit(conduit)
 
 # ----------------------------------------------------------------------
 # 4. Property Accessor Tests

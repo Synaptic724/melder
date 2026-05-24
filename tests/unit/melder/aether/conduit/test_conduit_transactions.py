@@ -3,6 +3,7 @@
 import pytest
 
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -30,6 +31,7 @@ def _build_conduit(
     """
     dynamic = not automatic
     aetheric_frame_object = MagicMock()
+    aetheric_frame_object._conduits = {}
     conduit_cloud = MagicMock()
     conduit_cloud.create_cluster.return_value = None
     conduit_cloud.delete_cluster.return_value = None
@@ -47,7 +49,16 @@ def _build_conduit(
     aetheric_frame_object.unregister_root_conduit.return_value = None
     if conduit_state is ConduitState.lesser and root_conduit_id is None:
         root_conduit_id = "root-1"
-    return Conduit(
+    if conduit_state is ConduitState.lesser:
+        root = MagicMock()
+        root._id = root_conduit_id
+        root._conduit_pool = ConduitPool(
+            root_conduit=root,
+            baseline_idle=10,
+            max_idle=10,
+        )
+        aetheric_frame_object._conduits[root_conduit_id] = root
+    conduit = Conduit(
         spellbook=spellbook,
         configuration=configuration,
         conduit_state=conduit_state,
@@ -58,6 +69,9 @@ def _build_conduit(
         dynamic=dynamic,
         root_conduit_id=root_conduit_id,
     )
+    if conduit_state is ConduitState.normal:
+        aetheric_frame_object._conduits[conduit._id] = conduit
+    return conduit
 
 
 def test_conduit_begin_transaction_link_accepts_conduits_list(

@@ -17,6 +17,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
@@ -84,12 +85,14 @@ class _ConduitStub:
             conduit_id: str,
             spellbook: Optional[_SpellbookStub],
             aetheric_frame: str = "default",
+            conduit_state: ConduitState = ConduitState.normal,
             raise_on: Optional[dict[str, set[str]]] = None,
     ) -> None:
         """Initialize the conduit stub with spellbook and optional raise rules."""
         self._id = conduit_id
         self._spellbook = spellbook
         self._aetheric_frame_name = aetheric_frame
+        self._conduit_state = conduit_state
         self._raise_on = raise_on or {}
         self.contract_with_deps_calls: list[dict[str, Any]] = []
         self.contract_calls: list[dict[str, Any]] = []
@@ -207,6 +210,7 @@ class _ConduitNoFrameStub:
         """Initialize a conduit stub without aetheric frame metadata."""
         self._id = conduit_id
         self._spellbook = spellbook
+        self._conduit_state = ConduitState.normal
 
 
 class _FrameStub:
@@ -349,6 +353,19 @@ def test_handle_join_shares_between_members() -> None:
             "link_dependencies": True,
         }
     ]
+
+
+def test_handle_join_rejects_non_normal_conduit() -> None:
+    """Verify cluster join rejects lesser/non-normal conduits."""
+    cluster = _make_cluster("cluster")
+    conduit = _ConduitStub(
+        "conduit-a",
+        _SpellbookStub([]),
+        conduit_state=ConduitState.lesser,
+    )
+
+    with pytest.raises(RuntimeError, match="normal conduit"):
+        cluster.handle_join(conduit)
 
 
 def test_handle_leave_removes_peer_owned_roots_from_leaver() -> None:
@@ -511,6 +528,22 @@ def test_share_to_borrower_uses_non_deps_when_disabled() -> None:
             "link_dependencies": False,
         }
     ]
+
+
+def test_share_to_borrower_rejects_non_normal_owner() -> None:
+    """Verify borrower sharing rejects non-normal owners."""
+    cluster = _make_cluster("cluster")
+    spell = _SpellStub("spell-1", Existence.unique_per_conduit_cluster)
+    owner = _ConduitStub(
+        "owner-1",
+        _SpellbookStub([spell]),
+        conduit_state=ConduitState.lesser,
+    )
+    borrower = _ConduitStub("borrower-1", _SpellbookStub([]))
+    cluster.add_shared_spell(owner._id, spell.spell_index)
+
+    with pytest.raises(RuntimeError, match="normal conduit"):
+        cluster.share_to_borrower(owner, borrower)
 
 
 def test_share_to_borrower_continues_after_exception() -> None:
@@ -1114,15 +1147,21 @@ def test_remove_shared_from_borrower_continues_after_exception() -> None:
     }
 
 
-def test_remove_shared_from_borrower_skips_missing_peer_entries() -> None:
-    """Verify remove_shared_from_borrower ignores member ids that are absent from the frame."""
+def test_remove_shared_from_borrower_uses_normal_borrower() -> None:
+    """Verify remove_shared_from_borrower operates on a normal borrower conduit."""
     cluster = _make_cluster("cluster")
     spell = _SpellStub("spell-1", Existence.unique_per_conduit_cluster)
     owner = _ConduitStub("owner-1", _SpellbookStub([spell]))
-    frame = _FrameStub([owner])
+    borrower = _ConduitStub("borrower-1", _SpellbookStub([]))
     cluster.add_shared_spell(owner._id, spell.spell_index)
 
-    cluster.remove_shared_from_borrower(owner, frame)
+    cluster.remove_shared_from_borrower(owner, borrower)
 
-    assert cluster.get_shared_spells()[owner._id] == {spell.spell_index}
+    assert borrower.remove_root_calls == [
+        {
+            "root_spell_id": cluster._cluster_root_id(owner._id, spell.spell_id),
+            "conduit": owner,
+            "aetheric_frame": "default",
+        }
+    ]
 

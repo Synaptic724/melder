@@ -10,6 +10,7 @@ from types import TracebackType
 
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -173,6 +174,20 @@ class ConduitCloud(Cleanable):
         if frame_configuration.system_state is not SystemState.dynamic:
             raise RuntimeError(
                 "Conduit-cluster operations require dynamic mode."
+            )
+
+    @staticmethod
+    def _assert_normal_conduit(conduit: Conduit) -> None:
+        """
+        Raise when a cluster operation targets a non-normal conduit.
+
+        Contract:
+            - Cluster membership is limited to normal/root conduits.
+            - Lesser, pooled, or cleaned conduits are rejected at the cloud boundary.
+        """
+        if conduit._conduit_state is not ConduitState.normal:
+            raise RuntimeError(
+                "Conduit-cluster operations require a normal conduit."
             )
 
 
@@ -426,6 +441,7 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
+        self._assert_normal_conduit(conduit)
         cluster = self._get_cluster(cluster_name)
         cluster.add_member(conduit.id)
         cluster.handle_join(conduit)
@@ -444,6 +460,7 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
+        self._assert_normal_conduit(conduit)
         cluster = self._get_cluster(cluster_name)
         cluster.remove_member(conduit.id)
         cluster.handle_leave(conduit)
@@ -475,6 +492,7 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
+        self._assert_normal_conduit(conduit)
         cluster_names = self.get_clusters_for_conduit(conduit.id)
         for cluster_name in cluster_names:
             cluster = self._get_cluster(cluster_name)

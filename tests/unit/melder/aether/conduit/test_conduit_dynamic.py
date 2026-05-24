@@ -447,6 +447,20 @@ def test_create_lesser_conduit_publishes_descriptor_record_when_enabled(
 
     assert new_conduit._nexus_publish_enabled is True
     assert published_calls == [new_conduit]
+    new_conduit.permanent_cleanup()
+
+
+def test_create_lesser_conduit_inherits_root_conduit_pool(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify newly created lessers share the root-owned conduit pool reference.
+    """
+    lesser = conduit_dynamic_normal.create_lesser_conduit()
+    try:
+        assert lesser._conduit_pool is conduit_dynamic_normal._conduit_pool
+    finally:
+        lesser.permanent_cleanup()
 
 
 def test_set_creation_gate_controller_for_lineage_uses_existing_gate_and_updates_lesser_conduits(

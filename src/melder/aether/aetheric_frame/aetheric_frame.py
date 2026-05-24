@@ -13,6 +13,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
@@ -275,6 +276,8 @@ class AethericFrame(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            if conduit._conduit_state is not ConduitState.normal:
+                raise ValueError("Only normal conduits can be registered as root conduits.")
             conduit_id = conduit._id
             conduit_name = conduit._name
             if not conduit_name:
