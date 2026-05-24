@@ -349,7 +349,6 @@ class Conduit(Cleanable):
                     pass
                 del self._logger
             else:
-                self._fire_conduit_hooks("on_conduit_cleanup_start", self)
                 self._cleaned = True
                 if self._conduit_state == ConduitState.lesser:
                     self._cleanup_lesser_conduit()
@@ -358,7 +357,6 @@ class Conduit(Cleanable):
                 else:
                     self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                     raise RuntimeError("Conduit state is unknown during cleanup")
-                self._fire_conduit_hooks("on_conduit_cleanup_complete", self)
 
                 del self._conduit_hooks
                 del self._meld_hooks
@@ -3558,9 +3556,12 @@ class Conduit(Cleanable):
             link_dependencies=link_dependencies,
         )
 
-        if result:
+        if result and (
+            (self._local_conduit_hooks and self._local_conduit_hooks.get("on_contract_created"))
+            or (self._conduit_hooks and self._conduit_hooks.get("on_contract_created"))
+        ):
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
+            if peer is not None:
                 self._fire_conduit_hooks(
                     "on_contract_created",
                     self,

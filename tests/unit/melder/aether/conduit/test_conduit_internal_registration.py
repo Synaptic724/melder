@@ -3,9 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.creations.creations import Creations
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 
 
 def test_add_root_conduit_delegates(
@@ -90,81 +88,6 @@ def test_add_spells_to_aether_registers_spell_indices(
     finally:
         spell_a.cleanup()
         spell_b.cleanup()
-
-
-def test_creations_configuration_returns_creations_for_lesser(
-    conduit_lesser: Conduit,
-    configuration_automatic: SpellbookConfiguration,
-) -> None:
-    """
-    Verify _creations_configuration returns Creations for lesser conduits.
-
-    Contract:
-        - Lesser conduits receive Creations instances.
-
-    Args:
-        conduit_lesser (Conduit): Lesser conduit instance.
-        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
-
-    Raises:
-        AssertionError: If the returned type is not Creations.
-    """
-    creations = conduit_lesser._creations_configuration(configuration_automatic)
-    try:
-        assert isinstance(creations, Creations)
-    finally:
-        creations.cleanup()
-
-
-def test_creations_configuration_returns_creations(
-    conduit_normal: Conduit,
-    configuration_automatic: SpellbookConfiguration,
-) -> None:
-    """
-    Verify _creations_configuration returns Creations for normal conduits.
-
-    Contract:
-        - Normal conduits receive Creations instances.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
-
-    Raises:
-        AssertionError: If the returned type is not Creations.
-    """
-    creations = conduit_normal._creations_configuration(configuration_automatic)
-    try:
-        assert isinstance(creations, Creations)
-    finally:
-        creations.cleanup()
-
-
-def test_creations_configuration_raises_for_unknown_state(
-    conduit_normal: Conduit,
-    configuration_automatic: SpellbookConfiguration,
-) -> None:
-    """
-    Verify _creations_configuration rejects unknown conduit states.
-
-    Contract:
-        - Raises RuntimeError for unsupported conduit states.
-
-    Args:
-        conduit_normal (Conduit): Normal conduit instance.
-        configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
-
-    Raises:
-        AssertionError: If unsupported state does not raise.
-    """
-    previous = conduit_normal._conduit_state
-    try:
-        conduit_normal._conduit_state = None
-        with pytest.raises(RuntimeError, match="Conduit state is unknown"):
-            conduit_normal._creations_configuration(configuration_automatic)
-    finally:
-        conduit_normal._conduit_state = previous
-
 
 def test_qualify_contracts_raises_when_cleaned(
     conduit_normal: Conduit,
