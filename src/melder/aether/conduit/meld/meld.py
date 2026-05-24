@@ -89,7 +89,6 @@ class Meld(Cleanable):
         "_lookup_contracted_spells",
         "_creations",
         "_input_resolution_cache",
-        "_spell_id_resolution_cache",
         "_max_resolution_cache_size",
         "_change_control_manager_by_frame",
         "_meld_hooks",
@@ -158,7 +157,6 @@ class Meld(Cleanable):
 
         # Front-door resolution caches.
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], Spell] = {}
-        self._spell_id_resolution_cache: Dict[str, Spell] = {}
         self._max_resolution_cache_size: int = 2048
 
         # Change-control state.
@@ -218,7 +216,6 @@ class Meld(Cleanable):
             del self._dynamic_environment
             del self._meld_hooks
             del self._input_resolution_cache
-            del self._spell_id_resolution_cache
             del self._max_resolution_cache_size
             del self._change_control_manager_by_frame
             if self._spell_compiler_system is not None:
@@ -331,16 +328,7 @@ class Meld(Cleanable):
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
         if isinstance(spell, str):
-            spell_id_resolution_cache = self._spell_id_resolution_cache
-            target_spell = spell_id_resolution_cache.get(spell)
-            if target_spell is None:
-                target_spell = self._resolve_spell_by_id(spell)
-                if len(spell_id_resolution_cache) >= self._max_resolution_cache_size:
-                    spell_id_resolution_cache.pop(
-                        next(iter(spell_id_resolution_cache)),
-                        None,
-                    )
-                spell_id_resolution_cache[spell] = target_spell
+            target_spell = self._resolve_spell_by_id(spell)
         else:
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
@@ -491,16 +479,7 @@ class Meld(Cleanable):
         """
         target_spell: Optional[Spell] = None
         if isinstance(spell, str):
-            spell_id_resolution_cache = self._spell_id_resolution_cache
-            target_spell = spell_id_resolution_cache.get(spell)
-            if target_spell is None:
-                target_spell = self._resolve_spell_by_id(spell)
-                if len(spell_id_resolution_cache) >= self._max_resolution_cache_size:
-                    spell_id_resolution_cache.pop(
-                        next(iter(spell_id_resolution_cache)),
-                        None,
-                    )
-                spell_id_resolution_cache[spell] = target_spell
+            target_spell = self._resolve_spell_by_id(spell)
         else:
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
@@ -784,16 +763,7 @@ class Meld(Cleanable):
         """
         target_spell: Optional[Spell] = None
         if isinstance(spell, str):
-            spell_id_resolution_cache = self._spell_id_resolution_cache
-            target_spell = spell_id_resolution_cache.get(spell)
-            if target_spell is None:
-                target_spell = self._resolve_spell_by_id(spell)
-                if len(spell_id_resolution_cache) >= self._max_resolution_cache_size:
-                    spell_id_resolution_cache.pop(
-                        next(iter(spell_id_resolution_cache)),
-                        None,
-                    )
-                spell_id_resolution_cache[spell] = target_spell
+            target_spell = self._resolve_spell_by_id(spell)
             return target_spell
 
         input_resolution_cache = self._input_resolution_cache
