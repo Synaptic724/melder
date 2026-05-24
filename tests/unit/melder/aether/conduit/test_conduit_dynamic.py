@@ -493,6 +493,15 @@ def test_create_lesser_conduit_inherits_root_conduit_pool(
     lesser = conduit_dynamic_normal.create_lesser_conduit()
     try:
         assert lesser._conduit_pool is conduit_dynamic_normal._conduit_pool
+        assert (
+            lesser._transaction_identity.metadata["parent_conduit_id"]
+            == conduit_dynamic_normal._id
+        )
+        lesser.cleanup()
+        assert (
+            lesser._transaction_identity.metadata["parent_conduit_id"]
+            is None
+        )
     finally:
         lesser.permanent_cleanup()
 

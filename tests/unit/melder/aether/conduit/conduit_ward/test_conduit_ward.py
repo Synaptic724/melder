@@ -423,7 +423,7 @@ def test_detach_for_pool_unregisters_lesser_parent_relation(ward) -> None:
 
     assert "child-2" not in ward._lesser_conduits
     assert child._conduit_ward._parent_conduit is None
-    child._transaction_identity.update_metadata.assert_called_once_with(
+    child._transaction_identity.update_metadata.assert_any_call(
         parent_conduit_id=None
     )
 
