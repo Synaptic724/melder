@@ -81,7 +81,7 @@ def test_spellbook_integration_config_shared_and_locked() -> None:
         instance = conduit.meld(spell=spell_id)
         assert isinstance(instance, BasicService)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_create_new_preset_spellbook_shares_config() -> None:
@@ -119,7 +119,7 @@ def test_spellbook_integration_create_new_preset_spellbook_shares_config() -> No
         instance = conduit.meld(spell=preset_spell_id)
         assert isinstance(instance, BasicConfig)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_named_frames_isolated() -> None:
@@ -164,8 +164,8 @@ def test_spellbook_integration_named_frames_isolated() -> None:
         assert spellbook_b.inspect_spell(BasicConfig, aetheric_frame=frame_b) == spell_id_b
         assert spellbook_b.inspect_spell(BasicConfig, aetheric_frame=frame_a) is None
     finally:
-        conduit_b.cleanup()
-        conduit_a.cleanup()
+        conduit_b.permanent_cleanup()
+        conduit_a.permanent_cleanup()
 
 
 def test_spellbook_integration_frame_config_mismatch_raises() -> None:
@@ -198,7 +198,7 @@ def test_spellbook_integration_frame_config_mismatch_raises() -> None:
         with pytest.raises(RuntimeError, match="Aether configuration does not match"):
             Spellbook(aetheric_frame=frame, configuration=other_config)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_conjure_registers_spell_versions_and_cleanup_clears_registry() -> None:
@@ -235,7 +235,7 @@ def test_spellbook_integration_conjure_registers_spell_versions_and_cleanup_clea
         assert registry[conduit_id] == spell_indices
         assert frame_obj.has_version(spell_id) is True
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
     assert frame in Spellbook._aether._aetheric_frames
     frame_obj = Spellbook._aether._aetheric_frames[frame]
@@ -290,7 +290,7 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
         instance = conduit.meld(spell=spell_id)
         assert isinstance(instance, BasicService)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_conjure_keeps_local_configuration_when_frame_sharing_disabled() -> None:
@@ -330,7 +330,7 @@ def test_spellbook_integration_conjure_keeps_local_configuration_when_frame_shar
         finally:
             second.cleanup()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_explicit_shared_mode_uses_one_frame_owned_configuration() -> None:
@@ -373,7 +373,7 @@ def test_spellbook_integration_explicit_shared_mode_uses_one_frame_owned_configu
         finally:
             second.cleanup()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_explicit_local_mode_keeps_spellbook_configurations_isolated() -> None:
@@ -412,7 +412,7 @@ def test_spellbook_integration_explicit_local_mode_keeps_spellbook_configuration
         finally:
             second.cleanup()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_explicit_shared_mode_same_frame_concurrent_conjure_is_threadsafe() -> None:
@@ -493,7 +493,7 @@ def test_spellbook_integration_explicit_shared_mode_same_frame_concurrent_conjur
         assert spellbook_b.is_configuration_locked() is True
     finally:
         for conduit in reversed(conduits):
-            conduit.cleanup()
+            conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_configuration_frame_mismatch_raises() -> None:
@@ -545,7 +545,7 @@ def test_spellbook_integration_same_frame_bind_collision_raises() -> None:
                 permissions="create",
             )
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instance() -> None:
@@ -576,7 +576,7 @@ def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instanc
         resolved = conduit.meld(spell=spell_id)
         assert resolved is existing
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind() -> None:
@@ -614,7 +614,7 @@ def test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind()
         resolved = conduit.meld(spell=spell_id)
         assert isinstance(resolved, BasicConfig)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
@@ -666,7 +666,7 @@ def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
     finally:
         if transaction_started:
             spellbook.end_transaction("bind")
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_scope() -> None:
@@ -726,7 +726,7 @@ def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> Non
         assert spell.resolution_frame is not None
         assert spell.validation_result_phase4 is not None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_binding_resolves_by_spellframe_and_name() -> None:
@@ -763,7 +763,7 @@ def test_spellbook_integration_fluent_binding_resolves_by_spellframe_and_name() 
         assert isinstance(spell_key, tuple)
         assert conduit.meld(spell=spell_id) is instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_binding_case_insensitive_keys() -> None:
@@ -799,7 +799,7 @@ def test_spellbook_integration_fluent_binding_case_insensitive_keys() -> None:
         assert isinstance(spell_key, tuple)
         assert conduit.meld(spell=spell_id) is instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_binding_hooks_execute() -> None:
@@ -872,7 +872,7 @@ def test_spellbook_integration_fluent_binding_hooks_execute() -> None:
         assert post_calls == ["post", "post"]
         assert activation_calls == [first]
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_binding_hooks_execute_from_kwargs() -> None:
@@ -960,7 +960,7 @@ def test_spellbook_integration_fluent_binding_hooks_execute_from_kwargs() -> Non
         assert post_calls == ["post", "post"]
         assert activation_calls == [first]
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_binding_reuse_registers_multiple_spells() -> None:
@@ -989,7 +989,7 @@ def test_spellbook_integration_fluent_binding_reuse_registers_multiple_spells() 
         assert isinstance(conduit.meld(spell=service_id), BasicService)
         assert isinstance(conduit.meld(spell=config_id), BasicConfig)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_defaults_apply_for_many() -> None:
@@ -1016,7 +1016,7 @@ def test_spellbook_integration_fluent_defaults_apply_for_many() -> None:
         second = conduit.meld(spell=spell_id)
         assert first is not second
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_defaults_permissions_apply() -> None:
@@ -1044,7 +1044,7 @@ def test_spellbook_integration_fluent_defaults_permissions_apply() -> None:
         spell_index = spellbook.find_spell_index("BasicService", BasicService.__name__, "__default__")
         assert spellbook.get_spell_permissions(spell_index) == "read"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() -> None:
@@ -1071,7 +1071,7 @@ def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() 
             spell_id = binder.bind(existing).as_unique().finalize()
         assert conduit.meld(spell=spell_id) is existing
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_inspect_spell_class_registered_after_conjure() -> None:
@@ -1099,7 +1099,7 @@ def test_spellbook_integration_inspect_spell_class_registered_after_conjure() ->
         inspected = spellbook.inspect_spell(BasicService)
         assert inspected == spell_id
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_create_binder_fluent_bind_and_meld() -> None:
@@ -1127,7 +1127,7 @@ def test_spellbook_integration_create_binder_fluent_bind_and_meld() -> None:
         assert isinstance(instance, BasicService)
         assert instance.marker == "service"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_inspect_spell_returns_registered_id() -> None:
@@ -1161,7 +1161,7 @@ def test_spellbook_integration_inspect_spell_returns_registered_id() -> None:
         resolved = conduit.meld(spell=spell_id)
         assert resolved is existing
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_spellbook_integration_contracted_spells_visible() -> None:
@@ -1208,8 +1208,8 @@ def test_spellbook_integration_contracted_spells_visible() -> None:
         instance = borrower.meld(spell=spell_id)
         assert isinstance(instance, BasicService)
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_spellbook_integration_contract_updates_risk_manager_lineages() -> None:
@@ -1270,8 +1270,8 @@ def test_spellbook_integration_contract_updates_risk_manager_lineages() -> None:
         assert lineage_id not in borrower_state.lineages
         assert borrower.id not in risk_manager._lineage_conduits.get(lineage_id, set())
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() -> None:
@@ -1320,8 +1320,8 @@ def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() ->
         assert owner.sever_link(borrower) is True
         assert registry.list_borrowers_for_provider(owner.id) == ()
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_spellbook_integration_contract_removal_clears_access() -> None:
@@ -1368,8 +1368,8 @@ def test_spellbook_integration_contract_removal_clears_access() -> None:
         assert removed is True
         assert borrower.get_spell_in_contracts(spell_id) is None
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_spellbook_integration_sever_link_clears_contracts() -> None:
@@ -1412,8 +1412,8 @@ def test_spellbook_integration_sever_link_clears_contracts() -> None:
         assert unlinked is True
         assert borrower.get_spell_in_contracts(spell_id) is None
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -> None:
@@ -1460,6 +1460,6 @@ def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -
         instance = borrower.meld(spellframe=IService, binding_name="primary")
         assert isinstance(instance, BasicService)
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 

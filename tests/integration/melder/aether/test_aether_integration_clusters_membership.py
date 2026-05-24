@@ -122,8 +122,8 @@ def test_aether_cluster_membership_tracks_conduits() -> None:
         clusters_b = set(cloud.get_clusters_for_conduit(conduit_b.id))
         assert clusters_b == set()
     finally:
-        conduit_b.cleanup()
-        conduit_a.cleanup()
+        conduit_b.permanent_cleanup()
+        conduit_a.permanent_cleanup()
         book_b.cleanup()
         book_a.cleanup()
 

@@ -122,8 +122,8 @@ def test_aether_frame_isolation_for_conduit_and_spell_lookup() -> None:
 
         assert Aether().get_conduit_by_name("root-b", "frame-b") is conduit_b
     finally:
-        conduit_b.cleanup()
-        conduit_a.cleanup()
+        conduit_b.permanent_cleanup()
+        conduit_a.permanent_cleanup()
 
 
 def test_aether_conduit_cloud_isolated_by_frame() -> None:
@@ -170,8 +170,8 @@ def test_aether_conduit_cloud_isolated_by_frame() -> None:
         with pytest.raises(ValueError, match="not found"):
             cloud_b.get_conduit("root-a")
     finally:
-        conduit_b.cleanup()
-        conduit_a.cleanup()
+        conduit_b.permanent_cleanup()
+        conduit_a.permanent_cleanup()
 
 
 def test_aetheric_frame_version_registry_tracks_bound_spells() -> None:
@@ -217,7 +217,7 @@ def test_aetheric_frame_version_registry_tracks_bound_spells() -> None:
         assert spell_index is not None
         assert spell_index.current == service_id
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_bottom_up_frame_cleanup_cleans_conduits_and_removes_frame() -> None:
@@ -296,7 +296,7 @@ def test_aether_configuration_bound_on_conjure_and_shared_by_frame() -> None:
         finally:
             book_b.cleanup()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         book_a.cleanup()
 
 
@@ -369,7 +369,7 @@ def test_aether_spell_versions_drop_after_conduit_cleanup() -> None:
     assert service_id in versions
     assert config_id in versions
 
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
     assert frame_name in aether._aetheric_frames
     assert aether._get_all_spell_versions(frame_name) == set()

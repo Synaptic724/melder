@@ -94,8 +94,8 @@ def test_conduit_cluster_join_leave_list_and_delete() -> None:
         cloud.delete_cluster("cluster-a")
         assert cloud.get_clusters_for_conduit(owner._id) == []
     finally:
-        peer.cleanup()
-        owner.cleanup()
+        peer.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_conduit_cloud_register_unregister() -> None:
@@ -128,12 +128,12 @@ def test_conduit_conduit_cloud_register_unregister() -> None:
         assert cloud.list_cloud_names() == ("owner",)
         assert cloud.get_conduit("owner") is conduit
 
-        with pytest.raises(ValueError, match="Root conduit name is required"):
+        with pytest.raises(ValueError, match="Only normal conduits can be registered as root conduits"):
             conduit._spellbook._aether._ensure_frame(
                 conduit._aetheric_frame_name
             ).register_root_conduit(lesser)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_aether_get_conduit_cloud_returns_frame_service_in_automatic() -> None:
@@ -161,4 +161,4 @@ def test_aether_get_conduit_cloud_returns_frame_service_in_automatic() -> None:
         cloud = spellbook._aether.get_conduit_cloud(conduit._aetheric_frame_name)
         assert cloud.get_conduit("root") is conduit
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()

@@ -103,7 +103,7 @@ def test_integration_spellbook_conjure_populates_passive_nexus_records() -> None
         )
         assert ("{0}".format(spellbook.id), spell_id) in descriptor.spell_records_by_key
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_record() -> None:
@@ -140,7 +140,7 @@ def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_r
         descriptor = nexus._get_required_frame_descriptor("ops")
         assert (spellbook_id, late_spell_id) in descriptor.spell_records_by_key
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
     nexus = Nexus()
     descriptor = nexus._get_required_frame_descriptor("ops")

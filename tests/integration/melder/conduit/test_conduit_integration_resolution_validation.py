@@ -152,8 +152,8 @@ def test_conduit_validate_resolution_reports_missing_contract_dependencies() -> 
         assert "visibility_gap_dependency_filtered" in _diagnostic_codes(state)
         assert state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.invalid
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_validate_resolution_recovers_after_contract_changes() -> None:
@@ -225,8 +225,8 @@ def test_conduit_validate_resolution_recovers_after_contract_changes() -> None:
         assert recovered_state.has_errors() is False
         assert recovered_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_validate_resolution_for_lesser_uses_root_and_survives_cleanup() -> None:
@@ -281,15 +281,15 @@ def test_conduit_validate_resolution_for_lesser_uses_root_and_survives_cleanup()
             assert lesser_state.has_errors() is False
             assert lesser_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
         finally:
-            lesser.cleanup()
+            lesser.permanent_cleanup()
 
         refreshed_state = borrower.validate_resolution(refresh_structural=False)
         assert refreshed_state is root_state
         assert refreshed_state.has_errors() is False
         assert refreshed_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_validate_resolution_matches_get_resolution_state() -> None:
@@ -335,8 +335,8 @@ def test_conduit_validate_resolution_matches_get_resolution_state() -> None:
         assert state is not None
         assert borrower.get_resolution_state() is state
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None:
@@ -360,7 +360,7 @@ def test_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None:
 
     conduit = spellbook.conjure(automatic=False, name="root")
     state = conduit.validate_resolution()
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
     assert state is not None
     assert state.cleaned is True
@@ -388,12 +388,12 @@ def test_conduit_validate_resolution_raises_when_lesser_cleaned() -> None:
     root = spellbook.conjure(automatic=False, name="root")
     lesser = root.create_lesser_conduit()
     try:
-        lesser.cleanup()
+        lesser.permanent_cleanup()
 
         with pytest.raises(RuntimeError):
             lesser.validate_resolution()
     finally:
-        root.cleanup()
+        root.permanent_cleanup()
 
 
 def test_conduit_upgrade_to_normal_preserves_id_and_resolution_state() -> None:
@@ -434,4 +434,4 @@ def test_conduit_upgrade_to_normal_preserves_id_and_resolution_state() -> None:
         assert root_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
         assert lesser.validate_resolution(refresh_structural=False) is upgraded_state
     finally:
-        root.cleanup()
+        root.permanent_cleanup()

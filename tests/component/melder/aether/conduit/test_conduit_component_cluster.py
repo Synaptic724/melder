@@ -8,6 +8,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
@@ -76,6 +77,7 @@ class _ContractingConduitStub:
         self._id = conduit_id
         self._spellbook = spellbook
         self._aetheric_frame_name = aetheric_frame
+        self._conduit_state = ConduitState.normal
         self.contract_calls: list[dict[str, object]] = []
         self.remove_root_calls: list[dict[str, object]] = []
 

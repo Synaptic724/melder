@@ -200,18 +200,18 @@ def test_cleanup_all_lesser_conduits_logs_child_cleanup_error(ward) -> None:
     """
     child_ok = MagicMock()
     child_ok._id = "child-ok"
-    child_ok.cleanup = MagicMock()
+    child_ok.permanent_cleanup = MagicMock()
     child_bad = MagicMock()
     child_bad._id = "child-bad"
-    child_bad.cleanup = MagicMock(side_effect=RuntimeError("boom"))
+    child_bad.permanent_cleanup = MagicMock(side_effect=RuntimeError("boom"))
 
     ward._link_lesser_conduit(child_ok)
     ward._link_lesser_conduit(child_bad)
 
     ward.cleanup_all_lesser_conduits()
 
-    child_ok.cleanup.assert_called_once()
-    child_bad.cleanup.assert_called_once()
+    child_ok.permanent_cleanup.assert_called_once()
+    child_bad.permanent_cleanup.assert_called_once()
     ward._logger.error.assert_called()
     assert ward._lesser_conduits == {}
 
@@ -804,12 +804,12 @@ def test_cleanup_all_lesser_conduits_clears_and_calls_cleanup(ward):
     """
     child = MagicMock()
     child._id = "child-1"
-    child.cleanup = MagicMock()
+    child.permanent_cleanup = MagicMock()
 
     ward._link_lesser_conduit(child)
     ward.cleanup_all_lesser_conduits()
 
-    child.cleanup.assert_called_once()
+    child.permanent_cleanup.assert_called_once()
     assert ward._lesser_conduits == {}
 
 def test_cleanup_all_lesser_conduits_raises_when_cleaned(ward):
@@ -827,18 +827,18 @@ def test_clean_up_lesser_conduits_links_continues_on_error(ward):
     """
     child_ok = MagicMock()
     child_ok._id = "child-ok"
-    child_ok.cleanup = MagicMock()
+    child_ok.permanent_cleanup = MagicMock()
     child_bad = MagicMock()
     child_bad._id = "child-bad"
-    child_bad.cleanup = MagicMock(side_effect=RuntimeError("boom"))
+    child_bad.permanent_cleanup = MagicMock(side_effect=RuntimeError("boom"))
 
     ward._link_lesser_conduit(child_ok)
     ward._link_lesser_conduit(child_bad)
 
     ward._clean_up_lesser_conduits_links()
 
-    child_ok.cleanup.assert_called_once()
-    child_bad.cleanup.assert_called_once()
+    child_ok.permanent_cleanup.assert_called_once()
+    child_bad.permanent_cleanup.assert_called_once()
     assert ward._lesser_conduits == {}
 
 def test_get_lesser_conduit_returns_nested_child(ward):

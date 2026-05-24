@@ -314,7 +314,7 @@ class NexusFrameManager(Cleanable):
                     self._configurations_by_frame_name.pop(frame_name, None)
             if root_conduit is not None:
                 try:
-                    root_conduit.cleanup()
+                    root_conduit.permanent_cleanup()
                 except Exception:
                     pass
             if frame is not None and not frame.cleaned:

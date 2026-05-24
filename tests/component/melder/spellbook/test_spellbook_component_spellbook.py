@@ -384,7 +384,7 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
         assert first_spell_id is not None
         assert second_spell_id is not None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -485,7 +485,7 @@ def test_component_spellbook_bind_respects_disable_all_transactions_after_conjur
                 permissions="create",
             )
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -510,7 +510,7 @@ def test_component_spellbook_scan_respects_disable_all_transactions_after_conjur
         with pytest.raises(RuntimeError, match="disabled"):
             spellbook.scan(scan_bind_module_core)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -538,7 +538,7 @@ def test_component_spellbook_begin_transaction_bind_respects_disable_all_transac
             spellbook.begin_transaction("bind")
         assert registry.list_live_transactions_for_type("bind") == ()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -627,7 +627,7 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
             assert callable_spell.disposal_method_names == []
             assert callable_spell.has_disposal_methods is False
         finally:
-            conduit.cleanup()
+            conduit.permanent_cleanup()
     finally:
         spellbook.cleanup()
 
@@ -666,7 +666,7 @@ def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -
             binding_name="after-close",
         )
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -696,7 +696,7 @@ def test_component_spellbook_transaction_context_closes_on_exception() -> None:
             binding_name="after-error",
         )
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -745,7 +745,7 @@ def test_component_spellbook_begin_transaction_disabled_change_control_tracks_re
     finally:
         if spellbook._get_required_transaction_mediator().get_active_request() is not None:
             spellbook.end_transaction("bind")
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -772,7 +772,7 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
         assert f"scope:spellbook:{spellbook._id}" in request.scope_keys
     finally:
         spellbook.end_transaction("bind")
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -802,7 +802,7 @@ def test_component_spellbook_begin_transaction_registers_live_registry_session()
         assert registry.list_live_transactions_for_type("bind") == sessions
     finally:
         spellbook.end_transaction("bind")
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -829,7 +829,7 @@ def test_component_spellbook_end_transaction_clears_live_registry_session() -> N
             owner_id=spellbook._id,
         ) == ()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -863,7 +863,7 @@ def test_component_spellbook_post_conjure_bind_updates_staged_binding_keys() -> 
         assert sessions[0].staged.binding_keys == (("basicservice", "__default__"),)
     finally:
         spellbook.end_transaction("bind")
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -890,7 +890,7 @@ def test_component_spellbook_transaction_context_exposes_active_request() -> Non
             assert request.request_type is ChangeTransactionType.BIND
         assert mediator.get_active_request() is None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -918,7 +918,7 @@ def test_component_spellbook_transaction_context_abort_clears_live_registry_sess
             owner_id=spellbook._id,
         ) == ()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -983,7 +983,7 @@ def test_component_spellbook_conjure_registers_and_cleanup_unregisters_risk_mana
             assert spellbook._spellbook_validation_required is False
             conduit_id = conduit.id
         finally:
-            conduit.cleanup()
+            conduit.permanent_cleanup()
 
         assert conduit_id not in risk_manager._conduit_states
     finally:
@@ -1017,7 +1017,7 @@ def test_component_spellbook_link_contract_updates_spellbook_contract_buckets() 
         assert "provider-1" not in spellbook._contracted_versions
         assert "provider-1" not in spellbook._contracted_spells_by_id
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -1082,7 +1082,7 @@ def test_component_spellbook_describe_spells_runtime_dump_includes_owner_and_sha
         assert by_name["BasicConfig"]["spellframe"] == "IService"
         assert all(description["existence"] == "unique" for description in descriptions)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         spellbook.cleanup()
 
 
@@ -1121,7 +1121,7 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
         descriptor = Nexus()._get_required_frame_descriptor("ops")
         assert (spellbook_id, late_spell_id) in descriptor.spell_records_by_key
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
     descriptor = Nexus()._get_required_frame_descriptor("ops")
     assert (spellbook_id, late_spell_id) not in descriptor.spell_records_by_key
@@ -1158,7 +1158,7 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
         for spell_id in spell_ids:
             assert (spellbook_id, spell_id) in descriptor.spell_records_by_key
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
     descriptor = Nexus()._get_required_frame_descriptor("ops")
     for spell_id in spell_ids:

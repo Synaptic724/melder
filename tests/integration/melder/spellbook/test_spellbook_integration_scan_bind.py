@@ -87,7 +87,7 @@ def test_scan_bind_integration_binds_only_marked_objects() -> None:
         with pytest.raises(KeyError):
             conduit.meld(spell=scan_bind_module_core.ScanCoreIgnored)
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_rejects_reexported_objects() -> None:
@@ -176,7 +176,7 @@ def test_conduit_scan_integration_binds_after_conjure() -> None:
         assert spell is not None
         assert spell.validation_result_phase4 is not None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_returns_ids_in_module_order() -> None:
@@ -200,7 +200,7 @@ def test_scan_bind_integration_returns_ids_in_module_order() -> None:
         assert second.marker == "beta"
         assert third == "hello"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_empty_module_returns_empty() -> None:
@@ -236,7 +236,7 @@ def test_scan_bind_integration_conjure_meld_class_by_binding() -> None:
         instance = conduit.meld(spellframe="scan_core", binding_name="alpha")
         assert instance.marker == "alpha"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_conjure_meld_class_by_spell_id() -> None:
@@ -256,7 +256,7 @@ def test_scan_bind_integration_conjure_meld_class_by_spell_id() -> None:
         instance = conduit.meld(spell=spell_id)
         assert instance.marker == "beta"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_conjure_meld_function_by_binding() -> None:
@@ -275,7 +275,7 @@ def test_scan_bind_integration_conjure_meld_function_by_binding() -> None:
         result = conduit.meld(spellframe="scan_factory", binding_name="message_factory")
         assert result == "hello"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_lambda_unique_cached() -> None:
@@ -299,7 +299,7 @@ def test_scan_bind_integration_lambda_unique_cached() -> None:
         assert first is second
         assert scan_bind_module_lambda.LAMBDA_CALLS == ["called"]
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_lambda_missing_binding_name_raises() -> None:
@@ -373,7 +373,7 @@ def test_scan_bind_integration_wrapped_module_binds_expected_targets() -> None:
         with pytest.raises(KeyError):
             conduit.meld(spellframe="scan_wrapped", binding_name="inner_no_wrap")
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_non_module_type_error() -> None:
@@ -443,7 +443,7 @@ def test_conduit_scan_integration_melds_after_scan() -> None:
         instance = conduit.meld(spell=spell_ids[1])
         assert instance.marker == "beta"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 #@pytest.mark.skip(reason="Stalls; revisit after phase scheduler investigation. .PhaseTimeoutError: Phase 'root_blueprints' exceeded barrier timeout (60000 ms). Resolution pipeline aborted.")
 def test_scan_bind_integration_spellbook_scan_after_conjure_registers_in_aether() -> None:
@@ -465,7 +465,7 @@ def test_scan_bind_integration_spellbook_scan_after_conjure_registers_in_aether(
         instance = conduit.meld(spell=spell_ids[0])
         assert instance.marker == "alpha"
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_scan_after_conjure_registers_in_aether() -> None:
@@ -485,7 +485,7 @@ def test_conduit_scan_after_conjure_registers_in_aether() -> None:
         found_id = spellbook.inspect_spell(scan_bind_module_core.ScanCoreBeta)
         assert found_id == spell_ids[1]
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records() -> None:
@@ -515,7 +515,7 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
         for spell_id in spell_ids:
             assert (spellbook_id, spell_id) in descriptor.spell_records_by_key
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
     descriptor = Nexus()._get_required_frame_descriptor(frame_name)
     for spell_id in spell_ids:

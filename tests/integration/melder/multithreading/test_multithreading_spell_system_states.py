@@ -597,7 +597,7 @@ def test_multithreading_orchestrated_two_threads_contract_toggle() -> None:
         _assert_worker_step_success(owner_worker, "pre")
         _assert_service_consumer(_assert_worker_step_success(borrower_worker, "pre"))
 
-        borrower.cleanup()
+        borrower.permanent_cleanup()
         _release_and_wait(workers, "during")
         _assert_worker_step_success(owner_worker, "during")
         _assert_worker_step_cleaned_error(borrower_worker, "during")
@@ -607,8 +607,8 @@ def test_multithreading_orchestrated_two_threads_contract_toggle() -> None:
 
         _join_workers(workers)
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_multithreading_orchestrated_three_threads_unlink_restore() -> None:
@@ -682,7 +682,7 @@ def test_multithreading_orchestrated_three_threads_unlink_restore() -> None:
         _assert_service_consumer(_assert_worker_step_success(borrower_one_worker, "pre"))
         _assert_service_consumer(_assert_worker_step_success(borrower_two_worker, "pre"))
 
-        borrower_one.cleanup()
+        borrower_one.permanent_cleanup()
         assert owner.sever_link(borrower_two) is True
         _restore_root_contract(borrower=borrower_two, owner=owner, root_spell_id=service_id)
         _release_and_wait(workers, "during")
@@ -696,9 +696,9 @@ def test_multithreading_orchestrated_three_threads_unlink_restore() -> None:
 
         _join_workers(workers)
     finally:
-        borrower_two.cleanup()
-        borrower_one.cleanup()
-        owner.cleanup()
+        borrower_two.permanent_cleanup()
+        borrower_one.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_multithreading_orchestrated_four_threads_mixed_mutations() -> None:
@@ -788,7 +788,7 @@ def test_multithreading_orchestrated_four_threads_mixed_mutations() -> None:
         _assert_service_consumer(_assert_worker_step_success(borrower_two_worker, "pre"))
         _assert_service_consumer(_assert_worker_step_success(borrower_three_worker, "pre"))
 
-        borrower_one.cleanup()
+        borrower_one.permanent_cleanup()
         _remove_root_contract(borrower=borrower_two, owner=owner, root_spell_id=service_id)
         _restore_root_contract(borrower=borrower_two, owner=owner, root_spell_id=service_id)
         assert owner.sever_link(borrower_three) is True
@@ -807,10 +807,10 @@ def test_multithreading_orchestrated_four_threads_mixed_mutations() -> None:
 
         _join_workers(workers)
     finally:
-        borrower_three.cleanup()
-        borrower_two.cleanup()
-        borrower_one.cleanup()
-        owner.cleanup()
+        borrower_three.permanent_cleanup()
+        borrower_two.permanent_cleanup()
+        borrower_one.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_multithreading_orchestrated_five_threads_with_mid_cleanup() -> None:
@@ -924,12 +924,12 @@ def test_multithreading_orchestrated_five_threads_with_mid_cleanup() -> None:
         _assert_service_consumer(_assert_worker_step_success(borrower_three_worker, "pre"))
         _assert_service_consumer(_assert_worker_step_success(borrower_four_worker, "pre"))
 
-        borrower_one.cleanup()
+        borrower_one.permanent_cleanup()
         assert owner.sever_link(borrower_two) is True
         _restore_root_contract(borrower=borrower_two, owner=owner, root_spell_id=service_id)
         _remove_root_contract(borrower=borrower_three, owner=owner, root_spell_id=service_id)
         _restore_root_contract(borrower=borrower_three, owner=owner, root_spell_id=service_id)
-        borrower_four.cleanup()
+        borrower_four.permanent_cleanup()
 
         _release_and_wait(workers, "during")
         _assert_worker_step_success(owner_worker, "during")
@@ -952,8 +952,8 @@ def test_multithreading_orchestrated_five_threads_with_mid_cleanup() -> None:
         assert borrower_two_state.get_root_validity(consumer_two_id) is SpellValidity.valid
         assert borrower_three_state.get_root_validity(consumer_three_id) is SpellValidity.valid
     finally:
-        borrower_four.cleanup()
-        borrower_three.cleanup()
-        borrower_two.cleanup()
-        borrower_one.cleanup()
-        owner.cleanup()
+        borrower_four.permanent_cleanup()
+        borrower_three.permanent_cleanup()
+        borrower_two.permanent_cleanup()
+        borrower_one.permanent_cleanup()
+        owner.permanent_cleanup()

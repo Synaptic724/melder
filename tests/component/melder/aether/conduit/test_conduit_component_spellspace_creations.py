@@ -126,7 +126,7 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
         assert creation is not None
         assert creation.value is existing
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_spellspace_cleanup_disposes_and_clears_bucket() -> None:
@@ -159,7 +159,7 @@ def test_component_spellspace_cleanup_disposes_and_clears_bucket() -> None:
         assert instance.cleanup_calls == 1
         assert creations.get_spellspace_creation(space_id, spell_id) is None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_spellspace_cleanup_preserves_other_spellspaces() -> None:
@@ -193,7 +193,7 @@ def test_component_spellspace_cleanup_preserves_other_spellspaces() -> None:
             assert outer_creation is not None
             assert outer_creation.value is outer_instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_creations_extract_restore_spellspace_reuses_instance() -> None:
@@ -229,7 +229,7 @@ def test_component_creations_extract_restore_spellspace_reuses_instance() -> Non
             restored = space.meld(spell=spell_id)
             assert restored is instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_creations_extract_restore_unique_per_conduit_reuses_instance() -> None:
@@ -263,7 +263,7 @@ def test_component_creations_extract_restore_unique_per_conduit_reuses_instance(
         restored = conduit.meld(spell=spell_id)
         assert restored is instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_create_spellspace_reuses_pooled_instance() -> None:
@@ -288,7 +288,7 @@ def test_component_conduit_create_spellspace_reuses_pooled_instance() -> None:
         assert second is first
         assert second.id == first_id
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_pool_preserves_fixed_spellspace_collaborators() -> None:
@@ -316,7 +316,7 @@ def test_component_conduit_pool_preserves_fixed_spellspace_collaborators() -> No
         assert second._meld is first_meld
         assert second._creations is first_creations
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_permanent_cleanup_drops_spellspace_from_reuse() -> None:
@@ -341,7 +341,7 @@ def test_component_conduit_permanent_cleanup_drops_spellspace_from_reuse() -> No
         assert second is not first
         assert second.id != first_id
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_cleanup_destroys_idle_pooled_spellspaces() -> None:
@@ -361,7 +361,7 @@ def test_component_conduit_cleanup_destroys_idle_pooled_spellspaces() -> None:
     space = conduit.create_spellspace()
     space.cleanup()
 
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
     assert space.cleaned is True
 
@@ -387,4 +387,4 @@ def test_component_spellspace_pool_cleanup_destroys_idle_spellspaces_directly() 
         assert space.cleaned is True
         assert conduit._spellspace_registry == set()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()

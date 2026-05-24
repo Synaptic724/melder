@@ -114,8 +114,8 @@ def test_conduit_cleanup_is_idempotent_and_blocks_meld() -> None:
     )
 
     conduit = spellbook.conjure(name="root")
-    conduit.cleanup()
-    conduit.cleanup()
+    conduit.permanent_cleanup()
+    conduit.permanent_cleanup()
 
     with pytest.raises(RuntimeError, match="already been cleaned"):
         conduit.meld(spell=spell_id)
@@ -154,7 +154,7 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
         assert observer.get_conduit_by_spell_id(spell_id) is owner
         assert cloud.get_conduit(owner_name) is owner
 
-        owner.cleanup()
+        owner.permanent_cleanup()
 
         with pytest.raises(ValueError, match="not found"):
             cloud.get_conduit_by_id(owner_id)
@@ -165,8 +165,8 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
         with pytest.raises(ValueError, match="not found"):
             cloud.get_conduit(owner_name)
     finally:
-        observer.cleanup()
-        owner.cleanup()
+        observer.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_cleanup_severs_links_and_clears_contracts() -> None:
@@ -206,15 +206,15 @@ def test_conduit_cleanup_severs_links_and_clears_contracts() -> None:
         assert borrower.get_spells_in_contract_by_conduit(owner_id) is not None
         assert any(link.id == owner_id for link in borrower.get_links())
 
-        owner.cleanup()
+        owner.permanent_cleanup()
 
         assert borrower.find_contracted_spell(spell_id) is None
         assert borrower.get_spells_in_contract_by_conduit(owner_id) is None
         assert all(link.id != owner_id for link in borrower.get_links())
         assert borrower_book.contracted_spells.get(owner_id) is None
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_cleanup_cleans_lesser_conduits() -> None:
@@ -241,7 +241,7 @@ def test_conduit_cleanup_cleans_lesser_conduits() -> None:
     lesser = root.create_lesser_conduit()
     nested = lesser.create_lesser_conduit()
     try:
-        root.cleanup()
+        root.permanent_cleanup()
 
         assert lesser.cleaned is True
         assert nested.cleaned is True
@@ -250,9 +250,9 @@ def test_conduit_cleanup_cleans_lesser_conduits() -> None:
         with pytest.raises(RuntimeError, match="already been cleaned"):
             nested.meld(spell=spell_id)
     finally:
-        nested.cleanup()
-        lesser.cleanup()
-        root.cleanup()
+        nested.permanent_cleanup()
+        lesser.permanent_cleanup()
+        root.permanent_cleanup()
 
 
 def test_conduit_meld_requires_identifier() -> None:
@@ -280,7 +280,7 @@ def test_conduit_meld_requires_identifier() -> None:
         with pytest.raises(ValueError, match="requires at least one"):
             conduit.meld()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_set_new_policy_inbound_only_blocks_outbound_links() -> None:
@@ -311,8 +311,8 @@ def test_conduit_set_new_policy_inbound_only_blocks_outbound_links() -> None:
         with pytest.raises(RuntimeError, match="inbound_only"):
             owner.link(borrower)
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
@@ -350,7 +350,7 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
         cloud = root._spellbook._aether.get_conduit_cloud(root._aetheric_frame_name)
         assert cloud.get_conduit_by_name("upgraded") is lesser
     finally:
-        root.cleanup()
+        root.permanent_cleanup()
 
 
 def test_conduit_upgrade_to_normal_rejects_duplicate_root_name() -> None:
@@ -379,7 +379,7 @@ def test_conduit_upgrade_to_normal_rejects_duplicate_root_name() -> None:
         with pytest.raises(ValueError, match="Conduit with name root already exists"):
             lesser.upgrade_to_normal(name="root")
     finally:
-        root.cleanup()
+        root.permanent_cleanup()
 
 
 def test_conduit_transfer_spell_ownership_moves_registry_and_meld() -> None:
@@ -419,8 +419,8 @@ def test_conduit_transfer_spell_ownership_moves_registry_and_meld() -> None:
         with pytest.raises(KeyError, match="No spell found"):
             owner.meld(spell=spell_id)
     finally:
-        target.cleanup()
-        owner.cleanup()
+        target.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_transfer_spell_ownership_with_dependencies() -> None:
@@ -464,8 +464,8 @@ def test_conduit_transfer_spell_ownership_with_dependencies() -> None:
         assert owner.get_conduit_by_spell_id(depth3_ids[Depth3Layer2A]) is target
         assert owner.get_conduit_by_spell_id(depth3_ids[Depth3Layer2B]) is target
     finally:
-        target.cleanup()
-        owner.cleanup()
+        target.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
@@ -505,8 +505,8 @@ def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
         assert contracted.spell_id == spell_id
         assert borrower.find_contracted_spell("missing-spell") is None
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_find_contracted_spell_returns_none_after_remove() -> None:
@@ -551,8 +551,8 @@ def test_conduit_find_contracted_spell_returns_none_after_remove() -> None:
         assert borrower.find_contracted_spell(spell_id) is None
         assert borrower.get_spell_in_contracts(spell_id) is None
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_conduit_get_mutation_research_dynamic_returns_manager() -> None:
@@ -580,7 +580,7 @@ def test_conduit_get_mutation_research_dynamic_returns_manager() -> None:
         assert manager is not None
         assert manager is conduit._aether.mutation_research
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_get_mutation_research_rejects_automatic() -> None:
@@ -608,7 +608,7 @@ def test_conduit_get_mutation_research_rejects_automatic() -> None:
         with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
             conduit.get_mutation_research()
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_root_conduit_defaults_name_before_dynamic_registration() -> None:
@@ -637,5 +637,5 @@ def test_root_conduit_defaults_name_before_dynamic_registration() -> None:
         assert conduit.name == "default"
     finally:
         if conduit is not None:
-            conduit.cleanup()
+            conduit.permanent_cleanup()
         spellbook.cleanup()

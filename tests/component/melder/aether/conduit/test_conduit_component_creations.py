@@ -282,7 +282,7 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
         assert bucket is not None
         assert [creation.value for creation in bucket] == [instance_a, instance_b]
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_bucket() -> None:
@@ -310,7 +310,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
         assert entry is not None
         assert entry.value is instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_bucket() -> None:
@@ -338,7 +338,7 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
         assert entry is not None
         assert entry.value is instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_cleanup_disposes_across_scopes() -> None:
@@ -369,13 +369,13 @@ def test_component_conduit_cleanup_disposes_across_scopes() -> None:
         many_instance_a = conduit.meld(spell=many_id)
         many_instance_b = conduit.meld(spell=many_id)
 
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
         assert unique_instance.cleanup_calls == 1
         assert many_instance_a.cleanup_calls == 1
         assert many_instance_b.cleanup_calls == 1
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique() -> None:
@@ -422,8 +422,8 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
         assert many_instance in values
         assert many_instance_after in values
     finally:
-        lesser.cleanup()
-        root.cleanup()
+        lesser.permanent_cleanup()
+        root.permanent_cleanup()
 
 
 def test_component_conduit_cleanup_disposes_lifo() -> None:
@@ -451,8 +451,8 @@ def test_component_conduit_cleanup_disposes_lifo() -> None:
         conduit.meld(spell=spell_id)
         conduit.meld(spell=spell_id)
 
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
         assert _DisposalOrderService.cleanup_order == [2, 1, 0]
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()

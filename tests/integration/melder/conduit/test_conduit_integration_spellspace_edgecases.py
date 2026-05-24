@@ -80,7 +80,7 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
         assert active_space.cleaned is False
         assert conduit.get_active_spellspace() is None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_spellspace_cleanup_idempotent() -> None:
@@ -104,7 +104,7 @@ def test_conduit_spellspace_cleanup_idempotent() -> None:
         space.cleanup()
         assert space.cleaned is False
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_enter_spellspace_detects_stack_corruption() -> None:
@@ -130,7 +130,7 @@ def test_conduit_enter_spellspace_detects_stack_corruption() -> None:
             space.cleanup()
         assert conduit.get_active_spellspace() is None
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_cleanup_cleans_orphaned_spellspaces() -> None:
@@ -154,7 +154,7 @@ def test_conduit_cleanup_cleans_orphaned_spellspaces() -> None:
     stack.append(space)
     conduit._spellspace_stack.set(stack)
 
-    conduit.cleanup()
+    conduit.permanent_cleanup()
     assert space.cleaned is True
 
 
@@ -176,6 +176,6 @@ def test_conduit_cleanup_cleans_registered_spellspaces() -> None:
     conduit = spellbook.conjure(name="root")
     space = conduit.create_spellspace()
 
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
     assert space.cleaned is True

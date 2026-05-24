@@ -283,7 +283,7 @@ class ConduitWard(Cleanable):
 
         for lesser_conduit in list(self._lesser_conduits.values()):
             try:
-                lesser_conduit.cleanup()
+                lesser_conduit.permanent_cleanup()
             except Exception as e:
                 self._logger.error(
                     f"cleanup lesser link failed: {e}",
@@ -324,7 +324,7 @@ class ConduitWard(Cleanable):
         with self._lock:
             for conduit in self._lesser_conduits.values():
                 try:
-                    conduit.cleanup()
+                    conduit.permanent_cleanup()
                 except Exception as e:
                     self._logger.error(
                         f"lesser cleanup failed: {e}",

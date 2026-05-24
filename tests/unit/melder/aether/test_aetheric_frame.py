@@ -178,6 +178,7 @@ def test_cleanup_calls_subcomponent_cleanup(frame):
     sss = frame._spell_system_states
     dom = frame._dev_ops_manager
     conduit = MagicMock()
+    conduit.permanent_cleanup = MagicMock()
     frame._conduits["c1"] = conduit
     cluster = MagicMock()
     frame._conduit_cloud._conduit_clusters["cl1"] = cluster
@@ -187,7 +188,7 @@ def test_cleanup_calls_subcomponent_cleanup(frame):
     cloud.cleanup.assert_called_once()
     sss.cleanup.assert_called_once()
     dom.cleanup.assert_called_once()
-    conduit.cleanup.assert_called_once()
+    conduit.permanent_cleanup.assert_called_once()
     cluster.cleanup.assert_called_once()
 
 def test_cleanup_idempotent(frame):

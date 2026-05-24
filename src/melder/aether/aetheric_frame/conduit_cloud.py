@@ -441,8 +441,8 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
-        self._assert_normal_conduit(conduit)
         cluster = self._get_cluster(cluster_name)
+        self._assert_normal_conduit(conduit)
         cluster.add_member(conduit.id)
         cluster.handle_join(conduit)
 
@@ -460,8 +460,8 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
-        self._assert_normal_conduit(conduit)
         cluster = self._get_cluster(cluster_name)
+        self._assert_normal_conduit(conduit)
         cluster.remove_member(conduit.id)
         cluster.handle_leave(conduit)
 

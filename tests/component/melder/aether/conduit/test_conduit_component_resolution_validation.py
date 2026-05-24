@@ -197,8 +197,8 @@ def test_component_conduit_validate_resolution_reports_missing_dependencies() ->
         )
         assert state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.invalid
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_component_conduit_validate_resolution_returns_valid_state() -> None:
@@ -245,8 +245,8 @@ def test_component_conduit_validate_resolution_returns_valid_state() -> None:
         assert state.has_errors() is False
         assert state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> None:
@@ -293,8 +293,8 @@ def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> 
             inbound = contracted.get("inbound", [])
             assert any(entry[0] == spell_id for entry in inbound)
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
 
 def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
@@ -337,7 +337,7 @@ def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
         assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
         assert lesser.id == original_id
     finally:
-        root.cleanup()
+        root.permanent_cleanup()
 
 
 def test_component_conduit_validate_resolution_matches_get_resolution_state() -> None:
@@ -366,7 +366,7 @@ def test_component_conduit_validate_resolution_matches_get_resolution_state() ->
         assert state is not None
         assert conduit.get_resolution_state() is state
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_component_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None:
@@ -390,7 +390,7 @@ def test_component_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None
 
     conduit = spellbook.conjure(automatic=False, name="root")
     state = conduit.validate_resolution()
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
     assert state is not None
     assert state.cleaned is True
@@ -416,7 +416,7 @@ def test_component_conduit_validate_resolution_raises_when_cleaned() -> None:
     )
 
     conduit = spellbook.conjure(automatic=False, name="root")
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
     with pytest.raises(RuntimeError):
         conduit.validate_resolution()
@@ -504,5 +504,5 @@ def test_component_meld_revalidation_uses_local_phase_lane(
         assert counters["system_validation_local"] == 1
         assert counters["change_control_local"] == 1
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 

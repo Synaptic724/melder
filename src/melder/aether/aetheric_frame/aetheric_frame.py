@@ -216,7 +216,7 @@ class AethericFrame(Cleanable):
         if self._conduits is not None:
             for conduit in list(self._conduits.values()):
                 try:
-                    conduit.cleanup()
+                    conduit.permanent_cleanup()
                 except Exception:
                     # DevOps surfaces can record incidents if you want;
                     # frame cleanup never dies on conduit cleanup.

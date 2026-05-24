@@ -1177,7 +1177,7 @@ def _assert_cleanup_scenario(scenario_name: str) -> None:
         workstation.bind_attribute("kind_value", live_object.kind, weak_ref=False)
         workstation.bind_method("runner", live_object.run, weak_ref=False)
         workstation.bind_object("conduit", conduit, weak_ref=False)
-        conduit.cleanup()
+        conduit.permanent_cleanup()
         if scenario_name == "nexus_object_binding_survives_cleanup_retrieval":
             assert workstation.get("live", store="objects") is live_object
             return
@@ -1213,7 +1213,7 @@ def _assert_cleanup_scenario(scenario_name: str) -> None:
     workstation.bind_attribute("kind_value", live_object.kind, weak_ref=False)
     workstation.bind_method("runner", live_object.run, weak_ref=False)
     workstation.bind_object("conduit", conduit, weak_ref=False)
-    conduit.cleanup()
+    conduit.permanent_cleanup()
     if scenario_name == "default_object_binding_survives_cleanup_retrieval":
         assert workstation.get("live", store="objects") is live_object
         return

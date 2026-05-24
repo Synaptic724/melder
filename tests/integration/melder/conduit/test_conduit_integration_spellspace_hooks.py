@@ -99,7 +99,7 @@ def test_conduit_spellspace_nesting_and_cleanup() -> None:
             outer_after_cleanup = next_space.meld(spell=spell_id)
             assert outer_after_cleanup is not outer_instance
     finally:
-        conduit.cleanup()
+        conduit.permanent_cleanup()
 
 
 def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
@@ -268,8 +268,8 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
             assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
         assert owner.sever_link(borrower) is True
     finally:
-        borrower.cleanup()
-        owner.cleanup()
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()
 
     assert len(meld_pre_calls) == 1
     assert len(meld_post_calls) == 1
@@ -361,5 +361,5 @@ def test_conduit_hooks_fire_for_lesser_conduit_creation() -> None:
         assert post_calls == [(owner, lesser)]
     finally:
         if lesser is not None:
-            lesser.cleanup()
-        owner.cleanup()
+            lesser.permanent_cleanup()
+        owner.permanent_cleanup()
