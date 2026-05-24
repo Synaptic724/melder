@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.creations.creations import Creations
 
-
 class Meld(Cleanable):
     """
     ## Meld: Spell Activation and Dependency Resolution
@@ -140,7 +139,6 @@ class Meld(Cleanable):
         )
         self._dynamic_environment: bool = bool(dynamic_environment)
         self._spellbook: Spellbook = spellbook
-
         # Spellbook references (used for resolution)
         self._owned_spells: Dict[SpellIndex, Spell] = spellbook._spells
         self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = (
@@ -154,13 +152,16 @@ class Meld(Cleanable):
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = (
             spellbook._lookup_contracted_spells
         )
-        # Conduit-local instantiation manager.
-        self._creations: Creations = creations
+        # Foundation runtime compiler owner surface for later spell compiler
+        # ownership decomposition.
+        self._spell_compiler_system: Optional[SpellCompilerSystem] = None
 
         # Front-door resolution caches.
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], Spell] = {}
         self._spell_id_resolution_cache: Dict[str, Spell] = {}
         self._max_resolution_cache_size: int = 2048
+
+        # Change-control state.
         self._change_control_manager_by_frame: Dict[str, ChangeControlManager] = {}
 
         # Optional hook map pulled from Configuration (via Conduit).
@@ -168,10 +169,8 @@ class Meld(Cleanable):
         self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
             meld_hooks if meld_hooks is not None else {}
         )
-        # Foundation runtime compiler owner surface for later spell compiler
-        # ownership decomposition.
-        self._spell_compiler_system: Optional[SpellCompilerSystem] = None
-
+        # Conduit-local instantiation manager.
+        self._creations: Creations = creations
 
     def cleanup(self) -> None:
         """

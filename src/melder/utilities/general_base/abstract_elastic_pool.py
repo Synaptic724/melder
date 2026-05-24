@@ -138,12 +138,34 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         self._last_expand_at: float = now
         self._last_decay_at: float = now
 
+    def cleanup(self) -> None:
+        """
+        Destroy all retained idle objects and retire this pool.
+
+        Contract:
+            - Idempotent.
+            - Destroys only retained idle objects still owned by the pool.
+            - Drops all idle references and prevents further acquire/release use.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            for obj in self._idle:
+                self.destroy_object(obj)
+            self._idle.clear()
+            del self._idle
+        del self._lock
+
+
     @property
     def enabled(self) -> bool:
         """
         Return whether this pool currently retains released objects.
         """
-        self.check_cleaned()
+        
         return self._enabled
 
     @property
@@ -151,7 +173,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the current retained idle object count.
         """
-        self.check_cleaned()
+        
         return len(self._idle)
 
     @property
@@ -159,7 +181,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the number of objects currently checked out of the pool.
         """
-        self.check_cleaned()
+        
         return self._in_use_count
 
     @property
@@ -167,7 +189,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the current elastic idle-retention target.
         """
-        self.check_cleaned()
+        
         return self._target_idle
 
     @property
@@ -175,7 +197,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the baseline idle-retention floor.
         """
-        self.check_cleaned()
+        
         return self._baseline_idle
 
     @property
@@ -183,7 +205,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the hard idle-retention ceiling.
         """
-        self.check_cleaned()
+        
         return self._max_idle
 
     def acquire(self, *args: Any, **kwargs: Any) -> _T:
@@ -232,7 +254,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             RuntimeError:
                 If release is called with no matching checked-out object count.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if self._in_use_count <= 0:
                 raise RuntimeError("release() called with no in-use objects.")
@@ -245,27 +267,6 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
                 return
             self.destroy_object(obj)
 
-    def cleanup(self) -> None:
-        """
-        Destroy all retained idle objects and retire this pool.
-
-        Contract:
-            - Idempotent.
-            - Destroys only retained idle objects still owned by the pool.
-            - Drops all idle references and prevents further acquire/release use.
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            for obj in self._idle:
-                self.destroy_object(obj)
-            self._idle.clear()
-            del self._idle
-        del self._lock
-
     def describe(self) -> Dict[str, Any]:
         """
         Return a detached diagnostic snapshot of the pool state.
@@ -273,7 +274,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Returns:
             Dict[str, Any]: Current pool policy and live-count snapshot.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "enabled": self._enabled,

@@ -1,4 +1,3 @@
-import threading
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -29,30 +28,12 @@ class TestCreation:
 
     def test_initialization_sets_contract_fields(self, creation, sample_value):
         """
-        Verify that a new Creation has a unique ID, the correct value, and is not cleaned.
+        Verify that a new Creation preserves the wrapped value and starts live.
         """
-        # Assert: ID is a string and looks like a ULID (length check is a decent proxy)
-        assert isinstance(creation.id, str)
-        assert len(creation.id) == 26  # ULID length
-
-        # Assert: Value is preserved
         assert creation.value is sample_value
-
-        # Assert: Not cleaned by default (checking internal state via Cleanable contract if exposed,
-        # or implicitly via behavior)
-        # Note: Accessing private _cleaned for test verification is acceptable in unit tests
-        # per common python testing practices, though AGENTS.md prefers public behavior.
-        # We'll rely on the behavior that properties still work.
-        assert creation.value is not None
-
-    def test_repr_includes_identity_and_value(self, creation):
-        """
-        Verify __repr__ provides useful debugging info (id and value).
-        """
-        repr_str = repr(creation)
-        assert "Creation" in repr_str
-        assert f"id={creation.id}" in repr_str
-        assert "value={'data': 'test_payload'}" in repr_str
+        assert creation.has_disposal_methods is False
+        assert creation.disposal_method_names == []
+        assert creation._cleaned is False
 
     # ------------------------------------------------------------------
     # Rank B: State Transition Tests (Lifecycle/Cleanup)

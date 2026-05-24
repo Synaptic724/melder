@@ -1,8 +1,36 @@
 import threading
 from typing import Any, List, Optional
 
+from melder.utilities.general_base.cleanable import Cleanable
 
-class SpellSpaceThreadState:
+
+class _SpellSpaceLocal(threading.local):
+    """
+    Per-thread spellspace storage for one `SpellSpaceThreadState`.
+
+    Purpose:
+        Ensure each participating thread starts with one concrete
+        `spellspace_stack` list so the owner does not need owned-code
+        `getattr(...)` probes to discover whether thread-local state exists.
+
+    Contract:
+        - Every thread gets its own independent `spellspace_stack` list.
+        - The list is initialized eagerly on first access in each thread.
+    """
+
+    __slots__ = ("spellspace_stack",)
+
+    def __init__(self) -> None:
+        """
+        Initialize the current thread's spellspace stack.
+
+        Returns:
+            None.
+        """
+        self.spellspace_stack: List[Any] = []
+
+
+class SpellSpaceThreadState(Cleanable):
     """
     Thread-local spellspace stack holder for one conduit.
 
@@ -18,9 +46,11 @@ class SpellSpaceThreadState:
           force or clear state explicitly.
         - `set(...)` replaces the current thread's whole spellspace stack with
           a detached copy of the provided list.
+        - `cleanup()` retires the holder and prevents future access through
+          `check_cleaned()`.
     """
 
-    __slots__ = ("_local",)
+    __slots__ = Cleanable.__slots__ + ["_local"]
 
     def __init__(self) -> None:
         """
@@ -29,7 +59,27 @@ class SpellSpaceThreadState:
         Returns:
             None.
         """
-        self._local: threading.local = threading.local()
+        super().__init__()
+        self._local: _SpellSpaceLocal = _SpellSpaceLocal()
+
+    def cleanup(self) -> None:
+        """
+        Retire this thread-local spellspace state holder.
+
+        Contract:
+            - Idempotent cleanup.
+            - Clears the current thread's spellspace stack before dropping the
+              local holder reference.
+            - After cleanup, public accessors fail through `check_cleaned()`.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._local.spellspace_stack.clear()
+        del self._local
 
     def get(self) -> List[Any]:
         """
@@ -39,10 +89,8 @@ class SpellSpaceThreadState:
             List[Any]:
                 Detached copy of the current thread's spellspace stack.
         """
-        stack = getattr(self._local, "spellspace_stack", None)
-        if stack is None:
-            return []
-        return list(stack)
+        self.check_cleaned()
+        return list(self._local.spellspace_stack)
 
     def set(self, stack: List[Any]) -> None:
         """
@@ -59,6 +107,7 @@ class SpellSpaceThreadState:
             TypeError:
                 If `stack` is not a list.
         """
+        self.check_cleaned()
         if not isinstance(stack, list):
             raise TypeError("spellspace stack must be a list.")
         self._local.spellspace_stack = list(stack)
@@ -71,7 +120,8 @@ class SpellSpaceThreadState:
             Optional[Any]:
                 Active spellspace object for the current thread, or `None`.
         """
-        stack = getattr(self._local, "spellspace_stack", None)
+        self.check_cleaned()
+        stack = self._local.spellspace_stack
         if not stack:
             return None
         return stack[-1]

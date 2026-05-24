@@ -444,7 +444,7 @@ class _GauntletConfig:
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
             iterations=_env_int("DI_GAUNTLET_ITERS", 1000),
-            threads=_env_int("DI_GAUNTLET_THREADS", 1),
+            threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
             worker_b_jobs=_env_int("DI_GAUNTLET_WORKER_B_JOBS", _WORKER_B_JOBS_DEFAULT),

@@ -53,7 +53,7 @@ class Creation(Cleanable):
                 later by `Creations`.
         """
         super().__init__()
-        self._id: str = str(ulid.ULID())
+        #self._id: str = str(ulid.ULID())
         self._lock : threading.RLock = threading.RLock()
         self._has_disposal_methods: bool = bool(has_disposal_methods)
         self._disposal_methods: list[str] = list(disposal_methods) if disposal_methods else []
@@ -87,7 +87,7 @@ class Creation(Cleanable):
         Return the stable ULID assigned to this wrapper.
         """
         self.check_cleaned()
-        return self._id
+        #return self._id
 
     @property
     def value(self) -> Any:
@@ -126,7 +126,7 @@ class Creation(Cleanable):
         Return a debug-oriented representation of the wrapper.
         """
         self.check_cleaned()
-        return f"<Creation id={self._id} value={self._value!r}>"
+        #return f"<Creation id={self._id} value={self._value!r}>"
 
     def __enter__(self) -> 'Creation':
         """

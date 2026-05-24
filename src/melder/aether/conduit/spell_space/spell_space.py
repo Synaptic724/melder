@@ -129,7 +129,6 @@ class SpellSpace(Cleanable):
         Returns:
             str: Unique id assigned at construction.
         """
-        self.check_cleaned()
         return self._id
 
     @property
@@ -140,7 +139,6 @@ class SpellSpace(Cleanable):
         Returns:
             str: Owner conduit id injected at construction time.
         """
-        self.check_cleaned()
         return self._owner_conduit_id
 
     @property
@@ -151,7 +149,6 @@ class SpellSpace(Cleanable):
         Returns:
             int: Current version, incremented by each successful `reset()`.
         """
-        self.check_cleaned()
         return self._version
 
     def meld(
@@ -181,7 +178,6 @@ class SpellSpace(Cleanable):
             RuntimeError:
                 If this spellspace has already been cleaned.
         """
-        self.check_cleaned()
         if self._creations.get_active_spellspace() is not self:
             raise SpellSpaceScopeError(
                 "SpellSpace.meld() requires this SpellSpace to be the active scope. "
@@ -208,7 +204,6 @@ class SpellSpace(Cleanable):
             RuntimeError:
                 If this spellspace has already been cleaned.
         """
-        self.check_cleaned()
         with self._lock:
             self._creations.clear_spellspace_instances(self._id)
             self._version += 1
