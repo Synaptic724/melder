@@ -83,7 +83,7 @@ class AethericFrameConfiguration(Cleanable):
             rift_enabled: bool,
             shared_framewide_spellbook_configuration: bool = False,
             change_control_mode: str = "strict",
-            allow_multiple_root_transactions: bool = False,
+            allow_multiple_root_transactions: bool = True,
             disable_all_transactions_after_conjure: bool = False,
             disable_mutations: bool = True,
             disable_linking: bool = False,
@@ -571,7 +571,7 @@ class AethericFrameConfiguration(Cleanable):
             self._rift_enabled = False
             self._shared_framewide_spellbook_configuration = False
             self._change_control_mode = "strict"
-            self._allow_multiple_root_transactions = False
+            self._allow_multiple_root_transactions = True
             self._disable_all_transactions_after_conjure = False
             self._disable_mutations = True
             self._disable_linking = False

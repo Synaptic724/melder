@@ -199,7 +199,7 @@ def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
         "rift_enabled": False,
         "shared_framewide_spellbook_configuration": False,
         "change_control_mode": "strict",
-        "allow_multiple_root_transactions": False,
+        "allow_multiple_root_transactions": True,
         "disable_all_transactions_after_conjure": False,
         "disable_mutations": True,
         "disable_linking": False,
@@ -249,7 +249,7 @@ def test_aetheric_frame_configuration_change_control_defaults() -> None:
     )
 
     assert frame_configuration.change_control_mode == "strict"
-    assert frame_configuration.allow_multiple_root_transactions is False
+    assert frame_configuration.allow_multiple_root_transactions is True
     assert frame_configuration.disable_all_transactions_after_conjure is False
     assert frame_configuration.disable_mutations is True
     assert frame_configuration.disable_linking is False
@@ -296,7 +296,7 @@ def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags(
     frame_configuration.with_defaults()
 
     assert frame_configuration.change_control_mode == "strict"
-    assert frame_configuration.allow_multiple_root_transactions is False
+    assert frame_configuration.allow_multiple_root_transactions is True
     assert frame_configuration.disable_all_transactions_after_conjure is False
     assert frame_configuration.disable_mutations is True
     assert frame_configuration.disable_linking is False

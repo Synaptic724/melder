@@ -95,7 +95,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
 
     spellbook = Spellbook(aetheric_frame="real-world-gauntlet")
     configuration = spellbook.get_configuration()
-    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 3)
 
     spell_ids: dict[type, str] = {}
     for cls in _support.ALL_CLASSES:
