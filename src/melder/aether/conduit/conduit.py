@@ -1109,11 +1109,30 @@ class Conduit(Cleanable):
         if not hooks:
             return
 
-        self._ensure_local_conduit_hooks()
-        local_conduit_hooks = self._local_conduit_hooks
-        if local_conduit_hooks is None:
-            raise RuntimeError("Local conduit hooks were not initialized.")
-        self._merge_conduit_hooks(local_conduit_hooks, hooks)
+        conduit_hook_updates: dict[str, Any] = {}
+        meld_hook_updates: dict[str, Any] = {}
+        meld_hook_names = self._configuration._MELD_HOOK_NAMES
+        for name, value in hooks.items():
+            if name in meld_hook_names:
+                meld_hook_updates[name] = value
+            else:
+                conduit_hook_updates[name] = value
+
+        if conduit_hook_updates:
+            self._ensure_local_conduit_hooks()
+            local_conduit_hooks = self._local_conduit_hooks
+            if local_conduit_hooks is None:
+                raise RuntimeError("Local conduit hooks were not initialized.")
+            self._merge_conduit_hooks(local_conduit_hooks, conduit_hook_updates)
+
+        if meld_hook_updates:
+            local_meld_hooks: dict[str, list[Any]] = {}
+            self._merge_conduit_hooks(local_meld_hooks, meld_hook_updates)
+            self._meld.set_meld_hooks(
+                local_meld_hooks,
+                create_local_hooks=True,
+                overwrite=False,
+            )
 
     def _add_root_conduit(self) -> None:
         """

@@ -789,10 +789,8 @@ def test_register_conduit_hooks_local_allowed_after_configuration_freeze(
     spellbook_id = conduit_dynamic_normal._spellbook._id
     config_hooks = conduit_dynamic_normal._configuration.get_conduit_hooks(spellbook_id)
     assert "on_meld_pre_resolve" not in config_hooks
-    assert conduit_dynamic_normal._local_conduit_hooks is not None
-    assert conduit_dynamic_normal._local_conduit_hooks["on_meld_pre_resolve"][0] is hook
     assert conduit_dynamic_normal._meld._meld_hooks is not None
-    assert "on_meld_pre_resolve" not in conduit_dynamic_normal._meld._meld_hooks
+    assert conduit_dynamic_normal._meld._meld_hooks["on_meld_pre_resolve"][-1] is hook
 
 
 def test_register_conduit_hooks_local_does_not_wire_non_meld_hooks_to_meld(
@@ -1018,9 +1016,10 @@ def test_create_lesser_conduit_ignores_local_meld_only_hooks(
         - Local `on_meld_*` hooks must not force conduit lifecycle dispatch.
     """
     conduit_dynamic_normal._conduit_hooks = {}
-    conduit_dynamic_normal._local_conduit_hooks = {
-        "on_meld_pre_resolve": [lambda conduit: None],
-    }
+    conduit_dynamic_normal._local_conduit_hooks = None
+    conduit_dynamic_normal.register_conduit_hooks(
+        {"on_meld_pre_resolve": lambda conduit: None}
+    )
     fire_conduit_hooks = MagicMock()
     monkeypatch.setattr(
         Conduit,
@@ -1072,9 +1071,10 @@ def test_add_spell_to_contract_skips_peer_resolution_without_contract_hook(
         - No conduit hook dispatcher call is made.
     """
     conduit_dynamic_normal._conduit_hooks = {}
-    conduit_dynamic_normal._local_conduit_hooks = {
-        "on_meld_pre_resolve": [lambda conduit: None],
-    }
+    conduit_dynamic_normal._local_conduit_hooks = None
+    conduit_dynamic_normal.register_conduit_hooks(
+        {"on_meld_pre_resolve": lambda conduit: None}
+    )
     conduit_dynamic_normal._conduit_ward = MagicMock()
     conduit_dynamic_normal._conduit_ward._add_spell_to_contract.return_value = True
     monkeypatch.setattr(
