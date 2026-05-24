@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -20,9 +20,9 @@ class ConduitPool(AbstractElasticPool[Any]):
     Contract:
         - Owned by one root conduit.
         - Keeps a stable reference to that root conduit and its id.
-        - Does not perform real lesser-conduit reuse yet.
-        - `create_object(...)` and `destroy_object(...)` are explicit
-          placeholders until the later wiring slice lands.
+        - Stores only lesser conduits.
+        - Hands back one retained lesser when available.
+        - Never constructs a new conduit itself.
 
     Threading:
         - Inherits pool policy locking from `AbstractElasticPool`.
@@ -79,17 +79,24 @@ class ConduitPool(AbstractElasticPool[Any]):
         """
         return self._root_conduit_id
 
-    def create_object(self, *args: Any, **kwargs: Any) -> Conduit:
+    def create_object(self, *args: Any, **kwargs: Any) -> Optional[Conduit]:
         """
-        Placeholder lesser-conduit creation hook.
+        Return one retained lesser conduit shell when available.
 
-        Raises:
-            NotImplementedError:
-                Always, until real lesser-conduit acquire wiring is added.
+        Contract:
+            - Reuses an idle lesser when available.
+            - Returns `None` when the pool is empty.
+            - Increments in-use count exactly once only when a shell is reused.
+            - Returns the lesser unattached so the caller still owns new-lesser
+              creation, hook order, and lineage-link timing.
         """
-        raise NotImplementedError(
-            "ConduitPool.create_object() is not wired yet."
-        )
+        self.check_cleaned()
+        with self._lock:
+            if not self._enabled or not self._idle:
+                return None
+            pooled_object = self._idle.pop()
+            self._in_use_count += 1
+            return pooled_object
 
     def destroy_object(self, obj: Conduit) -> None:
         """
@@ -100,3 +107,30 @@ class ConduitPool(AbstractElasticPool[Any]):
             - Assumes the pooled conduit implements `permanent_cleanup()`.
         """
         obj.permanent_cleanup()
+
+    def return_lesser_conduit(self, conduit: Conduit) -> None:
+        """
+        Return one lesser conduit shell to the idle pool or destroy it.
+
+        Purpose:
+            Support soft lesser cleanup before full pool-acquire wiring exists.
+
+        Contract:
+            - Retains the conduit when idle capacity allows.
+            - Destroys the conduit through the hard lane when the pool is
+              disabled or already full.
+            - Ignores duplicate idle insertion for the same conduit object.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._enabled:
+                if any(existing is conduit for existing in self._idle):
+                    return
+                if self._in_use_count > 0:
+                    self._in_use_count -= 1
+                now = self._time_func()
+                self._apply_decay_locked(now)
+                if len(self._idle) < self._target_idle and len(self._idle) < self._max_idle:
+                    self._idle.append(conduit)
+                    return
+            self.destroy_object(conduit)

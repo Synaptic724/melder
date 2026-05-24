@@ -38,7 +38,7 @@ def _cleanup_conduit_if_alive(conduit: Conduit) -> None:
         return
     if not hasattr(conduit, "_creation_gate_controller"):
         return
-    conduit.cleanup()
+    conduit.permanent_cleanup()
 
 
 def _attach_root_pool_stub(

@@ -361,8 +361,48 @@ class Conduit(Cleanable):
         """
         This method will properly cleanup the conduit resources that must be reset for the pool uptake.
         """
+        self._cleanup_spellspaces_for_pool()
+        self._creations.reset_non_spellspace_for_pool()
+        self._conduit_ward._detach_for_pool()
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
+        self._remove_conduit_record_from_nexus()
+        self._creation_gate.open()
+        self._conduit_pool.return_lesser_conduit(self)
+
+    def _cleanup_spellspaces_for_pool(self) -> None:
+        """
+        Internal
+
+        Soft-clean active and registered spellspaces without destroying the pool.
+        """
+        try:
+            stack = list(self._spellspace_stack.get())
+            for space in stack:
+                try:
+                    space.cleanup()
+                except Exception:
+                    self._logger.error(
+                        "Error cleaning spellspace for pool",
+                        "_cleanup_spellspaces_for_pool",
+                        exc_info=True,
+                    )
+            self._spellspace_stack.set([])
+            for registered_space in list(self._spellspace_registry):
+                try:
+                    registered_space.cleanup()
+                except Exception:
+                    self._logger.error(
+                        "Error cleaning registered spellspace for pool",
+                        "_cleanup_spellspaces_for_pool",
+                        exc_info=True,
+                    )
+        except Exception:
+            self._logger.error(
+                "Error flushing spellspaces for pool",
+                "_cleanup_spellspaces_for_pool",
+                exc_info=True,
+            )
 
     def permanent_cleanup(self) -> None:
         """
@@ -1635,20 +1675,22 @@ class Conduit(Cleanable):
                     self,  # parent_conduit
                 )
                 # 2) Construct the lesser conduit (activation point).
-                new_conduit = Conduit(
-                    spellbook=self._spellbook,
-                    configuration=self._configuration,
-                    conduit_state=ConduitState.lesser,
-                    aetheric_frame_name=self._aetheric_frame_name,
-                    aetheric_frame=self._aetheric_frame,
-                    policy=Policies.default,
-                    dynamic=self.__dynamic_environment__,
-                    logger=logger,
-                    root_conduit_id=root_conduit_id,
-                    creation_gate_controller=self._creation_gate_controller,
-                    conduit_hooks=root_conduit._conduit_hooks,
-                    meld_hooks=root_conduit._meld_hooks,
-                )
+                new_conduit = root_conduit._conduit_pool.create_object()
+                if new_conduit is None:
+                    new_conduit = Conduit(
+                        spellbook=self._spellbook,
+                        configuration=self._configuration,
+                        conduit_state=ConduitState.lesser,
+                        aetheric_frame_name=self._aetheric_frame_name,
+                        aetheric_frame=self._aetheric_frame,
+                        policy=Policies.default,
+                        dynamic=self.__dynamic_environment__,
+                        logger=logger,
+                        root_conduit_id=root_conduit_id,
+                        creation_gate_controller=self._creation_gate_controller,
+                        conduit_hooks=root_conduit._conduit_hooks,
+                        meld_hooks=root_conduit._meld_hooks,
+                    )
                 if new_conduit._conduit_ward is not None:
                     new_conduit._conduit_ward._root_conduit = root_conduit
                 new_conduit._root_conduit_id = root_conduit_id
@@ -1674,20 +1716,22 @@ class Conduit(Cleanable):
                 )
                 new_conduit._publish_conduit_record_to_nexus()
             else:
-                new_conduit = Conduit(
-                    spellbook=self._spellbook,
-                    configuration=self._configuration,
-                    conduit_state=ConduitState.lesser,
-                    aetheric_frame_name=self._aetheric_frame_name,
-                    aetheric_frame=self._aetheric_frame,
-                    policy=Policies.default,
-                    dynamic=self.__dynamic_environment__,
-                    logger=logger,
-                    root_conduit_id=root_conduit_id,
-                    creation_gate_controller=self._creation_gate_controller,
-                    conduit_hooks=root_conduit._conduit_hooks,
-                    meld_hooks=root_conduit._meld_hooks,
-                )
+                new_conduit = root_conduit._conduit_pool.create_object()
+                if new_conduit is None:
+                    new_conduit = Conduit(
+                        spellbook=self._spellbook,
+                        configuration=self._configuration,
+                        conduit_state=ConduitState.lesser,
+                        aetheric_frame_name=self._aetheric_frame_name,
+                        aetheric_frame=self._aetheric_frame,
+                        policy=Policies.default,
+                        dynamic=self.__dynamic_environment__,
+                        logger=logger,
+                        root_conduit_id=root_conduit_id,
+                        creation_gate_controller=self._creation_gate_controller,
+                        conduit_hooks=root_conduit._conduit_hooks,
+                        meld_hooks=root_conduit._meld_hooks,
+                    )
                 if new_conduit._conduit_ward is not None:
                     new_conduit._conduit_ward._root_conduit = root_conduit
                 new_conduit._root_conduit_id = root_conduit_id

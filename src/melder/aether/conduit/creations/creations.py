@@ -669,3 +669,86 @@ class Creations(Cleanable):
         self._spellspace_disposal_stacks.pop(spellspace_id, None)
         if errors:
             raise ExceptionGroup("Errors occurred during spellspace cleanup", errors)
+
+    def reset_for_pool(self) -> None:
+        """
+        Purpose:
+            Clear all live creation state without destroying this manager.
+
+        Contract:
+            - Drains global and spellspace disposal stacks.
+            - Cleans all retained `Creation` wrappers.
+            - Clears shared and spellspace-scoped creation buckets.
+            - Keeps the `Creations` object itself alive for later reuse.
+
+        Returns:
+            None.
+
+        Raises:
+            ExceptionGroup:
+                If one or more disposal operations fail during reset.
+        """
+        self.check_cleaned()
+        with self._lock:
+            errors: List[Exception] = []
+            errors.extend(self._drain_disposal_stack())
+            for spellspace_id in list(self._spellspace_disposal_stacks.keys()):
+                errors.extend(self._drain_spellspace_disposal_stack(spellspace_id))
+
+            for item in list(self._creations.values()):
+                if isinstance(item, Creation):
+                    item.cleanup()
+                elif isinstance(item, list):
+                    for creation in item:
+                        creation.cleanup()
+                elif isinstance(item, dict):
+                    for creation in item.values():
+                        creation.cleanup()
+
+            self._creations.clear()
+            self._spellspace_disposal_stacks.clear()
+            self._disposal_stack.clear()
+
+            if errors:
+                raise ExceptionGroup("Errors occurred during pooled reset", errors)
+
+    def reset_non_spellspace_for_pool(self) -> None:
+        """
+        Purpose:
+            Clear only non-spellspace creation state without touching spellspace buckets.
+
+        Contract:
+            - Drains only the global disposal stack.
+            - Cleans only shared non-spellspace `Creation` wrappers and many-lists.
+            - Leaves spellspace buckets and spellspace disposal stacks to the
+              spellspace cleanup path.
+            - Keeps the `Creations` object itself alive for later reuse.
+
+        Returns:
+            None.
+
+        Raises:
+            ExceptionGroup:
+                If one or more non-spellspace disposal operations fail during reset.
+        """
+        self.check_cleaned()
+        with self._lock:
+            errors: List[Exception] = []
+            errors.extend(self._drain_disposal_stack())
+
+            for key, item in list(self._creations.items()):
+                if isinstance(item, Creation):
+                    item.cleanup()
+                    del self._creations[key]
+                elif isinstance(item, list):
+                    for creation in item:
+                        creation.cleanup()
+                    del self._creations[key]
+
+            self._disposal_stack.clear()
+
+            if errors:
+                raise ExceptionGroup(
+                    "Errors occurred during pooled non-spellspace reset",
+                    errors,
+                )

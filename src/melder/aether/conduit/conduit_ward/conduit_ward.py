@@ -339,6 +339,47 @@ class ConduitWard(Cleanable):
             owner_id=self._id, owner_display=self._display_name,
             mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
         )
+
+    def _detach_for_pool(self) -> None:
+        """
+        Internal
+
+        Detach this lesser lineage from its current parent without destroying the ward shell.
+
+        Contract:
+            - Recursively soft-cleans descendant lesser conduits.
+            - Removes this conduit from its current parent's lesser registry.
+            - Clears the lesser-child registry and parent pointer.
+            - Keeps the root conduit reference intact for later reuse.
+        """
+        children: list[Conduit] = []
+        with self._lock:
+            children = list(self._lesser_conduits.values())
+
+        for lesser_conduit in children:
+            try:
+                lesser_conduit.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"detach_for_pool lesser cleanup failed: {e}",
+                    method_name="_detach_for_pool",
+                    exc_info=True,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
+                )
+
+        with self._lock:
+            parent_conduit = self._parent_conduit
+            if (
+                    parent_conduit is not None
+                    and parent_conduit._conduit_ward is not None
+            ):
+                parent_conduit._conduit_ward._lesser_conduits.pop(self._id, None)
+            self._parent_conduit = None
+            self._lesser_conduits.clear()
     #endregion Cleanup
 
     #region Context Manager

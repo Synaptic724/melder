@@ -1,7 +1,3 @@
-from typing import Any
-
-import pytest
-
 from melder.aether.conduit.conduit_pool import ConduitPool
 
 
@@ -53,9 +49,9 @@ def test_conduit_pool_inherits_base_policy_surface() -> None:
     assert snapshot["decay_interval_seconds"] == 5.0
 
 
-def test_conduit_pool_create_object_is_explicit_placeholder() -> None:
+def test_conduit_pool_create_object_returns_none_when_empty() -> None:
     """
-    Verify create_object remains an explicit placeholder until later wiring.
+    Verify the pool hands back nothing when no retained lesser is idle.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
@@ -64,8 +60,34 @@ def test_conduit_pool_create_object_is_explicit_placeholder() -> None:
         max_idle=1,
     )
 
-    with pytest.raises(NotImplementedError, match="not wired yet"):
-        pool.create_object()
+    acquired = pool.create_object()
+
+    assert acquired is None
+    assert pool.in_use_count == 0
+
+
+def test_conduit_pool_create_object_returns_retained_lesser() -> None:
+    """
+    Verify the pool reuses one retained lesser conduit shell.
+    """
+    root = _RootConduitStub("root-1")
+    pool = ConduitPool(
+        root_conduit=root,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    pooled = type(
+        "_PooledConduitStub",
+        (),
+        {"permanent_cleanup": lambda self: None},
+    )()
+
+    pool.return_lesser_conduit(pooled)
+    acquired = pool.create_object()
+
+    assert acquired is pooled
+    assert pool.in_use_count == 1
+    assert pool.idle_count == 0
 
 
 def test_conduit_pool_destroy_object_calls_permanent_cleanup() -> None:
