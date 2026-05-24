@@ -592,10 +592,7 @@ class ConduitWard(Cleanable):
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If policy forbids initiating outbound links or target forbids inbound links.
         """
-        if target_conduit._conduit_state in (
-                ConduitState.lesser,
-                ConduitState.pooled_lesser,
-        ):
+        if target_conduit._conduit_state is ConduitState.lesser:
             self._logger.error(
                 "link: target is lesser conduit",
                 method_name="_link",

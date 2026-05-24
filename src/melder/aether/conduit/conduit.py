@@ -1001,10 +1001,7 @@ class Conduit(Cleanable):
             except Exception as e:
                 self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
                 raise
-        elif self._conduit_state in (
-                ConduitState.lesser,
-                ConduitState.pooled_lesser,
-        ):
+        elif self._conduit_state is ConduitState.lesser:
             if self._name is not None:
                 self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
                 self._name = None
