@@ -272,7 +272,8 @@ def test_cleanup_idempotent_and_nulls():
 def test_operations_after_cleanup_raise():
     idx = SpellIndex("v1")
     idx.cleanup()
-    with pytest.raises(RuntimeError):
+    assert not hasattr(idx, "_current_id")
+    with pytest.raises(AttributeError):
         _ = idx.current
     with pytest.raises(RuntimeError):
         idx.update("v2")
@@ -294,7 +295,8 @@ def test_hash_equality_with_other_types():
 def test_cleanup_then_hash_raises():
     idx = SpellIndex("v1")
     idx.cleanup()
-    with pytest.raises(RuntimeError):
+    assert not hasattr(idx, "_current_id")
+    with pytest.raises(AttributeError):
         _ = idx.current
     with pytest.raises(RuntimeError):
         idx.update("v2")

@@ -97,7 +97,7 @@ def test_occurrence_plan_properties_cleanup_and_constructor_validation() -> None
     assert overrides_by_occurrence == {}
     assert overrides_by_spell_id == {}
 
-    with pytest.raises(RuntimeError, match="has already been cleaned"):
+    with pytest.raises(AttributeError):
         _ = plan.root_spell_id
 
     plan.cleanup()

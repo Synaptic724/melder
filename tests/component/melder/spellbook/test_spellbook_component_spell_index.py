@@ -32,7 +32,8 @@ def test_component_spell_index_cleanup_blocks_access() -> None:
     Purpose:
         Validate cleanup prevents further access to SpellIndex.
     Contract:
-        - Property access raises RuntimeError after cleanup.
+        - Cleanup removes the live current-id field.
+        - Post-clean current access fails through torn state.
     Returns:
         None.
     """
@@ -40,5 +41,6 @@ def test_component_spell_index_cleanup_blocks_access() -> None:
     index.cleanup()
 
     assert index.cleaned is True
-    with pytest.raises(RuntimeError):
+    assert not hasattr(index, "_current_id")
+    with pytest.raises(AttributeError):
         _ = index.current

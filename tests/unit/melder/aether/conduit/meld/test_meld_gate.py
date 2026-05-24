@@ -159,10 +159,11 @@ def test_creation_gate_cleanup_marks_closed_and_blocks_ops() -> None:
     gate.cleanup()
 
     assert gate._cleaned is True
+    assert gate._closed is True
     assert not hasattr(gate, "_event")
     assert not hasattr(gate, "_tickets")
 
-    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+    with pytest.raises(AttributeError):
         gate.open()
-    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+    with pytest.raises(AttributeError):
         gate.close()

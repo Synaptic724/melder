@@ -46,9 +46,11 @@ def test_creation_gate_controller_cleanup_cleans_registered_gates() -> None:
 
     controller.cleanup()
 
-    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+    assert conduit_gate.cleaned is True
+    assert index_gate.cleaned is True
+    with pytest.raises(AttributeError):
         conduit_gate.open()
-    with pytest.raises(RuntimeError, match="CreationGate has already been cleaned"):
+    with pytest.raises(AttributeError):
         index_gate.open()
 
 

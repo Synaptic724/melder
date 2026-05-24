@@ -1,0 +1,378 @@
+import math
+import threading
+import time
+from abc import ABC, abstractmethod
+from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, TypeVar
+
+from melder.utilities.general_base.cleanable import Cleanable
+
+
+_T = TypeVar("_T")
+
+
+class AbstractElasticPool(Generic[_T], Cleanable, ABC):
+    """
+    Reusable bounded elastic object-pool base.
+
+    Purpose:
+        Provide one shared pooling policy surface for expensive reusable runtime
+        objects such as lesser conduits and spellspaces without binding the base
+        class to one specific object type.
+
+    High-level model:
+        - The pool tracks a mutable `target_idle` count.
+        - New demand stretches `target_idle` upward by percentage.
+        - Quiet periods decay `target_idle` back toward `baseline_idle`.
+        - Released objects are retained only while idle count remains below both
+          `target_idle` and `max_idle`.
+        - Excess returned objects are destroyed immediately instead of retained.
+
+    Contract:
+        - `acquire(...)` either reuses an idle object or creates a new one.
+        - `release(obj)` decrements in-use count, resets the object, and either
+          retains it or destroys it based on the current elastic target.
+        - `cleanup()` destroys all retained idle objects and permanently retires
+          the pool.
+        - Subclasses define object creation, reset, and destruction behavior.
+
+    Threading:
+        - Internal policy state is protected by an `RLock`.
+        - The abstract lifecycle hooks execute while the lock is held so the
+          pool state and the object state transition stay synchronized.
+    """
+
+    _DEFAULT_ENABLED: ClassVar[bool] = True
+    _DEFAULT_BASELINE_IDLE: ClassVar[int] = 0
+    _DEFAULT_STRETCH_PERCENT: ClassVar[int] = 50
+    _DEFAULT_SETTLE_TIME_SECONDS: ClassVar[float] = 300.0
+    _DEFAULT_DECAY_PERCENT_PER_INTERVAL: ClassVar[int] = 10
+    _DEFAULT_DECAY_INTERVAL_SECONDS: ClassVar[float] = 60.0
+
+    __slots__ = Cleanable.__slots__ + [
+        "_baseline_idle",
+        "_decay_interval_seconds",
+        "_decay_percent_per_interval",
+        "_enabled",
+        "_idle",
+        "_in_use_count",
+        "_last_decay_at",
+        "_last_expand_at",
+        "_lock",
+        "_max_idle",
+        "_settle_time_seconds",
+        "_stretch_percent",
+        "_target_idle",
+        "_time_func",
+    ]
+
+    def __init__(
+            self,
+            *,
+            enabled: bool = _DEFAULT_ENABLED,
+            baseline_idle: int = _DEFAULT_BASELINE_IDLE,
+            stretch_percent: int = _DEFAULT_STRETCH_PERCENT,
+            settle_time_seconds: float = _DEFAULT_SETTLE_TIME_SECONDS,
+            decay_percent_per_interval: int = _DEFAULT_DECAY_PERCENT_PER_INTERVAL,
+            decay_interval_seconds: float = _DEFAULT_DECAY_INTERVAL_SECONDS,
+            max_idle: Optional[int] = None,
+            time_func: Optional[Callable[[], float]] = None,
+    ) -> None:
+        """
+        Initialize the elastic pool policy state.
+
+        Args:
+            enabled:
+                Whether the pool retains released objects or always destroys
+                them.
+            baseline_idle:
+                Idle target the pool decays back down to.
+            stretch_percent:
+                Percent used to expand `target_idle` when demand exceeds the
+                current prepared capacity.
+            settle_time_seconds:
+                Cooldown after the last stretch before decay begins.
+            decay_percent_per_interval:
+                Percent used to decay `target_idle` toward baseline on each
+                decay interval.
+            decay_interval_seconds:
+                Interval between decay steps once cooldown has elapsed.
+            max_idle:
+                Hard ceiling on retained idle objects. Defaults to
+                `baseline_idle` when omitted.
+            time_func:
+                Optional monotonic clock supplier for deterministic tests.
+
+        Raises:
+            ValueError:
+                If any numeric pool parameter is invalid.
+        """
+        super().__init__()
+        if baseline_idle < 0:
+            raise ValueError("baseline_idle must be >= 0.")
+        if stretch_percent < 0:
+            raise ValueError("stretch_percent must be >= 0.")
+        if settle_time_seconds < 0.0:
+            raise ValueError("settle_time_seconds must be >= 0.")
+        if decay_percent_per_interval < 0:
+            raise ValueError("decay_percent_per_interval must be >= 0.")
+        if decay_interval_seconds <= 0.0:
+            raise ValueError("decay_interval_seconds must be > 0.")
+
+        resolved_max_idle = baseline_idle if max_idle is None else max_idle
+        if resolved_max_idle < baseline_idle:
+            raise ValueError("max_idle must be >= baseline_idle.")
+
+        now = (time.monotonic if time_func is None else time_func)()
+        self._enabled: bool = bool(enabled)
+        self._baseline_idle: int = baseline_idle
+        self._stretch_percent: int = stretch_percent
+        self._settle_time_seconds: float = settle_time_seconds
+        self._decay_percent_per_interval: int = decay_percent_per_interval
+        self._decay_interval_seconds: float = decay_interval_seconds
+        self._max_idle: int = resolved_max_idle
+        self._target_idle: int = baseline_idle
+        self._idle: List[_T] = []
+        self._in_use_count: int = 0
+        self._lock: threading.RLock = threading.RLock()
+        self._time_func: Callable[[], float] = time.monotonic if time_func is None else time_func
+        self._last_expand_at: float = now
+        self._last_decay_at: float = now
+
+    @property
+    def enabled(self) -> bool:
+        """
+        Return whether this pool currently retains released objects.
+        """
+        self.check_cleaned()
+        return self._enabled
+
+    @property
+    def idle_count(self) -> int:
+        """
+        Return the current retained idle object count.
+        """
+        self.check_cleaned()
+        return len(self._idle)
+
+    @property
+    def in_use_count(self) -> int:
+        """
+        Return the number of objects currently checked out of the pool.
+        """
+        self.check_cleaned()
+        return self._in_use_count
+
+    @property
+    def target_idle(self) -> int:
+        """
+        Return the current elastic idle-retention target.
+        """
+        self.check_cleaned()
+        return self._target_idle
+
+    @property
+    def baseline_idle(self) -> int:
+        """
+        Return the baseline idle-retention floor.
+        """
+        self.check_cleaned()
+        return self._baseline_idle
+
+    @property
+    def max_idle(self) -> int:
+        """
+        Return the hard idle-retention ceiling.
+        """
+        self.check_cleaned()
+        return self._max_idle
+
+    def acquire(self, *args: Any, **kwargs: Any) -> _T:
+        """
+        Acquire one pooled object for use.
+
+        Contract:
+            - Reuses an idle object when available.
+            - Creates a new object when no idle object is available.
+            - Expands `target_idle` when current demand exceeds prepared
+              capacity.
+            - Invokes `prepare_object(...)` on the object before returning it.
+
+        Returns:
+            _T: Prepared pooled object.
+        """
+        self.check_cleaned()
+        with self._lock:
+            now = self._time_func()
+            self._apply_decay_locked(now)
+            pooled_object: Optional[_T] = None
+            if self._enabled and self._idle:
+                pooled_object = self._idle.pop()
+            else:
+                self._maybe_stretch_locked(now)
+            if pooled_object is None:
+                pooled_object = self.create_object(*args, **kwargs)
+            self._in_use_count += 1
+            return self.prepare_object(pooled_object, *args, **kwargs)
+
+    def release(self, obj: _T) -> None:
+        """
+        Release one object back to the pool or destroy it.
+
+        Contract:
+            - Decrements in-use count exactly once.
+            - Applies decay before deciding whether to retain or destroy.
+            - Calls `reset_object(...)` before retaining.
+            - Destroys returned objects when pooling is disabled or idle
+              retention is already full.
+
+        Args:
+            obj: Object being returned.
+
+        Raises:
+            RuntimeError:
+                If release is called with no matching checked-out object count.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._in_use_count <= 0:
+                raise RuntimeError("release() called with no in-use objects.")
+            self._in_use_count -= 1
+            now = self._time_func()
+            self._apply_decay_locked(now)
+            self.reset_object(obj)
+            if self._enabled and len(self._idle) < self._target_idle and len(self._idle) < self._max_idle:
+                self._idle.append(obj)
+                return
+            self.destroy_object(obj)
+
+    def cleanup(self) -> None:
+        """
+        Destroy all retained idle objects and retire this pool.
+
+        Contract:
+            - Idempotent.
+            - Destroys only retained idle objects still owned by the pool.
+            - Drops all idle references and prevents further acquire/release use.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            for obj in self._idle:
+                self.destroy_object(obj)
+            self._idle.clear()
+            del self._idle
+        del self._lock
+
+    def describe(self) -> Dict[str, Any]:
+        """
+        Return a detached diagnostic snapshot of the pool state.
+
+        Returns:
+            Dict[str, Any]: Current pool policy and live-count snapshot.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                "enabled": self._enabled,
+                "baseline_idle": self._baseline_idle,
+                "target_idle": self._target_idle,
+                "max_idle": self._max_idle,
+                "idle_count": len(self._idle),
+                "in_use_count": self._in_use_count,
+                "stretch_percent": self._stretch_percent,
+                "settle_time_seconds": self._settle_time_seconds,
+                "decay_percent_per_interval": self._decay_percent_per_interval,
+                "decay_interval_seconds": self._decay_interval_seconds,
+            }
+
+    def prepare_object(self, obj: _T, *args: Any, **kwargs: Any) -> _T:
+        """
+        Prepare one created or reused object before handing it to the caller.
+
+        Purpose:
+            Give subclasses a single override point for per-acquire wiring
+            without forcing them to replace `acquire(...)`.
+
+        Returns:
+            _T: Prepared object. Default implementation returns `obj` unchanged.
+        """
+        return obj
+
+    @abstractmethod
+    def create_object(self, *args: Any, **kwargs: Any) -> _T:
+        """
+        Create one new object for this pool.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset_object(self, obj: _T) -> None:
+        """
+        Reset one object so it can be safely retained for reuse.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def destroy_object(self, obj: _T) -> None:
+        """
+        Permanently destroy one object that should not be retained.
+        """
+        raise NotImplementedError
+
+    def _maybe_stretch_locked(self, now: float) -> None:
+        """
+        Increase target idle when demand exceeds prepared capacity.
+
+        Contract:
+            - Uses the checked-out object count to decide whether demand has
+              exceeded current prepared capacity.
+            - Expands by percentage and caps at `max_idle`.
+            - Resets the decay timers on stretch.
+        """
+        if not self._enabled:
+            return
+        if self._in_use_count + 1 <= self._target_idle:
+            return
+        if self._target_idle >= self._max_idle:
+            return
+        current_target = max(self._target_idle, self._baseline_idle)
+        stretch_amount = max(
+            1,
+            int(math.ceil(float(current_target) * (float(self._stretch_percent) / 100.0))),
+        )
+        self._target_idle = min(self._max_idle, current_target + stretch_amount)
+        self._last_expand_at = now
+        self._last_decay_at = now
+
+    def _apply_decay_locked(self, now: float) -> None:
+        """
+        Decay target idle back toward baseline after quiet periods.
+
+        Contract:
+            - No decay while cooldown is still active after the last stretch.
+            - Decays in percentage steps at fixed intervals.
+            - Never decays below `baseline_idle`.
+        """
+        if not self._enabled:
+            return
+        if self._target_idle <= self._baseline_idle:
+            return
+        if now - self._last_expand_at < self._settle_time_seconds:
+            return
+        elapsed_since_decay = now - self._last_decay_at
+        if elapsed_since_decay < self._decay_interval_seconds:
+            return
+
+        steps = int(elapsed_since_decay // self._decay_interval_seconds)
+        for _ in range(steps):
+            if self._target_idle <= self._baseline_idle:
+                break
+            decay_amount = max(
+                1,
+                int(math.floor(float(self._target_idle) * (float(self._decay_percent_per_interval) / 100.0))),
+            )
+            self._target_idle = max(self._baseline_idle, self._target_idle - decay_amount)
+        self._last_decay_at += float(steps) * self._decay_interval_seconds

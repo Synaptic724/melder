@@ -151,11 +151,12 @@ def test_mutations_raise_after_cleanup(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
 
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    assert not hasattr(creations, "_creations")
+    with pytest.raises(AttributeError):
         creations.add_creation("spell-x", object())
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    with pytest.raises(AttributeError):
         creations.add_many_creations("spell-x", object())
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    with pytest.raises(AttributeError):
         creations.register_spellspace_creation("ss", "spell-x", object())
 
 
@@ -598,13 +599,14 @@ def test_cleanup_raises_exceptiongroup_when_disposal_fails(
 def test_public_methods_raise_after_cleanup(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    assert not hasattr(creations, "_creations")
+    with pytest.raises(AttributeError):
         creations.extract_spell_creations("spell-1")
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    with pytest.raises(AttributeError):
         creations.restore_spell_creations("spell-1", [{"scope": "unique", "creation": Creation(object())}])
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    with pytest.raises(AttributeError):
         creations.get_spellspace_creation("ss-1", "spell-1")
-    with pytest.raises(RuntimeError, match="already been cleaned"):
+    with pytest.raises(AttributeError):
         creations.clear_spellspace_instances("ss-1")
 
 

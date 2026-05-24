@@ -131,7 +131,7 @@ def test_override_patch_map_validation_cleanup_and_specificity_conflicts() -> No
 
     patch_map.cleanup()
 
-    with pytest.raises(RuntimeError, match="has already been cleaned"):
+    with pytest.raises(AttributeError):
         _ = patch_map.root_spell_id
 
     patch_map.cleanup()
