@@ -2078,9 +2078,9 @@ class Conduit(Cleanable):
             Uses the Spellbook lock for local state; orchestrator handles admission state.
         """
         self.check_cleaned()
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("begin_transaction called when conduit not normal", "begin_transaction")
-            raise RuntimeError("Only normal conduits can start change transactions.")
+        if self._conduit_state is ConduitState.lesser:
+            self._logger.error("begin_transaction called when conduit is lesser", "begin_transaction")
+            raise RuntimeError("Lesser conduits cannot start change transactions.")
         mediator = self._get_required_transaction_mediator()
         existing_request = mediator.get_active_request()
 
@@ -2230,9 +2230,9 @@ class Conduit(Cleanable):
             Uses the Spellbook lock for local state; orchestrator handles admission state.
         """
         self.check_cleaned()
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("end_transaction called when conduit not normal", "end_transaction")
-            raise RuntimeError("Only normal conduits can end change transactions.")
+        if self._conduit_state is ConduitState.lesser:
+            self._logger.error("end_transaction called when conduit is lesser", "end_transaction")
+            raise RuntimeError("Lesser conduits cannot end change transactions.")
         request_type_value: Optional[str] = None
         if isinstance(transaction_type, str):
             request_type_value = transaction_type.strip().lower()
@@ -2390,9 +2390,9 @@ class Conduit(Cleanable):
 
         """
         self.check_cleaned()
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("bind called when conduit not normal", "bind")
-            raise RuntimeError("Only normal conduits can bind spells.")
+        if self._conduit_state is ConduitState.lesser:
+            self._logger.error("bind called when conduit is lesser", "bind")
+            raise RuntimeError("Lesser conduits cannot bind spells.")
         if self._bind_family_blocked_for_current_posture():
             self._logger.error("bind denied by current frame posture", "bind")
             raise RuntimeError(
@@ -2438,9 +2438,9 @@ class Conduit(Cleanable):
             RuntimeError: Propagated from Spellbook.bind on binding errors.
         """
         self.check_cleaned()
-        if not self._conduit_state == ConduitState.normal:
-            self._logger.error("scan called when conduit not normal", "scan")
-            raise RuntimeError("Only normal conduits can scan modules.")
+        if self._conduit_state is ConduitState.lesser:
+            self._logger.error("scan called when conduit is lesser", "scan")
+            raise RuntimeError("Lesser conduits cannot scan modules.")
         if self._bind_family_blocked_for_current_posture():
             self._logger.error("scan denied by current frame posture", "scan")
             raise RuntimeError(
@@ -2506,6 +2506,8 @@ class Conduit(Cleanable):
                 is unavailable.
         """
         self.check_cleaned()
+        if self._conduit_state is ConduitState.lesser:
+            raise RuntimeError("Lesser conduits cannot access MutationResearch.")
         frame_configuration = self._spellbook._aetheric_frame_configuration
         if (
                 not self.__dynamic_environment__
@@ -2567,6 +2569,9 @@ class Conduit(Cleanable):
             dict: Preflight summary of the transfer plan.
         """
         self.check_cleaned()
+        if self._conduit_state is ConduitState.lesser:
+            self._logger.error("transfer_spell_ownership called when conduit is lesser", "transfer_spell_ownership")
+            raise RuntimeError("Lesser conduits cannot transfer spell ownership.")
         if self._transaction_blocked_for_current_posture(
                 "transfer_ownership",
         ):
@@ -3102,6 +3107,9 @@ class Conduit(Cleanable):
             RuntimeError: If the target conduit belongs to a different `AethericFrame`.
         """
         self.check_cleaned()
+        if self._conduit_state is ConduitState.lesser:
+            self._logger.error("link called when conduit is lesser", "link")
+            raise RuntimeError("Lesser conduits cannot manage link services.")
         if self._transaction_blocked_for_current_posture(
                 "link",
         ):

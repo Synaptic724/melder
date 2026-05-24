@@ -145,6 +145,20 @@ def test_link_raises_when_not_dynamic(
         conduit_normal.link(conduit_lesser)
 
 
+def test_link_raises_when_source_conduit_is_lesser(
+    conduit_dynamic_lesser: Conduit,
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify link fails immediately when a lesser conduit hits the public surface.
+
+    Contract:
+        - Lesser conduits are rejected before link transaction or ward logic.
+    """
+    with pytest.raises(RuntimeError, match="Lesser conduits cannot manage link services"):
+        conduit_dynamic_lesser.link(conduit_normal)
+
+
 def test_link_rejects_non_conduit_target(conduit_dynamic_normal: Conduit) -> None:
     """
     Verify link enforces target type validation.

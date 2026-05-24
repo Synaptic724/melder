@@ -70,7 +70,7 @@ def test_bind_raises_for_lesser_conduit(
         AssertionError: If bind succeeds or forwards on a lesser conduit.
     """
     spellbook_stub.bind = MagicMock()
-    with pytest.raises(RuntimeError, match="Only normal conduits can bind spells"):
+    with pytest.raises(RuntimeError, match="Lesser conduits cannot bind spells"):
         conduit_lesser.bind(spell=object(), existence=Existence.unique)
     assert spellbook_stub.bind.called is False
 
@@ -125,7 +125,7 @@ def test_scan_raises_for_lesser_conduit(
     """scan should reject lesser conduits."""
     spellbook_stub.scan = MagicMock()
 
-    with pytest.raises(RuntimeError, match="Only normal conduits can scan modules"):
+    with pytest.raises(RuntimeError, match="Lesser conduits cannot scan modules"):
         conduit_lesser.scan(MagicMock())
 
     spellbook_stub.scan.assert_not_called()
