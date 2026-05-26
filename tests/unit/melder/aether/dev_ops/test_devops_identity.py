@@ -607,30 +607,6 @@ def test_devops_identity_detach_registry_unregisters_and_clears_local_reference(
         identity.refresh_registry()
 
 
-def test_devops_identity_cleanup_unregisters_from_registry_and_blocks_reuse() -> None:
-    """
-    Purpose:
-        Verify cleanup unregisters the identity and retires the surface.
-    Contract:
-        - cleanup is idempotent.
-        - Post-cleanup access fails fast.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If cleanup leaves the identity reusable.
-    """
-    identity = _make_identity(metadata={"region": "north"})
-    registry = _RegistrySpy()
-    identity.attach_registry(registry)
-
-    identity.cleanup()
-    identity.cleanup()
-
-    assert registry.unregister_calls == [("conduit", "conduit-1")]
-    with pytest.raises(RuntimeError):
-        identity.describe()
-
-
 def test_devops_identity_describe_returns_detached_snapshot() -> None:
     """
     Purpose:

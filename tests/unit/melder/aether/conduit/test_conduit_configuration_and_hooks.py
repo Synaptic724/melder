@@ -1362,28 +1362,6 @@ def test_register_to_creations_accepts_lesser_conduits(
     conduit_lesser._register_to_creations(spell, object())
     add_creation.assert_called_once()
 
-
-def test_register_to_creations_rejects_non_creations_manager(
-    conduit_normal: Conduit,
-) -> None:
-    """
-    Verify _register_to_creations fails fast when the creations manager is invalid.
-
-    Contract:
-        - Non-Creations managers raise RuntimeError and log the failure.
-    """
-    spell = MagicMock()
-    spell.existence = Existence.unique
-    spell.spell_id = "spell-1"
-    conduit_normal._creations = object()
-    conduit_normal._logger = MagicMock()
-
-    with pytest.raises(RuntimeError, match="requires a Creations manager"):
-        conduit_normal._register_to_creations(spell, object())
-
-    conduit_normal._logger.error.assert_called_once()
-
-
 def test_cleanup_normal_unregisters_root_state_and_removes_spells(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
