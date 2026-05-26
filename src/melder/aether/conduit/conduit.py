@@ -962,7 +962,7 @@ class Conduit(Cleanable):
             )
         return False
 
-    def _resolve_logger_from_config(self, configuration: SpellbookConfiguration) -> SafeLogger:
+    def _resolve_logger_from_config(self) -> SafeLogger:
         """
         Internal
 
@@ -1028,20 +1028,9 @@ class Conduit(Cleanable):
         first wired into its Spellbook and needs to prime its Creations
         store with pre-existing objects.
         """
-        if not isinstance(self._creations, Creations):
-            self._logger.error(
-                "_register_to_creations called with non-Creations manager",
-                "_register_to_creations",
-            )
-            raise RuntimeError(
-                "_register_to_creations requires a Creations manager."
-            )
-
-        creations: Creations = self._creations
-
         # Existing-object spells are semantically singletons in Melder.
         existence: Existence = spell.existence
-        if existence is not Existence.unique:
+        if spell.existence is not Existence.unique:
             self._logger.error(
                 f"_register_to_creations: existing-object spell {spell.spell_id} "
                 f"has unsupported existence={existence}; expected Existence.unique.",
@@ -1053,7 +1042,7 @@ class Conduit(Cleanable):
             )
 
         spell_id: str = spell.spell_id
-        creations.add_creation(
+        self._creations.add_creation(
             spell_id,
             instance,
             has_disposal_methods=spell.has_disposal_methods,
@@ -1224,9 +1213,8 @@ class Conduit(Cleanable):
 
         conduit_hook_updates: dict[str, Any] = {}
         meld_hook_updates: dict[str, Any] = {}
-        meld_hook_names = self._configuration._MELD_HOOK_NAMES
         for name, value in hooks.items():
-            if name in meld_hook_names:
+            if name in self._configuration._MELD_HOOK_NAMES:
                 meld_hook_updates[name] = value
             else:
                 conduit_hook_updates[name] = value
@@ -1295,9 +1283,8 @@ class Conduit(Cleanable):
             - Hook names must be in Configuration._ALLOWED_HOOKS.
             - Hook values must be a callable or a list/tuple of callables.
         """
-        allowed = self._configuration._ALLOWED_HOOKS
         for name, value in hooks.items():
-            if name not in allowed:
+            if name not in self._configuration._ALLOWED_HOOKS:
                 raise ValueError(f"Unknown hook name: {name!r}")
             if callable(value):
                 hook_map.setdefault(name, []).append(value)
@@ -1360,8 +1347,7 @@ class Conduit(Cleanable):
             ValueError:
                 Propagated for invalid or duplicate conduit/root keys.
         """
-        controller = self._creation_gate_controller
-        return controller.create_conduit_gate(
+        return self._creation_gate_controller.create_conduit_gate(
             conduit_id,
             root_conduit_id=self._root_conduit_id,
         )
@@ -1395,8 +1381,7 @@ class Conduit(Cleanable):
             ValueError:
                 Propagated for invalid or duplicate conduit/root keys.
         """
-        controller = self._creation_gate_controller
-        controller.register_conduit_gate(
+        self._creation_gate_controller.register_conduit_gate(
             conduit_id,
             gate,
             root_conduit_id=self._root_conduit_id,

@@ -90,7 +90,6 @@ class ConduitPool(AbstractElasticPool[Any]):
             - Returns the lesser unattached so the caller still owns new-lesser
               creation, hook order, and lineage-link timing.
         """
-        self.check_cleaned()
         with self._lock:
             if not self._enabled or not self._idle:
                 return None
@@ -121,7 +120,6 @@ class ConduitPool(AbstractElasticPool[Any]):
               disabled or already full.
             - Ignores duplicate idle insertion for the same conduit object.
         """
-        self.check_cleaned()
         with self._lock:
             if self._enabled:
                 if any(existing is conduit for existing in self._idle):

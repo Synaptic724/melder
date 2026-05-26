@@ -156,7 +156,7 @@ class DevopsIdentity(Cleanable):
         Returns:
             str: Stable lowercased owner kind for this identity.
         """
-        self.check_cleaned()
+        
         return self._owner_kind
 
     @property
@@ -167,7 +167,7 @@ class DevopsIdentity(Cleanable):
         Returns:
             str: Stable owner id registered for this identity.
         """
-        self.check_cleaned()
+        
         return self._owner_id
 
     @property
@@ -178,7 +178,7 @@ class DevopsIdentity(Cleanable):
         Returns:
             str: Frame name this identity is scoped to.
         """
-        self.check_cleaned()
+        
         return self._aetheric_frame_name
 
     @property
@@ -193,7 +193,6 @@ class DevopsIdentity(Cleanable):
         Returns:
             Dict[str, Any]: Copy of the current metadata payload.
         """
-        self.check_cleaned()
         with self._lock:
             return dict(self._metadata)
 
@@ -209,7 +208,6 @@ class DevopsIdentity(Cleanable):
         Returns:
             Tuple[str, ...]: Declared transaction kinds for this identity.
         """
-        self.check_cleaned()
         with self._lock:
             return self._available_transactions
 
@@ -228,7 +226,6 @@ class DevopsIdentity(Cleanable):
             TypeError: If `transaction_name` is not a string.
             ValueError: If `transaction_name` is empty after normalization.
         """
-        self.check_cleaned()
         if not isinstance(transaction_name, str):
             raise TypeError("transaction_name must be a string.")
         normalized_name = transaction_name.strip().lower()
@@ -260,7 +257,6 @@ class DevopsIdentity(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
         normalized = tuple(
             sorted(
                 {
@@ -288,13 +284,10 @@ class DevopsIdentity(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
-        registry = None
         with self._lock:
             self._metadata.update(metadata)
-            registry = self._registry
-        if registry is not None:
-            registry.refresh_identity(self)
+        if self._registry is not None:
+            self._registry.refresh_identity(self)
 
     def attach_registry(
             self,
@@ -325,7 +318,7 @@ class DevopsIdentity(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
+        
         if registry is None:
             raise ValueError("registry must not be None.")
         with self._lock:
@@ -363,7 +356,7 @@ class DevopsIdentity(Cleanable):
             RuntimeError:
                 If no registry is attached.
         """
-        self.check_cleaned()
+        
         registry = None
         with self._lock:
             registry = self._registry
@@ -393,7 +386,7 @@ class DevopsIdentity(Cleanable):
             ValueError:
                 If provider_conduit_id is empty.
         """
-        self.check_cleaned()
+        
         if self._owner_kind != "conduit":
             raise RuntimeError(
                 "Only conduit identities may publish provider conduit relations."
@@ -425,7 +418,7 @@ class DevopsIdentity(Cleanable):
             RuntimeError:
                 If this identity is not a conduit identity or has no registry.
         """
-        self.check_cleaned()
+        
         if self._owner_kind != "conduit":
             raise RuntimeError(
                 "Only conduit identities may remove provider conduit relations."
@@ -464,7 +457,7 @@ class DevopsIdentity(Cleanable):
             ValueError:
                 If conduit_id is empty.
         """
-        self.check_cleaned()
+        
         if self._owner_kind != "conduit_cluster":
             raise RuntimeError(
                 "Only conduit-cluster identities may publish cluster membership."
@@ -497,7 +490,7 @@ class DevopsIdentity(Cleanable):
                 If this identity is not a conduit-cluster identity or has no
                 registry.
         """
-        self.check_cleaned()
+        
         if self._owner_kind != "conduit_cluster":
             raise RuntimeError(
                 "Only conduit-cluster identities may remove cluster membership."
@@ -526,7 +519,7 @@ class DevopsIdentity(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
+        
         registry = None
         with self._lock:
             registry = self._registry
@@ -545,7 +538,7 @@ class DevopsIdentity(Cleanable):
         Returns:
             Dict[str, Any]: Diagnostic snapshot of the identity surface.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "owner_kind": self._owner_kind,
