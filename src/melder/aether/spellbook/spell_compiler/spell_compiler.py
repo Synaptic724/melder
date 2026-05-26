@@ -728,16 +728,16 @@ class SpellCompiler(Cleanable):
 
         Purpose:
             Build final execution plans for spell invocation from all prior phase
-            artifacts and spellbook context, then materialize the phase-12
-            no-overrides executor from the artifact handoff.
+            artifacts and spellbook context, stopping at the phase-11/12 artifact
+            handoff.
 
         Contract:
             - Requires phase-8 to phase-10 outputs for complete plan synthesis.
             - Stores phase-11 execution plans on the artifact for downstream
               runner/executor compilation.
-            - Preserves the internal phase-11/12 split, but keeps the front
-              execution-plan entrypoint execution-ready by immediately compiling
-              the phase-12 no-overrides executor after phase 11 completes.
+            - Stops at the phase-11/12 artifact handoff. Phase-12 no-overrides
+              executor compilation is now a distinct phase; callers must run
+              `compile_phase12_no_overrides_executor` separately.
             - Honors cancellation while constructing runtime execution structure.
 
         Args:
@@ -757,11 +757,6 @@ class SpellCompiler(Cleanable):
             spell,
             artifact,
             spellbook,
-        )
-        self._phase_12.compile_no_overrides_executor(
-            spellbook,
-            spell,
-            artifact,
         )
 
     def compile_phase12_no_overrides_executor(

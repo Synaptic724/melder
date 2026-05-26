@@ -471,6 +471,41 @@ class SpellCompilerSystem(Cleanable):
         )
         spell._cleanup_creation_context()
 
+    def run_phase_executor_compile(
+            self,
+            spellbook: Spellbook,
+            spell: Spell,
+    ) -> None:
+        """
+        Phase 12 - No-overrides executor compilation (front-facing compiler-system facade).
+
+        Delegates to the compiler system to compile the Phase 12 no-overrides
+        executor from the Phase 11 artifact handoff. Spells without a compatible
+        Phase 11 plan (including existing-creation spells) resolve to a `None`
+        executor.
+
+        Contract:
+            - Requires the Phase 11 `11 -> 12` artifact handoff to be available.
+            - Does not return a value; the compiled executor is stored on the
+              spell-owned compiler artifact.
+            - Does not execute any other phases.
+
+        Args:
+            spellbook:
+                Spellbook providing explicit spell lookup context for payload
+                executor compilation.
+            spell:
+                Spell whose Phase 12 no-overrides executor should be compiled.
+
+        Returns:
+            None.
+        """
+        self._spell_compiler.compile_phase12_no_overrides_executor(
+            spellbook,
+            spell,
+            spell._compiler_artifact,
+        )
+
     def run_phase_system_validation(
             self,
             spellbook: Spellbook,
@@ -938,6 +973,10 @@ class SpellCompilerSystem(Cleanable):
             spell,
         )
         self.run_phase_execution_plan(
+            spellbook,
+            spell,
+        )
+        self.run_phase_executor_compile(
             spellbook,
             spell,
         )

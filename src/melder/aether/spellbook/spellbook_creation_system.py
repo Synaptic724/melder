@@ -1198,6 +1198,12 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook, scheduler, compiler_system, conduit_id
             ),
         )
+        scheduler.register_phase(
+            "executor_compile",
+            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_executor_compile_factory(
+                spellbook, scheduler, compiler_system, conduit_id
+            ),
+        )
 
     @staticmethod
     def _new_phase_scheduler(
@@ -1676,6 +1682,13 @@ class SpellbookCreationSystem(Cleanable):
                     phase_name="execution_plan_local",
                     target_spell_id=target_spell_id,
                     phase_func=compiler_system.run_phase_execution_plan,
+                    args=(spellbook, target_spell,),
+                )
+                SpellbookCreationSystem._register_target_single_phase(
+                    scheduler=scheduler,
+                    phase_name="executor_compile_local",
+                    target_spell_id=target_spell_id,
+                    phase_func=compiler_system.run_phase_executor_compile,
                     args=(spellbook, target_spell,),
                 )
 
@@ -2159,6 +2172,40 @@ class SpellbookCreationSystem(Cleanable):
             compiler_system=compiler_system,
             phase_name="execution_plan",
             phase_callable_attr="run_phase_execution_plan",
+            args_factory=lambda spell, cancel_event: (spellbook, spell),
+        )
+
+    @staticmethod
+    def phase_executor_compile_factory(
+            spellbook: Spellbook,
+            scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
+            conduit_id: str,
+    ) -> Sequence[UnitOfWork]:
+        """
+        Purpose:
+            Build phase-12 executor-compile units for all local spells.
+        Contract:
+            - Returns empty when no local spells exist.
+            - Produces one unit per local spell otherwise.
+            - Each unit compiles the Phase 12 no-overrides executor from the
+              Phase 11 `11 -> 12` artifact handoff.
+        Args:
+            spellbook: Owning Spellbook instance.
+            scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
+            conduit_id: Conduit scope id.
+        Returns:
+            Sequence[UnitOfWork]: Executor-compile phase units.
+        Raises:
+            RuntimeError: If the spellbook has already been cleaned.
+        """
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            compiler_system=compiler_system,
+            phase_name="executor_compile",
+            phase_callable_attr="run_phase_executor_compile",
             args_factory=lambda spell, cancel_event: (spellbook, spell),
         )
 
