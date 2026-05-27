@@ -216,7 +216,8 @@ def test_get_spellspace_creation_returns_none_for_non_dict_slot(
     creations = _mk_creations(conduit=normal_conduit)
     creations.add_creation("ss-1", object())
 
-    assert creations.get_spellspace_creation("ss-1", "spell-1") is None
+    with pytest.raises(AttributeError):
+        creations.get_spellspace_creation("ss-1", "spell-1")
 
 
 def test_extract_spell_creations_removes_from_multiple_spellspaces(

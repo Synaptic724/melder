@@ -421,9 +421,22 @@ class Creations(Cleanable):
     def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Optional[Any]:
         """
         Return one spellspace-scoped live object by spellspace id and spell id.
+
+        Purpose:
+            Provide the spellspace-only retrieval path for runtime callers that
+            are already executing under the spellspace route.
+
+        Contract:
+            - Reads only `_creations`.
+            - Never consults `_disposable_creations`.
+            - Returns `None` when no spellspace bucket exists for
+              `spellspace_id`.
+            - Assumes callers use this helper only for spellspace-scoped
+              lookups, so a non-dict slot at `spellspace_id` is treated as a
+              broken internal state rather than normalized away.
         """
         bucket = self._creations.get(spellspace_id)
-        if not isinstance(bucket, dict):
+        if bucket is None:
             return None
         return bucket.get(spell_id)
 
@@ -442,12 +455,22 @@ class Creations(Cleanable):
 
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
-        Return one non-spellspace retained object by spell id, if present.
+        Return one non-spellspace retained live object by spell id.
+
+        Purpose:
+            Provide the hot unique/shared retrieval path for internal runtime
+            callers that already know they are not resolving through spellspace
+            or `many`.
+
+        Contract:
+            - Reads only `_creations`.
+            - Never consults `_disposable_creations`.
+            - Returns the stored object directly.
+            - Assumes callers use this helper only for non-spellspace singleton
+              or shared routes, so it does not branch around list or dict
+              values.
         """
-        entry = self._creations.get(spell_id)
-        if entry is not None and not isinstance(entry, dict) and not isinstance(entry, list):
-            return entry
-        return None
+        return self._creations.get(spell_id)
 
     def register_spellspace_creation(
             self,
