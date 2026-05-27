@@ -215,9 +215,9 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
 
         many_after = lesser.meld(spell=many_id)
         assert many_after is not many_instance
-        bucket = lesser._creations._creations.get(many_id)
+        bucket = lesser._creations._disposable_creations.get(many_id)
         assert bucket is not None
-        values = [creation.value for creation in bucket]
+        values = [entry[0] for entry in bucket]
         assert many_instance in values
         assert many_after in values
     finally:

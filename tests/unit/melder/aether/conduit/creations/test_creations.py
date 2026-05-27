@@ -6,7 +6,6 @@ from typing import Optional
 import pytest
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.creations.creation import Creation
 from melder.aether.conduit.creations.creations import Creations
 
 
@@ -71,6 +70,10 @@ def _mk_creations(*, conduit: FakeConduit) -> Creations:
         ),
     )
 
+
+def _disposable_entry(value: object, *methods: str) -> tuple[object, list[str]]:
+    return value, list(methods)
+
 def test_init_exposes_owner_conduit_id(lesser_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=lesser_conduit)
     assert creations.owner_conduit_id == lesser_conduit._id
@@ -88,9 +91,8 @@ def test_add_creation_records_disposal_metadata(normal_conduit: FakeConduit) -> 
         disposal_methods=["cleanup", "close"],
     )
 
-    creation = creations._creations[spell_id]
-    assert creation.has_disposal_methods is True
-    assert creation.disposal_method_names == ["cleanup", "close"]
+    creation = creations._disposable_creations[spell_id]
+    assert creation == _disposable_entry(obj, "cleanup", "close")
 
 
 def test_add_many_creations_records_disposal_metadata(normal_conduit: FakeConduit) -> None:
@@ -105,9 +107,8 @@ def test_add_many_creations_records_disposal_metadata(normal_conduit: FakeCondui
         disposal_methods=["dispose"],
     )
 
-    creation = creations._creations[spell_id][0]
-    assert creation.has_disposal_methods is True
-    assert creation.disposal_method_names == ["dispose"]
+    creation = creations._disposable_creations[spell_id][0]
+    assert creation == _disposable_entry(obj, "dispose")
 
 
 def test_add_creation_duplicate_key_raises(normal_conduit: FakeConduit) -> None:
@@ -128,7 +129,7 @@ def test_add_many_creations_appends_in_order(normal_conduit: FakeConduit) -> Non
     creations.add_many_creations(spell_id, b)
 
     extracted = creations.extract_spell_creations(spell_id)
-    assert [entry["creation"].value for entry in extracted] == [a, b]
+    assert [entry["stored"] for entry in extracted] == [a, b]
     assert {entry["scope"] for entry in extracted} == {"many"}
 
 
@@ -164,7 +165,8 @@ def test_extract_unique_returns_scope_and_is_destructive(normal_conduit: FakeCon
 
     assert len(extracted) == 1
     assert extracted[0]["scope"] == "unique"
-    assert extracted[0]["creation"].value is obj
+    assert extracted[0]["disposable"] is False
+    assert extracted[0]["stored"] is obj
     assert creations.extract_spell_creations(spell_id) == []
 
 
@@ -177,7 +179,7 @@ def test_extract_many_returns_all_entries(normal_conduit: FakeConduit) -> None:
         creations.add_many_creations(spell_id, obj)
 
     extracted = creations.extract_spell_creations(spell_id)
-    assert [entry["creation"].value for entry in extracted] == objs
+    assert [entry["stored"] for entry in extracted] == objs
     assert {entry["scope"] for entry in extracted} == {"many"}
 
 
@@ -188,8 +190,7 @@ def test_register_spellspace_creation_and_get(normal_conduit: FakeConduit) -> No
     creations.register_spellspace_creation("ss-1", "spell-1", obj)
 
     creation = creations.get_spellspace_creation("ss-1", "spell-1")
-    assert creation is not None
-    assert creation.value is obj
+    assert creation is obj
 
 
 def test_register_spellspace_duplicate_raises(normal_conduit: FakeConduit) -> None:
@@ -252,13 +253,13 @@ def test_restore_spell_creations_restores_unique(normal_conduit: FakeConduit) ->
     obj = object()
     creations.restore_spell_creations(
         spell_id,
-        [{"scope": "unique", "creation": Creation(obj)}],
+        [{"scope": "unique", "disposable": False, "stored": obj}],
     )
 
     extracted = creations.extract_spell_creations(spell_id)
     assert len(extracted) == 1
     assert extracted[0]["scope"] == "unique"
-    assert extracted[0]["creation"].value is obj
+    assert extracted[0]["stored"] is obj
 
 
 def test_restore_spell_creations_unique_replaces_root_and_spellspace_entries(
@@ -273,13 +274,13 @@ def test_restore_spell_creations_unique_replaces_root_and_spellspace_entries(
 
     creations.restore_spell_creations(
         spell_id,
-        [{"scope": "unique", "creation": Creation(replacement)}],
+        [{"scope": "unique", "disposable": False, "stored": replacement}],
     )
 
     extracted = creations.extract_spell_creations(spell_id)
     assert len(extracted) == 1
     assert extracted[0]["scope"] == "unique"
-    assert extracted[0]["creation"].value is replacement
+    assert extracted[0]["stored"] is replacement
     assert creations.get_spellspace_creation("ss-1", spell_id) is None
 
 
@@ -291,13 +292,13 @@ def test_restore_spell_creations_restores_many_in_order(normal_conduit: FakeCond
     creations.restore_spell_creations(
         spell_id,
         [
-            {"scope": "many", "creation": Creation(a)},
-            {"scope": "many", "creation": Creation(b)},
+            {"scope": "many", "disposable": False, "stored": a},
+            {"scope": "many", "disposable": False, "stored": b},
         ],
     )
 
     extracted = creations.extract_spell_creations(spell_id)
-    assert [entry["creation"].value for entry in extracted] == [a, b]
+    assert [entry["stored"] for entry in extracted] == [a, b]
     assert {entry["scope"] for entry in extracted} == {"many"}
 
 
@@ -313,13 +314,13 @@ def test_restore_spell_creations_unique_replaces_existing_many_entries(
 
     creations.restore_spell_creations(
         spell_id,
-        [{"scope": "unique", "creation": Creation(replacement)}],
+        [{"scope": "unique", "disposable": False, "stored": replacement}],
     )
 
     extracted = creations.extract_spell_creations(spell_id)
     assert len(extracted) == 1
     assert extracted[0]["scope"] == "unique"
-    assert extracted[0]["creation"].value is replacement
+    assert extracted[0]["stored"] is replacement
 
 
 def test_restore_spell_creations_many_into_spellspace_slot_raises_runtimeerror(
@@ -332,7 +333,7 @@ def test_restore_spell_creations_many_into_spellspace_slot_raises_runtimeerror(
     with pytest.raises(RuntimeError, match="non-list slot"):
         creations.restore_spell_creations(
             spell_id,
-            [{"scope": "many", "creation": Creation(object())}],
+            [{"scope": "many", "disposable": False, "stored": object()}],
         )
 
 
@@ -342,12 +343,11 @@ def test_restore_spell_creations_restores_spellspace(normal_conduit: FakeConduit
     obj = object()
     creations.restore_spell_creations(
         spell_id,
-        [{"scope": "spellspace", "spellspace_id": "ss-1", "creation": Creation(obj)}],
+        [{"scope": "spellspace", "spellspace_id": "ss-1", "disposable": False, "stored": obj}],
     )
 
     restored = creations.get_spellspace_creation("ss-1", spell_id)
-    assert restored is not None
-    assert restored.value is obj
+    assert restored is obj
 
 
 def test_restore_spell_creations_spellspace_replaces_root_and_existing_spellspace_entries(
@@ -362,18 +362,17 @@ def test_restore_spell_creations_spellspace_replaces_root_and_existing_spellspac
 
     creations.restore_spell_creations(
         spell_id,
-        [{"scope": "spellspace", "spellspace_id": "ss-new", "creation": Creation(replacement)}],
+        [{"scope": "spellspace", "spellspace_id": "ss-new", "disposable": False, "stored": replacement}],
     )
 
     restored = creations.get_spellspace_creation("ss-new", spell_id)
-    assert restored is not None
-    assert restored.value is replacement
+    assert restored is replacement
     assert creations.get_spellspace_creation("ss-old", spell_id) is None
     extracted = creations.extract_spell_creations(spell_id)
     assert len(extracted) == 1
     assert extracted[0]["scope"] == "spellspace"
     assert extracted[0]["spellspace_id"] == "ss-new"
-    assert extracted[0]["creation"].value is replacement
+    assert extracted[0]["stored"] is replacement
 
 
 def test_restore_spell_creations_spellspace_into_singleton_slot_raises_runtimeerror(
@@ -385,7 +384,7 @@ def test_restore_spell_creations_spellspace_into_singleton_slot_raises_runtimeer
     with pytest.raises(RuntimeError, match="non-dict slot"):
         creations.restore_spell_creations(
             "spell-ss",
-            [{"scope": "spellspace", "spellspace_id": "ss-1", "creation": Creation(object())}],
+            [{"scope": "spellspace", "spellspace_id": "ss-1", "disposable": False, "stored": object()}],
         )
 
 
@@ -394,7 +393,7 @@ def test_restore_spell_creations_unknown_scope_raises(normal_conduit: FakeCondui
     with pytest.raises(RuntimeError, match="Unknown creation scope"):
         creations.restore_spell_creations(
             "spell-x",
-            [{"scope": "unknown", "creation": Creation(object())}],
+            [{"scope": "unknown", "disposable": False, "stored": object()}],
         )
 
 
@@ -405,7 +404,7 @@ def test_restore_spell_creations_spellspace_missing_id_raises_keyerror(
     with pytest.raises(KeyError):
         creations.restore_spell_creations(
             "spell-x",
-            [{"scope": "spellspace", "creation": Creation(object())}],
+            [{"scope": "spellspace", "disposable": False, "stored": object()}],
         )
 
 
@@ -444,8 +443,7 @@ def test_clear_spellspace_instances_clears_only_target_bucket(
 
     assert creations.get_spellspace_creation("ss-1", "spell-a") is None
     remaining = creations.get_spellspace_creation("ss-2", "spell-b")
-    assert remaining is not None
-    assert remaining.value is b
+    assert remaining is b
 
 
 def test_clear_spellspace_instances_raises_exceptiongroup_on_disposal_error(
@@ -597,7 +595,7 @@ def test_public_methods_raise_after_cleanup(normal_conduit: FakeConduit) -> None
     with pytest.raises(AttributeError):
         creations.extract_spell_creations("spell-1")
     with pytest.raises(AttributeError):
-        creations.restore_spell_creations("spell-1", [{"scope": "unique", "creation": Creation(object())}])
+        creations.restore_spell_creations("spell-1", [{"scope": "unique", "disposable": False, "stored": object()}])
     with pytest.raises(AttributeError):
         creations.get_spellspace_creation("ss-1", "spell-1")
     with pytest.raises(AttributeError):
@@ -608,14 +606,13 @@ def test_attempt_cleanup_none_creation_raises_attributeerror(
     normal_conduit: FakeConduit,
 ) -> None:
     creations = _mk_creations(conduit=normal_conduit)
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         creations._attempt_cleanup(None)
 
 def test_attempt_cleanup_no_methods_returns_none(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit)
     probe = Probe()
-    creation = Creation(probe, has_disposal_methods=False, disposal_methods=None)
-    assert creations._attempt_cleanup(creation) is None
+    assert creations._attempt_cleanup((probe, [])) is None
     assert probe.calls == []
 
 
@@ -627,8 +624,7 @@ def test_attempt_cleanup_missing_method_returns_runtimeerror(
     class NoDisposal:
         pass
 
-    creation = Creation(NoDisposal(), has_disposal_methods=True, disposal_methods=["dispose"])
-    err = creations._attempt_cleanup(creation)
+    err = creations._attempt_cleanup((NoDisposal(), ["dispose"]))
     assert isinstance(err, RuntimeError)
 
 
@@ -646,16 +642,12 @@ def test_cleanup_spellspace_instances_drains_and_clears_buckets(
         disposal_methods=["dispose"],
     )
 
-    non_disposable = creations._creations["ss-1"]["spell-a"]
-    disposable = creations._creations["ss-1"]["spell-b"]
-
     errors = creations._cleanup_spellspace_instances()
 
     assert errors == []
     assert creations._creations == {}
+    assert creations._disposable_creations == {}
     assert creations._spellspace_disposal_stacks == {}
-    assert non_disposable.cleaned is True
-    assert disposable.cleaned is True
     assert probe.calls == ["dispose"]
 
 
@@ -676,8 +668,8 @@ def test_remove_disposal_creation_removes_only_targeted_entry(
         disposal_methods=["dispose"],
     )
 
-    target = creations._creations["spell-a"]
-    other = creations._creations["spell-b"]
+    target = creations._disposable_creations["spell-a"]
+    other = creations._disposable_creations["spell-b"]
 
     creations._remove_disposal_creation(target)
 
@@ -703,8 +695,8 @@ def test_remove_spellspace_disposal_creation_removes_only_targeted_entry(
         disposal_methods=["dispose"],
     )
 
-    target = creations._creations["ss-1"]["spell-a"]
-    other = creations._creations["ss-1"]["spell-b"]
+    target = creations._disposable_creations["ss-1"]["spell-a"]
+    other = creations._disposable_creations["ss-1"]["spell-b"]
 
     creations._remove_spellspace_disposal_creation("ss-1", target)
 

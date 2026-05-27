@@ -244,9 +244,8 @@ def test_build_with_overrides_lines_shared_route_contains_expected_branches() ->
         overrides_maybe_none=True,
     )
     joined = "\n".join(lines)
-    assert "creation = _owner_creations._creations.get(_spell_id)" in joined
+    assert "creation = _owner_creations.get_creation(_spell_id)" in joined
     assert "with _spell._lock:" in joined
-    assert "with _owner_creations._lock:" in joined
     assert "_existing_override_message" in joined
 
 
@@ -284,7 +283,7 @@ def test_build_with_overrides_lines_unique_per_conduit_route_contains_lock_and_o
         overrides_maybe_none=True,
     )
     joined = "\n".join(lines)
-    assert "creation = caller_creations._creations.get(_spell_id)" in joined
+    assert "creation = caller_creations.get_creation(_spell_id)" in joined
     assert "with caller_creations._lock:" in joined
     assert "_existing_override_message" in joined
     assert "_execute_with_overrides(caller_creations, overrides, True)" in joined

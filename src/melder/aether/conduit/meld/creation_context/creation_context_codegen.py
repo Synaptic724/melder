@@ -535,18 +535,17 @@ def _build_no_overrides_lines(
         )
     if resolve_route_key == "unique_per_conduit":
         return [
-            "caller_creations_values = caller_creations._creations",
-            "creation = caller_creations_values.get(_spell_id)",
+            "creation = caller_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
             ),
             "with caller_creations._lock:",
-            "    creation = caller_creations_values.get(_spell_id)",
+            "    creation = caller_creations.get_creation(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -557,7 +556,7 @@ def _build_no_overrides_lines(
         ) + [
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
@@ -568,21 +567,17 @@ def _build_no_overrides_lines(
             "spellspace = caller_creations.get_active_spellspace()",
             "if spellspace is None:",
             "    raise _SpellSpaceScopeError(_spellspace_required_message)",
-            "spellspace_id = spellspace.id",
-            "caller_creations_values = caller_creations._creations",
-            "spellspace_bucket = caller_creations_values.get(spellspace_id)",
-            "creation = spellspace_bucket.get(_spell_id) if isinstance(spellspace_bucket, dict) else None",
+            "creation = caller_creations.get_spellspace_creation(spellspace.id, _spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
             ),
             "with caller_creations._lock:",
-            "    spellspace_bucket = caller_creations_values.get(spellspace_id)",
-            "    creation = spellspace_bucket.get(_spell_id) if isinstance(spellspace_bucket, dict) else None",
+            "    creation = caller_creations.get_spellspace_creation(spellspace.id, _spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -593,7 +588,7 @@ def _build_no_overrides_lines(
         ) + [
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
@@ -601,19 +596,17 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "shared":
         return [
-            "owner_creations_values = _owner_creations._creations",
-            "creation = owner_creations_values.get(_spell_id)",
+            "creation = _owner_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
             ),
             "with _spell._lock:",
-            "    with _owner_creations._lock:",
-            "        creation = owner_creations_values.get(_spell_id)",
+            "    creation = _owner_creations.get_creation(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -624,7 +617,7 @@ def _build_no_overrides_lines(
         ) + [
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
@@ -687,7 +680,7 @@ def _build_with_overrides_lines(
     if resolve_route_key == "unique_per_conduit":
         if not overrides_maybe_none:
             return [
-                "creation = caller_creations._creations.get(_spell_id)",
+                "creation = caller_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
                 "        spell_id=_spell.spell_index.current,",
@@ -695,7 +688,7 @@ def _build_with_overrides_lines(
                 "        message=_existing_override_message,",
                 "    )",
                 "with caller_creations._lock:",
-                "    creation = caller_creations._creations.get(_spell_id)",
+                "    creation = caller_creations.get_creation(_spell_id)",
                 "    if creation is None:",
                 "        instance = _execute_with_overrides(caller_creations, overrides, True)",
                 _prefix_two_indent(
@@ -712,7 +705,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "creation = caller_creations._creations.get(_spell_id)",
+            "creation = caller_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",
             "        raise _MeldExecutionError(",
@@ -722,13 +715,13 @@ def _build_with_overrides_lines(
             "        )",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
             ),
             "with caller_creations._lock:",
-            "    creation = caller_creations._creations.get(_spell_id)",
+            "    creation = caller_creations.get_creation(_spell_id)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(caller_creations, overrides, True)",
             _prefix_two_indent(
@@ -746,7 +739,7 @@ def _build_with_overrides_lines(
             "        )",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
@@ -796,7 +789,7 @@ def _build_with_overrides_lines(
             "        )",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
@@ -820,7 +813,7 @@ def _build_with_overrides_lines(
             "        )",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
@@ -829,7 +822,7 @@ def _build_with_overrides_lines(
     if resolve_route_key == "shared":
         if not overrides_maybe_none:
             return [
-                "creation = _owner_creations._creations.get(_spell_id)",
+                "creation = _owner_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
                 "        spell_id=_spell.spell_index.current,",
@@ -837,8 +830,7 @@ def _build_with_overrides_lines(
                 "        message=_existing_override_message,",
                 "    )",
                 "with _spell._lock:",
-                "    with _owner_creations._lock:",
-                "        creation = _owner_creations._creations.get(_spell_id)",
+                "    creation = _owner_creations.get_creation(_spell_id)",
                 "    if creation is None:",
                 "        instance = _execute_with_overrides(caller_creations, overrides, False)",
                 _prefix_two_indent(
@@ -855,26 +847,25 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "creation = _owner_creations._creations.get(_spell_id)",
+            "creation = _owner_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
+                "        raise _MeldExecutionError(",
             "            spell_id=_spell.spell_index.current,",
             "            spell_name=_spell.spell_name,",
             "            message=_existing_override_message,",
             "        )",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),
             ),
             "with _spell._lock:",
-            "    with _owner_creations._lock:",
-            "        creation = _owner_creations._creations.get(_spell_id)",
+            "    creation = _owner_creations.get_creation(_spell_id)",
             "    if creation is None:",
-            "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+                "        instance = _execute_with_overrides(caller_creations, overrides, False)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -890,7 +881,7 @@ def _build_with_overrides_lines(
             "        )",
             _prefix_one_indent(
                 _build_return_statement(
-                    value_expression="creation.value",
+                    value_expression="creation",
                     created=False,
                     return_created=return_created,
                 ),

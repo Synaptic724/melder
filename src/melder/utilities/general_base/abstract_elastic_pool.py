@@ -1,4 +1,3 @@
-import math
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -135,10 +134,8 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         self._decay_step: int = max(
             1,
             int(
-                math.floor(
-                    float(max(baseline_idle, 1))
-                    * (float(self._decay_percent_per_interval) / 100.0)
-                )
+                float(max(baseline_idle, 1))
+                * (float(self._decay_percent_per_interval) / 100.0)
             ),
         )
         self._idle: List[_T] = []
@@ -237,13 +234,15 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             now = self._time_func()
             self._apply_decay_locked(now)
             pooled_object: Optional[_T] = None
+            created_new = False
             if self._enabled and self._idle:
                 pooled_object = self._idle.pop()
-            else:
-                self._maybe_stretch_locked(now)
             if pooled_object is None:
+                created_new = True
                 pooled_object = self.create_object(*args, **kwargs)
             self._in_use_count += 1
+            if created_new:
+                self._maybe_stretch_locked(now)
             return self.prepare_object(pooled_object, *args, **kwargs)
 
     def release(self, obj: _T) -> None:
@@ -326,33 +325,33 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
 
     def _maybe_stretch_locked(self, now: float) -> None:
         """
-        Increase target idle when demand exceeds prepared capacity.
+        Increase target idle only after real capacity breach.
 
         Contract:
-            - Uses the checked-out object count to decide whether demand has
-              exceeded current prepared capacity.
+            - Called only after a new object had to be created.
+            - Uses the updated checked-out object count to decide whether
+              demand breached the retained target.
             - Expands by percentage and caps at `max_idle`.
+            - Recomputes the cached decay step once on stretch.
             - Resets the decay timers on stretch.
         """
         if not self._enabled:
             return
-        if self._in_use_count + 1 <= self._target_idle:
+        if self._in_use_count <= self._target_idle:
             return
         if self._target_idle >= self._max_idle:
             return
         current_target = max(self._target_idle, self._baseline_idle)
         stretch_amount = max(
             1,
-            int(math.ceil(float(current_target) * (float(self._stretch_percent) / 100.0))),
+            int(float(current_target) * (float(self._stretch_percent) / 100.0)),
         )
         self._target_idle = min(self._max_idle, current_target + stretch_amount)
         self._decay_step = max(
             1,
             int(
-                math.floor(
-                    float(self._target_idle)
-                    * (float(self._decay_percent_per_interval) / 100.0)
-                )
+                float(self._target_idle)
+                * (float(self._decay_percent_per_interval) / 100.0)
             ),
         )
         self._last_expand_at = now

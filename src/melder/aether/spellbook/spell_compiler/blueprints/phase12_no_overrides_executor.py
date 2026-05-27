@@ -1361,10 +1361,10 @@ def _get_existing_creation(
             Existence.unique_per_conduit_cluster,
             Existence.unique_per_conduit_lineage,
     ):
-        creation = creations._creations.get(spell_id)
+        creation = creations.get_creation(spell_id)
         if creation is None:
             return None
-        return creation.value
+        return creation
 
     if existence is Existence.unique_per_spell_space:
         spellspace = creations.get_active_spellspace()
@@ -1378,7 +1378,7 @@ def _get_existing_creation(
                 "Active SpellSpace belongs to a different conduit."
             )
         creation = creations.get_spellspace_creation(spellspace.id, spell_id)
-        return creation.value if creation is not None else None
+        return creation
 
     raise RuntimeError(
         f"[MELD] Unsupported Existence '{existence}' for creation reuse "

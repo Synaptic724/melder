@@ -17,7 +17,6 @@ from typing import (
 from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.aether.conduit.creations.creation import Creation
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -538,12 +537,12 @@ class Meld(Cleanable):
             )
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations._creations.get(spell_id)
-            if not isinstance(creation, Creation):
+            creation = caller_creations.get_creation(spell_id)
+            if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            return creation.value
+            return creation
 
         if existence is Existence.unique_per_spell_space:
             spellspace = caller_creations.get_active_spellspace()
@@ -559,7 +558,7 @@ class Meld(Cleanable):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            return creation.value
+            return creation
 
         if existence in {
                 Existence.unique,
@@ -571,12 +570,12 @@ class Meld(Cleanable):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            creation = owner_creations._creations.get(spell_id)
-            if not isinstance(creation, Creation):
+            creation = owner_creations.get_creation(spell_id)
+            if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            return creation.value
+            return creation
 
         raise RuntimeError(
             "meld_existing_spell is unsupported for existence '{0}'.".format(

@@ -573,7 +573,7 @@ def test_register_spellspace_creation_registers_instance() -> None:
 
     stored = creations.get_spellspace_creation("space-1", spell.spell_id)
     assert stored is not None
-    assert stored.value is instance
+    assert stored is instance
 
 
 def test_add_many_creations_records_instance_without_disposal() -> None:

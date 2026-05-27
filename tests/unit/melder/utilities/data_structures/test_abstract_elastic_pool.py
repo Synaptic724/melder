@@ -201,6 +201,28 @@ def test_acquire_stretches_target_when_demand_exceeds_capacity() -> None:
     assert pool.in_use_count == 3
 
 
+def test_acquire_does_not_stretch_when_reusing_idle_object() -> None:
+    """
+    Reusing an idle object should not trigger a target stretch.
+    """
+    clock = _Clock()
+    pool = _TestElasticPool(
+        baseline_idle=2,
+        stretch_percent=50,
+        max_idle=10,
+        time_func=clock,
+    )
+    first = pool.acquire()
+    second = pool.acquire()
+    pool.release(first)
+
+    reused = pool.acquire()
+
+    assert reused is first
+    assert pool.target_idle == 2
+    assert pool.in_use_count == 2
+
+
 def test_stretch_caps_at_max_idle() -> None:
     """
     Stretch should never increase target idle beyond max_idle.
