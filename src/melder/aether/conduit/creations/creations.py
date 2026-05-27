@@ -92,16 +92,14 @@ class Creations(Cleanable):
                 return
 
             self._cleaned = True
-            live_creations = self._creations
             disposable_creations = self._disposable_creations
-            self._creations = {}
+            self._creations.clear()
             self._disposable_creations = {}
 
         try:
             errors = self._dispose_disposable_registry(disposable_creations)
         except Exception as exc:
             errors = [exc]
-        live_creations.clear()
         disposable_creations.clear()
 
         del self._creations
