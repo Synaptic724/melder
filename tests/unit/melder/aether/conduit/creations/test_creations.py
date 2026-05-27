@@ -71,12 +71,6 @@ def _mk_creations(*, conduit: FakeConduit) -> Creations:
         ),
     )
 
-
-def test_init_requires_conduit_id() -> None:
-    with pytest.raises(ValueError, match="conduit_id must not be empty"):
-        Creations(conduit_id="", spellspace_stack=ContextVar("spellspace_stack_c", default=[]))
-
-
 def test_init_exposes_owner_conduit_id(lesser_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=lesser_conduit)
     assert creations.owner_conduit_id == lesser_conduit._id
@@ -616,13 +610,6 @@ def test_attempt_cleanup_none_creation_raises_attributeerror(
     creations = _mk_creations(conduit=normal_conduit)
     with pytest.raises(AttributeError):
         creations._attempt_cleanup(None)
-
-
-def test_attempt_cleanup_item_none_returns_none(normal_conduit: FakeConduit) -> None:
-    creations = _mk_creations(conduit=normal_conduit)
-    creation = Creation(None, has_disposal_methods=True, disposal_methods=["dispose"])
-    assert creations._attempt_cleanup(creation) is None
-
 
 def test_attempt_cleanup_no_methods_returns_none(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit)

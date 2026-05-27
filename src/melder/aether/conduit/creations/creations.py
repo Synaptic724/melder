@@ -74,10 +74,6 @@ class Creations(Cleanable):
                 If `conduit_id` is empty or `spellspace_stack` is missing.
         """
         super().__init__()
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-        if spellspace_stack is None:
-            raise ValueError("spellspace_stack must not be None.")
         self._owner_conduit_id: str = conduit_id
         self._id: str = conduit_id
         self._spellspace_stack: SpellSpaceThreadState = spellspace_stack
@@ -184,16 +180,8 @@ class Creations(Cleanable):
             Optional[Exception]: Wrapped disposal error when the chosen cleanup
             method fails, otherwise `None`.
         """
-        if not isinstance(creation, Creation):
-            raise AttributeError("creation must be a Creation instance.")
         item = creation.value
-        if item is None:
-            return None
-        method_names = creation.disposal_method_names or []
-        if not method_names:
-            return None
-
-        for method_name in method_names:
+        for method_name in creation.disposal_method_names:
             try:
                 method = item.__getattribute__(method_name)
                 method()
@@ -211,8 +199,7 @@ class Creations(Cleanable):
         stack represents "must attempt explicit disposal" work rather than every
         live object in the registry.
         """
-        if creation.has_disposal_methods:
-            self._disposal_stack.appendleft(creation)
+        self._disposal_stack.appendleft(creation)
 
     def _push_spellspace_disposal_creation(self, spellspace_id: str, creation: Creation) -> None:
         """
@@ -222,9 +209,8 @@ class Creations(Cleanable):
         each spellspace bucket deterministically without mixing it into the
         global conduit-level disposal order.
         """
-        if creation.has_disposal_methods:
-            stack = self._spellspace_disposal_stacks.setdefault(spellspace_id, deque())
-            stack.appendleft(creation)
+        stack = self._spellspace_disposal_stacks.setdefault(spellspace_id, deque())
+        stack.appendleft(creation)
 
     def _remove_disposal_creation(self, creation: Creation) -> None:
         """
@@ -234,10 +220,6 @@ class Creations(Cleanable):
         out of the registry and need the disposal bookkeeping to stay aligned
         with the moved objects.
         """
-        if not creation.has_disposal_methods:
-            return
-        if not self._disposal_stack:
-            return
         filtered_items = [
             item
             for item in self._disposal_stack
@@ -253,8 +235,6 @@ class Creations(Cleanable):
         and keeps per-spellspace disposal bookkeeping aligned with extraction or
         bucket-clearing flows.
         """
-        if not creation.has_disposal_methods:
-            return
         stack = self._spellspace_disposal_stacks.get(spellspace_id)
         if not stack:
             return

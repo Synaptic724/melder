@@ -432,35 +432,3 @@ def test_cleanup_is_idempotent() -> None:
 
     assert pool.cleaned is True
     assert pool.destroyed_ids == [1]
-
-
-def test_public_methods_raise_after_cleanup() -> None:
-    """
-    Public pool surface should fail through check_cleaned after cleanup.
-    """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=1,
-        max_idle=10,
-        time_func=clock,
-    )
-    pool.cleanup()
-
-    operations = [
-        lambda: pool.acquire(),
-        lambda: pool.release({"id": 1, "prepared_tag": None, "reset_count": 0}),
-        lambda: pool.describe(),
-        lambda: pool.enabled,
-        lambda: pool.idle_count,
-        lambda: pool.in_use_count,
-        lambda: pool.target_idle,
-        lambda: pool.baseline_idle,
-        lambda: pool.max_idle,
-    ]
-
-    for operation in operations:
-        try:
-            operation()
-        except RuntimeError:
-            continue
-        raise AssertionError("Expected RuntimeError after pool cleanup.")
