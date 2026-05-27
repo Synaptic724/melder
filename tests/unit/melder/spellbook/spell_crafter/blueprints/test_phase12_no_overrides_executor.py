@@ -49,13 +49,6 @@ def _make_step_row(spell_id: str) -> dict[str, object]:
     }
 
 
-class _CreationRecord:
-    """Container matching creations registry value contract."""
-
-    def __init__(self, value: Any) -> None:
-        self.value = value
-
-
 class _Spellspace:
     """Active spellspace stub used by spellspace-creation tests."""
 
@@ -69,9 +62,11 @@ class _Creations:
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
-        self._creations: dict[str, _CreationRecord] = {}
+        self._creations: dict[str, Any] = {}
+        self._disposable_creations: dict[str, Any] = {}
         self._many: list[tuple[str, Any]] = []
-        self._spellspace: dict[tuple[str, str], _CreationRecord] = {}
+        self._spellspace: dict[tuple[str, str], Any] = {}
+        self._disposable_spellspace: dict[tuple[str, str], tuple[Any, tuple[str, ...]]] = {}
         self._owner_conduit_id = "conduit-1"
         self._active_spellspace = None
 
@@ -82,6 +77,15 @@ class _Creations:
     def get_active_spellspace(self) -> Any:
         return self._active_spellspace
 
+    def get_creation(self, spell_id: str) -> Any:
+        entry = self._creations.get(spell_id)
+        if entry is not None and not isinstance(entry, list):
+            return entry
+        entry = self._disposable_creations.get(spell_id)
+        if isinstance(entry, tuple):
+            return entry[0]
+        return None
+
     def add_creation(
             self,
             spell_id: str,
@@ -90,7 +94,13 @@ class _Creations:
             has_disposal_methods: bool,
             disposal_methods: Any,
     ) -> None:
-        self._creations[spell_id] = _CreationRecord(instance)
+        if has_disposal_methods:
+            self._disposable_creations[spell_id] = (
+                instance,
+                tuple(disposal_methods),
+            )
+            return
+        self._creations[spell_id] = instance
 
     def add_many_creations(
             self,
@@ -100,7 +110,13 @@ class _Creations:
             has_disposal_methods: bool,
             disposal_methods: Any,
     ) -> None:
-        self._many.append((spell_id, instance))
+        if has_disposal_methods:
+            self._many.append((spell_id, instance))
+            self._disposable_creations.setdefault(spell_id, []).append(
+                (instance, tuple(disposal_methods)),
+            )
+            return
+        self._creations.setdefault(spell_id, []).append(instance)
 
     def register_spellspace_creation(
             self,
@@ -111,10 +127,22 @@ class _Creations:
             has_disposal_methods: bool,
             disposal_methods: Any,
     ) -> None:
-        self._spellspace[(spellspace_id, spell_id)] = _CreationRecord(instance)
+        if has_disposal_methods:
+            self._disposable_spellspace[(spellspace_id, spell_id)] = (
+                instance,
+                tuple(disposal_methods),
+            )
+            return
+        self._spellspace[(spellspace_id, spell_id)] = instance
 
     def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Any:
-        return self._spellspace.get((spellspace_id, spell_id))
+        entry = self._spellspace.get((spellspace_id, spell_id))
+        if entry is not None:
+            return entry
+        entry = self._disposable_spellspace.get((spellspace_id, spell_id))
+        if entry is None:
+            return None
+        return entry[0]
 
 
 class _ExplodingLock:
@@ -688,7 +716,7 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_crea
     """
     creations = _Creations()
     creations._lock = _ExplodingLock()
-    creations._creations["root"] = _CreationRecord("existing-root")
+    creations._creations["root"] = "existing-root"
     spell = _make_spell("root")
     spell.existence = Existence.unique
     spell._lock = _ExplodingLock()
@@ -725,7 +753,7 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock
     """
     creations = _Creations()
     creations._lock = _ExplodingLock()
-    creations._creations["root"] = _CreationRecord("existing-root")
+    creations._creations["root"] = "existing-root"
     spell = _make_spell("root")
     spell.existence = Existence.unique
     row = _make_step_row("root")

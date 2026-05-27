@@ -117,20 +117,15 @@ class _TrackingPathRegistry:
         return self._depth_map.get(path_id)
 
 
-class _CreationRecord:
-    """Container matching creations registry record contract."""
-
-    def __init__(self, value: Any) -> None:
-        self.value = value
-
-
 class _Creations:
     """Creations stub used by override emitted-route semantics tests."""
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
-        self._creations: dict[str, _CreationRecord] = {}
-        self._spellspace: dict[tuple[str, str], _CreationRecord] = {}
+        self._creations: dict[str, Any] = {}
+        self._disposable_creations: dict[str, Any] = {}
+        self._spellspace: dict[tuple[str, str], Any] = {}
+        self._disposable_spellspace: dict[tuple[str, str], tuple[Any, tuple[str, ...]]] = {}
         self._owner_conduit_id = "conduit-1"
         self._active_spellspace = None
 
@@ -141,6 +136,15 @@ class _Creations:
     def get_active_spellspace(self) -> Any:
         return self._active_spellspace
 
+    def get_creation(self, spell_id: str) -> Any:
+        entry = self._creations.get(spell_id)
+        if entry is not None and not isinstance(entry, list):
+            return entry
+        entry = self._disposable_creations.get(spell_id)
+        if isinstance(entry, tuple):
+            return entry[0]
+        return None
+
     def add_creation(
             self,
             spell_id: str,
@@ -149,7 +153,13 @@ class _Creations:
             has_disposal_methods: bool,
             disposal_methods: Any,
     ) -> None:
-        self._creations[spell_id] = _CreationRecord(instance)
+        if has_disposal_methods:
+            self._disposable_creations[spell_id] = (
+                instance,
+                tuple(disposal_methods),
+            )
+            return
+        self._creations[spell_id] = instance
 
     def add_many_creations(
             self,
@@ -159,7 +169,12 @@ class _Creations:
             has_disposal_methods: bool,
             disposal_methods: Any,
     ) -> None:
-        self._creations[spell_id] = _CreationRecord(instance)
+        if has_disposal_methods:
+            self._disposable_creations.setdefault(spell_id, []).append(
+                (instance, tuple(disposal_methods)),
+            )
+            return
+        self._creations.setdefault(spell_id, []).append(instance)
 
     def register_spellspace_creation(
             self,
@@ -170,10 +185,22 @@ class _Creations:
             has_disposal_methods: bool,
             disposal_methods: Any,
     ) -> None:
-        self._spellspace[(spellspace_id, spell_id)] = _CreationRecord(instance)
+        if has_disposal_methods:
+            self._disposable_spellspace[(spellspace_id, spell_id)] = (
+                instance,
+                tuple(disposal_methods),
+            )
+            return
+        self._spellspace[(spellspace_id, spell_id)] = instance
 
     def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Any:
-        return self._spellspace.get((spellspace_id, spell_id))
+        entry = self._spellspace.get((spellspace_id, spell_id))
+        if entry is not None:
+            return entry
+        entry = self._disposable_spellspace.get((spellspace_id, spell_id))
+        if entry is None:
+            return None
+        return entry[0]
 
 
 def test_compile_phase12_overrides_executor_requires_spell_lookup_for_schema_rows() -> None:
@@ -773,7 +800,7 @@ def test_compile_phase12_overrides_executor_rejects_root_override_on_existing_sh
     Root-level override payloads reject reuse of an existing shared root instance.
     """
     creations = _Creations()
-    creations._creations["root"] = _CreationRecord("existing-root")
+    creations._creations["root"] = "existing-root"
     spell = _make_spell("root")
     spell.existence = Existence.unique
     spell._owner_creations = creations
@@ -811,7 +838,7 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     Targeted socket overrides reject reuse of an existing shared instance.
     """
     creations = _Creations()
-    creations._creations["dep"] = _CreationRecord("existing-dep")
+    creations._creations["dep"] = "existing-dep"
     root_spell = _make_spell("root")
     dep_spell = _make_spell("dep")
     dep_spell.existence = Existence.unique_per_conduit
@@ -856,7 +883,7 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
         owner_conduit_id=creations.owner_conduit_id,
     )
     creations._active_spellspace = active_spellspace
-    creations._spellspace[(active_spellspace.id, "dep")] = _CreationRecord("existing-dep")
+    creations._spellspace[(active_spellspace.id, "dep")] = "existing-dep"
 
     root_spell = _make_spell("root")
     dep_spell = _make_spell("dep")
