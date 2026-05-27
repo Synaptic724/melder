@@ -137,6 +137,9 @@ class ConduitWard(Cleanable):
             - Binds the ward permanently to one owning conduit id/display.
             - Seeds contract indices, lineage pointers, and policy state for
               that conduit.
+            - Only normal conduits own a registered ward-level dev-ops
+              identity. Lesser wards do not build that identity until they are
+              converted to normal.
             - Resolves the initial policy through `_set_initial_policy(...)`
               so the ward starts from one validated policy value.
             - Does not create any peer contracts or lineage links by itself;
@@ -184,21 +187,10 @@ class ConduitWard(Cleanable):
             conduit if conduit_type == ConduitState.normal else None
         )
         self._lesser_conduits: Dict[str, Conduit] = {} # [Lesser ConduitID] -> Lesser Conduit
-        self._devops_identity: DevopsIdentity = DevopsIdentity(
-            owner_kind="conduit_ward",
-            owner_id=self._id,
-            aetheric_frame_name=conduit._aetheric_frame_name,
-            metadata={
-                "conduit_id": conduit._id,
-                "dynamic": self._dynamic,
-                "conduit_state": self._conduit_type.value,
-            },
-            available_transactions=tuple(),
-        )
+        self._devops_identity: Optional[DevopsIdentity] = None
         if conduit_type is ConduitState.normal:
-            self._devops_identity.attach_registry(
+            self._ensure_devops_identity_registered(
                 aetheric_frame.devops_information_registry,
-                object_ref=self,
             )
 
         try:
@@ -255,7 +247,8 @@ class ConduitWard(Cleanable):
             del self._parent_conduit
             del self._root_conduit
             del self._policy
-            self._devops_identity.cleanup()
+            if self._devops_identity is not None:
+                self._devops_identity.cleanup()
             del self._devops_identity
             del self._conduit
             del self._conduit_cloud
@@ -431,6 +424,48 @@ class ConduitWard(Cleanable):
     #endregion Properties
 
     #region Conduit Ward Configuration
+    def _ensure_devops_identity_registered(
+            self,
+            registry: Any,
+    ) -> None:
+        """
+        Internal
+
+        Ensure this normal ward owns one registered dev-ops identity.
+
+        Contract:
+            - No-op for non-normal conduit wards.
+            - Creates the ward identity on first use only.
+            - Registers the identity into the supplied frame registry.
+            - Uses the conduit id as the stable owner id so strategy-level
+              `("conduit_ward", conduit_id)` identity keys stay valid.
+
+        Args:
+            registry (Any):
+                Frame-owned dev-ops information registry.
+
+        Returns:
+            None.
+        """
+        if self._conduit_type is not ConduitState.normal:
+            return
+        if self._devops_identity is None:
+            self._devops_identity = DevopsIdentity(
+                owner_kind="conduit_ward",
+                owner_id=self._id,
+                aetheric_frame_name=self._conduit._aetheric_frame_name,
+                metadata={
+                    "conduit_id": self._conduit._id,
+                    "dynamic": self._dynamic,
+                    "conduit_state": self._conduit_type.value,
+                },
+                available_transactions=tuple(),
+            )
+        self._devops_identity.attach_registry(
+            registry,
+            object_ref=self,
+        )
+
     def _convert_to_normal_conduit(self) -> None:
         """
         Internal
@@ -467,6 +502,9 @@ class ConduitWard(Cleanable):
                 self._root_conduit = self._conduit
                 self._conduit_type = ConduitState.normal
                 self._policy = Policies.default
+                self._ensure_devops_identity_registered(
+                    self._conduit._aetheric_frame.devops_information_registry,
+                )
                 self._logger.info(
                     "convert_to_normal: success",
                     method_name="_convert_to_normal_conduit",

@@ -43,6 +43,7 @@ def test_artifact_later_phase_fields_start_empty() -> None:
     artifact = SpellCompilerArtifact("spell-1")
 
     assert artifact._root_blueprint_phase5 is None
+    assert artifact._requires_spellspace_request_phase5 is False
     assert artifact._occurrence_plan_phase8 is None
     assert artifact._injection_plan_phase9 is None
     assert artifact._override_patch_map_phase10 is None
@@ -199,6 +200,7 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     """clear_phase5_artifacts should clear rooted and later-plan state."""
     artifact = SpellCompilerArtifact("spell-1")
     artifact._root_blueprint_phase5 = object()
+    artifact._requires_spellspace_request_phase5 = True
     artifact._phase8_occurrence_plan_input_signature = "phase8"
     artifact._phase9_injection_plan_input_signature = "phase9"
     artifact._phase10_patch_maps_input_signature = ("phase10",)
@@ -216,6 +218,7 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     artifact.clear_phase5_artifacts()
 
     assert artifact._root_blueprint_phase5 is None
+    assert artifact._requires_spellspace_request_phase5 is False
     assert artifact._phase8_occurrence_plan_input_signature is None
     assert artifact._phase9_injection_plan_input_signature is None
     assert artifact._phase10_patch_maps_input_signature is None

@@ -64,6 +64,7 @@ class SpellCompilerArtifact(Cleanable):
         "_validated_phase6",
         "_validated",
         "_root_blueprint_phase5",
+        "_requires_spellspace_request_phase5",
         "_phase8_occurrence_plan_input_signature",
         "_phase8_occurrence_plan_fast_key",
         "_occurrence_plan_phase8",
@@ -117,6 +118,7 @@ class SpellCompilerArtifact(Cleanable):
         self._validated_phase6: bool = False
         self._validated: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
+        self._requires_spellspace_request_phase5: bool = False
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
@@ -232,6 +234,7 @@ class SpellCompilerArtifact(Cleanable):
 
             del self.spell_id
             del self._root_blueprint_phase5
+            del self._requires_spellspace_request_phase5
             del self._phase8_occurrence_plan_input_signature
             del self._phase8_occurrence_plan_fast_key
             del self._occurrence_plan_phase8
@@ -344,6 +347,7 @@ class SpellCompilerArtifact(Cleanable):
         """
         self.check_cleaned()
         self._root_blueprint_phase5 = None
+        self._requires_spellspace_request_phase5 = False
         self._phase8_occurrence_plan_input_signature = None
         self._phase8_occurrence_plan_fast_key = None
 

@@ -66,6 +66,7 @@ def _make_conduit_with_ward(
     conduit._spellbook = MagicMock()
     conduit._spellbook._aether = MagicMock()
     conduit._ward_frame = _make_frame_with_cloud()
+    conduit._aetheric_frame = conduit._ward_frame
     ward = ConduitWard(
         conduit,
         dynamic,
@@ -87,6 +88,7 @@ def mock_conduit():
     c._spellbook = MagicMock()
     c._spellbook._aether = MagicMock()
     c._ward_frame = _make_frame_with_cloud()
+    c._aetheric_frame = c._ward_frame
     # Circular ref often needed
     return c
 
@@ -128,7 +130,25 @@ def test_init_success(mock_conduit):
     assert w._policy == Policies.default
     assert w._conduit_type == ConduitState.normal
     assert w._dynamic is True
-    assert w._initiated_index == {}
+    assert w._devops_identity is not None
+
+
+def test_init_lesser_skips_ward_devops_identity() -> None:
+    """
+    Verify lesser wards do not allocate a ward-level dev-ops identity.
+
+    Contract:
+        - Lesser wards keep `_devops_identity` unset (`None`) at init.
+        - No registry-backed ward identity is created until conversion to normal.
+    """
+    conduit, ward = _make_conduit_with_ward(
+        "lesser-ward-1",
+        conduit_state=ConduitState.lesser,
+    )
+
+    assert conduit._conduit_state == ConduitState.lesser
+    assert ward._devops_identity is None
+    assert ward._initiated_index == {}
 
 def test_init_sets_default_policy_if_none(mock_conduit):
     """Verify None policy defaults to Policies.default."""
@@ -1036,6 +1056,12 @@ def test_convert_to_normal_conduit_success_resets_state():
     assert lesser_ward._parent_conduit is None
     assert lesser_ward._conduit_type == ConduitState.normal
     assert lesser_ward._policy == Policies.default
+    assert lesser_ward._devops_identity is not None
+    identity = lesser_ward._conduit._aetheric_frame.devops_information_registry.get_identity(
+        owner_kind="conduit_ward",
+        owner_id=lesser_ward._id,
+    )
+    assert identity is lesser_ward._devops_identity
 
 # ----------------------------------------------------------------------
 # 11. Validation Helpers
