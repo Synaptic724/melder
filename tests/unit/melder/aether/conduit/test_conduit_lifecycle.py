@@ -594,6 +594,8 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     Raises:
         AssertionError: If cleanup is not idempotent.
     """
+    conduit_lesser._nexus = MagicMock()
+    conduit_lesser._nexus_publish_enabled = True
     conduit_lesser._conduit_ward = MagicMock()
     conduit_lesser._meld = MagicMock()
     conduit_lesser._creations = MagicMock()
@@ -603,9 +605,75 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     assert conduit_lesser._conduit_state is ConduitState.pooled_lesser
     assert (
         conduit_lesser._transaction_identity.metadata["conduit_state"]
+        == ConduitState.lesser.value
+    )
+    conduit_lesser._nexus._publish_conduit_record.assert_not_called()
+    assert hasattr(conduit_lesser, "_nexus")
+
+
+def test_create_fresh_lesser_conduit_publishes_once_when_nexus_enabled(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify fresh lesser creation still publishes into Nexus when enabled.
+
+    Contract:
+        - Fresh lesser creation retains the original passive-ingest publish.
+        - The publish target is the newly created lesser conduit instance.
+    """
+    conduit_normal._nexus_publish_enabled = True
+    conduit_normal._spellbook._nexus = MagicMock()
+    conduit_normal._nexus = conduit_normal._spellbook._nexus
+
+    lesser = conduit_normal.create_lesser_conduit()
+
+    conduit_normal._spellbook._nexus._publish_conduit_record.assert_called_once_with(
+        lesser
+    )
+
+
+def test_create_lesser_conduit_from_pool_skips_nexus_publish_and_identity_refresh(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify pooled lesser reactivation stays local.
+
+    Contract:
+        - A retained pooled lesser returns to active `lesser` state.
+        - Reactivation does not republish to Nexus.
+        - Reactivation does not refresh dev-ops identity metadata.
+    """
+    conduit_normal._nexus_publish_enabled = True
+    conduit_normal._nexus = MagicMock()
+
+    pooled = Conduit(
+        spellbook=conduit_normal._spellbook,
+        configuration=conduit_normal._configuration,
+        conduit_state=ConduitState.lesser,
+        aetheric_frame_name=conduit_normal._aetheric_frame_name,
+        aetheric_frame=conduit_normal._aetheric_frame,
+        policy=Policies.default,
+        root_conduit_id=conduit_normal._id,
+        creation_gate_controller=conduit_normal._creation_gate_controller,
+    )
+    pooled._nexus = MagicMock()
+    pooled._nexus_publish_enabled = True
+    pooled._conduit_state = ConduitState.pooled_lesser
+    pooled._conduit_ward._conduit_type = ConduitState.pooled_lesser
+    pooled._transaction_identity.update_metadata(
+        conduit_state=ConduitState.pooled_lesser.value
+    )
+    conduit_normal._conduit_pool.return_lesser_conduit(pooled)
+
+    reused = conduit_normal.create_lesser_conduit()
+
+    assert reused is pooled
+    assert reused._conduit_state is ConduitState.lesser
+    assert (
+        reused._transaction_identity.metadata["conduit_state"]
         == ConduitState.pooled_lesser.value
     )
-    assert hasattr(conduit_lesser, "_nexus")
+    reused._nexus._publish_conduit_record.assert_not_called()
 
 
 def test_cleanup_raises_for_unknown_conduit_state(conduit_normal: Conduit) -> None:

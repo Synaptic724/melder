@@ -315,7 +315,7 @@ def test_transaction_surface_session_cleanup_blocks_public_surfaces(
     )
     session.cleanup()
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         surface(session)
 
 

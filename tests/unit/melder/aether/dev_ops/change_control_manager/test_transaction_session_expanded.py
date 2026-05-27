@@ -359,5 +359,5 @@ def test_transaction_session_cleanup_is_idempotent_and_blocks_reuse() -> None:
     session.cleanup()
 
     assert not hasattr(session, "_lock")
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         session.describe()

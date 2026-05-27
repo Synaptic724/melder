@@ -263,7 +263,7 @@ class TransactionMediator(Cleanable):
             max_transaction_wait_time_in_seconds:
                 Maximum seconds a queued root start may wait.
         """
-        self.check_cleaned()
+        
         normalized_mode = self._normalize_mode(change_control_mode)
         if not isinstance(allow_multiple_root_transactions, bool):
             raise TypeError("allow_multiple_root_transactions must be a bool.")
@@ -322,7 +322,7 @@ class TransactionMediator(Cleanable):
             RuntimeError: If nested different-root start is attempted.
             RuntimeError: If strict mode rejects a cross-thread root collision.
         """
-        self.check_cleaned()
+        
         current_thread_id = threading.get_ident()
         active = self.get_active_session()
         if active is not None:
@@ -427,7 +427,7 @@ class TransactionMediator(Cleanable):
         Returns:
             TransactionSession: The active root session for this frame.
         """
-        self.check_cleaned()
+        
         if identity is None:
             raise ValueError("identity must not be None.")
 
@@ -542,7 +542,7 @@ class TransactionMediator(Cleanable):
         """
         Return the newest local session matching one identity and transaction kind.
         """
-        self.check_cleaned()
+        
         if identity is None:
             raise ValueError("identity must not be None.")
         transaction_name = self._normalize_transaction_name(transaction_type)
@@ -609,7 +609,7 @@ class TransactionMediator(Cleanable):
                 `True` when an active matching session was found and updated,
                 otherwise `False`.
         """
-        self.check_cleaned()
+        
         if identity is None:
             raise ValueError("identity must not be None.")
         session = self.get_session_for_identity(
@@ -642,7 +642,7 @@ class TransactionMediator(Cleanable):
             request shaping and bind lifecycle registration stay in the
             mediator rather than in the caller.
         """
-        self.check_cleaned()
+        
         transaction_name = self._normalize_transaction_name(transaction_type)
         if transaction_name in (
                 "bind",
@@ -668,7 +668,7 @@ class TransactionMediator(Cleanable):
         """
         End one high-level transaction by identity and transaction kind.
         """
-        self.check_cleaned()
+        
         session = self.get_session_for_identity(
             identity=identity,
             transaction_type=transaction_type,
@@ -698,7 +698,7 @@ class TransactionMediator(Cleanable):
         """
         Return one live session by request id, if present.
         """
-        self.check_cleaned()
+        
         if not isinstance(request_id, str):
             raise TypeError("request_id must be a string.")
         if not request_id.strip():
@@ -724,7 +724,7 @@ class TransactionMediator(Cleanable):
         Returns:
             TransactionSession: The session whose frame was ended.
         """
-        self.check_cleaned()
+        
         session = self.get_active_session()
         if session is None:
             raise RuntimeError("No active transaction session exists on this thread.")
@@ -749,7 +749,7 @@ class TransactionMediator(Cleanable):
         """
         End one specific active transaction frame identified by request id.
         """
-        self.check_cleaned()
+        
         session = self._get_session_or_raise(request_id)
         current_thread_id = threading.get_ident()
         if session.owner_thread_id != current_thread_id:
@@ -795,7 +795,7 @@ class TransactionMediator(Cleanable):
             RuntimeError: If no active session exists on the current thread.
             Exception: Propagates commit pipeline failures after abort cleanup.
         """
-        self.check_cleaned()
+        
         stack = self._get_stack()
         if not stack:
             raise RuntimeError("No active transaction session exists on this thread.")
@@ -824,7 +824,7 @@ class TransactionMediator(Cleanable):
         """
         Mark the current active session abort-only on the current thread.
         """
-        self.check_cleaned()
+        
         session = self.get_active_session()
         if session is None:
             raise RuntimeError("No active transaction session exists on this thread.")
@@ -834,7 +834,7 @@ class TransactionMediator(Cleanable):
         """
         Return the active session for the current thread, if any.
         """
-        self.check_cleaned()
+        
         stack = self._get_stack()
         if not stack:
             return None
@@ -846,7 +846,7 @@ class TransactionMediator(Cleanable):
         """
         Return the active root request for the current thread, if any.
         """
-        self.check_cleaned()
+        
         session = self.get_active_session()
         if session is None:
             return None
@@ -856,14 +856,14 @@ class TransactionMediator(Cleanable):
         """
         Return whether the current thread has an active session frame.
         """
-        self.check_cleaned()
+        
         return self.get_active_session() is not None
 
     def describe(self) -> dict:
         """
         Return a detached diagnostic snapshot of mediator state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "change_control_mode": self._change_control_mode,
@@ -1144,7 +1144,7 @@ class TransactionMediator(Cleanable):
         """
         Resolve and start one strategy-owned transaction.
         """
-        self.check_cleaned()
+        
         active = self.get_session_for_identity(
             identity=identity,
             transaction_type=transaction_type,

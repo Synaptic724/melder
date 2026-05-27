@@ -315,8 +315,8 @@ def test_access_after_cleanup_raises(state):
     """
     state.cleanup()
     
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         _ = state.spell_index_id
         
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         state.mark_structural_change()

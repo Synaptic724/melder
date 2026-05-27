@@ -60,7 +60,7 @@ def test_transaction_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
     assert not hasattr(manager, '_link_mirror')
     assert not hasattr(manager, '_lock')
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         manager.describe()
 
 

@@ -107,7 +107,7 @@ class IncidentManager(Cleanable):
             DevopsInformationRegistry:
                 Borrowed topology/transaction registry for this frame.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._devops_information_registry
 
@@ -154,7 +154,7 @@ class IncidentManager(Cleanable):
         Raises:
             RuntimeError: If the manager has already been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             incident_id = self._allocate_id()
             incident = Incident(
@@ -182,7 +182,7 @@ class IncidentManager(Cleanable):
         Raises:
             RuntimeError: If the manager has already been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._incidents_by_id.get(incident_id)
 
@@ -210,7 +210,7 @@ class IncidentManager(Cleanable):
         Raises:
             RuntimeError: If the manager has already been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             result: List[Incident] = []
             for inc in self._incidents_by_id.values():

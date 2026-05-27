@@ -230,7 +230,7 @@ class DevopsInformationRegistry(Cleanable):
         RuntimeError
             If the registry has been cleaned.
         """
-        self.check_cleaned()
+        
         return self._aetheric_frame_name
 
     def register_identity(
@@ -267,7 +267,7 @@ class DevopsInformationRegistry(Cleanable):
         "_objects_by_key". The owner-kind index "_identity_keys_by_kind" is also
         updated so callers can list all identities of a given kind.
         """
-        self.check_cleaned()
+        
         if identity is None:
             raise ValueError("identity must not be None.")
         if identity.aetheric_frame_name != self._aetheric_frame_name:
@@ -327,7 +327,7 @@ class DevopsInformationRegistry(Cleanable):
         RuntimeError
             none; this method is intentionally idempotent for missing keys.
         """
-        self.check_cleaned()
+        
         if identity is not None:
             owner_kind = identity.owner_kind
             owner_id = identity.owner_id
@@ -409,7 +409,7 @@ class DevopsInformationRegistry(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
+        
         if identity is None:
             raise ValueError("identity must not be None.")
         if identity.aetheric_frame_name != self._aetheric_frame_name:
@@ -450,7 +450,7 @@ class DevopsInformationRegistry(Cleanable):
         -----
         "owner_kind" is normalized with "strip().lower()" before lookup.
         """
-        self.check_cleaned()
+        
         if not owner_kind or not owner_id:
             return None
         with self._lock:
@@ -482,7 +482,7 @@ class DevopsInformationRegistry(Cleanable):
         The key may exist without a concrete object reference. In that case "None"
         is returned from this lookup even when the identity itself exists.
         """
-        self.check_cleaned()
+        
         if not owner_kind or not owner_id:
             return None
         with self._lock:
@@ -502,7 +502,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted conduit ids for deterministic output.
         """
-        self.check_cleaned()
+        
         if not spellbook_id:
             return tuple()
         with self._lock:
@@ -538,7 +538,7 @@ class DevopsInformationRegistry(Cleanable):
             spellbook, because that violates the current bind-family topology
             assumption.
         """
-        self.check_cleaned()
+        
         conduit_ids = self.get_conduits_for_spellbook(spellbook_id)
         if not conduit_ids:
             return None
@@ -564,7 +564,7 @@ class DevopsInformationRegistry(Cleanable):
             Live conduit objects currently known for the spellbook. Missing
             object references are skipped.
         """
-        self.check_cleaned()
+        
         conduit_ids = self.get_conduits_for_spellbook(spellbook_id)
         objects: List[Any] = []
         for conduit_id in conduit_ids:
@@ -587,7 +587,7 @@ class DevopsInformationRegistry(Cleanable):
         str | None
             Owning spellbook id when present, else "None".
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             return None
         with self._lock:
@@ -608,7 +608,7 @@ class DevopsInformationRegistry(Cleanable):
             Live spellbook object when both the ownership relation and object
             reference are present, otherwise `None`.
         """
-        self.check_cleaned()
+        
         spellbook_id = self.get_spellbook_for_conduit(conduit_id)
         if spellbook_id is None:
             return None
@@ -645,7 +645,7 @@ class DevopsInformationRegistry(Cleanable):
         - "_provider_to_borrowers[provider]"
         - "_borrower_to_providers[borrower]"
         """
-        self.check_cleaned()
+        
         if not provider_conduit_id or not borrower_conduit_id:
             raise ValueError(
                 "provider_conduit_id and borrower_conduit_id are required."
@@ -682,7 +682,7 @@ class DevopsInformationRegistry(Cleanable):
         -----
         This is an idempotent operation and performs cleanup of empty edge buckets.
         """
-        self.check_cleaned()
+        
         if not provider_conduit_id or not borrower_conduit_id:
             return
         with self._lock:
@@ -711,7 +711,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted borrower conduit ids. Empty tuple when unset.
         """
-        self.check_cleaned()
+        
         if not provider_conduit_id:
             return tuple()
         with self._lock:
@@ -737,7 +737,7 @@ class DevopsInformationRegistry(Cleanable):
             Live borrower conduit objects. Missing object references are
             skipped.
         """
-        self.check_cleaned()
+        
         borrower_ids = self.list_borrowers_for_provider(provider_conduit_id)
         borrowers: List[Any] = []
         for borrower_id in borrower_ids:
@@ -760,7 +760,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted provider conduit ids. Empty tuple when unset.
         """
-        self.check_cleaned()
+        
         if not borrower_conduit_id:
             return tuple()
         with self._lock:
@@ -786,7 +786,7 @@ class DevopsInformationRegistry(Cleanable):
             Live provider conduit objects. Missing object references are
             skipped.
         """
-        self.check_cleaned()
+        
         provider_ids = self.list_providers_for_borrower(borrower_conduit_id)
         providers: List[Any] = []
         for provider_id in provider_ids:
@@ -824,7 +824,7 @@ class DevopsInformationRegistry(Cleanable):
         -----
         Updates both cluster->conduit and conduit->cluster indexes.
         """
-        self.check_cleaned()
+        
         if not cluster_id or not conduit_id:
             raise ValueError("cluster_id and conduit_id are required.")
         with self._lock:
@@ -851,7 +851,7 @@ class DevopsInformationRegistry(Cleanable):
         -------
         None
         """
-        self.check_cleaned()
+        
         if not cluster_id or not conduit_id:
             return
         with self._lock:
@@ -880,7 +880,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted conduit ids under that cluster.
         """
-        self.check_cleaned()
+        
         if not cluster_id:
             return tuple()
         with self._lock:
@@ -900,7 +900,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted cluster ids that currently contain the conduit.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             return tuple()
         with self._lock:
@@ -921,7 +921,7 @@ class DevopsInformationRegistry(Cleanable):
             Live cluster objects for the conduit. Missing object references are
             skipped.
         """
-        self.check_cleaned()
+        
         cluster_ids = self.get_clusters_for_conduit(conduit_id)
         clusters: List[Any] = []
         for cluster_id in cluster_ids:
@@ -972,7 +972,7 @@ class DevopsInformationRegistry(Cleanable):
         - type is lower-cased
         - identity kinds are lower-cased and stripped
         """
-        self.check_cleaned()
+        
         if not transaction_id:
             raise ValueError("transaction_id must not be empty.")
         if transaction_object is None:
@@ -1021,7 +1021,7 @@ class DevopsInformationRegistry(Cleanable):
         Safe when transaction id is missing. It is removed from identity and type
         indexes as well as direct storage.
         """
-        self.check_cleaned()
+        
         if not transaction_id:
             return
         with self._lock:
@@ -1058,7 +1058,7 @@ class DevopsInformationRegistry(Cleanable):
         Any | None
             Stored transaction object if present.
         """
-        self.check_cleaned()
+        
         if not transaction_id:
             return None
         with self._lock:
@@ -1085,7 +1085,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted transaction ids.
         """
-        self.check_cleaned()
+        
         if not owner_kind or not owner_id:
             return tuple()
         identity_key = (owner_kind.strip().lower(), owner_id)
@@ -1116,7 +1116,7 @@ class DevopsInformationRegistry(Cleanable):
             Live transaction objects currently indexed to that identity.
             Missing transaction objects are skipped.
         """
-        self.check_cleaned()
+        
         transaction_ids = self.list_transaction_ids_for_identity(
             owner_kind=owner_kind,
             owner_id=owner_id,
@@ -1142,7 +1142,7 @@ class DevopsInformationRegistry(Cleanable):
         tuple[str, ...]
             Sorted transaction ids by type.
         """
-        self.check_cleaned()
+        
         if not transaction_type:
             return tuple()
         normalized_type = transaction_type.strip().lower()
@@ -1164,7 +1164,7 @@ class DevopsInformationRegistry(Cleanable):
             Live transaction objects currently indexed to that type. Missing
             transaction objects are skipped.
         """
-        self.check_cleaned()
+        
         transaction_ids = self.list_transaction_ids_for_type(transaction_type)
         transactions: List[Any] = []
         for transaction_id in transaction_ids:
@@ -1220,7 +1220,7 @@ class DevopsInformationRegistry(Cleanable):
         The snapshot intentionally excludes raw object references and transaction
         payloads; it returns high-level counts and indexed ids for safe telemetry.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "aetheric_frame_name": self._aetheric_frame_name,

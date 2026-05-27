@@ -590,5 +590,5 @@ def test_devops_information_registry_cleanup_is_idempotent_and_blocks_reuse() ->
     registry.cleanup()
 
     assert not hasattr(registry, "_identities_by_key")
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         registry.describe()

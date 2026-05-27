@@ -170,7 +170,7 @@ class DevOpsManager(Cleanable):
         Returns:
             IncidentManager: The incident manager owned by this DevOps root.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._incident_manager
 
@@ -186,7 +186,7 @@ class DevOpsManager(Cleanable):
             ChangeControlManager: The change-control manager owned by this
             DevOps root.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._change_control_manager
 
@@ -201,7 +201,7 @@ class DevOpsManager(Cleanable):
         Returns:
             RiskManager: The risk manager owned by this DevOps root.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._risk_manager
 
@@ -216,7 +216,7 @@ class DevOpsManager(Cleanable):
             CreationGateController: The gate controller owned by this DevOps
             root.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._creation_gate_controller
 
@@ -232,7 +232,7 @@ class DevOpsManager(Cleanable):
             DevopsInformationRegistry:
                 The borrowed frame-owned registry.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._devops_information_registry
 
@@ -264,7 +264,7 @@ class DevOpsManager(Cleanable):
             ValueError:
                 If conduit_id is empty.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         with self._lock:
@@ -297,7 +297,7 @@ class DevOpsManager(Cleanable):
             RuntimeError:
                 If manager has been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             gate = self._creation_gate_controller.get_conduit_gate(conduit_id)
             if gate is None:
@@ -328,7 +328,7 @@ class DevOpsManager(Cleanable):
             RuntimeError:
                 If manager has been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             gate = self._creation_gate_controller.get_conduit_gate(conduit_id)
             if gate is None:
@@ -367,7 +367,7 @@ class DevOpsManager(Cleanable):
             RuntimeError:
                 If manager has been cleaned or the gate drain times out.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._creation_gate_controller.close_and_wait_until_conduit_free(
                 conduit_id,
@@ -399,7 +399,7 @@ class DevOpsManager(Cleanable):
             RuntimeError:
                 If manager has been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             lineage_map = self._creation_gate_controller.get_conduit_lineage_gates(root_conduit_id)
             for gate in lineage_map.values():
@@ -429,7 +429,7 @@ class DevOpsManager(Cleanable):
             RuntimeError:
                 If manager has been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             lineage_map = self._creation_gate_controller.get_conduit_lineage_gates(root_conduit_id)
             for gate in lineage_map.values():
@@ -467,7 +467,7 @@ class DevOpsManager(Cleanable):
             RuntimeError:
                 If manager has been cleaned or any lineage gate drain times out.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._creation_gate_controller.close_and_wait_until_conduit_lineage_free(
                 root_conduit_id,
@@ -487,6 +487,6 @@ class DevOpsManager(Cleanable):
             SpellSystemStates: The frame-local spell-system state registry
             owned by this DevOps root.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._spell_system_states

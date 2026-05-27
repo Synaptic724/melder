@@ -134,7 +134,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the internal lock while updating the hook reference.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._commit_validator = fn
 
@@ -160,7 +160,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the internal lock while updating the hook reference.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._commit_hook = fn
 
@@ -186,7 +186,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the internal lock while updating the hook reference.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._abort_hook = fn
 
@@ -209,7 +209,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the internal lock while reading state.
         """
-        self.check_cleaned()
+        
         if not request_id:
             return None
         with self._lock:
@@ -231,7 +231,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the internal lock while copying state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return tuple(self._staged.values())
 
@@ -273,7 +273,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the admission lock while updating staged metadata.
         """
-        self.check_cleaned()
+        
         if not request_id:
             return False
         normalized_scope_keys = (
@@ -323,7 +323,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Caller must hold the orchestrator lock.
         """
-        self.check_cleaned()
+        
         self._staged[request.request_id] = ChangeControlStagedMutation.from_request(
             request_id=request.request_id,
             request_type=request.request_type,
@@ -374,7 +374,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the admission lock for the entire decision path.
         """
-        self.check_cleaned()
+        
         with self._lock:
             conflicts = conflict_manager.find_conflicts(
                 request,
@@ -433,7 +433,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the admission lock while finalizing.
         """
-        self.check_cleaned()
+        
         request: Optional[ChangeControlTransactionRequest] = None
         cleanup_request: Optional[ChangeControlTransactionRequest] = None
         staged: Optional[ChangeControlStagedMutation] = None
@@ -513,7 +513,7 @@ class ChangeControlOrchestrator(Cleanable):
         Threading:
             Acquires the admission lock while finalizing.
         """
-        self.check_cleaned()
+        
         request_snapshot: Optional[ChangeControlTransactionRequest] = None
         staged: Optional[ChangeControlStagedMutation] = None
         abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None

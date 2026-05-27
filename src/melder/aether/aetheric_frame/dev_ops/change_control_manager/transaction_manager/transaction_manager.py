@@ -138,7 +138,7 @@ class ChangeControlTransactionManager(Cleanable):
         Args:
             fn: Callable that receives admitted requests, or `None`.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._audit_log_fn = fn
 
@@ -190,7 +190,7 @@ class ChangeControlTransactionManager(Cleanable):
         Threading:
             Thread-safe without lock; no shared state is mutated.
         """
-        self.check_cleaned()
+        
         if not isinstance(initiator_conduit_id, str):
             raise TypeError("initiator_conduit_id must be a string.")
         if not initiator_conduit_id.strip():
@@ -234,7 +234,7 @@ class ChangeControlTransactionManager(Cleanable):
         Returns:
             Tuple[str, ...]: Deterministic scope hash values.
         """
-        self.check_cleaned()
+        
         unique_keys = sorted({key for key in scope_keys if key})
         hashes: List[str] = []
         for key in unique_keys:
@@ -253,7 +253,7 @@ class ChangeControlTransactionManager(Cleanable):
         Returns:
             str: Scope key in the form `"scope:spellbook:<id>"`.
         """
-        self.check_cleaned()
+        
         if not spellbook_id:
             raise ValueError("spellbook_id cannot be empty")
         return f"scope:spellbook:{spellbook_id}"
@@ -282,7 +282,7 @@ class ChangeControlTransactionManager(Cleanable):
             str:
                 Scope key in the form `"scope:<owner_kind>:<owner_id>"`.
         """
-        self.check_cleaned()
+        
         if not owner_kind:
             raise ValueError("owner_kind cannot be empty")
         if not owner_id:
@@ -317,7 +317,7 @@ class ChangeControlTransactionManager(Cleanable):
                 Scope key in the form
                 `"scope:transaction:<owner_kind>:<owner_id>:<transaction_name>"`.
         """
-        self.check_cleaned()
+        
         if not owner_kind:
             raise ValueError("owner_kind cannot be empty")
         if not owner_id:
@@ -338,7 +338,7 @@ class ChangeControlTransactionManager(Cleanable):
         Returns:
             str: Scope key in the form `"scope:conduit:<id>"`.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty")
         return f"scope:conduit:{conduit_id}"
@@ -354,7 +354,7 @@ class ChangeControlTransactionManager(Cleanable):
         Returns:
             str: Scope key in the form `"scope:cluster:<id>"`.
         """
-        self.check_cleaned()
+        
         if not cluster_id:
             raise ValueError("cluster_id cannot be empty")
         return f"scope:cluster:{cluster_id}"
@@ -370,7 +370,7 @@ class ChangeControlTransactionManager(Cleanable):
         Returns:
             str: Scope key in the form `"binding:<frame_key>:<binding_key>"`.
         """
-        self.check_cleaned()
+        
         if not frame_key or not binding_key:
             raise ValueError("frame_key and binding_key are required")
         return f"binding:{frame_key}:{binding_key}"
@@ -392,7 +392,7 @@ class ChangeControlTransactionManager(Cleanable):
             str: Scope key in the form
             `"contract:<frame_key>:<binding_key>:<peer_conduit_id>"`.
         """
-        self.check_cleaned()
+        
         if not frame_key or not binding_key or not peer_conduit_id:
             raise ValueError("frame_key, binding_key, and peer_conduit_id are required")
         return f"contract:{frame_key}:{binding_key}:{peer_conduit_id}"
@@ -410,7 +410,7 @@ class ChangeControlTransactionManager(Cleanable):
         once a request is added here, the rest of the change-control system may
         treat it as active until commit or abort removes it again.
         """
-        self.check_cleaned()
+        
         audit_fn: Optional[Callable[[ChangeControlTransactionRequest], None]] = None
         with self._lock:
             self._in_flight[request.request_id] = request
@@ -428,7 +428,7 @@ class ChangeControlTransactionManager(Cleanable):
         - Removal only affects the in-flight registry; it does not touch the
           link mirror or any external embargo state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if request_id in self._in_flight:
                 del self._in_flight[request_id]
@@ -444,7 +444,7 @@ class ChangeControlTransactionManager(Cleanable):
             List[ChangeControlTransactionRequest]: New list snapshot of the
             current in-flight registry.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return list(self._in_flight.values())
 
@@ -459,7 +459,7 @@ class ChangeControlTransactionManager(Cleanable):
             Optional[ChangeControlTransactionRequest]: The tracked request, or
             `None` when the id is not currently in flight.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._in_flight.get(request_id)
 
@@ -477,7 +477,7 @@ class ChangeControlTransactionManager(Cleanable):
         admission policy could reason about borrower/provider fan-out without
         redesigning the registry.
         """
-        self.check_cleaned()
+        
         if not borrower_conduit_id or not provider_conduit_id:
             raise ValueError("borrower_conduit_id and provider_conduit_id are required")
         with self._lock:
@@ -493,7 +493,7 @@ class ChangeControlTransactionManager(Cleanable):
         - If a provider no longer has any tracked borrowers after removal, its
           mirror entry is removed entirely.
         """
-        self.check_cleaned()
+        
         if not borrower_conduit_id or not provider_conduit_id:
             raise ValueError("borrower_conduit_id and provider_conduit_id are required")
         with self._lock:
@@ -520,7 +520,7 @@ class ChangeControlTransactionManager(Cleanable):
             Set[str]: New set snapshot of borrower conduit ids currently
             mirrored under the provider.
         """
-        self.check_cleaned()
+        
         if not provider_conduit_id:
             return set()
         with self._lock:
@@ -539,7 +539,7 @@ class ChangeControlTransactionManager(Cleanable):
             Dict[str, Any]: Snapshot metadata for current in-flight request
             count and the provider-to-borrower mirror.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "in_flight_count": len(self._in_flight),

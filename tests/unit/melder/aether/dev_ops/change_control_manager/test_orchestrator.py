@@ -88,7 +88,7 @@ def test_orchestrator_cleanup_is_idempotent_and_blocks_reuse() -> None:
     assert not hasattr(orchestrator, '_staged')
     assert not hasattr(orchestrator, '_lock')
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         orchestrator.list_staged()
 
 

@@ -173,7 +173,7 @@ class TransactionSession(Cleanable):
         """
         Return the immutable root request for this session.
         """
-        self.check_cleaned()
+        
         return self._request
 
     @property
@@ -181,7 +181,7 @@ class TransactionSession(Cleanable):
         """
         Return the immutable staged payload for this session.
         """
-        self.check_cleaned()
+        
         return self._staged
 
     @property
@@ -189,7 +189,7 @@ class TransactionSession(Cleanable):
         """
         Return the owning root thread id for this session.
         """
-        self.check_cleaned()
+        
         return self._owner_thread_id
 
     @property
@@ -197,7 +197,7 @@ class TransactionSession(Cleanable):
         """
         Return the identity surface that originated this root session.
         """
-        self.check_cleaned()
+        
         return self._submitter_identity
 
     @property
@@ -205,7 +205,7 @@ class TransactionSession(Cleanable):
         """
         Return the current same-thread nesting depth for this session.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._depth
 
@@ -214,7 +214,7 @@ class TransactionSession(Cleanable):
         """
         Return the current session status.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._status
 
@@ -223,7 +223,7 @@ class TransactionSession(Cleanable):
         """
         Return the current abort-only failure reason, if any.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._failure_reason
 
@@ -235,7 +235,7 @@ class TransactionSession(Cleanable):
             capabilities:
                 Capability names to add.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._capabilities.update(capabilities)
 
@@ -250,7 +250,7 @@ class TransactionSession(Cleanable):
         Returns:
             bool: True when all required capabilities are granted.
         """
-        self.check_cleaned()
+        
         required = set(required_capabilities)
         with self._lock:
             return required.issubset(self._capabilities)
@@ -274,7 +274,7 @@ class TransactionSession(Cleanable):
             RuntimeError: If another thread attempts to join or status is closed.
             RuntimeError: If the session lacks required capabilities.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if thread_id != self._owner_thread_id:
                 raise RuntimeError(
@@ -302,7 +302,7 @@ class TransactionSession(Cleanable):
         Raises:
             RuntimeError: If the depth would underflow.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if self._depth <= 0:
                 raise RuntimeError("Transaction session depth underflow.")
@@ -323,7 +323,7 @@ class TransactionSession(Cleanable):
             error:
                 Optional triggering exception to retain for diagnostics.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = self.STATUS_ABORT_ONLY
             self._failure_reason = reason
@@ -333,7 +333,7 @@ class TransactionSession(Cleanable):
         """
         Mark the session as entering the root commit path.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = self.STATUS_COMMITTING
 
@@ -341,7 +341,7 @@ class TransactionSession(Cleanable):
         """
         Mark the session as successfully committed.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = self.STATUS_COMMITTED
 
@@ -349,7 +349,7 @@ class TransactionSession(Cleanable):
         """
         Mark the session as fully aborted.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = self.STATUS_ABORTED
 
@@ -364,7 +364,7 @@ class TransactionSession(Cleanable):
             fn:
                 Callable invoked before commit hooks.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._commit_validators.append(fn)
 
@@ -379,7 +379,7 @@ class TransactionSession(Cleanable):
             fn:
                 Callable invoked after successful validators.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._commit_hooks.append(fn)
 
@@ -394,7 +394,7 @@ class TransactionSession(Cleanable):
             fn:
                 Callable invoked during abort finalization.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._abort_hooks.append(fn)
 
@@ -409,7 +409,7 @@ class TransactionSession(Cleanable):
             fn:
                 Callable invoked in reverse order during abort cleanup.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._rollback_actions.append(fn)
 
@@ -420,7 +420,7 @@ class TransactionSession(Cleanable):
         Raises:
             Exception: Propagates the first validator/hook failure.
         """
-        self.check_cleaned()
+        
         validators: List[Callable[[ChangeControlStagedMutation], None]]
         hooks: List[Callable[[ChangeControlStagedMutation], None]]
         with self._lock:
@@ -438,7 +438,7 @@ class TransactionSession(Cleanable):
         Returns:
             List[BaseException]: Exceptions raised by local abort/rollback work.
         """
-        self.check_cleaned()
+        
         hooks: List[Callable[[ChangeControlStagedMutation], None]]
         rollbacks: List[Callable[[], object]]
         with self._lock:
@@ -461,7 +461,7 @@ class TransactionSession(Cleanable):
         """
         Return a detached diagnostic snapshot of the session state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "request_id": self._request.request_id,

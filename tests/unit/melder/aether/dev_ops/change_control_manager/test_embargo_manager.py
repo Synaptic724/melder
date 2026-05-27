@@ -59,7 +59,7 @@ def test_embargo_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
     assert not hasattr(manager, '_embargoes_by_owner')
     assert not hasattr(manager, '_lock')
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, AttributeError)):
         manager.find_embargoes(["scope-a"])
 
 

@@ -114,7 +114,7 @@ class ChangeControlEmbargoManager(Cleanable):
             reason_tag: Short diagnostic reason for the embargo.
             owner_request_id: Request id that owns the embargoes.
         """
-        self.check_cleaned()
+        
         if not owner_request_id or not reason_tag:
             raise ValueError("owner_request_id and reason_tag are required")
         created_at = time.time()
@@ -148,7 +148,7 @@ class ChangeControlEmbargoManager(Cleanable):
             scope_keys: Additional scope keys to embargo.
             reason_tag: Diagnostic reason tag for the new records.
         """
-        self.check_cleaned()
+        
         if not owner_request_id or not reason_tag:
             raise ValueError("owner_request_id and reason_tag are required")
         created_at = time.time()
@@ -177,7 +177,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Args:
             owner_request_id: Request id whose embargoes should be released.
         """
-        self.check_cleaned()
+        
         if not owner_request_id:
             return
         with self._lock:
@@ -208,7 +208,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Acquires the internal lock while checking registries.
         """
-        self.check_cleaned()
+        
         blocked: List[str] = []
         with self._lock:
             for scope_key in scope_keys:
@@ -239,7 +239,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Acquires the internal lock while copying records.
         """
-        self.check_cleaned()
+        
         hints: List[ChangeControlEmbargoRecord] = []
         with self._lock:
             for scope_key in scope_keys:
@@ -273,7 +273,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Thread-safe without locks; no shared state is mutated.
         """
-        self.check_cleaned()
+        
         return self._collect_scope_keys_from_fields(
             scope_keys=request.scope_keys,
             spellbook_id=request.spellbook_id,
@@ -304,7 +304,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Thread-safe without locks; no shared state is mutated.
         """
-        self.check_cleaned()
+        
         if staged is None:
             return ()
         return self._collect_scope_keys_from_fields(
@@ -352,7 +352,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Thread-safe without locks; no shared state is mutated.
         """
-        self.check_cleaned()
+        
         scope_set: Set[str] = set()
         if scope_keys:
             scope_set.update(key for key in scope_keys if key)
@@ -391,7 +391,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Acquires the internal lock while updating registries.
         """
-        self.check_cleaned()
+        
         scope_keys = self.collect_scope_keys(request)
         if not scope_keys:
             return
@@ -426,7 +426,7 @@ class ChangeControlEmbargoManager(Cleanable):
             Delegates to `close_embargo(...)`, which mutates registry state
             under the manager lock.
         """
-        self.check_cleaned()
+        
         self.close_embargo(request.request_id)
 
     def describe(self) -> Dict[str, Any]:
@@ -445,7 +445,7 @@ class ChangeControlEmbargoManager(Cleanable):
         Threading:
             Acquires the internal lock while copying.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "embargoed_scopes": list(self._embargoes_by_scope.keys()),

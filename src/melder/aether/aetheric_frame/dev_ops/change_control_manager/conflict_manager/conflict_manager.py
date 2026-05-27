@@ -75,7 +75,7 @@ class ChangeControlConflictManager(Cleanable):
             Tuple[str, ...]: Request ids that conflict with the incoming
             request.
         """
-        self.check_cleaned()
+        
         if request is None:
             return ()
         with self._lock:
@@ -113,7 +113,7 @@ class ChangeControlConflictManager(Cleanable):
         Returns:
             Set[str]: Normalized hash set used by conflict detection.
         """
-        self.check_cleaned()
+        
         if scope_hashes:
             return {hash_value for hash_value in scope_hashes if hash_value}
         if not scope_keys:

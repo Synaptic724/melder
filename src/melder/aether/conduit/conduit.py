@@ -358,7 +358,14 @@ class Conduit(Cleanable):
 
     def _prepare_for_pool(self):
         """
-        This method will properly cleanup the conduit resources that must be reset for the pool uptake.
+        Reset one lesser conduit into the pooled idle state.
+
+        Contract:
+            - Normal conduits do not enter the lesser pool and still hard-clean.
+            - Lesser conduits transition to `pooled_lesser` locally before they
+              are returned to the root-owned pool.
+            - Pool return is a local lifecycle change only; it does not refresh
+              dev-ops identity or republish the conduit to Nexus.
         """
         if self._conduit_state is ConduitState.normal:
             self._permanent_cleanup()
@@ -370,8 +377,6 @@ class Conduit(Cleanable):
         self._conduit_ward._conduit_type = ConduitState.pooled_lesser
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
-        self._refresh_devops_identity_state()
-        self._publish_conduit_record_to_nexus()
         self._conduit_pool.return_lesser_conduit(self)
 
     def _cleanup_spellspaces_for_pool(self) -> None:
@@ -1627,6 +1632,9 @@ class Conduit(Cleanable):
         injected frame-owned services, but is restricted in its ability to
         establish external links or register new spells. It owns a
         conduit-local CreationGate created by the lineage CreationGateController.
+        Fresh lesser creation is published to Nexus when passive ingest is
+        enabled. Reused pooled lesser conduits are reactivated locally without
+        republishing or refreshing dev-ops identity metadata.
 
         If this (parent) Conduit has lifecycle hooks attached via the Configuration
         for its Spellbook, the following hooks will be fired in order:
@@ -1680,6 +1688,7 @@ class Conduit(Cleanable):
                 )
                 # 2) Construct the lesser conduit (activation point).
                 new_conduit = root_conduit._conduit_pool.create_object()
+                reused_from_pool = new_conduit is not None
                 if new_conduit is None:
                     new_conduit = Conduit(
                         spellbook=self._spellbook,
@@ -1696,16 +1705,11 @@ class Conduit(Cleanable):
                         meld_hooks=root_conduit._meld_hooks,
                     )
                 new_conduit._conduit_state = ConduitState.lesser
-                if new_conduit._conduit_ward is not None:
-                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
-                    new_conduit._conduit_ward._root_conduit = root_conduit
-                new_conduit._root_conduit_id = root_conduit_id
+                new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
-                new_conduit._conduit_pool = root_conduit._conduit_pool
-                if new_conduit._meld is not None:
-                    new_conduit._meld._resolution_conduit_id = root_conduit_id
-                new_conduit._creation_gate.open()
-                new_conduit._refresh_devops_identity_state()
+                self._conduit_ward._link_lesser_conduit(new_conduit)
+                if not reused_from_pool:
+                    new_conduit._publish_conduit_record_to_nexus()
 
                 # Fire activation hook with the new conduit instance.
                 self._fire_conduit_hooks(
@@ -1722,9 +1726,11 @@ class Conduit(Cleanable):
                     self,         # parent_conduit
                     new_conduit,  # child_conduit
                 )
-                new_conduit._publish_conduit_record_to_nexus()
+                if not reused_from_pool:
+                    new_conduit._publish_conduit_record_to_nexus()
             else:
                 new_conduit = root_conduit._conduit_pool.create_object()
+                reused_from_pool = new_conduit is not None
                 if new_conduit is None:
                     new_conduit = Conduit(
                         spellbook=self._spellbook,
@@ -1741,18 +1747,11 @@ class Conduit(Cleanable):
                         meld_hooks=root_conduit._meld_hooks,
                     )
                 new_conduit._conduit_state = ConduitState.lesser
-                if new_conduit._conduit_ward is not None:
-                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
-                    new_conduit._conduit_ward._root_conduit = root_conduit
-                new_conduit._root_conduit_id = root_conduit_id
+                new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
-                new_conduit._conduit_pool = root_conduit._conduit_pool
-                if new_conduit._meld is not None:
-                    new_conduit._meld._resolution_conduit_id = root_conduit_id
-                new_conduit._creation_gate.open()
-                new_conduit._refresh_devops_identity_state()
                 self._conduit_ward._link_lesser_conduit(new_conduit)
-                new_conduit._publish_conduit_record_to_nexus()
+                if not reused_from_pool:
+                    new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
 

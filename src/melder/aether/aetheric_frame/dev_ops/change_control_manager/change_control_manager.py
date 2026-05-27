@@ -326,7 +326,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while mutating state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._change_control_enabled = True
 
@@ -346,7 +346,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while mutating state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._change_control_enabled = False
 
@@ -359,7 +359,7 @@ class ChangeControlManager(Cleanable):
             conflict/embargo gate and `False` when the manager is operating in
             bypass mode.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return bool(self._change_control_enabled)
 
@@ -386,7 +386,7 @@ class ChangeControlManager(Cleanable):
             fn: Callable that receives admitted requests, or `None` to disable
                 audit logging.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._transaction_manager.set_audit_logger(fn)
 
@@ -410,7 +410,7 @@ class ChangeControlManager(Cleanable):
             fn: Callable that validates a staged mutation, or `None` to disable
                 this hook.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._commit_validator = fn
 
@@ -434,7 +434,7 @@ class ChangeControlManager(Cleanable):
             fn: Callable that validates a staged mutation, or `None` to disable
                 this hook.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._structural_validator = fn
 
@@ -457,7 +457,7 @@ class ChangeControlManager(Cleanable):
             fn: Callable invoked with a staged mutation, or `None` to disable
                 this hook.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._commit_hook = fn
 
@@ -481,7 +481,7 @@ class ChangeControlManager(Cleanable):
             fn: Callable invoked with a staged mutation, or `None` to disable
                 dirty marking.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._dirty_marker = fn
 
@@ -506,7 +506,7 @@ class ChangeControlManager(Cleanable):
             fn: Callable invoked when an admitted staged mutation aborts, or
                 `None` to disable the hook.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._abort_hook = fn
 
@@ -525,7 +525,7 @@ class ChangeControlManager(Cleanable):
         Args:
             staged: Staged mutation metadata to validate.
         """
-        self.check_cleaned()
+        
         validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         structural: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
@@ -551,7 +551,7 @@ class ChangeControlManager(Cleanable):
         Args:
             staged: Staged mutation metadata to process.
         """
-        self.check_cleaned()
+        
         marker: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
@@ -584,7 +584,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Uses the internal lock to snapshot hook references.
         """
-        self.check_cleaned()
+        
         hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
             hook = self._abort_hook
@@ -608,7 +608,7 @@ class ChangeControlManager(Cleanable):
             Optional[Any]:
                 The owning frame instance when available.
         """
-        self.check_cleaned()
+        
         return self._spell_system_states._frame
 
     def _resolve_conduit_by_id(self, conduit_id: str) -> Optional[Any]:
@@ -629,7 +629,7 @@ class ChangeControlManager(Cleanable):
             Optional[Any]:
                 The resolved conduit instance, if found.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             return None
         frame = self._resolve_frame()
@@ -665,7 +665,7 @@ class ChangeControlManager(Cleanable):
             Optional[Any]:
                 The resolved Spellbook instance, if available.
         """
-        self.check_cleaned()
+        
         if staged is None:
             return None
         candidate_ids: list[str] = []
@@ -707,7 +707,7 @@ class ChangeControlManager(Cleanable):
         Returns an empty list when the spellbook is unavailable, the keys are
         empty, or a particular key no longer resolves cleanly.
         """
-        self.check_cleaned()
+        
         if spellbook is None or not binding_keys:
             return []
         resolved: list = []
@@ -746,7 +746,7 @@ class ChangeControlManager(Cleanable):
         Any structural-phase exception is allowed to propagate so the commit
         path can fail loudly instead of accepting a broken staged bind.
         """
-        self.check_cleaned()
+        
         if staged.request_type is not ChangeTransactionType.BIND:
             return
         if not staged.binding_keys:
@@ -774,7 +774,7 @@ class ChangeControlManager(Cleanable):
         contract keys, but only when the staged mutation actually names a
         spellbook and contributes relevant keys.
         """
-        self.check_cleaned()
+        
         if staged.spellbook_id is None:
             return
         if not staged.binding_keys and not staged.contract_keys:
@@ -810,7 +810,7 @@ class ChangeControlManager(Cleanable):
             ChangeControlTransactionManager: Admission/in-flight transaction
             bookkeeping surface owned by this manager.
         """
-        self.check_cleaned()
+        
         return self._transaction_manager
 
     def transaction_mediator(self) -> TransactionMediator:
@@ -820,7 +820,7 @@ class ChangeControlManager(Cleanable):
         Returns:
             TransactionMediator: Frame-local live transaction/session surface.
         """
-        self.check_cleaned()
+        
         return self._transaction_mediator
 
     def conflict_manager(self) -> ChangeControlConflictManager:
@@ -831,7 +831,7 @@ class ChangeControlManager(Cleanable):
             ChangeControlConflictManager: Scope-overlap/conflict surface owned
             by this manager.
         """
-        self.check_cleaned()
+        
         return self._conflict_manager
 
     def embargo_manager(self) -> ChangeControlEmbargoManager:
@@ -842,7 +842,7 @@ class ChangeControlManager(Cleanable):
             ChangeControlEmbargoManager: Embargo/gating surface owned by this
             manager.
         """
-        self.check_cleaned()
+        
         return self._embargo_manager
 
     def orchestrator(self) -> ChangeControlOrchestrator:
@@ -853,7 +853,7 @@ class ChangeControlManager(Cleanable):
             ChangeControlOrchestrator: Admission-sequencing surface owned by
             this manager.
         """
-        self.check_cleaned()
+        
         return self._orchestrator
 
     def devops_information_registry(self) -> Optional[DevopsInformationRegistry]:
@@ -865,7 +865,7 @@ class ChangeControlManager(Cleanable):
                 Borrowed topology/transaction registry for this frame, or
                 `None` when not available.
         """
-        self.check_cleaned()
+        
         return self._devops_information_registry
 
     # ----------------------------------------------------------------------
@@ -889,7 +889,7 @@ class ChangeControlManager(Cleanable):
             ChangeControlAdmissionResult: Admission decision plus any rejection
             evidence returned by the orchestrator path.
         """
-        self.check_cleaned()
+        
         enabled = True
         with self._lock:
             enabled = bool(self._change_control_enabled)
@@ -944,7 +944,7 @@ class ChangeControlManager(Cleanable):
             Uses the internal lock to read enable state; orchestrator uses
             its lock for staged updates.
         """
-        self.check_cleaned()
+        
         if not request_id:
             raise ValueError("request_id cannot be empty")
         with self._lock:
@@ -998,7 +998,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Uses the internal lock to read enable state.
         """
-        self.check_cleaned()
+        
         enabled = True
         with self._lock:
             enabled = bool(self._change_control_enabled)
@@ -1031,7 +1031,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Uses the internal lock to read enable state.
         """
-        self.check_cleaned()
+        
         enabled = True
         with self._lock:
             enabled = bool(self._change_control_enabled)
@@ -1076,7 +1076,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while updating state.
         """
-        self.check_cleaned()
+        
         if spell_index is None:
             raise ValueError("spell_index cannot be None")
         if not reason:
@@ -1116,7 +1116,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while copying state.
         """
-        self.check_cleaned()
+        
         if not spell_index_id:
             raise ValueError("spell_index_id cannot be empty")
 
@@ -1144,7 +1144,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while copying state.
         """
-        self.check_cleaned()
+        
         snapshot: Dict[str, Dict[str, Any]] = {}
         with self._lock:
             for index_id, meta in self._pending_changes.items():
@@ -1173,7 +1173,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while mutating state.
         """
-        self.check_cleaned()
+        
         if not spell_index_id:
             raise ValueError("spell_index_id cannot be empty")
 
@@ -1212,7 +1212,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while updating state.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         if fn is None:
@@ -1243,7 +1243,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while reading registration state.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         with self._lock:
@@ -1275,7 +1275,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while rebuilding mappings.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         if root_blueprints is None:
@@ -1335,7 +1335,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while mutating mappings.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         if root_blueprints is None:
@@ -1393,7 +1393,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while updating dirty flags.
         """
-        self.check_cleaned()
+        
         if not spell_id:
             raise ValueError("spell_id cannot be empty")
         affected_roots_by_conduit: Dict[str, Set[str]] = {}
@@ -1477,7 +1477,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Copies state under lock and executes revalidation without the lock.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         if cancel_event is not None and cancel_event.is_set:
@@ -1515,7 +1515,7 @@ class ChangeControlManager(Cleanable):
         Raises:
             RuntimeError: If this manager has been cleaned.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return bool(self._revalidate_fn_by_conduit)
 
@@ -1543,7 +1543,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while reading state.
         """
-        self.check_cleaned()
+        
         if not conduit_id or not root_id:
             return False
         with self._lock:
@@ -1574,7 +1574,7 @@ class ChangeControlManager(Cleanable):
         Threading:
             Acquires the internal lock while copying state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return {
                 "pending_changes": dict(self._pending_changes),

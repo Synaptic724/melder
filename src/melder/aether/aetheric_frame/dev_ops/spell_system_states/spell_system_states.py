@@ -261,11 +261,6 @@ class SpellSystemStates(Cleanable):
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
         """
-        self.check_cleaned()
-
-        if spell_index is None:
-            raise ValueError("spell_index cannot be None")
-
         index_id = spell_index.id
         current_id = spell_index.current
         if current_id is None:
@@ -315,7 +310,6 @@ class SpellSystemStates(Cleanable):
             - The SpellSystemState instance for this spell index, or
             - None if no state has been registered for the id.
         """
-        self.check_cleaned()
         if not index_id:
             return None
         with self._lock:
@@ -335,7 +329,6 @@ class SpellSystemStates(Cleanable):
             - The SpellSystemState instance, or
             - None if no state is currently indexed for that spell id.
         """
-        self.check_cleaned()
         if not spell_id:
             return None
         with self._lock:
@@ -420,14 +413,6 @@ class SpellSystemStates(Cleanable):
         spell index and removes empty spellbook buckets when the last dependent is
         gone.
         """
-        if not spellbook_id or not index_id:
-            return
-        if (
-            self._contract_dependents_by_spellbook is None
-            or self._contract_keys_by_index is None
-        ):
-            return
-
         keys = self._contract_keys_by_index.pop(index_id, None)
         if not keys:
             return
@@ -466,10 +451,6 @@ class SpellSystemStates(Cleanable):
         - Mark this spell index as gated due to dependency change and add to
           `_dirty_indexes`.
         """
-        self.check_cleaned()
-        if spell_index is None:
-            raise ValueError("spell_index cannot be None")
-
         index_id = spell_index.id
         new_deps = {d for d in (dependency_ids or []) if d}
 
@@ -531,10 +512,6 @@ class SpellSystemStates(Cleanable):
         - Mark it structurally gated with the provided reason.
         - Add the spell-index id to `_dirty_indexes`.
         """
-        self.check_cleaned()
-        if spell_index is None:
-            raise ValueError("spell_index cannot be None")
-
         index_id = spell_index.id
         with self._lock:
             if self._states_by_index_id is None or self._dirty_indexes is None:
@@ -576,8 +553,6 @@ class SpellSystemStates(Cleanable):
         Returns:
             A set of all impacted spell-index ids, including the roots.
         """
-        self.check_cleaned()
-
         impacted: Set[str] = set()
         worklist: List[str] = [index_id for index_id in root_index_ids if index_id]
 
@@ -630,7 +605,6 @@ class SpellSystemStates(Cleanable):
         - Clear `_dirty_indexes`.
         - Return the snapshot list. Order is unspecified.
         """
-        self.check_cleaned()
         with self._lock:
             if self._dirty_indexes is None or not self._dirty_indexes:
                 return []
@@ -650,7 +624,6 @@ class SpellSystemStates(Cleanable):
             underlying ConcurrentDict so callers cannot accidentally keep a
             live iterator into internal state.
         """
-        self.check_cleaned()
         with self._lock:
             if self._states_by_index_id is None:
                 return []
@@ -665,7 +638,6 @@ class SpellSystemStates(Cleanable):
             DevopsInformationRegistry:
                 Borrowed topology/transaction registry for this frame.
         """
-        self.check_cleaned()
         return self._devops_information_registry
 
     # ------------------------------------------------------------------
@@ -686,9 +658,6 @@ class SpellSystemStates(Cleanable):
             Optional[ConduitResolutionState]:
                 The resolution state if present; otherwise None.
         """
-        self.check_cleaned()
-        if not conduit_id:
-            return None
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 return None
@@ -722,9 +691,6 @@ class SpellSystemStates(Cleanable):
             RuntimeError:
                 If the registry has been cleaned.
         """
-        self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id cannot be empty.")
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 raise RuntimeError("SpellSystemStates has been cleaned.")
@@ -761,10 +727,6 @@ class SpellSystemStates(Cleanable):
             ValueError: If spell_index is None.
             RuntimeError: If the registry has been cleaned.
         """
-        self.check_cleaned()
-        if spell_index is None:
-            raise ValueError("spell_index cannot be None")
-
         index_id = spell_index.id
         removed_state: Optional[SpellSystemState] = None
         current_spell_id: Optional[str] = None
@@ -840,7 +802,6 @@ class SpellSystemStates(Cleanable):
         coherent across both frame-level spell-index state and per-conduit
         resolution state.
         """
-        self.check_cleaned()
         with self._lock:
             self._risk_manager = risk_manager
             if self._states_by_index_id is not None:
@@ -870,7 +831,6 @@ class SpellSystemStates(Cleanable):
           later lookup can observe half-cleaned state.
         - Best-effort cleans the removed state object before discarding it.
         """
-        self.check_cleaned()
         if not conduit_id:
             return
         with self._lock:
@@ -895,7 +855,6 @@ class SpellSystemStates(Cleanable):
             Iterator[ConduitResolutionState]:
                 Snapshot iterator over registered resolution states.
         """
-        self.check_cleaned()
         with self._lock:
             if self._resolution_by_conduit_id is None:
                 return iter(())
@@ -923,7 +882,6 @@ class SpellSystemStates(Cleanable):
             - Lets `ConduitResolutionState` mark the conduit bucket dirty and
               notify `RiskManager` when the verdict changes.
         """
-        self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.set_spell_validity(spell_id, validity, change_reason=change_reason)
 
@@ -949,7 +907,7 @@ class SpellSystemStates(Cleanable):
               conduit-state object so batched writes stay consistent with
               scalar writes.
         """
-        self.check_cleaned()
+        
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.bulk_set_spell_validity(validity_map, change_reason=change_reason)
 
@@ -976,7 +934,6 @@ class SpellSystemStates(Cleanable):
             - Delegates dirty tracking and risk propagation to the owned
               `ConduitResolutionState`.
         """
-        self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.set_root_validity(root_id, validity, change_reason=change_reason)
 
@@ -1001,7 +958,6 @@ class SpellSystemStates(Cleanable):
             - Keeps batched root updates consistent with the scalar root write
               path for dirty tracking and risk propagation.
         """
-        self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.bulk_set_root_validity(validity_map, change_reason=change_reason)
 
@@ -1024,7 +980,6 @@ class SpellSystemStates(Cleanable):
             - Leaves global spell-index validity unchanged because diagnostics here
               are scoped to conduit-local resolution state.
         """
-        self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.record_diagnostics(diagnostics)
 
@@ -1040,7 +995,6 @@ class SpellSystemStates(Cleanable):
             - Clears only conduit-local diagnostics; spell/root verdicts remain
               untouched.
         """
-        self.check_cleaned()
         state = self.get_conduit_resolution_state(conduit_id)
         if state is None:
             return
@@ -1064,7 +1018,6 @@ class SpellSystemStates(Cleanable):
             - Marks only conduit-local resolution state dirty; it does not add
               spell-index ids to the frame-level dirty registry.
         """
-        self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.mark_dirty(change_reason=change_reason)
 
@@ -1080,7 +1033,6 @@ class SpellSystemStates(Cleanable):
             - Records the supplied validation timestamp on the existing
               conduit-state object.
         """
-        self.check_cleaned()
         state = self.get_conduit_resolution_state(conduit_id)
         if state is None:
             return
@@ -1118,7 +1070,6 @@ class SpellSystemStates(Cleanable):
         Returns:
             Set[str]: Spell-index ids marked dirty by this call.
         """
-        self.check_cleaned()
         if not spellbook_id:
             return set()
 
@@ -1189,7 +1140,6 @@ class SpellSystemStates(Cleanable):
         Returns:
             Set[str]: Spell-index ids marked dirty by this call.
         """
-        self.check_cleaned()
         if not spellbook_id:
             return set()
 
@@ -1262,12 +1212,6 @@ class SpellSystemStates(Cleanable):
             - Does not synthesize an owner spellbook id if the spell index has not
               yet been associated with a spellbook.
         """
-        self.check_cleaned()
-        if spell_index is None:
-            raise ValueError("spell_index must not be None.")
-        if topology is None:
-            raise ValueError("topology must not be None.")
-
         with self._lock:
             spell_id = spell_index.current
             if spell_id is None:
@@ -1318,10 +1262,6 @@ class SpellSystemStates(Cleanable):
               promoted spell id.
             - Does not clone the topology object.
         """
-        self.check_cleaned()
-        if spell_index is None:
-            raise ValueError("spell_index must not be None.")
-
         with self._lock:
             spell_id = spell_index.current
             if spell_id is None:
@@ -1344,10 +1284,6 @@ class SpellSystemStates(Cleanable):
               version id.
             - Does not clone the topology object.
         """
-        self.check_cleaned()
-        if not spell_id:
-            raise ValueError("spell_id must not be None.")
-
         with self._lock:
             return self._local_topologies.get(spell_id)
 
@@ -1426,14 +1362,6 @@ class SpellSystemStates(Cleanable):
               lookups never retain dead spell-index references.
             - Deletes empty spellbook buckets and empty spell-index memberships.
         """
-        if not spellbook_id or not index_id:
-            return
-        if (
-            self._collection_dependents_by_spellbook is None
-            or self._collection_frames_by_index is None
-        ):
-            return
-
         existing_frames = self._collection_frames_by_index.get(index_id, set())
         removed = existing_frames - frame_keys
         added = frame_keys - existing_frames
@@ -1483,14 +1411,6 @@ class SpellSystemStates(Cleanable):
               contract invalidation cannot target dead consumers.
             - Deletes empty spellbook buckets and empty spell-index memberships.
         """
-        if not spellbook_id or not index_id:
-            return
-        if (
-            self._contract_dependents_by_spellbook is None
-            or self._contract_keys_by_index is None
-        ):
-            return
-
         existing_keys = self._contract_keys_by_index.get(index_id, set())
         removed = existing_keys - contract_keys
         added = contract_keys - existing_keys

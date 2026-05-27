@@ -164,7 +164,7 @@ class RiskManager(Cleanable):
             DevopsInformationRegistry:
                 Borrowed topology/transaction registry for this frame.
         """
-        self.check_cleaned()
+        
         return self._devops_information_registry
 
     def register_conduit(self, conduit_id: str, spellbook: Spellbook) -> None:
@@ -184,7 +184,7 @@ class RiskManager(Cleanable):
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
         """
-        self.check_cleaned()
+        
         if not conduit_id or spellbook is None:
             return
         self.unregister_conduit(conduit_id)
@@ -213,7 +213,7 @@ class RiskManager(Cleanable):
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
         """
-        self.check_cleaned()
+        
         if not conduit_id:
             return
 
@@ -248,7 +248,7 @@ class RiskManager(Cleanable):
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
         """
-        self.check_cleaned()
+        
         if not conduit_id or spell is None:
             return
 
@@ -291,7 +291,7 @@ class RiskManager(Cleanable):
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
         """
-        self.check_cleaned()
+        
         if not conduit_id or spell is None:
             return
 
@@ -331,7 +331,7 @@ class RiskManager(Cleanable):
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
         """
-        self.check_cleaned()
+        
         if not lineage_id:
             return
         with self._lock:
@@ -363,7 +363,7 @@ class RiskManager(Cleanable):
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
         """
-        self.check_cleaned()
+        
         if not conduit_id or not spell_id:
             return
         lineage_id = self._resolve_lineage_id_from_spell_id(spell_id)

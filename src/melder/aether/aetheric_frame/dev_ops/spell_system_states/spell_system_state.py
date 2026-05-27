@@ -169,7 +169,7 @@ class SpellSystemState(Cleanable):
             Acquires the internal lock to avoid torn reads while mutation
             helpers are updating lineage state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._spell_index_id
 
@@ -182,7 +182,7 @@ class SpellSystemState(Cleanable):
             Acquires the internal lock to avoid torn reads while promotion
             updates are in flight.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._current_spell_id
 
@@ -194,7 +194,7 @@ class SpellSystemState(Cleanable):
         Returns:
             A plain set[str] copy so callers cannot mutate internal state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if self._direct_dependencies is None:
                 return set()
@@ -208,7 +208,7 @@ class SpellSystemState(Cleanable):
         Returns:
             A plain set[str] copy so callers cannot mutate internal state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if self._direct_dependents is None:
                 return set()
@@ -225,7 +225,7 @@ class SpellSystemState(Cleanable):
         Threading:
             Acquires the internal lock to avoid torn reads across validity transitions.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._validity
 
@@ -237,7 +237,7 @@ class SpellSystemState(Cleanable):
         Returns:
             A plain set[SpellStateFlag] copy so callers cannot mutate internal state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             if self._flags is None:
                 return set()
@@ -252,7 +252,7 @@ class SpellSystemState(Cleanable):
         Threading:
             Acquires the internal lock to avoid torn reads across validity transitions.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._change_reason
 
@@ -264,7 +264,7 @@ class SpellSystemState(Cleanable):
         Threading:
             Acquires the internal lock to avoid torn reads across transitions.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._transitively_dirty
 
@@ -275,7 +275,7 @@ class SpellSystemState(Cleanable):
         Threading:
             Acquires the internal lock to avoid torn reads across transitions.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._last_validated_at
 
@@ -288,7 +288,7 @@ class SpellSystemState(Cleanable):
         Threading:
             Acquires the internal lock to avoid torn reads across validity transitions.
         """
-        self.check_cleaned()
+        
         with self._lock:
             v = self._validity
         return v is not None and v is not SpellValidity.valid
@@ -324,7 +324,7 @@ class SpellSystemState(Cleanable):
               itself changes; flag-only updates stay local.
             - Ignores None entries in add/remove flag iterables.
         """
-        self.check_cleaned()
+        
         callback = None
         if self._risk_manager is not None:
             callback = self._risk_manager.on_structural_validity_change
@@ -382,7 +382,7 @@ class SpellSystemState(Cleanable):
             ValueError: If spell_id is empty.
             RuntimeError: If this state object has been cleaned.
         """
-        self.check_cleaned()
+        
         if not spell_id:
             raise ValueError("spell_id cannot be empty")
 
@@ -406,7 +406,7 @@ class SpellSystemState(Cleanable):
         Raises:
             RuntimeError: If this state object has been cleaned.
         """
-        self.check_cleaned()
+        
 
         deps = {d for d in dependency_ids if d}
         with self._lock:
@@ -424,7 +424,7 @@ class SpellSystemState(Cleanable):
             - Does not dirty or revalidate the lineage; this is topology
               bookkeeping only.
         """
-        self.check_cleaned()
+        
         if not index_id:
             return
         with self._lock:
@@ -442,7 +442,7 @@ class SpellSystemState(Cleanable):
             - Missing or empty ids are ignored so caller cleanup can stay
               idempotent.
         """
-        self.check_cleaned()
+        
         if not index_id:
             return
         with self._lock:
@@ -469,7 +469,7 @@ class SpellSystemState(Cleanable):
             - Forces `transitively_dirty` to False because this helper models a
               direct change to the lineage itself, not downstream impact.
         """
-        self.check_cleaned()
+        
         if change_reason is None:
             change_reason = SpellStateChangeReason.structure_changed
 
@@ -498,7 +498,7 @@ class SpellSystemState(Cleanable):
             - Leaves `transitively_dirty` unchanged unless a higher-level
               closure pass decides this lineage is only indirectly impacted.
         """
-        self.check_cleaned()
+        
         if change_reason is None:
             change_reason = SpellStateChangeReason.dependencies_changed
 
@@ -525,7 +525,7 @@ class SpellSystemState(Cleanable):
             - Sets `transitively_dirty` to True so callers can distinguish
               downstream fallout from direct structural changes.
         """
-        self.check_cleaned()
+        
         if change_reason is None:
             change_reason = SpellStateChangeReason.dependency_changed
 
@@ -560,7 +560,7 @@ class SpellSystemState(Cleanable):
             - Publishes `SpellValidity.valid` to `RiskManager` only when this
               call actually changes the stored validity.
         """
-        self.check_cleaned()
+        
         callback = None
         if self._risk_manager is not None:
             callback = self._risk_manager.on_structural_validity_change

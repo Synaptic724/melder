@@ -150,7 +150,7 @@ class Incident(Cleanable):
         """
         Return the stable manager-assigned incident identifier.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._id
 
@@ -159,7 +159,7 @@ class Incident(Cleanable):
         """
         Return the free-form incident kind code used for grouping/filtering.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._kind
 
@@ -168,7 +168,7 @@ class Incident(Cleanable):
         """
         Return the current severity classification for the incident.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._severity
 
@@ -177,7 +177,7 @@ class Incident(Cleanable):
         """
         Return the current operational lifecycle status of the incident.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._status
 
@@ -189,7 +189,7 @@ class Incident(Cleanable):
         This is the incident's main lineage anchor, not a derived search over
         every impacted root.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._spell_index_id
 
@@ -201,7 +201,7 @@ class Incident(Cleanable):
         Contract:
         - Returns a new list so callers cannot mutate incident-owned state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return list(self._root_ids)
 
@@ -210,7 +210,7 @@ class Incident(Cleanable):
         """
         Return the short human/AI-readable summary for the incident.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return self._summary
 
@@ -222,7 +222,7 @@ class Incident(Cleanable):
         Contract:
         - Returns a new dict so callers cannot mutate incident-owned state.
         """
-        self.check_cleaned()
+        
         with self._lock:
             return dict(self._details)
 
@@ -235,7 +235,7 @@ class Incident(Cleanable):
         - Records triage/visibility only; it does not imply the underlying
           condition has been resolved or suppressed.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = IncidentStatus.acknowledged
 
@@ -249,7 +249,7 @@ class Incident(Cleanable):
           "resolved" means operationally; this method only updates the status
           field.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = IncidentStatus.resolved
 
@@ -262,6 +262,6 @@ class Incident(Cleanable):
         - Uses the "accepted / intentionally muted" lifecycle state rather than
           claiming the underlying condition disappeared.
         """
-        self.check_cleaned()
+        
         with self._lock:
             self._status = IncidentStatus.suppressed
