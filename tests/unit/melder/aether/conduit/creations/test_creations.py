@@ -532,7 +532,7 @@ def test_cleanup_records_fatal_sequence_error_and_still_tears_down(
     def boom() -> list[Exception]:
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(Creations, "_drain_disposal_stack", lambda self: boom())
+    monkeypatch.setattr(Creations, "_dispose_disposable_registry", lambda self, registry: boom())
 
     with pytest.raises(ExceptionGroup) as eg:
         creations.cleanup()
@@ -540,8 +540,6 @@ def test_cleanup_records_fatal_sequence_error_and_still_tears_down(
     assert len(eg.value.exceptions) == 1
     assert isinstance(eg.value.exceptions[0], RuntimeError)
     assert not hasattr(creations, '_creations')
-    assert not hasattr(creations, '_spellspace_disposal_stacks')
-    assert not hasattr(creations, '_disposal_stack')
     assert not hasattr(creations, '_conduit')
 
 
@@ -549,8 +547,6 @@ def test_cleanup_nulls_internal_refs(normal_conduit: FakeConduit) -> None:
     creations = _mk_creations(conduit=normal_conduit)
     creations.cleanup()
     assert not hasattr(creations, '_creations')
-    assert not hasattr(creations, '_spellspace_disposal_stacks')
-    assert not hasattr(creations, '_disposal_stack')
     assert not hasattr(creations, '_conduit')
 
 
@@ -628,7 +624,7 @@ def test_attempt_cleanup_missing_method_returns_runtimeerror(
     assert isinstance(err, RuntimeError)
 
 
-def test_cleanup_spellspace_instances_drains_and_clears_buckets(
+def test_clear_spellspace_instances_disposes_and_clears_buckets(
     normal_conduit: FakeConduit,
 ) -> None:
     creations = _mk_creations(conduit=normal_conduit)
@@ -642,63 +638,10 @@ def test_cleanup_spellspace_instances_drains_and_clears_buckets(
         disposal_methods=["dispose"],
     )
 
-    errors = creations._cleanup_spellspace_instances()
+    creations.clear_spellspace_instances("ss-1")
 
-    assert errors == []
     assert creations._creations == {}
     assert creations._disposable_creations == {}
-    assert creations._spellspace_disposal_stacks == {}
     assert probe.calls == ["dispose"]
 
-
-def test_remove_disposal_creation_removes_only_targeted_entry(
-    normal_conduit: FakeConduit,
-) -> None:
-    creations = _mk_creations(conduit=normal_conduit)
-    creations.add_creation(
-        "spell-a",
-        object(),
-        has_disposal_methods=True,
-        disposal_methods=["dispose"],
-    )
-    creations.add_creation(
-        "spell-b",
-        object(),
-        has_disposal_methods=True,
-        disposal_methods=["dispose"],
-    )
-
-    target = creations._disposable_creations["spell-a"]
-    other = creations._disposable_creations["spell-b"]
-
-    creations._remove_disposal_creation(target)
-
-    assert list(creations._disposal_stack) == [other]
-
-
-def test_remove_spellspace_disposal_creation_removes_only_targeted_entry(
-    normal_conduit: FakeConduit,
-) -> None:
-    creations = _mk_creations(conduit=normal_conduit)
-    creations.register_spellspace_creation(
-        "ss-1",
-        "spell-a",
-        object(),
-        has_disposal_methods=True,
-        disposal_methods=["dispose"],
-    )
-    creations.register_spellspace_creation(
-        "ss-1",
-        "spell-b",
-        object(),
-        has_disposal_methods=True,
-        disposal_methods=["dispose"],
-    )
-
-    target = creations._disposable_creations["ss-1"]["spell-a"]
-    other = creations._disposable_creations["ss-1"]["spell-b"]
-
-    creations._remove_spellspace_disposal_creation("ss-1", target)
-
-    assert list(creations._spellspace_disposal_stacks["ss-1"]) == [other]
 
