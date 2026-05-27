@@ -92,3 +92,29 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Permanently destroy one spellspace that should not be retained.
         """
         obj.permanent_cleanup()
+
+    def release(self, obj: SpellSpace) -> None:
+        """
+        Return one spellspace to idle storage or destroy it.
+
+        Contract:
+            - Uses the same simplified private-pool release policy as
+              `ConduitPool`.
+            - Assumes trusted private callers do not double-return the same
+              spellspace shell.
+            - Applies at most one decay step only when the idle list is already
+              at the current retained limit.
+        """
+        with self._lock:
+            if self._in_use_count > 0:
+                self._in_use_count -= 1
+            if self._enabled and len(self._idle) < self._target_idle:
+                self._idle.append(obj)
+                return
+            if self._enabled:
+                now = self._time_func()
+                self._apply_decay_once_locked(now)
+                if len(self._idle) < self._target_idle:
+                    self._idle.append(obj)
+                    return
+            self.destroy_object(obj)

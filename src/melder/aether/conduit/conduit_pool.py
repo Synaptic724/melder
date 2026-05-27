@@ -118,17 +118,20 @@ class ConduitPool(AbstractElasticPool[Any]):
             - Retains the conduit when idle capacity allows.
             - Destroys the conduit through the hard lane when the pool is
               disabled or already full.
-            - Ignores duplicate idle insertion for the same conduit object.
+            - Assumes trusted private callers return each conduit at most once.
+            - Applies at most one decay step only when the idle list is already
+              at the current retained limit.
         """
         with self._lock:
+            if self._in_use_count > 0:
+                self._in_use_count -= 1
+            if self._enabled and len(self._idle) < self._target_idle:
+                self._idle.append(conduit)
+                return
             if self._enabled:
-                if any(existing is conduit for existing in self._idle):
-                    return
-                if self._in_use_count > 0:
-                    self._in_use_count -= 1
                 now = self._time_func()
-                self._apply_decay_locked(now)
-                if len(self._idle) < self._target_idle and len(self._idle) < self._max_idle:
+                self._apply_decay_once_locked(now)
+                if len(self._idle) < self._target_idle:
                     self._idle.append(conduit)
                     return
             self.destroy_object(conduit)

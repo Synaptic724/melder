@@ -1027,7 +1027,8 @@ class Conduit(Cleanable):
           must use `Existence.unique`.
         - The instance is registered under `spell.spell_id` via
           `Creations.add_creation(...)`.
-        - Disposal metadata from the spell is forwarded to the Creation wrapper.
+        - Disposal metadata from the spell is forwarded only when the retained
+          entry actually needs explicit disposal tracking.
 
         This is primarily used during the conjure flow when a Conduit is
         first wired into its Spellbook and needs to prime its Creations

@@ -317,7 +317,7 @@ def test_decay_applies_multiple_intervals() -> None:
     clock.value = 31.0
     pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
 
-    assert pool.target_idle == 13
+    assert pool.target_idle == 10
 
 
 def test_decay_never_drops_below_baseline() -> None:

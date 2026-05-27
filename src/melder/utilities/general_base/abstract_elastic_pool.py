@@ -52,6 +52,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         "_baseline_idle",
         "_decay_interval_seconds",
         "_decay_percent_per_interval",
+        "_decay_step",
         "_enabled",
         "_idle",
         "_in_use_count",
@@ -131,6 +132,15 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         self._decay_interval_seconds: float = decay_interval_seconds
         self._max_idle: int = resolved_max_idle
         self._target_idle: int = baseline_idle
+        self._decay_step: int = max(
+            1,
+            int(
+                math.floor(
+                    float(max(baseline_idle, 1))
+                    * (float(self._decay_percent_per_interval) / 100.0)
+                )
+            ),
+        )
         self._idle: List[_T] = []
         self._in_use_count: int = 0
         self._lock: threading.RLock = threading.RLock()
@@ -260,7 +270,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             self._in_use_count -= 1
             now = self._time_func()
             self._apply_decay_locked(now)
-            if self._enabled and len(self._idle) < self._target_idle and len(self._idle) < self._max_idle:
+            if self._enabled and len(self._idle) < self._target_idle:
                 self._idle.append(obj)
                 return
             self.destroy_object(obj)
@@ -336,7 +346,40 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             int(math.ceil(float(current_target) * (float(self._stretch_percent) / 100.0))),
         )
         self._target_idle = min(self._max_idle, current_target + stretch_amount)
+        self._decay_step = max(
+            1,
+            int(
+                math.floor(
+                    float(self._target_idle)
+                    * (float(self._decay_percent_per_interval) / 100.0)
+                )
+            ),
+        )
         self._last_expand_at = now
+        self._last_decay_at = now
+
+    def _apply_decay_once_locked(self, now: float) -> None:
+        """
+        Apply at most one decay step when the cooldown and interval allow it.
+
+        Contract:
+            - No decay while cooldown is active after the last stretch.
+            - No decay when the target is already at baseline.
+            - Applies one percentage-based decay step and updates the decay
+              timestamp to `now`.
+        """
+        if not self._enabled:
+            return
+        if self._target_idle <= self._baseline_idle:
+            return
+        if now - self._last_expand_at < self._settle_time_seconds:
+            return
+        if now - self._last_decay_at < self._decay_interval_seconds:
+            return
+        self._target_idle = max(
+            self._baseline_idle,
+            self._target_idle - self._decay_step,
+        )
         self._last_decay_at = now
 
     def _apply_decay_locked(self, now: float) -> None:
@@ -362,9 +405,8 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         for _ in range(steps):
             if self._target_idle <= self._baseline_idle:
                 break
-            decay_amount = max(
-                1,
-                int(math.floor(float(self._target_idle) * (float(self._decay_percent_per_interval) / 100.0))),
+            self._target_idle = max(
+                self._baseline_idle,
+                self._target_idle - self._decay_step,
             )
-            self._target_idle = max(self._baseline_idle, self._target_idle - decay_amount)
         self._last_decay_at += float(steps) * self._decay_interval_seconds
