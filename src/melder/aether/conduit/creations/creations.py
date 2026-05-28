@@ -62,10 +62,6 @@ class Creations(Cleanable):
                 If `conduit_id` is empty or `spellspace_stack` is missing.
         """
         super().__init__()
-        if not conduit_id:
-            raise ValueError("conduit_id must not be empty.")
-        if spellspace_stack is None:
-            raise ValueError("spellspace_stack must not be None.")
 
         self._owner_conduit_id: str = conduit_id
         self._id: str = conduit_id
@@ -93,7 +89,8 @@ class Creations(Cleanable):
 
             self._cleaned = True
             disposable_creations = self._disposable_creations
-            self._creations.clear()
+            creations = self._creations
+            self._creations = {}
             self._disposable_creations = {}
 
         try:
@@ -101,6 +98,7 @@ class Creations(Cleanable):
         except Exception as exc:
             errors = [exc]
         disposable_creations.clear()
+        creations.clear()
 
         del self._creations
         del self._disposable_creations

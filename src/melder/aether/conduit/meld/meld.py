@@ -854,7 +854,7 @@ class Meld(Cleanable):
         caller_creations = self._creations
 
         if existence is Existence.many:
-            creation_bucket = caller_creations._creations.get(spell_id)
+            creation_bucket = caller_creations.get_creation(spell_id)
             creation_count = (
                 len(creation_bucket)
                 if isinstance(creation_bucket, list)
@@ -873,7 +873,7 @@ class Meld(Cleanable):
             }
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations._creations.get(spell_id)
+            creation = caller_creations.get_creation(spell_id)
             return {
                 "is_live": creation is not None,
                 "spell_id": spell_id,
@@ -934,7 +934,7 @@ class Meld(Cleanable):
                     "active_spellspace_id": None,
                     "creation_count": 0,
                 }
-            creation = owner_creations._creations.get(spell_id)
+            creation = owner_creations.get_creation(spell_id)
             return {
                 "is_live": creation is not None,
                 "spell_id": spell_id,
