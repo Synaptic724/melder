@@ -506,11 +506,17 @@ def test_create_lesser_conduit_inherits_root_conduit_pool(
         lesser.permanent_cleanup()
 
 
-def test_create_lesser_conduit_reopens_temporarily_closed_pooled_gate(
+def test_create_lesser_conduit_preserves_temporarily_closed_pooled_gate(
     conduit_dynamic_normal: Conduit,
 ) -> None:
     """
-    Verify pooled lesser reacquire re-enables a non-terminally closed gate.
+    Verify pooled lesser reacquire preserves non-terminal gate disable state.
+
+    Contract:
+        - Returning a lesser conduit shell to the pool does not reopen its gate.
+        - Reusing the shell preserves the current temporary disabled state.
+        - Gate governance belongs to the dev-ops/controller layer, not conduit
+          reacquire lifecycle.
     """
     lesser = conduit_dynamic_normal.create_lesser_conduit()
     lesser._creation_gate.close()
@@ -523,7 +529,7 @@ def test_create_lesser_conduit_reopens_temporarily_closed_pooled_gate(
 
     try:
         assert reused is lesser
-        assert reused._creation_gate.enabled is True
+        assert reused._creation_gate.enabled is False
         assert reused._creation_gate.is_closed() is False
     finally:
         reused.permanent_cleanup()

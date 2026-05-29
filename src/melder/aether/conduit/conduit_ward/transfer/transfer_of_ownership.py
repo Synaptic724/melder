@@ -838,6 +838,7 @@ class TransferOfOwnership(Cleanable):
             spell_obj._cleanup_creation_context()
             spell_obj._compiler_artifact.cleanup_phase_artifacts()
             spell_obj._compiler_artifact.clear_phase5_artifacts()
+            spell_obj.requires_spellspace_request = False
             tgt_book._unregister_spell_with_risk_manager(self.target_conduit._id, spell_obj)
             src_book._register_spell_with_risk_manager(self.source_conduit._id, spell_obj)
         try:
@@ -1370,6 +1371,7 @@ class TransferOfOwnership(Cleanable):
                     spell_obj._cleanup_creation_context()
                     spell_obj._compiler_artifact.cleanup_phase_artifacts()
                     spell_obj._compiler_artifact.clear_phase5_artifacts()
+                    spell_obj.requires_spellspace_request = False
                 tgt_states.register_index(
                     spell_index=spell_obj.spell_index,
                 )

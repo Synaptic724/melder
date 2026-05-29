@@ -206,6 +206,7 @@ def test_clear_phase5_artifacts_delegates_to_artifact(monkeypatch: pytest.Monkey
     """clear_phase5_artifacts should delegate to the spell-owned artifact."""
     compiler_system = SpellCompilerSystem()
     spell = make_spell()
+    spell.requires_spellspace_request = True
     calls: list[str] = []
 
     monkeypatch.setattr(
@@ -217,6 +218,7 @@ def test_clear_phase5_artifacts_delegates_to_artifact(monkeypatch: pytest.Monkey
     compiler_system.clear_phase5_artifacts(spell)
 
     assert calls == ["clear"]
+    assert spell.requires_spellspace_request is False
 
 
 def test_run_structural_phases_calls_phases_1_to_4_in_order(

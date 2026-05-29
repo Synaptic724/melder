@@ -828,6 +828,7 @@ class SpellCompilerSystem(Cleanable):
             None.
         """
         spell._compiler_artifact.clear_phase5_artifacts()
+        spell.requires_spellspace_request = False
 
     def run_structural_phases(
             self,
