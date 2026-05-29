@@ -1,4 +1,23 @@
 ﻿from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
+from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
+    SharedCompilerExecutions,
+)
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
+    SpellSystemAdjacencyBuilder,
+)
+from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
+    SpellSystemAdjacencySnapshot,
+)
+from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
+    SpellSystemIndex,
+)
+from melder.aether.spellbook.spell_compiler.system.spell_system_node import (
+    SpellSystemNode,
+)
+from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
+    SpellSystemRootBlueprintBuilder,
+)
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
@@ -24,24 +43,6 @@ if TYPE_CHECKING:
 
 
 
-from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
-    SharedCompilerExecutions,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
-    SpellSystemAdjacencyBuilder,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
-    SpellSystemAdjacencySnapshot,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
-    SpellSystemIndex,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_node import (
-    SpellSystemNode,
-)
-from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder import (
-    SpellSystemRootBlueprintBuilder,
-)
 
 
 
@@ -178,6 +179,8 @@ class CompilerPhase5:
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
         artifact._root_blueprint_phase5 = blueprint
+        artifact._requires_spellspace_request_phase5 = blueprint.requires_spellspace_request
+        spell.requires_spellspace_request = blueprint.requires_spellspace_request
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
         SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
 
@@ -253,7 +256,7 @@ class CompilerPhase5:
             snapshot: SpellSystemAdjacencySnapshot,
             spell_lookup: Dict[str, Spell],
             spell_system_states: SpellSystemStates,
-    ) -> SpellSystemIndex:
+    ) -> tuple[SpellSystemIndex, Set[str]]:
         """
         Build a SpellSystemIndex for a pre-filtered adjacency snapshot.
 
@@ -275,12 +278,15 @@ class CompilerPhase5:
                 Index populated for all snapshot spell ids.
         """
         system_index = SpellSystemIndex()
+        spellspace_scoped_spell_ids: Set[str] = set()
         for spell_id, deps in snapshot.dependencies.items():
             lineage_id = self._get_required_spell_state_by_spell_id(
                 spell_system_states,
                 spell_id,
             ).spell_index_id
             spell_instance = spell_lookup[spell_id]
+            if spell_instance.existence is Existence.unique_per_spell_space:
+                spellspace_scoped_spell_ids.add(spell_id)
 
             node = SpellSystemNode(
                 spell_id=spell_id,
@@ -294,7 +300,7 @@ class CompilerPhase5:
             )
             system_index.upsert_node(node)
 
-        return system_index
+        return system_index, spellspace_scoped_spell_ids
 
     def _attach_phase5_artifacts_for_snapshot(
             self,
@@ -496,13 +502,14 @@ class CompilerPhase5:
 
         # --- 3. Build deep DAGs for visible roots --------------------------
         root_builder = SpellSystemRootBlueprintBuilder()
-        root_blueprints = root_builder.build_root_blueprints(filtered_snapshot)
-
-        # --- 4. Construct system-level index -------------------------------
-        system_index = self._build_system_index_for_snapshot(
+        system_index, spellspace_scoped_spell_ids = self._build_system_index_for_snapshot(
             snapshot=filtered_snapshot,
             spell_lookup=spellbook._spell_id_pool,
             spell_system_states=required_spell_system_states,
+        )
+        root_blueprints = root_builder.build_root_blueprints(
+            filtered_snapshot,
+            spellspace_scoped_spell_ids=spellspace_scoped_spell_ids,
         )
 
         self._attach_phase5_artifacts_for_snapshot(
@@ -649,11 +656,14 @@ class CompilerPhase5:
         )
 
         root_builder = SpellSystemRootBlueprintBuilder()
-        local_root_blueprints = root_builder.build_root_blueprints(scoped_snapshot)
-        system_index = self._build_system_index_for_snapshot(
+        system_index, spellspace_scoped_spell_ids = self._build_system_index_for_snapshot(
             snapshot=scoped_snapshot,
             spell_lookup=spell_lookup,
             spell_system_states=required_spell_system_states,
+        )
+        local_root_blueprints = root_builder.build_root_blueprints(
+            scoped_snapshot,
+            spellspace_scoped_spell_ids=spellspace_scoped_spell_ids,
         )
         self._attach_phase5_artifacts_for_snapshot(
             snapshot=scoped_snapshot,

@@ -70,11 +70,18 @@ class _RootBlueprintStub:
 
     __slots__ = [
         "root_spell_id",
+        "requires_spellspace_request",
     ]
 
-    def __init__(self, root_spell_id: str) -> None:
-        """Store the root spell id."""
+    def __init__(
+            self,
+            root_spell_id: str,
+            *,
+            requires_spellspace_request: bool = False,
+    ) -> None:
+        """Store the root spell id and spellspace-request flag."""
         self.root_spell_id = root_spell_id
+        self.requires_spellspace_request = requires_spellspace_request
 
 
 class _AdjacencyBuilderStub:
@@ -100,12 +107,21 @@ class _RootBlueprintBuilderStub:
         self.build_blueprint_for_spell_id_calls: list[tuple[str, Any]] = []
         _RootBlueprintBuilderStub.last_instance = self
 
-    def build_root_blueprints(self, snapshot: Any) -> Dict[str, Any]:
+    def build_root_blueprints(
+            self,
+            snapshot: Any,
+            spellspace_scoped_spell_ids: Optional[set[str]] = None,
+    ) -> Dict[str, Any]:
         """Record the snapshot and return configured root blueprints."""
         self.build_root_blueprints_calls.append(snapshot)
         return dict(self.next_blueprints)
 
-    def build_blueprint_for_spell_id(self, root_spell_id: str, snapshot: Any) -> Any:
+    def build_blueprint_for_spell_id(
+            self,
+            root_spell_id: str,
+            snapshot: Any,
+            spellspace_scoped_spell_ids: Optional[set[str]] = None,
+    ) -> Any:
         """Record the fallback request and return the configured fallback blueprint."""
         self.build_blueprint_for_spell_id_calls.append((root_spell_id, snapshot))
         if self.next_fallback_blueprint is not None:
@@ -260,7 +276,7 @@ def test_build_system_index_for_snapshot_populates_spell_metadata() -> None:
         root_spell_ids=set(["root"]),
     )
 
-    system_index = phase._build_system_index_for_snapshot(
+    system_index, spellspace_scoped_spell_ids = phase._build_system_index_for_snapshot(
         snapshot=snapshot,
         spell_lookup=spellbook._spell_id_pool,
         spell_system_states=states,
@@ -278,6 +294,7 @@ def test_build_system_index_for_snapshot_populates_spell_metadata() -> None:
     assert dep_node.is_root is False
     assert root_node.conduit_id == "conduit-root"
     assert dep_node.conduit_id == "conduit-dep"
+    assert spellspace_scoped_spell_ids == set()
 
 
 def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(

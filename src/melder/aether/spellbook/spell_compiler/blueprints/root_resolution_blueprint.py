@@ -38,6 +38,7 @@ class RootResolutionBlueprint(Cleanable):
         "_root_lineage_id",
         "_dag",
         "_ordered_node_ids",
+        "_requires_spellspace_request",
         "_socket_refs",
         "_dag_index",
         "_dag_index_build_lock",
@@ -49,6 +50,7 @@ class RootResolutionBlueprint(Cleanable):
             root_lineage_id: Optional[str],
             dag: DirectedAcyclicWorkGraph,
             ordered_node_ids: Optional[Sequence[str]] = None,
+            requires_spellspace_request: bool = False,
             socket_refs: Optional[Sequence[SocketRef]] = None,
             dag_index: Optional[DagIndex] = None,
     ) -> None:
@@ -90,6 +92,7 @@ class RootResolutionBlueprint(Cleanable):
 
         # Execution order: dependencies first, root last.
         self._ordered_node_ids: List[str] = list(ordered_node_ids) if ordered_node_ids else []
+        self._requires_spellspace_request: bool = bool(requires_spellspace_request)
 
         # Socket metadata (can be populated incrementally by Phase 5 builder).
         self._socket_refs: List[SocketRef] = list(socket_refs) if socket_refs else []
@@ -131,6 +134,7 @@ class RootResolutionBlueprint(Cleanable):
 
         del self._dag_index_build_lock
         del self._ordered_node_ids
+        del self._requires_spellspace_request
         del self._dag_index
         del self._socket_refs
         del self._dag
@@ -183,6 +187,14 @@ class RootResolutionBlueprint(Cleanable):
         """
         self.check_cleaned()
         return list(self._ordered_node_ids)
+
+    @property
+    def requires_spellspace_request(self) -> bool:
+        """
+        Return whether this rooted request graph contains spellspace-scoped work.
+        """
+        self.check_cleaned()
+        return self._requires_spellspace_request
 
     @property
     def socket_refs(self) -> List[SocketRef]:

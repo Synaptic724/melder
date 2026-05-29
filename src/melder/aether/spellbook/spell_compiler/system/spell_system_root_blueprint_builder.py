@@ -10,6 +10,7 @@ from typing import (
     Set,
     Tuple,
     ClassVar,
+    FrozenSet,
 )
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
@@ -45,16 +46,24 @@ class SpellSystemRootBlueprintBuilder:
           Socket metadata and DagIndex are overlaid in later Phase-5 steps.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __slots__: list[str] = ["_reachable_by_id", "_reachable_snapshot_id"]
+    __slots__: list[str] = [
+        "_reachable_by_id",
+        "_requires_spellspace_request_by_id",
+        "_reachable_snapshot_id",
+        "_reachable_spellspace_scoped_spell_ids",
+    ]
 
     def __init__(self) -> None:
         """Initialize the builder with an empty per-snapshot reachability memo."""
         self._reachable_by_id: Optional[Dict[str, Set[str]]] = None
+        self._requires_spellspace_request_by_id: Optional[Dict[str, bool]] = None
         self._reachable_snapshot_id: Optional[int] = None
+        self._reachable_spellspace_scoped_spell_ids: Optional[FrozenSet[str]] = None
 
     def build_root_blueprints(
             self,
             snapshot: SpellSystemAdjacencySnapshot,
+            spellspace_scoped_spell_ids: Optional[Set[str]] = None,
     ) -> Dict[str, RootResolutionBlueprint]:
         """
         Build a RootResolutionBlueprint for every root spell in the snapshot.
@@ -75,7 +84,13 @@ class SpellSystemRootBlueprintBuilder:
         """
         root_ids: Set[str] = snapshot.root_spell_ids
         dependencies: Dict[str, Set[str]] = snapshot.dependencies
-        reachable_by_id = self._reachable_by_id_for(snapshot)
+        (
+            reachable_by_id,
+            requires_spellspace_request_by_id,
+        ) = self._reachable_by_id_for(
+            snapshot,
+            spellspace_scoped_spell_ids,
+        )
         result: Dict[str, RootResolutionBlueprint] = {}
 
         for root_spell_id in sorted(root_ids):
@@ -91,6 +106,7 @@ class SpellSystemRootBlueprintBuilder:
                 root_lineage_id=None,          # lineages can be threaded later if needed
                 dag=dag,
                 ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
+                requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
                 socket_refs=None,              # Phase-5 socket overlay will populate
                 dag_index=None,                # Phase-5 DagIndex builder will populate
             )
@@ -112,6 +128,7 @@ class SpellSystemRootBlueprintBuilder:
             *,
             root_spell_id: str,
             snapshot: SpellSystemAdjacencySnapshot,
+            spellspace_scoped_spell_ids: Optional[Set[str]] = None,
     ) -> RootResolutionBlueprint:
         """
         Build a RootResolutionBlueprint for a specific spell id.
@@ -140,7 +157,13 @@ class SpellSystemRootBlueprintBuilder:
                 The compiled blueprint for the requested spell id.
 
         """
-        reachable_by_id = self._reachable_by_id_for(snapshot)
+        (
+            reachable_by_id,
+            requires_spellspace_request_by_id,
+        ) = self._reachable_by_id_for(
+            snapshot,
+            spellspace_scoped_spell_ids,
+        )
         dag, ordered_ids = self._build_single_root_dag(
             root_spell_id=root_spell_id,
             dependencies=snapshot.dependencies,
@@ -153,6 +176,7 @@ class SpellSystemRootBlueprintBuilder:
             root_lineage_id=None,          # lineages can be threaded later if needed
             dag=dag,
             ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
+            requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
             socket_refs=None,              # Phase-5 socket overlay will populate
             dag_index=None,                # Phase-5 DagIndex builder will populate
         )
@@ -174,7 +198,8 @@ class SpellSystemRootBlueprintBuilder:
     def _reachable_by_id_for(
             self,
             snapshot: SpellSystemAdjacencySnapshot,
-    ) -> Dict[str, Set[str]]:
+            spellspace_scoped_spell_ids: Optional[Set[str]] = None,
+    ) -> Tuple[Dict[str, Set[str]], Dict[str, bool]]:
         """
         Return the reachable-id map for ``snapshot``, computing it once.
 
@@ -188,22 +213,35 @@ class SpellSystemRootBlueprintBuilder:
         Memoized on snapshot identity; one builder instance only ever serves one
         snapshot, so this is effectively compute-once.
         """
+        requested_spellspace_scoped_spell_ids: FrozenSet[str] = frozenset(
+            spellspace_scoped_spell_ids or ()
+        )
         cached = self._reachable_by_id
-        if cached is not None and self._reachable_snapshot_id == id(snapshot):
-            return cached
-        computed = self._compute_reachable_by_id(
+        cached_requires = self._requires_spellspace_request_by_id
+        if (
+                cached is not None
+                and cached_requires is not None
+                and self._reachable_snapshot_id == id(snapshot)
+                and self._reachable_spellspace_scoped_spell_ids == requested_spellspace_scoped_spell_ids
+        ):
+            return cached, cached_requires
+        computed, requires_spellspace_request_by_id = self._compute_reachable_by_id(
             dependencies=snapshot.dependencies,
             all_spell_ids=snapshot.all_spell_ids,
+            spellspace_scoped_spell_ids=requested_spellspace_scoped_spell_ids,
         )
         self._reachable_by_id = computed
+        self._requires_spellspace_request_by_id = requires_spellspace_request_by_id
         self._reachable_snapshot_id = id(snapshot)
-        return computed
+        self._reachable_spellspace_scoped_spell_ids = requested_spellspace_scoped_spell_ids
+        return computed, requires_spellspace_request_by_id
 
     def _compute_reachable_by_id(
             self,
             dependencies: Dict[str, Set[str]],
             all_spell_ids: Collection[str],
-    ) -> Dict[str, Set[str]]:
+            spellspace_scoped_spell_ids: Collection[str],
+    ) -> Tuple[Dict[str, Set[str]], Dict[str, bool]]:
         """
         Compute ``reachable(X)`` for every spell id, sharing subtree work.
 
@@ -254,19 +292,29 @@ class SpellSystemRootBlueprintBuilder:
             order.extend(node for node in allowed if node not in ordered_set)
 
         reachable: Dict[str, Set[str]] = {}
+        requires_spellspace_request_by_id: Dict[str, bool] = {}
         for node in order:
             closure: Set[str] = {node}
+            requires_spellspace_request = node in spellspace_scoped_spell_ids
             for provider in dependencies.get(node, ()):
                 if provider not in allowed:
                     continue
                 provider_closure = reachable.get(provider)
                 if provider_closure is not None:
                     closure |= provider_closure
+                    if requires_spellspace_request_by_id.get(provider, False):
+                        requires_spellspace_request = True
                 else:
                     # Cycle member: provider closure not ready -> exact DFS.
-                    closure |= self._dfs_closure(provider, dependencies, allowed)
+                    fallback_closure = self._dfs_closure(provider, dependencies, allowed)
+                    closure |= fallback_closure
+                    if not requires_spellspace_request:
+                        requires_spellspace_request = not fallback_closure.isdisjoint(
+                            spellspace_scoped_spell_ids
+                        )
             reachable[node] = closure
-        return reachable
+            requires_spellspace_request_by_id[node] = requires_spellspace_request
+        return reachable, requires_spellspace_request_by_id
 
     @staticmethod
     def _dfs_closure(

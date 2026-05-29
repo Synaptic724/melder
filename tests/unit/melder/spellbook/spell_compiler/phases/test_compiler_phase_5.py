@@ -86,6 +86,7 @@ class _RootBlueprintStub:
     __slots__ = [
         "root_spell_id",
         "ordered_node_ids",
+        "requires_spellspace_request",
     ]
 
     def __init__(
@@ -93,12 +94,14 @@ class _RootBlueprintStub:
             root_spell_id: str,
             *,
             ordered_node_ids: Optional[tuple[str, ...]] = None,
+            requires_spellspace_request: bool = False,
     ) -> None:
         """Store the root spell id and stable ordered node ids."""
         self.root_spell_id = root_spell_id
         if ordered_node_ids is None:
             ordered_node_ids = (root_spell_id,)
         self.ordered_node_ids = ordered_node_ids
+        self.requires_spellspace_request = requires_spellspace_request
 
 
 class _AdjacencyBuilderStub:
@@ -131,12 +134,21 @@ class _RootBlueprintBuilderStub:
         self.build_blueprint_for_spell_id_calls: list[tuple[str, Any]] = []
         _RootBlueprintBuilderStub.last_instance = self
 
-    def build_root_blueprints(self, snapshot: Any) -> Dict[str, Any]:
+    def build_root_blueprints(
+            self,
+            snapshot: Any,
+            spellspace_scoped_spell_ids: Optional[set[str]] = None,
+    ) -> Dict[str, Any]:
         """Record the snapshot and return configured root blueprints."""
         self.build_root_blueprints_calls.append(snapshot)
         return dict(self.next_blueprints)
 
-    def build_blueprint_for_spell_id(self, root_spell_id: str, snapshot: Any) -> Any:
+    def build_blueprint_for_spell_id(
+            self,
+            root_spell_id: str,
+            snapshot: Any,
+            spellspace_scoped_spell_ids: Optional[set[str]] = None,
+    ) -> Any:
         """Record the fallback request and return the configured fallback blueprint."""
         self.build_blueprint_for_spell_id_calls.append((root_spell_id, snapshot))
         if self.next_fallback_blueprint is not None:
@@ -286,7 +298,6 @@ def test_set_root_blueprint_phase5_rejects_none(
             spell,
             spell._compiler_artifact,
             None,
-            False,
         )
 
     assert captured["capture"] == []
@@ -315,7 +326,6 @@ def test_set_root_blueprint_phase5_sets_value_and_refreshes_ir(
         spell,
         spell._compiler_artifact,
         blueprint,
-        False,
     )
 
     assert spell._compiler_artifact._root_blueprint_phase5 is blueprint
@@ -341,13 +351,12 @@ def test_set_root_blueprint_phase5_sets_spellspace_request_flag(
         spellbook=spellbook,
         spell_system_states=spellbook._spell_system_states,
     )
-    blueprint = _RootBlueprintStub("root")
+    blueprint = _RootBlueprintStub("root", requires_spellspace_request=True)
 
     phase._set_root_blueprint_phase5(
         spell,
         spell._compiler_artifact,
         blueprint,
-        True,
     )
 
     assert spell._compiler_artifact._root_blueprint_phase5 is blueprint
