@@ -1708,9 +1708,6 @@ class Conduit(Cleanable):
                 new_conduit._conduit_state = ConduitState.lesser
                 new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
-                self._conduit_ward._link_lesser_conduit(new_conduit)
-                if not reused_from_pool:
-                    new_conduit._publish_conduit_record_to_nexus()
 
                 # Fire activation hook with the new conduit instance.
                 self._fire_conduit_hooks(
