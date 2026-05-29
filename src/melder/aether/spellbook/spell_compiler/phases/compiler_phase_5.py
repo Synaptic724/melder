@@ -50,12 +50,12 @@ class CompilerPhase5:
     Compiler phase 5 surface.
 
     Purpose:
-        Expose the current rooted-blueprint build behavior through a compiler-
+        Expose the current rooted-blueprint build behaviour through a compiler-
         owned phase class.
 
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
-        - Directly ports the canonical `SpellCrafter` phase-5 behavior.
+        - Directly ports the canonical `SpellCrafter` phase-5 behaviour.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -260,7 +260,7 @@ class CompilerPhase5:
         Purpose:
             Share index construction between frame-wide and local Phase 5 paths.
         Contract:
-            - Requires every snapshot spell id to be present in ``spell_lookup``.
+            - Requires every snapshot spell id to be present in "spell_lookup".
             - Resolves lineage ids from SpellSystemStates.
             - Does not mutate snapshot or spell_lookup.
         Args:
@@ -312,7 +312,7 @@ class CompilerPhase5:
             Ensure scoped spells have consistent Phase 5 artifacts before
             Phase 6-11 are executed.
         Contract:
-            - Updates only spells included in ``snapshot.all_spell_ids``.
+            - Updates only spells included in "snapshot.all_spell_ids".
             - Existing-creation spells get index only and skip blueprints.
             - Builds fallback per-spell blueprint when not present as a root.
         Args:
@@ -466,7 +466,7 @@ class CompilerPhase5:
             - A root-only blueprint map for system validation (Phase 6).
             - Per-spell blueprints attached to constructed spells so Phase 8-10
               and Phase 11 compilation can proceed for any meldable spell.
-            - The change-control component-of map is rebuilt from owned roots
+            - The change-control component of the map is rebuilt from owned roots
               only, so contracted roots are not revalidated by this conduit.
 
         Args:

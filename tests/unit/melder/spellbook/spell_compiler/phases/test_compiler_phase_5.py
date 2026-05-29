@@ -85,11 +85,20 @@ class _RootBlueprintStub:
 
     __slots__ = [
         "root_spell_id",
+        "ordered_node_ids",
     ]
 
-    def __init__(self, root_spell_id: str) -> None:
-        """Store the root spell id."""
+    def __init__(
+            self,
+            root_spell_id: str,
+            *,
+            ordered_node_ids: Optional[tuple[str, ...]] = None,
+    ) -> None:
+        """Store the root spell id and stable ordered node ids."""
         self.root_spell_id = root_spell_id
+        if ordered_node_ids is None:
+            ordered_node_ids = (root_spell_id,)
+        self.ordered_node_ids = ordered_node_ids
 
 
 class _AdjacencyBuilderStub:
@@ -273,7 +282,12 @@ def test_set_root_blueprint_phase5_rejects_none(
     )
 
     with pytest.raises(ValueError, match="blueprint must not be None"):
-        phase._set_root_blueprint_phase5(spell, spell._compiler_artifact, None)
+        phase._set_root_blueprint_phase5(
+            spell,
+            spell._compiler_artifact,
+            None,
+            False,
+        )
 
     assert captured["capture"] == []
     assert captured["reset"] == []
@@ -297,9 +311,48 @@ def test_set_root_blueprint_phase5_sets_value_and_refreshes_ir(
     )
     blueprint = _RootBlueprintStub("root")
 
-    phase._set_root_blueprint_phase5(spell, spell._compiler_artifact, blueprint)
+    phase._set_root_blueprint_phase5(
+        spell,
+        spell._compiler_artifact,
+        blueprint,
+        False,
+    )
 
     assert spell._compiler_artifact._root_blueprint_phase5 is blueprint
+    assert spell._compiler_artifact._requires_spellspace_request_phase5 is False
+    assert spell.requires_spellspace_request is False
+    assert captured["capture"] == [(spell, spell._compiler_artifact)]
+    assert captured["reset"] == [(spell, spell._compiler_artifact)]
+
+
+def test_set_root_blueprint_phase5_sets_spellspace_request_flag(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Phase 5 helper should bind spellspace-request truth onto spell and artifact."""
+    phase = CompilerPhase5()
+    captured = _patch_ir_exports(monkeypatch)
+    spellbook = _make_spellbook_stub(
+        spell_system_states=_SpellSystemStatesStub(
+            [_SpellStateStub("root", "lineage-root")]
+        )
+    )
+    spell = _make_spell_stub(
+        "root",
+        spellbook=spellbook,
+        spell_system_states=spellbook._spell_system_states,
+    )
+    blueprint = _RootBlueprintStub("root")
+
+    phase._set_root_blueprint_phase5(
+        spell,
+        spell._compiler_artifact,
+        blueprint,
+        True,
+    )
+
+    assert spell._compiler_artifact._root_blueprint_phase5 is blueprint
+    assert spell._compiler_artifact._requires_spellspace_request_phase5 is True
+    assert spell.requires_spellspace_request is True
     assert captured["capture"] == [(spell, spell._compiler_artifact)]
     assert captured["reset"] == [(spell, spell._compiler_artifact)]
 

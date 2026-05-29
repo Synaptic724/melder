@@ -222,6 +222,7 @@ class Spell(Cleanable):
         "profile",
         "resolution_required",
         "resolution_complete",
+        "requires_spellspace_request",
         "execution_plan_step_count",
         "execution_plan_unique_spell_count",
         "execution_plan_max_occurrence_depth",
@@ -381,6 +382,11 @@ class Spell(Cleanable):
         # Runtime deferred-resolution completion flag.
         # Starts False and flips True only when Phase12 compile wiring completes.
         self.resolution_complete: bool = False
+        # Compiler-derived runtime request flag.
+        # True means the rooted request graph contains a spellspace-scoped
+        # dependency and the spell therefore requires an active spellspace
+        # request context at runtime.
+        self.requires_spellspace_request: bool = False
 
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None
@@ -524,6 +530,7 @@ class Spell(Cleanable):
             del self._dynamic_environment
             del self.resolution_required
             del self.resolution_complete
+            del self.requires_spellspace_request
             del self.aetheric_frame
             del self.spell_index
 

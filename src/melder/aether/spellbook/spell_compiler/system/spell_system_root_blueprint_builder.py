@@ -11,9 +11,6 @@ from typing import (
     Tuple,
     ClassVar,
 )
-
-
-
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -79,7 +76,6 @@ class SpellSystemRootBlueprintBuilder:
         root_ids: Set[str] = snapshot.root_spell_ids
         dependencies: Dict[str, Set[str]] = snapshot.dependencies
         reachable_by_id = self._reachable_by_id_for(snapshot)
-
         result: Dict[str, RootResolutionBlueprint] = {}
 
         for root_spell_id in sorted(root_ids):
