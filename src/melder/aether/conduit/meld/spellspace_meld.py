@@ -17,12 +17,11 @@ class SpellSpaceMeld(Meld):
     Concrete spellspace-facing meld front door.
 
     Purpose:
-        Own the spellspace-specific entry semantics while bridging the current
-        backend through the owner conduit runtime where needed.
+        Own the spellspace-specific entry semantics and route spellspace-bound
+        work onto spellspace-owned storage directly.
 
     Contract:
-        - Holds the owning spellspace object directly so the current backend can
-          be driven through active-spellspace push/pop semantics.
+        - Holds the owning spellspace object directly.
         - Holds both spellspace-owned creations and owner-conduit creations.
         - Leaves shared lookup, validation, and compiler logic on abstract
           `Meld`.
@@ -89,26 +88,22 @@ class SpellSpaceMeld(Meld):
             override_map: Optional[dict[str, Any]],
     ) -> Any:
         """
-        Execute the shared backend while the owning spellspace is active on the
-        owner-conduit spellspace stack.
+        Execute the shared backend with the correct caller-creations surface
+        for the resolved existence route.
 
         Contract:
-            - This is the bridge layer that keeps the current engine room
-              working while the front-door class/state split lands first.
-            - The owner-conduit creations surface remains the backend
-              `caller_creations` object in this slice.
+            - `unique_per_spell_space` uses spellspace-owned storage directly.
+            - Other caller-scoped routes keep using owner-conduit creations.
         """
-        owner_conduit_creations = self._owner_conduit_creations
-        spellspace = self._spellspace
-        owner_conduit_creations.push_active_spellspace(spellspace)
-        try:
-            return self._execute_meld_for_resolved_spell(
-                target_spell=target_spell,
-                runtime_creations=owner_conduit_creations,
-                override_map=override_map,
-            )
-        finally:
-            owner_conduit_creations.pop_active_spellspace(spellspace)
+        if target_spell.existence is Existence.unique_per_spell_space:
+            runtime_creations = self._spellspace_creations
+        else:
+            runtime_creations = self._owner_conduit_creations
+        return self._execute_meld_for_resolved_spell(
+            target_spell=target_spell,
+            runtime_creations=runtime_creations,
+            override_map=override_map,
+        )
 
     def meld(
             self,

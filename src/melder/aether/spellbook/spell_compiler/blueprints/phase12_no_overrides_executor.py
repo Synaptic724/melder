@@ -994,33 +994,7 @@ def _append_step_register_source(
 
     if existence is Existence.unique_per_spell_space:
         lines.extend([
-            (
-                f"{indent}spellspace_{step_index} = "
-                f"creations_{step_index}.get_active_spellspace()"
-            ),
-            f"{indent}if spellspace_{step_index} is None:",
-            f"{indent}    raise SpellSpaceScopeError(",
-            (
-                f"{indent}        \"Existence.unique_per_spell_space requires an "
-                f"active SpellSpace. \""
-            ),
-            (
-                f"{indent}        \"Use 'with conduit.enter_spellspace()' when "
-                f"melding.\""
-            ),
-            f"{indent}    )",
-            (
-                f"{indent}if spellspace_{step_index}.owner_conduit_id != "
-                f"creations_{step_index}.owner_conduit_id:"
-            ),
-            f"{indent}    raise SpellSpaceScopeError(",
-            (
-                f"{indent}        \"Active SpellSpace belongs to a different "
-                f"conduit.\""
-            ),
-            f"{indent}    )",
-            f"{indent}creations_{step_index}.register_spellspace_creation(",
-            f"{indent}    spellspace_{step_index}.id,",
+            f"{indent}creations_{step_index}.add_creation(",
             f"{indent}    spell_id_{step_index},",
             f"{indent}    instance_{step_index},",
             (
@@ -1367,17 +1341,7 @@ def _get_existing_creation(
         return creation
 
     if existence is Existence.unique_per_spell_space:
-        spellspace = creations.get_active_spellspace()
-        if spellspace is None:
-            raise SpellSpaceScopeError(
-                "Existence.unique_per_spell_space requires an active SpellSpace. "
-                "Use 'with conduit.enter_spellspace()' when melding."
-            )
-        if spellspace.owner_conduit_id != creations.owner_conduit_id:
-            raise SpellSpaceScopeError(
-                "Active SpellSpace belongs to a different conduit."
-            )
-        creation = creations.get_spellspace_creation(spellspace.id, spell_id)
+        creation = creations.get_creation(spell_id)
         return creation
 
     raise RuntimeError(
@@ -1399,7 +1363,7 @@ def _register_spell_instance(
     Contract:
         - Shared/per-conduit singleton scopes use add_creation.
         - many uses add_many_creations only when disposal methods exist.
-        - spellspace scope uses register_spellspace_creation for active spellspace.
+        - spellspace scope uses add_creation on the direct spellspace-owned store.
     """
     _register_spell_instance_prebound(
         spell_id=spell.spell_id,
@@ -1456,18 +1420,7 @@ def _register_spell_instance_prebound(
         return
 
     if existence is Existence.unique_per_spell_space:
-        spellspace = creations.get_active_spellspace()
-        if spellspace is None:
-            raise SpellSpaceScopeError(
-                "Existence.unique_per_spell_space requires an active SpellSpace. "
-                "Use 'with conduit.enter_spellspace()' when melding."
-            )
-        if spellspace.owner_conduit_id != creations.owner_conduit_id:
-            raise SpellSpaceScopeError(
-                "Active SpellSpace belongs to a different conduit."
-            )
-        creations.register_spellspace_creation(
-            spellspace.id,
+        creations.add_creation(
             spell_id,
             instance,
             has_disposal_methods=has_disposal_methods,
