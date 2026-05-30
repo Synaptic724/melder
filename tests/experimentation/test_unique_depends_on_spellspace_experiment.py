@@ -20,9 +20,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.spellbook_validation_error import (
-    SpellbookValidationError,
-)
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
 )
@@ -117,13 +114,13 @@ def test_unique_root_depends_on_spellspace_without_active_scope() -> None:
 
     Contract:
         - `conjure()` succeeds.
-        - The first `meld(_UniqueRoot)` fails with SpellbookValidationError.
-        - The current behavior is not a direct SpellSpaceScopeError here.
+        - The first `meld(_UniqueRoot)` fails at the conduit-facing spellspace
+          request gate.
     """
 
     _spellbook, conduit = _build_runtime()
     try:
-        with pytest.raises(SpellbookValidationError, match="UniqueRoot"):
+        with pytest.raises(RuntimeError, match="_UniqueRoot.*spellspace"):
             conduit.meld(spell=_UniqueRoot)
     finally:
         conduit.cleanup()
@@ -134,14 +131,15 @@ def test_unique_root_depends_on_spellspace_even_with_active_scope() -> None:
     Measure current behavior with an active spellspace on the caller conduit.
 
     Contract:
-        - Entering a spellspace does not make the broad-lived root meldable.
-        - The first `meld(_UniqueRoot)` still fails with SpellbookValidationError.
+        - Entering a spellspace does not make the conduit-facing root meldable.
+        - The first `conduit.meld(_UniqueRoot)` still fails at the same
+          conduit-facing spellspace request gate.
     """
 
     _spellbook, conduit = _build_runtime()
     try:
         with conduit.enter_spellspace():
-            with pytest.raises(SpellbookValidationError, match="UniqueRoot"):
+            with pytest.raises(RuntimeError, match="_UniqueRoot.*spellspace"):
                 conduit.meld(spell=_UniqueRoot)
     finally:
         conduit.cleanup()

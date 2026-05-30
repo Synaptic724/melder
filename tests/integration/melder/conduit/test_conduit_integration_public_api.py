@@ -8,7 +8,6 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicLogger
 from tests.mocks.spellbook.core_classes import BasicService
@@ -179,8 +178,10 @@ def test_conduit_public_api_spellspace_lifecycle() -> None:
         Validate spellspace lifecycle and active scope behavior.
     Contract:
         - get_active_spellspace returns None when inactive.
-        - create_spellspace produces an inactive spellspace that cannot meld.
-        - enter_spellspace activates a spellspace for meld.
+        - create_spellspace produces a direct spellspace handle that can meld
+          through its own front door.
+        - enter_spellspace still marks the active spellspace for conduit
+          inspection helpers.
     Returns:
         None.
     Raises:
@@ -201,8 +202,8 @@ def test_conduit_public_api_spellspace_lifecycle() -> None:
         assert conduit.get_active_spellspace() is None
 
         inactive = conduit.create_spellspace()
-        with pytest.raises(SpellSpaceScopeError, match="active scope"):
-            inactive.meld(spell=spell_id)
+        instance = inactive.meld(spell=spell_id)
+        assert isinstance(instance, BasicService)
 
         with conduit.enter_spellspace() as active:
             assert conduit.get_active_spellspace() is active

@@ -22,9 +22,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.spell_space_scope_error import (
-    SpellSpaceScopeError,
-)
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
 )
@@ -131,15 +128,16 @@ def _run_workers(
     return [results.get_nowait() for _ in range(worker_count)]
 
 
-def test_spellspace_direct_use_without_any_active_scope_fails_across_threads() -> None:
+def test_spellspace_direct_use_without_any_active_scope_reuses_across_threads() -> None:
     """
-    Validate that a SpellSpace object without any active scope fails across threads.
+    Validate that direct SpellSpace use no longer depends on thread-local active scope.
 
     Contract:
         - The test creates one SpellSpace but never activates it.
         - Five worker threads try to use the same SpellSpace object directly.
-        - Every worker should fail with SpellSpaceScopeError because no thread
-          has an active spellspace context.
+        - Every worker succeeds through the SpellSpace's owned front door.
+        - Because all workers share one SpellSpace id, the returned object
+          identity collapses to one shared spellspace-scoped instance.
     """
     _spellbook, conduit, spell_id = _build_spellspace_runtime()
     shared_space = conduit.create_spellspace()
@@ -156,25 +154,27 @@ def test_spellspace_direct_use_without_any_active_scope_fails_across_threads() -
         outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "err" for kind, _payload, _obj_id in outcomes)
-        assert all(
-            payload == SpellSpaceScopeError.__name__
-            for _kind, payload, _obj_id in outcomes
-        )
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        object_ids = {
+            obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
+        }
+        assert len(object_ids) == 1
     finally:
         shared_space.cleanup()
         conduit.cleanup()
 
 
-def test_spellspace_active_context_is_not_inherited_by_spawned_threads() -> None:
+def test_spellspace_active_context_is_not_required_for_spawned_threads() -> None:
     """
-    Validate that spawned threads do not inherit an active spellspace context.
+    Validate that spawned threads can still use the shared SpellSpace directly.
 
     Contract:
         - The main thread enters one active spellspace context.
         - Five worker threads are spawned while that context is active.
-        - Every worker should still fail because active spellspace state is
-          isolated per thread.
+        - Every worker still succeeds because direct SpellSpace use no longer
+          depends on inheriting the conduit's active spellspace stack.
+        - The returned object identity still collapses to one shared
+          spellspace-scoped instance for the shared SpellSpace id.
     """
     _spellbook, conduit, spell_id = _build_spellspace_runtime()
     try:
@@ -191,11 +191,11 @@ def test_spellspace_active_context_is_not_inherited_by_spawned_threads() -> None
             outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "err" for kind, _payload, _obj_id in outcomes)
-        assert all(
-            payload == SpellSpaceScopeError.__name__
-            for _kind, payload, _obj_id in outcomes
-        )
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        object_ids = {
+            obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
+        }
+        assert len(object_ids) == 1
     finally:
         conduit.cleanup()
 

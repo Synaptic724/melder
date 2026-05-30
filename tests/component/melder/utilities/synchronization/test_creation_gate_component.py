@@ -7,7 +7,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -266,7 +266,11 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_success(
     try:
         conduit._creation_gate = CreationGate()
         meld_mock = MagicMock(return_value="ok")
-        monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
+        monkeypatch.setattr(
+            ConduitMeld,
+            "meld",
+            lambda self, *args, **kwargs: meld_mock(*args, **kwargs),
+        )
         result = conduit.meld(spell="spell-id")
         assert result == "ok"
         assert conduit._creation_gate.active_ticket_count() == 0
@@ -286,7 +290,11 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception(
     try:
         conduit._creation_gate = CreationGate()
         meld_mock = MagicMock(side_effect=RuntimeError("boom"))
-        monkeypatch.setattr(Meld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
+        monkeypatch.setattr(
+            ConduitMeld,
+            "meld",
+            lambda self, *args, **kwargs: meld_mock(*args, **kwargs),
+        )
         with pytest.raises(RuntimeError, match="boom"):
             conduit.meld(spell="spell-id")
         assert conduit._creation_gate.active_ticket_count() == 0

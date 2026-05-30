@@ -100,10 +100,6 @@ def _enable_queued_root_transactions(spellbook: Spellbook) -> None:
     )
     mediator = change_control_manager.transaction_mediator()
     mediator.configure(
-        change_control_mode=frame_configuration.change_control_mode,
-        allow_multiple_root_transactions=(
-            frame_configuration.allow_multiple_root_transactions
-        ),
         queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=(
             frame_configuration.max_transaction_wait_time_in_seconds

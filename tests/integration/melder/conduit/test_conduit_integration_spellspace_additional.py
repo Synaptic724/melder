@@ -9,7 +9,6 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicService
 
 
@@ -194,13 +193,18 @@ def test_conduit_spellspace_pool_reuses_ids_after_concurrent_threads() -> None:
         conduit.cleanup()
 
 
-def test_conduit_spellspace_enforces_active_scope_between_nested_spaces() -> None:
+def test_conduit_spellspace_direct_handles_retain_own_scope_between_nested_spaces() -> None:
     """
     Purpose:
-        Verify only the active spellspace can be used for meld operations.
+        Verify direct spellspace handles retain their own local scope identity
+        even while nested spellspaces are active.
     Contract:
-        - Outer spellspace cannot meld while an inner spellspace is active.
-        - After inner exit, the outer spellspace can meld again.
+        - Outer and inner spellspaces produce different spellspace-scoped
+          instances.
+        - Direct meld on the outer spellspace still reuses the outer instance
+          while an inner spellspace is active.
+        - After inner exit, the outer spellspace still reuses its original
+          instance.
     Returns:
         None.
     Raises:
@@ -221,8 +225,8 @@ def test_conduit_spellspace_enforces_active_scope_between_nested_spaces() -> Non
             with conduit.enter_spellspace() as inner:
                 inner_instance = inner.meld(spell=spell_id)
                 assert inner_instance is not outer_instance
-                with pytest.raises(SpellSpaceScopeError, match="active scope"):
-                    outer.meld(spell=spell_id)
+                outer_during_inner = outer.meld(spell=spell_id)
+                assert outer_during_inner is outer_instance
             outer_after = outer.meld(spell=spell_id)
             assert outer_after is outer_instance
     finally:

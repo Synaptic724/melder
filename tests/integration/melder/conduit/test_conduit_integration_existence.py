@@ -8,7 +8,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicService
 
 
@@ -175,7 +174,8 @@ def test_conduit_unique_per_spell_space_scopes_instances() -> None:
     Contract:
         - Reuses within the same spellspace.
         - Creates a new instance for a new spellspace.
-        - Raises when no spellspace is active.
+        - Conduit-facing meld outside a spellspace raises the current
+          spellspace-request runtime error.
     Returns:
         None.
     Raises:
@@ -199,7 +199,7 @@ def test_conduit_unique_per_spell_space_scopes_instances() -> None:
         with conduit.enter_spellspace() as space:
             third = space.meld(spell=spell_id)
             assert third is not first
-        with pytest.raises(SpellSpaceScopeError, match="requires an active SpellSpace"):
+        with pytest.raises(RuntimeError, match="BasicService.*spellspace"):
             conduit.meld(spell=spell_id)
     finally:
         conduit.cleanup()
