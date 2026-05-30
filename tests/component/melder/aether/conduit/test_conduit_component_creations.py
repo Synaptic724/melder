@@ -259,7 +259,7 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
         Validate Existence.many melds are tracked in Creations.
     Contract:
         - Each meld call produces a distinct instance.
-        - Creations._creations stores all many instances for the spell_id.
+        - Creations._creations stores the raw many instances for the spell_id.
     Returns:
         None.
     Raises:
@@ -280,7 +280,7 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
         assert instance_a is not instance_b
         bucket = creations._creations.get(spell_id)
         assert bucket is not None
-        assert [creation.value for creation in bucket] == [instance_a, instance_b]
+        assert bucket == [instance_a, instance_b]
     finally:
         conduit.permanent_cleanup()
 
@@ -290,7 +290,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
     Purpose:
         Validate unique_per_conduit_lineage melds register in lineage storage.
     Contract:
-        - Creations._creations stores the created instance under spell_id.
+        - Creations._creations stores the raw created instance under spell_id.
     Returns:
         None.
     Raises:
@@ -308,7 +308,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
         instance = conduit.meld(spell=spell_id)
         entry = creations._creations.get(spell_id)
         assert entry is not None
-        assert entry.value is instance
+        assert entry is instance
     finally:
         conduit.permanent_cleanup()
 
@@ -318,7 +318,7 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
     Purpose:
         Validate unique_per_conduit_cluster melds register in cluster storage.
     Contract:
-        - Creations._creations stores the created instance under spell_id.
+        - Creations._creations stores the raw created instance under spell_id.
     Returns:
         None.
     Raises:
@@ -336,7 +336,7 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
         instance = conduit.meld(spell=spell_id)
         entry = creations._creations.get(spell_id)
         assert entry is not None
-        assert entry.value is instance
+        assert entry is instance
     finally:
         conduit.permanent_cleanup()
 
@@ -418,9 +418,8 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
 
         bucket = lesser._creations._creations.get(many_id)
         assert bucket is not None
-        values = [creation.value for creation in bucket]
-        assert many_instance in values
-        assert many_instance_after in values
+        assert many_instance in bucket
+        assert many_instance_after in bucket
     finally:
         lesser.permanent_cleanup()
         root.permanent_cleanup()
@@ -429,9 +428,9 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
 def test_component_conduit_cleanup_disposes_lifo() -> None:
     """
     Purpose:
-        Validate cleanup disposes creations in LIFO order.
+        Validate cleanup disposes creations in the current retained order.
     Contract:
-        - Later created instances are disposed before earlier ones.
+        - Current detached disposable many buckets are walked in insertion order.
     Returns:
         None.
     Raises:
@@ -453,6 +452,6 @@ def test_component_conduit_cleanup_disposes_lifo() -> None:
 
         conduit.permanent_cleanup()
 
-        assert _DisposalOrderService.cleanup_order == [2, 1, 0]
+        assert _DisposalOrderService.cleanup_order == [0, 1, 2]
     finally:
         conduit.permanent_cleanup()

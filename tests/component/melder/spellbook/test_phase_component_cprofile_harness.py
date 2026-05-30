@@ -421,6 +421,7 @@ def _run_group_8_11(
     phase_execution_plan_ms = _ms(time.perf_counter() - phase_execution_plan_start)
 
     metric_spell = _get_spell_by_id(spellbook, metric_spell_id)
+    metric_artifact = metric_spell._compiler_artifact
     group_total_ms = (
         phase_occurrence_plan_ms
         + phase_injection_plan_ms
@@ -436,10 +437,16 @@ def _run_group_8_11(
         "phase_execution_plan_ms": round(phase_execution_plan_ms, 3),
         "group_8_11_total_ms": round(group_total_ms, 3),
         "resolution_has_errors": _get_conduit_resolution_has_errors(spellbook, conduit_id),
-        "execution_plan_step_count": metric_spell.execution_plan_step_count,
-        "execution_plan_unique_spell_count": metric_spell.execution_plan_unique_spell_count,
-        "execution_plan_max_occurrence_depth": metric_spell.execution_plan_max_occurrence_depth,
-        "execution_plan_max_dependency_count": metric_spell.execution_plan_max_dependency_count,
+        "execution_plan_step_count": metric_artifact._execution_plan_step_count_phase11,
+        "execution_plan_unique_spell_count": (
+            metric_artifact._execution_plan_unique_spell_count_phase11
+        ),
+        "execution_plan_max_occurrence_depth": (
+            metric_artifact._execution_plan_max_occurrence_depth_phase11
+        ),
+        "execution_plan_max_dependency_count": (
+            metric_artifact._execution_plan_max_dependency_count_phase11
+        ),
         "execution_plan_dispatch_route": metric_spell.execution_plan_dispatch_route,
     }
 

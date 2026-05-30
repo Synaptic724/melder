@@ -1414,8 +1414,11 @@ class TransferOfOwnership(Cleanable):
         transfer. Instead of destroying existing creations and forcing the new
         owner to rebuild them later, it extracts the lineage's creation payload
         from the source and restores that payload into the target conduit's
-        `Creations` store. A rollback handler is then registered so the payload
-        can be put back if a later transfer step fails.
+        `Creations` store. This applies only to conduit-owned creation state;
+        spellspace-local request objects are intentionally excluded because
+        their lifetime is owned by the source spellspace request surface, not
+        by conduit ownership transfer. A rollback handler is then registered so
+        the payload can be put back if a later transfer step fails.
 
         Args:
             spell_obj: Spell whose existing creations should follow the new

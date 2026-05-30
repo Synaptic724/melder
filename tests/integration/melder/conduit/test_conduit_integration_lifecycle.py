@@ -468,6 +468,59 @@ def test_conduit_transfer_spell_ownership_with_dependencies() -> None:
         owner.permanent_cleanup()
 
 
+def test_conduit_transfer_spell_ownership_ignores_spellspace_local_creations() -> None:
+    """
+    Purpose:
+        Validate ownership transfer does not preserve spellspace-local request objects.
+    Contract:
+        - Ownership of the spell still moves to the target conduit.
+        - A target spellspace builds a new spellspace-scoped instance after transfer.
+        - The old source spellspace can no longer resolve the moved spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If transfer incorrectly preserves spellspace-local state.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    target_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    target = target_book.conjure(automatic=False, name="target")
+    try:
+        source_space = owner.create_spellspace()
+        source_instance = source_space.meld(spell=spell_id)
+
+        summary = owner.transfer_spell_ownership(
+            spell=spell_id,
+            target_conduit=target,
+            move_creations=True,
+            invalidate_after_transfer=False,
+        )
+
+        assert summary["spell_id"] == spell_id
+        assert owner.get_conduit_by_spell_id(spell_id) is target
+
+        with pytest.raises(KeyError, match="No spell found"):
+            source_space.meld(spell=spell_id)
+
+        with target.enter_spellspace() as target_space:
+            target_instance = target_space.meld(spell=spell_id)
+            assert target_instance is not source_instance
+    finally:
+        try:
+            source_space.permanent_cleanup()
+        except Exception:
+            pass
+        target.permanent_cleanup()
+        owner.permanent_cleanup()
+
+
 def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
     """
     Purpose:

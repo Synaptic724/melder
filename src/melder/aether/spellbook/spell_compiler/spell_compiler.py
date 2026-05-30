@@ -772,19 +772,21 @@ class SpellCompiler(Cleanable):
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Run the reserved Phase 12 strategy-selection slot.
+        Run the scaffolded Phase 12 processor/codegen-plan slot.
 
         Purpose:
-            Preserve the compiler numbering surface while the new strategy
-            phase is still a no-op placeholder.
+            Route the current spell/artifact surface into the compiler-owned
+            Phase 12 scaffold so processor state and the first codegen-plan
+            artifact are stored before later backend-emitter work consumes
+            them.
 
         Args:
             spellbook:
                 Spellbook compiler context.
             spell:
-                Spell being prepared for final backend emission.
+                Spell being prepared for later backend emission.
             artifact:
-                Compiler artifact carrying the current plan/build state.
+                Compiler artifact receiving the Phase 12 scaffold outputs.
 
         Returns:
             None.

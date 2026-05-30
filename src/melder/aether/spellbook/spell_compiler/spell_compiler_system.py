@@ -512,11 +512,12 @@ class SpellCompilerSystem(Cleanable):
             spell: Spell,
     ) -> None:
         """
-        Phase 12 - Strategy-selection placeholder (front-facing compiler-system facade).
+        Phase 12 - Scaffolded processor/codegen-plan build
+        (front-facing compiler-system facade).
 
-        Delegates to the current no-op Phase 12 slot so the compiler numbering
-        stays clean while the new strategy phase is being designed and
-        implemented.
+        Delegates to the current Phase 12 scaffold so the spell-owned compiler
+        artifact receives processor-state and codegen-plan outputs before later
+        backend-emitter work consumes them.
 
         Returns:
             None.

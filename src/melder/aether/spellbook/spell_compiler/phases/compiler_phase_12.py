@@ -1,5 +1,15 @@
 from typing import TYPE_CHECKING
 
+from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor import (
+    SpellArtifactProcessor,
+)
+from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_builder import (
+    SpellArtifactProcessorBuilder,
+)
+from melder.aether.spellbook.spell_compiler.phase12.spell_codegen_plan_builder import (
+    SpellCodegenPlanBuilder,
+)
+
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
@@ -10,18 +20,25 @@ if TYPE_CHECKING:
 
 class CompilerPhase12:
     """
-    Compiler phase 12 strategy-selection placeholder.
+    Compiler phase 12 scaffolded strategy/right-sizing surface.
 
     Purpose:
-        Reserve the explicit compiler slot for the future execution
-        strategy/right-sizing stage so the current backend-emitter phase can
-        move to Phase 13 without leaving a numbering gap.
+        Provide the first real compiler-owned Phase 12 execution surface by
+        assembling the full processor state and the first compiler-owned
+        codegen-plan artifact.
 
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
-        - Current behavior is a no-op placeholder.
-        - Does not mutate spell, artifact, or runtime state in this rename
-          slice.
+        - Consumes the full `SpellCompilerArtifact` surface plus the required
+          runtime-owned `Spell` facts.
+        - Stores compiler-owned Phase 12 processor-state and codegen-plan
+          outputs back on the artifact.
+        - Leaves Phase 13 and `CreationContext` consumers untouched in this
+          scaffold slice.
+
+    Ownership:
+        - Owns no spell/runtime/compiler artifacts.
+        - Orchestrates build/store work over artifact-owned Phase 12 outputs.
     """
 
     __slots__ = ()
@@ -33,11 +50,12 @@ class CompilerPhase12:
             artifact: "SpellCompilerArtifact",
     ) -> None:
         """
-        Phase 12 - strategy-selection placeholder.
+        Phase 12 - scaffolded artifact processing and codegen-plan build.
 
         Purpose:
-            Hold the future strategy/right-sizing slot without changing runtime
-            behavior yet.
+            Move Phase 12 out of no-op status by assembling the full processor
+            state and storing the first compiler-owned codegen plan for the
+            current spell.
 
         Args:
             spellbook:
@@ -45,12 +63,50 @@ class CompilerPhase12:
             spell:
                 Spell currently moving through compiler phases.
             artifact:
-                Compiler artifact for the spell.
+                Compiler artifact for the spell. Receives the new Phase 12
+                processor-state and codegen-plan outputs.
 
         Returns:
             None.
+
+        Contract:
+            - Replaces any previous Phase 12 scaffold outputs on the artifact.
+            - Best-effort cleans superseded Phase 12 objects after the new ones
+              are stored.
+            - Does not mutate Phase 13 or runtime consumer wiring in this slice.
         """
         _ = spellbook
-        _ = spell
-        _ = artifact
+
+        previous_processor_state = artifact._phase12_processor_state
+        previous_codegen_plan = artifact._phase12_codegen_plan
+
+        processor_state = SpellArtifactProcessorBuilder.build(
+            spell,
+            artifact,
+        )
+        processor = SpellArtifactProcessor(
+            state=processor_state,
+            strategies=(),
+        )
+        codegen_plan = SpellCodegenPlanBuilder.build(
+            processor,
+            strategies=(),
+        )
+
+        artifact._phase12_processor_state = processor_state
+        artifact._phase12_codegen_plan = codegen_plan
+
+        if (
+                previous_processor_state is not None
+                and previous_processor_state is not processor_state
+        ):
+            try:
+                previous_processor_state.cleanup()
+            except Exception:
+                pass
+        if previous_codegen_plan is not None and previous_codegen_plan is not codegen_plan:
+            try:
+                previous_codegen_plan.cleanup()
+            except Exception:
+                pass
 

@@ -30,6 +30,41 @@ def test_compiler_initializes_all_phase_surfaces() -> None:
     assert compiler._phase_13 is not None
 
 
+def test_compiler_run_phase_strategy_selection_delegates_to_phase12() -> None:
+    """SpellCompiler should route Phase 12 strategy selection to `_phase_12.run(...)`."""
+    compiler = SpellCompiler()
+    spell = make_spell()
+    spellbook = make_spellbook()
+    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+    phase_surface = type(
+        "_Phase12Stub",
+        (),
+        {
+            "run": staticmethod(
+                lambda *args, **kwargs: calls.append((args, kwargs))
+            ),
+        },
+    )()
+    compiler._phase_12 = phase_surface
+
+    compiler.run_phase_strategy_selection(
+        spellbook,
+        spell,
+        spell._compiler_artifact,
+    )
+
+    assert calls == [
+        (
+            (
+                spellbook,
+                spell,
+                spell._compiler_artifact,
+            ),
+            {},
+        )
+    ]
+
+
 @pytest.mark.parametrize(
     ("method_name", "phase_attr", "args_builder", "kwargs_builder"),
     [

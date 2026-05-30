@@ -94,6 +94,8 @@ class SpellCompilerArtifact(Cleanable):
         "_phase13_no_overrides_executor_signature",
         "_phase11_no_overrides_input_signature",
         "_phase11_no_overrides_fast_key",
+        "_phase12_processor_state",
+        "_phase12_codegen_plan",
         "_codegen_ir",
         "_phase8_11_codegen_ir_dirty",
         "_spell_system_index_phase5",
@@ -160,6 +162,8 @@ class SpellCompilerArtifact(Cleanable):
         self._phase13_no_overrides_executor_signature: Optional[str] = None
         self._phase11_no_overrides_input_signature: Optional[str] = None
         self._phase11_no_overrides_fast_key: Optional[Tuple[Any, ...]] = None
+        self._phase12_processor_state: Optional[Any] = None
+        self._phase12_codegen_plan: Optional[Any] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
@@ -233,6 +237,7 @@ class SpellCompilerArtifact(Cleanable):
                     self._execution_plan_phase11_overrides.cleanup()
                 except Exception:
                     pass
+            self._cleanup_phase12_artifacts()
             if self._spell_system_index_phase5 is not None:
                 try:
                     self._spell_system_index_phase5.cleanup()
@@ -288,6 +293,8 @@ class SpellCompilerArtifact(Cleanable):
             del self._phase13_no_overrides_executor_signature
             del self._phase11_no_overrides_input_signature
             del self._phase11_no_overrides_fast_key
+            del self._phase12_processor_state
+            del self._phase12_codegen_plan
             del self._codegen_ir
             del self._spell_system_index_phase5
             del self._entire_dag_blueprint_phase5
@@ -432,6 +439,32 @@ class SpellCompilerArtifact(Cleanable):
         self._phase11_no_overrides_input_signature = None
         self._phase11_no_overrides_fast_key = None
 
+    def _cleanup_phase12_artifacts(self) -> None:
+        """
+        Deterministically clean Phase 12 processor/codegen-plan artifacts.
+
+        Contract:
+            - Best-effort cleans both Phase 12 outputs when they expose a
+              cleanup method.
+            - Clears the Phase 12 slots regardless of individual cleanup
+              failures.
+            - Safe to call repeatedly.
+        """
+        phase12_processor_state = self._phase12_processor_state
+        if phase12_processor_state is not None:
+            try:
+                phase12_processor_state.cleanup()
+            except Exception:
+                pass
+        phase12_codegen_plan = self._phase12_codegen_plan
+        if phase12_codegen_plan is not None:
+            try:
+                phase12_codegen_plan.cleanup()
+            except Exception:
+                pass
+        self._phase12_processor_state = None
+        self._phase12_codegen_plan = None
+
     def _cleanup_execution_plans_phase11(self) -> None:
         """
         Deterministically clean all Phase 11 execution plan variants.
@@ -472,6 +505,7 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_shape_profile_phase11 = None
         self._phase11_no_overrides_plan_signature = None
         self._phase11_no_overrides_transient_schema = None
+        self._cleanup_phase12_artifacts()
 
 
 

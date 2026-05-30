@@ -1331,8 +1331,8 @@ def test_component_spell_crafter_builds_real_execution_plan_for_dependency_chain
         assert any(step.spell.spell_id == consumer_id for step in plan.steps)
         assert any(step.spell.spell_id == service_id for step in plan.steps)
         assert plan.fast_plan is not None
-        assert consumer_spell.execution_plan_step_count == 2
-        assert consumer_spell.execution_plan_unique_spell_count == 2
+        assert artifact._execution_plan_step_count_phase11 == 2
+        assert artifact._execution_plan_unique_spell_count_phase11 == 2
     finally:
         spellbook.cleanup()
 

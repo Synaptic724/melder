@@ -2568,7 +2568,12 @@ class Conduit(Cleanable):
         Args:
             spell: Spell object, spell_id, or SpellIndex to transfer.
             target_conduit: The conduit that will become the new steward.
-            move_creations: If True, move creations; else tear them down at source.
+            move_creations:
+                If True, move conduit-owned creation state; otherwise tear that
+                source-side conduit-owned state down.
+                Spellspace-local request objects are intentionally excluded from
+                ownership transfer and are not preserved onto the target
+                conduit.
             include_dependencies: If True, transfer owned dependencies as well.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
             invalidate_after_transfer: If True, mark lineage dirty after transfer.
