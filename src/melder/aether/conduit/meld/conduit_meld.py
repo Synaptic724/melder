@@ -164,10 +164,10 @@ class ConduitMeld(Meld):
                         None,
                     )
                 input_resolution_cache[cache_key] = target_spell.spell_id
-            if target_spell.requires_spellspace_request:
-                raise RuntimeError(
-                    f"Spell {target_spell.spell_id} must be built from a spellspace."
-                )
+        if target_spell.requires_spellspace_request:
+            raise RuntimeError(
+                f"Spell {target_spell.spell_id} must be built from a spellspace."
+            )
         # 2) Normalize per-call overrides into a stable dict shape.
         if spell_override is None:
             override_map = None

@@ -29,6 +29,9 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKIN
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
+from melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder import (
+    DevopsInformationStrategyBuilder,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -80,6 +83,7 @@ class DevopsInformationRegistry(Cleanable):
         "_borrower_to_providers",
         "_cluster_to_conduits",
         "_conduit_to_clusters",
+        "_information_strategy_builder",
         "_transactions_by_id",
         "_transaction_ids_by_identity",
         "_transaction_ids_by_scope",
@@ -132,6 +136,9 @@ class DevopsInformationRegistry(Cleanable):
         self._borrower_to_providers: Dict[str, Set[str]] = {}
         self._cluster_to_conduits: Dict[str, Set[str]] = {}
         self._conduit_to_clusters: Dict[str, Set[str]] = {}
+        self._information_strategy_builder: DevopsInformationStrategyBuilder = (
+            DevopsInformationStrategyBuilder(self)
+        )
         self._transactions_by_id: Dict[str, Any] = {}
         self._transaction_ids_by_identity: Dict[Tuple[str, str], Set[str]] = {}
         self._transaction_ids_by_scope: Dict[str, Set[str]] = {}
@@ -214,6 +221,7 @@ class DevopsInformationRegistry(Cleanable):
             del self._borrower_to_providers
             del self._cluster_to_conduits
             del self._conduit_to_clusters
+            del self._information_strategy_builder
             del self._transactions_by_id
             del self._transaction_ids_by_identity
             del self._transaction_ids_by_scope
@@ -241,6 +249,19 @@ class DevopsInformationRegistry(Cleanable):
         """
         
         return self._aetheric_frame_name
+
+    @property
+    def information_strategy_builder(self) -> DevopsInformationStrategyBuilder:
+        """
+        Return the registry-owned DevOps information-strategy builder.
+
+        Returns
+        -------
+        DevopsInformationStrategyBuilder
+            Builder that resolves registry-local information strategies.
+        """
+        
+        return self._information_strategy_builder
 
     def register_identity(
             self,
