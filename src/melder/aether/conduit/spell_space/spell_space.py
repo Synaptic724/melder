@@ -11,7 +11,8 @@ if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import (
         ConduitCreations,
     )
-    from melder.aether.conduit.meld.meld import Meld
+    from melder.aether.conduit.meld.conduit_meld import ConduitMeld
+    from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
     from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 
 
@@ -59,7 +60,7 @@ class SpellSpace(Cleanable):
             self,
             *,
             owner_conduit_id: str,
-            meld: Meld,
+            conduit_meld: ConduitMeld,
             owner_conduit_creations: ConduitCreations,
             spellspace_registry: set["SpellSpace"],
             spellspace_pool: SpellSpacePool,
@@ -70,8 +71,9 @@ class SpellSpace(Cleanable):
         Args:
             owner_conduit_id:
                 Stable id of the conduit that created this spellspace.
-            meld:
-                Meld runtime used for explicit spellspace execution.
+            conduit_meld:
+                Conduit-facing meld runtime used as the shared-core source for
+                constructing this spellspace's dedicated front door.
             owner_conduit_creations:
                 Conduit-owned creations manager used for conduit-scoped and
                 active-spellspace-routed execution beneath the spellspace front
@@ -88,12 +90,22 @@ class SpellSpace(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._owner_conduit_id: str = owner_conduit_id
-        self._meld: Meld = meld
         self._creations: Creations = Creations(
             owner_conduit_id=owner_conduit_id,
             id=self._id,
         )
         self._owner_conduit_creations: ConduitCreations = owner_conduit_creations
+        from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
+        self._meld: SpellSpaceMeld = SpellSpaceMeld(
+            spellspace=self,
+            spellspace_creations=self._creations,
+            owner_conduit_creations=self._owner_conduit_creations,
+            spellbook=conduit_meld._spellbook,
+            conduit_id=conduit_meld._conduit_id,
+            resolution_conduit_id=conduit_meld._resolution_conduit_id,
+            dynamic_environment=conduit_meld._dynamic_environment,
+            meld_hooks=conduit_meld._meld_hooks,
+        )
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
         self._spellspace_pool: SpellSpacePool = spellspace_pool
         self._permanent_cleanup_requested: bool = False
@@ -203,10 +215,7 @@ class SpellSpace(Cleanable):
         Returns:
             object: The resolved runtime object returned by the shared meld runtime.
         """
-        return self._meld.spellspace_meld(
-            spellspace=self,
-            spellspace_creations=self._creations,
-            owner_conduit_creations=self._owner_conduit_creations,
+        return self._meld.meld(
             spell_name=spell_name,
             spell=spell,
             spellframe=spellframe,

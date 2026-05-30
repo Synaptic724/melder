@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import (
         ConduitCreations,
     )
-    from melder.aether.conduit.meld.meld import Meld
+    from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 
 
 class SpellSpacePool(AbstractElasticPool[SpellSpace]):
@@ -30,7 +30,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = AbstractElasticPool.__slots__ + [
         "_owner_conduit_creations",
-        "_meld",
+        "_conduit_meld",
         "_owner_conduit_id",
         "_spellspace_registry",
     ]
@@ -39,7 +39,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             self,
             *,
             owner_conduit_id: str,
-            meld: Meld,
+            conduit_meld: ConduitMeld,
             owner_conduit_creations: ConduitCreations,
             spellspace_registry: set[SpellSpace],
             **kwargs: Any,
@@ -50,8 +50,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Args:
             owner_conduit_id:
                 Stable owner conduit id for pooled spellspaces.
-            meld:
-                Meld runtime used by pooled spellspaces.
+            conduit_meld:
+                Conduit-facing meld runtime used as the shared-core source for
+                pooled spellspace meld objects.
             owner_conduit_creations:
                 Conduit-owned creations manager used by pooled spellspaces
                 when they need conduit-scoped routing.
@@ -62,7 +63,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         """
         super().__init__(**kwargs)
         self._owner_conduit_id: str = owner_conduit_id
-        self._meld: Meld = meld
+        self._conduit_meld: ConduitMeld = conduit_meld
         self._owner_conduit_creations: ConduitCreations = owner_conduit_creations
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
 
@@ -72,7 +73,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         """
         return SpellSpace(
             owner_conduit_id=self._owner_conduit_id,
-            meld=self._meld,
+            conduit_meld=self._conduit_meld,
             owner_conduit_creations=self._owner_conduit_creations,
             spellspace_registry=self._spellspace_registry,
             spellspace_pool=self,

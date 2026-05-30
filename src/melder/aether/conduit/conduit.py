@@ -23,7 +23,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.conduit_pool import ConduitPool
@@ -283,7 +283,7 @@ class Conduit(Cleanable):
         # Local hook overlays for this conduit only.
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
 
-        self._meld: Meld = Meld(
+        self._meld: ConduitMeld = ConduitMeld(
             creations=self._creations,
             spellbook=self._spellbook,
             conduit_id=self._id,

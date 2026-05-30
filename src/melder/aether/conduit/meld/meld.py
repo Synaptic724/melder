@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import inspect
 from types import TracebackType
 from threading import RLock
@@ -39,17 +40,16 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.creations.creations import Creations
 
-class Meld(Cleanable):
+class Meld(Cleanable, ABC):
     """
     ## Meld: Spell Activation and Dependency Resolution
 
-    Meld is the **conduit-level entry point** for *activating* spells (components/dependencies)
-    within a specific `Conduit`. It handles the full lifecycle of spell resolution,
-    creation reuse, hook execution, and registration.
+    Meld is the **shared runtime core** for spell activation and dependency
+    resolution beneath concrete conduit-facing and spellspace-facing front
+    doors.
 
-    It is the conduit-local runtime bridge between:
+    It is the runtime bridge between:
     - `Spellbook`, which owns spell metadata and lookup maps
-    - `Creations`, which owns live instances under Existence rules
     - SpellSystemStates / change-control state, which decide whether runtime
       resolution is allowed to continue
 
@@ -86,7 +86,6 @@ class Meld(Cleanable):
         "_spell_id_pool",
         "_lookup_owned_spells",
         "_lookup_contracted_spells",
-        "_creations",
         "_input_resolution_cache",
         "_max_resolution_cache_size",
         "_change_control_manager_by_frame",
@@ -95,7 +94,6 @@ class Meld(Cleanable):
     ]
     def __init__(
             self,
-            creations: Creations,
             spellbook: Spellbook,
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
@@ -107,8 +105,6 @@ class Meld(Cleanable):
         spellbook lookup maps, spell_id maps, and creation-context caches.
 
         Args:
-            creations:
-                The conduit-local component instance manager (`Creations`).
             spellbook:
                 The registry of all known spell configurations. Meld keeps
                 direct references to internal spell, lookup, and spell_id
@@ -166,8 +162,6 @@ class Meld(Cleanable):
         self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
             meld_hooks if meld_hooks is not None else {}
         )
-        # Conduit-local instantiation manager.
-        self._creations: Creations = creations
 
     def cleanup(self) -> None:
         """
@@ -208,8 +202,6 @@ class Meld(Cleanable):
             del self._lookup_owned_spells
             del self._lookup_contracted_spells
             del self._spellbook
-            # Clear creations reference
-            del self._creations
             del self._conduit_id
             del self._resolution_conduit_id
             del self._dynamic_environment
@@ -256,6 +248,8 @@ class Meld(Cleanable):
         pass
 
     # endregion Context Manager
+
+    @abstractmethod
     def meld(
             self,
             spell_name: str | None = None,
@@ -324,125 +318,9 @@ class Meld(Cleanable):
                 meld a broken spell, or passing `spell_override` to a spell
                 that has overrides disabled).
         """
-        # 1) Resolve the spell object from the Spellbook / SpellIndex.
-        target_spell: Optional[Spell] = None
-        if isinstance(spell, str):
-            target_spell = self._resolve_spell_by_id(spell)
-        else:
-            input_resolution_cache = self._input_resolution_cache
-            cache_key = (spell_name, spell, spellframe, binding_name)
-            try:
-                cached_spell_id = input_resolution_cache.get(cache_key)
-            except TypeError:
-                cache_key = (
-                    spell_name,
-                    id(spell),
-                    id(spellframe),
-                    binding_name,
-                )
-                cached_spell_id = input_resolution_cache.get(cache_key)
-            if cached_spell_id is not None:
-                target_spell = self._spell_id_pool.get(cached_spell_id)
-                if target_spell is None:
-                    try:
-                        target_spell = self._resolve_spell_by_id(cached_spell_id)
-                    except KeyError:
-                        target_spell = None
-            if target_spell is None:
-                target_spell = self._resolve_spell(
-                    spell=spell,
-                    spell_name=spell_name,
-                    spellframe=spellframe,
-                    binding_name=binding_name,
-                )
-                if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                    input_resolution_cache.pop(
-                        next(iter(input_resolution_cache)),
-                        None,
-                    )
-                input_resolution_cache[cache_key] = target_spell.spell_id
-            if target_spell.requires_spellspace_request:
-                raise RuntimeError(
-                    f"Spell {target_spell.spell_id} must be built from a spellspace."
-                )
-        # 2) Normalize per-call overrides into a stable dict shape.
-        if spell_override is None:
-            override_map = None
-        else:
-            override_map = self._normalize_spell_override(spell_override)
+        raise NotImplementedError("Concrete Meld subclasses must implement meld().")
 
-        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
-        if self._spellbook._spellbook_validation_required:
-            self._ensure_lineage_resolvable(target_spell)
-        if target_spell.resolution_required:
-           self._ensure_runtime_resolution_ready(target_spell)
-
-        creations = self._creations
-        meld_hooks = self._meld_hooks
-        spell_hooks_enabled = target_spell._hooks_enabled
-
-        if not (meld_hooks or spell_hooks_enabled):
-            if target_spell._creation_context_switch.state >= 2:
-                creation_context = target_spell._creation_context
-            else:
-                creation_context = target_spell._get_or_build_creation_context()
-            if creation_context is None:
-                raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None:
-                execute_no_hooks_no_overrides_compiled = (
-                    creation_context._execute_no_hooks_no_overrides_compiled
-                )
-                instance = execute_no_hooks_no_overrides_compiled(creations)
-            else:
-                execute_no_hooks_overrides_compiled = (
-                    creation_context._execute_no_hooks_overrides_compiled
-                )
-                instance = execute_no_hooks_overrides_compiled(
-                    creations,
-                    override_map,
-                )
-
-            # 7) Return the resolved instance.
-            return instance
-        else:
-            # 1) Execute pre-cast hooks (no instance context yet).
-            self._execute_hooks(target_spell._pre_hooks, "pre_cast")
-            self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
-
-            if target_spell._creation_context_switch.state >= 2:
-                creation_context = target_spell._creation_context
-            else:
-                creation_context = target_spell._get_or_build_creation_context()
-            if creation_context is None:
-                raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None:
-                execute_hooks_no_overrides_compiled = (
-                    creation_context._execute_hooks_no_overrides_compiled
-                )
-                instance, created = execute_hooks_no_overrides_compiled(
-                    creations
-                )
-            else:
-                execute_hooks_overrides_compiled = (
-                    creation_context._execute_hooks_overrides_compiled
-                )
-                instance, created = execute_hooks_overrides_compiled(
-                    creations,
-                    override_map,
-                )
-
-            if created:
-                # Activation hooks fire only when the instance is newly created.
-                self._execute_activation_hooks(target_spell._activation_hooks, instance)
-                self._fire_meld_hooks("on_meld_activation", target_spell, instance)
-
-            # 2) Execute post-cast hooks (still no arguments for now).
-            self._execute_hooks(target_spell._post_hooks, "post_cast")
-            self._fire_meld_hooks("on_meld_post_resolve", target_spell)
-
-            # 3) Return the resolved instance.
-            return instance
-
+    @abstractmethod
     def meld_existing_spell(
             self,
             spell_name: str | None = None,
@@ -486,104 +364,8 @@ class Meld(Cleanable):
                 If the spell lifecycle does not support unambiguous
                 existing-object retrieval.
         """
-        target_spell: Optional[Spell] = None
-        if isinstance(spell, str):
-            target_spell = self._resolve_spell_by_id(spell)
-        else:
-            input_resolution_cache = self._input_resolution_cache
-            cache_key = (spell_name, spell, spellframe, binding_name)
-            try:
-                cached_spell_id = input_resolution_cache.get(cache_key)
-            except TypeError:
-                cache_key = (
-                    spell_name,
-                    id(spell),
-                    id(spellframe),
-                    binding_name,
-                )
-                cached_spell_id = input_resolution_cache.get(cache_key)
-            if cached_spell_id is not None:
-                target_spell = self._spell_id_pool.get(cached_spell_id)
-                if target_spell is None:
-                    try:
-                        target_spell = self._resolve_spell_by_id(cached_spell_id)
-                    except KeyError:
-                        target_spell = None
-            if target_spell is None:
-                target_spell = self._resolve_spell(
-                    spell=spell,
-                    spell_name=spell_name,
-                    spellframe=spellframe,
-                    binding_name=binding_name,
-                )
-                if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                    input_resolution_cache.pop(
-                        next(iter(input_resolution_cache)),
-                        None,
-                    )
-                input_resolution_cache[cache_key] = target_spell.spell_id
-
-        if target_spell.is_existing_creation:
-            if target_spell.user_created_object is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(target_spell.spell_id)
-                )
-            return target_spell.user_created_object
-
-        existence = target_spell.existence
-        spell_id = target_spell.spell_id
-        caller_creations = self._creations
-
-        if existence is Existence.many:
-            raise RuntimeError(
-                "meld_existing_spell is not supported for Existence.many."
-            )
-
-        if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation
-
-        if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations.get_active_spellspace()
-            if spellspace is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            creation = caller_creations.get_spellspace_creation(
-                spellspace.id,
-                spell_id,
-            )
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation
-
-        if existence in {
-                Existence.unique,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        }:
-            owner_creations = target_spell._owner_creations
-            if owner_creations is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            creation = owner_creations.get_creation(spell_id)
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation
-
-        raise RuntimeError(
-            "meld_existing_spell is unsupported for existence '{0}'.".format(
-                existence.name
-            )
+        raise NotImplementedError(
+            "Concrete Meld subclasses must implement meld_existing_spell()."
         )
 
     def has_live_creation(
@@ -643,6 +425,7 @@ class Meld(Cleanable):
         )
         return bool(status["is_live"])
 
+    @abstractmethod
     def describe_live_creation_status(
             self,
             spell_name: str | None = None,
@@ -691,13 +474,9 @@ class Meld(Cleanable):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell_for_live_creation_probe(
-            spell_name=spell_name,
-            spell=spell,
-            spellframe=spellframe,
-            binding_name=binding_name,
+        raise NotImplementedError(
+            "Concrete Meld subclasses must implement describe_live_creation_status()."
         )
-        return self._describe_spell_live_creation_status(target_spell)
 
     def _ensure_lineage_resolvable(self, spell: Spell) -> None:
         """
@@ -777,44 +556,12 @@ class Meld(Cleanable):
         Returns:
             Spell: Resolved spell object for the probe.
         """
-        target_spell: Optional[Spell] = None
-        if isinstance(spell, str):
-            target_spell = self._resolve_spell_by_id(spell)
-            return target_spell
-
-        input_resolution_cache = self._input_resolution_cache
-        cache_key = (spell_name, spell, spellframe, binding_name)
-        try:
-            cached_spell_id = input_resolution_cache.get(cache_key)
-        except TypeError:
-            cache_key = (
-                spell_name,
-                id(spell),
-                id(spellframe),
-                binding_name,
-            )
-            cached_spell_id = input_resolution_cache.get(cache_key)
-        if cached_spell_id is not None:
-            target_spell = self._spell_id_pool.get(cached_spell_id)
-            if target_spell is None:
-                try:
-                    target_spell = self._resolve_spell_by_id(cached_spell_id)
-                except KeyError:
-                    target_spell = None
-        if target_spell is None:
-            target_spell = self._resolve_spell(
-                spell=spell,
-                spell_name=spell_name,
-                spellframe=spellframe,
-                binding_name=binding_name,
-            )
-            if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                input_resolution_cache.pop(
-                    next(iter(input_resolution_cache)),
-                    None,
-                )
-            input_resolution_cache[cache_key] = target_spell.spell_id
-        return target_spell
+        return self._resolve_target_spell_from_inputs(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
 
     def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
         """

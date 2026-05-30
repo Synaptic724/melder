@@ -312,17 +312,17 @@ def test_devops_identity_set_available_transactions_replaces_normalized_tuple() 
     assert identity.available_transactions == ("bind", "mutation")
 
 
-def test_devops_identity_update_metadata_merges_and_refreshes_registry() -> None:
+def test_devops_identity_update_metadata_merges_without_refreshing_registry() -> None:
     """
     Purpose:
-        Verify metadata updates merge and refresh the attached registry.
+        Verify metadata updates merge without implicitly refreshing the attached registry.
     Contract:
         - update_metadata merges keys.
-        - Attached registries receive a refresh callback.
+        - Attached registries are not refreshed implicitly.
     Returns:
         None.
     Raises:
-        AssertionError: If metadata merge or refresh behavior is wrong.
+        AssertionError: If metadata merge or local-only update behavior is wrong.
     """
     identity = _make_identity(metadata={"region": "north"})
     registry = _RegistrySpy()
@@ -331,7 +331,7 @@ def test_devops_identity_update_metadata_merges_and_refreshes_registry() -> None
     identity.update_metadata(region="south", lane="alpha")
 
     assert identity.metadata == {"region": "south", "lane": "alpha"}
-    assert registry.refresh_calls[-1] == (identity, None)
+    assert registry.refresh_calls == []
 
 
 def test_devops_identity_attach_registry_rejects_none() -> None:

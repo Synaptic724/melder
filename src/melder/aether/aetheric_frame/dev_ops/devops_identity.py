@@ -276,6 +276,10 @@ class DevopsIdentity(Cleanable):
         Contract:
             - Later keys overwrite earlier values.
             - Mutation happens under the identity lock.
+            - Metadata updates are local-only; they do not implicitly refresh
+              the attached registry.
+            - Callers that need registry-side derived state to refresh must
+              invoke `refresh_registry(...)` explicitly.
 
         Args:
             **metadata:
@@ -286,8 +290,6 @@ class DevopsIdentity(Cleanable):
         """
         with self._lock:
             self._metadata.update(metadata)
-        if self._registry is not None:
-            self._registry.refresh_identity(self)
 
     def attach_registry(
             self,
