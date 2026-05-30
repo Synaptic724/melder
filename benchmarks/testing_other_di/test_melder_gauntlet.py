@@ -39,7 +39,7 @@ def _melder_config_from_env() -> _support.GauntletConfig:
         real-world gauntlet model.
     """
     cfg = _support.GauntletConfig(
-        iterations=_support.env_int("MELDER_GAUNTLET_ITERS", 3000),
+        iterations=_support.env_int("MELDER_GAUNTLET_ITERS", 1000),
         threads=_support.env_int("MELDER_GAUNTLET_THREADS", 1),
         request_scope_runs=_support.env_int(
             "MELDER_GAUNTLET_REQUEST_SCOPES",

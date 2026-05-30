@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Dict, Any
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
-    InjectionPlanBuilder,
+    InjectionPlanBuilder, InjectionPlan,
 )
 
 
@@ -32,6 +32,74 @@ class CompilerPhase9:
     """
 
     __slots__ = ()
+
+    @staticmethod
+    def _build_phase9_injection_shape_profile(
+            *,
+            occurrence_plan: OccurrencePlan,
+            injection_plan: InjectionPlan,
+    ) -> Dict[str, Any]:
+        """
+        Build a lightweight Phase 9 injection shape profile.
+
+        Purpose:
+            Summarize injection/runtime-call shape at the point where the
+            injection plan is already built, so later strategy selection can
+            consume call-shape truth without a separate analysis pass.
+
+        Contract:
+            - Uses runtime-selected injection specs for the root spell only.
+            - Captures counts and histograms, not strategy-family decisions.
+            - Returns deterministic tuple-backed rows for stable artifact
+              storage.
+
+        Args:
+            occurrence_plan:
+                Phase 8 occurrence plan for the same root spell.
+            injection_plan:
+                Fresh Phase 9 injection plan.
+
+        Returns:
+            Dict[str, Any]:
+                Cheap injection-shape summary for later compiler stages.
+        """
+        runtime_specs = injection_plan.select_for_runtime(
+            root_spell_id=occurrence_plan.root_spell_id,
+        )
+        param_source_kind_counts: Dict[str, int] = {}
+        dependency_arity_histogram: Dict[int, int] = {}
+        positional_override_instance_count = 0
+        contract_payload_instance_count = 0
+        list_aggregation_instance_count = 0
+
+        for injection_spec in runtime_specs.values():
+            if injection_spec.uses_positional_override:
+                positional_override_instance_count += 1
+            if injection_spec.contract_payload:
+                contract_payload_instance_count += 1
+            if injection_spec.allow_list_aggregation:
+                list_aggregation_instance_count += 1
+            for param_source in injection_spec.param_sources.values():
+                kind = param_source.kind
+                param_source_kind_counts[kind] = (
+                    param_source_kind_counts.get(kind, 0) + 1
+                )
+                dependency_keys = param_source.dependency_keys
+                if dependency_keys is None:
+                    continue
+                arity = len(dependency_keys)
+                dependency_arity_histogram[arity] = (
+                    dependency_arity_histogram.get(arity, 0) + 1
+                )
+
+        return {
+            "instance_spec_count": len(runtime_specs),
+            "positional_override_instance_count": positional_override_instance_count,
+            "contract_payload_instance_count": contract_payload_instance_count,
+            "list_aggregation_instance_count": list_aggregation_instance_count,
+            "param_source_kind_counts": tuple(sorted(param_source_kind_counts.items())),
+            "dependency_arity_histogram": tuple(sorted(dependency_arity_histogram.items())),
+        }
 
     def _get_required_occurrence_plan_phase8(
             self,
@@ -163,5 +231,11 @@ class CompilerPhase9:
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         artifact._injection_plan_phase9 = plan
+        artifact._injection_shape_profile_phase9 = (
+            self._build_phase9_injection_shape_profile(
+                occurrence_plan=occurrence_plan,
+                injection_plan=plan,
+            )
+        )
         artifact._phase9_injection_plan_input_signature = injection_plan_input_signature
         self._mark_phase8_11_codegen_ir_dirty(artifact)

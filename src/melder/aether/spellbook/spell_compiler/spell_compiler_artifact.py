@@ -56,6 +56,7 @@ class SpellCompilerArtifact(Cleanable):
         "_lock",
         "spell_id",
         "_requirements",
+        "_requirements_shape_profile_phase1",
         "_symbolic_graph",
         "_resolution_frame",
         "_validation_result_phase4",
@@ -68,11 +69,14 @@ class SpellCompilerArtifact(Cleanable):
         "_phase8_occurrence_plan_input_signature",
         "_phase8_occurrence_plan_fast_key",
         "_occurrence_plan_phase8",
+        "_occurrence_shape_profile_phase8",
         "_phase9_injection_plan_input_signature",
         "_injection_plan_phase9",
+        "_injection_shape_profile_phase9",
         "_override_patch_map_phase10",
         "_mutation_patch_map_phase10",
         "_phase10_patch_maps_input_signature",
+        "_override_shape_profile_phase10",
         "_execution_plan_phase11",
         "_execution_plan_phase11_no_overrides",
         "_execution_plan_phase11_overrides",
@@ -83,6 +87,7 @@ class SpellCompilerArtifact(Cleanable):
         "_execution_plan_has_calln_phase11",
         "_execution_plan_has_contract_payloads_phase11",
         "_execution_plan_has_existing_creations_phase11",
+        "_execution_shape_profile_phase11",
         "_phase11_no_overrides_plan_signature",
         "_phase11_no_overrides_transient_schema",
         "_phase12_no_overrides_executor",
@@ -117,6 +122,7 @@ class SpellCompilerArtifact(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self.spell_id: str = spell_id
         self._requirements: Optional[SpellRequirements] = None
+        self._requirements_shape_profile_phase1: Optional[Dict[str, Any]] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         self._resolution_frame: Optional[SpellResolutionFrame] = None
         self._validation_result_phase4: Optional[SpellValidationResult] = None
@@ -129,11 +135,14 @@ class SpellCompilerArtifact(Cleanable):
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
+        self._occurrence_shape_profile_phase8: Optional[Dict[str, Any]] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
         self._injection_plan_phase9: Optional[InjectionPlan] = None
+        self._injection_shape_profile_phase9: Optional[Dict[str, Any]] = None
         self._override_patch_map_phase10: Optional[OverridePatchMap] = None
         self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
         self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
+        self._override_shape_profile_phase10: Optional[Dict[str, Any]] = None
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
@@ -144,6 +153,7 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_plan_has_calln_phase11: Optional[bool] = None
         self._execution_plan_has_contract_payloads_phase11: Optional[bool] = None
         self._execution_plan_has_existing_creations_phase11: Optional[bool] = None
+        self._execution_shape_profile_phase11: Optional[Dict[str, Any]] = None
         self._phase11_no_overrides_plan_signature: Optional[str] = None
         self._phase11_no_overrides_transient_schema: Optional[Dict[str, Any]] = None
         self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
@@ -249,14 +259,18 @@ class SpellCompilerArtifact(Cleanable):
             del self.spell_id
             del self._root_blueprint_phase5
             del self._requires_spellspace_request_phase5
+            del self._requirements_shape_profile_phase1
             del self._phase8_occurrence_plan_input_signature
             del self._phase8_occurrence_plan_fast_key
             del self._occurrence_plan_phase8
+            del self._occurrence_shape_profile_phase8
             del self._phase9_injection_plan_input_signature
             del self._injection_plan_phase9
+            del self._injection_shape_profile_phase9
             del self._override_patch_map_phase10
             del self._mutation_patch_map_phase10
             del self._phase10_patch_maps_input_signature
+            del self._override_shape_profile_phase10
             del self._execution_plan_phase11
             del self._execution_plan_phase11_no_overrides
             del self._execution_plan_phase11_overrides
@@ -267,6 +281,7 @@ class SpellCompilerArtifact(Cleanable):
             del self._execution_plan_has_calln_phase11
             del self._execution_plan_has_contract_payloads_phase11
             del self._execution_plan_has_existing_creations_phase11
+            del self._execution_shape_profile_phase11
             del self._phase11_no_overrides_plan_signature
             del self._phase11_no_overrides_transient_schema
             del self._phase12_no_overrides_executor
@@ -350,6 +365,7 @@ class SpellCompilerArtifact(Cleanable):
 
         self._resolution_frame = None
         self._requirements = None
+        self._requirements_shape_profile_phase1 = None
         self._symbolic_graph = None
         self._validation_result_phase4 = None
         self._validation_result_phase6 = None
@@ -371,6 +387,7 @@ class SpellCompilerArtifact(Cleanable):
         self._requires_spellspace_request_phase5 = False
         self._phase8_occurrence_plan_input_signature = None
         self._phase8_occurrence_plan_fast_key = None
+        self._occurrence_shape_profile_phase8 = None
 
         if self._occurrence_plan_phase8 is not None:
             try:
@@ -380,6 +397,7 @@ class SpellCompilerArtifact(Cleanable):
         self._occurrence_plan_phase8 = None
 
         self._phase9_injection_plan_input_signature = None
+        self._injection_shape_profile_phase9 = None
         if self._injection_plan_phase9 is not None:
             try:
                 self._injection_plan_phase9.cleanup()
@@ -402,6 +420,7 @@ class SpellCompilerArtifact(Cleanable):
         self._mutation_patch_map_phase10 = None
 
         self._phase10_patch_maps_input_signature = None
+        self._override_shape_profile_phase10 = None
         self._cleanup_execution_plans_phase11()
         self._spell_system_index_phase5 = None
 
@@ -450,6 +469,7 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_plan_has_calln_phase11 = None
         self._execution_plan_has_contract_payloads_phase11 = None
         self._execution_plan_has_existing_creations_phase11 = None
+        self._execution_shape_profile_phase11 = None
         self._phase11_no_overrides_plan_signature = None
         self._phase11_no_overrides_transient_schema = None
 

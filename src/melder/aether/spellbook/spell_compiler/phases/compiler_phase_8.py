@@ -41,6 +41,60 @@ class CompilerPhase8:
 
     __slots__ = ()
 
+    @staticmethod
+    def _build_phase8_occurrence_shape_profile(
+            occurrence_plan: OccurrencePlan,
+    ) -> Dict[str, Any]:
+        """
+        Build a lightweight Phase 8 occurrence/graph shape profile.
+
+        Purpose:
+            Summarize occurrence-plan structure at the point it is already
+            materialized, so later strategy selection can consume graph-shape
+            truth without rewalking planner inputs in a separate pass.
+
+        Contract:
+            - Uses occurrence-plan-owned execution/occurrence data directly.
+            - Captures raw structural facts rather than strategy decisions.
+            - Returns deterministic tuple-backed rows for stable artifact
+              storage.
+
+        Args:
+            occurrence_plan:
+                Phase 8 occurrence plan just built for the current spell.
+
+        Returns:
+            Dict[str, Any]:
+                Cheap occurrence-shape summary for later compiler stages.
+        """
+        width_by_depth_map: Dict[int, int] = {}
+        max_occurrence_depth = 0
+        for _, path_id in occurrence_plan.occurrence_graph.keys():
+            depth = occurrence_plan.path_registry.depth(path_id)
+            width_by_depth_map[depth] = width_by_depth_map.get(depth, 0) + 1
+            if depth > max_occurrence_depth:
+                max_occurrence_depth = depth
+
+        width_by_depth = tuple(
+            count
+            for _, count in sorted(width_by_depth_map.items())
+        )
+        max_width = max(width_by_depth, default=0)
+        execution_order_count = len(occurrence_plan.execution_order)
+        unique_spell_count = len(occurrence_plan.instance_keys_by_spell_id)
+        shared_spell_count = len(occurrence_plan.shared_spell_ids)
+
+        return {
+            "execution_order_count": execution_order_count,
+            "unique_spell_count": unique_spell_count,
+            "shared_spell_count": shared_spell_count,
+            "max_occurrence_depth": max_occurrence_depth,
+            "width_by_depth": width_by_depth,
+            "max_width": max_width,
+            "is_solo_graph": execution_order_count == 1,
+            "is_chain_like": max_width <= 1,
+        }
+
     def _get_required_root_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
@@ -464,6 +518,9 @@ class CompilerPhase8:
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         artifact._occurrence_plan_phase8 = plan
+        artifact._occurrence_shape_profile_phase8 = (
+            self._build_phase8_occurrence_shape_profile(plan)
+        )
         artifact._phase8_occurrence_plan_input_signature = occurrence_plan_input_signature
         self._mark_phase8_11_codegen_ir_dirty(artifact)
 

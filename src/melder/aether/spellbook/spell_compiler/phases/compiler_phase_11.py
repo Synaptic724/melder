@@ -500,30 +500,77 @@ class CompilerPhase11:
         max_dependency_count = 0
         has_contract_payloads = False
         has_existing_creations = False
+        contract_payload_step_count = 0
+        shared_instance_step_count = 0
+        spell_lock_step_count = 0
+        must_register_count = 0
+        requires_spellspace_step_count = 0
+        owner_conduit_required_step_count = 0
+        override_capable_step_count = 0
+        creations_target_kind_counts: Dict[int, int] = {}
+        existence_counts: Dict[str, int] = {}
+        dependency_arity_histogram: Dict[int, int] = {}
 
         for step in steps:
             dependency_count = len(step.dependency_keys)
             if dependency_count > max_dependency_count:
                 max_dependency_count = dependency_count
+            dependency_arity_histogram[dependency_count] = (
+                dependency_arity_histogram.get(dependency_count, 0) + 1
+            )
             if step.has_contract_payload:
                 has_contract_payloads = True
+                contract_payload_step_count += 1
             if step.spell.is_existing_creation:
                 has_existing_creations = True
+            if step.shared_instance:
+                shared_instance_step_count += 1
+            if step.use_spell_lock_hint:
+                spell_lock_step_count += 1
+            if step.must_register:
+                must_register_count += 1
+            if step.requires_spellspace:
+                requires_spellspace_step_count += 1
+            if step.owner_conduit_required:
+                owner_conduit_required_step_count += 1
+            if step.expects_overrides:
+                override_capable_step_count += 1
+            creations_target_kind = step.creations_target_kind
+            creations_target_kind_counts[creations_target_kind] = (
+                creations_target_kind_counts.get(creations_target_kind, 0) + 1
+            )
+            existence_name = step.existence.name
+            existence_counts[existence_name] = (
+                existence_counts.get(existence_name, 0) + 1
+            )
 
-        max_occurrence_depth = 0
-        occurrence_graph = occurrence_plan.occurrence_graph
-        if occurrence_graph:
-            path_registry = occurrence_plan.path_registry
-            for _, path_id in occurrence_graph.keys():
-                depth = path_registry.depth(path_id)
-                if depth > max_occurrence_depth:
-                    max_occurrence_depth = depth
+        occurrence_shape_profile_phase8 = artifact._occurrence_shape_profile_phase8
+        if occurrence_shape_profile_phase8 is not None:
+            max_occurrence_depth = occurrence_shape_profile_phase8[
+                "max_occurrence_depth"
+            ]
+        else:
+            max_occurrence_depth = 0
+            occurrence_graph = occurrence_plan.occurrence_graph
+            if occurrence_graph:
+                path_registry = occurrence_plan.path_registry
+                for _, path_id in occurrence_graph.keys():
+                    depth = path_registry.depth(path_id)
+                    if depth > max_occurrence_depth:
+                        max_occurrence_depth = depth
 
         has_calln: Optional[bool] = None
+        call_mode_counts: tuple[tuple[int, int], ...] = ()
         fast_plan = plan.fast_plan
         if fast_plan is not None:
             fast_call_modes = fast_plan[20]
             has_calln = ExecutionPlanCallMode.CALLN in fast_call_modes
+            call_mode_histogram: Dict[int, int] = {}
+            for call_mode in fast_call_modes:
+                call_mode_histogram[call_mode] = (
+                    call_mode_histogram.get(call_mode, 0) + 1
+                )
+            call_mode_counts = tuple(sorted(call_mode_histogram.items()))
 
         dispatch_route = "ENGINE"
         if plan.fast_transient_plan is not None and not has_existing_creations:
@@ -545,6 +592,28 @@ class CompilerPhase11:
         artifact._execution_plan_has_calln_phase11 = has_calln
         artifact._execution_plan_has_contract_payloads_phase11 = has_contract_payloads
         artifact._execution_plan_has_existing_creations_phase11 = has_existing_creations
+        artifact._execution_shape_profile_phase11 = {
+            "step_count": step_count,
+            "unique_spell_count": unique_spell_count,
+            "max_occurrence_depth": max_occurrence_depth,
+            "max_dependency_count": max_dependency_count,
+            "has_calln": has_calln,
+            "has_contract_payloads": has_contract_payloads,
+            "has_existing_creations": has_existing_creations,
+            "contract_payload_step_count": contract_payload_step_count,
+            "shared_instance_step_count": shared_instance_step_count,
+            "spell_lock_step_count": spell_lock_step_count,
+            "must_register_count": must_register_count,
+            "requires_spellspace_step_count": requires_spellspace_step_count,
+            "owner_conduit_required_step_count": owner_conduit_required_step_count,
+            "override_capable_step_count": override_capable_step_count,
+            "creations_target_kind_counts": tuple(sorted(creations_target_kind_counts.items())),
+            "existence_counts": tuple(sorted(existence_counts.items())),
+            "dependency_arity_histogram": tuple(sorted(dependency_arity_histogram.items())),
+            "fast_plan_available": fast_plan is not None,
+            "fast_transient_available": plan.fast_transient_plan is not None,
+            "call_mode_counts": call_mode_counts,
+        }
         spell.execution_plan_dispatch_route = dispatch_route
 
     def _build_execution_plan_variant(

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Dict, Any
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
+)
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
 )
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
@@ -35,6 +38,69 @@ class CompilerPhase1:
     """
 
     __slots__ = ()
+
+    @staticmethod
+    def _build_phase1_requirements_shape_profile(requirements: Any) -> Dict[str, Any]:
+        """
+        Build a lightweight Phase 1 shape profile from requirements output.
+
+        Purpose:
+            Capture parameter and DI-shape facts at the point where Phase 1 has
+            already classified them, so later strategy selection can consume
+            compiler-owned shape truth without rewalking requirement structures.
+
+        Contract:
+            - Reads requirement rows exactly once after they are built.
+            - Stores only count/histogram style facts needed for later strategy
+              selection.
+            - Returns deterministic tuple-backed rows for stable artifact
+              storage.
+
+        Args:
+            requirements:
+                Phase 1 `SpellRequirements` output for the current spell.
+
+        Returns:
+            Dict[str, Any]:
+                Cheap requirements-shape summary for later compiler stages.
+        """
+        parameters = requirements.parameters
+        di_shape_counts: Dict[str, int] = {}
+        optional_parameter_count = 0
+        for parameter in parameters:
+            di_shape_name = parameter.di_shape.name
+            di_shape_counts[di_shape_name] = (
+                di_shape_counts.get(di_shape_name, 0) + 1
+            )
+            if parameter.is_optional:
+                optional_parameter_count += 1
+
+        return {
+            "parameter_count": len(parameters),
+            "optional_parameter_count": optional_parameter_count,
+            "plain_parameter_count": di_shape_counts.get(ParameterDIShape.PLAIN.name, 0),
+            "single_annotation_parameter_count": di_shape_counts.get(
+                ParameterDIShape.SINGLE_BY_ANNOTATION.name,
+                0,
+            ),
+            "collection_parameter_count": di_shape_counts.get(
+                ParameterDIShape.COLLECTION_BY_ANNOTATION.name,
+                0,
+            ),
+            "spellmap_default_parameter_count": di_shape_counts.get(
+                ParameterDIShape.SPELLMAP_DEFAULT.name,
+                0,
+            ),
+            "spell_contract_parameter_count": di_shape_counts.get(
+                ParameterDIShape.SPELL_CONTRACT.name,
+                0,
+            ),
+            "mutation_contract_parameter_count": di_shape_counts.get(
+                ParameterDIShape.MUTATION_CONTRACT.name,
+                0,
+            ),
+            "di_shape_counts": tuple(sorted(di_shape_counts.items())),
+        }
 
     def run(
             self,
@@ -85,3 +151,6 @@ class CompilerPhase1:
         # We deliberately do not call finder.cleanup() here, because the finder
         # owns the same SpellRequirements instance we are going to retain.
         artifact._requirements = requirements
+        artifact._requirements_shape_profile_phase1 = (
+            self._build_phase1_requirements_shape_profile(requirements)
+        )

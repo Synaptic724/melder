@@ -31,6 +31,72 @@ class CompilerPhase10:
 
     __slots__ = ()
 
+    @staticmethod
+    def _build_phase10_override_shape_profile(
+            *,
+            root_blueprint: RootResolutionBlueprint,
+            override_patch_map: object,
+    ) -> dict[str, object]:
+        """
+        Build a lightweight Phase 10 override-targetability shape profile.
+
+        Purpose:
+            Summarize override targeting geometry at the point where the patch
+            map is already built, so later strategy selection can consume
+            targetability facts without re-scanning the rooted blueprint.
+
+        Contract:
+            - Uses `OverridePatchMap.targets_by_spec` and the rooted path
+              registry as the source of truth.
+            - Captures counts and histograms, not strategy-family decisions.
+            - Returns deterministic tuple-backed rows for stable artifact
+              storage.
+        """
+        unique_socket_rows: dict[tuple[object, ...], object] = {}
+        path_depth_histogram: dict[int, int] = {}
+        max_targets_per_spec = 0
+        single_target_spec_count = 0
+        multi_target_spec_count = 0
+
+        for matches in override_patch_map.targets_by_spec.values():
+            match_count = len(matches)
+            if match_count > max_targets_per_spec:
+                max_targets_per_spec = match_count
+            if match_count == 1:
+                single_target_spec_count += 1
+            elif match_count > 1:
+                multi_target_spec_count += 1
+            for socket_ref in matches:
+                socket_row = (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                )
+                if socket_row in unique_socket_rows:
+                    continue
+                unique_socket_rows[socket_row] = socket_ref
+                depth = root_blueprint.path_registry.depth(socket_ref.param_path_id)
+                path_depth_histogram[depth] = (
+                    path_depth_histogram.get(depth, 0) + 1
+                )
+
+        targeted_spell_ids = {
+            socket_row[0]
+            for socket_row in unique_socket_rows.keys()
+        }
+        max_target_path_depth = max(path_depth_histogram.keys(), default=0)
+        return {
+            "target_spec_count": len(override_patch_map.targets_by_spec),
+            "targeted_socket_count": len(unique_socket_rows),
+            "targeted_spell_count": len(targeted_spell_ids),
+            "max_targets_per_spec": max_targets_per_spec,
+            "single_target_spec_count": single_target_spec_count,
+            "multi_target_spec_count": multi_target_spec_count,
+            "path_depth_histogram": tuple(sorted(path_depth_histogram.items())),
+            "max_target_path_depth": max_target_path_depth,
+        }
+
     def _get_required_root_blueprint_phase5(
             self,
             artifact: SpellCompilerArtifact,
@@ -168,6 +234,12 @@ class CompilerPhase10:
         # Concurrent runners may still be reading the prior maps.
         artifact._override_patch_map_phase10 = override_patch_map
         artifact._mutation_patch_map_phase10 = mutation_patch_map
+        artifact._override_shape_profile_phase10 = (
+            self._build_phase10_override_shape_profile(
+                root_blueprint=root_blueprint,
+                override_patch_map=override_patch_map,
+            )
+        )
         artifact._phase10_patch_maps_input_signature = patch_maps_input_signature
         self._mark_phase8_11_codegen_ir_dirty(artifact)
 
