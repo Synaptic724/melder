@@ -223,7 +223,10 @@ class SpellSpaceMeld(Meld):
         if target_spell.resolution_required:
             self._ensure_runtime_resolution_ready(target_spell)
 
-        creations = self._creations
+        if target_spell.existence is Existence.unique_per_spell_space:
+            creations = self._spellspace_creations
+        else:
+            creations = self._owner_conduit_creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
 

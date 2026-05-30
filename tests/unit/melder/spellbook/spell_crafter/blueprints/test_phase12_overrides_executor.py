@@ -875,15 +875,10 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
 
 def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existing_spellspace_instance() -> None:
     """
-    Spellspace-scoped targeted overrides reject reuse of existing spellspace instances.
+    Spellspace-scoped targeted overrides reject reuse of existing direct-store instances.
     """
     creations = _Creations()
-    active_spellspace = SimpleNamespace(
-        id="space-1",
-        owner_conduit_id=creations.owner_conduit_id,
-    )
-    creations._active_spellspace = active_spellspace
-    creations._spellspace[(active_spellspace.id, "dep")] = "existing-dep"
+    creations._creations["dep"] = "existing-dep"
 
     root_spell = _make_spell("root")
     dep_spell = _make_spell("dep")

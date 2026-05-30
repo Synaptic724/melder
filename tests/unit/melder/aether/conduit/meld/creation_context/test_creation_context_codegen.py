@@ -249,17 +249,16 @@ def test_build_with_overrides_lines_shared_route_contains_expected_branches() ->
     assert "_existing_override_message" in joined
 
 
-def test_build_with_overrides_lines_spellspace_route_contains_scope_error_guard() -> None:
-    """Verify spellspace-route override lines include active-spellspace checks."""
+def test_build_with_overrides_lines_spellspace_route_uses_direct_store_access() -> None:
+    """Verify spellspace-route override lines use direct spellspace store access."""
     lines = codegen._build_with_overrides_lines(
         resolve_route_key="spellspace",
         return_created=True,
         overrides_maybe_none=True,
     )
     joined = "\n".join(lines)
-    assert "get_active_spellspace()" in joined
-    assert "_SpellSpaceScopeError" in joined
-    assert "caller_creations.get_spellspace_creation" in joined
+    assert "caller_creations.get_creation(_spell_id)" in joined
+    assert "caller_creations.get_spellspace_creation" not in joined
 
 
 def test_build_with_overrides_lines_existing_creation_route_contains_override_guard() -> None:

@@ -291,7 +291,7 @@ class Conduit(Cleanable):
         )
         self._spellspace_pool: SpellSpacePool = SpellSpacePool(
             owner_conduit_id=self._id,
-            meld=self._meld,
+            conduit_meld=self._meld,
             owner_conduit_creations=self._creations,
             spellspace_registry=self._spellspace_registry,
             baseline_idle=4,
@@ -702,7 +702,15 @@ class Conduit(Cleanable):
         """
         if self._spellspace_stack is None:
             return
-        stack = list(self._spellspace_stack.get())
+        try:
+            stack = list(self._spellspace_stack.get())
+        except Exception:
+            self._logger.error(
+                "Error flushing spellspace stack",
+                "_cleanup_spellspaces",
+                exc_info=True,
+            )
+            return
         registry = list(self._spellspace_registry) if self._spellspace_registry is not None else []
         spellspaces = list(dict.fromkeys([*stack, *registry]))
         self._spellspace_stack.set([])

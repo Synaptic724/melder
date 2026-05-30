@@ -275,6 +275,8 @@ class DevopsInformationRegistry(Cleanable):
         The key is stored in "_identities_by_key" and optionally in
         "_objects_by_key". The owner-kind index "_identity_keys_by_kind" is also
         updated so callers can list all identities of a given kind.
+        Spellbook<->conduit ownership is not derived here; it is maintained by
+        explicit ownership-edge methods.
         """
         
         if identity is None:
@@ -409,17 +411,17 @@ class DevopsInformationRegistry(Cleanable):
             object_ref: Optional[Any] = None,
     ) -> None:
         """
-        Refresh stored identity snapshots and metadata-derived relations.
+        Refresh stored identity and optional object-reference snapshots.
 
         Purpose:
-            Re-run any registry-side derivation that depends on an identity's
-            current metadata, such as spellbook<->conduit ownership.
+            Update the registered identity object and, optionally, its live
+            object reference without rebuilding unrelated registry relations.
 
         Contract:
             - Identity must already belong to this frame.
             - Updates the optional object reference when supplied.
-            - Rebuilds metadata-derived spellbook/conduit relations from the
-              full current identity set under the registry lock.
+            - Does not derive or rebuild spellbook<->conduit ownership from
+              identity metadata.
 
         Args:
             identity:

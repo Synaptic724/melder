@@ -641,9 +641,9 @@ def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_
     assert call_counter["value"] == 1
 
 
-def test_compile_phase12_no_overrides_executor_requires_active_spellspace_for_spellspace_existence() -> None:
+def test_compile_phase12_no_overrides_executor_spellspace_existence_uses_direct_store() -> None:
     """
-    Spellspace existence route fails fast when no active spellspace exists.
+    Spellspace existence route now uses the direct spellspace-owned store.
     """
     creations = _Creations()
     spell = _make_spell("root")
@@ -666,13 +666,12 @@ def test_compile_phase12_no_overrides_executor_requires_active_spellspace_for_sp
         owner_creations=creations,
         caller_creations_lock_held=False,
     )
-
-    with pytest.raises(SpellSpaceScopeError, match="requires an active SpellSpace"):
-        executor(
-            caller_creations=context.caller_creations,
-            owner_creations=context.owner_creations,
-            caller_creations_lock_held=context.caller_creations_lock_held,
-        )
+    assert executor(
+        caller_creations=context.caller_creations,
+        owner_creations=context.owner_creations,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    ) == "value:root"
+    assert creations.get_creation("root") == "value:root"
 
 
 def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock_is_held() -> None:
