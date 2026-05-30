@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import inspect
-from types import TracebackType
 from threading import RLock
 from typing import (
     TYPE_CHECKING,
@@ -212,42 +211,6 @@ class Meld(Cleanable, ABC):
             if self._spell_compiler_system is not None:
                 self._spell_compiler_system.cleanup()
             del self._spell_compiler_system
-
-
-    # region Context Manager
-    def __enter__(self) -> "Meld":
-        """
-        Enter the meld lock context.
-
-        Returns:
-            Meld: The resolver instance itself, with the caller now inside the
-            same lock-protected critical section used by other mutable meld
-            operations.
-        """
-        return self
-
-    def __exit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
-    ) -> None:
-        """
-        Exit the meld lock context.
-
-        Args:
-            exc_type: Exception type if an exception occurred inside the
-                context.
-            exc_value: Exception instance raised inside the context.
-            traceback: Traceback for the exception, if any.
-
-        Returns:
-            None. The method exists for context-manager symmetry; the surrounding
-            lock usage determines the effective critical-section behavior.
-        """
-        pass
-
-    # endregion Context Manager
 
     @abstractmethod
     def meld(
@@ -527,41 +490,6 @@ class Meld(Cleanable, ABC):
         # Resolution gating (per-conduit)
         if not spell.resolution_required:
             self._ensure_resolution_resolvable(spell)
-
-    def _resolve_spell_for_live_creation_probe(
-            self,
-            *,
-            spell_name: str | None,
-            spell: str | object | None,
-            spellframe: str | object | None,
-            binding_name: str | None,
-    ) -> Spell:
-        """
-        Resolve one spell for the live-creation probe using meld semantics.
-
-        Purpose:
-            Keep the probe on the same identity-resolution spine as `meld(...)`
-            without changing the main meld method itself.
-
-        Args:
-            spell_name:
-                Optional logical spell name for name-based resolution.
-            spell:
-                Optional spell id string or spell object.
-            spellframe:
-                Optional spellframe / protocol / frame key.
-            binding_name:
-                Optional binding name used for lookup-key resolution.
-
-        Returns:
-            Spell: Resolved spell object for the probe.
-        """
-        return self._resolve_target_spell_from_inputs(
-            spell_name=spell_name,
-            spell=spell,
-            spellframe=spellframe,
-            binding_name=binding_name,
-        )
 
     @abstractmethod
     def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:

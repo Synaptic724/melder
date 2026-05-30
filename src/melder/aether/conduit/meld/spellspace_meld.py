@@ -81,31 +81,6 @@ class SpellSpaceMeld(Meld):
             del self._spellspace_id
             del self._owner_conduit_id
 
-    def _execute_with_active_spellspace(
-            self,
-            *,
-            target_spell: "Spell",
-            override_map: Optional[dict[str, Any]],
-    ) -> Any:
-        """
-        Execute the shared backend with the correct caller-creations surface
-        for the resolved existence route.
-
-        Contract:
-            - `unique_per_spell_space` uses spellspace-owned storage directly.
-            - `unique_per_conduit` and current `many` keep using
-              owner-conduit creations.
-        """
-        if target_spell.existence is Existence.unique_per_spell_space:
-            runtime_creations = self._spellspace_creations
-        else:
-            runtime_creations = self._owner_conduit_creations
-        return self._execute_meld_for_resolved_spell(
-            target_spell=target_spell,
-            runtime_creations=runtime_creations,
-            override_map=override_map,
-        )
-
     def meld(
             self,
             spell_name: str | None = None,
@@ -472,9 +447,9 @@ class SpellSpaceMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell_for_live_creation_probe(
-            spell_name=spell_name,
+        target_spell = self._resolve_spell(
             spell=spell,
+            spell_name=spell_name,
             spellframe=spellframe,
             binding_name=binding_name,
         )

@@ -425,9 +425,9 @@ class ConduitMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell_for_live_creation_probe(
-            spell_name=spell_name,
+        target_spell = self._resolve_spell(
             spell=spell,
+            spell_name=spell_name,
             spellframe=spellframe,
             binding_name=binding_name,
         )

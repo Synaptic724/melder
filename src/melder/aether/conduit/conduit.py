@@ -384,12 +384,7 @@ class Conduit(Cleanable):
 
         Soft-clean active and registered spellspaces without destroying the pool.
         """
-        stack = list(self._spellspace_stack.get())
-        registry = list(self._spellspace_registry)
-        spellspaces = list(dict.fromkeys([*stack, *registry]))
-        self._spellspace_stack.set([])
-        self._spellspace_registry.clear()
-        for spellspace in spellspaces:
+        for spellspace in self._spellspace_stack.get():
             try:
                 spellspace.cleanup()
             except Exception:
@@ -398,6 +393,19 @@ class Conduit(Cleanable):
                     "_cleanup_spellspaces_for_pool",
                     exc_info=True,
                 )
+
+        for spellspace in self._spellspace_registry:
+            try:
+                spellspace.cleanup()
+            except Exception:
+                self._logger.error(
+                    "Error cleaning spellspace for pool",
+                    "_cleanup_spellspaces_for_pool",
+                    exc_info=True,
+                )
+
+        self._spellspace_stack.set([])
+        self._spellspace_registry.clear()
 
     def permanent_cleanup(self) -> None:
         """
