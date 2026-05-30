@@ -93,6 +93,7 @@ def test_cache_execution_plan_metrics_assigns_dispatch_route_tiers(
     """Phase 11 should assign the documented dispatch tier thresholds."""
     phase = CompilerPhase11()
     spell = SimpleNamespace()
+    artifact = SimpleNamespace(_occurrence_shape_profile_phase8={"max_occurrence_depth": max_depth})
     depths = {index: max_depth for index in range(step_count)}
     occurrence_plan = SimpleNamespace(
         occurrence_graph={
@@ -131,13 +132,14 @@ def test_cache_execution_plan_metrics_assigns_dispatch_route_tiers(
 
     phase._cache_execution_plan_metrics(
         spell,
+        artifact,
         occurrence_plan=occurrence_plan,
         plan=plan,
     )
 
-    assert spell.execution_plan_step_count == step_count
-    assert spell.execution_plan_max_occurrence_depth == max_depth
-    assert spell.execution_plan_max_dependency_count == max_dependency_count
+    assert artifact._execution_plan_step_count_phase11 == step_count
+    assert artifact._execution_plan_max_occurrence_depth_phase11 == max_depth
+    assert artifact._execution_plan_max_dependency_count_phase11 == max_dependency_count
     assert spell.execution_plan_dispatch_route == dispatch_route
 
 
@@ -145,6 +147,7 @@ def test_cache_execution_plan_metrics_records_calln_payload_and_existing_creatio
     """Phase 11 should aggregate CALLN, payload, and existing-creation flags."""
     phase = CompilerPhase11()
     spell = SimpleNamespace()
+    artifact = SimpleNamespace(_occurrence_shape_profile_phase8={"max_occurrence_depth": 1})
     occurrence_plan = SimpleNamespace(
         occurrence_graph={("root", 1): {}},
         path_registry=SimpleNamespace(depth=lambda path_id: 1),
@@ -170,13 +173,14 @@ def test_cache_execution_plan_metrics_records_calln_payload_and_existing_creatio
 
     phase._cache_execution_plan_metrics(
         spell,
+        artifact,
         occurrence_plan=occurrence_plan,
         plan=plan,
     )
 
-    assert spell.execution_plan_has_calln is True
-    assert spell.execution_plan_has_contract_payloads is True
-    assert spell.execution_plan_has_existing_creations is True
+    assert artifact._execution_plan_has_calln_phase11 is True
+    assert artifact._execution_plan_has_contract_payloads_phase11 is True
+    assert artifact._execution_plan_has_existing_creations_phase11 is True
     assert spell.execution_plan_dispatch_route == "ENGINE"
 
 
@@ -282,13 +286,13 @@ def test_run_reuses_cached_variant_set_when_input_signature_unchanged(
     monkeypatch.setattr(
         CompilerPhase11,
         "_cache_execution_plan_metrics",
-        lambda self, spell, *, occurrence_plan, plan: cached_calls.append(
+        lambda self, spell, artifact, *, occurrence_plan, plan: cached_calls.append(
             ("cache", plan)
         ),
     )
     monkeypatch.setattr(
         CompilerPhase11,
-        "_store_phase11_to_phase12_handoff",
+        "_store_phase11_to_phase13_handoff",
         lambda self, spell, artifact, plan: cached_calls.append(("handoff", plan)),
     )
 
@@ -356,11 +360,11 @@ def test_run_rebuilds_no_overrides_plan_when_input_signature_changes(
     monkeypatch.setattr(
         CompilerPhase11,
         "_cache_execution_plan_metrics",
-        lambda self, spell, *, occurrence_plan, plan: callbacks.append(("cache", plan)),
+        lambda self, spell, artifact, *, occurrence_plan, plan: callbacks.append(("cache", plan)),
     )
     monkeypatch.setattr(
         CompilerPhase11,
-        "_store_phase11_to_phase12_handoff",
+        "_store_phase11_to_phase13_handoff",
         lambda self, spell, artifact, plan: callbacks.append(("handoff", plan)),
     )
 
@@ -436,11 +440,11 @@ def test_run_reuses_no_overrides_plan_when_signature_unchanged_but_rebuilds_othe
     monkeypatch.setattr(
         CompilerPhase11,
         "_cache_execution_plan_metrics",
-        lambda self, spell, *, occurrence_plan, plan: callbacks.append(("cache", plan)),
+        lambda self, spell, artifact, *, occurrence_plan, plan: callbacks.append(("cache", plan)),
     )
     monkeypatch.setattr(
         CompilerPhase11,
-        "_store_phase11_to_phase12_handoff",
+        "_store_phase11_to_phase13_handoff",
         lambda self, spell, artifact, plan: callbacks.append(("handoff", plan)),
     )
 
@@ -463,7 +467,7 @@ def test_run_reuses_no_overrides_plan_when_signature_unchanged_but_rebuilds_othe
 def test_run_stores_phase11_handoff_without_eager_phase8_11_flush(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Phase 11 run should store phase12 handoff and leave phase8_11 export dirty."""
+    """Phase 11 run should store phase13 handoff and leave phase8_11 export dirty."""
     phase = CompilerPhase11()
     spell = SimpleNamespace(is_existing_creation=False, resolution_complete=False)
     occurrence_plan = object()
@@ -512,11 +516,11 @@ def test_run_stores_phase11_handoff_without_eager_phase8_11_flush(
     monkeypatch.setattr(
         CompilerPhase11,
         "_cache_execution_plan_metrics",
-        lambda self, spell, *, occurrence_plan, plan: callbacks.append(("cache", plan)),
+        lambda self, spell, artifact, *, occurrence_plan, plan: callbacks.append(("cache", plan)),
     )
     monkeypatch.setattr(
         CompilerPhase11,
-        "_store_phase11_to_phase12_handoff",
+        "_store_phase11_to_phase13_handoff",
         lambda self, spell, artifact, plan: callbacks.append(("handoff", plan)),
     )
     monkeypatch.setattr(
@@ -588,11 +592,11 @@ def test_run_builds_override_variants_separately_from_stripped_no_overrides_base
     monkeypatch.setattr(
         CompilerPhase11,
         "_cache_execution_plan_metrics",
-        lambda self, spell, *, occurrence_plan, plan: None,
+        lambda self, spell, artifact, *, occurrence_plan, plan: None,
     )
     monkeypatch.setattr(
         CompilerPhase11,
-        "_store_phase11_to_phase12_handoff",
+        "_store_phase11_to_phase13_handoff",
         lambda self, spell, artifact, plan: None,
     )
 
@@ -608,3 +612,4 @@ def test_run_builds_override_variants_separately_from_stripped_no_overrides_base
     assert artifact._execution_plan_phase11.plan_variant == compiler_phase_11_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS
     assert artifact._execution_plan_phase11_overrides.fast_transient_plan is None
     assert artifact._execution_plan_phase11.fast_transient_plan is None
+

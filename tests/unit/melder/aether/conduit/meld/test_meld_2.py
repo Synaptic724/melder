@@ -1,5 +1,4 @@
 """Additional contract tests for Meld resolution and registration helpers."""
-from contextvars import ContextVar
 from threading import RLock
 from types import SimpleNamespace
 from typing import Any, Callable
@@ -8,7 +7,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -191,7 +192,7 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
     """
     effective_creations = creations or MagicMock()
     conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
-    return Meld(
+    return ConduitMeld(
         creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
         conduit_id=conduit_id,

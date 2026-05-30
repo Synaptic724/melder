@@ -120,7 +120,7 @@ class SharedCompilerExecutions:
             Build a deterministic signature from primitive IR parts.
             
             Purpose:
-                Produce stable fingerprints for phase-exported IR slices so Phase 12
+                Produce stable fingerprints for phase-exported IR slices so Phase 13
                 compilation can skip unchanged payloads.
             Contract:
                 - Signature is deterministic for equal-ordered inputs.
@@ -1131,14 +1131,14 @@ class SharedCompilerExecutions:
         }
 
     @staticmethod
-    def build_phase12_no_overrides_step_signature_row(
+    def build_phase13_no_overrides_step_signature_row(
             step: Any,
     ) -> Tuple[Any, ...]:
         """
             Build one deterministic signature row for no-overrides compile caching.
             
             Purpose:
-                Capture only the step fields that influence phase12 no-overrides
+                Capture only the step fields that influence phase13 no-overrides
                 compiled source/namespace behaviour without constructing full IR
                 payload dict rows.
             Contract:
@@ -1307,7 +1307,7 @@ class SharedCompilerExecutions:
             Export one Phase 11 execution-plan variant into IR fields.
             
             Purpose:
-                Normalize plan metadata and signatures so Phase 12 and runtime
+                Normalize plan metadata and signatures so Phase 13 and runtime
                 dispatch can consume a deterministic payload.
             Contract:
                 - Returns a payload dictionary for any input; empty plan fields are
@@ -1384,7 +1384,7 @@ class SharedCompilerExecutions:
             Export phases 8-11 artifacts into the spell-scoped Codegen IR payload.
             
             Purpose:
-                Publish normalized execution-planning metadata needed by Phase 12
+                Publish normalized execution-planning metadata needed by Phase 13
                 compilation and runtime plan dispatch.
             Contract:
                 - Safe to call repeatedly; latest phase artifacts overwrite prior IR.
@@ -1651,7 +1651,7 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Clear the phase8_11 segment from Codegen IR and Phase 12 artifacts.
+        Clear the phase8_11 segment from Codegen IR and Phase 13 artifacts.
 
         Purpose:
             Invalidate runtime execution artifacts whenever Phase8+ state is
@@ -1673,11 +1673,12 @@ class SharedCompilerExecutions:
         # This path resets caches on a still-live artifact. Downstream phase
         # logic reads these attributes directly, so they must remain present
         # and reset to empty-cache state instead of being deleted.
-        artifact._phase12_no_overrides_executor = None
-        artifact._phase12_no_overrides_executor_signature = None
+        artifact._phase13_no_overrides_executor = None
+        artifact._phase13_no_overrides_executor_signature = None
         artifact._phase8_occurrence_plan_input_signature = None
         artifact._phase8_occurrence_plan_fast_key = None
         artifact._phase9_injection_plan_input_signature = None
         artifact._phase10_patch_maps_input_signature = None
         artifact._phase11_no_overrides_input_signature = None
         artifact._phase11_no_overrides_fast_key = None
+

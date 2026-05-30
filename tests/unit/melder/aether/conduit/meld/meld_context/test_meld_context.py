@@ -30,7 +30,7 @@ class _CompilerArtifactStub:
         """
         Initialize default no-overrides/overrides codegen artifacts.
         """
-        self._phase12_no_overrides_executor = lambda _context: "built"
+        self._phase13_no_overrides_executor = lambda _context: "built"
         self._execution_plan_phase11_no_overrides = SimpleNamespace(
             fast_transient_plan=None,
         )
@@ -279,5 +279,6 @@ def test_factory_build_for_spell_dynamic_attaches_lineage_gate() -> None:
     finally:
         context.cleanup()
         factory.cleanup()
+
 
 

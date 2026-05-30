@@ -894,8 +894,8 @@ def test_reset_phase8_11_codegen_ir_clears_resolution_complete_flag() -> None:
         "signatures": {"phase8_11": "sig"},
     }
     artifact._phase8_11_codegen_ir_dirty = True
-    artifact._phase12_no_overrides_executor = object()
-    artifact._phase12_no_overrides_executor_signature = "sig"
+    artifact._phase13_no_overrides_executor = object()
+    artifact._phase13_no_overrides_executor_signature = "sig"
     artifact._phase8_occurrence_plan_input_signature = "phase8"
     artifact._phase8_occurrence_plan_fast_key = ("fast",)
     artifact._phase9_injection_plan_input_signature = "phase9"
@@ -909,8 +909,8 @@ def test_reset_phase8_11_codegen_ir_clears_resolution_complete_flag() -> None:
     assert artifact._codegen_ir["phase8_11"] == {}
     assert "phase8_11" not in artifact._codegen_ir["signatures"]
     assert artifact._phase8_11_codegen_ir_dirty is False
-    assert artifact._phase12_no_overrides_executor is None
-    assert artifact._phase12_no_overrides_executor_signature is None
+    assert artifact._phase13_no_overrides_executor is None
+    assert artifact._phase13_no_overrides_executor_signature is None
     assert artifact._phase8_occurrence_plan_input_signature is None
     assert artifact._phase8_occurrence_plan_fast_key is None
     assert artifact._phase9_injection_plan_input_signature is None
@@ -938,3 +938,4 @@ def test_capture_phase8_11_codegen_ir_if_dirty_only_flushes_when_dirty(monkeypat
     artifact._phase8_11_codegen_ir_dirty = True
     SharedCompilerExecutions.capture_phase8_11_codegen_ir_if_dirty(artifact)
     assert calls == ["capture"]
+

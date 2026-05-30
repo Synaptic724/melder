@@ -1,13 +1,13 @@
-"""Unit tests for current-surface compiler phase 12 compile caching behavior."""
+"""Unit tests for current-surface compiler phase 13 compile caching behavior."""
 
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
-import melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 as compiler_phase_12_module
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
-    CompilerPhase12,
+import melder.aether.spellbook.spell_compiler.phases.compiler_phase_13 as compiler_phase_13_module
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_13 import (
+    CompilerPhase13,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
@@ -15,14 +15,14 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 
 
 def _make_spellbook_stub() -> Any:
-    """Build a minimal spellbook stub for phase 12 tests."""
+    """Build a minimal spellbook stub for phase 13 tests."""
     return SimpleNamespace(
         _spell_id_pool={},
     )
 
 
 def _make_spell_stub(spell_id: str) -> Any:
-    """Build a minimal spell stub for phase 12 tests."""
+    """Build a minimal spell stub for phase 13 tests."""
     return SimpleNamespace(
         spell_id=spell_id,
         spell_index=SimpleNamespace(current=spell_id),
@@ -31,8 +31,8 @@ def _make_spell_stub(spell_id: str) -> Any:
 
 
 def test_compile_no_overrides_executor_from_payload_requires_signature_field() -> None:
-    """Phase 12 payload compile should fail fast on missing required fields."""
-    phase = CompilerPhase12()
+    """Phase 13 payload compile should fail fast on missing required fields."""
+    phase = CompilerPhase13()
     spellbook = _make_spellbook_stub()
     spell = _make_spell_stub("root")
     artifact = SpellCompilerArtifact("root")
@@ -51,8 +51,8 @@ def test_compile_no_overrides_executor_from_payload_requires_signature_field() -
 
 
 def test_compile_no_overrides_executor_from_payload_requires_steps_rows() -> None:
-    """Phase 12 payload compile should require non-empty step rows."""
-    phase = CompilerPhase12()
+    """Phase 13 payload compile should require non-empty step rows."""
+    phase = CompilerPhase13()
     spellbook = _make_spellbook_stub()
     spell = _make_spell_stub("root")
     artifact = SpellCompilerArtifact("root")
@@ -72,13 +72,13 @@ def test_compile_no_overrides_executor_from_payload_requires_steps_rows() -> Non
 
 
 def test_compile_no_overrides_executor_from_payload_reuses_cached_signature() -> None:
-    """Phase 12 payload compile should reuse the cached executor when signatures match."""
-    phase = CompilerPhase12()
+    """Phase 13 payload compile should reuse the cached executor when signatures match."""
+    phase = CompilerPhase13()
     spellbook = _make_spellbook_stub()
     spell = _make_spell_stub("root")
     artifact = SpellCompilerArtifact("root")
-    artifact._phase12_no_overrides_executor_signature = "sig"
-    artifact._phase12_no_overrides_executor = object()
+    artifact._phase13_no_overrides_executor_signature = "sig"
+    artifact._phase13_no_overrides_executor = object()
 
     phase.compile_no_overrides_executor_from_payload(
         spellbook,
@@ -92,20 +92,20 @@ def test_compile_no_overrides_executor_from_payload_reuses_cached_signature() ->
         },
     )
 
-    assert artifact._phase12_no_overrides_executor_signature == "sig"
-    assert artifact._phase12_no_overrides_executor is not None
+    assert artifact._phase13_no_overrides_executor_signature == "sig"
+    assert artifact._phase13_no_overrides_executor is not None
     assert spell.resolution_complete is True
 
 
 def test_compile_no_overrides_executor_from_plan_reuses_cached_signature() -> None:
-    """Phase 12 plan compile should reuse the cached executor when signatures match."""
-    phase = CompilerPhase12()
+    """Phase 13 plan compile should reuse the cached executor when signatures match."""
+    phase = CompilerPhase13()
     spell = _make_spell_stub("root")
     artifact = SpellCompilerArtifact("root")
     plan = SimpleNamespace(steps=[object()])
     artifact._phase11_no_overrides_plan_signature = "sig"
-    artifact._phase12_no_overrides_executor_signature = "sig"
-    artifact._phase12_no_overrides_executor = object()
+    artifact._phase13_no_overrides_executor_signature = "sig"
+    artifact._phase13_no_overrides_executor = object()
 
     phase.compile_no_overrides_executor_from_plan(
         spell,
@@ -113,28 +113,28 @@ def test_compile_no_overrides_executor_from_plan_reuses_cached_signature() -> No
         plan,
     )
 
-    assert artifact._phase12_no_overrides_executor_signature == "sig"
-    assert artifact._phase12_no_overrides_executor is not None
+    assert artifact._phase13_no_overrides_executor_signature == "sig"
+    assert artifact._phase13_no_overrides_executor is not None
     assert spell.resolution_complete is True
 
 
 def test_compile_no_overrides_executor_from_plan_recompiles_on_signature_change(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Phase 12 plan compile should rebuild the executor when the cached signature changes."""
-    phase = CompilerPhase12()
+    """Phase 13 plan compile should rebuild the executor when the cached signature changes."""
+    phase = CompilerPhase13()
     spell = _make_spell_stub("root")
     artifact = SpellCompilerArtifact("root")
     plan = SimpleNamespace(steps=[object()])
     artifact._phase11_no_overrides_plan_signature = "sig-new"
     artifact._phase11_no_overrides_transient_schema = {"schema": 1}
-    artifact._phase12_no_overrides_executor_signature = "sig-old"
+    artifact._phase13_no_overrides_executor_signature = "sig-old"
     compiled_executor = object()
     compile_calls: list[tuple[Any, Any]] = []
 
     monkeypatch.setattr(
-        compiler_phase_12_module,
-        "compile_phase12_no_overrides_executor_from_plan",
+        compiler_phase_13_module,
+        "compile_phase13_no_overrides_executor_from_plan",
         lambda plan, transient_schema: compile_calls.append((plan, transient_schema)) or compiled_executor,
     )
 
@@ -145,6 +145,7 @@ def test_compile_no_overrides_executor_from_plan_recompiles_on_signature_change(
     )
 
     assert compile_calls == [(plan, {"schema": 1})]
-    assert artifact._phase12_no_overrides_executor is compiled_executor
-    assert artifact._phase12_no_overrides_executor_signature == "sig-new"
+    assert artifact._phase13_no_overrides_executor is compiled_executor
+    assert artifact._phase13_no_overrides_executor_signature == "sig-new"
     assert spell.resolution_complete is True
+

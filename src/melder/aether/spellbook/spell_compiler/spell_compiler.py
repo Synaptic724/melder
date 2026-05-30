@@ -38,6 +38,9 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
     CompilerPhase12,
 )
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_13 import (
+    CompilerPhase13,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -93,6 +96,7 @@ class SpellCompiler(Cleanable):
         "_phase_10",
         "_phase_11",
         "_phase_12",
+        "_phase_13",
     ]
 
     def __init__(self) -> None:
@@ -119,6 +123,7 @@ class SpellCompiler(Cleanable):
         self._phase_10 = CompilerPhase10()
         self._phase_11 = CompilerPhase11()
         self._phase_12 = CompilerPhase12()
+        self._phase_13 = CompilerPhase13()
 
     def cleanup(self) -> None:
         """
@@ -139,6 +144,7 @@ class SpellCompiler(Cleanable):
         del self._phase_10
         del self._phase_11
         del self._phase_12
+        del self._phase_13
 
 
 
@@ -728,16 +734,16 @@ class SpellCompiler(Cleanable):
 
         Purpose:
             Build final execution plans for spell invocation from all prior phase
-            artifacts and spellbook context, stopping at the phase-11/12 artifact
+            artifacts and spellbook context, stopping at the phase-11/13 artifact
             handoff.
 
         Contract:
             - Requires phase-8 to phase-10 outputs for complete plan synthesis.
             - Stores phase-11 execution plans on the artifact for downstream
               runner/executor compilation.
-            - Stops at the phase-11/12 artifact handoff. Phase-12 no-overrides
+            - Stops at the phase-11/13 artifact handoff. Phase-13 no-overrides
               executor compilation is now a distinct phase; callers must run
-              `compile_phase12_no_overrides_executor` separately.
+              `compile_phase13_no_overrides_executor` separately.
             - Honors cancellation while constructing runtime execution structure.
 
         Args:
@@ -759,17 +765,47 @@ class SpellCompiler(Cleanable):
             spellbook,
         )
 
-    def compile_phase12_no_overrides_executor(
+    def run_phase_strategy_selection(
             self,
             spellbook: Spellbook,
             spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Compile the phase-12 no-overrides executor directly from artifact state.
+        Run the reserved Phase 12 strategy-selection slot.
 
         Purpose:
-            Delegate to phase-12 executor synthesis using current phase-11 artifact
+            Preserve the compiler numbering surface while the new strategy
+            phase is still a no-op placeholder.
+
+        Args:
+            spellbook:
+                Spellbook compiler context.
+            spell:
+                Spell being prepared for final backend emission.
+            artifact:
+                Compiler artifact carrying the current plan/build state.
+
+        Returns:
+            None.
+        """
+        self._phase_12.run(
+            spellbook,
+            spell,
+            artifact,
+        )
+
+    def compile_phase13_no_overrides_executor(
+            self,
+            spellbook: Spellbook,
+            spell: Spell,
+            artifact: SpellCompilerArtifact,
+    ) -> None:
+        """
+        Compile the phase-13 no-overrides executor directly from artifact state.
+
+        Purpose:
+            Delegate to phase-13 executor synthesis using current phase-11 artifact
             state.
 
         Contract:
@@ -789,20 +825,20 @@ class SpellCompiler(Cleanable):
         Returns:
             None.
         """
-        self._phase_12.compile_no_overrides_executor(
+        self._phase_13.compile_no_overrides_executor(
             spellbook,
             spell,
             artifact,
         )
 
-    def compile_phase12_no_overrides_executor_from_plan(
+    def compile_phase13_no_overrides_executor_from_plan(
             self,
             spell: Spell,
             artifact: SpellCompilerArtifact,
             execution_plan: ExecutionPlan,
     ) -> None:
         """
-        Compile the phase-12 no-overrides executor from a provided execution plan.
+        Compile the phase-13 no-overrides executor from a provided execution plan.
 
         Purpose:
             Build and cache a callable executor for an already-selected
@@ -825,13 +861,13 @@ class SpellCompiler(Cleanable):
         Returns:
             None.
         """
-        self._phase_12.compile_no_overrides_executor_from_plan(
+        self._phase_13.compile_no_overrides_executor_from_plan(
             spell,
             artifact,
             execution_plan,
         )
 
-    def compile_phase12_no_overrides_executor_from_payload(
+    def compile_phase13_no_overrides_executor_from_payload(
             self,
             spellbook: Spellbook,
             spell: Spell,
@@ -839,7 +875,7 @@ class SpellCompiler(Cleanable):
             no_overrides_payload: Dict[str, Any],
     ) -> None:
         """
-        Compile the phase-12 no-overrides executor from raw payload data.
+        Compile the phase-13 no-overrides executor from raw payload data.
 
         Purpose:
             Synthesize a no-overrides executor and cache it using payload-provided
@@ -859,14 +895,15 @@ class SpellCompiler(Cleanable):
             artifact:
                 Compiler artifact receiving the compiled callable.
             no_overrides_payload:
-                Serialized execution plan payload passed into phase-12.
+                Serialized execution plan payload passed into phase-13.
 
         Returns:
             None.
         """
-        self._phase_12.compile_no_overrides_executor_from_payload(
+        self._phase_13.compile_no_overrides_executor_from_payload(
             spellbook,
             spell,
             artifact,
             no_overrides_payload,
         )
+

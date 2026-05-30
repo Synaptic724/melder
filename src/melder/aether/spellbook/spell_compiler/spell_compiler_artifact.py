@@ -90,8 +90,8 @@ class SpellCompilerArtifact(Cleanable):
         "_execution_shape_profile_phase11",
         "_phase11_no_overrides_plan_signature",
         "_phase11_no_overrides_transient_schema",
-        "_phase12_no_overrides_executor",
-        "_phase12_no_overrides_executor_signature",
+        "_phase13_no_overrides_executor",
+        "_phase13_no_overrides_executor_signature",
         "_phase11_no_overrides_input_signature",
         "_phase11_no_overrides_fast_key",
         "_codegen_ir",
@@ -156,8 +156,8 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_shape_profile_phase11: Optional[Dict[str, Any]] = None
         self._phase11_no_overrides_plan_signature: Optional[str] = None
         self._phase11_no_overrides_transient_schema: Optional[Dict[str, Any]] = None
-        self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
-        self._phase12_no_overrides_executor_signature: Optional[str] = None
+        self._phase13_no_overrides_executor: Optional[Callable[..., Any]] = None
+        self._phase13_no_overrides_executor_signature: Optional[str] = None
         self._phase11_no_overrides_input_signature: Optional[str] = None
         self._phase11_no_overrides_fast_key: Optional[Tuple[Any, ...]] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
@@ -284,8 +284,8 @@ class SpellCompilerArtifact(Cleanable):
             del self._execution_shape_profile_phase11
             del self._phase11_no_overrides_plan_signature
             del self._phase11_no_overrides_transient_schema
-            del self._phase12_no_overrides_executor
-            del self._phase12_no_overrides_executor_signature
+            del self._phase13_no_overrides_executor
+            del self._phase13_no_overrides_executor_signature
             del self._phase11_no_overrides_input_signature
             del self._phase11_no_overrides_fast_key
             del self._codegen_ir
@@ -427,8 +427,8 @@ class SpellCompilerArtifact(Cleanable):
         self._phase8_11_codegen_ir_dirty = False
         self._phase11_no_overrides_plan_signature = None
         self._phase11_no_overrides_transient_schema = None
-        self._phase12_no_overrides_executor = None
-        self._phase12_no_overrides_executor_signature = None
+        self._phase13_no_overrides_executor = None
+        self._phase13_no_overrides_executor_signature = None
         self._phase11_no_overrides_input_signature = None
         self._phase11_no_overrides_fast_key = None
 
@@ -472,6 +472,7 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_shape_profile_phase11 = None
         self._phase11_no_overrides_plan_signature = None
         self._phase11_no_overrides_transient_schema = None
+
 
 
 

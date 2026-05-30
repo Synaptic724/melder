@@ -51,7 +51,7 @@ def test_artifact_later_phase_fields_start_empty() -> None:
     assert artifact._execution_plan_phase11 is None
     assert artifact._execution_plan_phase11_no_overrides is None
     assert artifact._execution_plan_phase11_overrides is None
-    assert artifact._phase12_no_overrides_executor is None
+    assert artifact._phase13_no_overrides_executor is None
     assert artifact._spell_system_index_phase5 is None
     assert artifact._entire_dag_blueprint_phase5 is None
     assert artifact._phase8_11_codegen_ir_dirty is False
@@ -212,7 +212,7 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     artifact._execution_plan_phase11_no_overrides = CleanupTracker()
     artifact._execution_plan_phase11_overrides = CleanupTracker()
     artifact._spell_system_index_phase5 = object()
-    artifact._phase12_no_overrides_executor = object()
+    artifact._phase13_no_overrides_executor = object()
     artifact._phase11_no_overrides_input_signature = "phase11"
 
     artifact.clear_phase5_artifacts()
@@ -230,7 +230,7 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     assert artifact._execution_plan_phase11_no_overrides is None
     assert artifact._execution_plan_phase11_overrides is None
     assert artifact._spell_system_index_phase5 is None
-    assert artifact._phase12_no_overrides_executor is None
+    assert artifact._phase13_no_overrides_executor is None
     assert artifact._phase11_no_overrides_input_signature is None
 
 
@@ -299,3 +299,4 @@ def test_cleanup_execution_plans_phase11_swallows_cleanup_failures() -> None:
     assert overrides.cleanup_calls == 1
     assert artifact._execution_plan_phase11 is None
     assert artifact._execution_plan_phase11_overrides is None
+

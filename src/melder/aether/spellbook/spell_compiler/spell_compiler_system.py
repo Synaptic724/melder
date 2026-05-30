@@ -477,15 +477,15 @@ class SpellCompilerSystem(Cleanable):
             spell: Spell,
     ) -> None:
         """
-        Phase 12 - No-overrides executor compilation (front-facing compiler-system facade).
+        Phase 13 - No-overrides executor compilation (front-facing compiler-system facade).
 
-        Delegates to the compiler system to compile the Phase 12 no-overrides
+        Delegates to the compiler system to compile the Phase 13 no-overrides
         executor from the Phase 11 artifact handoff. Spells without a compatible
         Phase 11 plan (including existing-creation spells) resolve to a `None`
         executor.
 
         Contract:
-            - Requires the Phase 11 `11 -> 12` artifact handoff to be available.
+            - Requires the current Phase 11 -> Phase 13 artifact handoff to be available.
             - Does not return a value; the compiled executor is stored on the
               spell-owned compiler artifact.
             - Does not execute any other phases.
@@ -495,12 +495,33 @@ class SpellCompilerSystem(Cleanable):
                 Spellbook providing explicit spell lookup context for payload
                 executor compilation.
             spell:
-                Spell whose Phase 12 no-overrides executor should be compiled.
+                Spell whose Phase 13 no-overrides executor should be compiled.
 
         Returns:
             None.
         """
-        self._spell_compiler.compile_phase12_no_overrides_executor(
+        self._spell_compiler.compile_phase13_no_overrides_executor(
+            spellbook,
+            spell,
+            spell._compiler_artifact,
+        )
+
+    def run_phase_strategy_selection(
+            self,
+            spellbook: Spellbook,
+            spell: Spell,
+    ) -> None:
+        """
+        Phase 12 - Strategy-selection placeholder (front-facing compiler-system facade).
+
+        Delegates to the current no-op Phase 12 slot so the compiler numbering
+        stays clean while the new strategy phase is being designed and
+        implemented.
+
+        Returns:
+            None.
+        """
+        self._spell_compiler.run_phase_strategy_selection(
             spellbook,
             spell,
             spell._compiler_artifact,
@@ -817,7 +838,7 @@ class SpellCompilerSystem(Cleanable):
         Contract:
             - Clears Phase 5 rooted blueprints/index state.
             - Clears Phase 8-11 planning/codegen cache state.
-            - Clears the cached Phase 12 no-overrides executor state.
+            - Clears the cached Phase 13 no-overrides executor state.
             - Preserves the spell-owned compiler artifact object itself.
 
         Args:
@@ -905,7 +926,8 @@ class SpellCompilerSystem(Cleanable):
             - Phase 9: Injection plan compilation.
             - Phase 10: Patch map compilation.
             - Phase 11: Execution plan compilation.
-            - Phase 12: No-overrides executor compilation.
+            - Phase 12: Strategy-selection placeholder.
+            - Phase 13: No-overrides executor compilation.
 
         Each phase honours the optional `CancellationEvent`. If the event is
         set, the underlying phase methods rise through the shared cancellation
@@ -977,8 +999,13 @@ class SpellCompilerSystem(Cleanable):
             spellbook,
             spell,
         )
+        self.run_phase_strategy_selection(
+            spellbook,
+            spell,
+        )
         self.run_phase_executor_compile(
             spellbook,
             spell,
         )
         spell._compiler_artifact.cleanup_phase_artifacts()
+

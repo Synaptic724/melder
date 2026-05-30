@@ -2188,7 +2188,7 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Returns empty when no local spells exist.
             - Produces one unit per local spell otherwise.
-            - Each unit compiles the Phase 12 no-overrides executor from the
+            - Each unit compiles the Phase 13 no-overrides executor from the
               Phase 11 `11 -> 12` artifact handoff.
         Args:
             spellbook: Owning Spellbook instance.
@@ -2290,6 +2290,7 @@ class SpellbookCreationSystem(Cleanable):
                 },
             )
         ]
+
 
 
 

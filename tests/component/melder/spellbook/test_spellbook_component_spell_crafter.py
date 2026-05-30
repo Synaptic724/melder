@@ -13,8 +13,8 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
     select_occurrence_plan,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor import (
-    compile_phase12_overrides_executor,
+from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+    compile_phase13_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spellbook import Spellbook
@@ -1583,7 +1583,7 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
 def test_component_spell_crafter_executes_real_overrides_executor_for_dependency_override() -> None:
     """
     Purpose:
-        Validate Phase 12 override execution against live phase8-11 artifacts.
+        Validate Phase 13 override execution against live phase8-11 artifacts.
     Contract:
         - The compiled overrides executor runs from the real plan and patch map.
         - A targeted override value replaces the dependency for the root spell.
@@ -1647,7 +1647,7 @@ def test_component_spell_crafter_executes_real_overrides_executor_for_dependency
         assert execution_plan is not None
 
         targeted_sockets = tuple(override_patch_map._targets_by_spec["*service"])
-        executor = compile_phase12_overrides_executor(
+        executor = compile_phase13_overrides_executor(
             execution_plan=execution_plan,
             override_targets_by_spell_id={consumer_id: targeted_sockets},
             any_overrides_present=True,
@@ -1811,6 +1811,7 @@ def test_component_spell_crafter_run_phase_system_validation_local_scopes_result
         assert outside_spell.validation_result_phase6 is None
     finally:
         spellbook.cleanup()
+
 
 
 

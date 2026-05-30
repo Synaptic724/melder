@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
@@ -49,7 +49,9 @@ class _SpellbookStub:
 class _CreationStoreStub:
     """Minimal creations stub for Meld foundation tests."""
 
-    pass
+    def __init__(self) -> None:
+        """Initialize the conduit-owned identity used by ConduitMeld."""
+        self.owner_conduit_id = "conduit-1"
 
 
 class _CleanableArtifact(Cleanable):
@@ -124,7 +126,12 @@ def test_meld_creates_spell_compiler_system_on_first_demand() -> None:
     spellbook = _SpellbookStub()
     creations = _CreationStoreStub()
 
-    meld = Meld(creations=creations, spellbook=spellbook)
+    meld = ConduitMeld(
+        creations=creations,
+        spellbook=spellbook,
+        conduit_id=creations.owner_conduit_id,
+        resolution_conduit_id=creations.owner_conduit_id,
+    )
 
     assert meld._spell_compiler_system is None
     compiler_system = meld._get_spell_compiler_system()

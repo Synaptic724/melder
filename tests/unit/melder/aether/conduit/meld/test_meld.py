@@ -7,12 +7,12 @@ from unittest.mock import MagicMock
 import pytest
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 from melder.aether.conduit.meld.meld import Meld
+from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.aether.conduit.spell_space.spell_space_thread_state import (
-    SpellSpaceThreadState,
-)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -312,6 +312,9 @@ class _SpellStub:
         else:
             self.disposal_method_names = list(disposal_method_names)
         self.has_mutation_override = bool(has_mutation_override)
+        self.requires_spellspace_request = (
+            existence is Existence.unique_per_spell_space
+        )
         self._owner_creations = owner_creations
         self._owner_conduit_id = owner_conduit_id
         self._owner_conduit_name = owner_conduit_name
@@ -700,7 +703,11 @@ class _CreationContextStub:
         return self._hooks_overrides_result
 
 
-def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None = None) -> Meld:
+def _make_meld(
+        *,
+        creations: Any | None = None,
+        spellbook: _SpellbookStub | None = None,
+) -> ConduitMeld:
     """
     Build a Meld instance with stubbed spellbook/creations.
 
@@ -709,11 +716,11 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
         spellbook: Optional spellbook stub override.
 
     Returns:
-        Meld: Meld instance ready for testing.
+        ConduitMeld: Conduit-facing meld instance ready for testing.
     """
-    effective_creations = creations or MagicMock()
+    effective_creations = creations or _make_creations()[0]
     conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
-    meld = Meld(
+    meld = ConduitMeld(
         creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
         conduit_id=conduit_id,
@@ -734,7 +741,7 @@ def _make_creations(
     *,
     conduit_id: str = "conduit-1",
     active_spellspace: Any | None = None,
-) -> tuple[Creations, _ConduitStub]:
+) -> tuple[ConduitCreations, _ConduitStub]:
     """
     Build a Creations instance with a stub conduit.
 
@@ -743,20 +750,58 @@ def _make_creations(
         active_spellspace: Optional active spellspace for the conduit.
 
     Returns:
-        tuple[Creations, _ConduitStub]: Creations instance and backing conduit.
+        tuple[ConduitCreations, _ConduitStub]:
+            Conduit creations instance and backing conduit.
     """
     conduit = _ConduitStub(
         conduit_id=conduit_id,
         conduit_state=ConduitState.normal,
         active_spellspace=active_spellspace,
     )
-    spellspace_state = SpellSpaceThreadState()
-    if active_spellspace is not None:
-        spellspace_state.set([active_spellspace])
-    return Creations(
+    return ConduitCreations(
         conduit_id=conduit._id,
-        spellspace_stack=spellspace_state,
     ), conduit
+
+
+def _make_spellspace_meld(
+        *,
+        conduit_id: str = "conduit-1",
+        spellspace_id: str = "space-1",
+        spellbook: _SpellbookStub | None = None,
+) -> tuple[SpellSpaceMeld, Creations, ConduitCreations, _SpellSpaceStub]:
+    """
+    Build a spellspace-facing meld instance and its scoped creations stores.
+    """
+    effective_spellbook = spellbook or _SpellbookStub()
+    owner_conduit_creations = ConduitCreations(conduit_id=conduit_id)
+    conduit_meld = ConduitMeld(
+        creations=owner_conduit_creations,
+        spellbook=effective_spellbook,
+        conduit_id=conduit_id,
+        resolution_conduit_id=conduit_id,
+    )
+    spellspace = _SpellSpaceStub(
+        spellspace_id=spellspace_id,
+        owner_conduit_id=conduit_id,
+    )
+    spellspace_creations = Creations(
+        owner_conduit_id=conduit_id,
+        id=spellspace_id,
+    )
+    spellspace_meld = SpellSpaceMeld(
+        spellspace=spellspace,
+        spellspace_creations=spellspace_creations,
+        owner_conduit_creations=owner_conduit_creations,
+        spellbook=effective_spellbook,
+        conduit_id=conduit_id,
+        resolution_conduit_id=conduit_id,
+    )
+    return (
+        spellspace_meld,
+        spellspace_creations,
+        owner_conduit_creations,
+        spellspace,
+    )
 
 
 def test_cleanup_clears_references() -> None:
@@ -2297,33 +2342,21 @@ def test_meld_existing_spell_raises_when_unique_per_conduit_not_live() -> None:
         meld.meld_existing_spell(spell="spell-1")
 
 
-def test_meld_existing_spell_uses_active_spellspace_bucket() -> None:
+def test_spellspace_meld_existing_spell_uses_spellspace_storage() -> None:
     """
-    Verify `meld_existing_spell` supports unique-per-spell-space with an active scope.
+    Verify `SpellSpaceMeld` returns the live spellspace-scoped object.
     """
-    conduit = _ConduitStub(
-        conduit_id="conduit-1",
-        conduit_state=ConduitState.normal,
-    )
-    spellspace = _SpellSpaceStub(
-        spellspace_id="space-1",
-        owner_conduit_id=conduit._id,
-    )
-    conduit._active_spellspace = spellspace
-    spellspace_state = SpellSpaceThreadState()
-    spellspace_state.set([spellspace])
-    creations = Creations(
-        conduit_id=conduit._id,
-        spellspace_stack=spellspace_state,
+    spellbook = _SpellbookStub()
+    meld, spellspace_creations, _owner_conduit_creations, _spellspace = (
+        _make_spellspace_meld(spellbook=spellbook)
     )
     live_instance = object()
-    creations.register_spellspace_creation("space-1", "spell-1", live_instance)
+    spellspace_creations.add_creation("spell-1", live_instance)
     spell = _SpellStub(
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
-    meld = _make_meld(creations=creations, spellbook=spellbook)
+    spellbook._spells = {spell.spell_index: spell}
 
     assert meld.meld_existing_spell(spell="spell-1") is live_instance
 
@@ -2379,41 +2412,29 @@ def test_has_live_creation_returns_true_when_many_bucket_is_non_empty() -> None:
     assert meld.has_live_creation(spell="spell-1") is True
 
 
-def test_has_live_creation_uses_active_spellspace_bucket() -> None:
+def test_spellspace_meld_has_live_creation_uses_spellspace_storage() -> None:
     """
-    Verify the probe checks the active spellspace bucket for spellspace scope.
+    Verify `SpellSpaceMeld` probes spellspace-local storage for spellspace scope.
     """
-    conduit = _ConduitStub(
-        conduit_id="conduit-1",
-        conduit_state=ConduitState.normal,
+    spellbook = _SpellbookStub()
+    meld, spellspace_creations, _owner_conduit_creations, _spellspace = (
+        _make_spellspace_meld(spellbook=spellbook)
     )
-    spellspace = _SpellSpaceStub(
-        spellspace_id="space-1",
-        owner_conduit_id=conduit._id,
-    )
-    conduit._active_spellspace = spellspace
-    spellspace_state = SpellSpaceThreadState()
-    spellspace_state.set([spellspace])
-    creations = Creations(
-        conduit_id=conduit._id,
-        spellspace_stack=spellspace_state,
-    )
-    creations.register_spellspace_creation("space-1", "spell-1", object())
+    spellspace_creations.add_creation("spell-1", object())
     spell = _SpellStub(
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
-    meld = _make_meld(creations=creations, spellbook=spellbook)
+    spellbook._spells = {spell.spell_index: spell}
 
     assert meld.has_live_creation(spell="spell-1") is True
 
 
-def test_has_live_creation_returns_false_for_spellspace_without_active_scope() -> None:
+def test_conduit_meld_rejects_spellspace_request_probe() -> None:
     """
-    Verify the probe returns False for spellspace scope when no scope is active.
+    Verify `ConduitMeld` rejects spellspace-request probes.
     """
-    creations, _ = _make_creations(active_spellspace=None)
+    creations, _ = _make_creations()
     spell = _SpellStub(
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
@@ -2421,7 +2442,8 @@ def test_has_live_creation_returns_false_for_spellspace_without_active_scope() -
     spellbook = _SpellbookStub(spells={spell.spell_index: spell})
     meld = _make_meld(creations=creations, spellbook=spellbook)
 
-    assert meld.has_live_creation(spell="spell-1") is False
+    with pytest.raises(RuntimeError, match="must be built from a spellspace"):
+        meld.has_live_creation(spell="spell-1")
 
 
 def test_has_live_creation_uses_owner_creations_for_shared_routes() -> None:
@@ -2514,17 +2536,19 @@ def test_describe_live_creation_status_reports_owner_scope_for_shared_routes() -
     }
 
 
-def test_describe_live_creation_status_reports_spellspace_gap_without_scope() -> None:
+def test_spellspace_meld_describe_live_creation_status_reports_spellspace_scope() -> None:
     """
-    Verify the richer status payload reports missing active spellspace cleanly.
+    Verify `SpellSpaceMeld` reports spellspace-local status payloads.
     """
-    creations, _ = _make_creations(active_spellspace=None)
+    spellbook = _SpellbookStub()
+    meld, spellspace_creations, _owner_conduit_creations, _spellspace = (
+        _make_spellspace_meld(spellbook=spellbook)
+    )
     spell = _SpellStub(
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
-    meld = _make_meld(creations=creations, spellbook=spellbook)
+    spellbook._spells = {spell.spell_index: spell}
 
     assert meld.describe_live_creation_status(spell="spell-1") == {
         "is_live": False,
@@ -2532,9 +2556,9 @@ def test_describe_live_creation_status_reports_spellspace_gap_without_scope() ->
         "spell_name": "Spell",
         "existence": "unique_per_spell_space",
         "query_conduit_id": "conduit-1",
-        "storage_scope_kind": "active_spellspace",
+        "storage_scope_kind": "spellspace",
         "storage_owner_conduit_id": "conduit-1",
-        "active_spellspace_id": None,
+        "active_spellspace_id": "space-1",
         "creation_count": 0,
     }
 

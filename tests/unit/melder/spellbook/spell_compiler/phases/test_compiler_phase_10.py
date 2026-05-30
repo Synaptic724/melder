@@ -113,6 +113,11 @@ def test_run_rebuilds_when_input_signature_changes(monkeypatch) -> None:
             cleanup_calls.append("cleanup")
 
     monkeypatch.setattr(compiler_phase_10_module, "PatchMapBuilder", _BuilderStub)
+    monkeypatch.setattr(
+        CompilerPhase10,
+        "_build_phase10_override_shape_profile",
+        staticmethod(lambda **kwargs: {}),
+    )
 
     phase.run(spell, artifact)
 
@@ -157,6 +162,11 @@ def test_run_marks_phase8_11_dirty_without_eager_capture(monkeypatch) -> None:
             return None
 
     monkeypatch.setattr(compiler_phase_10_module, "PatchMapBuilder", _BuilderStub)
+    monkeypatch.setattr(
+        CompilerPhase10,
+        "_build_phase10_override_shape_profile",
+        staticmethod(lambda **kwargs: {}),
+    )
 
     phase.run(spell, artifact)
 

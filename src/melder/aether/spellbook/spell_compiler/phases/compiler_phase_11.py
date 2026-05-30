@@ -200,7 +200,7 @@ class CompilerPhase11:
             transient_schema
         )
 
-    def _build_phase12_no_overrides_step_signature_row(
+    def _build_phase13_no_overrides_step_signature_row(
             self,
             step: Any,
     ) -> Tuple[Any, ...]:
@@ -208,7 +208,7 @@ class CompilerPhase11:
         Build one deterministic signature row for no-overrides compile caching.
 
         Purpose:
-            Capture only the step fields that influence phase12 no-overrides
+            Capture only the step fields that influence phase13 no-overrides
             compiled source/namespace behaviour without constructing full IR
             payload dict rows.
         Contract:
@@ -221,7 +221,7 @@ class CompilerPhase11:
             Tuple[Any, ...]:
                 Deterministic row used by no-overrides plan signature hashing.
         """
-        return SharedCompilerExecutions.build_phase12_no_overrides_step_signature_row(
+        return SharedCompilerExecutions.build_phase13_no_overrides_step_signature_row(
             step
         )
 
@@ -424,7 +424,7 @@ class CompilerPhase11:
             injection_rows,
         )
 
-    def _build_phase12_no_overrides_plan_signature(
+    def _build_phase13_no_overrides_plan_signature(
             self,
             plan: ExecutionPlan,
             transient_schema: Optional[Dict[str, Any]],
@@ -449,7 +449,7 @@ class CompilerPhase11:
                 Deterministic compile cache signature.
         """
         step_signature_rows = tuple(
-            SharedCompilerExecutions.build_phase12_no_overrides_step_signature_row(step)
+            SharedCompilerExecutions.build_phase13_no_overrides_step_signature_row(step)
             for step in plan.steps
         )
         transient_signature = SharedCompilerExecutions.build_fast_transient_signature(
@@ -654,21 +654,21 @@ class CompilerPhase11:
         )
         return builder.build()
 
-    def _store_phase11_to_phase12_handoff(
+    def _store_phase11_to_phase13_handoff(
             self,
             spell: Spell,
             artifact: SpellCompilerArtifact,
             plan: Optional[ExecutionPlan],
     ) -> None:
         """
-        Persist phase-11 handoff payloads/signatures required by phase-12.
+        Persist phase-11 handoff payloads/signatures required by phase-13.
 
         Purpose:
             Store no-overrides execution-plan schema and signatures directly on
             the owning artifact, and gate `resolution_complete` when the cached
             executor is still valid.
         Contract:
-            - Clears phase-12 executor cache when a plan signature drifts.
+            - Clears phase-13 executor cache when a plan signature drifts.
             - Preserves `spell.resolution_complete = True` only when signature
               and executor cache line up.
             - Sets `resolution_complete = False` on missing or non-empty-plan
@@ -677,7 +677,7 @@ class CompilerPhase11:
             spell:
                 Spell that should receive resolution_complete state updates.
             artifact:
-                Target artifact that stores phase11/phase12 handoff values.
+                Target artifact that stores phase11/phase13 handoff values.
             plan:
                 No-overrides execution plan.
         Returns:
@@ -686,25 +686,25 @@ class CompilerPhase11:
         if plan is None or not plan.steps:
             artifact._phase11_no_overrides_transient_schema = None
             artifact._phase11_no_overrides_plan_signature = None
-            artifact._phase12_no_overrides_executor = None
-            artifact._phase12_no_overrides_executor_signature = None
+            artifact._phase13_no_overrides_executor = None
+            artifact._phase13_no_overrides_executor_signature = None
             spell.resolution_complete = False
             return
 
         transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
             plan.fast_transient_plan
         )
-        plan_signature = self._build_phase12_no_overrides_plan_signature(
+        plan_signature = self._build_phase13_no_overrides_plan_signature(
             plan=plan,
             transient_schema=transient_schema,
         )
         artifact._phase11_no_overrides_transient_schema = transient_schema
         artifact._phase11_no_overrides_plan_signature = plan_signature
-        if artifact._phase12_no_overrides_executor_signature != plan_signature:
-            artifact._phase12_no_overrides_executor = None
-            artifact._phase12_no_overrides_executor_signature = None
+        if artifact._phase13_no_overrides_executor_signature != plan_signature:
+            artifact._phase13_no_overrides_executor = None
+            artifact._phase13_no_overrides_executor_signature = None
             spell.resolution_complete = False
-        elif artifact._phase12_no_overrides_executor is not None:
+        elif artifact._phase13_no_overrides_executor is not None:
             spell.resolution_complete = True
         else:
             spell.resolution_complete = False
@@ -756,8 +756,8 @@ class CompilerPhase11:
               unchanged and cached sibling variants are available.
             - Falls back to the legacy no-overrides rebuild path when signature
               inputs are missing.
-            - Stops at the approved phase-11/12 boundary by storing handoff
-              state on the artifact instead of compiling phase 12 immediately.
+            - Stops at the approved phase-11/13 boundary by storing handoff
+              state on the artifact instead of compiling phase 13 immediately.
         Args:
             spell:
                 Spell being compiled.
@@ -829,7 +829,7 @@ class CompilerPhase11:
                 occurrence_plan=occurrence_plan,
                 plan=cached_plan_no_overrides,
             )
-            self._store_phase11_to_phase12_handoff(
+            self._store_phase11_to_phase13_handoff(
                 spell,
                 artifact,
                 cached_plan_no_overrides,
@@ -877,10 +877,11 @@ class CompilerPhase11:
         artifact._execution_plan_phase11_overrides = plan_overrides
         artifact._execution_plan_phase11 = plan_overrides_with_mutations
         artifact._phase8_11_codegen_ir_dirty = True
-        self._store_phase11_to_phase12_handoff(
+        self._store_phase11_to_phase13_handoff(
             spell,
             artifact,
             plan_no_overrides,
         )
+
 
 

@@ -19,12 +19,12 @@ from melder.aether.conduit.meld.creation_context.creation_context_codegen import
     compile_creation_context_instance_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor import (
-    compile_phase12_overrides_executor_code_object,
-    compile_phase12_overrides_executor,
-    _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache,
-    build_phase12_override_step_target_counts_from_rows,
-    emit_phase12_overrides_executor_shape_source,
+from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+    compile_phase13_overrides_executor_code_object,
+    compile_phase13_overrides_executor,
+    _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache,
+    build_phase13_override_step_target_counts_from_rows,
+    emit_phase13_overrides_executor_shape_source,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -78,7 +78,7 @@ class OverrideRouteConfig(Cleanable):
             path_registry:
                 Root blueprint path registry used by specialization prefiltering.
             plan_rows:
-                Schema rows for Phase 12 override executor compilation.
+                Schema rows for Phase 13 override executor compilation.
             root_spell_id:
                 Root spell id for this execution variant.
             spell_lookup:
@@ -214,7 +214,7 @@ class CreationContext(Cleanable):
                 True when this spell can run no-overrides calls on the direct
                 transient executor lane.
             no_overrides_executor:
-                Prebound no-overrides phase 12 executor for this spell.
+                Prebound no-overrides phase 13 executor for this spell.
             override_patch_map_phase10:
                 Prebound Phase 10 override patch map artifact.
             override_route_config_no_mutation:
@@ -600,7 +600,7 @@ class CreationContext(Cleanable):
           override map plus deterministic socket shape
         - reuses the most recent executor when the socket shape and root
           positional arity are identical
-        - otherwise resolves or compiles a specialized Phase 12 executor keyed
+        - otherwise resolves or compiles a specialized Phase 13 executor keyed
           by the current override shape
 
         The override payload values themselves do not participate in executor
@@ -1166,7 +1166,7 @@ class CreationContext(Cleanable):
         Callers supply the already-derived structural shape and the grouped
         targets for the current override call. If a matching executor is not
         cached yet, the method compiles one using either the spell's plan rows
-        or the generic Phase 12 fallback path.
+        or the generic Phase 13 fallback path.
         """
         override_specialization_cache = self._override_specialization_cache
         cached = override_specialization_cache.get(shape_key)
@@ -1185,7 +1185,7 @@ class CreationContext(Cleanable):
                 prefilter_cache_key=prefilter_cache_key,
             )
         else:
-            compiled = compile_phase12_overrides_executor(
+            compiled = compile_phase13_overrides_executor(
                 execution_plan=None,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 any_overrides_present=any_overrides_present,
@@ -1230,7 +1230,7 @@ class CreationContext(Cleanable):
             )
         )
         override_target_counts_by_step = (
-            build_phase12_override_step_target_counts_from_rows(
+            build_phase13_override_step_target_counts_from_rows(
                 plan_rows=plan_rows,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 path_registry=path_registry,
@@ -1254,7 +1254,7 @@ class CreationContext(Cleanable):
             source_cache_key=shape_key,
             source=source,
         )
-        return _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache(
+        return _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache(
             code_object=code_object,
             execution_plan=None,
             override_targets_by_spell_id=override_targets_by_spell_id,
@@ -1300,7 +1300,7 @@ class CreationContext(Cleanable):
         )
         if cached_code_object is not None:
             return cached_code_object
-        compiled_code_object = compile_phase12_overrides_executor_code_object(
+        compiled_code_object = compile_phase13_overrides_executor_code_object(
             source=source,
         )
         override_executor_code_object_cache[source_cache_key] = (
@@ -1333,7 +1333,7 @@ class CreationContext(Cleanable):
         cached_source = override_executor_source_cache.get(source_cache_key)
         if cached_source is not None:
             return cached_source
-        emitted_source = emit_phase12_overrides_executor_shape_source(
+        emitted_source = emit_phase13_overrides_executor_shape_source(
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
             spell_lookup=spell_lookup,
@@ -1344,3 +1344,4 @@ class CreationContext(Cleanable):
         )
         override_executor_source_cache[source_cache_key] = emitted_source
         return emitted_source
+

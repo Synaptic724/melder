@@ -264,6 +264,11 @@ def test_run_rebuilds_when_input_signature_changes(
         "_build_phase8_occurrence_plan_input_signature",
         lambda self, **kwargs: "sig-new",
     )
+    monkeypatch.setattr(
+        CompilerPhase8,
+        "_build_phase8_occurrence_shape_profile",
+        staticmethod(lambda occurrence_plan: {}),
+    )
 
     class _BuilderStub:
         def __init__(self, **kwargs: Any) -> None:
@@ -311,6 +316,11 @@ def test_run_marks_phase8_11_dirty_without_eager_capture(monkeypatch) -> None:
         CompilerPhase8,
         "_build_phase8_occurrence_plan_input_signature",
         lambda self, **kwargs: "sig-new",
+    )
+    monkeypatch.setattr(
+        CompilerPhase8,
+        "_build_phase8_occurrence_shape_profile",
+        staticmethod(lambda occurrence_plan: {}),
     )
 
     class _BuilderStub:

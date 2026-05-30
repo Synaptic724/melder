@@ -9,7 +9,7 @@ from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlanCallMode,
     ExecutionPlanTargetKind,
 )
-import melder.aether.spellbook.spell_compiler.blueprints.phase12_no_overrides_executor as phase12_module
+import melder.aether.spellbook.spell_compiler.blueprints.phase13_no_overrides_executor as phase13_module
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 
@@ -200,7 +200,7 @@ def _make_transient_schema() -> dict[str, object]:
     }
 
 
-def test_compile_phase12_no_overrides_executor_raises_on_transient_compile_error(
+def test_compile_phase13_no_overrides_executor_raises_on_transient_compile_error(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -215,31 +215,31 @@ def test_compile_phase12_no_overrides_executor_raises_on_transient_compile_error
         "transient_schema": _make_transient_schema(),
     }
     monkeypatch.setattr(
-        phase12_module,
-        "_build_phase12_executor_source",
-        lambda transient_schema: "def _phase12_executor(:\n    pass",
+        phase13_module,
+        "_build_phase13_executor_source",
+        lambda transient_schema: "def _phase13_executor(:\n    pass",
     )
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_executor_namespace",
         lambda transient_schema, steps: {},
     )
 
     with pytest.raises(RuntimeError, match="code generation failed"):
-        phase12_module.compile_phase12_no_overrides_executor(
+        phase13_module.compile_phase13_no_overrides_executor(
             codegen_ir=codegen_ir,
             spell_lookup={"root": _make_spell("root")},
         )
 
 
-def test_compile_phase12_no_overrides_executor_raises_when_callable_missing(
+def test_compile_phase13_no_overrides_executor_raises_when_callable_missing(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Ensure generated source must define the transient executor callable.
 
     Contract:
-        - Missing `_phase12_executor` symbol raises RuntimeError.
+        - Missing `_phase13_executor` symbol raises RuntimeError.
     """
     codegen_ir = {
         "steps_rows": (_make_step_row("root"),),
@@ -247,24 +247,24 @@ def test_compile_phase12_no_overrides_executor_raises_when_callable_missing(
         "transient_schema": _make_transient_schema(),
     }
     monkeypatch.setattr(
-        phase12_module,
-        "_build_phase12_executor_source",
+        phase13_module,
+        "_build_phase13_executor_source",
         lambda transient_schema: "x = 1",
     )
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_executor_namespace",
         lambda transient_schema, steps: {},
     )
 
-    with pytest.raises(RuntimeError, match="did not define a callable _phase12_executor"):
-        phase12_module.compile_phase12_no_overrides_executor(
+    with pytest.raises(RuntimeError, match="did not define a callable _phase13_executor"):
+        phase13_module.compile_phase13_no_overrides_executor(
             codegen_ir=codegen_ir,
             spell_lookup={"root": _make_spell("root")},
         )
 
 
-def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_transient_source_unavailable(
+def test_compile_phase13_no_overrides_executor_uses_emitted_step_source_when_transient_source_unavailable(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -279,21 +279,21 @@ def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_tra
         "transient_schema": _make_transient_schema(),
     }
     monkeypatch.setattr(
-        phase12_module,
-        "_build_phase12_executor_source",
+        phase13_module,
+        "_build_phase13_executor_source",
         lambda transient_schema: None,
     )
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir=codegen_ir,
         spell_lookup={"root": _make_spell("root")},
     )
 
     assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_no_overrides_step_executor>"
 
 
-def test_compile_phase12_no_overrides_executor_transient_uses_direct_call_path() -> None:
+def test_compile_phase13_no_overrides_executor_transient_uses_direct_call_path() -> None:
     """
     Transient executor stays on the direct emitted-call path.
 
@@ -309,17 +309,17 @@ def test_compile_phase12_no_overrides_executor_transient_uses_direct_call_path()
         "transient_schema": _make_transient_schema(),
     }
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir=codegen_ir,
         spell_lookup={"root": _make_spell("root")},
     )
 
     assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_transient_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_no_overrides_transient_executor>"
     assert executor() == "value:root"
 
 
-def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> None:
+def test_compile_phase13_no_overrides_executor_supports_steps_rows_schema() -> None:
     """
     Ensure schema-only step rows can be hydrated into executable plan steps.
 
@@ -332,23 +332,23 @@ def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> N
         "transient_schema": None,
     }
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir=codegen_ir,
         spell_lookup={"root": _make_spell("root")},
     )
 
     assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_no_overrides_step_executor>"
 
 
-def test_compile_phase12_no_overrides_executor_delegates_to_shared_entry_input_compiler(
+def test_compile_phase13_no_overrides_executor_delegates_to_shared_entry_input_compiler(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Ensure the IR entrypoint routes through shared entry-input compilation.
 
     Contract:
-        - `compile_phase12_no_overrides_executor(...)` delegates to
+        - `compile_phase13_no_overrides_executor(...)` delegates to
           `_compile_no_overrides_executor_from_entry_inputs(...)`.
         - Delegation includes entrypoint-specific missing-root error text.
     """
@@ -371,7 +371,7 @@ def test_compile_phase12_no_overrides_executor_delegates_to_shared_entry_input_c
         return expected_executor
 
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_compile_no_overrides_executor_from_entry_inputs",
         _fake_shared_compile,
     )
@@ -382,7 +382,7 @@ def test_compile_phase12_no_overrides_executor_delegates_to_shared_entry_input_c
         "transient_schema": None,
     }
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir=codegen_ir,
         spell_lookup={"root": _make_spell("root")},
     )
@@ -394,18 +394,18 @@ def test_compile_phase12_no_overrides_executor_delegates_to_shared_entry_input_c
     assert captured["root_spell_id"] == "root"
     assert captured["transient_schema"] is None
     assert captured["missing_root_instance_key_message"] == (
-        "Phase 12 IR is missing a resolvable root instance key."
+        "Phase 13 IR is missing a resolvable root instance key."
     )
 
 
-def test_compile_phase12_no_overrides_executor_from_plan_delegates_to_shared_entry_input_compiler(
+def test_compile_phase13_no_overrides_executor_from_plan_delegates_to_shared_entry_input_compiler(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Ensure plan entrypoint routes through shared entry-input compilation.
 
     Contract:
-        - `compile_phase12_no_overrides_executor_from_plan(...)` delegates to
+        - `compile_phase13_no_overrides_executor_from_plan(...)` delegates to
           `_compile_no_overrides_executor_from_entry_inputs(...)`.
         - Delegation includes entrypoint-specific missing-root error text.
     """
@@ -428,7 +428,7 @@ def test_compile_phase12_no_overrides_executor_from_plan_delegates_to_shared_ent
         return expected_executor
 
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_compile_no_overrides_executor_from_entry_inputs",
         _fake_shared_compile,
     )
@@ -439,7 +439,7 @@ def test_compile_phase12_no_overrides_executor_from_plan_delegates_to_shared_ent
         root_spell_id="root",
     )
 
-    executor = phase12_module.compile_phase12_no_overrides_executor_from_plan(
+    executor = phase13_module.compile_phase13_no_overrides_executor_from_plan(
         plan=plan,
         transient_schema={"step_count": 0, "root_step_index": 0},
     )
@@ -450,7 +450,7 @@ def test_compile_phase12_no_overrides_executor_from_plan_delegates_to_shared_ent
     assert captured["root_spell_id"] == "root"
     assert captured["transient_schema"] == {"step_count": 0, "root_step_index": 0}
     assert captured["missing_root_instance_key_message"] == (
-        "Phase 12 plan is missing a resolvable root instance key."
+        "Phase 13 plan is missing a resolvable root instance key."
     )
 
 
@@ -476,10 +476,10 @@ def test_compile_no_overrides_executor_from_entry_inputs_resolves_missing_root_k
         captured["transient_schema"] = transient_schema
         return expected_executor
 
-    original_compile_from_steps = phase12_module._compile_no_overrides_executor_from_steps
-    phase12_module._compile_no_overrides_executor_from_steps = _fake_compile_from_steps
+    original_compile_from_steps = phase13_module._compile_no_overrides_executor_from_steps
+    phase13_module._compile_no_overrides_executor_from_steps = _fake_compile_from_steps
     try:
-        result = phase12_module._compile_no_overrides_executor_from_entry_inputs(
+        result = phase13_module._compile_no_overrides_executor_from_entry_inputs(
             steps=(SimpleNamespace(instance_key=("root", None)),),
             root_instance_key=None,
             root_spell_id="root",
@@ -487,7 +487,7 @@ def test_compile_no_overrides_executor_from_entry_inputs_resolves_missing_root_k
             missing_root_instance_key_message="missing root key",
         )
     finally:
-        phase12_module._compile_no_overrides_executor_from_steps = original_compile_from_steps
+        phase13_module._compile_no_overrides_executor_from_steps = original_compile_from_steps
 
     assert result is expected_executor
     assert captured["root_instance_key"] == ("root", None)
@@ -503,7 +503,7 @@ def test_compile_no_overrides_executor_from_entry_inputs_raises_with_entry_messa
           message provided by the entrypoint.
     """
     with pytest.raises(RuntimeError, match="entrypoint root message"):
-        phase12_module._compile_no_overrides_executor_from_entry_inputs(
+        phase13_module._compile_no_overrides_executor_from_entry_inputs(
             steps=(SimpleNamespace(instance_key=("other", None)),),
             root_instance_key=None,
             root_spell_id="root",
@@ -512,7 +512,7 @@ def test_compile_no_overrides_executor_from_entry_inputs_raises_with_entry_messa
         )
 
 
-def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing() -> None:
+def test_compile_phase13_no_overrides_executor_inlines_creations_target_routing() -> None:
     """
     Ensure emitted step executors route creations targets without helper dispatch.
 
@@ -525,7 +525,7 @@ def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing(
         "transient_schema": None,
     }
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir=codegen_ir,
         spell_lookup={"root": _make_spell("root")},
     )
@@ -533,7 +533,7 @@ def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing(
     assert "_select_creations_for_target_kind" not in executor.__code__.co_names
 
 
-def test_compile_phase12_no_overrides_executor_prebinds_step_existences() -> None:
+def test_compile_phase13_no_overrides_executor_prebinds_step_existences() -> None:
     """
     Ensure emitted step executors prebind required per-step metadata.
 
@@ -547,7 +547,7 @@ def test_compile_phase12_no_overrides_executor_prebinds_step_existences() -> Non
         "transient_schema": None,
     }
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir=codegen_ir,
         spell_lookup={"root": _make_spell("root")},
     )
@@ -558,7 +558,7 @@ def test_compile_phase12_no_overrides_executor_prebinds_step_existences() -> Non
     assert "step_creations_target_kinds" not in executor.__code__.co_varnames
 
 
-def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:
+def test_compile_phase13_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:
     """
     Ensure schema-only step rows fail fast when spell lookup is missing.
 
@@ -572,10 +572,10 @@ def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_r
     }
 
     with pytest.raises(RuntimeError, match="require spell_lookup"):
-        phase12_module.compile_phase12_no_overrides_executor(codegen_ir=codegen_ir)
+        phase13_module.compile_phase13_no_overrides_executor(codegen_ir=codegen_ir)
 
 
-def test_compile_phase12_no_overrides_executor_rejects_invalid_transient_schema() -> None:
+def test_compile_phase13_no_overrides_executor_rejects_invalid_transient_schema() -> None:
     """Malformed transient schema fails fast before transient code generation."""
     codegen_ir = {
         "steps_rows": (_make_step_row("root"),),
@@ -584,13 +584,13 @@ def test_compile_phase12_no_overrides_executor_rejects_invalid_transient_schema(
     }
 
     with pytest.raises(RuntimeError, match="missing required field 'root_step_index'"):
-        phase12_module.compile_phase12_no_overrides_executor(
+        phase13_module.compile_phase13_no_overrides_executor(
             codegen_ir=codegen_ir,
             spell_lookup={"root": _make_spell("root")},
         )
 
 
-def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_emitted_path() -> None:
+def test_compile_phase13_no_overrides_executor_reuses_spellspace_singleton_from_emitted_path() -> None:
     """
     Spellspace existence route reuses an active spellspace singleton.
 
@@ -614,7 +614,7 @@ def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_
     row["creations_target_kind"] = ExecutionPlanTargetKind.SPELLSPACE
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -641,7 +641,7 @@ def test_compile_phase12_no_overrides_executor_reuses_spellspace_singleton_from_
     assert call_counter["value"] == 1
 
 
-def test_compile_phase12_no_overrides_executor_spellspace_existence_uses_direct_store() -> None:
+def test_compile_phase13_no_overrides_executor_spellspace_existence_uses_direct_store() -> None:
     """
     Spellspace existence route now uses the direct spellspace-owned store.
     """
@@ -653,7 +653,7 @@ def test_compile_phase12_no_overrides_executor_spellspace_existence_uses_direct_
     row["creations_target_kind"] = ExecutionPlanTargetKind.SPELLSPACE
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -674,7 +674,7 @@ def test_compile_phase12_no_overrides_executor_spellspace_existence_uses_direct_
     assert creations.get_creation("root") == "value:root"
 
 
-def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock_is_held() -> None:
+def test_compile_phase13_no_overrides_executor_skips_spell_lock_when_caller_lock_is_held() -> None:
     """
     Emitted unique route suppresses spell lock when caller creations lock is held.
     """
@@ -688,7 +688,7 @@ def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock
     row["use_spell_lock_hint"] = True
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -709,7 +709,7 @@ def test_compile_phase12_no_overrides_executor_skips_spell_lock_when_caller_lock
     ) == "value:root"
 
 
-def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_creations_locks() -> None:
+def test_compile_phase13_no_overrides_executor_existing_hit_skips_spell_and_creations_locks() -> None:
     """
     Existing shared-instance hits skip spell/creations lock acquisition.
     """
@@ -725,7 +725,7 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_crea
     row["use_spell_lock_hint"] = True
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -746,7 +746,7 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_spell_and_crea
     ) == "existing-root"
 
 
-def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock_without_spell_hint() -> None:
+def test_compile_phase13_no_overrides_executor_existing_hit_skips_creations_lock_without_spell_hint() -> None:
     """
     Existing shared-instance hits skip creations lock when spell-lock hint is disabled.
     """
@@ -761,7 +761,7 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock
     row["use_spell_lock_hint"] = False
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -832,7 +832,7 @@ def test_compile_phase12_no_overrides_executor_existing_hit_skips_creations_lock
         ),
     ),
 )
-def test_compile_phase12_no_overrides_executor_existence_matrix(
+def test_compile_phase13_no_overrides_executor_existence_matrix(
         existence_name: str,
         target_kind: int,
         must_register: bool,
@@ -869,7 +869,7 @@ def test_compile_phase12_no_overrides_executor_existence_matrix(
     row["creations_target_kind"] = target_kind
     row["must_register"] = must_register
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -902,7 +902,7 @@ def test_compile_phase12_no_overrides_executor_existence_matrix(
     assert len(creations._many) == expect_many_count
 
 
-def test_compile_phase12_no_overrides_executor_owner_target_prefers_spell_owner_creations() -> None:
+def test_compile_phase13_no_overrides_executor_owner_target_prefers_spell_owner_creations() -> None:
     """
     OWNER target routes registration through spell-owned creations when available.
     """
@@ -924,7 +924,7 @@ def test_compile_phase12_no_overrides_executor_owner_target_prefers_spell_owner_
     row["creations_target_kind"] = ExecutionPlanTargetKind.OWNER
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -954,7 +954,7 @@ def test_compile_phase12_no_overrides_executor_owner_target_prefers_spell_owner_
     assert "root" not in caller_creations._creations
 
 
-def test_compile_phase12_no_overrides_executor_owner_target_falls_back_to_context_owner_creations() -> None:
+def test_compile_phase13_no_overrides_executor_owner_target_falls_back_to_context_owner_creations() -> None:
     """
     OWNER target uses context owner_creations when spell owner-creations is absent.
     """
@@ -969,7 +969,7 @@ def test_compile_phase12_no_overrides_executor_owner_target_falls_back_to_contex
     row["creations_target_kind"] = ExecutionPlanTargetKind.OWNER
     row["must_register"] = True
 
-    executor = phase12_module.compile_phase12_no_overrides_executor(
+    executor = phase13_module.compile_phase13_no_overrides_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -1003,7 +1003,7 @@ def test_build_kwargs_no_overrides_fast_path_returns_empty_dict() -> None:
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_no_overrides(
+    kwargs = phase13_module._build_kwargs_no_overrides(
         plan_step=plan_step,
         instance_results={},
     )
@@ -1023,7 +1023,7 @@ def test_build_kwargs_no_overrides_contract_payload_only_returns_copy() -> None:
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_no_overrides(
+    kwargs = phase13_module._build_kwargs_no_overrides(
         plan_step=plan_step,
         instance_results={},
     )
@@ -1046,7 +1046,7 @@ def test_build_kwargs_no_overrides_contract_payload_only_filters_args_key() -> N
         uses_positional_override=True,
     )
 
-    kwargs = phase12_module._build_kwargs_no_overrides(
+    kwargs = phase13_module._build_kwargs_no_overrides(
         plan_step=plan_step,
         instance_results={},
     )
@@ -1071,7 +1071,7 @@ def test_build_kwargs_no_overrides_single_and_multi_dependency_shapes() -> None:
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_no_overrides(
+    kwargs = phase13_module._build_kwargs_no_overrides(
         plan_step=plan_step,
         instance_results={
             dep_key_one: "v1",
@@ -1118,7 +1118,7 @@ def test_build_kwargs_no_overrides_two_dependency_fast_path_skips_iteration() ->
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_no_overrides(
+    kwargs = phase13_module._build_kwargs_no_overrides(
         plan_step=plan_step,
         instance_results={
             first_dependency_key: "v1",
@@ -1145,8 +1145,8 @@ def test_construct_spell_instance_rejects_invalid_positional_payload() -> None:
         uses_positional_override=False,
     )
 
-    with pytest.raises(phase12_module.MeldExecutionError, match="__args__ override must be a list or tuple"):
-        phase12_module._construct_spell_instance(
+    with pytest.raises(phase13_module.MeldExecutionError, match="__args__ override must be a list or tuple"):
+        phase13_module._construct_spell_instance(
             plan_step=plan_step,
             instance_results={},
         )
@@ -1174,7 +1174,7 @@ def test_construct_spell_instance_accepts_tuple_positional_payload() -> None:
         uses_positional_override=True,
     )
 
-    result = phase12_module._construct_spell_instance(
+    result = phase13_module._construct_spell_instance(
         plan_step=plan_step,
         instance_results={},
     )
@@ -1186,7 +1186,7 @@ def test_construct_spell_instance_accepts_tuple_positional_payload() -> None:
 
 def test_normalize_transient_schema_normalizes_and_validates() -> None:
     """Transient schema normalization returns tuples and rejects malformed payloads."""
-    normalized = phase12_module._normalize_transient_schema(
+    normalized = phase13_module._normalize_transient_schema(
         transient_schema=_make_transient_schema(),
     )
 
@@ -1198,28 +1198,28 @@ def test_normalize_transient_schema_normalizes_and_validates() -> None:
     bad_schema = _make_transient_schema()
     del bad_schema["dep1"]
     with pytest.raises(RuntimeError, match="missing required field 'dep1'"):
-        phase12_module._normalize_transient_schema(transient_schema=bad_schema)
+        phase13_module._normalize_transient_schema(transient_schema=bad_schema)
 
     bad_length_schema = _make_transient_schema()
     bad_length_schema["dep1"] = ()
     with pytest.raises(RuntimeError, match="length must equal step_count"):
-        phase12_module._normalize_transient_schema(transient_schema=bad_length_schema)
+        phase13_module._normalize_transient_schema(transient_schema=bad_length_schema)
 
 
 def test_supports_transient_unrolled_plan_requires_many_and_no_registration() -> None:
     """Transient unrolled plans require many-existence and no registration."""
-    assert phase12_module._supports_transient_unrolled_plan(
+    assert phase13_module._supports_transient_unrolled_plan(
         (
             SimpleNamespace(existence=Existence.many, must_register=False),
             SimpleNamespace(existence=Existence.many, must_register=False),
         )
     ) is True
-    assert phase12_module._supports_transient_unrolled_plan(
+    assert phase13_module._supports_transient_unrolled_plan(
         (
             SimpleNamespace(existence=Existence.unique, must_register=False),
         )
     ) is False
-    assert phase12_module._supports_transient_unrolled_plan(
+    assert phase13_module._supports_transient_unrolled_plan(
         (
             SimpleNamespace(existence=Existence.many, must_register=True),
         )
@@ -1228,7 +1228,7 @@ def test_supports_transient_unrolled_plan_requires_many_and_no_registration() ->
 
 def test_unrolled_call_helpers_cover_supported_and_unsupported_modes() -> None:
     """Unrolled transient call helpers handle trivial modes and reject unsupported ones."""
-    arg_refs = phase12_module._build_unrolled_call_arg_refs(
+    arg_refs = phase13_module._build_unrolled_call_arg_refs(
         step_index=0,
         call_mode=ExecutionPlanCallMode.CALL2,
         transient_dep1=(-1,),
@@ -1270,7 +1270,7 @@ def test_unrolled_call_helpers_cover_supported_and_unsupported_modes() -> None:
     )
 
     assert arg_refs == ("v1", "v2")
-    assert phase12_module._build_unrolled_call_expression(
+    assert phase13_module._build_unrolled_call_expression(
         step_index=0,
         call_mode=ExecutionPlanCallMode.CALL0,
         transient_dep1=(-1,),
@@ -1310,7 +1310,7 @@ def test_unrolled_call_helpers_cover_supported_and_unsupported_modes() -> None:
         transient_dep8g=(-1,),
         transient_dep8h=(-1,),
     ) == "t0()"
-    assert phase12_module._build_unrolled_call_arg_refs(
+    assert phase13_module._build_unrolled_call_arg_refs(
         step_index=0,
         call_mode=ExecutionPlanCallMode.CALLN,
         transient_dep1=(-1,),
@@ -1363,13 +1363,13 @@ def test_resolve_transient_targets_validates_step_count_and_callable_steps() -> 
         )
     )
 
-    assert phase12_module._resolve_transient_targets(
+    assert phase13_module._resolve_transient_targets(
         steps=(callable_step,),
         transient_step_count=1,
     ) == (callable_step.spell.spell,)
 
     with pytest.raises(RuntimeError, match="step_count does not match hydrated steps"):
-        phase12_module._resolve_transient_targets(
+        phase13_module._resolve_transient_targets(
             steps=(callable_step,),
             transient_step_count=2,
         )
@@ -1383,7 +1383,8 @@ def test_resolve_transient_targets_validates_step_count_and_callable_steps() -> 
         )
     )
     with pytest.raises(RuntimeError, match="requires callable steps"):
-        phase12_module._resolve_transient_targets(
+        phase13_module._resolve_transient_targets(
             steps=(non_callable_step,),
             transient_step_count=1,
         )
+

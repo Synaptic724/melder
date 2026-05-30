@@ -65,6 +65,11 @@ def test_run_rebuilds_when_input_signature_changes(
             return built_plan
 
     monkeypatch.setattr(compiler_phase_9_module, "InjectionPlanBuilder", _BuilderStub)
+    monkeypatch.setattr(
+        CompilerPhase9,
+        "_build_phase9_injection_shape_profile",
+        staticmethod(lambda **kwargs: {}),
+    )
 
     phase.run(spell, artifact)
 
@@ -95,6 +100,11 @@ def test_run_marks_phase8_11_dirty_without_eager_capture(monkeypatch) -> None:
                 return object()
 
     monkeypatch.setattr(compiler_phase_9_module, "InjectionPlanBuilder", _BuilderStub)
+    monkeypatch.setattr(
+        CompilerPhase9,
+        "_build_phase9_injection_shape_profile",
+        staticmethod(lambda **kwargs: {}),
+    )
 
     phase.run(spell, artifact)
 

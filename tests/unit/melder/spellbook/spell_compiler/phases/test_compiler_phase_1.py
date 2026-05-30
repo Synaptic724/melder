@@ -74,6 +74,11 @@ def test_run_builds_requirements_once(monkeypatch: pytest.MonkeyPatch) -> None:
         "SpellRequirementsFinder",
         _FinderStub,
     )
+    monkeypatch.setattr(
+        CompilerPhase1,
+        "_build_phase1_requirements_shape_profile",
+        staticmethod(lambda requirements: {}),
+    )
 
     phase = CompilerPhase1()
     phase.run(spell, artifact)
@@ -101,6 +106,11 @@ def test_run_skips_when_requirements_already_exist(
         compiler_phase_1_module,
         "SpellRequirementsFinder",
         _FinderStub,
+    )
+    monkeypatch.setattr(
+        CompilerPhase1,
+        "_build_phase1_requirements_shape_profile",
+        staticmethod(lambda requirements: {}),
     )
 
     phase = CompilerPhase1()

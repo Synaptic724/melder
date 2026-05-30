@@ -6,17 +6,17 @@ from typing import Any, Dict, Tuple
 
 import pytest
 
-import melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor as phase12_module
+import melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor as phase13_module
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import ExecutionPlanTargetKind
-from melder.aether.spellbook.spell_compiler.blueprints.phase12_overrides_executor import (
-    build_phase12_override_step_target_counts_from_rows,
-    compile_phase12_overrides_executor_code_object,
-    compile_phase12_overrides_executor_from_code_object,
-    compile_phase12_overrides_executor,
-    compile_phase12_overrides_executor_from_source,
-    emit_phase12_overrides_executor_source,
-    emit_phase12_overrides_executor_shape_source,
+from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+    build_phase13_override_step_target_counts_from_rows,
+    compile_phase13_overrides_executor_code_object,
+    compile_phase13_overrides_executor_from_code_object,
+    compile_phase13_overrides_executor,
+    compile_phase13_overrides_executor_from_source,
+    emit_phase13_overrides_executor_source,
+    emit_phase13_overrides_executor_shape_source,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -203,10 +203,10 @@ class _Creations:
         return entry[0]
 
 
-def test_compile_phase12_overrides_executor_requires_spell_lookup_for_schema_rows() -> None:
+def test_compile_phase13_overrides_executor_requires_spell_lookup_for_schema_rows() -> None:
     """Schema-row override compile fails fast when spell lookup is missing."""
     with pytest.raises(RuntimeError, match="require spell_lookup"):
-        compile_phase12_overrides_executor(
+        compile_phase13_overrides_executor(
             execution_plan=None,
             plan_rows=(_make_plan_row("root"),),
             root_spell_id="root",
@@ -217,12 +217,12 @@ def test_compile_phase12_overrides_executor_requires_spell_lookup_for_schema_row
         )
 
 
-def test_compile_phase12_overrides_executor_rejects_schema_rows_missing_required_field() -> None:
+def test_compile_phase13_overrides_executor_rejects_schema_rows_missing_required_field() -> None:
     """Schema-row override compile fails fast for missing required row fields."""
     row = _make_plan_row("root")
     row.pop("instance_key")
     with pytest.raises(RuntimeError, match="missing required field 'instance_key'"):
-        compile_phase12_overrides_executor(
+        compile_phase13_overrides_executor(
             execution_plan=None,
             plan_rows=(row,),
             root_spell_id="root",
@@ -233,10 +233,10 @@ def test_compile_phase12_overrides_executor_rejects_schema_rows_missing_required
         )
 
 
-def test_compile_phase12_overrides_executor_rejects_unknown_spell_id_in_schema_rows() -> None:
+def test_compile_phase13_overrides_executor_rejects_unknown_spell_id_in_schema_rows() -> None:
     """Schema-row override compile fails when spell lookup cannot resolve a row spell id."""
     with pytest.raises(RuntimeError, match="unknown spell_id 'root'"):
-        compile_phase12_overrides_executor(
+        compile_phase13_overrides_executor(
             execution_plan=None,
             plan_rows=(_make_plan_row("root"),),
             root_spell_id="root",
@@ -247,12 +247,12 @@ def test_compile_phase12_overrides_executor_rejects_unknown_spell_id_in_schema_r
         )
 
 
-def test_compile_phase12_overrides_executor_rejects_unknown_existence_name() -> None:
+def test_compile_phase13_overrides_executor_rejects_unknown_existence_name() -> None:
     """Schema-row override compile fails for unknown existence enum names."""
     row = _make_plan_row("root")
     row["existence"] = "not_an_existence"
     with pytest.raises(RuntimeError, match="unknown existence"):
-        compile_phase12_overrides_executor(
+        compile_phase13_overrides_executor(
             execution_plan=None,
             plan_rows=(row,),
             root_spell_id="root",
@@ -263,10 +263,10 @@ def test_compile_phase12_overrides_executor_rejects_unknown_existence_name() -> 
         )
 
 
-def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> None:
+def test_compile_phase13_overrides_executor_supports_schema_rows_execution() -> None:
     """Schema-row override compile path emits a callable executor that executes."""
     spell = _make_spell("root")
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
@@ -275,7 +275,7 @@ def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> 
         any_overrides_present=False,
         path_registry=None,
     )
-    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_overrides_executor>"
     assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
 
     context = SimpleNamespace(
@@ -292,10 +292,10 @@ def test_compile_phase12_overrides_executor_supports_schema_rows_execution() -> 
     assert result == "value:root"
 
 
-def test_compile_phase12_overrides_executor_inlines_creations_target_routing() -> None:
+def test_compile_phase13_overrides_executor_inlines_creations_target_routing() -> None:
     """Generated override source does not call creations-target helper dispatch."""
     spell = _make_spell("root")
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
@@ -307,10 +307,10 @@ def test_compile_phase12_overrides_executor_inlines_creations_target_routing() -
     assert "_select_creations_for_target_kind" not in executor.__code__.co_names
 
 
-def test_compile_phase12_overrides_executor_prebinds_step_metadata() -> None:
+def test_compile_phase13_overrides_executor_prebinds_step_metadata() -> None:
     """Generated override source prebinds step metadata tuples for hot-path access."""
     spell = _make_spell("root")
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
@@ -327,11 +327,11 @@ def test_compile_phase12_overrides_executor_prebinds_step_metadata() -> None:
     assert "step_must_register_flags" in executor.__code__.co_varnames
 
 
-def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_execution() -> None:
+def test_compile_phase13_overrides_executor_from_source_supports_schema_rows_execution() -> None:
     """Source-restored compile path emits a callable executor that executes."""
     spell = _make_spell("root")
-    source = emit_phase12_overrides_executor_source(step_count=1)
-    executor = compile_phase12_overrides_executor_from_source(
+    source = emit_phase13_overrides_executor_source(step_count=1)
+    executor = compile_phase13_overrides_executor_from_source(
         source=source,
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
@@ -341,7 +341,7 @@ def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_exe
         any_overrides_present=False,
         path_registry=None,
     )
-    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_overrides_executor>"
     assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
 
     context = SimpleNamespace(
@@ -357,18 +357,18 @@ def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_exe
     assert result == "value:root"
 
 
-def test_compile_phase12_overrides_executor_code_object_rejects_empty_source() -> None:
+def test_compile_phase13_overrides_executor_code_object_rejects_empty_source() -> None:
     """Code-object helper requires non-empty emitted source."""
     with pytest.raises(ValueError, match="source must be a non-empty string"):
-        compile_phase12_overrides_executor_code_object(source="")
+        compile_phase13_overrides_executor_code_object(source="")
 
 
-def test_compile_phase12_overrides_executor_from_code_object_supports_schema_rows_execution() -> None:
+def test_compile_phase13_overrides_executor_from_code_object_supports_schema_rows_execution() -> None:
     """Code-object compile path emits a callable executor that executes."""
     spell = _make_spell("root")
-    source = emit_phase12_overrides_executor_source(step_count=1)
-    code_object = compile_phase12_overrides_executor_code_object(source=source)
-    executor = compile_phase12_overrides_executor_from_code_object(
+    source = emit_phase13_overrides_executor_source(step_count=1)
+    code_object = compile_phase13_overrides_executor_code_object(source=source)
+    executor = compile_phase13_overrides_executor_from_code_object(
         code_object=code_object,
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
@@ -378,7 +378,7 @@ def test_compile_phase12_overrides_executor_from_code_object_supports_schema_row
         any_overrides_present=False,
         path_registry=None,
     )
-    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_overrides_executor>"
     assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
 
     context = SimpleNamespace(
@@ -394,39 +394,39 @@ def test_compile_phase12_overrides_executor_from_code_object_supports_schema_row
     assert result == "value:root"
 
 
-def test_emit_phase12_overrides_executor_source_rejects_negative_step_count() -> None:
+def test_emit_phase13_overrides_executor_source_rejects_negative_step_count() -> None:
     """Source emitter enforces non-negative step counts."""
     with pytest.raises(ValueError, match="step_count must not be negative"):
-        emit_phase12_overrides_executor_source(step_count=-1)
+        emit_phase13_overrides_executor_source(step_count=-1)
 
 
-def test_emit_phase12_overrides_executor_shape_source_rejects_missing_required_field() -> None:
+def test_emit_phase13_overrides_executor_shape_source_rejects_missing_required_field() -> None:
     """Shape emitter fails fast when required row fields are missing."""
     row = _make_plan_row("root")
     row.pop("must_register")
 
     with pytest.raises(RuntimeError, match="missing required field 'must_register'"):
-        emit_phase12_overrides_executor_shape_source(
+        emit_phase13_overrides_executor_shape_source(
             plan_rows=(row,),
             root_spell_id="root",
         )
 
 
-def test_emit_phase12_overrides_executor_shape_source_rejects_unknown_existence_name() -> None:
+def test_emit_phase13_overrides_executor_shape_source_rejects_unknown_existence_name() -> None:
     """Shape emitter fails fast when row existence names are invalid."""
     row = _make_plan_row("root")
     row["existence"] = "not_an_existence"
 
     with pytest.raises(RuntimeError, match="unknown existence"):
-        emit_phase12_overrides_executor_shape_source(
+        emit_phase13_overrides_executor_shape_source(
             plan_rows=(row,),
             root_spell_id="root",
         )
 
 
-def test_emit_phase12_overrides_executor_shape_source_specializes_target_and_existence() -> None:
+def test_emit_phase13_overrides_executor_shape_source_specializes_target_and_existence() -> None:
     """Shape emitter removes runtime target/existence selection from emitted source."""
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
     )
@@ -439,9 +439,9 @@ def test_emit_phase12_overrides_executor_shape_source_specializes_target_and_exi
     assert "step_root_positional_override_0 = None" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_prebinds_non_root_override_to_none() -> None:
+def test_emit_phase13_overrides_executor_shape_source_prebinds_non_root_override_to_none() -> None:
     """Shape emitter elides positional locals when root positional overrides are impossible."""
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("dep"),),
         root_spell_id="root",
     )
@@ -450,13 +450,13 @@ def test_emit_phase12_overrides_executor_shape_source_prebinds_non_root_override
     assert "root_positional_override if is_root_step_0 else None" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_static_spell_flags_elide_dynamic_invoke_branches() -> None:
+def test_emit_phase13_overrides_executor_shape_source_static_spell_flags_elide_dynamic_invoke_branches() -> None:
     """Shape emitter uses spell lookup metadata to remove dynamic invoke-type branching."""
     row = _make_plan_row("root")
     spell = _make_spell("root")
     spell.is_class_spell = True
 
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(row,),
         root_spell_id="root",
         spell_lookup={"root": spell},
@@ -467,9 +467,9 @@ def test_emit_phase12_overrides_executor_shape_source_static_spell_flags_elide_d
     assert "if is_existing_unique_creation_0:" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_specializes_static_target_count() -> None:
+def test_emit_phase13_overrides_executor_shape_source_specializes_static_target_count() -> None:
     """Shape emitter removes dynamic override-target-count branching for static shapes."""
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
         override_targeted_spell_ids=("root",),
@@ -480,9 +480,9 @@ def test_emit_phase12_overrides_executor_shape_source_specializes_static_target_
     assert "if override_target_count_0 == 0:" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_duplicate_spell_id_skips_static_count_specialization() -> None:
+def test_emit_phase13_overrides_executor_shape_source_duplicate_spell_id_skips_static_count_specialization() -> None:
     """Shape emitter avoids fixed [0] indexing lanes when one spell_id maps to multiple steps."""
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(
             _make_plan_row("dup"),
             _make_plan_row("dup"),
@@ -498,9 +498,9 @@ def test_emit_phase12_overrides_executor_shape_source_duplicate_spell_id_skips_s
     assert "for override_socket_1 in override_targets_1:" in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_uses_per_step_target_counts_when_provided() -> None:
+def test_emit_phase13_overrides_executor_shape_source_uses_per_step_target_counts_when_provided() -> None:
     """Shape emitter can specialize duplicate spell_id rows safely with per-step counts."""
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(
             _make_plan_row("dup"),
             _make_plan_row("dup"),
@@ -516,12 +516,12 @@ def test_emit_phase12_overrides_executor_shape_source_uses_per_step_target_count
     assert "override_values_1 = _EMPTY_OVERRIDE_VALUES" in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration() -> None:
+def test_emit_phase13_overrides_executor_shape_source_inlines_many_registration() -> None:
     """Shape emitter inlines Existence.many registration when must_register is true."""
     row = _make_plan_row("root")
     row["must_register"] = True
 
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(row,),
         root_spell_id="root",
     )
@@ -531,14 +531,14 @@ def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration(
     assert "_register_spell_instance_prebound(" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_skips_many_registration_when_static_disposal_is_false() -> None:
+def test_emit_phase13_overrides_executor_shape_source_skips_many_registration_when_static_disposal_is_false() -> None:
     """Shape emitter omits many-registration emission when disposal metadata is statically false."""
     row = _make_plan_row("root")
     row["must_register"] = True
     spell = _make_spell("root")
     spell.has_disposal_methods = False
 
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(row,),
         root_spell_id="root",
         spell_lookup={"root": spell},
@@ -550,7 +550,7 @@ def test_emit_phase12_overrides_executor_shape_source_skips_many_registration_wh
     assert "disposal_methods_0 = step_disposal_methods[0]" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration_without_runtime_disposal_branch_when_static_true() -> None:
+def test_emit_phase13_overrides_executor_shape_source_inlines_many_registration_without_runtime_disposal_branch_when_static_true() -> None:
     """Shape emitter emits direct many-registration when disposal metadata is statically true."""
     row = _make_plan_row("root")
     row["must_register"] = True
@@ -558,7 +558,7 @@ def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration_
     spell.has_disposal_methods = True
     spell.disposal_method_names = ("cleanup",)
 
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(row,),
         root_spell_id="root",
         spell_lookup={"root": spell},
@@ -570,9 +570,9 @@ def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration_
     assert "has_disposal_methods_0 = step_has_disposal_methods[0]" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_skips_many_registration_metadata_when_unused() -> None:
+def test_emit_phase13_overrides_executor_shape_source_skips_many_registration_metadata_when_unused() -> None:
     """Shape emitter skips per-step registration metadata for non-registering many rows."""
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
     )
@@ -582,13 +582,13 @@ def test_emit_phase12_overrides_executor_shape_source_skips_many_registration_me
     assert "disposal_methods_0 = step_disposal_methods[0]" not in source
 
 
-def test_emit_phase12_overrides_executor_shape_source_uses_direct_callable_invoke_for_static_empty_kwargs() -> None:
+def test_emit_phase13_overrides_executor_shape_source_uses_direct_callable_invoke_for_static_empty_kwargs() -> None:
     """Shape emitter calls callable spells directly when kwargs are statically empty."""
     spell = _make_spell("root")
     spell.is_class_spell = True
     spell.spell = lambda: "ok"
 
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
         spell_lookup={"root": spell},
@@ -599,7 +599,7 @@ def test_emit_phase12_overrides_executor_shape_source_uses_direct_callable_invok
     assert "plan_step_0.spell.spell(**kwargs_0)" not in source
 
 
-def test_build_phase12_override_step_target_counts_from_rows_filters_duplicate_spell_steps() -> None:
+def test_build_phase13_override_step_target_counts_from_rows_filters_duplicate_spell_steps() -> None:
     """Per-step target counts honor row-level shared/non-shared matching rules."""
     socket_a = _SocketRef("dup", "value", 10, "normal")
     socket_b = _SocketRef("dup", "value", 11, "normal")
@@ -623,7 +623,7 @@ def test_build_phase12_override_step_target_counts_from_rows_filters_duplicate_s
         },
     )
 
-    counts = build_phase12_override_step_target_counts_from_rows(
+    counts = build_phase13_override_step_target_counts_from_rows(
         plan_rows=(row_a, row_b),
         override_targets_by_spell_id={"dup": (socket_a, socket_b)},
         path_registry=path_registry,
@@ -632,15 +632,15 @@ def test_build_phase12_override_step_target_counts_from_rows_filters_duplicate_s
     assert counts == (1, 1)
 
 
-def test_compile_phase12_overrides_executor_from_shape_source_supports_schema_rows_execution() -> None:
+def test_compile_phase13_overrides_executor_from_shape_source_supports_schema_rows_execution() -> None:
     """Shape-source code object compile path emits a callable executor that executes."""
     spell = _make_spell("root")
-    source = emit_phase12_overrides_executor_shape_source(
+    source = emit_phase13_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
     )
-    code_object = compile_phase12_overrides_executor_code_object(source=source)
-    executor = compile_phase12_overrides_executor_from_code_object(
+    code_object = compile_phase13_overrides_executor_code_object(source=source)
+    executor = compile_phase13_overrides_executor_from_code_object(
         code_object=code_object,
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
@@ -650,7 +650,7 @@ def test_compile_phase12_overrides_executor_from_shape_source_supports_schema_ro
         any_overrides_present=False,
         path_registry=None,
     )
-    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert executor.__code__.co_filename == "<melder_phase13_overrides_executor>"
     assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
     assert "step_creations_target_kinds" not in executor.__code__.co_varnames
     assert "step_existences" not in executor.__code__.co_varnames
@@ -669,18 +669,18 @@ def test_compile_phase12_overrides_executor_from_shape_source_supports_schema_ro
     assert result == "value:root"
 
 
-def test_emit_phase12_overrides_executor_source_uses_prebound_must_register_flags() -> None:
+def test_emit_phase13_overrides_executor_source_uses_prebound_must_register_flags() -> None:
     """Generated source uses prebound must-register tuple flags in many-step blocks."""
-    source = emit_phase12_overrides_executor_source(step_count=1)
+    source = emit_phase13_overrides_executor_source(step_count=1)
 
     assert "step_must_register_flags=step_must_register_flags" in source
     assert "must_register_0 = step_must_register_flags[0]" in source
     assert "plan_step_0.must_register" not in source
 
 
-def test_emit_phase12_overrides_executor_source_prebinds_root_positional_override_once_per_step() -> None:
+def test_emit_phase13_overrides_executor_source_prebinds_root_positional_override_once_per_step() -> None:
     """Generated source prebinds root positional payload once per step and reuses it."""
-    source = emit_phase12_overrides_executor_source(step_count=1)
+    source = emit_phase13_overrides_executor_source(step_count=1)
 
     assert (
         "step_root_positional_override_0 = root_positional_override if "
@@ -690,27 +690,27 @@ def test_emit_phase12_overrides_executor_source_prebinds_root_positional_overrid
     assert source.count("root_positional_override=step_root_positional_override_0") == 4
 
 
-def test_emit_phase12_overrides_executor_source_uses_prebound_targeted_override_flags() -> None:
+def test_emit_phase13_overrides_executor_source_uses_prebound_targeted_override_flags() -> None:
     """Generated source wires per-step targeted-override bool flags from prebound tuple."""
-    source = emit_phase12_overrides_executor_source(step_count=1)
+    source = emit_phase13_overrides_executor_source(step_count=1)
 
     assert "step_has_targeted_overrides=step_has_targeted_overrides" in source
     assert "has_targeted_overrides_0 = step_has_targeted_overrides[0]" in source
     assert "has_targeted_overrides_0 = bool(override_targets_0)" not in source
 
 
-def test_compile_phase12_overrides_executor_raises_on_codegen_error(
+def test_compile_phase13_overrides_executor_raises_on_codegen_error(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Compilation fails fast when generated source cannot compile."""
     monkeypatch.setattr(
-        phase12_module,
-        "_build_phase12_overrides_executor_source",
-        lambda step_count: "def _phase12_executor(:\n    pass",
+        phase13_module,
+        "_build_phase13_overrides_executor_source",
+        lambda step_count: "def _phase13_executor(:\n    pass",
     )
 
     with pytest.raises(RuntimeError, match="code generation failed"):
-        phase12_module.compile_phase12_overrides_executor(
+        phase13_module.compile_phase13_overrides_executor(
             execution_plan=None,
             plan_rows=(_make_plan_row("root"),),
             root_spell_id="root",
@@ -721,18 +721,18 @@ def test_compile_phase12_overrides_executor_raises_on_codegen_error(
         )
 
 
-def test_compile_phase12_overrides_executor_raises_when_callable_missing(
+def test_compile_phase13_overrides_executor_raises_when_callable_missing(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Compilation fails when generated source omits `_phase12_executor`."""
+    """Compilation fails when generated source omits `_phase13_executor`."""
     monkeypatch.setattr(
-        phase12_module,
-        "_build_phase12_overrides_executor_source",
+        phase13_module,
+        "_build_phase13_overrides_executor_source",
         lambda step_count: "x = 1",
     )
 
-    with pytest.raises(RuntimeError, match="did not define a callable _phase12_executor"):
-        phase12_module.compile_phase12_overrides_executor(
+    with pytest.raises(RuntimeError, match="did not define a callable _phase13_executor"):
+        phase13_module.compile_phase13_overrides_executor(
             execution_plan=None,
             plan_rows=(_make_plan_row("root"),),
             root_spell_id="root",
@@ -743,7 +743,7 @@ def test_compile_phase12_overrides_executor_raises_when_callable_missing(
         )
 
 
-def test_compile_phase12_overrides_executor_contract_and_root_override_precedence() -> None:
+def test_compile_phase13_overrides_executor_contract_and_root_override_precedence() -> None:
     """
     Root positional overrides and socket overrides outrank contract payload defaults.
     """
@@ -768,7 +768,7 @@ def test_compile_phase12_overrides_executor_contract_and_root_override_precedenc
     )
 
     socket_ref = _SocketRef("root", "value", 7, "normal")
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(row,),
         root_spell_id="root",
@@ -795,7 +795,7 @@ def test_compile_phase12_overrides_executor_contract_and_root_override_precedenc
     assert captured["kwargs"]["value"] == "override-value"
 
 
-def test_compile_phase12_overrides_executor_rejects_root_override_on_existing_shared_instance() -> None:
+def test_compile_phase13_overrides_executor_rejects_root_override_on_existing_shared_instance() -> None:
     """
     Root-level override payloads reject reuse of an existing shared root instance.
     """
@@ -808,7 +808,7 @@ def test_compile_phase12_overrides_executor_rejects_root_override_on_existing_sh
     row["existence"] = "unique"
     row["creations_target_kind"] = ExecutionPlanTargetKind.OWNER
 
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(row,),
         root_spell_id="root",
@@ -833,7 +833,7 @@ def test_compile_phase12_overrides_executor_rejects_root_override_on_existing_sh
         )
 
 
-def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existing_instance() -> None:
+def test_compile_phase13_overrides_executor_rejects_targeted_override_on_existing_instance() -> None:
     """
     Targeted socket overrides reject reuse of an existing shared instance.
     """
@@ -848,7 +848,7 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     dep_row["creations_target_kind"] = ExecutionPlanTargetKind.CALLER
     socket_ref = _SocketRef("dep", "value", 11, "normal")
 
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(root_row, dep_row),
         root_spell_id="root",
@@ -873,7 +873,7 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
         )
 
 
-def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existing_spellspace_instance() -> None:
+def test_compile_phase13_overrides_executor_rejects_targeted_override_on_existing_spellspace_instance() -> None:
     """
     Spellspace-scoped targeted overrides reject reuse of existing direct-store instances.
     """
@@ -889,7 +889,7 @@ def test_compile_phase12_overrides_executor_rejects_targeted_override_on_existin
     dep_row["creations_target_kind"] = ExecutionPlanTargetKind.SPELLSPACE
     socket_ref = _SocketRef("dep", "value", 12, "normal")
 
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(root_row, dep_row),
         root_spell_id="root",
@@ -937,7 +937,7 @@ def test_build_step_override_targets_prefilters_non_shared_steps() -> None:
         ),
     )
 
-    step_targets = phase12_module._build_step_override_targets(
+    step_targets = phase13_module._build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
         path_registry=path_registry,
@@ -972,7 +972,7 @@ def test_build_step_override_targets_caches_path_metadata_across_steps() -> None
         ),
     )
 
-    step_targets = phase12_module._build_step_override_targets(
+    step_targets = phase13_module._build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
         path_registry=path_registry,
@@ -1002,7 +1002,7 @@ def test_build_step_override_targets_reuses_external_path_metadata_cache_across_
     )
     path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
 
-    first_targets = phase12_module._build_step_override_targets(
+    first_targets = phase13_module._build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
         path_registry=path_registry,
@@ -1010,7 +1010,7 @@ def test_build_step_override_targets_reuses_external_path_metadata_cache_across_
     )
     parent_calls_after_first = path_registry.parent_calls
     depth_calls_after_first = path_registry.depth_calls
-    second_targets = phase12_module._build_step_override_targets(
+    second_targets = phase13_module._build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
         path_registry=path_registry,
@@ -1042,7 +1042,7 @@ def test_build_step_override_targets_reuses_prefilter_step_target_cache() -> Non
     step_targets_cache: Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]] = {}
     path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
 
-    first_targets = phase12_module._build_step_override_targets(
+    first_targets = phase13_module._build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
         path_registry=path_registry,
@@ -1053,7 +1053,7 @@ def test_build_step_override_targets_reuses_prefilter_step_target_cache() -> Non
     parent_calls_after_first = path_registry.parent_calls
     depth_calls_after_first = path_registry.depth_calls
     path_registry.raise_on_access = True
-    second_targets = phase12_module._build_step_override_targets(
+    second_targets = phase13_module._build_step_override_targets(
         steps=steps,
         override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
         path_registry=path_registry,
@@ -1069,7 +1069,7 @@ def test_build_step_override_targets_reuses_prefilter_step_target_cache() -> Non
     assert step_targets_cache[cache_key] == first_targets
 
 
-def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile_time_only() -> None:
+def test_compile_phase13_overrides_executor_non_shared_path_filtering_is_compile_time_only() -> None:
     """Runtime override materialization does not call path registry after compile."""
     captured: Dict[str, Any] = {}
 
@@ -1091,7 +1091,7 @@ def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile
         depth_map={11: 2, 12: 2},
     )
 
-    executor = compile_phase12_overrides_executor(
+    executor = compile_phase13_overrides_executor(
         execution_plan=None,
         plan_rows=(row,),
         root_spell_id="root",
@@ -1135,7 +1135,7 @@ def test_build_kwargs_with_overrides_fast_path_returns_override_copy() -> None:
     )
     override_values = {"value": "override"}
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={},
         override_values=override_values,
@@ -1157,7 +1157,7 @@ def test_build_kwargs_with_overrides_contract_payload_only_returns_copy() -> Non
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={},
         override_values={},
@@ -1181,7 +1181,7 @@ def test_build_kwargs_with_overrides_contract_payload_only_filters_args_key() ->
         uses_positional_override=True,
     )
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={},
         override_values={},
@@ -1207,7 +1207,7 @@ def test_build_kwargs_with_overrides_single_and_multi_dependency_shapes() -> Non
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={
             dep_key_one: "v1",
@@ -1237,7 +1237,7 @@ def test_build_kwargs_with_overrides_override_precedence_skips_dependency_lookup
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={},
         override_values={"value": "override"},
@@ -1260,7 +1260,7 @@ def test_build_kwargs_with_overrides_override_precedence_beats_contract_payload(
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={},
         override_values={"value": "override"},
@@ -1301,7 +1301,7 @@ def test_build_kwargs_with_overrides_two_dependency_fast_path_skips_iteration() 
         uses_positional_override=False,
     )
 
-    kwargs = phase12_module._build_kwargs_with_overrides(
+    kwargs = phase13_module._build_kwargs_with_overrides(
         plan_step=plan_step,
         instance_results={
             first_dependency_key: "v1",
@@ -1331,24 +1331,24 @@ def test_construct_spell_instance_with_overrides_skips_helper_for_empty_non_root
         return "instance"
 
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_step_override_values",
         lambda **kwargs: (_ for _ in ()).throw(
             AssertionError("override-values helper must not run for empty non-root payloads")
         ),
     )
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_kwargs_with_overrides",
         _build_kwargs_with_overrides,
     )
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_invoke_spell_with_kwargs",
         _invoke_spell_with_kwargs,
     )
 
-    result = phase12_module._construct_spell_instance_with_overrides(
+    result = phase13_module._construct_spell_instance_with_overrides(
         plan_step=plan_step,
         instance_results={},
         override_targets=(),
@@ -1366,14 +1366,14 @@ def test_build_step_override_values_fast_path_returns_empty_when_no_targets(
 ) -> None:
     """Step override values helper returns empty payload without touching target-map helper."""
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_instance_override_map",
         lambda override_targets, override_map: (_ for _ in ()).throw(
             AssertionError("target helper must not be called for empty targets")
         ),
     )
 
-    values = phase12_module._build_step_override_values(
+    values = phase13_module._build_step_override_values(
         override_targets=(),
         override_map={},
         root_positional_override=None,
@@ -1387,14 +1387,14 @@ def test_build_step_override_values_fast_path_returns_root_positional_payload(
 ) -> None:
     """Step override values helper returns only root positional payload for empty targets."""
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_instance_override_map",
         lambda override_targets, override_map: (_ for _ in ()).throw(
             AssertionError("target helper must not be called for empty targets")
         ),
     )
 
-    values = phase12_module._build_step_override_values(
+    values = phase13_module._build_step_override_values(
         override_targets=(),
         override_map={},
         root_positional_override=("arg-1",),
@@ -1409,14 +1409,14 @@ def test_build_step_override_values_single_target_fast_path_without_root_args(
     """Single-target helper path materializes direct param mapping without generic helper."""
     socket_ref = _SocketRef("root", "value", 7, "normal")
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_instance_override_map",
         lambda override_targets, override_map: (_ for _ in ()).throw(
             AssertionError("generic target helper must not be called for single target")
         ),
     )
 
-    values = phase12_module._build_step_override_values(
+    values = phase13_module._build_step_override_values(
         override_targets=(socket_ref,),
         override_map={socket_ref: "override-value"},
         root_positional_override=None,
@@ -1431,14 +1431,14 @@ def test_build_step_override_values_single_target_fast_path_with_root_args(
     """Single-target helper path merges direct param mapping with root positional args."""
     socket_ref = _SocketRef("root", "value", 7, "normal")
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_instance_override_map",
         lambda override_targets, override_map: (_ for _ in ()).throw(
             AssertionError("generic target helper must not be called for single target")
         ),
     )
 
-    values = phase12_module._build_step_override_values(
+    values = phase13_module._build_step_override_values(
         override_targets=(socket_ref,),
         override_map={socket_ref: "override-value"},
         root_positional_override=("arg-1",),
@@ -1457,14 +1457,14 @@ def test_build_step_override_values_two_target_fast_path_without_root_args(
     first_socket_ref = _SocketRef("root", "value_a", 7, "normal")
     second_socket_ref = _SocketRef("root", "value_b", 8, "normal")
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_instance_override_map",
         lambda override_targets, override_map: (_ for _ in ()).throw(
             AssertionError("generic target helper must not be called for two targets")
         ),
     )
 
-    values = phase12_module._build_step_override_values(
+    values = phase13_module._build_step_override_values(
         override_targets=(first_socket_ref, second_socket_ref),
         override_map={
             first_socket_ref: "override-a",
@@ -1486,14 +1486,14 @@ def test_build_step_override_values_two_target_fast_path_with_root_args(
     first_socket_ref = _SocketRef("root", "value_a", 7, "normal")
     second_socket_ref = _SocketRef("root", "value_b", 8, "normal")
     monkeypatch.setattr(
-        phase12_module,
+        phase13_module,
         "_build_instance_override_map",
         lambda override_targets, override_map: (_ for _ in ()).throw(
             AssertionError("generic target helper must not be called for two targets")
         ),
     )
 
-    values = phase12_module._build_step_override_values(
+    values = phase13_module._build_step_override_values(
         override_targets=(first_socket_ref, second_socket_ref),
         override_map={
             first_socket_ref: "override-a",
@@ -1523,7 +1523,7 @@ def test_invoke_spell_with_kwargs_preserves_args_payload_mapping() -> None:
     spell.spell = _callable
     kwargs_payload = {"__args__": [1, 2], "value": "override"}
 
-    result = phase12_module._invoke_spell_with_kwargs(
+    result = phase13_module._invoke_spell_with_kwargs(
         spell=spell,
         kwargs=kwargs_payload,
     )
@@ -1548,7 +1548,7 @@ def test_invoke_spell_with_kwargs_accepts_tuple_args_payload_and_preserves_mappi
     spell.spell = _callable
     kwargs_payload = {"__args__": (1, 2), "value": "override"}
 
-    result = phase12_module._invoke_spell_with_kwargs(
+    result = phase13_module._invoke_spell_with_kwargs(
         spell=spell,
         kwargs=kwargs_payload,
     )
@@ -1566,7 +1566,7 @@ def test_invoke_spell_with_kwargs_rejects_invalid_args_payload_type() -> None:
     spell.spell = lambda **kwargs: kwargs
 
     with pytest.raises(MeldExecutionError, match="__args__ override must be a list or tuple"):
-        phase12_module._invoke_spell_with_kwargs(
+        phase13_module._invoke_spell_with_kwargs(
             spell=spell,
             kwargs={"__args__": None},
         )
@@ -1580,23 +1580,23 @@ def test_resolve_root_instance_key_prefers_canonical_root_and_falls_back_to_firs
         SimpleNamespace(instance_key=("dep", 1)),
     )
 
-    assert phase12_module._resolve_root_instance_key(
+    assert phase13_module._resolve_root_instance_key(
         steps=steps,
         root_spell_id="root",
     ) == ("root", None)
 
-    assert phase12_module._resolve_root_instance_key(
+    assert phase13_module._resolve_root_instance_key(
         steps=(SimpleNamespace(instance_key=("root", 7)), SimpleNamespace(instance_key=("dep", 1))),
         root_spell_id="root",
     ) == ("root", 7)
 
-    assert phase12_module._resolve_root_instance_key(
+    assert phase13_module._resolve_root_instance_key(
         steps=steps,
         root_spell_id=None,
     ) is None
 
 
-def test_build_phase12_overrides_executor_namespace_prebinds_root_and_target_metadata() -> None:
+def test_build_phase13_overrides_executor_namespace_prebinds_root_and_target_metadata() -> None:
     """Namespace builder prebinds root/target metadata needed by emitted override source."""
     root_spell = _make_spell("root")
     dep_spell = _make_spell("dep")
@@ -1620,7 +1620,7 @@ def test_build_phase12_overrides_executor_namespace_prebinds_root_and_target_met
     )
     socket_ref = _SocketRef("root", "value", 7, "normal")
 
-    namespace = phase12_module._build_phase12_overrides_executor_namespace(
+    namespace = phase13_module._build_phase13_overrides_executor_namespace(
         steps=steps,
         step_override_targets=((socket_ref,), ()),
         root_instance_key=("root", None),
@@ -1636,3 +1636,4 @@ def test_build_phase12_overrides_executor_namespace_prebinds_root_and_target_met
     assert namespace["step_must_register_flags"] == (True, False)
     assert namespace["root_instance_key"] == ("root", None)
     assert namespace["any_overrides_present"] is True
+

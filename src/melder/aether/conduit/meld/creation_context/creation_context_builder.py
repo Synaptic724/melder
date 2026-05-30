@@ -177,7 +177,7 @@ class CreationContextBuilder:
             spell: Spell,
     ) -> Optional[Callable[..., Any]]:
         """
-        Return the spell's precompiled no-overrides Phase 12 executor.
+        Return the spell's precompiled no-overrides Phase 13 executor.
 
         The builder keeps this lookup separate so `CreationContext` can be
         seeded with the direct no-override execution lane only when the spell
@@ -185,7 +185,7 @@ class CreationContextBuilder:
         """
         if spell.is_existing_creation:
             return None
-        executor = spell._compiler_artifact._phase12_no_overrides_executor
+        executor = spell._compiler_artifact._phase13_no_overrides_executor
         return executor
 
     @staticmethod
@@ -287,3 +287,4 @@ class CreationContextBuilder:
             ),
             baseline_executor=None,
         )
+

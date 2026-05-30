@@ -12,7 +12,7 @@ from tests.unit.melder.spellbook.spell_compiler.support.compiler_test_support im
 
 
 def test_compiler_initializes_all_phase_surfaces() -> None:
-    """SpellCompiler should own one instantiated phase surface for phases 1-12."""
+    """SpellCompiler should own one instantiated phase surface for phases 1-13."""
     compiler = SpellCompiler()
 
     assert compiler._phase_1 is not None
@@ -27,6 +27,7 @@ def test_compiler_initializes_all_phase_surfaces() -> None:
     assert compiler._phase_10 is not None
     assert compiler._phase_11 is not None
     assert compiler._phase_12 is not None
+    assert compiler._phase_13 is not None
 
 
 @pytest.mark.parametrize(
