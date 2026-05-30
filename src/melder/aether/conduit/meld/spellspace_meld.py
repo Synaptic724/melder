@@ -215,10 +215,6 @@ class SpellSpaceMeld(Meld):
                         None,
                     )
                 input_resolution_cache[cache_key] = target_spell.spell_id
-            if target_spell.requires_spellspace_request:
-                raise RuntimeError(
-                    f"Spell {target_spell.spell_id} must be built from a spellspace."
-                )
         # 2) Normalize per-call overrides into a stable dict shape.
         if spell_override is None:
             override_map = None
@@ -385,15 +381,13 @@ class SpellSpaceMeld(Meld):
 
         existence = target_spell.existence
         spell_id = target_spell.spell_id
-        caller_creations = self._creations
-
         if existence is Existence.many:
             raise RuntimeError(
                 "meld_existing_spell is not supported for Existence.many."
             )
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
+            creation = self._owner_conduit_creations.get_creation(spell_id)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -401,15 +395,7 @@ class SpellSpaceMeld(Meld):
             return creation
 
         if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations.get_active_spellspace()
-            if spellspace is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            creation = caller_creations.get_spellspace_creation(
-                spellspace.id,
-                spell_id,
-            )
+            creation = self._spellspace_creations.get_creation(spell_id)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -534,10 +520,8 @@ class SpellSpaceMeld(Meld):
 
         existence = spell.existence
         spell_id = spell.spell_id
-        caller_creations = self._creations
-
         if existence is Existence.many:
-            creation_bucket = caller_creations.get_creation(spell_id)
+            creation_bucket = self._owner_conduit_creations.get_creation(spell_id)
             creation_count = (
                 len(creation_bucket)
                 if isinstance(creation_bucket, list)
@@ -549,53 +533,37 @@ class SpellSpaceMeld(Meld):
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
                 "query_conduit_id": query_conduit_id,
-                "storage_scope_kind": "caller_conduit_many",
-                "storage_owner_conduit_id": query_conduit_id,
+                "storage_scope_kind": "owner_conduit_many",
+                "storage_owner_conduit_id": self._owner_conduit_id,
                 "active_spellspace_id": None,
                 "creation_count": creation_count,
             }
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
+            creation = self._owner_conduit_creations.get_creation(spell_id)
             return {
                 "is_live": creation is not None,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
                 "query_conduit_id": query_conduit_id,
-                "storage_scope_kind": "caller_conduit",
-                "storage_owner_conduit_id": query_conduit_id,
-                "active_spellspace_id": None,
+                "storage_scope_kind": "owner_conduit",
+                "storage_owner_conduit_id": self._owner_conduit_id,
+                "active_spellspace_id": self._spellspace_id,
                 "creation_count": 1 if creation is not None else 0,
             }
 
         if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations.get_active_spellspace()
-            if spellspace is None:
-                return {
-                    "is_live": False,
-                    "spell_id": spell_id,
-                    "spell_name": spell.spell_name,
-                    "existence": existence.name,
-                    "query_conduit_id": query_conduit_id,
-                    "storage_scope_kind": "active_spellspace",
-                    "storage_owner_conduit_id": query_conduit_id,
-                    "active_spellspace_id": None,
-                    "creation_count": 0,
-                }
-            creation = caller_creations.get_spellspace_creation(
-                spellspace.id,
-                spell_id,
-            )
+            creation = self._spellspace_creations.get_creation(spell_id)
             return {
                 "is_live": creation is not None,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
                 "query_conduit_id": query_conduit_id,
-                "storage_scope_kind": "active_spellspace",
-                "storage_owner_conduit_id": query_conduit_id,
-                "active_spellspace_id": spellspace.id,
+                "storage_scope_kind": "spellspace",
+                "storage_owner_conduit_id": self._owner_conduit_id,
+                "active_spellspace_id": self._spellspace_id,
                 "creation_count": 1 if creation is not None else 0,
             }
 

@@ -1,6 +1,5 @@
 import threading
 import time
-import warnings
 import sys
 from enum import Enum
 from typing import (
@@ -68,11 +67,10 @@ class TransactionMediator(Cleanable):
     Contract:
         - Root sessions are keyed by admitted request id.
         - Same-thread nested work joins the active root session.
-        - Cross-thread root starts may be rejected depending on mode and
-          `allow_multiple_root_transactions`.
+        - Cross-thread root starts are allowed by default unless coarse
+          queueing is explicitly enabled.
         - Only the outermost frame finalizes commit or abort through the
           existing orchestrator path.
-        - `warn` mode allows additional root sessions but emits a warning.
 
     Threading:
         - Shared mediator state is guarded by an internal `RLock`.
@@ -80,9 +78,6 @@ class TransactionMediator(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    AVAILABLE_MODES: ClassVar[frozenset[str]] = frozenset(
-        ("strict", "warn", "disabled")
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_wait_condition",
@@ -91,8 +86,6 @@ class TransactionMediator(Cleanable):
         "_embargo_manager",
         "_orchestrator",
         "_devops_information_registry",
-        "_change_control_mode",
-        "_allow_multiple_root_transactions",
         "_queue_competing_root_transactions",
         "_max_transaction_wait_time_in_seconds",
         "_admit_request",
@@ -110,8 +103,6 @@ class TransactionMediator(Cleanable):
             embargo_manager: "ChangeControlEmbargoManager",
             orchestrator: "ChangeControlOrchestrator",
             devops_information_registry: Optional[DevopsInformationRegistry],
-            change_control_mode: str = "strict",
-            allow_multiple_root_transactions: bool = False,
             queue_competing_root_transactions: bool = False,
             max_transaction_wait_time_in_seconds: float = 30.0,
             admit_request_fn: Optional[Callable[["ChangeControlTransactionRequest"], ChangeControlAdmissionResult]] = None,
@@ -128,10 +119,6 @@ class TransactionMediator(Cleanable):
                 Embargo helper used by orchestrator commit/abort paths.
             orchestrator:
                 Admission/commit/abort orchestration helper.
-            change_control_mode:
-                `strict`, `warn`, or `disabled`.
-            allow_multiple_root_transactions:
-                Whether multiple root sessions may coexist in the frame.
             queue_competing_root_transactions:
                 Whether competing root starts should wait in FIFO order.
             max_transaction_wait_time_in_seconds:
@@ -143,8 +130,7 @@ class TransactionMediator(Cleanable):
                 change-control disablement still applies.
 
         Raises:
-            ValueError: If required collaborators are missing or mode is invalid.
-            TypeError: If `allow_multiple_root_transactions` is not a bool.
+            ValueError: If required collaborators are missing.
         """
         super().__init__()
         if transaction_manager is None:
@@ -155,8 +141,6 @@ class TransactionMediator(Cleanable):
             raise ValueError("embargo_manager must not be None.")
         if orchestrator is None:
             raise ValueError("orchestrator must not be None.")
-        if not isinstance(allow_multiple_root_transactions, bool):
-            raise TypeError("allow_multiple_root_transactions must be a bool.")
         if not isinstance(queue_competing_root_transactions, bool):
             raise TypeError("queue_competing_root_transactions must be a bool.")
         if (
@@ -179,12 +163,6 @@ class TransactionMediator(Cleanable):
         self._orchestrator: ChangeControlOrchestrator = orchestrator
         self._devops_information_registry: Optional[DevopsInformationRegistry] = (
             devops_information_registry
-        )
-        self._change_control_mode: str = self._normalize_mode(
-            change_control_mode
-        )
-        self._allow_multiple_root_transactions: bool = (
-            allow_multiple_root_transactions
         )
         self._queue_competing_root_transactions: bool = (
             queue_competing_root_transactions
@@ -232,8 +210,6 @@ class TransactionMediator(Cleanable):
             del self._conflict_manager
             del self._embargo_manager
             del self._orchestrator
-            del self._change_control_mode
-            del self._allow_multiple_root_transactions
             del self._queue_competing_root_transactions
             del self._max_transaction_wait_time_in_seconds
             del self._admit_request

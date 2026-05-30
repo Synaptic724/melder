@@ -332,6 +332,11 @@ class ConduitMeld(Meld):
                 )
             return target_spell.user_created_object
 
+        if target_spell.requires_spellspace_request:
+            raise RuntimeError(
+                f"Spell {target_spell.spell_id} must be built from a spellspace."
+            )
+
         existence = target_spell.existence
         spell_id = target_spell.spell_id
         caller_creations = self._creations
@@ -343,22 +348,6 @@ class ConduitMeld(Meld):
 
         if existence is Existence.unique_per_conduit:
             creation = caller_creations.get_creation(spell_id)
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation
-
-        if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations.get_active_spellspace()
-            if spellspace is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            creation = caller_creations.get_spellspace_creation(
-                spellspace.id,
-                spell_id,
-            )
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -442,4 +431,100 @@ class ConduitMeld(Meld):
             spellframe=spellframe,
             binding_name=binding_name,
         )
+        if target_spell.requires_spellspace_request:
+            raise RuntimeError(
+                f"Spell {target_spell.spell_id} must be built from a spellspace."
+            )
         return self._describe_spell_live_creation_status(target_spell)
+
+    def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
+        """
+        Return conduit-scoped live-creation status for one resolved spell.
+        """
+        query_conduit_id = self._conduit_id
+        if spell.is_existing_creation:
+            return {
+                "is_live": spell.user_created_object is not None,
+                "spell_id": spell.spell_id,
+                "spell_name": spell.spell_name,
+                "existence": spell.existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "existing_creation",
+                "storage_owner_conduit_id": None,
+                "active_spellspace_id": None,
+                "creation_count": 1 if spell.user_created_object is not None else 0,
+            }
+
+        existence = spell.existence
+        spell_id = spell.spell_id
+        caller_creations = self._creations
+
+        if existence is Existence.many:
+            creation_bucket = caller_creations.get_creation(spell_id)
+            creation_count = (
+                len(creation_bucket)
+                if isinstance(creation_bucket, list)
+                else 0
+            )
+            return {
+                "is_live": creation_count > 0,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "caller_conduit_many",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": creation_count,
+            }
+
+        if existence is Existence.unique_per_conduit:
+            creation = caller_creations.get_creation(spell_id)
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "caller_conduit",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": 1 if creation is not None else 0,
+            }
+
+        if existence in {
+            Existence.unique,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
+        }:
+            owner_creations = spell._owner_creations
+            if owner_creations is None:
+                return {
+                    "is_live": False,
+                    "spell_id": spell_id,
+                    "spell_name": spell.spell_name,
+                    "existence": existence.name,
+                    "query_conduit_id": query_conduit_id,
+                    "storage_scope_kind": "owner_creations",
+                    "storage_owner_conduit_id": spell._owner_conduit_id,
+                    "active_spellspace_id": None,
+                    "creation_count": 0,
+                }
+            creation = owner_creations.get_creation(spell_id)
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "owner_creations",
+                "storage_owner_conduit_id": spell._owner_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": 1 if creation is not None else 0,
+            }
+
+        raise RuntimeError(
+            "Unsupported existence '{0}' for live creation probe.".format(
+                existence,
+            )
+        )

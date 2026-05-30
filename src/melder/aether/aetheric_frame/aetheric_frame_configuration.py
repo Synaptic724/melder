@@ -49,9 +49,6 @@ class AethericFrameConfiguration(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    AVAILABLE_CHANGE_CONTROL_MODES: ClassVar[frozenset[str]] = frozenset(
-        ("strict", "warn", "disabled")
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
@@ -61,8 +58,6 @@ class AethericFrameConfiguration(Cleanable):
         "_ai_native_enabled",
         "_rift_enabled",
         "_shared_framewide_spellbook_configuration",
-        "_change_control_mode",
-        "_allow_multiple_root_transactions",
         "_disable_all_transactions_after_conjure",
         "_disable_mutations",
         "_disable_linking",
@@ -82,8 +77,6 @@ class AethericFrameConfiguration(Cleanable):
             ai_native_enabled: bool,
             rift_enabled: bool,
             shared_framewide_spellbook_configuration: bool = False,
-            change_control_mode: str = "strict",
-            allow_multiple_root_transactions: bool = True,
             disable_all_transactions_after_conjure: bool = False,
             disable_mutations: bool = True,
             disable_linking: bool = False,
@@ -111,12 +104,6 @@ class AethericFrameConfiguration(Cleanable):
             shared_framewide_spellbook_configuration:
                 Whether the frame posture permits one explicit frame-owned
                 shared rich `SpellbookConfiguration` object.
-            change_control_mode:
-                Frame-level change-control posture:
-                `strict`, `warn`, or `disabled`.
-            allow_multiple_root_transactions:
-                Whether more than one root transaction may be active in the
-                frame at the same time.
             disable_all_transactions_after_conjure:
                 Whether new transactions are blocked once the frame runtime is
                 already conjured/live.
@@ -146,15 +133,12 @@ class AethericFrameConfiguration(Cleanable):
         Raises:
             TypeError: If the boolean posture flags are not bools.
             ValueError: If `system_state` cannot be normalized into a
-                `SystemState`, or if `change_control_mode` is invalid.
+                `SystemState`.
         """
         super().__init__()
         normalized_system_state = EnumHelpers.convert_enum_and_check(
             system_state,
             SystemState,
-        )
-        normalized_change_control_mode = self._normalize_change_control_mode(
-            change_control_mode
         )
         if not isinstance(ai_native_enabled, bool):
             raise TypeError("ai_native_enabled must be a bool.")
@@ -165,7 +149,6 @@ class AethericFrameConfiguration(Cleanable):
                 "shared_framewide_spellbook_configuration must be a bool."
             )
         for field_name, value in (
-            ("allow_multiple_root_transactions", allow_multiple_root_transactions),
             (
                 "disable_all_transactions_after_conjure",
                 disable_all_transactions_after_conjure,
@@ -212,10 +195,6 @@ class AethericFrameConfiguration(Cleanable):
         self._shared_framewide_spellbook_configuration: bool = (
             shared_framewide_spellbook_configuration
         )
-        self._change_control_mode: str = normalized_change_control_mode
-        self._allow_multiple_root_transactions: bool = (
-            allow_multiple_root_transactions
-        )
         self._disable_all_transactions_after_conjure: bool = (
             disable_all_transactions_after_conjure
         )
@@ -259,8 +238,6 @@ class AethericFrameConfiguration(Cleanable):
             del self._ai_native_enabled
             del self._rift_enabled
             del self._shared_framewide_spellbook_configuration
-            del self._change_control_mode
-            del self._allow_multiple_root_transactions
             del self._disable_all_transactions_after_conjure
             del self._disable_mutations
             del self._disable_linking
@@ -289,7 +266,6 @@ class AethericFrameConfiguration(Cleanable):
                 raise ValueError(
                     "ai_native_enabled requires system_state to be dynamic."
                 )
-            self._normalize_change_control_mode(self._change_control_mode)
             return True
 
     def freeze(self, origin_spellbook_id: Optional[str] = None) -> None:
@@ -375,37 +351,6 @@ class AethericFrameConfiguration(Cleanable):
             if self._frozen:
                 raise RuntimeError("Cannot modify frame configuration after it is frozen.")
             self._shared_framewide_spellbook_configuration = enabled
-        return self
-
-    def with_change_control_mode(
-            self,
-            mode: str,
-    ) -> "AethericFrameConfiguration":
-        """
-        Set the frame-level change-control mode before freeze and return `self`.
-        """
-        self.check_cleaned()
-        normalized_mode = self._normalize_change_control_mode(mode)
-        with self._lock:
-            if self._frozen:
-                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
-            self._change_control_mode = normalized_mode
-        return self
-
-    def with_allow_multiple_root_transactions(
-            self,
-            enabled: bool = True,
-    ) -> "AethericFrameConfiguration":
-        """
-        Set whether the frame allows multiple root transactions and return `self`.
-        """
-        self.check_cleaned()
-        if not isinstance(enabled, bool):
-            raise TypeError("allow_multiple_root_transactions must be a bool.")
-        with self._lock:
-            if self._frozen:
-                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
-            self._allow_multiple_root_transactions = enabled
         return self
 
     def with_disable_all_transactions_after_conjure(
@@ -570,8 +515,6 @@ class AethericFrameConfiguration(Cleanable):
             self._ai_native_enabled = False
             self._rift_enabled = False
             self._shared_framewide_spellbook_configuration = False
-            self._change_control_mode = "strict"
-            self._allow_multiple_root_transactions = True
             self._disable_all_transactions_after_conjure = False
             self._disable_mutations = True
             self._disable_linking = False
@@ -668,31 +611,6 @@ class AethericFrameConfiguration(Cleanable):
         with self._lock:
             return self._shared_framewide_spellbook_configuration
 
-    @property
-    def change_control_mode(self) -> str:
-        """
-        Return the frame-level change-control mode.
-
-        Returns:
-            str: `strict`, `warn`, or `disabled`.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._change_control_mode
-
-    @property
-    def allow_multiple_root_transactions(self) -> bool:
-        """
-        Return whether the frame allows multiple root transactions.
-
-        Returns:
-            bool: True when multiple root transactions are permitted.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._allow_multiple_root_transactions
-
-    @property
     def disable_all_transactions_after_conjure(self) -> bool:
         """
         Return whether new transactions are disabled after conjure.
@@ -827,9 +745,6 @@ class AethericFrameConfiguration(Cleanable):
                 and self._rift_enabled == other._rift_enabled
                 and self._shared_framewide_spellbook_configuration
                 == other._shared_framewide_spellbook_configuration
-                and self._change_control_mode == other._change_control_mode
-                and self._allow_multiple_root_transactions
-                == other._allow_multiple_root_transactions
                 and self._disable_all_transactions_after_conjure
                 == other._disable_all_transactions_after_conjure
                 and self._disable_mutations == other._disable_mutations
@@ -869,10 +784,6 @@ class AethericFrameConfiguration(Cleanable):
                 "shared_framewide_spellbook_configuration": (
                     self._shared_framewide_spellbook_configuration
                 ),
-                "change_control_mode": self._change_control_mode,
-                "allow_multiple_root_transactions": (
-                    self._allow_multiple_root_transactions
-                ),
                 "disable_all_transactions_after_conjure": (
                     self._disable_all_transactions_after_conjure
                 ),
@@ -893,29 +804,3 @@ class AethericFrameConfiguration(Cleanable):
                     self._max_transaction_wait_time_in_seconds
                 ),
             }
-
-    @classmethod
-    def _normalize_change_control_mode(cls, mode: Any) -> str:
-        """
-        Normalize and validate one frame-level change-control mode string.
-
-        Args:
-            mode:
-                Candidate change-control mode.
-
-        Returns:
-            str: Normalized lowercase mode string.
-
-        Raises:
-            TypeError: If `mode` is not a string.
-            ValueError: If `mode` is not one of the supported values.
-        """
-        if not isinstance(mode, str):
-            raise TypeError("change_control_mode must be a string.")
-        normalized_mode = mode.strip().lower()
-        if normalized_mode not in cls.AVAILABLE_CHANGE_CONTROL_MODES:
-            raise ValueError(
-                "change_control_mode must be one of "
-                f"{sorted(cls.AVAILABLE_CHANGE_CONTROL_MODES)}."
-            )
-        return normalized_mode
