@@ -255,8 +255,6 @@ class Conduit(Cleanable):
         self._spellspace_registry: set[SpellSpace] = set()
         self._creations: ConduitCreations = ConduitCreations(
             conduit_id=self._id,
-            spellspace_thread_state=self._spellspace_stack,
-            spellspace_registry=self._spellspace_registry,
         )
         if creation_gate is None:
             creation_gate = self._create_gate_for_current_root(conduit_id)
@@ -386,33 +384,20 @@ class Conduit(Cleanable):
 
         Soft-clean active and registered spellspaces without destroying the pool.
         """
-        try:
-            stack = list(self._spellspace_stack.get())
-            for space in stack:
-                try:
-                    space.cleanup()
-                except Exception:
-                    self._logger.error(
-                        "Error cleaning spellspace for pool",
-                        "_cleanup_spellspaces_for_pool",
-                        exc_info=True,
-                    )
-            self._spellspace_stack.set([])
-            for registered_space in list(self._spellspace_registry):
-                try:
-                    registered_space.cleanup()
-                except Exception:
-                    self._logger.error(
-                        "Error cleaning registered spellspace for pool",
-                        "_cleanup_spellspaces_for_pool",
-                        exc_info=True,
-                    )
-        except Exception:
-            self._logger.error(
-                "Error flushing spellspaces for pool",
-                "_cleanup_spellspaces_for_pool",
-                exc_info=True,
-            )
+        stack = list(self._spellspace_stack.get())
+        registry = list(self._spellspace_registry)
+        spellspaces = list(dict.fromkeys([*stack, *registry]))
+        self._spellspace_stack.set([])
+        self._spellspace_registry.clear()
+        for spellspace in spellspaces:
+            try:
+                spellspace.cleanup()
+            except Exception:
+                self._logger.error(
+                    "Error cleaning spellspace for pool",
+                    "_cleanup_spellspaces_for_pool",
+                    exc_info=True,
+                )
 
     def permanent_cleanup(self) -> None:
         """
@@ -717,25 +702,30 @@ class Conduit(Cleanable):
         """
         if self._spellspace_stack is None:
             return
-        try:
-            stack = list(self._spellspace_stack.get())
-            for space in stack:
-                try:
-                    space.permanent_cleanup()
-                except Exception:
-                    self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
-            self._spellspace_stack.set([])
-            if self._spellspace_registry is not None:
-                for registered_space in list(self._spellspace_registry):
-                    try:
-                        registered_space.permanent_cleanup()
-                    except Exception:
-                        self._logger.error("Error cleaning spellspace", "_cleanup_spellspaces", exc_info=True)
-                self._spellspace_registry.clear()
-            if self._spellspace_pool is not None:
+        stack = list(self._spellspace_stack.get())
+        registry = list(self._spellspace_registry) if self._spellspace_registry is not None else []
+        spellspaces = list(dict.fromkeys([*stack, *registry]))
+        self._spellspace_stack.set([])
+        if self._spellspace_registry is not None:
+            self._spellspace_registry.clear()
+        for spellspace in spellspaces:
+            try:
+                spellspace.permanent_cleanup()
+            except Exception:
+                self._logger.error(
+                    "Error cleaning spellspace",
+                    "_cleanup_spellspaces",
+                    exc_info=True,
+                )
+        if self._spellspace_pool is not None:
+            try:
                 self._spellspace_pool.cleanup()
-        except Exception:
-            self._logger.error("Error flushing spellspace stack", "_cleanup_spellspaces", exc_info=True)
+            except Exception:
+                self._logger.error(
+                    "Error cleaning spellspace pool",
+                    "_cleanup_spellspaces",
+                    exc_info=True,
+                )
 
 
     #endregion Cleanup and Disposal

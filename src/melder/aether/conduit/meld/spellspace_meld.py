@@ -17,8 +17,8 @@ class SpellSpaceMeld(Meld):
     Concrete spellspace-facing meld front door.
 
     Purpose:
-        Own the spellspace-specific entry semantics and route spellspace-bound
-        work onto spellspace-owned storage directly.
+        Own the spellspace-specific entry semantics and route
+        `unique_per_spell_space` work onto spellspace-owned storage directly.
 
     Contract:
         - Holds the owning spellspace object directly.
@@ -93,7 +93,8 @@ class SpellSpaceMeld(Meld):
 
         Contract:
             - `unique_per_spell_space` uses spellspace-owned storage directly.
-            - Other caller-scoped routes keep using owner-conduit creations.
+            - `unique_per_conduit` and current `many` keep using
+              owner-conduit creations.
         """
         if target_spell.existence is Existence.unique_per_spell_space:
             runtime_creations = self._spellspace_creations

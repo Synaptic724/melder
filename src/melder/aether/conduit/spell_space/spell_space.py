@@ -75,9 +75,9 @@ class SpellSpace(Cleanable):
                 Conduit-facing meld runtime used as the shared-core source for
                 constructing this spellspace's dedicated front door.
             owner_conduit_creations:
-                Conduit-owned creations manager used for conduit-scoped and
-                active-spellspace-routed execution beneath the spellspace front
-                door.
+                Conduit-owned creations manager used for conduit-scoped
+                existences (`unique_per_conduit`, current `many`) beneath the
+                spellspace front door.
             spellspace_registry:
                 Conduit-owned registry set used for spellspace lifecycle
                 bookkeeping and self-unregistration.
@@ -154,6 +154,7 @@ class SpellSpace(Cleanable):
         """
         self._creations.reset_for_pool()
         self._spellspace_registry.discard(self)
+        self._permanent_cleanup_requested = False
 
     def _cleanup_for_destroy(self) -> None:
         """
