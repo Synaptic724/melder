@@ -166,7 +166,9 @@ class ConduitMeld(Meld):
                 input_resolution_cache[cache_key] = target_spell.spell_id
         if target_spell.requires_spellspace_request:
             raise RuntimeError(
-                f"Spell {target_spell.spell_id} must be built from a spellspace."
+                "{0} must be built from a spellspace.".format(
+                    self._describe_spellspace_request_target(target_spell),
+                )
             )
         # 2) Normalize per-call overrides into a stable dict shape.
         if spell_override is None:
@@ -334,7 +336,9 @@ class ConduitMeld(Meld):
 
         if target_spell.requires_spellspace_request:
             raise RuntimeError(
-                f"Spell {target_spell.spell_id} must be built from a spellspace."
+                "{0} must be built from a spellspace.".format(
+                    self._describe_spellspace_request_target(target_spell),
+                )
             )
 
         existence = target_spell.existence
@@ -433,9 +437,42 @@ class ConduitMeld(Meld):
         )
         if target_spell.requires_spellspace_request:
             raise RuntimeError(
-                f"Spell {target_spell.spell_id} must be built from a spellspace."
+                "{0} must be built from a spellspace.".format(
+                    self._describe_spellspace_request_target(target_spell),
+                )
             )
         return self._describe_spell_live_creation_status(target_spell)
+
+    @staticmethod
+    def _describe_spellspace_request_target(spell: Spell) -> str:
+        """
+        Build one human-facing spell descriptor for spellspace-request errors.
+
+        Purpose:
+            Surface a useful spell identity at conduit-facing rejection sites so
+            callers see more than the opaque structural spell id.
+
+        Contract:
+            - Prefers the spell's human-facing `spell_name` when available.
+            - Retains `spell_id` for unambiguous diagnostics.
+            - Falls back cleanly when `spell_name` is empty.
+
+        Args:
+            spell:
+                Resolved spell object being rejected on the conduit-facing
+                spellspace-only path.
+
+        Returns:
+            str:
+                Human-facing spell descriptor suitable for runtime error
+                messages.
+        """
+        if spell.spell_name:
+            return "Spell '{0}' (spell_id={1})".format(
+                spell.spell_name,
+                spell.spell_id,
+            )
+        return "Spell spell_id={0}".format(spell.spell_id)
 
     def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
         """

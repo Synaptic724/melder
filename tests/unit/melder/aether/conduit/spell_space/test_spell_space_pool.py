@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, Optional, Union
 
 from melder.aether.conduit.spell_space.spell_space import SpellSpace

@@ -3,52 +3,57 @@
 Validation: Not run.
 
 These tests target `melder.aether.conduit.spell_space.spell_space.SpellSpace`.
-They focus on explicit-collaborator lifecycle, activation checks, and
-delegation behavior.
+They focus on the current explicit-collaborator constructor, cleanup lanes,
+pool reuse behavior, and front-door delegation behavior.
 """
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, Optional, Union
 
 import pytest
 
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
-from melder.utilities.custom_exceptions.spell_space_scope_error import (
-    SpellSpaceScopeError,
-)
 
 
-class _CreationsStub:
-    """Record spellspace cleanup calls and active-scope state for tests."""
+class _ConduitCreationsStub:
+    """Minimal conduit-owned creations stub for direct SpellSpace tests."""
 
     def __init__(self, *, owner_conduit_id: str) -> None:
         """Initialize the stub with owner identity and empty state."""
         self._owner_conduit_id = owner_conduit_id
-        self.cleared_ids: list[str] = []
-        self._active_spellspace: Optional[SpellSpace] = None
+        self._creations: dict[str, Any] = {}
 
     @property
     def owner_conduit_id(self) -> str:
-        """Return the owning conduit id for the stub."""
+        """Return the stable owner conduit id."""
         return self._owner_conduit_id
 
-    def set_active_spellspace(self, space: Optional[SpellSpace]) -> None:
-        """Set the active spellspace returned by the stub."""
-        self._active_spellspace = space
 
-    def get_active_spellspace(self) -> Optional[SpellSpace]:
-        """Return the currently active spellspace."""
-        return self._active_spellspace
+class _ConduitMeldStub:
+    """Minimal conduit-facing meld stub for SpellSpace construction."""
 
-    def clear_spellspace_instances(self, spellspace_id: str) -> None:
-        """Record the spellspace id passed by SpellSpace.reset()."""
-        self.cleared_ids.append(spellspace_id)
+    def __init__(self) -> None:
+        """Initialize the stub with the shared-core meld attributes."""
+        self._spellbook = SimpleNamespace(
+            _spells={},
+            _contracted_spells={},
+            _spells_by_id={},
+            _contracted_spells_by_id={},
+            _spell_id_pool={},
+            _lookup_spells={},
+            _lookup_contracted_spells={},
+        )
+        self._conduit_id = "conduit-test"
+        self._resolution_conduit_id = "conduit-test"
+        self._dynamic_environment = False
+        self._meld_hooks: dict[str, list[Any]] = {}
 
 
-class _MeldStub:
-    """Minimal meld stub that records delegation arguments."""
+class _SpellSpaceMeldDelegateStub:
+    """Minimal owned meld stub that records `SpellSpace.meld(...)` delegation."""
 
     def __init__(self, *, meld_result: Any = None) -> None:
         """Initialize the stub with an optional meld result."""
@@ -90,7 +95,7 @@ class _PoolStub:
         self.released_ids: list[str] = []
 
     def release(self, obj: SpellSpace) -> None:
-        """Record the release without mutating the spellspace a second time."""
+        """Record one released spellspace id."""
         self.released_ids.append(obj.id)
 
 
@@ -101,15 +106,17 @@ def owner_conduit_id() -> str:
 
 
 @pytest.fixture
-def creations_stub(owner_conduit_id: str) -> _CreationsStub:
-    """Provide a fresh creations stub for SpellSpace tests."""
-    return _CreationsStub(owner_conduit_id=owner_conduit_id)
+def owner_conduit_creations_stub(
+        owner_conduit_id: str,
+) -> _ConduitCreationsStub:
+    """Provide a fresh conduit-owned creations stub for SpellSpace tests."""
+    return _ConduitCreationsStub(owner_conduit_id=owner_conduit_id)
 
 
 @pytest.fixture
-def meld_stub() -> _MeldStub:
-    """Provide a fresh meld stub for SpellSpace tests."""
-    return _MeldStub()
+def conduit_meld_stub() -> _ConduitMeldStub:
+    """Provide a fresh conduit-facing meld stub for SpellSpace tests."""
+    return _ConduitMeldStub()
 
 
 @pytest.fixture
@@ -124,18 +131,36 @@ def pool_stub() -> _PoolStub:
     return _PoolStub()
 
 
-def test_properties_expose_id_and_owner_conduit_id(
+def _build_space(
+        *,
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld: _ConduitMeldStub,
+        owner_conduit_creations: _ConduitCreationsStub,
+        spellspace_registry: set[SpellSpace],
+        spellspace_pool: _PoolStub,
+) -> SpellSpace:
+    """Build one direct SpellSpace under the current constructor contract."""
+    return SpellSpace(
+        owner_conduit_id=owner_conduit_id,
+        conduit_meld=conduit_meld,
+        owner_conduit_creations=owner_conduit_creations,
+        spellspace_registry=spellspace_registry,
+        spellspace_pool=spellspace_pool,
+    )
+
+
+def test_properties_expose_id_owner_and_current_collaborators(
+        owner_conduit_id: str,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
         pool_stub: _PoolStub,
 ) -> None:
-    """Verify SpellSpace exposes stable id and owner id."""
-    space = SpellSpace(
+    """Verify SpellSpace exposes stable ids and current collaborator ownership."""
+    space = _build_space(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         spellspace_pool=pool_stub,
     )
@@ -145,70 +170,57 @@ def test_properties_expose_id_and_owner_conduit_id(
     assert first_id != ""
     assert space.id == first_id
     assert space.owner_conduit_id == owner_conduit_id
+    assert space._owner_conduit_creations is owner_conduit_creations_stub
+    assert space._creations.owner_conduit_id == owner_conduit_id
+    assert space._creations.id == first_id
 
 
-def test_cleanup_clears_spellspace_instances_and_returns_to_pool(
+def test_cleanup_clears_local_creations_unregisters_and_returns_to_pool(
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
         pool_stub: _PoolStub,
 ) -> None:
-    """Verify cleanup clears spellspace storage and returns the spellspace to the pool."""
-    space = SpellSpace(
+    """Verify normal cleanup clears local creations and returns to the pool."""
+    space = _build_space(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         spellspace_pool=pool_stub,
     )
     spellspace_registry.add(space)
-    space_id = space.id
+    created = object()
+    space._creations._creations["spell-id"] = created
+    assert space._creations.get_creation("spell-id") is created
 
     space.cleanup()
 
-    assert creations_stub.cleared_ids == [space_id]
-    assert pool_stub.released_ids == [space_id]
+    assert space._creations.get_creation("spell-id") is None
+    assert pool_stub.released_ids == [space.id]
     assert space not in spellspace_registry
+    assert space.cleaned is False
 
 
-def test_meld_raises_when_not_active(
+def test_meld_delegates_to_owned_meld_runtime_and_returns_result(
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
         pool_stub: _PoolStub,
 ) -> None:
-    """Verify meld rejects calls when SpellSpace is not the active scope."""
-    space = SpellSpace(
+    """Verify SpellSpace.meld delegates through the owned front door."""
+    space = _build_space(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         spellspace_pool=pool_stub,
     )
-
-    with pytest.raises(SpellSpaceScopeError, match="active scope"):
-        space.meld(spell_name="spell-x")
-
-
-def test_meld_delegates_when_active_and_returns_result(
-        owner_conduit_id: str,
-        creations_stub: _CreationsStub,
-        spellspace_registry: set[SpellSpace],
-        pool_stub: _PoolStub,
-) -> None:
-    """Verify meld delegates to the injected Meld runtime when active."""
     expected = object()
-    meld_stub = _MeldStub(meld_result=expected)
-    space = SpellSpace(
-        owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
-        spellspace_registry=spellspace_registry,
-        spellspace_pool=pool_stub,
-    )
-    creations_stub.set_active_spellspace(space)
+    delegate = _SpellSpaceMeldDelegateStub(meld_result=expected)
+    space._meld = delegate
 
     result = space.meld(
         spell_name="spell-x",
@@ -219,79 +231,81 @@ def test_meld_delegates_when_active_and_returns_result(
     )
 
     assert result is expected
-    assert len(meld_stub.meld_calls) == 1
-    assert meld_stub.meld_calls[0] == {
-        "spell_name": "spell-x",
-        "spell": "spell-id",
-        "spellframe": "frame-1",
-        "binding_name": "bind-1",
-        "spell_override": {"k": "v"},
-    }
+    assert delegate.meld_calls == [
+        {
+            "spell_name": "spell-x",
+            "spell": "spell-id",
+            "spellframe": "frame-1",
+            "binding_name": "bind-1",
+            "spell_override": {"k": "v"},
+        }
+    ]
 
 
-def test_cleanup_calls_reset_unregisters_and_marks_cleaned(
+def test_cleanup_keeps_reusable_spellspace_surface_alive(
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
         pool_stub: _PoolStub,
 ) -> None:
-    """Verify normal cleanup returns the spellspace to the pool."""
-    space = SpellSpace(
+    """Verify normal cleanup keeps owned collaborators for later pool reuse."""
+    space = _build_space(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         spellspace_pool=pool_stub,
     )
     spellspace_registry.add(space)
-    space_id = space.id
 
     space.cleanup()
 
+    assert hasattr(space, "_creations")
+    assert hasattr(space, "_meld")
+    assert hasattr(space, "_spellspace_pool")
     assert space.cleaned is False
-    assert space not in spellspace_registry
-    assert creations_stub.cleared_ids == [space_id]
-    assert pool_stub.released_ids == [space_id]
 
 
 def test_cleanup_returns_spellspace_to_pool(
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
 ) -> None:
     """Verify normal cleanup returns a pooled spellspace to the idle pool."""
     pool = SpellSpacePool(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         baseline_idle=1,
         max_idle=1,
     )
     space = pool.acquire()
-    space_id = space.id
+    created = object()
+    space._creations._creations["spell-id"] = created
+    assert space._creations.get_creation("spell-id") is created
 
     space.cleanup()
 
-    assert space.cleaned is False
     assert pool.idle_count == 1
     assert space not in spellspace_registry
-    assert creations_stub.cleared_ids == [space_id]
+    assert space._creations.get_creation("spell-id") is None
+    assert space.cleaned is False
 
 
 def test_pool_reuses_spellspace_after_cleanup(
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
 ) -> None:
     """Verify a pooled spellspace is reused after normal cleanup."""
     pool = SpellSpacePool(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         baseline_idle=1,
         max_idle=1,
@@ -308,27 +322,28 @@ def test_pool_reuses_spellspace_after_cleanup(
     assert second in spellspace_registry
 
 
-def test_permanent_cleanup_bypasses_pool_reuse(
+def test_permanent_cleanup_bypasses_pool_reuse_and_drops_owned_fields(
         owner_conduit_id: str,
-        meld_stub: _MeldStub,
-        creations_stub: _CreationsStub,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
 ) -> None:
     """Verify permanent cleanup destroys instead of retaining to the pool."""
     pool = SpellSpacePool(
         owner_conduit_id=owner_conduit_id,
-        meld=meld_stub,
-        creations=creations_stub,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
         baseline_idle=1,
         max_idle=1,
     )
     space = pool.acquire()
-    space_id = space.id
 
     space.permanent_cleanup()
 
     assert space.cleaned is True
     assert pool.idle_count == 0
     assert space not in spellspace_registry
-    assert creations_stub.cleared_ids == [space_id]
+    assert not hasattr(space, "_creations")
+    assert not hasattr(space, "_owner_conduit_creations")
+    assert not hasattr(space, "_spellspace_pool")

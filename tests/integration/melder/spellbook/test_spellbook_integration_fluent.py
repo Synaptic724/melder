@@ -8,7 +8,6 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -358,9 +357,10 @@ def test_spellbook_fluent_as_unique_per_spell_space_scopes_instances() -> None:
     Purpose:
         Validate fluent unique_per_spell_space scopes by spellspace.
     Contract:
-        - Instances are reused within a spellspace.
-        - Instances differ across spellspaces.
-        - Missing spellspace raises SpellSpaceScopeError.
+        - Instances are reused within one yielded spellspace.
+        - Instances differ across yielded spellspaces.
+        - Conduit-facing meld outside a spellspace raises the current
+          spellspace-request runtime error.
     Returns:
         None.
     Raises:
@@ -375,16 +375,16 @@ def test_spellbook_fluent_as_unique_per_spell_space_scopes_instances() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        with conduit.enter_spellspace():
-            first = conduit.meld(spell=spell_id)
-            second = conduit.meld(spell=spell_id)
+        with conduit.enter_spellspace() as spellspace:
+            first = spellspace.meld(spell=spell_id)
+            second = spellspace.meld(spell=spell_id)
             assert first is second
 
-        with conduit.enter_spellspace():
-            third = conduit.meld(spell=spell_id)
+        with conduit.enter_spellspace() as spellspace:
+            third = spellspace.meld(spell=spell_id)
             assert third is not first
 
-        with pytest.raises(SpellSpaceScopeError, match="SpellSpace"):
+        with pytest.raises(RuntimeError, match="BasicService.*spellspace"):
             conduit.meld(spell=spell_id)
     finally:
         conduit.cleanup()

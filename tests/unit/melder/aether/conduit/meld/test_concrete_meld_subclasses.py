@@ -346,11 +346,15 @@ def test_conduit_meld_rejects_spellspace_request_in_meld() -> None:
     meld, _creations, spellbook = _make_conduit_meld()
     spell = _SpellStub(
         spell_id="spell-1",
+        spell_name="BasicService",
         existence=Existence.unique_per_spell_space,
     )
     _seed_spell(spellbook, spell)
 
-    with pytest.raises(RuntimeError, match="must be built from a spellspace"):
+    with pytest.raises(
+            RuntimeError,
+            match=r"BasicService.*spell_id=spell-1.*must be built from a spellspace",
+    ):
         meld.meld(spell="spell-1")
 
 
@@ -521,11 +525,15 @@ def test_conduit_meld_describe_live_creation_status_rejects_spellspace_request()
     meld, _creations, spellbook = _make_conduit_meld()
     spell = _SpellStub(
         spell_id="spell-1",
+        spell_name="BasicService",
         existence=Existence.unique_per_spell_space,
     )
     _seed_spell(spellbook, spell)
 
-    with pytest.raises(RuntimeError, match="must be built from a spellspace"):
+    with pytest.raises(
+            RuntimeError,
+            match=r"BasicService.*spell_id=spell-1.*must be built from a spellspace",
+    ):
         meld.describe_live_creation_status(spell="spell-1")
 
 
