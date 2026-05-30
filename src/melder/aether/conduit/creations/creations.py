@@ -48,6 +48,19 @@ class Creations(Cleanable):
         """
         Initialize one scoped creation registry.
 
+        Purpose:
+            Create the smallest live-object store that can own one scope's
+            runtime creations without any ambient spellspace-stack or
+            conduit-lineage lookup rules.
+
+        Contract:
+            - `owner_conduit_id` identifies the conduit that owns the scope.
+            - `id` identifies the concrete scope itself (conduit id,
+              spellspace id, or another explicit owner id).
+            - Initializes one live registry and one detached cleanup-metadata
+              registry.
+            - Does not pre-populate any spell buckets.
+
         Args:
             owner_conduit_id:
                 Stable id of the conduit that owns the scope.
@@ -79,6 +92,13 @@ class Creations(Cleanable):
             - Detaches live and disposable registries before disposal work.
             - Uses `_disposable_creations` only for explicit teardown work.
             - Raises `ExceptionGroup` after best-effort disposal attempts.
+            - Drops the live field surface after cleanup so later use fails
+              honestly instead of reading stale state.
+
+        Threading:
+            - Performs the detach step under `_lock`.
+            - Disposal work happens after detach so callers cannot keep racing
+              the live registries while cleanup is executing.
         """
         if self._cleaned:
             return
@@ -178,6 +198,8 @@ class Creations(Cleanable):
             - Stores cleanup metadata in `_disposable_creations` only when
               disposal methods were declared.
             - Rejects duplicate keys across both registries.
+            - Treats the stored object itself as the authoritative runtime
+              payload; there is no `Creation.value` wrapper in the live store.
         """
         if key in self._creations or key in self._disposable_creations:
             raise ValueError(f"Key {key} already exists in creations.")
@@ -205,6 +227,8 @@ class Creations(Cleanable):
             - Appends cleanup metadata into `_disposable_creations[key]` only
               when disposal methods were declared.
             - Rejects collisions with non-list slots.
+            - Preserves insertion order inside both the live many bucket and
+              the matching disposable metadata bucket.
         """
         live_value = self._creations.get(key)
         if live_value is None:
@@ -257,6 +281,12 @@ class Creations(Cleanable):
             - Preserves enough metadata for later restore.
             - Supports both singleton and `many` storage shapes.
             - Does not reach into external owners or adjacent scopes.
+            - Returns raw stored objects plus disposal metadata, not a richer
+              wrapper object.
+
+        Threading:
+            - Performs extraction under `_lock` so the local slot shape stays
+              consistent while the payload is detached.
         """
         extracted: List[Dict[str, Any]] = []
         with self._lock:
@@ -310,6 +340,8 @@ class Creations(Cleanable):
             - Replaces any current local state for the spell id.
             - Restores both live entries and disposal metadata.
             - Raises when the payload does not match the local slot shape.
+            - Restores the same raw object references that were extracted; it
+              does not clone or rehydrate them.
         """
         if not creations:
             return
@@ -379,6 +411,8 @@ class Creations(Cleanable):
             - Reusable clear for scope cleanup or pooling flows.
             - Detaches live and disposable registries before disposal work.
             - Raises `ExceptionGroup` after best-effort disposal attempts.
+            - Leaves this `Creations` instance reusable after the clear
+              completes.
         """
         with self._lock:
             live_creations = self._creations
@@ -407,6 +441,9 @@ class Creations(Cleanable):
     def owner_conduit_id(self) -> str:
         """
         Return the stable owner conduit id for this scoped registry.
+
+        Returns:
+            str: Conduit id that owns the scope represented by this registry.
         """
         return self._owner_conduit_id
 
@@ -414,5 +451,9 @@ class Creations(Cleanable):
     def id(self) -> str:
         """
         Return the stable owner scope id for this registry.
+
+        Returns:
+            str: Concrete scope id for this registry (for example a conduit id
+            or spellspace id).
         """
         return self._id

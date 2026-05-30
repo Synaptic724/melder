@@ -17,6 +17,17 @@ class ConduitMeld(Meld):
     Purpose:
         Own the conduit-caller runtime storage surface while reusing the shared
         lookup, validation, and compiler logic in the abstract `Meld` base.
+
+    Contract:
+        - Uses one conduit-owned `ConduitCreations` store for caller-local
+          `unique_per_conduit` and `many` storage.
+        - Uses spell-owned shared owner-creations for broad-lived existences
+          such as `unique`, `unique_per_conduit_cluster`, and
+          `unique_per_conduit_lineage`.
+        - Rejects `requires_spellspace_request` spells because the conduit door
+          is not allowed to fabricate request-local spellspace scope.
+        - Never owns spellspace-local `Creations`; that boundary belongs to
+          `SpellSpaceMeld`.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -36,6 +47,22 @@ class ConduitMeld(Meld):
     ) -> None:
         """
         Initialize one conduit-facing meld front door.
+
+        Args:
+            creations:
+                Conduit-owned live creation registry used for caller-local
+                `unique_per_conduit` and `many` storage.
+            spellbook:
+                Spellbook providing the shared lookup and spell metadata maps.
+            conduit_id:
+                Identity of the conduit using this front door.
+            resolution_conduit_id:
+                Identity used for per-conduit resolution-state lookups. Lesser
+                conduits typically pass the root conduit id here.
+            dynamic_environment:
+                True when the owning conduit runs in dynamic mode.
+            meld_hooks:
+                Optional conduit-owned meld hook mapping.
         """
         super().__init__(
             spellbook=spellbook,
@@ -48,7 +75,14 @@ class ConduitMeld(Meld):
 
     def cleanup(self) -> None:
         """
-        Release conduit-facing creations state after shared Meld cleanup.
+        Release conduit-facing state after shared Meld cleanup.
+
+        Contract:
+            - Delegates shared cache/spellbook teardown to `Meld.cleanup()`.
+            - Drops only the conduit-owned creations reference that this
+              subclass adds.
+            - Does not cleanup the `ConduitCreations` instance itself because
+              that registry is owned by the conduit.
         """
         if self._cleaned:
             return
@@ -105,6 +139,15 @@ class ConduitMeld(Meld):
                 :meth:`_normalize_spell_override`.
                 The payload is rejected when the resolved spell disables
                 override-capable runtime posture.
+
+        Contract:
+            - Rejects spells that require a spellspace-local request context.
+            - Routes `unique_per_conduit` and `many` through the caller
+              conduit's `ConduitCreations`.
+            - Routes broader-lived existences through spell-owned shared
+              `owner_creations`.
+            - Reuses the shared validation, resolution, and hook machinery
+              provided by `Meld`.
 
         Returns:
             Optional[Any]:
@@ -268,6 +311,9 @@ class ConduitMeld(Meld):
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
+            - Rejects spellspace-request lineages on the conduit-facing door.
+            - Reads caller-local conduit storage for `unique_per_conduit` and
+              shared owner-creations for broader-lived existences.
 
         Args:
             spell_name:
@@ -404,6 +450,8 @@ class ConduitMeld(Meld):
             - Reports the query conduit context explicitly so callers know the
               result is scoped to the current conduit and, where relevant, its
               active spellspace or shared owner-creation path.
+            - Rejects spellspace-request lineages on the conduit-facing door
+              instead of pretending conduit-local storage can answer them.
 
         Args:
             spell_name:
@@ -477,6 +525,20 @@ class ConduitMeld(Meld):
     def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
         """
         Return conduit-scoped live-creation status for one resolved spell.
+
+        Purpose:
+            Interpret one resolved spell against the conduit-facing storage
+            rules so diagnostics and tooling can tell whether the spell is live
+            in the caller conduit, in shared owner state, or only as an
+            existing-creation object.
+
+        Contract:
+            - `many` and `unique_per_conduit` read from caller-local conduit
+              storage.
+            - broad-lived existences read from spell-owned shared
+              `owner_creations`.
+            - spellspace-request spells never reach this helper because the
+              conduit-facing door rejects them earlier.
         """
         query_conduit_id = self._conduit_id
         if spell.is_existing_creation:

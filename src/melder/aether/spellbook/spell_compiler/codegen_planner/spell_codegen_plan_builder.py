@@ -1,15 +1,15 @@
 from typing import Any, Dict, Optional, Sequence, Tuple
 
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
     SpellArtifactProcessor,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_state import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_state import (
     SpellArtifactProcessorState,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_codegen_plan import (
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_codegen_plan_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
     SpellCodegenPlanStrategy,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType

@@ -100,8 +100,25 @@ class Meld(Cleanable, ABC):
             meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None,
     ) -> None:
         """
-        Initialize the Meld component with references to the component store,
-        spellbook lookup maps, spell_id maps, and creation-context caches.
+        Initialize the shared meld runtime core.
+
+        Purpose:
+            Capture the immutable spellbook-facing lookup surfaces and the
+            conduit-facing runtime metadata that every concrete meld front door
+            needs in order to resolve spells, validate runtime readiness, and
+            delegate into creation-context execution.
+
+        Contract:
+            - Stores direct references to the spellbook's owned and contracted
+              lookup maps rather than copying them.
+            - Normalizes `resolution_conduit_id` to `conduit_id` when the
+              caller does not provide a different root-resolution identity.
+            - Creates one per-meld input-resolution cache used by the concrete
+              `meld(...)` front doors.
+            - Stores the meld-hooks mapping by reference when supplied so shared
+              hook updates stay visible without additional synchronization.
+            - Does not own any caller-specific creations store; concrete
+              subclasses provide that scope-routing surface.
 
         Args:
             spellbook:
@@ -122,6 +139,12 @@ class Meld(Cleanable, ABC):
                 Optional hook map passed by Conduit. When provided, Meld stores
                 this map by reference so shared hook mutations are immediately
                 visible without re-copying.
+
+        Threading:
+            - Creates one internal `RLock` used by cleanup and lazy compiler
+              helper creation.
+            - Assumes the spellbook maps themselves are already protected by the
+              owning runtime's synchronization rules.
         """
         super().__init__()
 
@@ -164,21 +187,17 @@ class Meld(Cleanable, ABC):
 
     def cleanup(self) -> None:
         """
-        Cleanup the Meld instance to prevent further use and release references
-        to spell configurations, creations manager, and runtime caches.
-
-        This should be called when the owning `Conduit` is being shut down.
+        Permanently retire the shared meld runtime core.
 
         Contract:
             - Idempotent: repeated calls are safe.
             - Thread-safe: guarded by the internal lock.
-            - Runtime caches are cleared deterministically.
-            - After cleanup, references are cleared and this instance must not be used.
-
-        Behaviour:
-            - Marks the instance as cleaned.
-            - Clears references to spellbook maps, spell_id maps, and creations.
-            - Clears override specialization cache state.
+            - Clears spellbook map references, front-door caches, change-control
+              manager cache, and optional compiler-system helper.
+            - Does not cleanup caller-owned creations directly; those belong to
+              the concrete subclass or the owning conduit/spellspace surface.
+            - After cleanup, this meld instance no longer exposes any live
+              runtime lookup surface and must not be reused.
 
         Returns:
             None.
@@ -305,6 +324,9 @@ class Meld(Cleanable, ABC):
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
+            - Concrete subclasses decide which live storage surface counts as
+              "existing" for the caller: conduit-owned, spellspace-owned, or
+              owner-conduit/shared storage.
 
         Args:
             spell_name:
@@ -409,9 +431,9 @@ class Meld(Cleanable, ABC):
             - Reuses the same spell-resolution helpers used by the meld path.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
-            - Reports the query conduit context explicitly so callers know the
-              result is scoped to the current conduit and, where relevant, its
-              active spellspace or shared owner-creation path.
+            - Reports enough caller-context metadata that higher-level tooling
+              can tell whether the answer came from conduit-local, spellspace-
+              local, existing-creation, or shared owner-created state.
 
         Args:
             spell_name:
@@ -495,6 +517,13 @@ class Meld(Cleanable, ABC):
     def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
         """
         Return caller-specific live-creation status for one resolved spell.
+
+        Contract:
+            - Concrete subclasses must interpret the resolved spell against the
+              caller-owned storage surfaces they front.
+            - The returned payload should stay aligned with
+              `describe_live_creation_status(...)` so `has_live_creation(...)`
+              can trust the `is_live` field without knowing caller scope rules.
         """
         raise NotImplementedError(
             "Concrete Meld subclasses must implement _describe_spell_live_creation_status()."

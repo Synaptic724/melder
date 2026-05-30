@@ -25,6 +25,9 @@ class SpellSpaceMeld(Meld):
         - Holds both spellspace-owned creations and owner-conduit creations.
         - Leaves shared lookup, validation, and compiler logic on abstract
           `Meld`.
+        - Routes `unique_per_spell_space` work into spellspace-local storage.
+        - Routes conduit-owned or broader-lived existences through owner
+          conduit or spell-owned shared storage as appropriate.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -50,6 +53,18 @@ class SpellSpaceMeld(Meld):
     ) -> None:
         """
         Initialize one spellspace-facing meld front door.
+
+        Purpose:
+            Bind one explicit request-local spellspace surface onto the shared
+            meld runtime core without exposing conduit spellspace-stack logic to
+            callers that already hold the spellspace object directly.
+
+        Contract:
+            - Captures both the spellspace-local creations registry and the
+              owner-conduit creations registry.
+            - Caches the owning spellspace id and owner conduit id for later
+              live-creation diagnostics.
+            - Reuses the shared spellbook/lookup surfaces owned by `Meld`.
         """
         super().__init__(
             spellbook=spellbook,
@@ -67,6 +82,14 @@ class SpellSpaceMeld(Meld):
     def cleanup(self) -> None:
         """
         Release spellspace-facing state after shared Meld cleanup.
+
+        Contract:
+            - Delegates shared cache/spellbook teardown to `Meld.cleanup()`.
+            - Drops only the spellspace-facing references introduced by this
+              subclass.
+            - Does not cleanup the spellspace-local or owner-conduit creations
+              registries because those are owned by the spellspace and conduit
+              respectively.
         """
         if self._cleaned:
             return
@@ -132,6 +155,16 @@ class SpellSpaceMeld(Meld):
             Optional[Any]:
                 The resolved component instance (either reused or newly created)
                 after all pre-/activation-/post-hooks have executed.
+
+        Contract:
+            - Routes `unique_per_spell_space` through the spellspace-local
+              creations registry owned by this request object.
+            - Routes `unique_per_conduit` and `many` through the injected
+              owner-conduit creations registry.
+            - Routes broader-lived existences through spell-owned shared
+              `owner_creations`.
+            - Does not depend on the conduit's active spellspace stack once the
+              caller already holds this explicit spellspace front door.
 
         Raises:
             ValueError:
@@ -287,6 +320,10 @@ class SpellSpaceMeld(Meld):
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
+            - Reads spellspace-local storage for `unique_per_spell_space`.
+            - Reads owner-conduit storage for conduit-owned existences.
+            - Reads spell-owned shared `owner_creations` for broader-lived
+              existences.
 
         Args:
             spell_name:
@@ -422,6 +459,8 @@ class SpellSpaceMeld(Meld):
             - Reports the query conduit context explicitly so callers know the
               result is scoped to the current conduit and, where relevant, its
               active spellspace or shared owner-creation path.
+            - Answers from spellspace-local, owner-conduit, or shared-owner
+              storage according to the resolved spell's existence semantics.
 
         Args:
             spell_name:
@@ -463,6 +502,14 @@ class SpellSpaceMeld(Meld):
         Purpose:
             Interpret the resolved spell's existence semantics against the
             current runtime storage state without creating anything.
+
+        Contract:
+            - `unique_per_spell_space` reads from spellspace-local storage.
+            - `unique_per_conduit` and `many` read from owner-conduit storage.
+            - broader shared existences read from spell-owned
+              `owner_creations`.
+            - Reports both `query_conduit_id` and `active_spellspace_id` so the
+              caller can distinguish request-local versus broader scope state.
 
         Args:
             spell:

@@ -3,10 +3,10 @@ from typing import ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_state import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_state import (
     SpellArtifactProcessorState,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_codegen_plan import (
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
 

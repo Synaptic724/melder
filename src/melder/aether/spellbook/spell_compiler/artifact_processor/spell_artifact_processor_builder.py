@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from melder.aether.spellbook.spell import Spell
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_state import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_state import (
     SpellArtifactProcessorState,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (

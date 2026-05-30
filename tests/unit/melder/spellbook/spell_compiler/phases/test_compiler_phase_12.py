@@ -4,13 +4,13 @@ from types import SimpleNamespace
 from typing import Any
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_builder import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_builder import (
     SpellArtifactProcessorBuilder,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_state import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_state import (
     SpellArtifactProcessorState,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_codegen_plan import (
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (

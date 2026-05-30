@@ -57,6 +57,15 @@ class TransferOfOwnership(Cleanable):
       gated/dirty so later validation phases can rebuild a truthful runtime
       view.
 
+    Accepted spellspace boundary:
+    - Transfer moves canonical lineage ownership plus conduit-owned runtime
+      state only.
+    - Live spellspace-local request objects are intentionally excluded.
+    - If a spellspace-scoped lineage is transferred while an old source
+      `SpellSpace` still exists, that old request object may become stale and
+      must be cleaned as request-local state; ownership transfer does not try
+      to preserve or rehome it.
+
     The object also owns rollback bookkeeping, change-intent registration, and
     incident reporting so transfer failures do not silently strand the runtime
     in a half-moved state.
@@ -305,9 +314,15 @@ class TransferOfOwnership(Cleanable):
         1. disable the lineage so callers cannot resolve it mid-transfer
         2. pre-clean contract state if `force_unshare` requires it
         3. flip the canonical registry and spellbook ownership under lock
-        4. reconcile creations, contracts/clusters, and dependency handling
+        4. reconcile conduit-owned creations, contracts/clusters, and dependency
+           handling
         5. leave the lineage gated/dirty or simply re-enable it according to
            the constructor options
+
+        Scope note:
+            Step 4 does not move spellspace-local request objects. Those remain
+            owned by any already-live source `SpellSpace` surfaces and are
+            intentionally outside ownership-transfer continuity.
 
         If any step fails, rollback handlers attempt to restore a coherent
         runtime view, the lineage is lifted back to a safe gated state, and the

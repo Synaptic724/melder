@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
     SpellArtifactProcessor,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_artifact_processor_builder import (
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_builder import (
     SpellArtifactProcessorBuilder,
 )
-from melder.aether.spellbook.spell_compiler.phase12.spell_codegen_plan_builder import (
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_builder import (
     SpellCodegenPlanBuilder,
 )
 
