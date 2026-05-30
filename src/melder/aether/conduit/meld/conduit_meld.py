@@ -13,9 +13,8 @@ from typing import (
     ClassVar,
 )
 
-
-from melder.utilities.general_base.cleanable import Cleanable
 # Melder Imports
+from melder.aether.conduit.meld.meld import Meld
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -39,7 +38,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.creations.creations import Creations
 
-class Meld(Cleanable):
+class ConduitMeld(Meld):
     """
     ## Meld: Spell Activation and Dependency Resolution
 
@@ -73,25 +72,7 @@ class Meld(Cleanable):
     6. Return the final resolved instance.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __slots__ = [
-        "_lock",
-        "_conduit_id",
-        "_resolution_conduit_id",
-        "_dynamic_environment",
-        "_spellbook",
-        "_owned_spells",
-        "_contracted_spells",
-        "_spells_by_id",
-        "_contracted_spells_by_id",
-        "_spell_id_pool",
-        "_lookup_owned_spells",
-        "_lookup_contracted_spells",
-        "_creations",
-        "_input_resolution_cache",
-        "_max_resolution_cache_size",
-        "_change_control_manager_by_frame",
-        "_meld_hooks",
-        "_spell_compiler_system",
+    __slots__ = Meld.__slots__ + [
     ]
     def __init__(
             self,
@@ -128,47 +109,7 @@ class Meld(Cleanable):
                 this map by reference so shared hook mutations are immediately
                 visible without re-copying.
         """
-        super().__init__()
-
-        self._lock = RLock()
-        self._conduit_id: Optional[str] = conduit_id
-        self._resolution_conduit_id: Optional[str] = (
-            resolution_conduit_id if resolution_conduit_id is not None else conduit_id
-        )
-        self._dynamic_environment: bool = bool(dynamic_environment)
-        self._spellbook: Spellbook = spellbook
-        # Spellbook references (used for resolution)
-        self._owned_spells: Dict[SpellIndex, Spell] = spellbook._spells
-        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = (
-            spellbook._contracted_spells
-        )
-        self._spells_by_id: Dict[str, Spell] = spellbook._spells_by_id
-        self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = spellbook._contracted_spells_by_id
-        self._spell_id_pool: Dict[str, Spell] = spellbook._spell_id_pool
-
-        self._lookup_owned_spells: Dict[tuple, SpellIndex] = spellbook._lookup_spells
-        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = (
-            spellbook._lookup_contracted_spells
-        )
-        # Foundation runtime compiler owner surface for later spell compiler
-        # ownership decomposition.
-        self._spell_compiler_system: Optional[SpellCompilerSystem] = None
-
-        # Front-door resolution caches.
-        self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], str] = {}
-        self._max_resolution_cache_size: int = 2048
-
-        # Change-control state.
-        self._change_control_manager_by_frame: Dict[str, ChangeControlManager] = {}
-
-        # Optional hook map pulled from Configuration (via Conduit).
-        # This is stored by reference when provided.
-        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
-            meld_hooks if meld_hooks is not None else {}
-        )
-        # Conduit-local instantiation manager.
-        self._creations: Creations = creations
-
+        super().__init__(creations=creations, spellbook=spellbook, conduit_id=conduit_id, resolution_conduit_id=resolution_conduit_id, dynamic_environment=dynamic_environment, meld_hooks=meld_hooks)
     def cleanup(self) -> None:
         """
         Cleanup the Meld instance to prevent further use and release references
@@ -197,29 +138,7 @@ class Meld(Cleanable):
             if self._cleaned:
                 return
 
-            self._cleaned = True
-
-            # Clear spellbook references
-            del self._owned_spells
-            del self._contracted_spells
-            del self._spells_by_id
-            del self._contracted_spells_by_id
-            del self._spell_id_pool
-            del self._lookup_owned_spells
-            del self._lookup_contracted_spells
-            del self._spellbook
-            # Clear creations reference
-            del self._creations
-            del self._conduit_id
-            del self._resolution_conduit_id
-            del self._dynamic_environment
-            del self._meld_hooks
-            del self._input_resolution_cache
-            del self._max_resolution_cache_size
-            del self._change_control_manager_by_frame
-            if self._spell_compiler_system is not None:
-                self._spell_compiler_system.cleanup()
-            del self._spell_compiler_system
+            super().cleanup()
 
 
     # region Context Manager
@@ -375,7 +294,7 @@ class Meld(Cleanable):
         if self._spellbook._spellbook_validation_required:
             self._ensure_lineage_resolvable(target_spell)
         if target_spell.resolution_required:
-           self._ensure_runtime_resolution_ready(target_spell)
+            self._ensure_runtime_resolution_ready(target_spell)
 
         creations = self._creations
         meld_hooks = self._meld_hooks
@@ -564,9 +483,9 @@ class Meld(Cleanable):
             return creation
 
         if existence in {
-                Existence.unique,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
+            Existence.unique,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
         }:
             owner_creations = target_spell._owner_creations
             if owner_creations is None:
@@ -920,9 +839,9 @@ class Meld(Cleanable):
             }
 
         if existence in {
-                Existence.unique,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
+            Existence.unique,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
         }:
             owner_creations = spell._owner_creations
             if owner_creations is None:
@@ -1156,9 +1075,9 @@ class Meld(Cleanable):
             return
 
         if (
-            resolution_validity is SpellValidity.invalid
-            or resolution_validity is SpellValidity.disabled
-            or resolution_validity is SpellValidity.cleaned
+                resolution_validity is SpellValidity.invalid
+                or resolution_validity is SpellValidity.disabled
+                or resolution_validity is SpellValidity.cleaned
         ):
             raise SpellbookValidationError([spell])
 
