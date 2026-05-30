@@ -394,18 +394,17 @@ class Conduit(Cleanable):
                     exc_info=True,
                 )
 
-        for spellspace in self._spellspace_registry:
+        self._spellspace_stack.set([])
+
+        while self._spellspace_registry:
             try:
-                spellspace.cleanup()
+                self._spellspace_registry.pop().cleanup()
             except Exception:
                 self._logger.error(
                     "Error cleaning spellspace for pool",
                     "_cleanup_spellspaces_for_pool",
                     exc_info=True,
                 )
-
-        self._spellspace_stack.set([])
-        self._spellspace_registry.clear()
 
     def permanent_cleanup(self) -> None:
         """
