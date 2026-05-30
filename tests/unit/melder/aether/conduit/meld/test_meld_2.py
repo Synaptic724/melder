@@ -98,6 +98,9 @@ class _SpellStub:
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
         self.has_mutation_override = bool(has_mutation_override)
+        self.requires_spellspace_request = (
+            existence is Existence.unique_per_spell_space
+        )
         self.has_disposal_methods = bool(has_disposal_methods)
         if disposal_method_names is None:
             self.disposal_method_names = ["cleanup"] if self.has_disposal_methods else []
@@ -179,7 +182,11 @@ class _ConduitStub:
         return self._active_spellspace
 
 
-def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None = None) -> Meld:
+def _make_meld(
+        *,
+        creations: Any | None = None,
+        spellbook: _SpellbookStub | None = None,
+) -> ConduitMeld:
     """
     Build a Meld instance with stubs.
 
@@ -188,9 +195,9 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
         spellbook: Optional spellbook stub.
 
     Returns:
-        Meld: The constructed Meld instance.
+        ConduitMeld: The constructed conduit-facing Meld instance.
     """
-    effective_creations = creations or MagicMock()
+    effective_creations = creations or _make_creations()
     conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
     return ConduitMeld(
         creations=effective_creations,
@@ -200,18 +207,15 @@ def _make_meld(*, creations: Any | None = None, spellbook: _SpellbookStub | None
     )
 
 
-def _make_creations() -> Creations:
+def _make_creations() -> ConduitCreations:
     """
     Build a real Creations manager using a stub conduit.
 
     Returns:
-        Creations: Initialized creations manager.
+        ConduitCreations: Initialized conduit-owned creations manager.
     """
     conduit = _ConduitStub("conduit-1", ConduitState.normal)
-    return Creations(
-        conduit_id=conduit._id,
-        spellspace_stack=ContextVar("spellspace_stack_conduit_1", default=[]),
-    )
+    return ConduitCreations(conduit_id=conduit._id)
 
 
 def _make_lesser_creations(parent: Creations | None = None) -> Any:
@@ -550,31 +554,17 @@ def test_legacy_registration_helpers_removed_from_meld() -> None:
     assert not hasattr(meld, "_register_spellspace_to_lesser_creations")
 
 
-def test_register_spellspace_creation_registers_instance() -> None:
+def test_conduit_creations_exposes_no_spellspace_registration_surface() -> None:
     """
-    Verify spellspace registration stores the instance in the spellspace bucket.
+    Verify conduit-owned creations no longer exposes old spellspace APIs.
 
     Contract:
-        - Creations.register_spellspace_creation stores and returns the instance.
+        - Spellspace registration moved off `ConduitCreations`.
     """
     creations = _make_creations()
-    spellspace = SimpleNamespace(
-        id="space-1",
-        owner_conduit_id=creations.owner_conduit_id,
-    )
-    creations._spellspace_stack.set([spellspace])
-    spell = _SpellStub(spell_id="spell-1", existence=Existence.unique_per_spell_space)
-    instance = object()
 
-    creations.register_spellspace_creation(
-        spellspace_id=spellspace.id,
-        spell_id=spell.spell_id,
-        item=instance,
-    )
-
-    stored = creations.get_spellspace_creation("space-1", spell.spell_id)
-    assert stored is not None
-    assert stored is instance
+    assert not hasattr(creations, "register_spellspace_creation")
+    assert not hasattr(creations, "get_spellspace_creation")
 
 
 def test_add_many_creations_records_instance_without_disposal() -> None:

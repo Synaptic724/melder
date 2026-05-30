@@ -2356,7 +2356,9 @@ def test_spellspace_meld_existing_spell_uses_spellspace_storage() -> None:
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    spellbook._spells = {spell.spell_index: spell}
+    spellbook._spells[spell.spell_index] = spell
+    spellbook._spells_by_id[spell.spell_id] = spell
+    spellbook._spell_id_pool[spell.spell_id] = spell
 
     assert meld.meld_existing_spell(spell="spell-1") is live_instance
 
@@ -2425,7 +2427,9 @@ def test_spellspace_meld_has_live_creation_uses_spellspace_storage() -> None:
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    spellbook._spells = {spell.spell_index: spell}
+    spellbook._spells[spell.spell_index] = spell
+    spellbook._spells_by_id[spell.spell_id] = spell
+    spellbook._spell_id_pool[spell.spell_id] = spell
 
     assert meld.has_live_creation(spell="spell-1") is True
 
@@ -2548,7 +2552,9 @@ def test_spellspace_meld_describe_live_creation_status_reports_spellspace_scope(
         spell_id="spell-1",
         existence=Existence.unique_per_spell_space,
     )
-    spellbook._spells = {spell.spell_index: spell}
+    spellbook._spells[spell.spell_index] = spell
+    spellbook._spells_by_id[spell.spell_id] = spell
+    spellbook._spell_id_pool[spell.spell_id] = spell
 
     assert meld.describe_live_creation_status(spell="spell-1") == {
         "is_live": False,
