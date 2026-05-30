@@ -198,8 +198,6 @@ def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
         "ai_native_enabled": True,
         "rift_enabled": False,
         "shared_framewide_spellbook_configuration": False,
-        "change_control_mode": "strict",
-        "allow_multiple_root_transactions": True,
         "disable_all_transactions_after_conjure": False,
         "disable_mutations": True,
         "disable_linking": False,
@@ -248,8 +246,6 @@ def test_aetheric_frame_configuration_change_control_defaults() -> None:
         rift_enabled=False,
     )
 
-    assert frame_configuration.change_control_mode == "strict"
-    assert frame_configuration.allow_multiple_root_transactions is True
     assert frame_configuration.disable_all_transactions_after_conjure is False
     assert frame_configuration.disable_mutations is True
     assert frame_configuration.disable_linking is False
@@ -260,19 +256,6 @@ def test_aetheric_frame_configuration_change_control_defaults() -> None:
     assert frame_configuration.queue_competing_root_transactions is False
     assert frame_configuration.max_transaction_wait_time_in_seconds == 30.0
 
-
-def test_aetheric_frame_configuration_rejects_invalid_change_control_mode() -> None:
-    """Constructor should reject unsupported change-control modes."""
-    with pytest.raises(ValueError, match="change_control_mode"):
-        AethericFrameConfiguration(
-            origin_spellbook_id="spellbook-alpha",
-            system_state=SystemState.automatic,
-            ai_native_enabled=False,
-            rift_enabled=False,
-            change_control_mode="garbage",
-        )
-
-
 def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags() -> None:
     """with_defaults should restore the requested change-control defaults."""
     frame_configuration = AethericFrameConfiguration(
@@ -280,8 +263,6 @@ def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags(
         system_state=SystemState.dynamic,
         ai_native_enabled=True,
         rift_enabled=True,
-        change_control_mode="warn",
-        allow_multiple_root_transactions=True,
         disable_all_transactions_after_conjure=True,
         disable_mutations=False,
         disable_linking=True,
@@ -295,8 +276,6 @@ def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags(
 
     frame_configuration.with_defaults()
 
-    assert frame_configuration.change_control_mode == "strict"
-    assert frame_configuration.allow_multiple_root_transactions is True
     assert frame_configuration.disable_all_transactions_after_conjure is False
     assert frame_configuration.disable_mutations is True
     assert frame_configuration.disable_linking is False
@@ -323,7 +302,6 @@ def test_aetheric_frame_configuration_rejects_invalid_transaction_wait_time() ->
 @pytest.mark.parametrize(
     ("setter_name", "property_name"),
     (
-        ("with_allow_multiple_root_transactions", "allow_multiple_root_transactions"),
         (
             "with_disable_all_transactions_after_conjure",
             "disable_all_transactions_after_conjure",
@@ -362,7 +340,6 @@ def test_aetheric_frame_configuration_boolean_mutators_update_flags(
 @pytest.mark.parametrize(
     ("setter_name", "error_message"),
     (
-        ("with_allow_multiple_root_transactions", "allow_multiple_root_transactions must be a bool."),
         (
             "with_disable_all_transactions_after_conjure",
             "disable_all_transactions_after_conjure must be a bool.",
@@ -408,8 +385,6 @@ def test_aetheric_frame_configuration_boolean_mutators_reject_non_bool(
         "with_ai_native",
         "with_rift_enabled",
         "with_shared_framewide_spellbook_configuration",
-        "with_change_control_mode",
-        "with_allow_multiple_root_transactions",
         "with_disable_all_transactions_after_conjure",
         "with_disable_mutations",
         "with_disable_linking",
@@ -443,10 +418,6 @@ def test_aetheric_frame_configuration_mutators_reject_after_freeze(
             frame_configuration.with_rift_enabled(True)
         elif setter_name == "with_shared_framewide_spellbook_configuration":
             frame_configuration.with_shared_framewide_spellbook_configuration(True)
-        elif setter_name == "with_change_control_mode":
-            frame_configuration.with_change_control_mode("warn")
-        elif setter_name == "with_allow_multiple_root_transactions":
-            frame_configuration.with_allow_multiple_root_transactions(True)
         elif setter_name == "with_disable_all_transactions_after_conjure":
             frame_configuration.with_disable_all_transactions_after_conjure(True)
         elif setter_name == "with_disable_mutations":
@@ -469,31 +440,6 @@ def test_aetheric_frame_configuration_mutators_reject_after_freeze(
             frame_configuration.with_defaults()
 
 
-@pytest.mark.parametrize(
-    ("raw_mode", "expected_mode"),
-    (
-        ("strict", "strict"),
-        (" Warn ", "warn"),
-        ("DISABLED", "disabled"),
-    ),
-)
-def test_aetheric_frame_configuration_change_control_mode_normalizes_input(
-        raw_mode: str,
-        expected_mode: str,
-) -> None:
-    """Change-control mode mutator should normalize whitespace and case."""
-    frame_configuration = AethericFrameConfiguration(
-        origin_spellbook_id="spellbook-alpha",
-        system_state=SystemState.automatic,
-        ai_native_enabled=False,
-        rift_enabled=False,
-    )
-
-    frame_configuration.with_change_control_mode(raw_mode)
-
-    assert frame_configuration.change_control_mode == expected_mode
-
-
 def test_aetheric_frame_configuration_transaction_wait_mutator_normalizes_int_to_float() -> None:
     """Transaction wait mutator should normalize ints to floats."""
     frame_configuration = AethericFrameConfiguration(
@@ -511,7 +457,6 @@ def test_aetheric_frame_configuration_transaction_wait_mutator_normalizes_int_to
 @pytest.mark.parametrize(
     ("field_name", "mutator_name", "mutator_value"),
     (
-        ("change_control_mode", "with_change_control_mode", "warn"),
         (
             "disable_all_transactions_after_conjure",
             "with_disable_all_transactions_after_conjure",

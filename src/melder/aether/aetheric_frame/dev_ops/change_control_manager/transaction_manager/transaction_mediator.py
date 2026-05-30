@@ -221,8 +221,6 @@ class TransactionMediator(Cleanable):
     def configure(
             self,
             *,
-            change_control_mode: str,
-            allow_multiple_root_transactions: bool,
             queue_competing_root_transactions: bool,
             max_transaction_wait_time_in_seconds: float,
     ) -> None:
@@ -230,19 +228,11 @@ class TransactionMediator(Cleanable):
         Update mediator root-session policy.
 
         Args:
-            change_control_mode:
-                `strict`, `warn`, or `disabled`.
-            allow_multiple_root_transactions:
-                Whether multiple root sessions may coexist.
             queue_competing_root_transactions:
                 Whether competing root starts queue for their turn.
             max_transaction_wait_time_in_seconds:
                 Maximum seconds a queued root start may wait.
         """
-        
-        normalized_mode = self._normalize_mode(change_control_mode)
-        if not isinstance(allow_multiple_root_transactions, bool):
-            raise TypeError("allow_multiple_root_transactions must be a bool.")
         if not isinstance(queue_competing_root_transactions, bool):
             raise TypeError("queue_competing_root_transactions must be a bool.")
         if (
@@ -257,10 +247,6 @@ class TransactionMediator(Cleanable):
                 "max_transaction_wait_time_in_seconds must be greater than 0."
             )
         with self._lock:
-            self._change_control_mode = normalized_mode
-            self._allow_multiple_root_transactions = (
-                allow_multiple_root_transactions
-            )
             self._queue_competing_root_transactions = (
                 queue_competing_root_transactions
             )
@@ -842,10 +828,6 @@ class TransactionMediator(Cleanable):
         
         with self._lock:
             return {
-                "change_control_mode": self._change_control_mode,
-                "allow_multiple_root_transactions": (
-                    self._allow_multiple_root_transactions
-                ),
                 "queue_competing_root_transactions": (
                     self._queue_competing_root_transactions
                 ),
@@ -913,12 +895,11 @@ class TransactionMediator(Cleanable):
 
         Contract:
             - Returns immediately when no root session is active.
-            - Returns immediately when multiple roots are allowed.
-            - Preserves strict/warn behavior when queueing is disabled.
+            - Returns immediately when queueing is disabled.
             - When queueing is enabled, waits until this thread is the queue
               head and no root sessions remain active.
         """
-        if self._allow_multiple_root_transactions or not self._sessions_by_request_id:
+        if not self._sessions_by_request_id:
             return
         if allow_same_thread_parallel:
             # Distinct local roots on the same thread should still be allowed
@@ -932,16 +913,6 @@ class TransactionMediator(Cleanable):
             if owner_thread_ids == {thread_id}:
                 return
         if not self._queue_competing_root_transactions:
-            if self._change_control_mode == "strict":
-                raise RuntimeError(
-                    "Another root transaction session is already active in this frame."
-                )
-            if self._change_control_mode == "warn":
-                warnings.warn(
-                    "Another root transaction session is already active in this frame.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
             return
 
         self._pending_root_starts.append(thread_id)
@@ -1071,21 +1042,6 @@ class TransactionMediator(Cleanable):
         if registry is None:
             return
         registry.unregister_transaction(request_id)
-
-    @classmethod
-    def _normalize_mode(cls, mode: str) -> str:
-        """
-        Normalize and validate one mediator mode string.
-        """
-        if not isinstance(mode, str):
-            raise TypeError("change_control_mode must be a string.")
-        normalized_mode = mode.strip().lower()
-        if normalized_mode not in cls.AVAILABLE_MODES:
-            raise ValueError(
-                "change_control_mode must be one of "
-                f"{sorted(cls.AVAILABLE_MODES)}."
-            )
-        return normalized_mode
 
     @staticmethod
     def _normalize_transaction_name(transaction_type: Any) -> str:

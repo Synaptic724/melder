@@ -168,16 +168,10 @@ class ChangeControlManager(Cleanable):
                 frame_configuration = frame.frame_configuration
         except Exception:
             frame_configuration = None
-        change_control_mode = "strict"
-        allow_multiple_root_transactions = False
         queue_competing_root_transactions = False
         max_transaction_wait_time_in_seconds = 30.0
         devops_information_registry: Optional[DevopsInformationRegistry] = None
         if isinstance(frame_configuration, AethericFrameConfiguration):
-            change_control_mode = frame_configuration.change_control_mode
-            allow_multiple_root_transactions = (
-                frame_configuration.allow_multiple_root_transactions
-            )
             queue_competing_root_transactions = (
                 frame_configuration.queue_competing_root_transactions
             )
@@ -193,8 +187,6 @@ class ChangeControlManager(Cleanable):
             embargo_manager=self._embargo_manager,
             orchestrator=self._orchestrator,
             devops_information_registry=devops_information_registry,
-            change_control_mode=change_control_mode,
-            allow_multiple_root_transactions=allow_multiple_root_transactions,
             queue_competing_root_transactions=queue_competing_root_transactions,
             max_transaction_wait_time_in_seconds=(
                 max_transaction_wait_time_in_seconds

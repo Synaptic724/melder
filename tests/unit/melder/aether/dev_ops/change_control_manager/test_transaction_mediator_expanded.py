@@ -507,8 +507,6 @@ def test_transaction_mediator_describe_reports_mode_flags_and_request_ids() -> N
 
     described = mediator.describe()
 
-    assert described["change_control_mode"] == "strict"
-    assert described["allow_multiple_root_transactions"] is False
     assert described["queue_competing_root_transactions"] is False
     assert described["request_ids"] == (session.request.request_id,)
     mediator.end_transaction_by_request_id(session.request.request_id, success=True)

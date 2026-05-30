@@ -541,12 +541,6 @@ class AethericFrame(Cleanable):
                     existing_frame_configuration.with_shared_framewide_spellbook_configuration(
                         frame_configuration.shared_framewide_spellbook_configuration
                     )
-                    existing_frame_configuration.with_change_control_mode(
-                        frame_configuration.change_control_mode
-                    )
-                    existing_frame_configuration.with_allow_multiple_root_transactions(
-                        frame_configuration.allow_multiple_root_transactions
-                    )
                     existing_frame_configuration.with_disable_all_transactions_after_conjure(
                         frame_configuration.disable_all_transactions_after_conjure
                     )

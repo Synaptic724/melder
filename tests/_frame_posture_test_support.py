@@ -54,12 +54,6 @@ def _sync_detached_frame_posture_to_aether(
     frame_configuration.with_shared_framewide_spellbook_configuration(
         detached_configuration.shared_framewide_spellbook_configuration
     )
-    frame_configuration.with_change_control_mode(
-        detached_configuration.change_control_mode
-    )
-    frame_configuration.with_allow_multiple_root_transactions(
-        detached_configuration.allow_multiple_root_transactions
-    )
     frame_configuration.with_disable_all_transactions_after_conjure(
         detached_configuration.disable_all_transactions_after_conjure
     )
@@ -252,10 +246,6 @@ def build_aetheric_frame_configuration_for_spellbook_configuration(
         rift_enabled=frame_configuration.rift_enabled,
         shared_framewide_spellbook_configuration=(
             frame_configuration.shared_framewide_spellbook_configuration
-        ),
-        change_control_mode=frame_configuration.change_control_mode,
-        allow_multiple_root_transactions=(
-            frame_configuration.allow_multiple_root_transactions
         ),
         disable_all_transactions_after_conjure=(
             frame_configuration.disable_all_transactions_after_conjure

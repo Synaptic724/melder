@@ -26,8 +26,6 @@ class AethericFrameConfiguration(Cleanable):
           `system_state`, `ai_native_enabled`, `rift_enabled`, and
           `shared_framewide_spellbook_configuration`.
         - Captures frame-level change-control posture values:
-          `change_control_mode`,
-          `allow_multiple_root_transactions`,
           `disable_all_transactions_after_conjure`,
           `disable_mutations`,
           `disable_linking`,
@@ -611,6 +609,7 @@ class AethericFrameConfiguration(Cleanable):
         with self._lock:
             return self._shared_framewide_spellbook_configuration
 
+    @property
     def disable_all_transactions_after_conjure(self) -> bool:
         """
         Return whether new transactions are disabled after conjure.
