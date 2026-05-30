@@ -25,7 +25,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
-from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
@@ -253,9 +253,10 @@ class Conduit(Cleanable):
         )
         self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
-        self._creations: Creations = Creations(
+        self._creations: ConduitCreations = ConduitCreations(
             conduit_id=self._id,
-            spellspace_stack=self._spellspace_stack,
+            spellspace_thread_state=self._spellspace_stack,
+            spellspace_registry=self._spellspace_registry,
         )
         if creation_gate is None:
             creation_gate = self._create_gate_for_current_root(conduit_id)
@@ -293,7 +294,7 @@ class Conduit(Cleanable):
         self._spellspace_pool: SpellSpacePool = SpellSpacePool(
             owner_conduit_id=self._id,
             meld=self._meld,
-            creations=self._creations,
+            owner_conduit_creations=self._creations,
             spellspace_registry=self._spellspace_registry,
             baseline_idle=4,
             max_idle=4,
@@ -371,7 +372,7 @@ class Conduit(Cleanable):
             self._permanent_cleanup()
             return
         self._cleanup_spellspaces_for_pool()
-        self._creations.reset_non_spellspace_for_pool()
+        self._creations.reset_for_pool()
         self._conduit_ward._detach_for_pool()
         self._conduit_state = ConduitState.pooled_lesser
         self._conduit_ward._conduit_type = ConduitState.pooled_lesser

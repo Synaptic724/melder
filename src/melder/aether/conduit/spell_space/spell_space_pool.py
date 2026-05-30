@@ -7,7 +7,9 @@ from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.utilities.general_base.abstract_elastic_pool import AbstractElasticPool
 
 if TYPE_CHECKING:
-    from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.creations.conduit_creations import (
+        ConduitCreations,
+    )
     from melder.aether.conduit.meld.meld import Meld
 
 
@@ -27,7 +29,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = AbstractElasticPool.__slots__ + [
-        "_creations",
+        "_owner_conduit_creations",
         "_meld",
         "_owner_conduit_id",
         "_spellspace_registry",
@@ -38,7 +40,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             *,
             owner_conduit_id: str,
             meld: Meld,
-            creations: Creations,
+            owner_conduit_creations: ConduitCreations,
             spellspace_registry: set[SpellSpace],
             **kwargs: Any,
     ) -> None:
@@ -50,8 +52,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
                 Stable owner conduit id for pooled spellspaces.
             meld:
                 Meld runtime used by pooled spellspaces.
-            creations:
-                Creations manager used by pooled spellspaces.
+            owner_conduit_creations:
+                Conduit-owned creations manager used by pooled spellspaces
+                when they need conduit-scoped routing.
             spellspace_registry:
                 Conduit-owned registry used for spellspace bookkeeping.
             **kwargs:
@@ -60,7 +63,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         super().__init__(**kwargs)
         self._owner_conduit_id: str = owner_conduit_id
         self._meld: Meld = meld
-        self._creations: Creations = creations
+        self._owner_conduit_creations: ConduitCreations = owner_conduit_creations
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
 
     def create_object(self, *args: Any, **kwargs: Any) -> SpellSpace:
@@ -70,7 +73,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         return SpellSpace(
             owner_conduit_id=self._owner_conduit_id,
             meld=self._meld,
-            creations=self._creations,
+            owner_conduit_creations=self._owner_conduit_creations,
             spellspace_registry=self._spellspace_registry,
             spellspace_pool=self,
         )

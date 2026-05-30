@@ -9,7 +9,7 @@ StoredDisposalEntry = Tuple[object, List[str]]
 
 class Creations(Cleanable):
     """
-    Spellspace-local live creation registry.
+    Scoped live creation registry.
 
     Purpose:
         Own the live object store for exactly one scoped creations owner
@@ -28,11 +28,6 @@ class Creations(Cleanable):
           - many: `spell_id -> list[(object, disposal_methods)]`
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
-
-    Ownership:
-        - The owner scope id is fixed at construction time.
-        - The owner conduit id is retained only as metadata for higher-level
-          coordination and diagnostics.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -249,6 +244,132 @@ class Creations(Cleanable):
             - Returns the stored object directly.
         """
         return self._creations.get(spell_id)
+
+    def extract_spell_creations(
+            self,
+            spell_id: str,
+    ) -> List[Dict[str, Any]]:
+        """
+        Remove and return all locally owned creations for one spell id.
+
+        Contract:
+            - Extracts only this scoped store's local state.
+            - Preserves enough metadata for later restore.
+            - Supports both singleton and `many` storage shapes.
+            - Does not reach into external owners or adjacent scopes.
+        """
+        extracted: List[Dict[str, Any]] = []
+        with self._lock:
+            live_value = self._creations.get(spell_id)
+            disposable_value = self._disposable_creations.get(spell_id)
+
+            if isinstance(live_value, list):
+                live_many = self._creations.pop(spell_id)
+                disposable_many = (
+                    self._disposable_creations.pop(spell_id)
+                    if isinstance(disposable_value, list)
+                    else None
+                )
+                for index, stored_value in enumerate(live_many):
+                    entry = {
+                        "scope": "many",
+                        "disposable": disposable_many is not None,
+                        "stored": stored_value,
+                    }
+                    if disposable_many is not None:
+                        entry["disposal_methods"] = list(disposable_many[index][1])
+                    extracted.append(entry)
+            elif live_value is not None and not isinstance(live_value, dict):
+                stored_value = self._creations.pop(spell_id)
+                disposable_entry = (
+                    self._disposable_creations.pop(spell_id)
+                    if isinstance(disposable_value, tuple)
+                    else None
+                )
+                entry = {
+                    "scope": "unique",
+                    "disposable": disposable_entry is not None,
+                    "stored": stored_value,
+                }
+                if disposable_entry is not None:
+                    entry["disposal_methods"] = list(disposable_entry[1])
+                extracted.append(entry)
+
+        return extracted
+
+    def restore_spell_creations(
+            self,
+            spell_id: str,
+            creations: List[Dict[str, Any]],
+    ) -> None:
+        """
+        Restore locally owned creations previously extracted for one spell id.
+
+        Contract:
+            - Rebuilds this scoped store from the extracted payload only.
+            - Replaces any current local state for the spell id.
+            - Restores both live entries and disposal metadata.
+            - Raises when the payload does not match the local slot shape.
+        """
+        if not creations:
+            return
+
+        with self._lock:
+            live_value = self._creations.get(spell_id)
+            if live_value is not None:
+                self._creations.pop(spell_id)
+            self._disposable_creations.pop(spell_id, None)
+
+            for entry in creations:
+                scope = entry["scope"]
+                is_disposable = entry["disposable"]
+                stored_value = entry["stored"]
+                disposal_methods = entry.get("disposal_methods")
+
+                if scope == "unique":
+                    existing = self._creations.get(spell_id)
+                    if isinstance(existing, dict):
+                        raise RuntimeError(
+                            f"Cannot restore unique creation for spell '{spell_id}' into non-singleton slot."
+                        )
+                    self._creations[spell_id] = stored_value
+                    if is_disposable:
+                        self._disposable_creations[spell_id] = (
+                            stored_value,
+                            list(disposal_methods) if disposal_methods else [],
+                        )
+                    continue
+
+                if scope == "many":
+                    existing = self._creations.get(spell_id)
+                    if existing is None:
+                        self._creations[spell_id] = []
+                        existing = self._creations[spell_id]
+                    if not isinstance(existing, list):
+                        raise RuntimeError(
+                            f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
+                        )
+                    existing.append(stored_value)
+                    if is_disposable:
+                        disposable_many = self._disposable_creations.get(spell_id)
+                        if disposable_many is None:
+                            self._disposable_creations[spell_id] = []
+                            disposable_many = self._disposable_creations[spell_id]
+                        if not isinstance(disposable_many, list):
+                            raise RuntimeError(
+                                f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
+                            )
+                        disposable_many.append(
+                            (
+                                stored_value,
+                                list(disposal_methods) if disposal_methods else [],
+                            )
+                        )
+                    continue
+
+                raise RuntimeError(
+                    f"Unknown creation scope '{scope}' while restoring spell '{spell_id}'."
+                )
 
     def clear_all(self) -> None:
         """

@@ -361,7 +361,10 @@ class Meld(Cleanable):
                         None,
                     )
                 input_resolution_cache[cache_key] = target_spell.spell_id
-
+            if target_spell.requires_spellspace_request:
+                raise RuntimeError(
+                    f"Spell {target_spell.spell_id} must be built from a spellspace."
+                )
         # 2) Normalize per-call overrides into a stable dict shape.
         if spell_override is None:
             override_map = None
@@ -440,6 +443,188 @@ class Meld(Cleanable):
             # 3) Return the resolved instance.
             return instance
 
+    def spellspace_meld(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> Optional[Any]:
+        """
+        Entry point for resolving and activating a spell (component) within this Conduit.
+
+        This method orchestrates the full lifecycle: resolution, reuse, instantiation,
+        hook execution, and registration.
+
+        Args:
+            spell_name (str):
+                spell_name of the spell to meld
+
+                When provided without an explicit spell or spellframe, this is
+                treated as the **logical name key** used by the resolution pipeline.
+                In other words, meld(spell_name=\"MyService\") becomes equivalent
+                to a name-based lookup driven by the Spellbook / SpellIndex mappings.
+            spell (str | object | None):
+                The primary spell identifier.
+                - If a **string**, treated as the unique `spell_id` (typically the
+                  SHA256 structural fingerprint for the SpellIndex).
+                - If an **object** (e.g., a class or function), used together with
+                  `spellframe` and `binding_name` to form the DI identity key via the
+                  `SpellInputUtils` normalization helpers.
+            spellframe (str | object | None):
+                Optional Spellframe / Protocol / class used as the primary DI identity.
+                Often redundant if `spell` is the class/protocol itself. Spellframes
+                act as grouping keys (interfaces, protocol frames, string categories)
+                under which multiple spells may be bound.
+            binding_name (str | None):
+                Optional binding name, used alongside `spell` or `spellframe` to create
+                a unique lookup key within a given frame. If omitted, the default
+                binding (e.g. `"__default__"`) is used internally.
+            spell_override (dict | list | tuple | None):
+                Optional override payload attached to the meld call. This payload
+                represents **per-call overrides** (constructor arguments, factory
+                inputs, etc.) and is normalized into a dictionary by
+                :meth:`_normalize_spell_override`.
+                The payload is rejected when the resolved spell disables
+                override-capable runtime posture.
+
+        Returns:
+            Optional[Any]:
+                The resolved component instance (either reused or newly created)
+                after all pre-/activation-/post-hooks have executed.
+
+        Raises:
+            ValueError:
+                If none of `spell_name`, `spell`, or `spellframe` are provided.
+            KeyError:
+                If the spell cannot be resolved by the provided inputs.
+            NotImplementedError:
+                If the spell type (e.g., class-based DI) or existence mode is not
+                yet supported for construction/registration.
+            HookExecutionError:
+                If a pre-cast, activation, or post-cast hook fails.
+            RuntimeError:
+                For unexpected internal state issues (e.g., missing object after
+                ID resolution, unsupported Creations manager, attempting to
+                meld a broken spell, or passing `spell_override` to a spell
+                that has overrides disabled).
+        """
+        # 1) Resolve the spell object from the Spellbook / SpellIndex.
+        target_spell: Optional[Spell] = None
+        if isinstance(spell, str):
+            target_spell = self._resolve_spell_by_id(spell)
+        else:
+            input_resolution_cache = self._input_resolution_cache
+            cache_key = (spell_name, spell, spellframe, binding_name)
+            try:
+                cached_spell_id = input_resolution_cache.get(cache_key)
+            except TypeError:
+                cache_key = (
+                    spell_name,
+                    id(spell),
+                    id(spellframe),
+                    binding_name,
+                )
+                cached_spell_id = input_resolution_cache.get(cache_key)
+            if cached_spell_id is not None:
+                target_spell = self._spell_id_pool.get(cached_spell_id)
+                if target_spell is None:
+                    try:
+                        target_spell = self._resolve_spell_by_id(cached_spell_id)
+                    except KeyError:
+                        target_spell = None
+            if target_spell is None:
+                target_spell = self._resolve_spell(
+                    spell=spell,
+                    spell_name=spell_name,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                )
+                if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                    input_resolution_cache.pop(
+                        next(iter(input_resolution_cache)),
+                        None,
+                    )
+                input_resolution_cache[cache_key] = target_spell.spell_id
+        # 2) Normalize per-call overrides into a stable dict shape.
+        if spell_override is None:
+            override_map = None
+        else:
+            override_map = self._normalize_spell_override(spell_override)
+
+        # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
+        if self._spellbook._spellbook_validation_required:
+            self._ensure_lineage_resolvable(target_spell)
+        if target_spell.resolution_required:
+            self._ensure_runtime_resolution_ready(target_spell)
+
+        creations = self._creations
+        meld_hooks = self._meld_hooks
+        spell_hooks_enabled = target_spell._hooks_enabled
+
+        if not (meld_hooks or spell_hooks_enabled):
+            if target_spell._creation_context_switch.state >= 2:
+                creation_context = target_spell._creation_context
+            else:
+                creation_context = target_spell._get_or_build_creation_context()
+            if creation_context is None:
+                raise RuntimeError("Spell returned no live CreationContext.")
+            if override_map is None:
+                execute_no_hooks_no_overrides_compiled = (
+                    creation_context._execute_no_hooks_no_overrides_compiled
+                )
+                instance = execute_no_hooks_no_overrides_compiled(creations)
+            else:
+                execute_no_hooks_overrides_compiled = (
+                    creation_context._execute_no_hooks_overrides_compiled
+                )
+                instance = execute_no_hooks_overrides_compiled(
+                    creations,
+                    override_map,
+                )
+
+            # 7) Return the resolved instance.
+            return instance
+        else:
+            # 1) Execute pre-cast hooks (no instance context yet).
+            self._execute_hooks(target_spell._pre_hooks, "pre_cast")
+            self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
+
+            if target_spell._creation_context_switch.state >= 2:
+                creation_context = target_spell._creation_context
+            else:
+                creation_context = target_spell._get_or_build_creation_context()
+            if creation_context is None:
+                raise RuntimeError("Spell returned no live CreationContext.")
+            if override_map is None:
+                execute_hooks_no_overrides_compiled = (
+                    creation_context._execute_hooks_no_overrides_compiled
+                )
+                instance, created = execute_hooks_no_overrides_compiled(
+                    creations
+                )
+            else:
+                execute_hooks_overrides_compiled = (
+                    creation_context._execute_hooks_overrides_compiled
+                )
+                instance, created = execute_hooks_overrides_compiled(
+                    creations,
+                    override_map,
+                )
+
+            if created:
+                # Activation hooks fire only when the instance is newly created.
+                self._execute_activation_hooks(target_spell._activation_hooks, instance)
+                self._fire_meld_hooks("on_meld_activation", target_spell, instance)
+
+            # 2) Execute post-cast hooks (still no arguments for now).
+            self._execute_hooks(target_spell._post_hooks, "post_cast")
+            self._fire_meld_hooks("on_meld_post_resolve", target_spell)
+
+            # 3) Return the resolved instance.
+            return instance
     def meld_existing_spell(
             self,
             spell_name: str | None = None,
@@ -1153,9 +1338,9 @@ class Meld(Cleanable):
             return
 
         if (
-                resolution_validity is SpellValidity.invalid
-                or resolution_validity is SpellValidity.disabled
-                or resolution_validity is SpellValidity.cleaned
+            resolution_validity is SpellValidity.invalid
+            or resolution_validity is SpellValidity.disabled
+            or resolution_validity is SpellValidity.cleaned
         ):
             raise SpellbookValidationError([spell])
 
@@ -1580,11 +1765,11 @@ class Meld(Cleanable):
                 a lookup key resolves to a SpellIndex that has no
                 corresponding spell object).
         """
-        # 1) string spell Ã¢â€ â€™ treated as spell_id (SHA)
+        # 1) string spell treated as spell_id (SHA)
         if isinstance(spell, str):
             return self._resolve_spell_by_id(spell)
 
-        # 2) Everything else Ã¢â€ â€™ (frame_key, binding_key) path
+        # 2) Everything else (frame_key, binding_key) path
 
         # Decide what we use as "spell" for name-based resolution:
         # - if we have a concrete spell object (class/function), use that
