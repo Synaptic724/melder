@@ -66,7 +66,8 @@ class Spell(Cleanable):
       lineage/version record.
     - Owns spell-local mutable runtime state such as hooks, dependency/build
       artifacts, the spell-owned `CreationContextFactory`, the spell-owned
-      `CreationContext`, execution-plan metrics, and mutation overlays.
+      `CreationContext`, execution-plan dispatch-route metadata, and mutation
+      overlays.
     - Does not validate bind-time inputs by itself; upstream bind/examiner
       stages are expected to hand it already-validated configuration.
     - Uses an internal `RLock` to guard multi-field configuration and cleanup
@@ -85,7 +86,7 @@ class Spell(Cleanable):
     - Acts as a source of truth for spell identity and access.
     - Stores conjure-time disposal metadata (matched method names + boolean flag).
     - Tracks whether runtime resolution is still required before the first context build.
-    - Caches Phase 11 execution-plan metrics (node count, max depth, etc.) for
+    - Caches the Phase 11 execution-plan dispatch-route hint used by current
       runtime path selection.
 
     Permissions (`Permissions` enum):
@@ -172,7 +173,8 @@ class Spell(Cleanable):
     Lifecycle / Cleanup:
         - `Spell` owns its spell compiler artifact foundation, spell-owned
           `CreationContextFactory`, spell-owned `CreationContext`, hook lists,
-          dependency/build artifacts, and cached execution-plan metrics.
+          dependency/build artifacts and cached execution-plan dispatch-route
+          metadata.
         - Conduit ownership can be restamped later, which invalidates the
           spell-owned `CreationContext` and rebuilds the spell-owned factory.
         - `cleanup()` is deterministic, best-effort for owned child cleanup, and
@@ -223,13 +225,6 @@ class Spell(Cleanable):
         "resolution_required",
         "resolution_complete",
         "requires_spellspace_request",
-        "execution_plan_step_count",
-        "execution_plan_unique_spell_count",
-        "execution_plan_max_occurrence_depth",
-        "execution_plan_max_dependency_count",
-        "execution_plan_has_calln",
-        "execution_plan_has_contract_payloads",
-        "execution_plan_has_existing_creations",
         "execution_plan_dispatch_route",
         "retries",
         "spell",
@@ -354,14 +349,7 @@ class Spell(Cleanable):
         self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
-        # Phase 11 execution-plan metrics (populated during conjuring).
-        self.execution_plan_step_count: Optional[int] = None
-        self.execution_plan_unique_spell_count: Optional[int] = None
-        self.execution_plan_max_occurrence_depth: Optional[int] = None
-        self.execution_plan_max_dependency_count: Optional[int] = None
-        self.execution_plan_has_calln: Optional[bool] = None
-        self.execution_plan_has_contract_payloads: Optional[bool] = None
-        self.execution_plan_has_existing_creations: Optional[bool] = None
+        # Phase 11 dispatch-route hint used by current runtime path selection.
         self.execution_plan_dispatch_route: Optional[str] = None
 
         # Foundation artifact home for compiler/build state and validation
@@ -506,13 +494,6 @@ class Spell(Cleanable):
             del self.disposal_method_names
             del self.has_disposal_methods
             del self.dependency_graph
-            del self.execution_plan_step_count
-            del self.execution_plan_unique_spell_count
-            del self.execution_plan_max_occurrence_depth
-            del self.execution_plan_max_dependency_count
-            del self.execution_plan_has_calln
-            del self.execution_plan_has_contract_payloads
-            del self.execution_plan_has_existing_creations
             del self.execution_plan_dispatch_route
             del self.profile
             del self.spell

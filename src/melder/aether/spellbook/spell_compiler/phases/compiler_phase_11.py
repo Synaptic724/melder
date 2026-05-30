@@ -470,6 +470,7 @@ class CompilerPhase11:
     def _cache_execution_plan_metrics(
             self,
             spell: Spell,
+            artifact: SpellCompilerArtifact,
             *,
             occurrence_plan: OccurrencePlan,
             plan: ExecutionPlan,
@@ -537,13 +538,13 @@ class CompilerPhase11:
             else:
                 dispatch_route = "ENGINE"
 
-        spell.execution_plan_step_count = step_count
-        spell.execution_plan_unique_spell_count = unique_spell_count
-        spell.execution_plan_max_occurrence_depth = max_occurrence_depth
-        spell.execution_plan_max_dependency_count = max_dependency_count
-        spell.execution_plan_has_calln = has_calln
-        spell.execution_plan_has_contract_payloads = has_contract_payloads
-        spell.execution_plan_has_existing_creations = has_existing_creations
+        artifact._execution_plan_step_count_phase11 = step_count
+        artifact._execution_plan_unique_spell_count_phase11 = unique_spell_count
+        artifact._execution_plan_max_occurrence_depth_phase11 = max_occurrence_depth
+        artifact._execution_plan_max_dependency_count_phase11 = max_dependency_count
+        artifact._execution_plan_has_calln_phase11 = has_calln
+        artifact._execution_plan_has_contract_payloads_phase11 = has_contract_payloads
+        artifact._execution_plan_has_existing_creations_phase11 = has_existing_creations
         spell.execution_plan_dispatch_route = dispatch_route
 
     def _build_execution_plan_variant(
@@ -755,6 +756,7 @@ class CompilerPhase11:
             artifact._phase11_no_overrides_input_signature = no_overrides_input_signature
             self._cache_execution_plan_metrics(
                 spell,
+                artifact,
                 occurrence_plan=occurrence_plan,
                 plan=cached_plan_no_overrides,
             )
@@ -795,6 +797,7 @@ class CompilerPhase11:
 
         self._cache_execution_plan_metrics(
             spell,
+            artifact,
             occurrence_plan=occurrence_plan,
             plan=plan_no_overrides,
         )
