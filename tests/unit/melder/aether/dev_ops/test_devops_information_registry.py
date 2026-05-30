@@ -137,34 +137,35 @@ def test_devops_information_registry_refresh_identity_requires_existing_registra
         registry.refresh_identity(identity)
 
 
-def test_devops_information_registry_rebuilds_spellbook_conduit_relations_from_metadata() -> None:
+def test_devops_information_registry_tracks_spellbook_conduit_ownership_explicitly() -> None:
     """
     Purpose:
-        Verify spellbook <-> conduit ownership mirrors are rebuilt from metadata.
+        Verify spellbook <-> conduit ownership mirrors are updated explicitly.
     Contract:
-        - Spellbook metadata with conduit_id contributes ownership.
-        - Conduit metadata with spellbook_id contributes the same ownership.
+        - Explicit ownership registration creates both lookup directions.
     Returns:
         None.
     Raises:
-        AssertionError: If derived ownership relations are wrong.
+        AssertionError: If explicit ownership relations are wrong.
     """
     registry = DevopsInformationRegistry("frame-1")
     spellbook_identity = _make_identity(
         owner_kind="spellbook",
         owner_id="book-1",
-        metadata={"conduit_id": "conduit-1"},
     )
     conduit_identity = _make_identity(
         owner_kind="conduit",
         owner_id="conduit-1",
-        metadata={"spellbook_id": "book-1"},
     )
     conduit_object = MagicMock()
     spellbook_object = MagicMock()
 
     registry.register_identity(spellbook_identity, object_ref=spellbook_object)
     registry.register_identity(conduit_identity, object_ref=conduit_object)
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="book-1",
+        conduit_id="conduit-1",
+    )
 
     assert registry.get_conduits_for_spellbook("book-1") == ("conduit-1",)
     assert registry.get_primary_conduit_id_for_spellbook("book-1") == "conduit-1"
@@ -205,21 +206,21 @@ def test_devops_information_registry_get_primary_conduit_for_spellbook_rejects_m
         _make_identity(
             owner_kind="conduit",
             owner_id="conduit-1",
-            metadata={
-                "spellbook_id": "book-1",
-                "conduit_state": ConduitState.normal.value,
-            },
         )
     )
     registry.register_identity(
         _make_identity(
             owner_kind="conduit",
             owner_id="conduit-2",
-            metadata={
-                "spellbook_id": "book-1",
-                "conduit_state": ConduitState.normal.value,
-            },
         )
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="book-1",
+        conduit_id="conduit-1",
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="book-1",
+        conduit_id="conduit-2",
     )
 
     with pytest.raises(RuntimeError, match="expected one paired conduit"):
@@ -433,6 +434,7 @@ def test_devops_information_registry_transaction_indexes_support_identity_and_ty
         transaction_object=tx_object,
         transaction_type="bind",
         identity_keys=(("spellbook", "book-1"), ("conduit", "conduit-1")),
+        scope_keys=("scope:spellbook:book-1",),
     )
 
     assert registry.get_transaction("tx-1") is tx_object
@@ -441,11 +443,13 @@ def test_devops_information_registry_transaction_indexes_support_identity_and_ty
         owner_id="book-1",
     ) == ("tx-1",)
     assert registry.list_transaction_ids_for_type("bind") == ("tx-1",)
+    assert registry.list_transaction_ids_for_scope("scope:spellbook:book-1") == ("tx-1",)
     assert registry.list_live_transactions_for_identity(
         owner_kind="conduit",
         owner_id="conduit-1",
     ) == (tx_object,)
     assert registry.list_live_transactions_for_type("bind") == (tx_object,)
+    assert registry.list_live_transactions_for_scope("scope:spellbook:book-1") == (tx_object,)
 
 
 def test_devops_information_registry_unregister_transaction_clears_reverse_indexes() -> None:
@@ -465,6 +469,7 @@ def test_devops_information_registry_unregister_transaction_clears_reverse_index
         transaction_object=object(),
         transaction_type="bind",
         identity_keys=(("spellbook", "book-1"),),
+        scope_keys=("scope:spellbook:book-1",),
     )
 
     registry.unregister_transaction("tx-1")
@@ -475,6 +480,7 @@ def test_devops_information_registry_unregister_transaction_clears_reverse_index
         owner_id="book-1",
     ) == ()
     assert registry.list_transaction_ids_for_type("bind") == ()
+    assert registry.list_transaction_ids_for_scope("scope:spellbook:book-1") == ()
 
 
 def test_devops_information_registry_unregister_conduit_identity_clears_related_edges() -> None:
@@ -534,15 +540,17 @@ def test_devops_information_registry_describe_returns_detached_summary() -> None
         _make_identity(
             owner_kind="spellbook",
             owner_id="book-1",
-            metadata={"conduit_id": "conduit-1"},
         )
     )
     registry.register_identity(
         _make_identity(
             owner_kind="conduit",
             owner_id="conduit-1",
-            metadata={"spellbook_id": "book-1"},
         )
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="book-1",
+        conduit_id="conduit-1",
     )
     registry.register_conduit_link(
         provider_conduit_id="conduit-1",
@@ -557,6 +565,7 @@ def test_devops_information_registry_describe_returns_detached_summary() -> None
         transaction_object=object(),
         transaction_type="bind",
         identity_keys=(("spellbook", "book-1"),),
+        scope_keys=("scope:spellbook:book-1",),
     )
 
     described = registry.describe()
@@ -565,6 +574,9 @@ def test_devops_information_registry_describe_returns_detached_summary() -> None
     assert described["identity_count"] == 2
     assert described["transaction_count"] == 1
     assert described["spellbook_to_conduits"] == {"book-1": ("conduit-1",)}
+    assert described["transaction_ids_by_scope"] == {
+        "scope:spellbook:book-1": ("tx-1",),
+    }
     assert described["provider_to_borrowers"] == {"conduit-1": ("borrower-1",)}
     assert described["cluster_to_conduits"] == {"cluster-1": ("conduit-1",)}
 

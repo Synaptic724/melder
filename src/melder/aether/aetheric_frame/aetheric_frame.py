@@ -293,6 +293,10 @@ class AethericFrame(Cleanable):
                 )
             self._conduits[conduit_id] = conduit
             self._conduit_ids_by_name[conduit_name] = conduit_id
+            self._devops_information_registry.register_spellbook_conduit_ownership(
+                spellbook_id=conduit._spellbook._id,
+                conduit_id=conduit_id,
+            )
 
     def unregister_root_conduit(self, conduit: Conduit) -> None:
         """
@@ -322,6 +326,10 @@ class AethericFrame(Cleanable):
                 mapped_id = self._conduit_ids_by_name.get(conduit_name)
                 if mapped_id == conduit_id:
                     self._conduit_ids_by_name.pop(conduit_name, None)
+            self._devops_information_registry.unregister_spellbook_conduit_ownership(
+                spellbook_id=removed._spellbook._id,
+                conduit_id=conduit_id,
+            )
 
 
     # ------------------------------------------------------------------

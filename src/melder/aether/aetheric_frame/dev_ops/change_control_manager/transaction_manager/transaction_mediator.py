@@ -1029,6 +1029,7 @@ class TransactionMediator(Cleanable):
                 session.request.request_type,
             ),
             identity_keys=identity_keys,
+            scope_keys=session.request.scope_keys,
         )
 
     def _unregister_transaction_session_locked(self, request_id: str) -> None:

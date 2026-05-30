@@ -29,7 +29,6 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKIN
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -83,8 +82,10 @@ class DevopsInformationRegistry(Cleanable):
         "_conduit_to_clusters",
         "_transactions_by_id",
         "_transaction_ids_by_identity",
+        "_transaction_ids_by_scope",
         "_transaction_ids_by_type",
         "_transaction_identity_keys_by_id",
+        "_transaction_scope_keys_by_id",
         "_transaction_type_by_id",
     ]
 
@@ -133,8 +134,10 @@ class DevopsInformationRegistry(Cleanable):
         self._conduit_to_clusters: Dict[str, Set[str]] = {}
         self._transactions_by_id: Dict[str, Any] = {}
         self._transaction_ids_by_identity: Dict[Tuple[str, str], Set[str]] = {}
+        self._transaction_ids_by_scope: Dict[str, Set[str]] = {}
         self._transaction_ids_by_type: Dict[str, Set[str]] = {}
         self._transaction_identity_keys_by_id: Dict[str, Set[Tuple[str, str]]] = {}
+        self._transaction_scope_keys_by_id: Dict[str, Set[str]] = {}
         self._transaction_type_by_id: Dict[str, str] = {}
 
     def cleanup(self) -> None:
@@ -180,6 +183,8 @@ class DevopsInformationRegistry(Cleanable):
                 cluster_ids.clear()
             for transaction_ids in self._transaction_ids_by_identity.values():
                 transaction_ids.clear()
+            for transaction_ids in self._transaction_ids_by_scope.values():
+                transaction_ids.clear()
             for transaction_ids in self._transaction_ids_by_type.values():
                 transaction_ids.clear()
 
@@ -194,8 +199,10 @@ class DevopsInformationRegistry(Cleanable):
             self._conduit_to_clusters.clear()
             self._transactions_by_id.clear()
             self._transaction_ids_by_identity.clear()
+            self._transaction_ids_by_scope.clear()
             self._transaction_ids_by_type.clear()
             self._transaction_identity_keys_by_id.clear()
+            self._transaction_scope_keys_by_id.clear()
             self._transaction_type_by_id.clear()
 
             del self._identities_by_key
@@ -209,8 +216,10 @@ class DevopsInformationRegistry(Cleanable):
             del self._conduit_to_clusters
             del self._transactions_by_id
             del self._transaction_ids_by_identity
+            del self._transaction_ids_by_scope
             del self._transaction_ids_by_type
             del self._transaction_identity_keys_by_id
+            del self._transaction_scope_keys_by_id
             del self._transaction_type_by_id
             del self._aetheric_frame_name
         del self._lock
@@ -287,7 +296,6 @@ class DevopsInformationRegistry(Cleanable):
             elif key not in self._objects_by_key:
                 self._objects_by_key[key] = None
             self._identity_keys_by_kind.setdefault(identity.owner_kind, set()).add(key)
-            self._rebuild_spellbook_conduit_relations_locked()
 
     def unregister_identity(
             self,
@@ -343,7 +351,21 @@ class DevopsInformationRegistry(Cleanable):
                 if not kind_keys:
                     self._identity_keys_by_kind.pop(key[0], None)
 
+            if key[0] == "spellbook":
+                conduit_ids = set(self._spellbook_to_conduits.pop(key[1], set()))
+                for conduit_id in conduit_ids:
+                    mapped_spellbook_id = self._conduit_to_spellbook.get(conduit_id)
+                    if mapped_spellbook_id == key[1]:
+                        self._conduit_to_spellbook.pop(conduit_id, None)
+
             if key[0] == "conduit":
+                spellbook_id = self._conduit_to_spellbook.pop(key[1], None)
+                if spellbook_id is not None:
+                    conduit_ids = self._spellbook_to_conduits.get(spellbook_id)
+                    if conduit_ids is not None:
+                        conduit_ids.discard(key[1])
+                        if not conduit_ids:
+                            self._spellbook_to_conduits.pop(spellbook_id, None)
                 borrower_ids = set(self._provider_to_borrowers.pop(key[1], set()))
                 for borrower_id in borrower_ids:
                     provider_ids = self._borrower_to_providers.get(borrower_id)
@@ -379,7 +401,6 @@ class DevopsInformationRegistry(Cleanable):
                 identity_keys = self._transaction_identity_keys_by_id.get(transaction_id)
                 if identity_keys is not None:
                     identity_keys.discard(key)
-            self._rebuild_spellbook_conduit_relations_locked()
 
     def refresh_identity(
             self,
@@ -423,7 +444,76 @@ class DevopsInformationRegistry(Cleanable):
             self._identities_by_key[key] = identity
             if object_ref is not None:
                 self._objects_by_key[key] = object_ref
-            self._rebuild_spellbook_conduit_relations_locked()
+
+    def register_spellbook_conduit_ownership(
+            self,
+            *,
+            spellbook_id: str,
+            conduit_id: str,
+    ) -> None:
+        """
+        Register one explicit spellbook -> root-conduit ownership edge.
+
+        Parameters
+        ----------
+        spellbook_id:
+            Spellbook identifier that owns the root conduit.
+        conduit_id:
+            Root conduit identifier owned by the spellbook.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If either identifier is empty.
+        """
+        if not spellbook_id or not conduit_id:
+            raise ValueError("spellbook_id and conduit_id are required.")
+        with self._lock:
+            previous_spellbook_id = self._conduit_to_spellbook.get(conduit_id)
+            if previous_spellbook_id is not None and previous_spellbook_id != spellbook_id:
+                conduit_ids = self._spellbook_to_conduits.get(previous_spellbook_id)
+                if conduit_ids is not None:
+                    conduit_ids.discard(conduit_id)
+                    if not conduit_ids:
+                        self._spellbook_to_conduits.pop(previous_spellbook_id, None)
+            self._conduit_to_spellbook[conduit_id] = spellbook_id
+            self._spellbook_to_conduits.setdefault(spellbook_id, set()).add(conduit_id)
+
+    def unregister_spellbook_conduit_ownership(
+            self,
+            *,
+            spellbook_id: str,
+            conduit_id: str,
+    ) -> None:
+        """
+        Remove one explicit spellbook -> root-conduit ownership edge.
+
+        Parameters
+        ----------
+        spellbook_id:
+            Spellbook identifier that owned the root conduit.
+        conduit_id:
+            Root conduit identifier to detach.
+
+        Returns
+        -------
+        None
+        """
+        if not spellbook_id or not conduit_id:
+            return
+        with self._lock:
+            mapped_spellbook_id = self._conduit_to_spellbook.get(conduit_id)
+            if mapped_spellbook_id == spellbook_id:
+                self._conduit_to_spellbook.pop(conduit_id, None)
+            conduit_ids = self._spellbook_to_conduits.get(spellbook_id)
+            if conduit_ids is not None:
+                conduit_ids.discard(conduit_id)
+                if not conduit_ids:
+                    self._spellbook_to_conduits.pop(spellbook_id, None)
 
     def get_identity(
             self,
@@ -940,6 +1030,7 @@ class DevopsInformationRegistry(Cleanable):
             transaction_object: Any,
             transaction_type: Optional[str] = None,
             identity_keys: Optional[Iterable[Tuple[str, str]]] = None,
+            scope_keys: Optional[Iterable[str]] = None,
     ) -> None:
         """
         Register one transaction object and populate reverse indexes.
@@ -990,9 +1081,18 @@ class DevopsInformationRegistry(Cleanable):
             if not owner_kind or not owner_id:
                 raise ValueError("identity_keys cannot contain empty values.")
             normalized_identity_keys.add((owner_kind.strip().lower(), owner_id))
+        normalized_scope_keys: Set[str] = set()
+        for scope_key in scope_keys or ():
+            if not isinstance(scope_key, str):
+                raise ValueError("scope_keys must contain string scope keys.")
+            normalized_scope_key = scope_key.strip()
+            if not normalized_scope_key:
+                raise ValueError("scope_keys cannot contain empty values.")
+            normalized_scope_keys.add(normalized_scope_key)
         with self._lock:
             self._transactions_by_id[transaction_id] = transaction_object
             self._transaction_identity_keys_by_id[transaction_id] = normalized_identity_keys
+            self._transaction_scope_keys_by_id[transaction_id] = normalized_scope_keys
             if normalized_type is not None:
                 self._transaction_type_by_id[transaction_id] = normalized_type
                 self._transaction_ids_by_type.setdefault(normalized_type, set()).add(
@@ -1000,6 +1100,10 @@ class DevopsInformationRegistry(Cleanable):
                 )
             for identity_key in normalized_identity_keys:
                 self._transaction_ids_by_identity.setdefault(identity_key, set()).add(
+                    transaction_id
+                )
+            for scope_key in normalized_scope_keys:
+                self._transaction_ids_by_scope.setdefault(scope_key, set()).add(
                     transaction_id
                 )
 
@@ -1030,12 +1134,22 @@ class DevopsInformationRegistry(Cleanable):
                 transaction_id,
                 set(),
             )
+            scope_keys = self._transaction_scope_keys_by_id.pop(
+                transaction_id,
+                set(),
+            )
             for identity_key in identity_keys:
                 transaction_ids = self._transaction_ids_by_identity.get(identity_key)
                 if transaction_ids is not None:
                     transaction_ids.discard(transaction_id)
                     if not transaction_ids:
                         self._transaction_ids_by_identity.pop(identity_key, None)
+            for scope_key in scope_keys:
+                transaction_ids = self._transaction_ids_by_scope.get(scope_key)
+                if transaction_ids is not None:
+                    transaction_ids.discard(transaction_id)
+                    if not transaction_ids:
+                        self._transaction_ids_by_scope.pop(scope_key, None)
             transaction_type = self._transaction_type_by_id.pop(transaction_id, None)
             if transaction_type is not None:
                 transaction_ids = self._transaction_ids_by_type.get(transaction_type)
@@ -1149,6 +1263,50 @@ class DevopsInformationRegistry(Cleanable):
         with self._lock:
             return tuple(sorted(self._transaction_ids_by_type.get(normalized_type, set())))
 
+    def list_transaction_ids_for_scope(self, scope_key: str) -> Tuple[str, ...]:
+        """
+        List transaction ids associated with one normalized scope key.
+
+        Parameters
+        ----------
+        scope_key:
+            Normalized scope key to resolve.
+
+        Returns
+        -------
+        tuple[str, ...]
+            Sorted transaction ids touching that scope.
+        """
+        if not scope_key:
+            return tuple()
+        normalized_scope_key = scope_key.strip()
+        if not normalized_scope_key:
+            return tuple()
+        with self._lock:
+            return tuple(sorted(self._transaction_ids_by_scope.get(normalized_scope_key, set())))
+
+    def list_live_transactions_for_scope(self, scope_key: str) -> Tuple[Any, ...]:
+        """
+        Return live transaction objects currently indexed under one scope key.
+
+        Parameters
+        ----------
+        scope_key:
+            Normalized scope key to resolve.
+
+        Returns
+        -------
+        tuple[Any, ...]
+            Live transaction objects currently indexed to that scope.
+        """
+        transaction_ids = self.list_transaction_ids_for_scope(scope_key)
+        transactions: List[Any] = []
+        for transaction_id in transaction_ids:
+            transaction = self.get_transaction(transaction_id)
+            if transaction is not None:
+                transactions.append(transaction)
+        return tuple(transactions)
+
     def list_live_transactions_for_type(self, transaction_type: str) -> Tuple[Any, ...]:
         """
         Return live transaction objects currently indexed under one type.
@@ -1172,39 +1330,6 @@ class DevopsInformationRegistry(Cleanable):
             if transaction is not None:
                 transactions.append(transaction)
         return tuple(transactions)
-
-    def _rebuild_spellbook_conduit_relations_locked(self) -> None:
-        """
-        Rebuild spellbook<->conduit ownership relations from identity metadata.
-
-        Caller contract:
-            The registry lock must already be held.
-        """
-        self._spellbook_to_conduits.clear()
-        self._conduit_to_spellbook.clear()
-        for identity in self._identities_by_key.values():
-            metadata = identity.metadata
-            if identity.owner_kind == "spellbook":
-                conduit_id = metadata.get("conduit_id")
-                if isinstance(conduit_id, str) and conduit_id:
-                    self._spellbook_to_conduits.setdefault(
-                        identity.owner_id,
-                        set(),
-                    ).add(conduit_id)
-                    self._conduit_to_spellbook[conduit_id] = identity.owner_id
-            elif identity.owner_kind == "conduit":
-                spellbook_id = metadata.get("spellbook_id")
-                conduit_state = metadata.get("conduit_state")
-                if (
-                    isinstance(spellbook_id, str)
-                    and spellbook_id
-                    and conduit_state == ConduitState.normal.value
-                ):
-                    self._spellbook_to_conduits.setdefault(
-                        spellbook_id,
-                        set(),
-                    ).add(identity.owner_id)
-                    self._conduit_to_spellbook[identity.owner_id] = spellbook_id
 
     def describe(self) -> Dict[str, Any]:
         """
@@ -1233,6 +1358,10 @@ class DevopsInformationRegistry(Cleanable):
                 "spellbook_to_conduits": {
                     spellbook_id: tuple(sorted(conduit_ids))
                     for spellbook_id, conduit_ids in self._spellbook_to_conduits.items()
+                },
+                "transaction_ids_by_scope": {
+                    scope_key: tuple(sorted(transaction_ids))
+                    for scope_key, transaction_ids in self._transaction_ids_by_scope.items()
                 },
                 "provider_to_borrowers": {
                     provider_id: tuple(sorted(borrower_ids))
