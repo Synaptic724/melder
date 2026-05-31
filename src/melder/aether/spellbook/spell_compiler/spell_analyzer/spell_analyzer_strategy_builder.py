@@ -15,9 +15,10 @@ from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occu
 from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_order_analyzer_strategy import (
     SpellOccurrenceOrderAnalyzerStrategy,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class SpellAnalyzerStrategyBuilder:
+class SpellAnalyzerStrategyBuilder(Cleanable):
     """
     Registry holder for analyzer strategies.
 
@@ -36,7 +37,7 @@ class SpellAnalyzerStrategyBuilder:
           deterministic ordered tuple of strategies for one analysis chain.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
         "_strategies_by_name",
     ]
 
@@ -48,10 +49,21 @@ class SpellAnalyzerStrategyBuilder:
             - The registry always starts empty before default loading.
             - Default strategy registration happens through `load_defaults()`.
         """
+        super().__init__()
         self._strategies_by_name: Dict[str, SpellAnalyzerStrategy] = {}
-        self.load_defaults()
+        self._load_defaults()
 
-    def load_defaults(self) -> None:
+    def cleanup(self) -> None:
+        """
+        Clean up internal references.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._strategies_by_name.clear()
+        del self._strategies_by_name
+
+    def _load_defaults(self) -> None:
         """
         Populate the default analyzer strategy registry.
 
@@ -65,31 +77,11 @@ class SpellAnalyzerStrategyBuilder:
             - Keys are the strategies' stable `strategy_id` values.
             - Current defaults are the 4 occurrence-analysis strategies.
         """
-        self._strategies_by_name.clear()
-        for strategy_class in self._default_strategy_classes():
-            self.register_strategy(strategy_class())
+        self._strategies_by_name["SpellOccurrenceGraphAnalyzerStrategy"] = SpellOccurrenceGraphAnalyzerStrategy()
+        self._strategies_by_name["SpellOccurrenceOrderAnalyzerStrategy"] = SpellOccurrenceOrderAnalyzerStrategy()
+        self._strategies_by_name["SpellOccurrenceInstanceAnalyzerStrategy"] = SpellOccurrenceInstanceAnalyzerStrategy()
+        self._strategies_by_name["SpellOccurrenceContractAnalyzerStrategy"] = SpellOccurrenceContractAnalyzerStrategy()
 
-    @staticmethod
-    def _default_strategy_classes() -> Tuple[type[SpellAnalyzerStrategy], ...]:
-        """
-        Return the default analyzer strategy classes in deterministic order.
-
-        Purpose:
-            Keep the built-in analyzer strategy list centralized in one place
-            so defaults can be extended without rewriting `load_defaults()`
-            into a pile of one-off registrations.
-
-        Returns:
-            Tuple[type[SpellAnalyzerStrategy], ...]:
-                Default strategy classes in the order they should be chained by
-                analyzer entrypoints.
-        """
-        return (
-            SpellOccurrenceGraphAnalyzerStrategy,
-            SpellOccurrenceOrderAnalyzerStrategy,
-            SpellOccurrenceInstanceAnalyzerStrategy,
-            SpellOccurrenceContractAnalyzerStrategy,
-        )
 
     def register_strategy(
             self,
