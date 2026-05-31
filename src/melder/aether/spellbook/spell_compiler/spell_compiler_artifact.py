@@ -71,6 +71,10 @@ class SpellCompilerArtifact(Cleanable):
           services.
         - Starts empty and additive; existing `SpellCrafter` behavior remains
           authoritative until later slices migrate reads and writes.
+        - Exposes the new generic compiler surfaces:
+          - `_spell_codegen_model`
+          - `_spell_codegen_plan`
+          - `_spell_codegen_creation`
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

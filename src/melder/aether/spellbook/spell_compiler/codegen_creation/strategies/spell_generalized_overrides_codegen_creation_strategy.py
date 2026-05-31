@@ -1,0 +1,195 @@
+from typing import Any, Dict, Optional, Sequence, Tuple
+
+from melder.aether.conduit.meld.creation_context.creation_context import (
+    OverrideRouteConfig,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+    SpellCodegenModel,
+)
+from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+    compile_phase13_overrides_executor,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
+    SpellCodegenCreation,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
+    SpellCodegenStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation.spell_overrides_codegen_creation import (
+    SpellOverridesCodegenCreation,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
+    SpellGeneralizedCodegenLanePlan,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
+    SpellCodegenPlan,
+)
+from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
+    SharedCompilerExecutions,
+)
+
+
+class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
+    """
+    Generalized non-mutation overrides codegen creation strategy.
+
+    Purpose:
+        Port the non-mutation override packaging that is currently assembled in
+        `CreationContextBuilder` into the codegen-creation layer, using the new
+        generalized overrides lane plan as the spell-static source of truth.
+    """
+
+    __slots__ = ()
+
+    @property
+    def strategy_id(self) -> str:
+        """
+        Return the stable overrides creation strategy id.
+        """
+        return "generalized_overrides_codegen_creation"
+
+    def apply(
+            self,
+            spell_codegen_model: SpellCodegenModel,
+            spell_codegen_plan: SpellCodegenPlan,
+            spell_codegen_creation: SpellCodegenCreation,
+    ) -> None:
+        """
+        Populate the non-mutation overrides creation payload.
+
+        Contract:
+            - Requires the planner to have already produced an overrides lane
+              plan.
+            - Builds the spell-static `OverrideRouteConfig` from the generalized
+              lane plan instead of reading old exported IR.
+            - Prebuilds the empty-shape baseline override executor for later
+              runtime reuse.
+            - Leaves the Phase 10 patch-map bridge unset in this slice because
+              the current focus is Phase 13-first packaging.
+        """
+        overrides_plan = spell_codegen_plan.overrides_plan
+        if overrides_plan is None:
+            raise RuntimeError(
+                "Overrides codegen creation requires an overrides_plan."
+            )
+
+        override_route_config = self._build_override_route_config(
+            spell_codegen_model=spell_codegen_model,
+            overrides_plan=overrides_plan,
+        )
+        spell_codegen_creation.overrides_creation = (
+            SpellOverridesCodegenCreation(
+                override_patch_map_phase10=None,
+                override_route_config=override_route_config,
+                baseline_executor=override_route_config.baseline_executor,
+                metadata={
+                    "lane_id": overrides_plan.lane_id,
+                    "root_spell_id": overrides_plan.root_spell_id,
+                    "step_count": len(overrides_plan.steps),
+                    "steps_rows_signature": (
+                        override_route_config.plan_signature[2]
+                    ),
+                },
+            )
+        )
+
+    def _build_override_route_config(
+            self,
+            *,
+            spell_codegen_model: SpellCodegenModel,
+            overrides_plan: SpellGeneralizedCodegenLanePlan,
+    ) -> OverrideRouteConfig:
+        """
+        Build the spell-static non-mutation override route config.
+
+        Contract:
+            - Uses the generalized overrides lane plan as the source of truth.
+            - Derives deterministic plan rows compatible with the current
+              override executor compiler.
+            - Prebuilds the baseline empty-shape override executor.
+        """
+        steps_rows = self._build_steps_rows(overrides_plan.steps)
+        steps_rows_signature = SharedCompilerExecutions.hash_codegen_signature(
+            steps_rows
+        )
+        step_spell_ids = tuple(
+            step.spell.spell_index.current
+            for step in overrides_plan.steps
+        )
+        plan_signature = (
+            "generalized_overrides_lane_plan",
+            SharedCompilerExecutions.hash_codegen_signature(
+                overrides_plan.lane_id,
+                overrides_plan.root_spell_id,
+                step_spell_ids,
+                steps_rows_signature,
+            ),
+            steps_rows_signature,
+        )
+        spell_lookup = self._build_spell_lookup(overrides_plan)
+        path_registry = None
+        graph_shape = spell_codegen_model.graph_shape
+        if graph_shape is not None:
+            path_registry = graph_shape.path_registry
+
+        baseline_executor = compile_phase13_overrides_executor(
+            execution_plan=None,
+            override_targets_by_spell_id={},
+            any_overrides_present=False,
+            path_registry=path_registry,
+            plan_rows=steps_rows,
+            root_spell_id=overrides_plan.root_spell_id,
+            spell_lookup=spell_lookup,
+        )
+        return OverrideRouteConfig(
+            plan_signature=plan_signature,
+            path_registry=path_registry,
+            plan_rows=steps_rows,
+            root_spell_id=overrides_plan.root_spell_id,
+            spell_lookup=spell_lookup,
+            empty_shape_key=(
+                plan_signature,
+                (),
+                -1,
+            ),
+            baseline_executor=baseline_executor,
+        )
+
+    @staticmethod
+    def _build_spell_lookup(
+            overrides_plan: SpellGeneralizedCodegenLanePlan,
+    ) -> Dict[str, Any]:
+        """
+        Build the spell-id lookup required by override lane hydration.
+
+        Contract:
+            - Uses the lane-plan step order as the source of truth.
+            - Keeps only the first encountered runtime object per spell id.
+        """
+        spell_lookup: Dict[str, Any] = {}
+        for step in overrides_plan.steps:
+            spell_id = step.spell.spell_index.current
+            if spell_id in spell_lookup:
+                continue
+            spell_lookup[spell_id] = step.spell
+        return spell_lookup
+
+    @staticmethod
+    def _build_steps_rows(
+            steps: Sequence[Any],
+    ) -> Tuple[Dict[str, Any], ...]:
+        """
+        Build override-compatible schema rows from generalized lane steps.
+
+        Contract:
+            - Uses the same row-builder semantics the old phase11 IR export
+              used for override-aware variants.
+            - Returns deterministic tuple-backed row order.
+        """
+        return tuple(
+            SharedCompilerExecutions.build_phase11_step_ir_row(
+                step,
+                include_override_metadata=True,
+            )
+            for step in steps
+        )

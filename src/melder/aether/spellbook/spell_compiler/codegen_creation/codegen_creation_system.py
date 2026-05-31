@@ -22,7 +22,7 @@ class CodegenCreationSystem:
         - Owns the discovery system and strategy builder.
         - Does not implement emitted-code behavior itself.
         - Publishes a neutral `SpellCodegenCreation` and lets the selected
-          strategy populate it.
+          strategy chain populate it.
     """
 
     __slots__ = [
@@ -55,6 +55,7 @@ class CodegenCreationSystem:
         Contract:
             - Reads `artifact._spell_codegen_model`.
             - Reads `artifact._spell_codegen_plan`.
+            - Runs one ordered creation-strategy chain chosen by discovery.
             - Publishes `artifact._spell_codegen_creation`.
             - Does not return the output object directly.
         """
@@ -71,31 +72,35 @@ class CodegenCreationSystem:
 
         previous_spell_codegen_creation = artifact._spell_codegen_creation
         spell_codegen_creation = SpellCodegenCreation(
-            selected_strategy_id=None,
+            selected_strategy_ids=(),
             discovery_reason=None,
-            no_overrides_output=None,
-            overrides_output=None,
-            mutation_overrides_output=None,
+            resolve_route_key=None,
+            fast_transient_no_overrides_enabled=False,
+            no_overrides_creation=None,
+            overrides_creation=None,
+            mutation_overrides_creation=None,
             metadata={},
         )
         discovery = self._discovery_system.discover(
             spell_codegen_model,
             spell_codegen_plan,
         )
-        selected_strategy = self._strategy_builder.get_strategy(
-            discovery.selected_strategy_id
+        spell_codegen_creation.selected_strategy_ids = (
+            discovery.selected_strategy_ids
         )
-        selected_strategy.apply(
-            spell_codegen_model,
-            spell_codegen_plan,
-            spell_codegen_creation,
+        spell_codegen_creation.discovery_reason = discovery.discovery_reason
+        selected_strategies = self._strategy_builder.get_strategies(
+            discovery.selected_strategy_ids
         )
+        for selected_strategy in selected_strategies:
+            selected_strategy.apply(
+                spell_codegen_model,
+                spell_codegen_plan,
+                spell_codegen_creation,
+            )
         artifact._spell_codegen_creation = spell_codegen_creation
         if (
                 previous_spell_codegen_creation is not None
                 and previous_spell_codegen_creation is not spell_codegen_creation
         ):
-            try:
-                previous_spell_codegen_creation.cleanup()
-            except Exception:
-                pass
+            previous_spell_codegen_creation.cleanup()

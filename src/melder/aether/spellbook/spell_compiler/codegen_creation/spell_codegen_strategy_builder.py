@@ -5,8 +5,17 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_codegen_creation_strategy import (
-    SpellGeneralizedCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
+    SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
+    SpellGeneralizedNoOverridesCodegenCreationStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_overrides_codegen_creation_strategy import (
+    SpellGeneralizedOverridesCodegenCreationStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
+    SpellGeneralizedMutationOverridesCodegenCreationStrategy,
 )
 
 
@@ -46,15 +55,34 @@ class SpellCodegenStrategyBuilder(Cleanable):
         Populate the default codegen creation strategy registry.
 
         Contract:
-            - Current default is the generalized placeholder strategy only.
+            - Current defaults are the first Phase-13 migration strategies:
+              setup, no-overrides, overrides, and mutation-overrides.
             - Registration order is execution order.
         """
-        generalized_codegen_creation_strategy = (
-            SpellGeneralizedCodegenCreationStrategy()
+        generalized_creation_context_setup_codegen_creation_strategy = (
+            SpellGeneralizedCreationContextSetupCodegenCreationStrategy()
         )
         self._strategies_by_name[
-            generalized_codegen_creation_strategy.strategy_id
-        ] = generalized_codegen_creation_strategy
+            generalized_creation_context_setup_codegen_creation_strategy.strategy_id
+        ] = generalized_creation_context_setup_codegen_creation_strategy
+        generalized_no_overrides_codegen_creation_strategy = (
+            SpellGeneralizedNoOverridesCodegenCreationStrategy()
+        )
+        self._strategies_by_name[
+            generalized_no_overrides_codegen_creation_strategy.strategy_id
+        ] = generalized_no_overrides_codegen_creation_strategy
+        generalized_overrides_codegen_creation_strategy = (
+            SpellGeneralizedOverridesCodegenCreationStrategy()
+        )
+        self._strategies_by_name[
+            generalized_overrides_codegen_creation_strategy.strategy_id
+        ] = generalized_overrides_codegen_creation_strategy
+        generalized_mutation_overrides_codegen_creation_strategy = (
+            SpellGeneralizedMutationOverridesCodegenCreationStrategy()
+        )
+        self._strategies_by_name[
+            generalized_mutation_overrides_codegen_creation_strategy.strategy_id
+        ] = generalized_mutation_overrides_codegen_creation_strategy
 
     def get_strategy(
             self,
@@ -69,6 +97,26 @@ class SpellCodegenStrategyBuilder(Cleanable):
         raise RuntimeError(
             "SpellCodegenStrategyBuilder is missing strategy "
             f"'{strategy_name}'."
+        )
+
+    def get_strategies(
+            self,
+            strategy_names: Tuple[str, ...],
+    ) -> Tuple[SpellCodegenStrategy, ...]:
+        """
+        Return one deterministic ordered tuple of creation strategies.
+
+        Args:
+            strategy_names:
+                Ordered stable strategy ids to resolve.
+
+        Returns:
+            Tuple[SpellCodegenStrategy, ...]:
+                Ordered strategy tuple for later execution.
+        """
+        return tuple(
+            self.get_strategy(strategy_name)
+            for strategy_name in strategy_names
         )
 
     def registered_strategy_names(self) -> Tuple[str, ...]:
