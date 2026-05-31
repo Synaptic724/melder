@@ -80,25 +80,22 @@ class CompilerPhase12:
         previous_processor_state = artifact._phase12_processor_state
         previous_codegen_plan = artifact._phase12_codegen_plan
 
-        processor_state = SpellArtifactProcessorBuilder.build(
-            spell,
-            artifact,
-        )
-        processor = SpellArtifactProcessor(
-            state=processor_state,
+        processor_builder = SpellArtifactProcessorBuilder(
             strategies=(),
         )
-        codegen_plan = SpellCodegenPlanBuilder.build(
-            processor,
+        processor = processor_builder.build()
+        codegen_model = processor.process(artifact)
+        plan_builder = SpellCodegenPlanBuilder(
             strategies=(),
         )
+        codegen_plan = plan_builder.build(codegen_model)
 
-        artifact._phase12_processor_state = processor_state
+        artifact._phase12_processor_state = codegen_model
         artifact._phase12_codegen_plan = codegen_plan
 
         if (
                 previous_processor_state is not None
-                and previous_processor_state is not processor_state
+                and previous_processor_state is not codegen_model
         ):
             try:
                 previous_processor_state.cleanup()

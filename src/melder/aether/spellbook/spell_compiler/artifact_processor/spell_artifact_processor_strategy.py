@@ -3,8 +3,8 @@ from typing import ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_state import (
-    SpellArtifactProcessorState,
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+    SpellCodegenModel,
 )
 
 
@@ -60,7 +60,7 @@ class SpellArtifactProcessorStrategy(ABC):
     @abstractmethod
     def process(
             self,
-            state: SpellArtifactProcessorState,
+            state: SpellCodegenModel,
     ) -> None:
         """
         Examine the current processor state and record strategy output.

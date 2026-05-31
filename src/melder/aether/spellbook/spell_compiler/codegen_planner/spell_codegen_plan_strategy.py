@@ -3,8 +3,8 @@ from typing import ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_state import (
-    SpellArtifactProcessorState,
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+    SpellCodegenModel,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
@@ -55,7 +55,7 @@ class SpellCodegenPlanStrategy(ABC):
     @abstractmethod
     def apply(
             self,
-            state: SpellArtifactProcessorState,
+            state: SpellCodegenModel,
             plan: SpellCodegenPlan,
     ) -> SpellCodegenPlan:
         """
@@ -73,7 +73,7 @@ class SpellCodegenPlanStrategy(ABC):
 
         Args:
             state:
-                Assessed Phase 12 processor state.
+                Assessed Phase 12 codegen model.
             plan:
                 Current compiler-owned codegen plan.
 
