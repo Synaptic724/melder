@@ -23,17 +23,17 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_6 import (
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_7 import (
     CompilerPhase7,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
-    SpellArtifactProcessor,
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_8 import (
+    CompilerPhase8,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.codegen_creation_system import (
-    CodegenCreationSystem,
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_9 import (
+    CompilerPhase9,
 )
-from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner import (
-    SpellCodegenPlanner,
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_10 import (
+    CompilerPhase10,
 )
-from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer import (
-    SpellAnalyzer,
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
+    CompilerPhase11,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -82,10 +82,10 @@ class SpellCompiler(Cleanable):
         "_phase_5",
         "_phase_6",
         "_phase_7",
-        "_spell_analyzer",
-        "_artifact_processor",
-        "_codegen_planner",
-        "_codegen_creation_system",
+        "_phase_8",
+        "_phase_9",
+        "_phase_10",
+        "_phase_11",
     ]
 
     def __init__(self) -> None:
@@ -107,10 +107,10 @@ class SpellCompiler(Cleanable):
         self._phase_5 = CompilerPhase5()
         self._phase_6 = CompilerPhase6()
         self._phase_7 = CompilerPhase7()
-        self._spell_analyzer = SpellAnalyzer()
-        self._artifact_processor = SpellArtifactProcessor()
-        self._codegen_planner = SpellCodegenPlanner()
-        self._codegen_creation_system = CodegenCreationSystem()
+        self._phase_8 = CompilerPhase8()
+        self._phase_9 = CompilerPhase9()
+        self._phase_10 = CompilerPhase10()
+        self._phase_11 = CompilerPhase11()
 
     def cleanup(self) -> None:
         """
@@ -126,14 +126,14 @@ class SpellCompiler(Cleanable):
         del self._phase_5
         del self._phase_6
         del self._phase_7
-        self._spell_analyzer.cleanup()
-        del self._spell_analyzer
-        self._artifact_processor.cleanup()
-        del self._artifact_processor
-        self._codegen_planner.cleanup()
-        del self._codegen_planner
-        self._codegen_creation_system.cleanup()
-        del self._codegen_creation_system
+        self._phase_8.cleanup()
+        del self._phase_8
+        self._phase_9.cleanup()
+        del self._phase_9
+        self._phase_10.cleanup()
+        del self._phase_10
+        self._phase_11.cleanup()
+        del self._phase_11
 
 
 
@@ -605,9 +605,12 @@ class SpellCompiler(Cleanable):
         Returns:
             None.
         """
-        _ = spellbook
-        _ = spell_system_states
-        self._spell_analyzer.analyze_occurrence(spell, artifact)
+        self._phase_8.run(
+            spell,
+            artifact,
+            spellbook,
+            spell_system_states,
+        )
 
     def run_phase_injection_plan(
             self,
@@ -621,7 +624,10 @@ class SpellCompiler(Cleanable):
                 Build the processor-owned `SpellCodegenModel` from the existing
                 analyzer and compiler artifact truth.
         """
-        self._artifact_processor.process(spell, artifact)
+        self._phase_9.run(
+            spell,
+            artifact,
+        )
 
     def run_phase_patch_maps(
             self,
@@ -635,8 +641,10 @@ class SpellCompiler(Cleanable):
                 Build the planner-owned `SpellCodegenPlan` from the
                 processor-owned model already attached to the artifact.
         """
-        _ = spell
-        self._codegen_planner.build(artifact)
+        self._phase_10.run(
+            spell,
+            artifact,
+        )
 
     def run_phase_execution_plan(
             self,
@@ -672,8 +680,10 @@ class SpellCompiler(Cleanable):
         Returns:
             None.
         """
-        _ = spell
-        _ = spellbook
-        self._codegen_creation_system.build(artifact)
+        self._phase_11.run(
+            spell,
+            artifact,
+            spellbook,
+        )
 
 

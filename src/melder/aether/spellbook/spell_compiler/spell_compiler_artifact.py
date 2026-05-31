@@ -177,41 +177,6 @@ class SpellCompilerArtifact(Cleanable):
                     self._root_blueprint_phase5.cleanup()
                 except Exception:
                     pass
-            if self._occurrence_plan_phase8 is not None:
-                try:
-                    self._occurrence_plan_phase8.cleanup()
-                except Exception:
-                    pass
-            if self._injection_plan_phase9 is not None:
-                try:
-                    self._injection_plan_phase9.cleanup()
-                except Exception:
-                    pass
-            if self._override_patch_map_phase10 is not None:
-                try:
-                    self._override_patch_map_phase10.cleanup()
-                except Exception:
-                    pass
-            if self._mutation_patch_map_phase10 is not None:
-                try:
-                    self._mutation_patch_map_phase10.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11 is not None:
-                try:
-                    self._execution_plan_phase11.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11_no_overrides is not None:
-                try:
-                    self._execution_plan_phase11_no_overrides.cleanup()
-                except Exception:
-                    pass
-            if self._execution_plan_phase11_overrides is not None:
-                try:
-                    self._execution_plan_phase11_overrides.cleanup()
-                except Exception:
-                    pass
             self._cleanup_codegen_outputs()
             if self._spell_system_index_phase5 is not None:
                 try:

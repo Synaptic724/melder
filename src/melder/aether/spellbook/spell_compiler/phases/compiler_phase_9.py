@@ -1,241 +1,70 @@
-from typing import TYPE_CHECKING, Optional, Dict, Any
+from typing import TYPE_CHECKING, ClassVar
+
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
+    SpellArtifactProcessor,
+)
+from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
-    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
-        OccurrencePlan,
-    )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
         SpellCompilerArtifact,
     )
 
 
-
-from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import (
-    InjectionPlanBuilder, InjectionPlan,
-)
-
-
-
-class CompilerPhase9:
+class CompilerPhase9(Cleanable):
     """
-    Compiler phase 9 surface.
+    Live compiler phase-9 wrapper over `SpellArtifactProcessor`.
 
     Purpose:
-        Expose the current injection-plan build behavior through a compiler-
-        owned phase class.
+        Make the live phase-9 surface explicitly processor-backed instead of
+        continuing to expose the old injection-plan phase implementation as if
+        it were still the current path.
 
     Contract:
-        - Slot-only phase surface with no explicit `__init__`.
-        - Directly ports the canonical `SpellCrafter` phase-9 behavior.
-        - Does not own spell, artifact, or runtime collaborator lifecycle.
+        - Owns one `SpellArtifactProcessor`.
+        - Consumes the spell/artifact pair.
+        - Publishes `SpellCodegenModel` onto the artifact.
     """
 
-    __slots__ = ()
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_artifact_processor",
+    ]
 
-    @staticmethod
-    def _build_phase9_injection_shape_profile(
-            *,
-            occurrence_plan: OccurrencePlan,
-            injection_plan: InjectionPlan,
-    ) -> Dict[str, Any]:
+    def __init__(self) -> None:
         """
-        Build a lightweight Phase 9 injection shape profile.
-
-        Purpose:
-            Summarize injection/runtime-call shape at the point where the
-            injection plan is already built, so later strategy selection can
-            consume call-shape truth without a separate analysis pass.
-
-        Contract:
-            - Uses runtime-selected injection specs for the root spell only.
-            - Captures counts and histograms, not strategy-family decisions.
-            - Returns deterministic tuple-backed rows for stable artifact
-              storage.
-
-        Args:
-            occurrence_plan:
-                Phase 8 occurrence plan for the same root spell.
-            injection_plan:
-                Fresh Phase 9 injection plan.
-
-        Returns:
-            Dict[str, Any]:
-                Cheap injection-shape summary for later compiler stages.
+        Build the live phase-9 wrapper.
         """
-        runtime_specs = injection_plan.select_for_runtime(
-            root_spell_id=occurrence_plan.root_spell_id,
-        )
-        param_source_kind_counts: Dict[str, int] = {}
-        dependency_arity_histogram: Dict[int, int] = {}
-        positional_override_instance_count = 0
-        contract_payload_instance_count = 0
-        list_aggregation_instance_count = 0
+        super().__init__()
+        self._artifact_processor = SpellArtifactProcessor()
 
-        for injection_spec in runtime_specs.values():
-            if injection_spec.uses_positional_override:
-                positional_override_instance_count += 1
-            if injection_spec.contract_payload:
-                contract_payload_instance_count += 1
-            if injection_spec.allow_list_aggregation:
-                list_aggregation_instance_count += 1
-            for param_source in injection_spec.param_sources.values():
-                kind = param_source.kind
-                param_source_kind_counts[kind] = (
-                    param_source_kind_counts.get(kind, 0) + 1
-                )
-                dependency_keys = param_source.dependency_keys
-                if dependency_keys is None:
-                    continue
-                arity = len(dependency_keys)
-                dependency_arity_histogram[arity] = (
-                    dependency_arity_histogram.get(arity, 0) + 1
-                )
-
-        return {
-            "instance_spec_count": len(runtime_specs),
-            "positional_override_instance_count": positional_override_instance_count,
-            "contract_payload_instance_count": contract_payload_instance_count,
-            "list_aggregation_instance_count": list_aggregation_instance_count,
-            "param_source_kind_counts": tuple(sorted(param_source_kind_counts.items())),
-            "dependency_arity_histogram": tuple(sorted(dependency_arity_histogram.items())),
-        }
-
-    def _get_required_occurrence_plan_phase8(
-            self,
-            artifact: SpellCompilerArtifact,
-    ) -> OccurrencePlan:
+    def cleanup(self) -> None:
         """
-        Return the Phase 8 occurrence plan or raise.
-
-        Purpose:
-            Provide the same hard Phase-8 artifact gate the original
-            `SpellCrafter` phase-9 path depends on before injection-plan
-            compilation can begin.
-
-        Returns:
-            OccurrencePlan: Attached Phase 8 occurrence plan.
+        Deterministically release phase-9 owned state.
         """
-        occurrence_plan = artifact._occurrence_plan_phase8
-        if occurrence_plan is None:
-            raise RuntimeError("SpellCrafter Phase 8 occurrence plan is required.")
-        return occurrence_plan
-
-    def _build_phase9_injection_plan_input_signature(
-            self,
-            artifact: SpellCompilerArtifact,
-            *,
-            occurrence_plan: Optional[OccurrencePlan],
-    ) -> Optional[str]:
-        """
-        Build a deterministic phase9 input signature for injection-plan reuse.
-
-        Purpose:
-            Detect phase9 semantic drift using the phase8 signature state so warm
-            runs can safely skip redundant injection-plan rebuilds with minimal
-            additional signature overhead.
-        Contract:
-            - Returns None when occurrence-plan inputs are unavailable.
-            - Reuses phase8 occurrence-plan input signature when present.
-            - Falls back to rebuild (None) when the phase8 signature is unavailable.
-        Args:
-            artifact:
-                Spell-owned compiler artifact whose phase-8 signature state is
-                being queried.
-            occurrence_plan:
-                Phase8 occurrence plan used to build phase9 injection plan.
-        Returns:
-            Optional[str]:
-                Deterministic signature string or None when rebuild must proceed.
-        """
-        if occurrence_plan is None:
-            return None
-        return artifact._phase8_occurrence_plan_input_signature
-
-    def _mark_phase8_11_codegen_ir_dirty(
-            self,
-            artifact: SpellCompilerArtifact,
-    ) -> None:
-        """
-        Mark phase8_11 codegen export as stale.
-
-        Purpose:
-            Record that one or more Phase8-11 artifacts are changed and a new IR
-            export is required before consumers read phase8_11 payloads.
-        Contract:
-            - Idempotent; repeated calls keep the dirty state true.
-            - Does not mutate codegen payloads directly.
-        Returns:
-            None.
-        """
-        artifact._phase8_11_codegen_ir_dirty = True
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._artifact_processor.cleanup()
+        del self._artifact_processor
 
     def run(
             self,
-            spell: Spell,
-            artifact: SpellCompilerArtifact,
+            spell: "Spell",
+            artifact: "SpellCompilerArtifact",
     ) -> None:
         """
-        Phase 9 - Injection plan compilation.
-
-        Compiles an InjectionPlan for spells using Phase-8 occurrence plans.
-        Existing-creation spells are treated as a no-op.
-
-        Purpose:
-            Precompute dependency-to-parameter wiring so meld can inject without
-            recomputing occurrence-driven dependency paths at runtime.
-
-        Contract:
-            - Requires Phase 8 artifacts to be available.
-            - Builds plan only when an occurrence plan is attached for this spell.
-            - Replaces any existing InjectionPlan for this spell.
-            - Does not mutate the occurrence plan.
+        Execute the processor-backed live phase 9.
 
         Args:
             spell:
-                Root spell under compilation.
+                Spell whose processor-owned model should be fitted.
             artifact:
-                Phase-8 artifact output holder used for signature and plan
-                caching.
+                Compiler artifact receiving `SpellCodegenModel`.
+
         Returns:
             None.
-
-        Raises:
-            RuntimeError:
-                If Phase 8 artifacts are missing for this spell.
         """
-        artifact.check_cleaned()
-        if spell.is_existing_creation:
-            return
-
-        # Stage 1: require phase-8 plan and build phase-9 signature gate.
-        occurrence_plan = self._get_required_occurrence_plan_phase8(artifact)
-        injection_plan_input_signature = self._build_phase9_injection_plan_input_signature(
-            artifact,
-            occurrence_plan=occurrence_plan,
-        )
-        # Reuse the prior InjectionPlan when the deterministic phase-9 input
-        # signature is unchanged.
-        if (
-                injection_plan_input_signature is not None
-                and injection_plan_input_signature == artifact._phase9_injection_plan_input_signature
-                and artifact._injection_plan_phase9 is not None
-        ):
-            return
-        # Stage 2: rebuild injection plan and hot-swap references.
-        builder = InjectionPlanBuilder(
-            occurrence_plan=occurrence_plan,
-        )
-        plan = builder.build()
-
-        # Hot-swap the plan without cleaning the previous object in-place.
-        # Concurrent phase runners may still hold references to the prior plan.
-        artifact._injection_plan_phase9 = plan
-        artifact._injection_shape_profile_phase9 = (
-            self._build_phase9_injection_shape_profile(
-                occurrence_plan=occurrence_plan,
-                injection_plan=plan,
-            )
-        )
-        artifact._phase9_injection_plan_input_signature = injection_plan_input_signature
-        self._mark_phase8_11_codegen_ir_dirty(artifact)
+        self._artifact_processor.process(spell, artifact)
