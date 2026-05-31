@@ -5,6 +5,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
     SpellCodegenPlanStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_codegen_plan_strategy import (
+    SpellGeneralizedCodegenPlanStrategy,
+)
 
 
 class SpellCodegenPlanStrategyBuilder(Cleanable):
@@ -63,9 +66,12 @@ class SpellCodegenPlanStrategyBuilder(Cleanable):
         Contract:
             - Clears and rebuilds the registry each time it runs.
             - Keys are the strategies' stable `strategy_id` values.
-            - Current scaffold defaults are intentionally empty.
+            - Current default is the generalized model-native strategy.
         """
-        return
+        generalized_codegen_plan_strategy = SpellGeneralizedCodegenPlanStrategy()
+        self._strategies_by_name[
+            generalized_codegen_plan_strategy.strategy_id
+        ] = generalized_codegen_plan_strategy
 
     def get_strategy(
             self,
@@ -120,6 +126,6 @@ class SpellCodegenPlanStrategyBuilder(Cleanable):
 
         Returns:
             Tuple[str, ...]:
-                Sorted registered strategy names.
+                Registered strategy names in execution order.
         """
-        return tuple(sorted(self._strategies_by_name.keys()))
+        return tuple(self._strategies_by_name.keys())

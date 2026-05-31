@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -9,6 +9,11 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_mod
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
 
 
 class SpellCodegenPlanStrategy(ABC):
@@ -55,6 +60,7 @@ class SpellCodegenPlanStrategy(ABC):
     def apply(
             self,
             state: SpellCodegenModel,
+            artifact: "SpellCompilerArtifact",
             plan: SpellCodegenPlan,
     ) -> None:
         """
@@ -66,12 +72,17 @@ class SpellCodegenPlanStrategy(ABC):
 
         Contract:
             - Reads from the assessed processor state.
+            - May read compatibility-oracle truth from the compiler artifact
+              during migration.
             - Mutates only the supplied planner-owned codegen plan.
             - Must not mutate borrowed compiler/runtime artifacts directly.
 
         Args:
             state:
                 Assessed codegen model.
+            artifact:
+                Compiler artifact supplying any temporary migration-oracle
+                truth that this strategy still needs.
             plan:
                 Current planner-owned codegen plan.
 
