@@ -6,7 +6,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler import (
     compile_phase13_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
@@ -14,9 +14,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creat
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
     SpellCodegenStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_mutation_overrides_codegen_creation import (
-    SpellMutationOverridesCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
     SpellGeneralizedCodegenLanePlan,
@@ -78,19 +75,38 @@ class SpellGeneralizedMutationOverridesCodegenCreationStrategy(
             spell_codegen_model=spell_codegen_model,
             mutation_overrides_plan=mutation_overrides_plan,
         )
-        spell_codegen_creation.mutation_overrides_creation = (
-            SpellMutationOverridesCodegenCreation(
-                override_route_config=override_route_config,
-                baseline_executor=override_route_config.baseline_executor,
-                metadata={
-                    "lane_id": mutation_overrides_plan.lane_id,
-                    "root_spell_id": mutation_overrides_plan.root_spell_id,
-                    "step_count": len(mutation_overrides_plan.steps),
-                    "steps_rows_signature": (
-                        override_route_config.plan_signature[2]
-                    ),
-                },
-            )
+        spell_codegen_creation.override_mutation_plan_signature = (
+            override_route_config.plan_signature
+        )
+        spell_codegen_creation.override_mutation_path_registry = (
+            override_route_config.path_registry
+        )
+        spell_codegen_creation.override_mutation_plan_rows = (
+            override_route_config.plan_rows
+        )
+        spell_codegen_creation.override_mutation_root_spell_id = (
+            override_route_config.root_spell_id
+        )
+        spell_codegen_creation.override_mutation_spell_lookup = (
+            override_route_config.spell_lookup
+        )
+        spell_codegen_creation.override_mutation_empty_shape_key = (
+            override_route_config.empty_shape_key
+        )
+        spell_codegen_creation.override_mutation_baseline_executor = (
+            override_route_config.baseline_executor
+        )
+        spell_codegen_creation.metadata["override_mutation_lane_id"] = (
+            mutation_overrides_plan.lane_id
+        )
+        spell_codegen_creation.metadata["override_mutation_root_spell_id"] = (
+            mutation_overrides_plan.root_spell_id
+        )
+        spell_codegen_creation.metadata["override_mutation_step_count"] = (
+            len(mutation_overrides_plan.steps)
+        )
+        spell_codegen_creation.metadata["override_mutation_steps_rows_signature"] = (
+            override_route_config.plan_signature[2]
         )
 
     def _build_override_route_config(

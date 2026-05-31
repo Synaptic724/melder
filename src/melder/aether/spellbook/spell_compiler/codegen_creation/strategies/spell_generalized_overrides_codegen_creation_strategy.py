@@ -6,17 +6,17 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler import (
     compile_phase13_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation.spell_override_targeting_codegen_creation import (
+    SpellOverrideTargetingCodegenCreation,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
     SpellCodegenStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_overrides_codegen_creation import (
-    SpellOverridesCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
     SpellGeneralizedCodegenLanePlan,
@@ -64,33 +64,62 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
               lane plan instead of reading old exported IR.
             - Prebuilds the empty-shape baseline override executor for later
               runtime reuse.
-            - Leaves the Phase 10 patch-map bridge unset in this slice because
-              the current focus is Phase 13-first packaging.
+            - Ports the Phase 10 bridge into a compiler-owned override
+              targeting artifact instead of leaving the old patch-map object in
+              the runtime path.
         """
         overrides_plan = spell_codegen_plan.overrides_plan
         if overrides_plan is None:
             raise RuntimeError(
                 "Overrides codegen creation requires an overrides_plan."
             )
+        override_targeting_shape = spell_codegen_model.override_targeting_shape
+        if override_targeting_shape is None:
+            raise RuntimeError(
+                "Overrides codegen creation requires override_targeting_shape."
+            )
 
         override_route_config = self._build_override_route_config(
             spell_codegen_model=spell_codegen_model,
             overrides_plan=overrides_plan,
         )
-        spell_codegen_creation.overrides_creation = (
-            SpellOverridesCodegenCreation(
-                override_patch_map_phase10=None,
-                override_route_config=override_route_config,
-                baseline_executor=override_route_config.baseline_executor,
-                metadata={
-                    "lane_id": overrides_plan.lane_id,
-                    "root_spell_id": overrides_plan.root_spell_id,
-                    "step_count": len(overrides_plan.steps),
-                    "steps_rows_signature": (
-                        override_route_config.plan_signature[2]
-                    ),
-                },
+        spell_codegen_creation.override_targeting = (
+            SpellOverrideTargetingCodegenCreation.from_analysis(
+                root_spell_id=overrides_plan.root_spell_id,
+                targets_by_spec=override_targeting_shape.targets_by_spec,
+                specificity_by_spec=override_targeting_shape.specificity_by_spec,
             )
+        )
+        spell_codegen_creation.override_no_mutation_plan_signature = (
+            override_route_config.plan_signature
+        )
+        spell_codegen_creation.override_no_mutation_path_registry = (
+            override_route_config.path_registry
+        )
+        spell_codegen_creation.override_no_mutation_plan_rows = (
+            override_route_config.plan_rows
+        )
+        spell_codegen_creation.override_no_mutation_root_spell_id = (
+            override_route_config.root_spell_id
+        )
+        spell_codegen_creation.override_no_mutation_spell_lookup = (
+            override_route_config.spell_lookup
+        )
+        spell_codegen_creation.override_no_mutation_empty_shape_key = (
+            override_route_config.empty_shape_key
+        )
+        spell_codegen_creation.override_no_mutation_baseline_executor = (
+            override_route_config.baseline_executor
+        )
+        spell_codegen_creation.metadata["override_lane_id"] = overrides_plan.lane_id
+        spell_codegen_creation.metadata["override_root_spell_id"] = (
+            overrides_plan.root_spell_id
+        )
+        spell_codegen_creation.metadata["override_step_count"] = (
+            len(overrides_plan.steps)
+        )
+        spell_codegen_creation.metadata["override_steps_rows_signature"] = (
+            override_route_config.plan_signature[2]
         )
 
     def _build_override_route_config(

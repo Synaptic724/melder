@@ -19,7 +19,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_codegen import
     compile_creation_context_instance_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler import (
     compile_phase13_overrides_executor_code_object,
     compile_phase13_overrides_executor,
     _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache,
@@ -161,7 +161,7 @@ class CreationContext(Cleanable):
         "_execute_no_hooks_overrides_compiled",
         "_execute_no_hooks_no_overrides_compiled",
         "_no_overrides_executor",
-        "_override_patch_map_phase10",
+        "_override_targeting",
         "_override_apply_with_socket_shape_prechecked_phase10",
         "_override_route_config_no_mutation",
         "_override_route_config_mutation",
@@ -189,7 +189,7 @@ class CreationContext(Cleanable):
             resolve_route_key: str,
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
-            override_patch_map_phase10: Optional[Any] = None,
+            override_targeting: Optional[Any] = None,
             override_route_config_no_mutation: Optional[OverrideRouteConfig] = None,
             override_route_config_mutation: Optional[OverrideRouteConfig] = None,
     ) -> None:
@@ -215,8 +215,9 @@ class CreationContext(Cleanable):
                 transient executor lane.
             no_overrides_executor:
                 Prebound no-overrides phase 13 executor for this spell.
-            override_patch_map_phase10:
-                Prebound Phase 10 override patch map artifact.
+            override_targeting:
+                Prebound compiler-owned override targeting artifact for this
+                spell.
             override_route_config_no_mutation:
                 Prebound override route config for non-mutation calls.
             override_route_config_mutation:
@@ -236,17 +237,17 @@ class CreationContext(Cleanable):
         self._no_overrides_executor: Optional[Callable[..., Any]] = (
             no_overrides_executor
         )
-        self._override_patch_map_phase10: Optional[Any] = (
-            override_patch_map_phase10
+        self._override_targeting: Optional[Any] = (
+            override_targeting
         )
         self._override_apply_with_socket_shape_prechecked_phase10: Optional[
             Callable[..., Any]
         ]
-        if override_patch_map_phase10 is None:
+        if override_targeting is None:
             self._override_apply_with_socket_shape_prechecked_phase10 = None
         else:
             self._override_apply_with_socket_shape_prechecked_phase10 = (
-                override_patch_map_phase10._apply_with_socket_shape_prechecked
+                override_targeting._apply_with_socket_shape_prechecked
             )
         self._override_route_config_no_mutation: Optional[OverrideRouteConfig] = (
             override_route_config_no_mutation
@@ -414,7 +415,7 @@ class CreationContext(Cleanable):
         del self._execute_no_hooks_overrides_compiled
         del self._execute_no_hooks_no_overrides_compiled
         del self._no_overrides_executor
-        del self._override_patch_map_phase10
+        del self._override_targeting
         del self._override_apply_with_socket_shape_prechecked_phase10
         del self._override_route_config_no_mutation
         del self._override_route_config_mutation
@@ -887,7 +888,7 @@ class CreationContext(Cleanable):
                     socket_ref.node_id,
                     socket_ref.param_path_id,
                     socket_ref.param_name,
-                    socket_ref.socket_kind.value,
+                    CreationContext._socket_kind_value(socket_ref),
                 ),
             )
         if len(override_map) == 2:
@@ -898,13 +899,13 @@ class CreationContext(Cleanable):
                 first_ref.node_id,
                 first_ref.param_path_id,
                 first_ref.param_name,
-                first_ref.socket_kind.value,
+                CreationContext._socket_kind_value(first_ref),
             )
             second_shape_row = (
                 second_ref.node_id,
                 second_ref.param_path_id,
                 second_ref.param_name,
-                second_ref.socket_kind.value,
+                CreationContext._socket_kind_value(second_ref),
             )
             if second_shape_row < first_shape_row:
                 return (
@@ -923,7 +924,7 @@ class CreationContext(Cleanable):
                     socket_ref.node_id,
                     socket_ref.param_path_id,
                     socket_ref.param_name,
-                    socket_ref.socket_kind.value,
+                    CreationContext._socket_kind_value(socket_ref),
                 )
             )
         socket_shape.sort()
@@ -958,7 +959,7 @@ class CreationContext(Cleanable):
                     socket_ref.node_id,
                     socket_ref.param_path_id,
                     socket_ref.param_name,
-                    socket_ref.socket_kind.value,
+                    CreationContext._socket_kind_value(socket_ref),
                 )
             ] = socket_ref
 
@@ -1116,6 +1117,21 @@ class CreationContext(Cleanable):
             },
             tuple(socket_shape),
         )
+
+    @staticmethod
+    def _socket_kind_value(socket_ref: Any) -> int:
+        """
+        Return the stable socket-kind integer for one override target row.
+
+        Contract:
+            - Supports the old `SocketRef` shape (`socket_kind.value`).
+            - Supports the new compiler-owned override target row shape
+              (`socket_kind_value`).
+        """
+        try:
+            return socket_ref.socket_kind_value
+        except AttributeError:
+            return socket_ref.socket_kind.value
 
     @staticmethod
     def _build_override_shape_key(

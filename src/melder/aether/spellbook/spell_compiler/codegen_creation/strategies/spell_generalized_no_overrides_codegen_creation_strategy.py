@@ -6,9 +6,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creat
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_no_overrides_codegen_creation import (
-    SpellNoOverridesCodegenCreation,
-)
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
     SpellGeneralizedCodegenLanePlan,
 )
@@ -21,7 +18,7 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.phase13_no_overrides_executor import (
+from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_no_overrides_codegen_creation_compiler import (
     compile_phase13_no_overrides_executor_from_plan,
 )
 
@@ -84,19 +81,21 @@ class SpellGeneralizedNoOverridesCodegenCreationStrategy(
             transient_schema,
         )
 
-        spell_codegen_creation.no_overrides_creation = (
-            SpellNoOverridesCodegenCreation(
-                compiled_executor=compiled_executor,
-                executor_signature=executor_signature,
-                metadata={
-                    "lane_id": no_overrides_plan.lane_id,
-                    "root_spell_id": no_overrides_plan.root_spell_id,
-                    "step_count": len(no_overrides_plan.steps),
-                    "fast_transient_available": (
-                        no_overrides_plan.fast_transient_plan is not None
-                    ),
-                },
-            )
+        spell_codegen_creation.no_overrides_executor = compiled_executor
+        spell_codegen_creation.no_overrides_executor_signature = (
+            executor_signature
+        )
+        spell_codegen_creation.metadata["no_overrides_lane_id"] = (
+            no_overrides_plan.lane_id
+        )
+        spell_codegen_creation.metadata["no_overrides_root_spell_id"] = (
+            no_overrides_plan.root_spell_id
+        )
+        spell_codegen_creation.metadata["no_overrides_step_count"] = (
+            len(no_overrides_plan.steps)
+        )
+        spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
+            no_overrides_plan.fast_transient_plan is not None
         )
 
     @staticmethod

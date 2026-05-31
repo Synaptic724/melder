@@ -6,6 +6,9 @@ from typing import Any
 import pytest
 
 import melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy as occurrence_graph_strategy_module
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer import (
     SpellAnalyzer,
 )
@@ -20,6 +23,21 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 )
 
 
+class _SpellIndexProbe:
+    """Hashable spell-index double for contracted lookup tests."""
+
+    __slots__ = ["current", "id"]
+
+    def __init__(self, spell_id: str) -> None:
+        """Store current and lineage ids."""
+        self.current = spell_id
+        self.id = "lineage-{0}".format(spell_id)
+
+    def __hash__(self) -> int:
+        """Keep the probe usable as a dictionary key."""
+        return hash((self.current, self.id))
+
+
 def _make_spellbook_and_spell() -> tuple[Any, Any]:
     """Build a minimal spellbook/spell pair for occurrence analyzer tests."""
     spellbook = SimpleNamespace(
@@ -29,6 +47,7 @@ def _make_spellbook_and_spell() -> tuple[Any, Any]:
         spell_id="spell-1",
         spell_name="spell-1",
         spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
+        existence=Existence.unique,
         is_existing_creation=False,
         mutation_override=None,
         _spellbook=spellbook,
@@ -61,19 +80,15 @@ def test_occurrence_analyzer_builds_graph_artifact(
     )
     occurrence_graph = _make_occurrence_graph()
 
-    class _Phase8Stub:
-        """Phase 8 helper stub with deterministic cache output."""
-
-        def _build_phase8_occurrence_plan_fast_key(self, **kwargs: Any) -> tuple[str]:
-            return ("occ-fast",)
-
-        def _build_phase8_occurrence_plan_input_signature(self, **kwargs: Any) -> str:
-            return "occ-sig"
-
     monkeypatch.setattr(
-        occurrence_graph_strategy_module,
-        "CompilerPhase8",
-        _Phase8Stub,
+        SpellOccurrenceGraphAnalyzerStrategy,
+        "_build_occurrence_graph_fast_key",
+        lambda self, **kwargs: ("occ-fast",),
+    )
+    monkeypatch.setattr(
+        SpellOccurrenceGraphAnalyzerStrategy,
+        "_build_occurrence_graph_input_signature",
+        lambda self, **kwargs: "occ-sig",
     )
     monkeypatch.setattr(
         SpellOccurrenceGraphAnalyzerStrategy,
@@ -111,3 +126,177 @@ def test_spell_analyzer_strategy_builder_registers_graph_strategy_by_default() -
     assert strategy_builder.registered_strategy_names() == (
         "spell_occurrence_graph_analyzer",
     )
+
+
+def test_occurrence_graph_analyzer_fast_key_serializes_visible_state_and_rejects_mutations() -> None:
+    """The analyzer fast-key helper should serialize visible state and reject mutation overrides."""
+    strategy = SpellOccurrenceGraphAnalyzerStrategy()
+    spellbook = _make_spellbook_and_spell()[0]
+    root_spell = spellbook._spell_id_pool["spell-1"]
+    dep_spell = SimpleNamespace(
+        spell_id="dep",
+        spell_name="dep",
+        spell_index=_SpellIndexProbe("dep"),
+        existence=Existence.unique,
+        is_existing_creation=False,
+        mutation_override=None,
+    )
+    spellbook._spell_id_pool["dep"] = dep_spell
+    spellbook._lookup_contracted_spells = {
+        "peer": {
+            ("frame", "binding"): dep_spell.spell_index,
+        }
+    }
+    spellbook._contracted_spells = {
+        "peer": {
+            dep_spell.spell_index: dep_spell,
+        }
+    }
+    spellbook._aetheric_frame_configuration = SimpleNamespace(
+        system_state=SystemState.dynamic,
+    )
+    spell_system_states = SimpleNamespace(
+        _local_topologies={
+            "spell-1": SimpleNamespace(
+                sockets=[
+                    SimpleNamespace(param_name="svc", target_spell_ids=("dep",)),
+                ]
+            )
+        }
+    )
+    path_registry = object()
+    blueprint = SimpleNamespace(
+        root_spell_id="spell-1",
+        ordered_node_ids=("dep", "spell-1"),
+        path_registry=path_registry,
+        socket_refs=[
+            SimpleNamespace(
+                node_id="spell-1",
+                param_name="svc",
+                param_path_id=7,
+                socket_kind=SocketKind.NORMAL,
+            )
+        ],
+    )
+
+    fast_key = strategy._build_occurrence_graph_fast_key(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+        spellbook=spellbook,
+        spell_system_states=spell_system_states,
+    )
+
+    assert fast_key == (
+        "spell-1",
+        ("dep", "spell-1"),
+        id(path_registry),
+        (("spell-1", "svc", 7, SocketKind.NORMAL.value),),
+        (
+            ("dep", "dep", Existence.unique.name, False),
+            ("spell-1", "spell-1", Existence.unique.name, False),
+        ),
+        (("spell-1", (("svc", ("dep",)),)),),
+        SystemState.dynamic,
+        (("peer", "frame", "binding", "dep"),),
+    )
+
+    dep_spell.mutation_override = {"svc": "mutated"}
+    assert strategy._build_occurrence_graph_fast_key(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+        spellbook=spellbook,
+        spell_system_states=spell_system_states,
+    ) is None
+
+
+def test_occurrence_graph_analyzer_input_signature_hashes_mutation_payloads(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The analyzer input-signature helper should hash normalized mutation payload semantics."""
+    strategy = SpellOccurrenceGraphAnalyzerStrategy()
+    spellbook, spell = _make_spellbook_and_spell()
+    spell.mutation_override = {"svc": ["x", "y"]}
+    spellbook._lookup_contracted_spells = {}
+    spellbook._contracted_spells = {}
+    spellbook._aetheric_frame_configuration = SimpleNamespace(
+        system_state=SystemState.dynamic,
+    )
+    captured_parts: list[tuple[Any, ...]] = []
+
+    monkeypatch.setattr(
+        occurrence_graph_strategy_module.SharedCompilerExecutions,
+        "hash_codegen_signature",
+        lambda *parts: captured_parts.append(parts) or "occurrence-signature",
+    )
+    blueprint = SimpleNamespace(
+        root_spell_id="spell-1",
+        ordered_node_ids=("spell-1",),
+        path_registry=object(),
+        socket_refs=[
+            SimpleNamespace(
+                node_id="spell-1",
+                param_name="svc",
+                param_path_id=7,
+                socket_kind=SocketKind.NORMAL,
+            )
+        ],
+    )
+
+    signature = strategy._build_occurrence_graph_input_signature(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+        spellbook=spellbook,
+        spell_system_states=None,
+    )
+
+    assert signature == "occurrence-signature"
+    assert captured_parts
+    spell_rows = captured_parts[0][4]
+    assert spell_rows == (
+        (
+            "spell-1",
+            "spell-1",
+            Existence.unique.name,
+            False,
+            strategy._freeze_schema_value({"svc": ["x", "y"]}),
+        ),
+    )
+
+
+def test_occurrence_graph_analyzer_reuses_cached_graph_when_fast_key_and_signature_match(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The analyzer strategy should skip rebuild when the cached graph truth still matches."""
+    strategy = SpellOccurrenceGraphAnalyzerStrategy()
+    spellbook, spell = _make_spellbook_and_spell()
+    spellbook._aetheric_frame_configuration = SimpleNamespace(
+        system_state=SystemState.dynamic,
+    )
+    artifact = SpellCompilerArtifact("spell-1")
+    cached_graph = object()
+    artifact._root_blueprint_phase5 = object()
+    artifact._occurrence_graph_analysis = cached_graph
+    artifact._occurrence_analysis_fast_key = ("fast",)
+    artifact._occurrence_analysis_input_signature = "sig"
+
+    monkeypatch.setattr(
+        SpellOccurrenceGraphAnalyzerStrategy,
+        "_build_occurrence_graph_fast_key",
+        lambda self, **kwargs: ("fast",),
+    )
+    monkeypatch.setattr(
+        SpellOccurrenceGraphAnalyzerStrategy,
+        "_build_occurrence_graph_input_signature",
+        lambda self, **kwargs: "sig",
+    )
+    monkeypatch.setattr(
+        SpellOccurrenceGraphAnalyzerStrategy,
+        "_build_occurrence_graph",
+        lambda self, **kwargs: (_ for _ in ()).throw(
+            AssertionError("graph rebuild should not run")
+        ),
+    )
+
+    strategy.analyze(spell, artifact)
+
+    assert artifact._occurrence_graph_analysis is cached_graph

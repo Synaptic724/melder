@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from melder.aether.spellbook.spell_compiler.codegen_creation.codegen_creation_discovery_system import (
     CodegenCreationDiscoverySystem,
 )
@@ -7,9 +9,15 @@ from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creat
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy_builder import (
     SpellCodegenStrategyBuilder,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
 
 
-class CodegenCreationSystem:
+class CodegenCreationSystem(Cleanable):
     """
     Codegen creation facade over artifact-owned model and plan truth.
 
@@ -34,6 +42,7 @@ class CodegenCreationSystem:
         """
         Build one codegen creation system facade.
         """
+        super().__init__()
         self._discovery_system = CodegenCreationDiscoverySystem()
         self._strategy_builder = SpellCodegenStrategyBuilder()
 
@@ -41,13 +50,16 @@ class CodegenCreationSystem:
         """
         Deterministically release facade-owned state.
         """
+        if self._cleaned:
+            return
+        self._cleaned = True
         self._strategy_builder.cleanup()
         del self._strategy_builder
         del self._discovery_system
 
     def build(
             self,
-            artifact,
+            artifact: "SpellCompilerArtifact",
     ) -> None:
         """
         Fit and publish the codegen creation output for the supplied artifact.
@@ -76,9 +88,23 @@ class CodegenCreationSystem:
             discovery_reason=None,
             resolve_route_key=None,
             fast_transient_no_overrides_enabled=False,
-            no_overrides_creation=None,
-            overrides_creation=None,
-            mutation_overrides_creation=None,
+            no_overrides_executor=None,
+            no_overrides_executor_signature=None,
+            override_targeting=None,
+            override_no_mutation_plan_signature=None,
+            override_no_mutation_path_registry=None,
+            override_no_mutation_plan_rows=None,
+            override_no_mutation_root_spell_id=None,
+            override_no_mutation_spell_lookup=None,
+            override_no_mutation_empty_shape_key=None,
+            override_no_mutation_baseline_executor=None,
+            override_mutation_plan_signature=None,
+            override_mutation_path_registry=None,
+            override_mutation_plan_rows=None,
+            override_mutation_root_spell_id=None,
+            override_mutation_spell_lookup=None,
+            override_mutation_empty_shape_key=None,
+            override_mutation_baseline_executor=None,
             metadata={},
         )
         discovery = self._discovery_system.discover(
