@@ -1,5 +1,6 @@
 """Direct unit tests for the codegen_creation object layer."""
 
+from types import SimpleNamespace
 from typing import Any, Dict, Tuple
 
 import pytest
@@ -504,3 +505,329 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
     assert creation.metadata["no_overrides_root_spell_id"] == "root"
     assert creation.metadata["no_overrides_step_count"] == 2
     assert creation.metadata["no_overrides_fast_transient_available"] is True
+
+
+def test_override_targeting_codegen_creation_resolves_and_caches_target_keys() -> None:
+    """The override-targeting creation artifact should preserve path/unique/broadcast resolution and caching."""
+    artifact = SpellOverrideTargetingCodegenCreation.from_analysis(
+        root_spell_id="root",
+        targets_by_spec={
+            "root>svc": (
+                SpellOverrideTargetRef(
+                    node_id="root",
+                    param_path_id=1,
+                    param_name="svc",
+                    socket_kind_value=0,
+                ),
+            ),
+            "*svc": (
+                SpellOverrideTargetRef(
+                    node_id="root",
+                    param_path_id=1,
+                    param_name="svc",
+                    socket_kind_value=0,
+                ),
+            ),
+            "**svc": (
+                SpellOverrideTargetRef(
+                    node_id="root",
+                    param_path_id=1,
+                    param_name="svc",
+                    socket_kind_value=0,
+                ),
+                SpellOverrideTargetRef(
+                    node_id="dep",
+                    param_path_id=2,
+                    param_name="svc",
+                    socket_kind_value=0,
+                ),
+            ),
+        },
+        specificity_by_spec={
+            "root>svc": 3,
+            "*svc": 2,
+            "**svc": 1,
+        },
+    )
+
+    path_matches, path_level, path_shape = artifact._resolve_targets_for_raw_key(
+        "root>svc"
+    )
+    unique_matches, unique_level, unique_shape = artifact._resolve_targets_for_raw_key(
+        "*svc"
+    )
+    broadcast_matches, broadcast_level, broadcast_shape = artifact._resolve_targets_for_raw_key(
+        "**svc"
+    )
+    cached_matches, cached_level, cached_shape = artifact._resolve_targets_for_raw_key(
+        "root>svc"
+    )
+
+    assert len(path_matches) == 1
+    assert path_level.value == 3
+    assert path_shape == (("root", 1, "svc", 0),)
+    assert len(unique_matches) == 1
+    assert unique_level.value == 2
+    assert unique_shape == (("root", 1, "svc", 0),)
+    assert len(broadcast_matches) == 2
+    assert broadcast_level.value == 1
+    assert broadcast_shape == (
+        ("dep", 2, "svc", 0),
+        ("root", 1, "svc", 0),
+    )
+    assert cached_matches is path_matches
+    assert cached_level is path_level
+    assert cached_shape is path_shape
+
+
+def test_override_targeting_codegen_creation_rejects_missing_and_ambiguous_targets() -> None:
+    """The override-targeting creation artifact should fail hard on missing/ambiguous target rules."""
+    artifact = SpellOverrideTargetingCodegenCreation.from_analysis(
+        root_spell_id="root",
+        targets_by_spec={
+            "*svc": (
+                SpellOverrideTargetRef(
+                    node_id="root",
+                    param_path_id=1,
+                    param_name="svc",
+                    socket_kind_value=0,
+                ),
+                SpellOverrideTargetRef(
+                    node_id="dep",
+                    param_path_id=2,
+                    param_name="svc",
+                    socket_kind_value=0,
+                ),
+            ),
+        },
+        specificity_by_spec={"*svc": 2},
+    )
+
+    with pytest.raises(RuntimeError, match="No sockets found for override path"):
+        artifact._resolve_targets_for_raw_key("root>missing")
+    with pytest.raises(RuntimeError, match="matched 2 sockets"):
+        artifact._resolve_targets_for_raw_key("*svc")
+
+
+def test_override_targeting_codegen_creation_spec_key_rejects_unknown_kind() -> None:
+    """The override-targeting creation artifact should reject unsupported parsed target kinds."""
+    with pytest.raises(RuntimeError, match="Unsupported TargetSpecKind"):
+        SpellOverrideTargetingCodegenCreation._spec_key(
+            type("SpecProbe", (), {"kind": "bad", "param_name": "svc", "path": ()})()
+        )
+
+
+def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The overrides creation strategy should package the non-mutation override route onto the creation artifact."""
+    plan = SpellCodegenPlan(
+        processor_strategy_ids=(),
+        plan_strategy_ids=(),
+        no_overrides_plan=None,
+        overrides_plan=type(
+            "LanePlanProbe",
+            (),
+            {
+                "lane_id": "overrides",
+                "root_spell_id": "root",
+                "steps": (
+                    SimpleNamespace(
+                        spell=SimpleNamespace(
+                            spell_index=SimpleNamespace(current="root"),
+                        )
+                    ),
+                ),
+            },
+        )(),
+        mutation_overrides_plan=None,
+        metadata={},
+    )
+    creation = SpellCodegenCreation(
+        selected_strategy_ids=(),
+        discovery_reason=None,
+        resolve_route_key=None,
+        fast_transient_no_overrides_enabled=False,
+        no_overrides_executor=None,
+        no_overrides_executor_signature=None,
+        override_targeting=None,
+        override_no_mutation_plan_signature=None,
+        override_no_mutation_path_registry=None,
+        override_no_mutation_plan_rows=None,
+        override_no_mutation_root_spell_id=None,
+        override_no_mutation_spell_lookup=None,
+        override_no_mutation_empty_shape_key=None,
+        override_no_mutation_baseline_executor=None,
+        override_mutation_plan_signature=None,
+        override_mutation_path_registry=None,
+        override_mutation_plan_rows=None,
+        override_mutation_root_spell_id=None,
+        override_mutation_spell_lookup=None,
+        override_mutation_empty_shape_key=None,
+        override_mutation_baseline_executor=None,
+        metadata={},
+    )
+    state = type(
+        "ModelProbe",
+        (),
+        {
+            "graph_shape": SimpleNamespace(path_registry="PATH_REG"),
+            "override_targeting_shape": SimpleNamespace(
+                targets_by_spec={
+                    "root>svc": (
+                        SpellOverrideTargetRef(
+                            node_id="root",
+                            param_path_id=1,
+                            param_name="svc",
+                            socket_kind_value=0,
+                        ),
+                    )
+                },
+                specificity_by_spec={"root>svc": 3},
+            ),
+        },
+    )()
+
+    monkeypatch.setattr(
+        overrides_strategy_module.SharedCompilerExecutions,
+        "build_phase11_step_ir_row",
+        lambda step, include_override_metadata: {
+            "step": step.spell.spell_index.current,
+            "include_override_metadata": include_override_metadata,
+        },
+    )
+    monkeypatch.setattr(
+        overrides_strategy_module.SharedCompilerExecutions,
+        "hash_codegen_signature",
+        lambda *parts: ("sig", len(parts)),
+    )
+    monkeypatch.setattr(
+        overrides_strategy_module,
+        "compile_phase13_overrides_executor",
+        lambda **kwargs: ("override-executor", kwargs["root_spell_id"]),
+    )
+
+    SpellGeneralizedOverridesCodegenCreationStrategy().apply(
+        state,
+        plan,
+        creation,
+    )
+
+    assert creation.override_targeting is not None
+    assert creation.override_no_mutation_root_spell_id == "root"
+    assert creation.override_no_mutation_path_registry == "PATH_REG"
+    assert creation.override_no_mutation_baseline_executor == (
+        "override-executor",
+        "root",
+    )
+    assert creation.metadata["override_lane_id"] == "overrides"
+    assert creation.metadata["override_root_spell_id"] == "root"
+    assert creation.metadata["override_step_count"] == 1
+
+
+def test_mutation_overrides_codegen_creation_strategy_publishes_mutation_route_payload(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The mutation-overrides creation strategy should package the mutation-aware override route onto the creation artifact."""
+    plan = SpellCodegenPlan(
+        processor_strategy_ids=(),
+        plan_strategy_ids=(),
+        no_overrides_plan=None,
+        overrides_plan=None,
+        mutation_overrides_plan=type(
+            "LanePlanProbe",
+            (),
+            {
+                "lane_id": "mutation_overrides",
+                "root_spell_id": "root",
+                "steps": (
+                    SimpleNamespace(
+                        spell=SimpleNamespace(
+                            spell_index=SimpleNamespace(current="root"),
+                        )
+                    ),
+                ),
+            },
+        )(),
+        metadata={},
+    )
+    creation = SpellCodegenCreation(
+        selected_strategy_ids=(),
+        discovery_reason=None,
+        resolve_route_key=None,
+        fast_transient_no_overrides_enabled=False,
+        no_overrides_executor=None,
+        no_overrides_executor_signature=None,
+        override_targeting=None,
+        override_no_mutation_plan_signature=None,
+        override_no_mutation_path_registry=None,
+        override_no_mutation_plan_rows=None,
+        override_no_mutation_root_spell_id=None,
+        override_no_mutation_spell_lookup=None,
+        override_no_mutation_empty_shape_key=None,
+        override_no_mutation_baseline_executor=None,
+        override_mutation_plan_signature=None,
+        override_mutation_path_registry=None,
+        override_mutation_plan_rows=None,
+        override_mutation_root_spell_id=None,
+        override_mutation_spell_lookup=None,
+        override_mutation_empty_shape_key=None,
+        override_mutation_baseline_executor=None,
+        metadata={},
+    )
+    state = type(
+        "ModelProbe",
+        (),
+        {
+            "graph_shape": SimpleNamespace(path_registry="PATH_REG"),
+        },
+    )()
+
+    monkeypatch.setattr(
+        mutation_strategy_module.SharedCompilerExecutions,
+        "build_phase11_step_ir_row",
+        lambda step, include_override_metadata: {
+            "step": step.spell.spell_index.current,
+            "include_override_metadata": include_override_metadata,
+        },
+    )
+    monkeypatch.setattr(
+        mutation_strategy_module.SharedCompilerExecutions,
+        "hash_codegen_signature",
+        lambda *parts: ("sig", len(parts)),
+    )
+    monkeypatch.setattr(
+        mutation_strategy_module,
+        "compile_phase13_overrides_executor",
+        lambda **kwargs: ("mutation-executor", kwargs["root_spell_id"]),
+    )
+
+    SpellGeneralizedMutationOverridesCodegenCreationStrategy().apply(
+        state,
+        plan,
+        creation,
+    )
+
+    assert creation.override_mutation_root_spell_id == "root"
+    assert creation.override_mutation_path_registry == "PATH_REG"
+    assert creation.override_mutation_baseline_executor == (
+        "mutation-executor",
+        "root",
+    )
+    assert creation.metadata["override_mutation_lane_id"] == "mutation_overrides"
+    assert creation.metadata["override_mutation_root_spell_id"] == "root"
+    assert creation.metadata["override_mutation_step_count"] == 1
+
+
+def test_codegen_creation_system_cleanup_cleans_builder_and_drops_owned_refs() -> None:
+    """The creation facade cleanup should clean the builder and drop both owned references."""
+    system = CodegenCreationSystem()
+    builder = _StrategyBuilderProbe(())
+    system._strategy_builder = builder
+    system._discovery_system = object()
+
+    system.cleanup()
+
+    assert builder.cleanup_called is True
+    assert not hasattr(system, "_strategy_builder")
+    assert not hasattr(system, "_discovery_system")

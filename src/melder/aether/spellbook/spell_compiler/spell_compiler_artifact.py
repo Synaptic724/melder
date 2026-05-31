@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, ClassVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -22,8 +22,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
         SpellOccurrenceOrderAnalysis,
     )
-    from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
-    from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationPatchMap, OverridePatchMap
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
     )
@@ -36,9 +34,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.system.spell_system_index import (
         SpellSystemIndex,
     )
-    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-        ExecutionPlan,
-    )
     from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
         SpellCodegenPlan,
     )
@@ -47,9 +42,6 @@ if TYPE_CHECKING:
     )
     from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
         SpellSymbolicGraph,
-    )
-    from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
-        OccurrencePlan,
     )
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import RootResolutionBlueprint
 
@@ -97,35 +89,6 @@ class SpellCompilerArtifact(Cleanable):
         "_occurrence_order_analysis",
         "_occurrence_instance_analysis",
         "_occurrence_contract_analysis",
-        "_occurrence_analysis_shape_profile",
-        "_phase8_occurrence_plan_input_signature",
-        "_phase8_occurrence_plan_fast_key",
-        "_occurrence_plan_phase8",
-        "_occurrence_shape_profile_phase8",
-        "_phase9_injection_plan_input_signature",
-        "_injection_plan_phase9",
-        "_injection_shape_profile_phase9",
-        "_override_patch_map_phase10",
-        "_mutation_patch_map_phase10",
-        "_phase10_patch_maps_input_signature",
-        "_override_shape_profile_phase10",
-        "_execution_plan_phase11",
-        "_execution_plan_phase11_no_overrides",
-        "_execution_plan_phase11_overrides",
-        "_execution_plan_step_count_phase11",
-        "_execution_plan_unique_spell_count_phase11",
-        "_execution_plan_max_occurrence_depth_phase11",
-        "_execution_plan_max_dependency_count_phase11",
-        "_execution_plan_has_calln_phase11",
-        "_execution_plan_has_contract_payloads_phase11",
-        "_execution_plan_has_existing_creations_phase11",
-        "_execution_shape_profile_phase11",
-        "_phase11_no_overrides_plan_signature",
-        "_phase11_no_overrides_transient_schema",
-        "_phase13_no_overrides_executor",
-        "_phase13_no_overrides_executor_signature",
-        "_phase11_no_overrides_input_signature",
-        "_phase11_no_overrides_fast_key",
         "_spell_codegen_model",
         "_spell_codegen_plan",
         "_spell_codegen_creation",
@@ -173,35 +136,6 @@ class SpellCompilerArtifact(Cleanable):
         self._occurrence_order_analysis: Optional[SpellOccurrenceOrderAnalysis] = None
         self._occurrence_instance_analysis: Optional[SpellOccurrenceInstanceAnalysis] = None
         self._occurrence_contract_analysis: Optional[SpellOccurrenceContractAnalysis] = None
-        self._occurrence_analysis_shape_profile: Optional[Dict[str, Any]] = None
-        self._phase8_occurrence_plan_input_signature: Optional[str] = None
-        self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
-        self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
-        self._occurrence_shape_profile_phase8: Optional[Dict[str, Any]] = None
-        self._phase9_injection_plan_input_signature: Optional[str] = None
-        self._injection_plan_phase9: Optional[InjectionPlan] = None
-        self._injection_shape_profile_phase9: Optional[Dict[str, Any]] = None
-        self._override_patch_map_phase10: Optional[OverridePatchMap] = None
-        self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
-        self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
-        self._override_shape_profile_phase10: Optional[Dict[str, Any]] = None
-        self._execution_plan_phase11: Optional[ExecutionPlan] = None
-        self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
-        self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
-        self._execution_plan_step_count_phase11: Optional[int] = None
-        self._execution_plan_unique_spell_count_phase11: Optional[int] = None
-        self._execution_plan_max_occurrence_depth_phase11: Optional[int] = None
-        self._execution_plan_max_dependency_count_phase11: Optional[int] = None
-        self._execution_plan_has_calln_phase11: Optional[bool] = None
-        self._execution_plan_has_contract_payloads_phase11: Optional[bool] = None
-        self._execution_plan_has_existing_creations_phase11: Optional[bool] = None
-        self._execution_shape_profile_phase11: Optional[Dict[str, Any]] = None
-        self._phase11_no_overrides_plan_signature: Optional[str] = None
-        self._phase11_no_overrides_transient_schema: Optional[Dict[str, Any]] = None
-        self._phase13_no_overrides_executor: Optional[Callable[..., Any]] = None
-        self._phase13_no_overrides_executor_signature: Optional[str] = None
-        self._phase11_no_overrides_input_signature: Optional[str] = None
-        self._phase11_no_overrides_fast_key: Optional[Tuple[Any, ...]] = None
         self._spell_codegen_model: Optional[SpellCodegenModel] = None
         self._spell_codegen_plan: Optional[SpellCodegenPlan] = None
         self._spell_codegen_creation: Optional[SpellCodegenCreation] = None
@@ -312,36 +246,7 @@ class SpellCompilerArtifact(Cleanable):
             del self._occurrence_order_analysis
             del self._occurrence_instance_analysis
             del self._occurrence_contract_analysis
-            del self._occurrence_analysis_shape_profile
             del self._requirements_shape_profile_phase1
-            del self._phase8_occurrence_plan_input_signature
-            del self._phase8_occurrence_plan_fast_key
-            del self._occurrence_plan_phase8
-            del self._occurrence_shape_profile_phase8
-            del self._phase9_injection_plan_input_signature
-            del self._injection_plan_phase9
-            del self._injection_shape_profile_phase9
-            del self._override_patch_map_phase10
-            del self._mutation_patch_map_phase10
-            del self._phase10_patch_maps_input_signature
-            del self._override_shape_profile_phase10
-            del self._execution_plan_phase11
-            del self._execution_plan_phase11_no_overrides
-            del self._execution_plan_phase11_overrides
-            del self._execution_plan_step_count_phase11
-            del self._execution_plan_unique_spell_count_phase11
-            del self._execution_plan_max_occurrence_depth_phase11
-            del self._execution_plan_max_dependency_count_phase11
-            del self._execution_plan_has_calln_phase11
-            del self._execution_plan_has_contract_payloads_phase11
-            del self._execution_plan_has_existing_creations_phase11
-            del self._execution_shape_profile_phase11
-            del self._phase11_no_overrides_plan_signature
-            del self._phase11_no_overrides_transient_schema
-            del self._phase13_no_overrides_executor
-            del self._phase13_no_overrides_executor_signature
-            del self._phase11_no_overrides_input_signature
-            del self._phase11_no_overrides_fast_key
             del self._spell_codegen_model
             del self._spell_codegen_plan
             del self._spell_codegen_creation
@@ -444,54 +349,10 @@ class SpellCompilerArtifact(Cleanable):
         self._requires_spellspace_request_phase5 = False
         self._occurrence_analysis_input_signature = None
         self._occurrence_analysis_fast_key = None
-        self._occurrence_analysis_shape_profile = None
         self._cleanup_occurrence_analysis_artifacts()
-        self._phase8_occurrence_plan_input_signature = None
-        self._phase8_occurrence_plan_fast_key = None
-        self._occurrence_shape_profile_phase8 = None
-
-        if self._occurrence_plan_phase8 is not None:
-            try:
-                self._occurrence_plan_phase8.cleanup()
-            except Exception:
-                pass
-        self._occurrence_plan_phase8 = None
-
-        self._phase9_injection_plan_input_signature = None
-        self._injection_shape_profile_phase9 = None
-        if self._injection_plan_phase9 is not None:
-            try:
-                self._injection_plan_phase9.cleanup()
-            except Exception:
-                pass
-        self._injection_plan_phase9 = None
-
-        if self._override_patch_map_phase10 is not None:
-            try:
-                self._override_patch_map_phase10.cleanup()
-            except Exception:
-                pass
-        self._override_patch_map_phase10 = None
-
-        if self._mutation_patch_map_phase10 is not None:
-            try:
-                self._mutation_patch_map_phase10.cleanup()
-            except Exception:
-                pass
-        self._mutation_patch_map_phase10 = None
-
-        self._phase10_patch_maps_input_signature = None
-        self._override_shape_profile_phase10 = None
-        self._cleanup_execution_plans_phase11()
-        self._spell_system_index_phase5 = None
-
         self._phase8_11_codegen_ir_dirty = False
-        self._phase11_no_overrides_plan_signature = None
-        self._phase11_no_overrides_transient_schema = None
-        self._phase13_no_overrides_executor = None
-        self._phase13_no_overrides_executor_signature = None
-        self._phase11_no_overrides_input_signature = None
-        self._phase11_no_overrides_fast_key = None
+        self._cleanup_codegen_outputs()
+        self._spell_system_index_phase5 = None
 
     def _cleanup_occurrence_analysis_artifacts(self) -> None:
         """
@@ -564,49 +425,5 @@ class SpellCompilerArtifact(Cleanable):
         self._spell_codegen_model = None
         self._spell_codegen_plan = None
         self._spell_codegen_creation = None
-
-    def _cleanup_execution_plans_phase11(self) -> None:
-        """
-        Deterministically clean all Phase 11 execution plan variants.
-
-        Contract:
-            - Best-effort cleans all three execution-plan caches for no-overrides,
-              overrides, and default variant.
-            - Leaves non-plan mutable state (for example phase-5 caches) untouched.
-
-        Returns:
-            None.
-        """
-        if self._execution_plan_phase11 is not None:
-            try:
-                self._execution_plan_phase11.cleanup()
-            except Exception:
-                pass
-        if self._execution_plan_phase11_no_overrides is not None:
-            try:
-                self._execution_plan_phase11_no_overrides.cleanup()
-            except Exception:
-                pass
-        if self._execution_plan_phase11_overrides is not None:
-            try:
-                self._execution_plan_phase11_overrides.cleanup()
-            except Exception:
-                pass
-        self._execution_plan_phase11 = None
-        self._execution_plan_phase11_no_overrides = None
-        self._execution_plan_phase11_overrides = None
-        self._execution_plan_step_count_phase11 = None
-        self._execution_plan_unique_spell_count_phase11 = None
-        self._execution_plan_max_occurrence_depth_phase11 = None
-        self._execution_plan_max_dependency_count_phase11 = None
-        self._execution_plan_has_calln_phase11 = None
-        self._execution_plan_has_contract_payloads_phase11 = None
-        self._execution_plan_has_existing_creations_phase11 = None
-        self._execution_shape_profile_phase11 = None
-        self._phase11_no_overrides_plan_signature = None
-        self._phase11_no_overrides_transient_schema = None
-        self._cleanup_codegen_outputs()
-
-
 
 

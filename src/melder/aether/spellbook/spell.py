@@ -225,7 +225,6 @@ class Spell(Cleanable):
         "resolution_required",
         "resolution_complete",
         "requires_spellspace_request",
-        "execution_plan_dispatch_route",
         "retries",
         "spell",
         "spell_id",
@@ -348,9 +347,6 @@ class Spell(Cleanable):
         # Final build-time artifacts
         self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
-
-        # Phase 11 dispatch-route hint used by current runtime path selection.
-        self.execution_plan_dispatch_route: Optional[str] = None
 
         # Foundation artifact home for compiler/build state and validation
         # artifacts owned directly by the Spell.
@@ -494,7 +490,6 @@ class Spell(Cleanable):
             del self.disposal_method_names
             del self.has_disposal_methods
             del self.dependency_graph
-            del self.execution_plan_dispatch_route
             del self.profile
             del self.spell
             del self._key

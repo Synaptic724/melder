@@ -182,7 +182,9 @@ class CompilerPhase5:
         artifact._requires_spellspace_request_phase5 = blueprint.requires_spellspace_request
         spell.requires_spellspace_request = blueprint.requires_spellspace_request
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
-        SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
+        artifact._cleanup_occurrence_analysis_artifacts()
+        artifact._cleanup_codegen_outputs()
+        spell._cleanup_creation_context()
 
     def _set_spell_system_index_phase5(
             self,
@@ -204,7 +206,9 @@ class CompilerPhase5:
             raise ValueError("index must not be None.")
         artifact._spell_system_index_phase5 = index
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
-        SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
+        artifact._cleanup_occurrence_analysis_artifacts()
+        artifact._cleanup_codegen_outputs()
+        spell._cleanup_creation_context()
 
     def _collect_local_scope_spell_ids(
             self,
@@ -526,7 +530,9 @@ class CompilerPhase5:
             for root_id, blueprint in root_blueprints.items()
         }
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
-        SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
+        artifact._cleanup_occurrence_analysis_artifacts()
+        artifact._cleanup_codegen_outputs()
+        spell._cleanup_creation_context()
 
         # Rebuild component-of index and register a revalidation hook for dirty roots.
         frame_name = self._get_required_spellbook_frame_name(spellbook)
@@ -679,5 +685,7 @@ class CompilerPhase5:
             for root_id, blueprint in local_root_blueprints.items()
         }
         SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
-        SharedCompilerExecutions.reset_phase8_11_codegen_ir(spell, artifact)
+        artifact._cleanup_occurrence_analysis_artifacts()
+        artifact._cleanup_codegen_outputs()
+        spell._cleanup_creation_context()
 

@@ -1670,11 +1670,6 @@ class SharedCompilerExecutions:
         artifact._phase8_11_codegen_ir_dirty = False
         spell.resolution_complete = False
 
-        # This path resets caches on a still-live artifact. Downstream phase
-        # logic reads these attributes directly, so they must remain present
-        # and reset to empty-cache state instead of being deleted.
-        artifact._phase13_no_overrides_executor = None
-        artifact._phase13_no_overrides_executor_signature = None
         artifact._phase8_occurrence_plan_input_signature = None
         artifact._phase8_occurrence_plan_fast_key = None
         artifact._phase9_injection_plan_input_signature = None
