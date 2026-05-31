@@ -36,7 +36,7 @@ class SpellAnalyzerStrategy(ABC):
     Design rule:
         - The builder is the registry holder.
         - The analyzer is the explicit method surface.
-        - Concrete strategies stay narrow and composable so additional
+        - Concrete strategies stay narrow and composable, so additional
           analysis groups can be added later without turning the analyzer back
           into a monolith.
     """
@@ -51,16 +51,16 @@ class SpellAnalyzerStrategy(ABC):
         Return the stable identifier for this analyzer strategy.
 
         Purpose:
-            Give one stable name to the strategy for diagnostics, builder
-            registration, benchmark output, and migration auditing.
+            Give the analyzer builder one deterministic registry key that the
+            analyzer facade can reference explicitly in its strategy chains.
 
         Contract:
-            - Must be constant for the strategy type.
-            - Must not depend on spell-local runtime values.
+            - Identifier must be stable for a given concrete strategy.
+            - Identifier must be safe to persist into analyzer diagnostics.
 
         Returns:
             str:
-                Stable analyzer-strategy id for diagnostics and provenance.
+                Stable analyzer strategy id.
         """
         raise NotImplementedError
 
@@ -74,8 +74,7 @@ class SpellAnalyzerStrategy(ABC):
         Analyze the current spell/artifact pair and enrich the artifact.
 
         Purpose:
-            Let one concrete analyzer strategy inspect current spell/compiler
-            truth and add one bounded family of analysis artifacts back onto
+            Let one concrete analyzer strategy inspect the current spell / compiler truth and add one bounded family of analysis artifacts back onto
             `SpellCompilerArtifact`.
 
         Contract:

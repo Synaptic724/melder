@@ -1,5 +1,6 @@
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Tuple, ClassVar
 
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
@@ -7,15 +8,19 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_mod
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
     SpellArtifactProcessorStrategy,
 )
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder import (
+    SpellArtifactProcessorStrategyBuilder,
+)
 from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
     ExecutionPlan,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class SpellArtifactProcessor:
+class SpellArtifactProcessor(Cleanable):
     """
     Phase 12 processor orchestrator over compiler artifact inputs.
 
@@ -34,29 +39,43 @@ class SpellArtifactProcessor:
           exist yet, so later plan building has a stable baseline surface.
     """
 
-    __slots__ = [
-        "_strategies",
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_strategy_builder",
     ]
 
     def __init__(
             self,
-            *,
-            strategies: Optional[Sequence[SpellArtifactProcessorStrategy]] = None,
     ) -> None:
         """
-        Build one processor with an ordered strategy sequence.
+        Build one processor with a strategy builder.
         """
-        if strategies is None:
-            self._strategies: Tuple[SpellArtifactProcessorStrategy, ...] = ()
-        else:
-            self._strategies = tuple(strategies)
+        super().__init__()
+        self._strategy_builder = SpellArtifactProcessorStrategyBuilder()
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release processor-owned state.
+
+        Contract:
+            - Idempotent.
+            - Cleans the owned strategy builder directly.
+            - Drops the processor's only owned reference so later use fails
+              honestly through `check_cleaned()`.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._strategy_builder.cleanup()
+        del self._strategy_builder
 
     def process(
             self,
+            spell,
             artifact: SpellCompilerArtifact,
     ) -> SpellCodegenModel:
         """
-        Build the model from the current artifact and run the strategy sequence.
+        Build processor-owned artifacts, then assemble the model.
 
         Args:
             artifact:
@@ -68,15 +87,20 @@ class SpellArtifactProcessor:
                 processing.
         """
         model = self._build_model(artifact)
+        strategy_names = self._strategy_builder.registered_strategy_names()
+        strategies = self._strategy_builder.get_strategies(strategy_names)
+
+        applied_strategy_ids: list[str] = []
+        for strategy in strategies:
+            strategy.process(spell, artifact, model)
+            applied_strategy_ids.append(strategy.strategy_id)
+
+        self._refresh_model_from_processor_outputs(model, artifact)
         assessment = model.assessment
         assessment["processor_ready"] = True
         assessment["section_names"] = model.section_names()
-        assessment["strategy_count"] = len(self._strategies)
-
-        for strategy in self._strategies:
-            strategy.process(model)
-            model.applied_strategy_ids.append(strategy.strategy_id)
-
+        assessment["strategy_count"] = len(strategies)
+        model.applied_strategy_ids.extend(applied_strategy_ids)
         assessment["applied_strategy_ids"] = model.snapshot_applied_strategy_ids()
         return model
 
@@ -93,7 +117,7 @@ class SpellArtifactProcessor:
             - Short-circuits existing-creation mode when no construction-planning
               artifacts exist.
         """
-        occurrence_shape_profile = artifact._occurrence_shape_profile_phase8 or {}
+        occurrence_shape_profile = artifact._occurrence_analysis_shape_profile or {}
         injection_shape_profile = artifact._injection_shape_profile_phase9 or {}
         override_shape_profile = artifact._override_shape_profile_phase10 or {}
         execution_shape_profile = artifact._execution_shape_profile_phase11 or {}
@@ -122,12 +146,25 @@ class SpellArtifactProcessor:
             route_family = SpellArtifactProcessor._route_family_from_existence(
                 existence,
             )
-            node_count = int(
-                occurrence_shape_profile.get(
-                    "unique_spell_count",
-                    execution_shape_profile.get("unique_spell_count", 0),
+            if artifact._occurrence_instance_analysis is not None:
+                node_count = artifact._occurrence_instance_analysis.unique_spell_count
+                shared_node_count = artifact._occurrence_instance_analysis.shared_spell_count
+                contract_payload_count = (
+                    artifact._occurrence_contract_analysis.contract_payload_count
+                    if artifact._occurrence_contract_analysis is not None
+                    else int(execution_shape_profile.get("contract_payload_step_count", 0))
                 )
-            )
+            else:
+                node_count = int(
+                    occurrence_shape_profile.get(
+                        "unique_spell_count",
+                        execution_shape_profile.get("unique_spell_count", 0),
+                    )
+                )
+                shared_node_count = int(occurrence_shape_profile.get("shared_spell_count", 0))
+                contract_payload_count = int(
+                    execution_shape_profile.get("contract_payload_step_count", 0)
+                )
             root_dependency_count = len(root_step.dependency_keys)
             max_depth = int(
                 occurrence_shape_profile.get(
@@ -136,7 +173,6 @@ class SpellArtifactProcessor:
                 )
             )
             max_width = int(occurrence_shape_profile.get("max_width", 0))
-            shared_node_count = int(occurrence_shape_profile.get("shared_spell_count", 0))
             graph_family = SpellArtifactProcessor._graph_family(
                 node_count=node_count,
                 max_depth=max_depth,
@@ -157,9 +193,6 @@ class SpellArtifactProcessor:
                     "has_calln",
                     artifact._execution_plan_has_calln_phase11 or False,
                 )
-            )
-            contract_payload_count = int(
-                execution_shape_profile.get("contract_payload_step_count", 0)
             )
             call_shape_family = SpellArtifactProcessor._call_shape_family(
                 root_dependency_count=root_dependency_count,
@@ -212,7 +245,73 @@ class SpellArtifactProcessor:
             root_positional_override_relevant=root_positional_override_relevant,
             override_shape_family=override_shape_family,
             fast_transient_eligible=fast_transient_eligible,
+            occurrence_graph_analysis=artifact._occurrence_graph_analysis,
         )
+
+    @staticmethod
+    def _refresh_model_from_processor_outputs(
+            model: SpellCodegenModel,
+            artifact: SpellCompilerArtifact,
+    ) -> None:
+        """
+        Refresh distilled selector fields from processor-owned outputs.
+
+        Purpose:
+            Let processor strategies own concrete derived artifacts while the
+            model stays the normalized planner input surface.
+        """
+        if model.occurrence_instance_analysis is not None:
+            model.node_count = model.occurrence_instance_analysis.unique_spell_count
+            model.shared_node_count = (
+                model.occurrence_instance_analysis.shared_spell_count
+            )
+
+        shape_profile = model.occurrence_shape_profile
+        if shape_profile is not None:
+            model.max_depth = int(
+                shape_profile.get("max_occurrence_depth", model.max_depth)
+            )
+            model.max_width = int(
+                shape_profile.get("max_width", model.max_width)
+            )
+            if model.shared_node_count == 0:
+                model.shared_node_count = int(
+                    shape_profile.get("shared_spell_count", model.shared_node_count)
+                )
+            model.graph_family = SpellArtifactProcessor._graph_family(
+                node_count=model.node_count,
+                max_depth=model.max_depth,
+                max_width=model.max_width,
+                shared_node_count=model.shared_node_count,
+            )
+
+        if model.occurrence_contract_analysis is not None:
+            model.contract_payload_count = (
+                model.occurrence_contract_analysis.contract_payload_count
+            )
+
+        if artifact._execution_shape_profile_phase11 is not None:
+            execution_shape_profile = artifact._execution_shape_profile_phase11
+            model.max_dependency_count = int(
+                execution_shape_profile.get(
+                    "max_dependency_count",
+                    model.max_dependency_count,
+                )
+            )
+            model.dependency_arity_histogram = tuple(
+                execution_shape_profile.get(
+                    "dependency_arity_histogram",
+                    model.dependency_arity_histogram,
+                )
+            )
+            model.has_calln = bool(
+                execution_shape_profile.get("has_calln", model.has_calln)
+            )
+            model.call_shape_family = SpellArtifactProcessor._call_shape_family(
+                root_dependency_count=model.root_dependency_count,
+                max_dependency_count=model.max_dependency_count,
+                has_calln=model.has_calln,
+            )
 
     @staticmethod
     def _resolve_root_step(

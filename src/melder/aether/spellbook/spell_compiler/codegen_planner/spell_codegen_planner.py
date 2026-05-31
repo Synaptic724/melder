@@ -1,5 +1,6 @@
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, ClassVar
 
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
@@ -7,68 +8,81 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_mod
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
-from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
-    SpellCodegenPlanStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder import (
+    SpellCodegenPlanStrategyBuilder,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class SpellCodegenPlanBuilder:
+class SpellCodegenPlanner(Cleanable):
     """
-    Build compiler-owned codegen plans from an already-finished model.
+    Phase 12 codegen-plan orchestrator.
 
     Purpose:
-        Keep the builder's role literal: it owns the ordered plan-strategy
-        registry and produces `SpellCodegenPlan` objects from finished
-        `SpellCodegenModel` inputs.
+        Consume an assessed model, build one baseline planner-owned codegen
+        plan, and then let planner strategies refine that final output object.
 
     Contract:
-        - Does not consume raw artifact bags directly.
-        - Does not build the model itself.
-        - Produces a meaningful baseline plan even when no concrete plan
-          strategies exist yet.
-        - Applies plan strategies in the stored order.
+        - Owns no runtime/compiler artifacts.
+        - Owns only the plan-strategy builder.
+        - Always starts from the same baseline codegen plan shape for a given
+          model.
+        - Applies registered plan strategies in deterministic order.
+        - Returns the final `SpellCodegenPlan` after planner strategies mutate
+          it in place.
     """
 
-    __slots__ = [
-        "_strategies",
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
+        "_strategy_builder",
     ]
 
     def __init__(
             self,
-            *,
-            strategies: Optional[Sequence[SpellCodegenPlanStrategy]] = None,
     ) -> None:
         """
-        Build one plan builder with an ordered strategy registry.
+        Build one planner with a plan-strategy builder.
         """
-        if strategies is None:
-            self._strategies: Tuple[SpellCodegenPlanStrategy, ...] = ()
-        else:
-            self._strategies = tuple(strategies)
+        super().__init__()
+        self._strategy_builder = SpellCodegenPlanStrategyBuilder()
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release planner-owned state.
+
+        Contract:
+            - Idempotent.
+            - Cleans the owned strategy builder directly.
+            - Drops the planner's only owned reference so later use fails
+              honestly through `check_cleaned()`.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._strategy_builder.cleanup()
+        del self._strategy_builder
 
     def build(
             self,
             model: SpellCodegenModel,
     ) -> SpellCodegenPlan:
         """
-        Build one Phase 12 codegen plan from the finished model.
+        Build one Phase 12 codegen plan from the assessed model.
         """
-        plan = self._build_baseline_plan(model)
-
-        plan_strategy_ids: list[str] = []
-        for strategy in self._strategies:
-            plan = strategy.apply(model, plan)
-            plan_strategy_ids.append(strategy.strategy_id)
-
-        plan.plan_strategy_ids = tuple(plan_strategy_ids)
+        plan = self._build_plan(model)
+        strategy_names = self._strategy_builder.registered_strategy_names()
+        strategies = self._strategy_builder.get_strategies(strategy_names)
+        for strategy in strategies:
+            strategy.apply(model, plan)
+            plan.plan_strategy_ids = plan.plan_strategy_ids + (strategy.strategy_id,)
         return plan
 
     @staticmethod
-    def _build_baseline_plan(
+    def _build_plan(
             model: SpellCodegenModel,
     ) -> SpellCodegenPlan:
         """
-        Build the first meaningful Phase 12 baseline plan from the model.
+        Build the first meaningful planner-owned codegen plan from the model.
         """
         build_kind = model.build_kind
         route_key = model.route_family

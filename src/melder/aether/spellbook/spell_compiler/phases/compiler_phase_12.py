@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
     SpellArtifactProcessor,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_builder import (
-    SpellArtifactProcessorBuilder,
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder import (
+    SpellArtifactProcessorStrategyBuilder,
 )
-from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_builder import (
-    SpellCodegenPlanBuilder,
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner import (
+    SpellCodegenPlanner,
 )
 
 if TYPE_CHECKING:
@@ -73,22 +73,24 @@ class CompilerPhase12:
             - Replaces any previous Phase 12 scaffold outputs on the artifact.
             - Best-effort cleans superseded Phase 12 objects after the new ones
               are stored.
+            - Does not force analyzer wiring into the live compiler path yet.
+            - Returns early when the analyzer-owned occurrence graph has not
+              been produced yet.
             - Does not mutate Phase 13 or runtime consumer wiring in this slice.
         """
         _ = spellbook
 
+        if artifact._occurrence_graph_analysis is None:
+            return
+
         previous_processor_state = artifact._phase12_processor_state
         previous_codegen_plan = artifact._phase12_codegen_plan
 
-        processor_builder = SpellArtifactProcessorBuilder(
-            strategies=(),
+        processor = SpellArtifactProcessor(
+            strategy_builder=SpellArtifactProcessorStrategyBuilder(),
         )
-        processor = processor_builder.build()
-        codegen_model = processor.process(artifact)
-        plan_builder = SpellCodegenPlanBuilder(
-            strategies=(),
-        )
-        codegen_plan = plan_builder.build(codegen_model)
+        codegen_model = processor.process(spell, artifact)
+        codegen_plan = SpellCodegenPlanner().build(codegen_model)
 
         artifact._phase12_processor_state = codegen_model
         artifact._phase12_codegen_plan = codegen_plan

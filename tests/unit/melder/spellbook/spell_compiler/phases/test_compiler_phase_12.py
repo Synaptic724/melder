@@ -4,14 +4,29 @@ from types import SimpleNamespace
 from typing import Any
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_builder import (
-    SpellArtifactProcessorBuilder,
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
+    SpellArtifactProcessor,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
+    SpellArtifactProcessorStrategy,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder import (
+    SpellArtifactProcessorStrategyBuilder,
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner import (
+    SpellCodegenPlanner,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
+    SpellCodegenPlanStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder import (
+    SpellCodegenPlanStrategyBuilder,
 )
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
     CompilerPhase12,
@@ -20,6 +35,60 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+
+
+class _EchoProcessorStrategy(SpellArtifactProcessorStrategy):
+    """Minimal processor strategy double for builder-registry tests."""
+
+    @property
+    def strategy_id(self) -> str:
+        """Return one stable processor strategy id."""
+        return "echo_processor"
+
+    def process(
+            self,
+            spell,
+            artifact: SpellCompilerArtifact,
+            model: SpellCodegenModel,
+    ) -> None:
+        """Record one visible marker on the processor-owned model."""
+        _ = spell
+        _ = artifact
+        model.occurrence_shape_profile = {"echo_processor": True}
+
+
+class _EchoPlanStrategy(SpellCodegenPlanStrategy):
+    """Minimal plan strategy double for builder-registry tests."""
+
+    @property
+    def strategy_id(self) -> str:
+        """Return one stable plan strategy id."""
+        return "echo_plan"
+
+    def apply(
+            self,
+            state: SpellCodegenModel,
+            plan: SpellCodegenPlan,
+    ) -> None:
+        """Record one visible marker on the plan metadata surface."""
+        _ = state
+        plan.metadata["echo_plan"] = True
+
+
+class _EchoProcessorStrategyBuilder(SpellArtifactProcessorStrategyBuilder):
+    """Test builder that seeds one processor strategy by default."""
+
+    def _load_defaults(self) -> None:
+        """Install one default processor strategy for registry tests."""
+        self._strategies_by_name["echo_processor"] = _EchoProcessorStrategy()
+
+
+class _EchoPlanStrategyBuilder(SpellCodegenPlanStrategyBuilder):
+    """Test builder that seeds one plan strategy by default."""
+
+    def _load_defaults(self) -> None:
+        """Install one default plan strategy for registry tests."""
+        self._strategies_by_name["echo_plan"] = _EchoPlanStrategy()
 
 
 def _seed_artifact(artifact: SpellCompilerArtifact) -> None:
@@ -95,10 +164,9 @@ def test_phase12_processor_consumes_full_artifact_surface() -> None:
     artifact = SpellCompilerArtifact("spell-1")
     _seed_artifact(artifact)
 
-    processor = SpellArtifactProcessorBuilder(
-        strategies=(),
-    ).build()
-    state = processor.process(artifact)
+    spell = SimpleNamespace()
+    processor = SpellArtifactProcessor()
+    state = processor.process(spell, artifact)
 
     assert isinstance(state, SpellCodegenModel)
     assert state.build_kind == "construct"
@@ -120,7 +188,14 @@ def test_phase12_run_stores_processor_state_and_codegen_plan() -> None:
     phase = CompilerPhase12()
     artifact = SpellCompilerArtifact("spell-1")
     _seed_artifact(artifact)
-    spell = SimpleNamespace()
+    spell = SimpleNamespace(
+        _spellbook=SimpleNamespace(_spell_id_pool={}),
+        is_existing_creation=False,
+        spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
+        mutation_override=None,
+        _spell_system_states=SimpleNamespace(_local_topologies={}),
+    )
+    spell._spellbook._spell_id_pool["spell-1"] = spell
     spellbook = SimpleNamespace()
 
     phase.run(spellbook, spell, artifact)
@@ -135,15 +210,38 @@ def test_phase12_run_stores_processor_state_and_codegen_plan() -> None:
     assert artifact._phase12_codegen_plan.processor_strategy_ids == ()
 
 
-def test_phase12_processor_builder_constructs_processor_with_registry() -> None:
-    """The processor builder should only act as a strategy-registry factory."""
-    processor_builder = SpellArtifactProcessorBuilder(
-        strategies=(),
-    )
+def test_phase12_processor_strategy_builder_registers_and_resolves_by_name() -> None:
+    """Processor strategy builder should expose a real name-based registry."""
+    builder = _EchoProcessorStrategyBuilder()
 
-    processor = processor_builder.build()
+    assert builder.get_strategy("echo_processor").strategy_id == "echo_processor"
+    assert tuple(
+        strategy.strategy_id
+        for strategy in builder.get_strategies(("echo_processor",))
+    ) == ("echo_processor",)
+    assert builder.registered_strategy_names() == ("echo_processor",)
 
-    assert processor is not None
+
+def test_phase12_codegen_plan_strategy_builder_registers_and_applies_by_name() -> None:
+    """Plan strategy builder should expose a real name-based registry."""
+    artifact = SpellCompilerArtifact("spell-1")
+    _seed_artifact(artifact)
+    spell = SimpleNamespace()
+    processor = SpellArtifactProcessor()
+    model = processor.process(spell, artifact)
+    builder = _EchoPlanStrategyBuilder()
+    planner = SpellCodegenPlanner()
+    planner._strategy_builder = builder
+    plan = planner.build(model)
+
+    assert builder.get_strategy("echo_plan").strategy_id == "echo_plan"
+    assert tuple(
+        strategy.strategy_id
+        for strategy in builder.get_strategies(("echo_plan",))
+    ) == ("echo_plan",)
+    assert builder.registered_strategy_names() == ("echo_plan",)
+    assert plan.plan_strategy_ids == ("echo_plan",)
+    assert plan.metadata["echo_plan"] is True
 
 
 def test_phase12_artifacts_clear_when_phase11_artifacts_clear() -> None:

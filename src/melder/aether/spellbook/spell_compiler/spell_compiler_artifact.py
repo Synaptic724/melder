@@ -4,16 +4,16 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, ClassVar
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_contract_analysis import (
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
         SpellOccurrenceContractAnalysis,
     )
-    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_graph_analysis import (
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
         SpellOccurrenceGraphAnalysis,
     )
-    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_instance_analysis import (
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis import (
         SpellOccurrenceInstanceAnalysis,
     )
-    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_order_analysis import (
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
         SpellOccurrenceOrderAnalysis,
     )
     from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan

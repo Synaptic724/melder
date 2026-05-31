@@ -8,11 +8,11 @@ InstanceKey = Tuple[str, Optional[int]]
 
 class SpellOccurrenceInstanceAnalysis(Cleanable):
     """
-    Occurrence-instance analysis artifact.
+    Processor-owned occurrence instance/sharedness artifact.
 
     Purpose:
         Hold the instance-key, sharedness, and canonical-occurrence decisions
-        derived from the occurrence graph.
+        derived from analyzer-owned occurrence graph data.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -34,7 +34,7 @@ class SpellOccurrenceInstanceAnalysis(Cleanable):
             shared_spell_ids: Set[str],
     ) -> None:
         """
-        Build one occurrence-instance analysis artifact.
+        Build one occurrence-instance artifact.
         """
         super().__init__()
         self.instance_keys_by_spell_id = instance_keys_by_spell_id

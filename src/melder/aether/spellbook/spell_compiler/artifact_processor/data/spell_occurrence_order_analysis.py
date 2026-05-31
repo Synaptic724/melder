@@ -5,10 +5,11 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class SpellOccurrenceOrderAnalysis(Cleanable):
     """
-    Occurrence-order analysis artifact.
+    Processor-owned occurrence-order artifact.
 
     Purpose:
-        Hold only execution-order decisions derived from the occurrence graph.
+        Hold deterministic execution-order truth derived from analyzer-owned
+        occurrence graph data.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -22,7 +23,7 @@ class SpellOccurrenceOrderAnalysis(Cleanable):
             execution_order: List[str],
     ) -> None:
         """
-        Build one occurrence-order analysis artifact.
+        Build one occurrence-order artifact.
         """
         super().__init__()
         self.execution_order = execution_order

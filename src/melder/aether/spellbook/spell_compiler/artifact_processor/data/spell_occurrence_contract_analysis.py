@@ -7,11 +7,11 @@ OccurrenceKey = Tuple[str, int]
 
 class SpellOccurrenceContractAnalysis(Cleanable):
     """
-    Occurrence-contract analysis artifact.
+    Processor-owned occurrence contract-routing artifact.
 
     Purpose:
-        Hold the SpellContract-derived payload routing gathered during
-        occurrence analysis.
+        Hold SpellContract-derived payload routing and completeness truth
+        derived from analyzer-owned occurrence graph data.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -31,7 +31,7 @@ class SpellOccurrenceContractAnalysis(Cleanable):
             contract_dependencies_complete: bool,
     ) -> None:
         """
-        Build one occurrence-contract analysis artifact.
+        Build one occurrence-contract artifact.
         """
         super().__init__()
         self.contract_overrides_by_occurrence = contract_overrides_by_occurrence

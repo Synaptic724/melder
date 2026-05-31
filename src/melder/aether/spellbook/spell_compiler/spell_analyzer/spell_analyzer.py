@@ -1,8 +1,10 @@
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Tuple, ClassVar
 
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder import (
     SpellAnalyzerStrategyBuilder,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
     )
 
 
-class SpellAnalyzer:
+class SpellAnalyzer(Cleanable):
     """
     Compiler-side spell analyzer orchestrator.
 
@@ -40,14 +42,13 @@ class SpellAnalyzer:
           is being scaffolded.
     """
 
-    __slots__ = [
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __slots__ = Cleanable.__slots__ + [
         "_strategy_builder",
     ]
 
     def __init__(
             self,
-            *,
-            strategy_builder: Optional[SpellAnalyzerStrategyBuilder] = None,
     ) -> None:
         """
         Build one analyzer with a strategy builder.
@@ -57,19 +58,28 @@ class SpellAnalyzer:
             owner of the named strategy registry.
 
         Contract:
-            - `None` means construct a default `SpellAnalyzerStrategyBuilder`.
+            - Analyzer owns its strategy builder directly.
             - The analyzer does not clone strategy objects; it consumes them
-              from the builder.
-
-        Args:
-            strategy_builder:
-                Optional analyzer strategy builder. When omitted, the analyzer
-                creates a default one.
+              from the owned builder.
         """
-        if strategy_builder is None:
-            self._strategy_builder = SpellAnalyzerStrategyBuilder()
+        super().__init__()
+        self._strategy_builder = SpellAnalyzerStrategyBuilder()
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release analyzer-owned state.
+
+        Contract:
+            - Idempotent.
+            - Cleans the owned strategy builder directly.
+            - Drops the analyzer's only owned reference so later use fails
+              honestly through `check_cleaned()`.
+        """
+        if self._cleaned:
             return
-        self._strategy_builder = strategy_builder
+        self._cleaned = True
+        self._strategy_builder.cleanup()
+        del self._strategy_builder
 
     def analyze_occurrence(
             self,
@@ -103,9 +113,6 @@ class SpellAnalyzer:
         self._run_strategy_chain(
             strategy_ids=(
                 "spell_occurrence_graph_analyzer",
-                "spell_occurrence_order_analyzer",
-                "spell_occurrence_instance_analyzer",
-                "spell_occurrence_contract_analyzer",
             ),
             spell=spell,
             artifact=artifact,

@@ -16,13 +16,12 @@ class SpellCodegenPlanStrategy(ABC):
     One Phase 12 codegen-plan shaping strategy contract.
 
     Purpose:
-        Define the seam where future plan strategies will transform assessed
-        processor state into tighter `SpellCodegenPlan` variants.
+        Define the seam where future planner strategies will transform assessed
+        processor state into the final planner-owned codegen plan output.
 
     Contract:
         - Strategies operate after artifact processing has completed.
-        - Strategies may replace the incoming plan object with a richer plan,
-          but they must preserve compiler-owned ownership.
+        - Strategies mutate `SpellCodegenPlan` in place.
         - Concrete strategies are intentionally absent from this scaffold slice.
 
     Ownership:
@@ -57,28 +56,26 @@ class SpellCodegenPlanStrategy(ABC):
             self,
             state: SpellCodegenModel,
             plan: SpellCodegenPlan,
-    ) -> SpellCodegenPlan:
+    ) -> None:
         """
-        Apply this strategy to the current Phase 12 plan.
+        Apply this strategy to the current planner-owned codegen plan.
 
         Purpose:
-            Let one concrete plan strategy refine or replace the current plan
-            after artifact processing has completed.
+            Let one concrete plan strategy refine the current planner-owned
+            codegen plan after artifact processing has completed.
 
         Contract:
             - Reads from the assessed processor state.
-            - Returns the resulting compiler-owned plan object.
-            - Must preserve compiler-owned ownership and not mutate borrowed
-              compiler/runtime artifacts directly.
+            - Mutates only the supplied planner-owned codegen plan.
+            - Must not mutate borrowed compiler/runtime artifacts directly.
 
         Args:
             state:
                 Assessed Phase 12 codegen model.
             plan:
-                Current compiler-owned codegen plan.
+                Current planner-owned codegen plan.
 
         Returns:
-            SpellCodegenPlan:
-                The resulting plan after this strategy is applied.
+            None.
         """
         raise NotImplementedError

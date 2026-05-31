@@ -1,31 +1,29 @@
 from typing import Dict, Tuple
 
-from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy import (
-    SpellAnalyzerStrategy,
-)
-from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy import (
-    SpellOccurrenceGraphAnalyzerStrategy,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
+    SpellCodegenPlanStrategy,
+)
 
-class SpellAnalyzerStrategyBuilder(Cleanable):
+
+class SpellCodegenPlanStrategyBuilder(Cleanable):
     """
-    Registry holder for analyzer strategies.
+    Registry holder for codegen-plan strategies.
 
     Purpose:
-        Own the default analyzer strategy objects keyed by stable strategy name
-        so the analyzer can consume them later through explicit method
-        chains.
+        Own the default plan strategy objects keyed by stable strategy name so
+        the planner can consume them later through explicit strategy-chain
+        selection.
 
     Contract:
-        - This object does not consume spells or artifacts.
-        - This object does not build or return `SpellAnalyzer`.
+        - This object does not consume models or artifacts.
+        - This object does not build or return `SpellCodegenPlan`.
         - It owns a single named strategy registry.
-        - `load_defaults()` populates the current built-in strategies into that
-          registry.
+        - `_load_defaults()` populates the current built-in strategies into
+          that registry.
         - Later compiler code can ask for strategies by name or ask for a
-          deterministic ordered tuple of strategies for one analysis chain.
+          deterministic ordered tuple of strategies for one planner chain.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -34,14 +32,14 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
 
     def __init__(self) -> None:
         """
-        Build one empty analyzer strategy registry and load defaults.
+        Build one empty plan strategy registry and load defaults.
 
         Contract:
             - The registry always starts empty before default loading.
-            - Default strategy registration happens through `load_defaults()`.
+            - Default strategy registration happens through `_load_defaults()`.
         """
         super().__init__()
-        self._strategies_by_name: Dict[str, SpellAnalyzerStrategy] = {}
+        self._strategies_by_name: Dict[str, SpellCodegenPlanStrategy] = {}
         self._load_defaults()
 
     def cleanup(self) -> None:
@@ -56,38 +54,33 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
 
     def _load_defaults(self) -> None:
         """
-        Populate the default analyzer strategy registry.
+        Populate the default plan strategy registry.
 
         Purpose:
-            Register the built-in analyzer strategies into the named registry
-            in one explicit place instead of spreading that wiring across the
-            analyzer itself.
+            Keep the built-in plan strategy wiring in one explicit place
+            instead of spreading that registration across planner call sites.
 
         Contract:
             - Clears and rebuilds the registry each time it runs.
             - Keys are the strategies' stable `strategy_id` values.
-            - Current defaults include only the primary occurrence graph
-              analysis strategy. Derived occurrence consumers belong under the
-              artifact processor.
+            - Current scaffold defaults are intentionally empty.
         """
-        graph_strategy = SpellOccurrenceGraphAnalyzerStrategy()
-        self._strategies_by_name[graph_strategy.strategy_id] = graph_strategy
-
+        return
 
     def get_strategy(
             self,
             strategy_name: str,
-    ) -> SpellAnalyzerStrategy:
+    ) -> SpellCodegenPlanStrategy:
         """
-        Return one registered analyzer strategy by stable name.
+        Return one registered plan strategy by stable name.
 
         Args:
             strategy_name:
                 Stable strategy name / id.
 
         Returns:
-            SpellAnalyzerStrategy:
-                Registered analyzer strategy.
+            SpellCodegenPlanStrategy:
+                Registered plan strategy.
 
         Raises:
             RuntimeError:
@@ -97,14 +90,14 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
         if strategy is not None:
             return strategy
         raise RuntimeError(
-            "SpellAnalyzerStrategyBuilder is missing strategy "
+            "SpellCodegenPlanStrategyBuilder is missing strategy "
             f"'{strategy_name}'."
         )
 
     def get_strategies(
             self,
             strategy_names: Tuple[str, ...],
-    ) -> Tuple[SpellAnalyzerStrategy, ...]:
+    ) -> Tuple[SpellCodegenPlanStrategy, ...]:
         """
         Return a deterministic ordered tuple of strategies by stable name.
 
@@ -113,8 +106,8 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
                 Ordered strategy names to resolve.
 
         Returns:
-            Tuple[SpellAnalyzerStrategy, ...]:
-                Ordered strategy tuple for later analyzer chaining.
+            Tuple[SpellCodegenPlanStrategy, ...]:
+                Ordered strategy tuple for later planner chaining.
         """
         return tuple(
             self.get_strategy(strategy_name)

@@ -1,11 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
-    SpellCodegenModel,
-)
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+        SpellCodegenModel,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
 
 
 class SpellArtifactProcessorStrategy(ABC):
@@ -13,24 +18,23 @@ class SpellArtifactProcessorStrategy(ABC):
     One Phase 12 artifact-processing strategy contract.
 
     Purpose:
-        Define the execution seam for processor strategies that examine the
-        full Phase 12 state and record assessments without generating code.
+        Define the execution seam for processor strategies that build or refine
+        concrete processor-owned artifacts from upstream compiler truth before
+        the distilled `SpellCodegenModel` is assembled.
 
     Contract:
         - Strategies run inside `SpellArtifactProcessor`.
-        - Strategies may read any part of the processor state.
-        - Strategies should write only to `state.assessment` and
-          `state.applied_strategy_ids`, not mutate borrowed compiler/runtime
-          artifacts.
-        - Concrete strategies are intentionally absent from this scaffold slice.
+        - Strategies may read `Spell` and `SpellCompilerArtifact`.
+        - Strategies should write concrete processor-owned outputs back onto
+          `SpellCompilerArtifact`.
+        - Strategies must not generate final planner outputs.
 
     Ownership:
         - Strategy instances are Phase 12 helper objects only.
         - They do not own spell/runtime/compiler artifacts.
 
     Lifecycle:
-        - Expected to be reusable across many spells when future concrete
-          strategies are added.
+        - Expected to be reusable across many spells.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -60,23 +64,30 @@ class SpellArtifactProcessorStrategy(ABC):
     @abstractmethod
     def process(
             self,
-            state: SpellCodegenModel,
+            spell: "Spell",
+            artifact: "SpellCompilerArtifact",
+            model: "SpellCodegenModel",
     ) -> None:
         """
-        Examine the current processor state and record strategy output.
+        Build or refine one concrete processor-owned artifact slice.
 
         Purpose:
-            Let one concrete strategy contribute a specific assessment or
-            classification result into the shared Phase 12 state.
+            Let one concrete strategy consume current compiler truth and
+            materialize one bounded family of processor-owned outputs before
+            model assembly.
 
         Contract:
-            - Reads from the supplied state only.
-            - Records outputs on the mutable state assessment surface.
-            - Must not mutate borrowed runtime/compiler artifacts directly.
+            - Reads from the supplied spell and artifact only.
+            - Writes only the artifact family owned by this strategy.
+            - Must not generate final planner outputs directly.
 
         Args:
-            state:
-                Phase 12 processor state being examined.
+            spell:
+                Spell whose compiler state is being processed.
+            artifact:
+                Compiler artifact receiving processor-owned outputs.
+            model:
+                Processor-owned codegen model being refined by this strategy.
 
         Returns:
             None.

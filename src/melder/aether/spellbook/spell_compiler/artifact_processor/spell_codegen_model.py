@@ -1,7 +1,21 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
+        SpellOccurrenceContractAnalysis,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
+        SpellOccurrenceGraphAnalysis,
+    )
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis import (
+        SpellOccurrenceInstanceAnalysis,
+    )
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
+        SpellOccurrenceOrderAnalysis,
+    )
 
 
 class SpellCodegenModel(Cleanable):
@@ -54,6 +68,11 @@ class SpellCodegenModel(Cleanable):
         "root_positional_override_relevant",
         "override_shape_family",
         "fast_transient_eligible",
+        "occurrence_graph_analysis",
+        "occurrence_order_analysis",
+        "occurrence_instance_analysis",
+        "occurrence_contract_analysis",
+        "occurrence_shape_profile",
         "assessment",
         "applied_strategy_ids",
     ]
@@ -82,6 +101,11 @@ class SpellCodegenModel(Cleanable):
             root_positional_override_relevant: bool,
             override_shape_family: str,
             fast_transient_eligible: bool,
+            occurrence_graph_analysis: Optional["SpellOccurrenceGraphAnalysis"] = None,
+            occurrence_order_analysis: Optional["SpellOccurrenceOrderAnalysis"] = None,
+            occurrence_instance_analysis: Optional["SpellOccurrenceInstanceAnalysis"] = None,
+            occurrence_contract_analysis: Optional["SpellOccurrenceContractAnalysis"] = None,
+            occurrence_shape_profile: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Build one distilled codegen model.
@@ -133,6 +157,17 @@ class SpellCodegenModel(Cleanable):
             fast_transient_eligible:
                 Whether the current artifact set supports the transient fast
                 path for later planning.
+            occurrence_graph_analysis:
+                Borrowed analyzer-owned occurrence graph truth.
+            occurrence_order_analysis:
+                Processor-owned occurrence order output when available.
+            occurrence_instance_analysis:
+                Processor-owned instance/sharedness output when available.
+            occurrence_contract_analysis:
+                Processor-owned contract routing output when available.
+            occurrence_shape_profile:
+                Processor-owned summarized occurrence shape profile when
+                available.
         """
         super().__init__()
         self.build_kind: str = build_kind
@@ -160,6 +195,21 @@ class SpellCodegenModel(Cleanable):
         )
         self.override_shape_family: str = override_shape_family
         self.fast_transient_eligible: bool = fast_transient_eligible
+        self.occurrence_graph_analysis: Optional[SpellOccurrenceGraphAnalysis] = (
+            occurrence_graph_analysis
+        )
+        self.occurrence_order_analysis: Optional[SpellOccurrenceOrderAnalysis] = (
+            occurrence_order_analysis
+        )
+        self.occurrence_instance_analysis: Optional[SpellOccurrenceInstanceAnalysis] = (
+            occurrence_instance_analysis
+        )
+        self.occurrence_contract_analysis: Optional[SpellOccurrenceContractAnalysis] = (
+            occurrence_contract_analysis
+        )
+        self.occurrence_shape_profile: Optional[Dict[str, Any]] = (
+            occurrence_shape_profile
+        )
         self.assessment: Dict[str, Any] = {}
         self.applied_strategy_ids: List[str] = []
 
@@ -176,6 +226,21 @@ class SpellCodegenModel(Cleanable):
             return
 
         self._cleaned = True
+        if self.occurrence_order_analysis is not None:
+            try:
+                self.occurrence_order_analysis.cleanup()
+            except Exception:
+                pass
+        if self.occurrence_instance_analysis is not None:
+            try:
+                self.occurrence_instance_analysis.cleanup()
+            except Exception:
+                pass
+        if self.occurrence_contract_analysis is not None:
+            try:
+                self.occurrence_contract_analysis.cleanup()
+            except Exception:
+                pass
         self.assessment.clear()
         self.applied_strategy_ids.clear()
 
@@ -200,6 +265,11 @@ class SpellCodegenModel(Cleanable):
         del self.root_positional_override_relevant
         del self.override_shape_family
         del self.fast_transient_eligible
+        del self.occurrence_graph_analysis
+        del self.occurrence_order_analysis
+        del self.occurrence_instance_analysis
+        del self.occurrence_contract_analysis
+        del self.occurrence_shape_profile
         del self.assessment
         del self.applied_strategy_ids
 
