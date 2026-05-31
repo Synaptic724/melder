@@ -10,9 +10,6 @@ from melder.aether.spellbook.spell_compiler.dag.target_spec import (
     TargetSpec,
     TargetSpecKind,
 )
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_8 import (
-    CompilerPhase8,
-)
 from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
     SpellOccurrenceGraphAnalysis,
 )
@@ -24,6 +21,9 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.helpers.general_helpers import EnumHelpers
+from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
+    SharedCompilerExecutions,
+)
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
@@ -61,8 +61,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         - Consumes `Spell`, the existing `SpellCompilerArtifact`, the owning
           Spellbook spell pool, Phase 5 rooted blueprint truth, and current
           spell-system topology state.
-        - Reuses the current Phase 8 fast-key and input-signature helpers for
-          parity with the old phase.
         - Publishes only:
           - `_occurrence_graph_analysis`
           - `_occurrence_analysis_fast_key`
@@ -110,8 +108,9 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
 
         Contract:
             - Validates that the artifact is live before any work begins.
-            - Reuses Phase 8 fast-key and input-signature helpers only for
-              warm-run skip behavior; graph-building ownership stays here.
+            - Computes the graph-side fast key and input signature directly in
+              this strategy instead of reaching back into old Phase 8 helper
+              methods.
             - Replaces the prior graph artifact atomically and best-effort
               cleans the superseded analysis object.
             - Leaves order, instance, and contract artifacts untouched.
@@ -134,14 +133,13 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 "SpellOccurrenceGraphAnalyzerStrategy requires Phase 5 root blueprint truth."
             )
 
-        phase8 = CompilerPhase8()
-        fast_key = phase8._build_phase8_occurrence_plan_fast_key(
+        fast_key = self._build_occurrence_graph_fast_key(
             root_blueprint=root_blueprint,
             spell_lookup=spellbook._spell_id_pool,
             spellbook=spellbook,
             spell_system_states=spell._spell_system_states,
         )
-        input_signature = phase8._build_phase8_occurrence_plan_input_signature(
+        input_signature = self._build_occurrence_graph_input_signature(
             root_blueprint=root_blueprint,
             spell_lookup=spellbook._spell_id_pool,
             spellbook=spellbook,
@@ -205,6 +203,276 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         artifact._occurrence_analysis_fast_key = fast_key
         artifact._occurrence_analysis_input_signature = input_signature
         self._cleanup_previous(previous_graph, graph_analysis)
+
+    @staticmethod
+    def _freeze_schema_value(value: Any) -> Any:
+        """
+        Normalize arbitrary values into deterministic schema-safe forms.
+
+        Contract:
+            - Preserves primitive scalar values.
+            - Recursively normalizes composite values through the shared
+              compiler execution helper.
+            - Returns hashable deterministic rows suitable for signature input.
+        """
+        return SharedCompilerExecutions.freeze_phase11_schema_value(value)
+
+    def _build_occurrence_graph_fast_key(
+            self,
+            *,
+            root_blueprint: "RootResolutionBlueprint",
+            spell_lookup: Dict[str, "Spell"],
+            spellbook: "Spellbook",
+            spell_system_states: Optional["SpellSystemStates"],
+    ) -> Optional[Tuple[Any, ...]]:
+        """
+        Build a lightweight deterministic key for graph-analysis reuse.
+
+        Purpose:
+            Avoid recomputing the deep graph input signature when the upstream
+            graph-shape inputs have not changed and no mutation overrides are
+            present.
+
+        Contract:
+            - Returns `None` when required inputs are unavailable.
+            - Returns `None` when any spell carries a mutation override,
+              forcing the deep signature path.
+            - Tracks blueprint identity, visible spell rows, local topology
+              rows, and contracted provider routing rows.
+        """
+        if root_blueprint is None or spell_lookup is None:
+            return None
+
+        try:
+            ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
+            path_registry_identity = id(root_blueprint.path_registry)
+            blueprint_socket_rows = tuple(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_name,
+                    socket_ref.param_path_id,
+                    socket_ref.socket_kind.value,
+                )
+                for socket_ref in (root_blueprint.socket_refs or ())
+            )
+        except Exception:
+            return None
+
+        try:
+            spell_rows_list: List[Tuple[Any, ...]] = []
+            for spell_id, candidate_spell in sorted(spell_lookup.items()):
+                if candidate_spell.mutation_override:
+                    return None
+                spell_rows_list.append(
+                    (
+                        spell_id,
+                        candidate_spell.spell_index.current,
+                        candidate_spell.existence.name,
+                        bool(candidate_spell.is_existing_creation),
+                    )
+                )
+            spell_rows = tuple(spell_rows_list)
+        except Exception:
+            return None
+
+        topology_rows: Tuple[Any, ...] = ()
+        local_topologies = None
+        if spell_system_states is not None:
+            local_topologies = spell_system_states._local_topologies
+        if local_topologies is not None:
+            try:
+                topology_rows_list: List[Tuple[Any, ...]] = []
+                for spell_id in sorted(local_topologies.keys()):
+                    topology = local_topologies.get(spell_id)
+                    if topology is None:
+                        continue
+                    socket_rows = tuple(
+                        (
+                            socket.param_name,
+                            tuple(sorted(socket.target_spell_ids)),
+                        )
+                        for socket in topology.sockets
+                    )
+                    topology_rows_list.append((spell_id, socket_rows))
+                topology_rows = tuple(topology_rows_list)
+            except Exception:
+                return None
+
+        try:
+            contracted_lookup = spellbook._lookup_contracted_spells
+            contracted_maps = spellbook._contracted_spells
+            frame_configuration = spellbook._aetheric_frame_configuration
+            if frame_configuration is None:
+                return None
+            system_state = frame_configuration.system_state
+        except Exception:
+            return None
+
+        try:
+            contracted_rows_list: List[Tuple[Any, ...]] = []
+            for conduit_id in sorted(contracted_lookup.keys()):
+                lookup_map = contracted_lookup.get(conduit_id)
+                if lookup_map is None:
+                    continue
+                contracted_map = contracted_maps.get(conduit_id)
+                for contract_key in sorted(lookup_map.keys()):
+                    spell_index = lookup_map.get(contract_key)
+                    if spell_index is None:
+                        continue
+                    provider_spell_id = None
+                    if contracted_map is not None:
+                        provider_spell = contracted_map.get(spell_index)
+                        if provider_spell is not None:
+                            provider_spell_id = provider_spell.spell_index.current
+                    contracted_rows_list.append(
+                        (
+                            conduit_id,
+                            contract_key[0],
+                            contract_key[1],
+                            provider_spell_id,
+                        )
+                    )
+            contracted_rows = tuple(contracted_rows_list)
+        except Exception:
+            return None
+
+        return (
+            root_blueprint.root_spell_id,
+            ordered_node_ids,
+            path_registry_identity,
+            blueprint_socket_rows,
+            spell_rows,
+            topology_rows,
+            system_state,
+            contracted_rows,
+        )
+
+    def _build_occurrence_graph_input_signature(
+            self,
+            *,
+            root_blueprint: "RootResolutionBlueprint",
+            spell_lookup: Dict[str, "Spell"],
+            spellbook: "Spellbook",
+            spell_system_states: Optional["SpellSystemStates"],
+    ) -> Optional[str]:
+        """
+        Build a deterministic graph-analysis input signature.
+
+        Purpose:
+            Detect semantic drift in graph-shape inputs so repeated warm runs
+            can safely skip redundant graph rebuilding when the upstream
+            blueprint, spell set, topology, and contract-routing inputs are
+            unchanged.
+
+        Contract:
+            - Returns `None` when required inputs are unavailable, forcing a
+              rebuild.
+            - Includes blueprint shape, spell mutation/existence rows, local
+              topology rows, and contracted provider routing rows.
+        """
+        if root_blueprint is None or spell_lookup is None:
+            return None
+
+        try:
+            ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
+            path_registry_identity = id(root_blueprint.path_registry)
+            blueprint_socket_rows = tuple(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_name,
+                    socket_ref.param_path_id,
+                    socket_ref.socket_kind.value,
+                )
+                for socket_ref in (root_blueprint.socket_refs or ())
+            )
+        except Exception:
+            return None
+
+        try:
+            spell_rows = tuple(
+                (
+                    spell_id,
+                    candidate_spell.spell_index.current,
+                    candidate_spell.existence.name,
+                    bool(candidate_spell.is_existing_creation),
+                    self._freeze_schema_value(candidate_spell.mutation_override),
+                )
+                for spell_id, candidate_spell in sorted(spell_lookup.items())
+            )
+        except Exception:
+            return None
+
+        topology_rows: Tuple[Any, ...] = ()
+        local_topologies = None
+        if spell_system_states is not None:
+            local_topologies = spell_system_states._local_topologies
+        if local_topologies is not None:
+            try:
+                topology_rows_list: List[Tuple[Any, ...]] = []
+                for spell_id in sorted(local_topologies.keys()):
+                    topology = local_topologies.get(spell_id)
+                    if topology is None:
+                        continue
+                    socket_rows = tuple(
+                        (
+                            socket.param_name,
+                            tuple(sorted(socket.target_spell_ids)),
+                        )
+                        for socket in topology.sockets
+                    )
+                    topology_rows_list.append((spell_id, socket_rows))
+                topology_rows = tuple(topology_rows_list)
+            except Exception:
+                return None
+
+        try:
+            contracted_lookup = spellbook._lookup_contracted_spells
+            contracted_maps = spellbook._contracted_spells
+            frame_configuration = spellbook._aetheric_frame_configuration
+            if frame_configuration is None:
+                return None
+            system_state = frame_configuration.system_state
+        except Exception:
+            return None
+
+        try:
+            contracted_rows_list: List[Tuple[Any, ...]] = []
+            for conduit_id in sorted(contracted_lookup.keys()):
+                lookup_map = contracted_lookup.get(conduit_id)
+                if lookup_map is None:
+                    continue
+                contracted_map = contracted_maps.get(conduit_id)
+                for contract_key in sorted(lookup_map.keys()):
+                    spell_index = lookup_map.get(contract_key)
+                    if spell_index is None:
+                        continue
+                    provider_spell_id = None
+                    if contracted_map is not None:
+                        provider_spell = contracted_map.get(spell_index)
+                        if provider_spell is not None:
+                            provider_spell_id = provider_spell.spell_index.current
+                    contracted_rows_list.append(
+                        (
+                            conduit_id,
+                            contract_key[0],
+                            contract_key[1],
+                            provider_spell_id,
+                        )
+                    )
+            contracted_rows = tuple(contracted_rows_list)
+        except Exception:
+            return None
+
+        return SharedCompilerExecutions.hash_codegen_signature(
+            root_blueprint.root_spell_id,
+            ordered_node_ids,
+            path_registry_identity,
+            blueprint_socket_rows,
+            spell_rows,
+            topology_rows,
+            system_state,
+            contracted_rows,
+        )
 
     @staticmethod
     def _cleanup_previous(
