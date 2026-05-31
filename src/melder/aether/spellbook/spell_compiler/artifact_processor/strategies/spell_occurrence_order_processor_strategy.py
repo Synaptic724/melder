@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Tuple
 
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
-    SpellArtifactProcessorStrategy,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
     SpellOccurrenceOrderAnalysis,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
+    SpellArtifactProcessorStrategy,
 )
 
 if TYPE_CHECKING:
@@ -22,12 +22,12 @@ OccurrenceKey = Tuple[str, int]
 
 class SpellOccurrenceOrderProcessorStrategy(SpellArtifactProcessorStrategy):
     """
-    Build processor-owned occurrence execution order from graph truth.
+    Fit the occurrence-order section of `SpellCodegenModel`.
 
     Purpose:
-        Consume the analyzer-owned occurrence graph and produce the
-        deterministic execution-order artifact that later processor/model
-        stages can consume without touching analyzer internals.
+        Consume analyzer-owned occurrence graph truth and materialize the
+        deterministic spell execution order that later planner work can use
+        without reopening graph traversal logic.
     """
 
     __slots__ = ()
@@ -41,35 +41,37 @@ class SpellOccurrenceOrderProcessorStrategy(SpellArtifactProcessorStrategy):
 
     def process(
             self,
-            spell: "Spell",
-            artifact: "SpellCompilerArtifact",
-            model: "SpellCodegenModel",
+            spell: Spell,
+            artifact: SpellCompilerArtifact,
+            model: SpellCodegenModel,
     ) -> None:
         """
-        Build and publish the occurrence-order artifact on the compiler
-        artifact.
+        Fit the occurrence-order model section.
+
+        Contract:
+            - Reads only analyzer-owned graph truth from the model shell.
+            - Writes only `model.order_shape` plus compatible top-level
+              `node_count`.
+            - Does not write back onto `SpellCompilerArtifact`.
         """
         _ = spell
-        graph_analysis = artifact._occurrence_graph_analysis
-        if graph_analysis is None:
+        _ = artifact
+        graph_shape = model.graph_shape
+        if graph_shape is None:
             raise RuntimeError(
-                "SpellOccurrenceOrderProcessorStrategy requires occurrence graph analysis first."
-            )
-        root_blueprint = artifact._root_blueprint_phase5
-        if root_blueprint is None:
-            raise RuntimeError(
-                "SpellOccurrenceOrderProcessorStrategy requires Phase 5 root blueprint truth."
+                "SpellOccurrenceOrderProcessorStrategy requires graph_shape first."
             )
 
-        order_analysis = SpellOccurrenceOrderAnalysis(
+        order_shape = SpellOccurrenceOrderAnalysis(
             execution_order=self._build_execution_order(
-                occurrence_graph=graph_analysis.occurrence_graph,
-                fallback_order=root_blueprint.ordered_node_ids,
+                occurrence_graph=graph_shape.occurrence_graph,
+                fallback_occurrences=tuple(graph_shape.occurrence_graph.keys()),
             )
         )
-        previous_order = model.occurrence_order_analysis
-        model.occurrence_order_analysis = order_analysis
-        self._cleanup_previous(previous_order, order_analysis)
+        previous_order_shape = model.order_shape
+        model.order_shape = order_shape
+        model.node_count = order_shape.execution_order_count
+        self._cleanup_previous(previous_order_shape, order_shape)
 
     @staticmethod
     def _cleanup_previous(
@@ -77,7 +79,7 @@ class SpellOccurrenceOrderProcessorStrategy(SpellArtifactProcessorStrategy):
             current: SpellOccurrenceOrderAnalysis,
     ) -> None:
         """
-        Best-effort cleanup for one superseded occurrence-order artifact.
+        Best-effort cleanup for one superseded order section.
         """
         if previous is None or previous is current:
             return
@@ -101,10 +103,17 @@ class SpellOccurrenceOrderProcessorStrategy(SpellArtifactProcessorStrategy):
     def _build_execution_order(
             *,
             occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]],
-            fallback_order: Sequence[str],
+            fallback_occurrences: Sequence[OccurrenceKey],
     ) -> List[str]:
         """
         Build a dependency-safe execution order for spell ids.
+
+        Contract:
+            - Uses the occurrence graph as the primary dependency source.
+            - Uses spell-id lexical ordering as the stable topological
+              tie-breaker.
+            - Falls back to the first-seen occurrence order when the graph is
+              cyclic or incomplete.
         """
         edges: Dict[str, Set[str]] = {}
         indegree: Dict[str, int] = {}
@@ -150,7 +159,8 @@ class SpellOccurrenceOrderProcessorStrategy(SpellArtifactProcessorStrategy):
 
         resolved: List[str] = []
         seen: Set[str] = set()
-        for node_id in fallback_order:
+        for occurrence in fallback_occurrences:
+            node_id = occurrence[0]
             if node_id in nodes and node_id not in seen:
                 seen.add(node_id)
                 resolved.append(node_id)

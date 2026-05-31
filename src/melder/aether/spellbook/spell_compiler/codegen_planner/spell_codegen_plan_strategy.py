@@ -13,7 +13,7 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 
 class SpellCodegenPlanStrategy(ABC):
     """
-    One Phase 12 codegen-plan shaping strategy contract.
+    One codegen-plan shaping strategy contract.
 
     Purpose:
         Define the seam where future planner strategies will transform assessed
@@ -25,7 +25,7 @@ class SpellCodegenPlanStrategy(ABC):
         - Concrete strategies are intentionally absent from this scaffold slice.
 
     Ownership:
-        - Strategy instances are Phase 12 helper objects only.
+        - Strategy instances are planner helper objects only.
         - They do not own spell/runtime/compiler artifacts.
     """
 
@@ -47,7 +47,7 @@ class SpellCodegenPlanStrategy(ABC):
 
         Returns:
             str:
-                Stable strategy id used in Phase 12 plan provenance.
+                Stable strategy id used in plan provenance.
         """
         raise NotImplementedError
 
@@ -71,7 +71,7 @@ class SpellCodegenPlanStrategy(ABC):
 
         Args:
             state:
-                Assessed Phase 12 codegen model.
+                Assessed codegen model.
             plan:
                 Current planner-owned codegen plan.
 

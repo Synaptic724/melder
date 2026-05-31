@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
-    SpellArtifactProcessorStrategy,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
     SpellOccurrenceContractAnalysis,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
+    SpellArtifactProcessorStrategy,
 )
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
@@ -31,12 +31,12 @@ OccurrenceKey = Tuple[str, int]
 
 class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
     """
-    Build processor-owned occurrence contract routing output from graph truth.
+    Fit the occurrence contract-routing section of `SpellCodegenModel`.
 
     Purpose:
-        Consume the analyzer-owned occurrence graph and produce the
-        contract-routing artifact needed by later model assembly without
-        leaving contract payload logic stranded in the analyzer lane.
+        Consume analyzer-owned graph truth and produce the SpellContract
+        provider-routing and payload facts that later planner work will need
+        without leaving contract payload logic stranded in the analyzer lane.
     """
 
     __slots__ = ()
@@ -50,18 +50,24 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
 
     def process(
             self,
-            spell: "Spell",
-            artifact: "SpellCompilerArtifact",
-            model: "SpellCodegenModel",
+            spell: Spell,
+            artifact: SpellCompilerArtifact,
+            model: SpellCodegenModel,
     ) -> None:
         """
-        Build and publish the occurrence contract-routing artifact on the
-        compiler artifact.
+        Fit the contract-routing model section.
+
+        Contract:
+            - Reads analyzer-owned `graph_shape` from the model shell.
+            - Writes only `model.contract_shape` plus compatible top-level
+              `contract_payload_count`.
+            - Does not write back onto `SpellCompilerArtifact`.
         """
-        graph_analysis = artifact._occurrence_graph_analysis
-        if graph_analysis is None:
+        _ = artifact
+        graph_shape = model.graph_shape
+        if graph_shape is None:
             raise RuntimeError(
-                "SpellOccurrenceContractProcessorStrategy requires occurrence graph analysis first."
+                "SpellOccurrenceContractProcessorStrategy requires graph_shape first."
             )
         spellbook = spell._spellbook
         if spellbook is None:
@@ -74,20 +80,21 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             contract_overrides_by_spell_id,
             contract_dependencies_complete,
         ) = self._compile_contract_overrides(
-            occurrence_graph=graph_analysis.occurrence_graph,
+            occurrence_graph=graph_shape.occurrence_graph,
             spell_lookup=spellbook._spell_id_pool,
             spellbook=spellbook,
-            path_registry=graph_analysis.path_registry,
+            path_registry=graph_shape.path_registry,
         )
 
-        contract_analysis = SpellOccurrenceContractAnalysis(
+        contract_shape = SpellOccurrenceContractAnalysis(
             contract_overrides_by_occurrence=contract_overrides_by_occurrence,
             contract_overrides_by_spell_id=contract_overrides_by_spell_id,
             contract_dependencies_complete=contract_dependencies_complete,
         )
-        previous_contract = model.occurrence_contract_analysis
-        model.occurrence_contract_analysis = contract_analysis
-        self._cleanup_previous(previous_contract, contract_analysis)
+        previous_contract_shape = model.contract_shape
+        model.contract_shape = contract_shape
+        model.contract_payload_count = contract_shape.contract_payload_count
+        self._cleanup_previous(previous_contract_shape, contract_shape)
 
     @staticmethod
     def _cleanup_previous(
@@ -95,7 +102,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             current: SpellOccurrenceContractAnalysis,
     ) -> None:
         """
-        Best-effort cleanup for one superseded occurrence-contract artifact.
+        Best-effort cleanup for one superseded contract-routing section.
         """
         if previous is None or previous is current:
             return
@@ -119,8 +126,8 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             self,
             *,
             occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]],
-            spell_lookup: Dict[str, "Spell"],
-            spellbook: "Spellbook",
+            spell_lookup: Dict[str, Spell],
+            spellbook: Spellbook,
             path_registry: Any,
     ) -> Tuple[
         Dict[OccurrenceKey, Dict[str, Any]],
@@ -128,7 +135,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
         bool,
     ]:
         """
-        Compile SpellContract override payload maps for the processor artifact.
+        Compile SpellContract override payload maps for the model section.
         """
         overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]] = {}
         overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]] = {}
@@ -156,8 +163,8 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             occurrence: OccurrenceKey,
             overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
             overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
-            spell_lookup: Dict[str, "Spell"],
-            spellbook: "Spellbook",
+            spell_lookup: Dict[str, Spell],
+            spellbook: Spellbook,
             path_registry: Any,
     ) -> bool:
         """
@@ -168,6 +175,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             raise RuntimeError(
                 "Occurrence spell could not be resolved from the spell lookup."
             )
+
         complete = True
         allow_missing = self._allow_missing_contract_providers(spellbook)
 
@@ -208,7 +216,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
 
     @staticmethod
     def _iter_spell_contract_defaults(
-            spell: "Spell",
+            spell: Spell,
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
@@ -257,9 +265,9 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             self,
             *,
             contract: SpellContract,
-            consumer_spell: "Spell",
+            consumer_spell: Spell,
             param_name: str,
-            spellbook: "Spellbook",
+            spellbook: Spellbook,
             allow_missing: bool = False,
     ) -> Optional[str]:
         """
@@ -304,8 +312,8 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
     def _collect_contracted_contract_candidates(
             *,
             contract_key: Tuple[str, str],
-            spellbook: "Spellbook",
-    ) -> List["Spell"]:
+            spellbook: Spellbook,
+    ) -> List[Spell]:
         """
         Collect contracted spell candidates that satisfy the contract key.
         """
@@ -336,7 +344,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             param_name: str,
     ) -> Dict[str, Any]:
         """
-        Normalize a SpellContract override payload for processor storage.
+        Normalize a SpellContract override payload for model storage.
         """
         if payload is None:
             return {}
@@ -388,10 +396,10 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
 
     @staticmethod
     def _allow_missing_contract_providers(
-            spellbook: "Spellbook",
+            spellbook: Spellbook,
     ) -> bool:
         """
-        Determine whether processor analysis may tolerate missing SpellContract providers.
+        Determine whether processor analysis may tolerate missing providers.
         """
         if spellbook._aetheric_frame_configuration is None:
             raise RuntimeError("Root spellbook has no frame configuration.")

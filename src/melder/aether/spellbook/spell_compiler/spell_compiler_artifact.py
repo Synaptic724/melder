@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, ClassVar
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+        SpellCodegenModel,
+    )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
         SpellOccurrenceContractAnalysis,
     )
@@ -32,6 +35,9 @@ if TYPE_CHECKING:
     )
     from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
         ExecutionPlan,
+    )
+    from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
+        SpellCodegenPlan,
     )
     from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
         SpellResolutionFrame,
@@ -113,8 +119,8 @@ class SpellCompilerArtifact(Cleanable):
         "_phase13_no_overrides_executor_signature",
         "_phase11_no_overrides_input_signature",
         "_phase11_no_overrides_fast_key",
-        "_phase12_processor_state",
-        "_phase12_codegen_plan",
+        "_spell_codegen_model",
+        "_spell_codegen_plan",
         "_codegen_ir",
         "_phase8_11_codegen_ir_dirty",
         "_spell_system_index_phase5",
@@ -188,8 +194,8 @@ class SpellCompilerArtifact(Cleanable):
         self._phase13_no_overrides_executor_signature: Optional[str] = None
         self._phase11_no_overrides_input_signature: Optional[str] = None
         self._phase11_no_overrides_fast_key: Optional[Tuple[Any, ...]] = None
-        self._phase12_processor_state: Optional[Any] = None
-        self._phase12_codegen_plan: Optional[Any] = None
+        self._spell_codegen_model: Optional[SpellCodegenModel] = None
+        self._spell_codegen_plan: Optional[SpellCodegenPlan] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
@@ -263,7 +269,7 @@ class SpellCompilerArtifact(Cleanable):
                     self._execution_plan_phase11_overrides.cleanup()
                 except Exception:
                     pass
-            self._cleanup_phase12_artifacts()
+            self._cleanup_codegen_outputs()
             if self._spell_system_index_phase5 is not None:
                 try:
                     self._spell_system_index_phase5.cleanup()
@@ -327,8 +333,8 @@ class SpellCompilerArtifact(Cleanable):
             del self._phase13_no_overrides_executor_signature
             del self._phase11_no_overrides_input_signature
             del self._phase11_no_overrides_fast_key
-            del self._phase12_processor_state
-            del self._phase12_codegen_plan
+            del self._spell_codegen_model
+            del self._spell_codegen_plan
             del self._codegen_ir
             del self._spell_system_index_phase5
             del self._entire_dag_blueprint_phase5
@@ -516,31 +522,31 @@ class SpellCompilerArtifact(Cleanable):
         self._occurrence_instance_analysis = None
         self._occurrence_contract_analysis = None
 
-    def _cleanup_phase12_artifacts(self) -> None:
+    def _cleanup_codegen_outputs(self) -> None:
         """
-        Deterministically clean Phase 12 processor/codegen-plan artifacts.
+        Deterministically clean generic codegen model/plan artifacts.
 
         Contract:
-            - Best-effort cleans both Phase 12 outputs when they expose a
+            - Best-effort cleans both codegen outputs when they expose a
               cleanup method.
-            - Clears the Phase 12 slots regardless of individual cleanup
+            - Clears the generic artifact slots regardless of individual cleanup
               failures.
             - Safe to call repeatedly.
         """
-        phase12_processor_state = self._phase12_processor_state
-        if phase12_processor_state is not None:
+        spell_codegen_model = self._spell_codegen_model
+        if spell_codegen_model is not None:
             try:
-                phase12_processor_state.cleanup()
+                spell_codegen_model.cleanup()
             except Exception:
                 pass
-        phase12_codegen_plan = self._phase12_codegen_plan
-        if phase12_codegen_plan is not None:
+        spell_codegen_plan = self._spell_codegen_plan
+        if spell_codegen_plan is not None:
             try:
-                phase12_codegen_plan.cleanup()
+                spell_codegen_plan.cleanup()
             except Exception:
                 pass
-        self._phase12_processor_state = None
-        self._phase12_codegen_plan = None
+        self._spell_codegen_model = None
+        self._spell_codegen_plan = None
 
     def _cleanup_execution_plans_phase11(self) -> None:
         """
@@ -582,7 +588,7 @@ class SpellCompilerArtifact(Cleanable):
         self._execution_shape_profile_phase11 = None
         self._phase11_no_overrides_plan_signature = None
         self._phase11_no_overrides_transient_schema = None
-        self._cleanup_phase12_artifacts()
+        self._cleanup_codegen_outputs()
 
 
 

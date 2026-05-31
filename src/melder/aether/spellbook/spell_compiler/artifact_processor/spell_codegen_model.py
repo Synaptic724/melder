@@ -4,11 +4,11 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
+        SpellInjectionAnalysis,
+    )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
         SpellOccurrenceContractAnalysis,
-    )
-    from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
-        SpellOccurrenceGraphAnalysis,
     )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis import (
         SpellOccurrenceInstanceAnalysis,
@@ -16,40 +16,41 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
         SpellOccurrenceOrderAnalysis,
     )
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
+        SpellOccurrenceGraphAnalysis,
+    )
 
 
 class SpellCodegenModel(Cleanable):
     """
-    Distilled Phase 12 codegen-shape model.
+    Processor-owned codegen model for one spell.
 
     Purpose:
-        Hold only the normalized planning selectors that matter for codegen
-        selection. This model is intentionally not a second raw artifact bag.
+        Hold the fitted processor output that later planner strategies should
+        consume. The model is section-first: it stores the real occurrence-
+        derived shapes directly instead of forcing the processor facade to
+        reinterpret old phase artifacts into an adapter bag.
 
     Contract:
-        - Compiler-owned and stored on `SpellCompilerArtifact` during Phase 12.
-        - Built from current compiler artifacts by the processor.
-        - Stores only distilled planning selectors and derived shape families.
-        - Does not store raw phase artifacts, raw plan objects, raw patch maps,
-          spell ids, spell names, or backend-emitter cache payloads.
-        - Uses `assessment` as processor scratch/provenance space until real
-          processor strategies are added.
-        - Uses `applied_strategy_ids` to record the ordered processor
-          strategies that contributed to the final model.
-
-    Threading:
-        - No internal lock is used here.
-        - Intended to be built and consumed inside one compiler pass.
-
-    Lifecycle:
-        - Built fresh for one Phase 12 run.
-        - Cleared when the owning compiler artifact clears later-phase state.
+        - `graph_shape` is analyzer-owned truth borrowed into the model shell.
+        - `order_shape`, `instance_shape`, and `contract_shape` are processor-
+          owned sections populated by processor strategies.
+        - Top-level scalar fields are compatibility selectors only. They should
+          be populated by the shell builder or the strategies that genuinely own
+          the corresponding facts.
+        - The processor facade must not recompute strategy-family decisions
+          after strategies run.
     """
 
     __slots__ = Cleanable.__slots__ + [
         "build_kind",
         "existence",
         "route_family",
+        "graph_shape",
+        "order_shape",
+        "instance_shape",
+        "contract_shape",
+        "injection_shape",
         "node_count",
         "root_dependency_count",
         "max_depth",
@@ -68,11 +69,6 @@ class SpellCodegenModel(Cleanable):
         "root_positional_override_relevant",
         "override_shape_family",
         "fast_transient_eligible",
-        "occurrence_graph_analysis",
-        "occurrence_order_analysis",
-        "occurrence_instance_analysis",
-        "occurrence_contract_analysis",
-        "occurrence_shape_profile",
         "assessment",
         "applied_strategy_ids",
     ]
@@ -80,99 +76,64 @@ class SpellCodegenModel(Cleanable):
     def __init__(
             self,
             *,
-            build_kind: str,
-            existence: Optional[Existence],
-            route_family: str,
-            node_count: int,
-            root_dependency_count: int,
-            max_depth: int,
-            max_width: int,
-            shared_node_count: int,
-            graph_family: str,
-            max_dependency_count: int,
-            dependency_arity_histogram: Tuple[Tuple[int, int], ...],
-            has_calln: bool,
-            contract_payload_count: int,
-            call_shape_family: str,
-            target_spec_count: int,
-            targeted_socket_count: int,
-            max_targets_per_spec: int,
-            max_target_path_depth: int,
-            root_positional_override_relevant: bool,
-            override_shape_family: str,
-            fast_transient_eligible: bool,
-            occurrence_graph_analysis: Optional["SpellOccurrenceGraphAnalysis"] = None,
-            occurrence_order_analysis: Optional["SpellOccurrenceOrderAnalysis"] = None,
-            occurrence_instance_analysis: Optional["SpellOccurrenceInstanceAnalysis"] = None,
-            occurrence_contract_analysis: Optional["SpellOccurrenceContractAnalysis"] = None,
-            occurrence_shape_profile: Optional[Dict[str, Any]] = None,
+            build_kind: str = "unknown",
+            existence: Optional[Existence] = None,
+            route_family: str = "unknown",
+            graph_shape: Optional[SpellOccurrenceGraphAnalysis] = None,
+            order_shape: Optional[SpellOccurrenceOrderAnalysis] = None,
+            instance_shape: Optional[SpellOccurrenceInstanceAnalysis] = None,
+            contract_shape: Optional[SpellOccurrenceContractAnalysis] = None,
+            injection_shape: Optional[SpellInjectionAnalysis] = None,
+            node_count: int = 0,
+            root_dependency_count: int = 0,
+            max_depth: int = 0,
+            max_width: int = 0,
+            shared_node_count: int = 0,
+            graph_family: str = "unclassified",
+            max_dependency_count: int = 0,
+            dependency_arity_histogram: Tuple[Tuple[int, int], ...] = (),
+            has_calln: bool = False,
+            contract_payload_count: int = 0,
+            call_shape_family: str = "unclassified",
+            target_spec_count: int = 0,
+            targeted_socket_count: int = 0,
+            max_targets_per_spec: int = 0,
+            max_target_path_depth: int = 0,
+            root_positional_override_relevant: bool = False,
+            override_shape_family: str = "unclassified",
+            fast_transient_eligible: bool = False,
     ) -> None:
         """
-        Build one distilled codegen model.
+        Build one processor-owned codegen model shell.
 
-        Args:
-            build_kind:
-                High-level build mode. Current scaffold values are
-                `existing_creation` or `construct`.
-            existence:
-                Root existence family when construction applies, otherwise
-                `None` for existing-creation mode.
-            route_family:
-                Distilled route/storage family used by later planning.
-            node_count:
-                Normalized node count for the spell graph.
-            root_dependency_count:
-                Number of direct dependencies on the root step.
-            max_depth:
-                Maximum graph/occurrence depth.
-            max_width:
-                Maximum graph width by depth level.
-            shared_node_count:
-                Number of shared nodes/spells in the graph.
-            graph_family:
-                Distilled graph-shape family such as `single`, `flat`, `chain`,
-                `shared_dag`, or `complex`.
-            max_dependency_count:
-                Maximum dependency count across all execution steps.
-            dependency_arity_histogram:
-                Distilled arity histogram used by call-shape planning.
-            has_calln:
-                Whether generic `CALLN` behavior is required somewhere.
-            contract_payload_count:
-                Number of steps carrying contract payloads.
-            call_shape_family:
-                Distilled call-shape family.
-            target_spec_count:
-                Count of override target specs.
-            targeted_socket_count:
-                Count of targeted sockets.
-            max_targets_per_spec:
-                Maximum fanout count for one target spec.
-            max_target_path_depth:
-                Maximum target path depth.
-            root_positional_override_relevant:
-                Whether root positional override shape is relevant.
-            override_shape_family:
-                Distilled override-geometry family.
-            fast_transient_eligible:
-                Whether the current artifact set supports the transient fast
-                path for later planning.
-            occurrence_graph_analysis:
-                Borrowed analyzer-owned occurrence graph truth.
-            occurrence_order_analysis:
-                Processor-owned occurrence order output when available.
-            occurrence_instance_analysis:
-                Processor-owned instance/sharedness output when available.
-            occurrence_contract_analysis:
-                Processor-owned contract routing output when available.
-            occurrence_shape_profile:
-                Processor-owned summarized occurrence shape profile when
-                available.
+        Purpose:
+            Give the processor one mutable model surface that starts with raw
+            section homes and a minimal set of compatibility selectors, then let
+            processor strategies fit the rest directly.
+
+        Contract:
+            - All 4 section homes are explicit on construction.
+            - `graph_shape` may be borrowed from analyzer-owned artifact truth.
+            - `order_shape`, `instance_shape`, `contract_shape`, and
+              `injection_shape` are
+              expected to be filled by processor strategies later in the same
+              processor pass.
+            - Mutable `assessment` and `applied_strategy_ids` are always
+              initialized empty.
         """
         super().__init__()
         self.build_kind: str = build_kind
         self.existence: Optional[Existence] = existence
         self.route_family: str = route_family
+        self.graph_shape: Optional[SpellOccurrenceGraphAnalysis] = graph_shape
+        self.order_shape: Optional[SpellOccurrenceOrderAnalysis] = order_shape
+        self.instance_shape: Optional[SpellOccurrenceInstanceAnalysis] = (
+            instance_shape
+        )
+        self.contract_shape: Optional[SpellOccurrenceContractAnalysis] = (
+            contract_shape
+        )
+        self.injection_shape: Optional[SpellInjectionAnalysis] = injection_shape
         self.node_count: int = node_count
         self.root_dependency_count: int = root_dependency_count
         self.max_depth: int = max_depth
@@ -195,50 +156,42 @@ class SpellCodegenModel(Cleanable):
         )
         self.override_shape_family: str = override_shape_family
         self.fast_transient_eligible: bool = fast_transient_eligible
-        self.occurrence_graph_analysis: Optional[SpellOccurrenceGraphAnalysis] = (
-            occurrence_graph_analysis
-        )
-        self.occurrence_order_analysis: Optional[SpellOccurrenceOrderAnalysis] = (
-            occurrence_order_analysis
-        )
-        self.occurrence_instance_analysis: Optional[SpellOccurrenceInstanceAnalysis] = (
-            occurrence_instance_analysis
-        )
-        self.occurrence_contract_analysis: Optional[SpellOccurrenceContractAnalysis] = (
-            occurrence_contract_analysis
-        )
-        self.occurrence_shape_profile: Optional[Dict[str, Any]] = (
-            occurrence_shape_profile
-        )
         self.assessment: Dict[str, Any] = {}
         self.applied_strategy_ids: List[str] = []
 
     def cleanup(self) -> None:
         """
-        Deterministically release the Phase 12 codegen model.
+        Deterministically release model-owned state.
 
         Contract:
             - Idempotent cleanup.
-            - Clears the mutable assessment and provenance collections.
-            - Drops all distilled selector fields.
+            - Does not cleanup borrowed analyzer-owned `graph_shape`.
+            - Best-effort cleans processor-owned `order_shape`,
+              `instance_shape`, `contract_shape`, and `injection_shape`.
+            - Clears mutable assessment/provenance containers.
         """
         if self._cleaned:
             return
 
         self._cleaned = True
-        if self.occurrence_order_analysis is not None:
+        if self.order_shape is not None:
             try:
-                self.occurrence_order_analysis.cleanup()
+                self.order_shape.cleanup()
             except Exception:
                 pass
-        if self.occurrence_instance_analysis is not None:
+        if self.instance_shape is not None:
             try:
-                self.occurrence_instance_analysis.cleanup()
+                self.instance_shape.cleanup()
             except Exception:
                 pass
-        if self.occurrence_contract_analysis is not None:
+        if self.contract_shape is not None:
             try:
-                self.occurrence_contract_analysis.cleanup()
+                self.contract_shape.cleanup()
+            except Exception:
+                pass
+        if self.injection_shape is not None:
+            try:
+                self.injection_shape.cleanup()
             except Exception:
                 pass
         self.assessment.clear()
@@ -247,6 +200,11 @@ class SpellCodegenModel(Cleanable):
         del self.build_kind
         del self.existence
         del self.route_family
+        del self.graph_shape
+        del self.order_shape
+        del self.instance_shape
+        del self.contract_shape
+        del self.injection_shape
         del self.node_count
         del self.root_dependency_count
         del self.max_depth
@@ -265,11 +223,6 @@ class SpellCodegenModel(Cleanable):
         del self.root_positional_override_relevant
         del self.override_shape_family
         del self.fast_transient_eligible
-        del self.occurrence_graph_analysis
-        del self.occurrence_order_analysis
-        del self.occurrence_instance_analysis
-        del self.occurrence_contract_analysis
-        del self.occurrence_shape_profile
         del self.assessment
         del self.applied_strategy_ids
 
@@ -285,18 +238,17 @@ class SpellCodegenModel(Cleanable):
 
     def section_names(self) -> Tuple[str, ...]:
         """
-        Return the stable high-level section labels represented in this model.
+        Return the stable section labels represented in this model.
 
         Returns:
             Tuple[str, ...]:
                 Immutable section-name row for diagnostics and assertions.
         """
         return (
-            "build_shape",
-            "route_shape",
             "graph_shape",
-            "call_shape",
-            "override_shape",
-            "fast_path_shape",
+            "order_shape",
+            "instance_shape",
+            "contract_shape",
+            "injection_shape",
             "assessment",
         )

@@ -15,22 +15,23 @@ if TYPE_CHECKING:
 
 class SpellArtifactProcessorStrategy(ABC):
     """
-    One Phase 12 artifact-processing strategy contract.
+    One artifact-processing strategy contract.
 
     Purpose:
-        Define the execution seam for processor strategies that build or refine
-        concrete processor-owned artifacts from upstream compiler truth before
-        the distilled `SpellCodegenModel` is assembled.
+        Define the execution seam for processor strategies that fit sections of
+        `SpellCodegenModel` from upstream compiler truth.
 
     Contract:
         - Strategies run inside `SpellArtifactProcessor`.
         - Strategies may read `Spell` and `SpellCompilerArtifact`.
-        - Strategies should write concrete processor-owned outputs back onto
+        - Strategies should write directly onto the supplied
+          `SpellCodegenModel`.
+        - Strategies may read analyzer-owned or legacy compiler truth from
           `SpellCompilerArtifact`.
         - Strategies must not generate final planner outputs.
 
     Ownership:
-        - Strategy instances are Phase 12 helper objects only.
+        - Strategy instances are processor helper objects only.
         - They do not own spell/runtime/compiler artifacts.
 
     Lifecycle:
@@ -56,7 +57,7 @@ class SpellArtifactProcessorStrategy(ABC):
 
         Returns:
             str:
-                Stable strategy id used in Phase 12 diagnostics and plan
+                Stable strategy id used in processor diagnostics and plan
                 provenance.
         """
         raise NotImplementedError
@@ -64,30 +65,31 @@ class SpellArtifactProcessorStrategy(ABC):
     @abstractmethod
     def process(
             self,
-            spell: "Spell",
-            artifact: "SpellCompilerArtifact",
-            model: "SpellCodegenModel",
+            spell: Spell,
+            artifact: SpellCompilerArtifact,
+            model: SpellCodegenModel,
     ) -> None:
         """
         Build or refine one concrete processor-owned artifact slice.
 
         Purpose:
-            Let one concrete strategy consume current compiler truth and
-            materialize one bounded family of processor-owned outputs before
-            model assembly.
+            Let one concrete strategy consume current compiler truth and fit
+            one bounded model section before planner work begins.
 
         Contract:
             - Reads from the supplied spell and artifact only.
-            - Writes only the artifact family owned by this strategy.
+            - Writes only the model section and compatibility fields owned by
+              this strategy.
             - Must not generate final planner outputs directly.
 
         Args:
             spell:
                 Spell whose compiler state is being processed.
             artifact:
-                Compiler artifact receiving processor-owned outputs.
+                Compiler artifact supplying analyzer-owned or legacy compiler
+                truth.
             model:
-                Processor-owned codegen model being refined by this strategy.
+                Processor-owned codegen model being fitted by this strategy.
 
         Returns:
             None.

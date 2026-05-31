@@ -3,9 +3,6 @@ from typing import TYPE_CHECKING
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
     SpellArtifactProcessor,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder import (
-    SpellArtifactProcessorStrategyBuilder,
-)
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner import (
     SpellCodegenPlanner,
 )
@@ -83,29 +80,7 @@ class CompilerPhase12:
         if artifact._occurrence_graph_analysis is None:
             return
 
-        previous_processor_state = artifact._phase12_processor_state
-        previous_codegen_plan = artifact._phase12_codegen_plan
-
-        processor = SpellArtifactProcessor(
-            strategy_builder=SpellArtifactProcessorStrategyBuilder(),
-        )
-        codegen_model = processor.process(spell, artifact)
-        codegen_plan = SpellCodegenPlanner().build(codegen_model)
-
-        artifact._phase12_processor_state = codegen_model
-        artifact._phase12_codegen_plan = codegen_plan
-
-        if (
-                previous_processor_state is not None
-                and previous_processor_state is not codegen_model
-        ):
-            try:
-                previous_processor_state.cleanup()
-            except Exception:
-                pass
-        if previous_codegen_plan is not None and previous_codegen_plan is not codegen_plan:
-            try:
-                previous_codegen_plan.cleanup()
-            except Exception:
-                pass
+        processor = SpellArtifactProcessor()
+        processor.process(spell, artifact)
+        SpellCodegenPlanner().build(artifact)
 

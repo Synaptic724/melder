@@ -1,9 +1,6 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
-    SpellCodegenModel,
-)
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
@@ -12,24 +9,20 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_s
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+
 
 class SpellCodegenPlanner(Cleanable):
     """
-    Phase 12 codegen-plan orchestrator.
+    Planner facade over artifact-owned model truth.
 
     Purpose:
-        Consume an assessed model, create one neutral planner-owned codegen
-        plan shell, and then let planner strategies define the final output
-        object.
-
-    Contract:
-        - Owns no runtime/compiler artifacts.
-        - Owns only the plan-strategy builder.
-        - Always starts from the same neutral codegen plan shell for a given
-          model.
-        - Applies registered plan strategies in deterministic order.
-        - Returns the final `SpellCodegenPlan` after planner strategies mutate
-          it in place.
+        Read the artifact-owned `SpellCodegenModel`, create one neutral
+        `SpellCodegenPlan` container, run planner strategies, and publish the
+        result back onto `SpellCompilerArtifact`.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -37,11 +30,9 @@ class SpellCodegenPlanner(Cleanable):
         "_strategy_builder",
     ]
 
-    def __init__(
-            self,
-    ) -> None:
+    def __init__(self) -> None:
         """
-        Build one planner with a plan-strategy builder.
+        Build one planner with an owned strategy builder.
         """
         super().__init__()
         self._strategy_builder = SpellCodegenPlanStrategyBuilder()
@@ -64,59 +55,58 @@ class SpellCodegenPlanner(Cleanable):
 
     def build(
             self,
-            model: SpellCodegenModel,
-    ) -> SpellCodegenPlan:
+            artifact: "SpellCompilerArtifact",
+    ) -> None:
         """
-        Build one Phase 12 codegen plan from the assessed model.
+        Fit and publish the planner output for the supplied artifact.
 
         Contract:
-            - Planner does not hardcode concrete runtime/codegen families.
-            - Planner creates one neutral plan shell first.
-            - Planner strategies are responsible for defining the real planning
-              outcome.
+            - Reads `artifact._spell_codegen_model`.
+            - Publishes `artifact._spell_codegen_plan`.
+            - Does not return the plan object directly.
         """
-        plan = self._build_plan(model)
+        spell_codegen_model = artifact._spell_codegen_model
+        if spell_codegen_model is None:
+            raise RuntimeError(
+                "SpellCodegenPlanner requires artifact._spell_codegen_model first."
+            )
+
+        previous_spell_codegen_plan = artifact._spell_codegen_plan
+        spell_codegen_plan = self._build_plan(spell_codegen_model)
         strategy_names = self._strategy_builder.registered_strategy_names()
         strategies = self._strategy_builder.get_strategies(strategy_names)
         for strategy in strategies:
-            strategy.apply(model, plan)
-            plan.plan_strategy_ids = plan.plan_strategy_ids + (strategy.strategy_id,)
-        return plan
+            strategy.apply(spell_codegen_model, spell_codegen_plan)
+            spell_codegen_plan.plan_strategy_ids = (
+                spell_codegen_plan.plan_strategy_ids + (strategy.strategy_id,)
+            )
+
+        artifact._spell_codegen_plan = spell_codegen_plan
+        if (
+                previous_spell_codegen_plan is not None
+                and previous_spell_codegen_plan is not spell_codegen_plan
+        ):
+            try:
+                previous_spell_codegen_plan.cleanup()
+            except Exception:
+                pass
 
     @staticmethod
     def _build_plan(
-            model: SpellCodegenModel,
+            spell_codegen_model,
     ) -> SpellCodegenPlan:
         """
-        Build one neutral planner-owned codegen plan shell from the model.
+        Build one neutral planner-owned codegen plan container.
 
-        Purpose:
-            Give planner strategies one owned plan object to mutate without the
-            planner facade pre-deciding families, lane support, or runtime
-            hints that should actually come from strategy logic later.
+        Contract:
+            - Starts with empty lane payloads.
+            - Carries processor provenance forward into the planner layer.
         """
         return SpellCodegenPlan(
-            processor_strategy_ids=model.snapshot_applied_strategy_ids(),
+            processor_strategy_ids=spell_codegen_model.snapshot_applied_strategy_ids(),
             plan_strategy_ids=(),
-            no_overrides_family=None,
-            overrides_family=None,
-            mutation_family=None,
-            route_key=model.route_family,
-            supports_no_overrides_lane=False,
-            supports_overrides_lane=False,
-            supports_mutation_lane=False,
-            requires_spellspace_request=False,
-            execution_plan_dispatch_route=None,
-            step_count=model.node_count,
-            unique_spell_count=model.node_count,
-            max_occurrence_depth=model.max_depth,
-            max_dependency_count=model.max_dependency_count,
-            fast_transient_no_overrides_enabled=False,
-            lock_strategy_hint=None,
-            registration_strategy_hint=None,
-            call_mode_hint=None,
-            emitter_family_id=None,
-            fallback_reason=None,
-            step_rows=(),
+            no_overrides_plan=None,
+            overrides_plan=None,
+            mutation_overrides_plan=None,
             metadata={},
         )

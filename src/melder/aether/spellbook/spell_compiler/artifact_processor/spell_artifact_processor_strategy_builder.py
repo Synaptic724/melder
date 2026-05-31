@@ -8,6 +8,9 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_pr
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy import (
     SpellOccurrenceContractProcessorStrategy,
 )
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy import (
+    SpellInjectionProcessorStrategy,
+)
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy import (
     SpellOccurrenceInstanceProcessorStrategy,
 )
@@ -73,15 +76,18 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
             - Clears and rebuilds the registry each time it runs.
             - Keys are the strategies' stable `strategy_id` values.
             - Current defaults are the 3 occurrence-derived processor
-              strategies: order, instance/sharedness, and contract routing.
+              strategies plus the injection fitting strategy.
+            - Registration order is execution order.
         """
         order_strategy = SpellOccurrenceOrderProcessorStrategy()
         instance_strategy = SpellOccurrenceInstanceProcessorStrategy()
         contract_strategy = SpellOccurrenceContractProcessorStrategy()
+        injection_strategy = SpellInjectionProcessorStrategy()
 
         self._strategies_by_name[order_strategy.strategy_id] = order_strategy
         self._strategies_by_name[instance_strategy.strategy_id] = instance_strategy
         self._strategies_by_name[contract_strategy.strategy_id] = contract_strategy
+        self._strategies_by_name[injection_strategy.strategy_id] = injection_strategy
 
     def get_strategy(
             self,
@@ -136,6 +142,6 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
 
         Returns:
             Tuple[str, ...]:
-                Sorted registered strategy names.
+                Registered strategy names in execution order.
         """
-        return tuple(sorted(self._strategies_by_name.keys()))
+        return tuple(self._strategies_by_name.keys())

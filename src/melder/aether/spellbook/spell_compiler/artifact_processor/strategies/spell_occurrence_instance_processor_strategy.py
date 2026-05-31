@@ -2,14 +2,11 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_8 import (
-    CompilerPhase8,
+from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis import (
+    SpellOccurrenceInstanceAnalysis,
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
     SpellArtifactProcessorStrategy,
-)
-from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis import (
-    SpellOccurrenceInstanceAnalysis,
 )
 
 if TYPE_CHECKING:
@@ -28,12 +25,12 @@ InstanceKey = Tuple[str, Optional[int]]
 
 class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
     """
-    Build processor-owned occurrence instance/sharedness output from graph truth.
+    Fit the occurrence instance/sharedness section of `SpellCodegenModel`.
 
     Purpose:
-        Consume the analyzer-owned occurrence graph and produce the
-        instance/sharedness artifact plus the combined occurrence shape profile
-        used by later model assembly.
+        Consume analyzer-owned graph truth and produce the instance-key and
+        sharedness facts that describe what runtime objects will actually exist
+        when the graph is executed.
     """
 
     __slots__ = ()
@@ -47,23 +44,24 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
 
     def process(
             self,
-            spell: "Spell",
-            artifact: "SpellCompilerArtifact",
-            model: "SpellCodegenModel",
+            spell: Spell,
+            artifact: SpellCompilerArtifact,
+            model: SpellCodegenModel,
     ) -> None:
         """
-        Build and publish the occurrence instance/sharedness artifact on the
-        compiler artifact.
+        Fit the instance/sharedness model section.
+
+        Contract:
+            - Reads analyzer-owned `graph_shape` from the model shell.
+            - Writes only `model.instance_shape` plus compatible top-level
+              scalar facts owned by this strategy.
+            - Does not synthesize a fake occurrence-plan adapter.
         """
-        graph_analysis = artifact._occurrence_graph_analysis
-        if graph_analysis is None:
+        _ = artifact
+        graph_shape = model.graph_shape
+        if graph_shape is None:
             raise RuntimeError(
-                "SpellOccurrenceInstanceProcessorStrategy requires occurrence graph analysis first."
-            )
-        order_analysis = model.occurrence_order_analysis
-        if order_analysis is None:
-            raise RuntimeError(
-                "SpellOccurrenceInstanceProcessorStrategy requires occurrence order analysis first."
+                "SpellOccurrenceInstanceProcessorStrategy requires graph_shape first."
             )
         spellbook = spell._spellbook
         if spellbook is None:
@@ -77,39 +75,23 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
             root_instance_key,
             shared_spell_ids,
         ) = self._build_instance_plan(
-            occurrence_graph=graph_analysis.occurrence_graph,
-            root_spell_id=graph_analysis.root_spell_id,
+            occurrence_graph=graph_shape.occurrence_graph,
+            root_spell_id=graph_shape.root_spell_id,
             spell_lookup=spellbook._spell_id_pool,
-            root_path_id=graph_analysis.path_registry.root_path_id,
+            root_path_id=graph_shape.path_registry.root_path_id,
         )
 
-        instance_analysis = SpellOccurrenceInstanceAnalysis(
+        instance_shape = SpellOccurrenceInstanceAnalysis(
             instance_keys_by_spell_id=instance_keys_by_spell_id,
             canonical_occurrences_by_spell_id=canonical_occurrences_by_spell_id,
             root_instance_key=root_instance_key,
             shared_spell_ids=shared_spell_ids,
         )
-        previous_instance = model.occurrence_instance_analysis
-        model.occurrence_instance_analysis = instance_analysis
-
-        occurrence_plan_like = type(
-            "_OccurrencePlanLike",
-            (),
-            {
-                "occurrence_graph": graph_analysis.occurrence_graph,
-                "execution_order": order_analysis.execution_order,
-                "instance_keys_by_spell_id": instance_analysis.instance_keys_by_spell_id,
-                "shared_spell_ids": instance_analysis.shared_spell_ids,
-                "path_registry": graph_analysis.path_registry,
-            },
-        )()
-        model.occurrence_shape_profile = (
-            CompilerPhase8._build_phase8_occurrence_shape_profile(
-                occurrence_plan_like,
-            )
-        )
-
-        self._cleanup_previous(previous_instance, instance_analysis)
+        previous_instance_shape = model.instance_shape
+        model.instance_shape = instance_shape
+        model.node_count = instance_shape.unique_spell_count
+        model.shared_node_count = instance_shape.shared_spell_count
+        self._cleanup_previous(previous_instance_shape, instance_shape)
 
     @staticmethod
     def _cleanup_previous(
@@ -117,7 +99,7 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
             current: SpellOccurrenceInstanceAnalysis,
     ) -> None:
         """
-        Best-effort cleanup for one superseded occurrence-instance artifact.
+        Best-effort cleanup for one superseded instance/sharedness section.
         """
         if previous is None or previous is current:
             return
@@ -151,7 +133,7 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
             *,
             occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]],
             root_spell_id: str,
-            spell_lookup: Dict[str, "Spell"],
+            spell_lookup: Dict[str, Spell],
             root_path_id: int,
     ) -> Tuple[
         Dict[str, List[InstanceKey]],
@@ -161,6 +143,11 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
     ]:
         """
         Build per-spell instance keys and canonical occurrences.
+
+        Contract:
+            - `Existence.many` yields one instance per occurrence path.
+            - Shared existences yield one canonical `(spell_id, None)` instance
+              key plus a canonical occurrence for dependency routing.
         """
         occurrences_by_spell_id: Dict[str, List[OccurrenceKey]] = defaultdict(list)
         for occurrence in sorted(
@@ -180,11 +167,12 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
             )
             if self._is_shared_existence(spell_lookup[spell_id].existence):
                 shared_spell_ids.add(spell_id)
-                canonical_occurrences_by_spell_id[spell_id] = self._select_canonical_occurrence(
-                    occurrences
+                canonical_occurrences_by_spell_id[spell_id] = (
+                    self._select_canonical_occurrence(occurrences)
                 )
                 instance_keys_by_spell_id[spell_id] = [(spell_id, None)]
                 continue
+
             instance_keys_by_spell_id[spell_id] = [
                 (spell_id, path_id)
                 for _, path_id in occurrences
@@ -205,10 +193,10 @@ class SpellOccurrenceInstanceProcessorStrategy(SpellArtifactProcessorStrategy):
             self,
             *,
             occurrence: OccurrenceKey,
-            spell_lookup: Dict[str, "Spell"],
+            spell_lookup: Dict[str, Spell],
     ) -> InstanceKey:
         """
-        Map an occurrence to its instance key based on existence policy.
+        Map one occurrence to its instance key based on existence policy.
         """
         if self._is_shared_existence(spell_lookup[occurrence[0]].existence):
             return occurrence[0], None
