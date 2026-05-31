@@ -7,6 +7,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
         SpellCodegenModel,
     )
+    from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
+        SpellCodegenCreation,
+    )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
         SpellOccurrenceContractAnalysis,
     )
@@ -121,6 +124,7 @@ class SpellCompilerArtifact(Cleanable):
         "_phase11_no_overrides_fast_key",
         "_spell_codegen_model",
         "_spell_codegen_plan",
+        "_spell_codegen_creation",
         "_codegen_ir",
         "_phase8_11_codegen_ir_dirty",
         "_spell_system_index_phase5",
@@ -196,6 +200,7 @@ class SpellCompilerArtifact(Cleanable):
         self._phase11_no_overrides_fast_key: Optional[Tuple[Any, ...]] = None
         self._spell_codegen_model: Optional[SpellCodegenModel] = None
         self._spell_codegen_plan: Optional[SpellCodegenPlan] = None
+        self._spell_codegen_creation: Optional[SpellCodegenCreation] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
@@ -335,6 +340,7 @@ class SpellCompilerArtifact(Cleanable):
             del self._phase11_no_overrides_fast_key
             del self._spell_codegen_model
             del self._spell_codegen_plan
+            del self._spell_codegen_creation
             del self._codegen_ir
             del self._spell_system_index_phase5
             del self._entire_dag_blueprint_phase5
@@ -545,8 +551,15 @@ class SpellCompilerArtifact(Cleanable):
                 spell_codegen_plan.cleanup()
             except Exception:
                 pass
+        spell_codegen_creation = self._spell_codegen_creation
+        if spell_codegen_creation is not None:
+            try:
+                spell_codegen_creation.cleanup()
+            except Exception:
+                pass
         self._spell_codegen_model = None
         self._spell_codegen_plan = None
+        self._spell_codegen_creation = None
 
     def _cleanup_execution_plans_phase11(self) -> None:
         """
