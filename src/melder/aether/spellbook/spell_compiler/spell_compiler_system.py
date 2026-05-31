@@ -337,10 +337,11 @@ class SpellCompilerSystem(Cleanable):
             spell: Spell,
     ) -> None:
         """
-        Phase 8 - Occurrence plan compilation (front-facing compiler-system facade).
+        Phase 8 - Analyzer occurrence compilation (front-facing compiler-system facade).
 
-        Delegates to the compiler system to compile the occurrence plan for root
-        spells. Non-root spells are treated as a no-op.
+        Delegates to the analyzer-backed live phase-8 substitute so the
+        compiler artifact receives occurrence graph analysis instead of the old
+        occurrence plan.
 
         Contract:
             - Requires Phase 5 artifacts to be available.
@@ -370,32 +371,10 @@ class SpellCompilerSystem(Cleanable):
             spell: Spell,
     ) -> None:
         """
-            Phase 9 - Injection plan compilation.
-            
-            Compiles an InjectionPlan for spells using Phase-8 occurrence plans.
-            Existing-creation spells are treated as a no-op.
-            
-            Purpose:
-                Precompute dependency-to-parameter wiring so meld can inject without
-                recomputing occurrence-driven dependency paths at runtime.
-            
-            Contract:
-                - Requires Phase 8 artifacts to be available.
-                - Builds plan only when an occurrence plan is attached for this spell.
-                - Replaces any existing InjectionPlan for this spell.
-                - Does not mutate the occurrence plan.
-            
-            Args:
-                spell:
-                    Spell whose Phase 9 artifacts should be produced.
-            
-            Returns:
-                None.
-            
-            Raises:
-                RuntimeError:
-                    If Phase 8 artifacts are missing for this spell, or if the
-                    root blueprint is missing for this spell.
+            Phase 9 - Artifact processor (front-facing compiler-system facade).
+
+            Delegates to the new processor-backed live phase-9 substitute so
+            the compiler artifact receives `SpellCodegenModel`.
         """
         self._spell_compiler.run_phase_injection_plan(
             spell,
@@ -407,32 +386,10 @@ class SpellCompilerSystem(Cleanable):
             spell: Spell,
     ) -> None:
         """
-            Phase 10 - Patch map compilation.
-            
-            Compiles override and mutation patch maps for spells using
-            Phase-5 blueprints. Existing-creation spells are treated as a no-op.
-            
-            Purpose:
-                Precompute override and mutation targeting so meld can apply
-                TargetSpec overrides without scanning the blueprint every call.
-            
-            Contract:
-                - Requires Phase 5 artifacts to be available.
-                - Builds maps only when a blueprint is attached for this spell.
-                - Replaces any existing patch maps for this spell.
-                - Does not mutate the root blueprint.
-            
-            Args:
-                spell:
-                    Spell whose Phase 10 artifacts should be produced.
-            
-            Returns:
-                None.
-            
-            Raises:
-                RuntimeError:
-                    If Phase 5 artifacts are missing or the root blueprint is missing
-                    for this spell.
+            Phase 10 - Codegen planner (front-facing compiler-system facade).
+
+            Delegates to the planner-backed live phase-10 substitute so the
+            compiler artifact receives `SpellCodegenPlan`.
         """
         self._spell_compiler.run_phase_patch_maps(
             spell,
@@ -445,24 +402,10 @@ class SpellCompilerSystem(Cleanable):
             spell: Spell,
     ) -> None:
         """
-            Phase 11 - Execution plan compilation.
-            
-            Compiles a Phase 11 ExecutionPlan for spells using Phase 8-9
-            artifacts. Existing-creation spells are treated as a no-op.
-            Emits plan variants for override-free, override-aware, and
-            override+mutation-aware execution plan.
-            
-            Contract:
-                - Requires Phase 8 artifacts to be available.
-                - Uses Phase 9 injection plan when available.
-                - Replaces existing ExecutionPlan references for this spell.
-                - Uses the Spellbook-managed spell_id_pool (spell_id -> Spell) as the
-                  spell lookup map without rebuilding it per phase.
-                - Reuses cached no-overrides plan when the deterministic Phase11 no-overrides input signature is unchanged.
-                - Reuses the full cached phase11 variant set when the signature is
-                  unchanged and cached sibling variants are available.
-                - Falls back to the legacy no-overrides rebuild path when signature
-                  inputs are missing.
+            Phase 11 - Codegen creation (front-facing compiler-system facade).
+
+            Delegates to the codegen-creation-backed live phase-11 substitute
+            so the compiler artifact receives `SpellCodegenCreation`.
         """
         self._spell_compiler.run_phase_execution_plan(
             spell,
@@ -470,63 +413,6 @@ class SpellCompilerSystem(Cleanable):
             spellbook,
         )
         spell._cleanup_creation_context()
-
-    def run_phase_executor_compile(
-            self,
-            spellbook: Spellbook,
-            spell: Spell,
-    ) -> None:
-        """
-        Phase 13 - No-overrides executor compilation (front-facing compiler-system facade).
-
-        Delegates to the compiler system to compile the Phase 13 no-overrides
-        executor from the Phase 11 artifact handoff. Spells without a compatible
-        Phase 11 plan (including existing-creation spells) resolve to a `None`
-        executor.
-
-        Contract:
-            - Requires the current Phase 11 -> Phase 13 artifact handoff to be available.
-            - Does not return a value; the compiled executor is stored on the
-              spell-owned compiler artifact.
-            - Does not execute any other phases.
-
-        Args:
-            spellbook:
-                Spellbook providing explicit spell lookup context for payload
-                executor compilation.
-            spell:
-                Spell whose Phase 13 no-overrides executor should be compiled.
-
-        Returns:
-            None.
-        """
-        self._spell_compiler.compile_phase13_no_overrides_executor(
-            spellbook,
-            spell,
-            spell._compiler_artifact,
-        )
-
-    def run_phase_strategy_selection(
-            self,
-            spellbook: Spellbook,
-            spell: Spell,
-    ) -> None:
-        """
-        Phase 12 - Scaffolded processor/codegen-plan build
-        (front-facing compiler-system facade).
-
-        Delegates to the current Phase 12 scaffold so the spell-owned compiler
-        artifact receives processor-state and codegen-plan outputs before later
-        backend-emitter work consumes them.
-
-        Returns:
-            None.
-        """
-        self._spell_compiler.run_phase_strategy_selection(
-            spellbook,
-            spell,
-            spell._compiler_artifact,
-        )
 
     def run_phase_system_validation(
             self,
@@ -997,14 +883,6 @@ class SpellCompilerSystem(Cleanable):
             spell,
         )
         self.run_phase_execution_plan(
-            spellbook,
-            spell,
-        )
-        self.run_phase_strategy_selection(
-            spellbook,
-            spell,
-        )
-        self.run_phase_executor_compile(
             spellbook,
             spell,
         )

@@ -23,23 +23,17 @@ from melder.aether.spellbook.spell_compiler.phases.compiler_phase_6 import (
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_7 import (
     CompilerPhase7,
 )
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_8 import (
-    CompilerPhase8,
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
+    SpellArtifactProcessor,
 )
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_9 import (
-    CompilerPhase9,
+from melder.aether.spellbook.spell_compiler.codegen_creation.codegen_creation_system import (
+    CodegenCreationSystem,
 )
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_10 import (
-    CompilerPhase10,
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner import (
+    SpellCodegenPlanner,
 )
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_11 import (
-    CompilerPhase11,
-)
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_12 import (
-    CompilerPhase12,
-)
-from melder.aether.spellbook.spell_compiler.phases.compiler_phase_13 import (
-    CompilerPhase13,
+from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer import (
+    SpellAnalyzer,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -48,9 +42,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
         SpellSystemStates,
-    )
-    from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-        ExecutionPlan,
     )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
         SpellCompilerArtifact,
@@ -91,12 +82,10 @@ class SpellCompiler(Cleanable):
         "_phase_5",
         "_phase_6",
         "_phase_7",
-        "_phase_8",
-        "_phase_9",
-        "_phase_10",
-        "_phase_11",
-        "_phase_12",
-        "_phase_13",
+        "_spell_analyzer",
+        "_artifact_processor",
+        "_codegen_planner",
+        "_codegen_creation_system",
     ]
 
     def __init__(self) -> None:
@@ -118,12 +107,10 @@ class SpellCompiler(Cleanable):
         self._phase_5 = CompilerPhase5()
         self._phase_6 = CompilerPhase6()
         self._phase_7 = CompilerPhase7()
-        self._phase_8 = CompilerPhase8()
-        self._phase_9 = CompilerPhase9()
-        self._phase_10 = CompilerPhase10()
-        self._phase_11 = CompilerPhase11()
-        self._phase_12 = CompilerPhase12()
-        self._phase_13 = CompilerPhase13()
+        self._spell_analyzer = SpellAnalyzer()
+        self._artifact_processor = SpellArtifactProcessor()
+        self._codegen_planner = SpellCodegenPlanner()
+        self._codegen_creation_system = CodegenCreationSystem()
 
     def cleanup(self) -> None:
         """
@@ -139,12 +126,14 @@ class SpellCompiler(Cleanable):
         del self._phase_5
         del self._phase_6
         del self._phase_7
-        del self._phase_8
-        del self._phase_9
-        del self._phase_10
-        del self._phase_11
-        del self._phase_12
-        del self._phase_13
+        self._spell_analyzer.cleanup()
+        del self._spell_analyzer
+        self._artifact_processor.cleanup()
+        del self._artifact_processor
+        self._codegen_planner.cleanup()
+        del self._codegen_planner
+        self._codegen_creation_system.cleanup()
+        del self._codegen_creation_system
 
 
 
@@ -592,12 +581,14 @@ class SpellCompiler(Cleanable):
         Run compiler phase 8 (occurrence plan).
 
         Purpose:
-            Build occurrence plans from resolved blueprints and phase-6 status.
+            Run the analyzer-owned occurrence analysis seam as the new live
+            phase-8 substitute.
 
         Contract:
-            - Requires phase-6 validation output where applicable.
-            - Stores computed occurrence plans for subsequent injection planning.
-            - Supports optional cancellation during graph expansion and hashing.
+            - Consumes the existing spell/artifact pair.
+            - Publishes analyzer-owned occurrence graph truth onto the artifact.
+            - Ignores the old spellbook/system-state inputs because the analyzer
+              already reads through the spell/artifact relationship.
 
         Args:
             spell:
@@ -614,12 +605,9 @@ class SpellCompiler(Cleanable):
         Returns:
             None.
         """
-        self._phase_8.run(
-            spell,
-            artifact,
-            spellbook,
-            spell_system_states,
-        )
+        _ = spellbook
+        _ = spell_system_states
+        self._spell_analyzer.analyze_occurrence(spell, artifact)
 
     def run_phase_injection_plan(
             self,
@@ -627,50 +615,13 @@ class SpellCompiler(Cleanable):
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-            Phase 9 - Injection plan compilation.
-            
-            Compiles an InjectionPlan for spells using Phase-8 occurrence plans.
-            Existing-creation spells are treated as a no-op.
-            
+            Run the processor seam as the new live phase-9 substitute.
+
             Purpose:
-                Precompute dependency-to-parameter wiring so meld can inject without
-                recomputing occurrence-driven dependency paths at runtime.
-            
-            Contract:
-                - Requires Phase 8 artifacts to be available.
-                - Builds plan only when an occurrence plan is attached for this spell.
-                - Replaces any existing InjectionPlan for this spell.
-                - Does not mutate the occurrence plan.
-            
-            Args:
-                conduit_id:
-                    Conduit identifier used to scope resolution artifacts.
-                cancel_event:
-                    Optional cancellation signal shared across the scheduler.
-            
-            Returns:
-                None.
-            
-            Raises:
-                ValueError:
-                    If conduit_id is empty.
-                RuntimeError:
-                    If Phase 8 artifacts are missing for this spell, or if the
-                    root blueprint is missing for this spell.
-                OperationCancelledError:
-                    If cancel_event signals cancellation.
-            
-            Threading:
-                - Not thread-safe; expected to run under spellbook phase scheduling.
-            
-            Lifecycle:
-                - Replaces any prior InjectionPlan reference for this spell.
-                - Prior plan objects are cleaned during SpellCrafter teardown.
+                Build the processor-owned `SpellCodegenModel` from the existing
+                analyzer and compiler artifact truth.
         """
-        self._phase_9.run(
-            spell,
-            artifact,
-        )
+        self._artifact_processor.process(spell, artifact)
 
     def run_phase_patch_maps(
             self,
@@ -678,50 +629,14 @@ class SpellCompiler(Cleanable):
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-            Phase 10 - Patch map compilation.
-            
-            Compiles override and mutation patch maps for spells using
-            Phase-5 blueprints. Existing-creation spells are treated as a no-op.
-            
+            Run the planner seam as the new live phase-10 substitute.
+
             Purpose:
-                Precompute override and mutation targeting so meld can apply
-                TargetSpec overrides without scanning the blueprint every call.
-            
-            Contract:
-                - Requires Phase 5 artifacts to be available.
-                - Builds maps only when a blueprint is attached for this spell.
-                - Replaces any existing patch maps for this spell.
-                - Does not mutate the root blueprint.
-            
-            Args:
-                conduit_id:
-                    Conduit identifier used to scope resolution artifacts.
-                cancel_event:
-                    Optional cancellation signal shared across the scheduler.
-            
-            Returns:
-                None.
-            
-            Raises:
-                ValueError:
-                    If conduit_id is empty.
-                RuntimeError:
-                    If Phase 5 artifacts are missing or the root blueprint is missing
-                    for this spell.
-                OperationCancelledError:
-                    If cancel_event signals cancellation.
-            
-            Threading:
-                - Not thread-safe; expected to run under spellbook phase scheduling.
-            
-            Lifecycle:
-                - Replaces any prior patch map references for this spell.
-                - Prior map objects are cleaned during SpellCrafter teardown.
+                Build the planner-owned `SpellCodegenPlan` from the
+                processor-owned model already attached to the artifact.
         """
-        self._phase_10.run(
-            spell,
-            artifact,
-        )
+        _ = spell
+        self._codegen_planner.build(artifact)
 
     def run_phase_execution_plan(
             self,
@@ -730,21 +645,19 @@ class SpellCompiler(Cleanable):
             spellbook: Spellbook,
     ) -> None:
         """
-        Run compiler phase 11 (execution plan).
+        Run the codegen-creation seam as the new live phase-11 substitute.
 
         Purpose:
-            Build final execution plans for spell invocation from all prior phase
-            artifacts and spellbook context, stopping at the phase-11/13 artifact
-            handoff.
+            Build the compiler-owned `SpellCodegenCreation` artifact from the
+            planner-owned plan and processor-owned model so runtime binders can
+            consume the new spell-static handoff.
 
         Contract:
-            - Requires phase-8 to phase-10 outputs for complete plan synthesis.
-            - Stores phase-11 execution plans on the artifact for downstream
-              runner/executor compilation.
-            - Stops at the phase-11/13 artifact handoff. Phase-13 no-overrides
-              executor compilation is now a distinct phase; callers must run
-              `compile_phase13_no_overrides_executor` separately.
-            - Honors cancellation while constructing runtime execution structure.
+            - Consumes the already-built model and plan from the artifact.
+            - Publishes the codegen-creation artifact onto the spell compiler
+              artifact.
+            - Leaves the old compiler-facing phase-13 facade present but out of
+              the main live path.
 
         Args:
             spell:
@@ -759,153 +672,8 @@ class SpellCompiler(Cleanable):
         Returns:
             None.
         """
-        self._phase_11.run(
-            spell,
-            artifact,
-            spellbook,
-        )
+        _ = spell
+        _ = spellbook
+        self._codegen_creation_system.build(artifact)
 
-    def run_phase_strategy_selection(
-            self,
-            spellbook: Spellbook,
-            spell: Spell,
-            artifact: SpellCompilerArtifact,
-    ) -> None:
-        """
-        Run the scaffolded Phase 12 processor/codegen-plan slot.
-
-        Purpose:
-            Route the current spell/artifact surface into the compiler-owned
-            Phase 12 scaffold so processor state and the first codegen-plan
-            artifact are stored before later backend-emitter work consumes
-            them.
-
-        Args:
-            spellbook:
-                Spellbook compiler context.
-            spell:
-                Spell being prepared for later backend emission.
-            artifact:
-                Compiler artifact receiving the Phase 12 scaffold outputs.
-
-        Returns:
-            None.
-        """
-        self._phase_12.run(
-            spellbook,
-            spell,
-            artifact,
-        )
-
-    def compile_phase13_no_overrides_executor(
-            self,
-            spellbook: Spellbook,
-            spell: Spell,
-            artifact: SpellCompilerArtifact,
-    ) -> None:
-        """
-        Compile the phase-13 no-overrides executor directly from artifact state.
-
-        Purpose:
-            Delegate to phase-13 executor synthesis using current phase-11 artifact
-            state.
-
-        Contract:
-            - Requires phase-11 artifacts already present and compatible.
-            - Writes the no-overrides executor and signature cache into the
-              provided artifact.
-
-        Args:
-            spellbook:
-                Spellbook providing explicit spell lookup context for payload
-                compile fallback.
-            spell:
-                Spell whose executor is being compiled.
-            artifact:
-                Compiler artifact containing phase-11 execution-plan inputs.
-
-        Returns:
-            None.
-        """
-        self._phase_13.compile_no_overrides_executor(
-            spellbook,
-            spell,
-            artifact,
-        )
-
-    def compile_phase13_no_overrides_executor_from_plan(
-            self,
-            spell: Spell,
-            artifact: SpellCompilerArtifact,
-            execution_plan: ExecutionPlan,
-    ) -> None:
-        """
-        Compile the phase-13 no-overrides executor from a provided execution plan.
-
-        Purpose:
-            Build and cache a callable executor for an already-selected
-            execution plan without recomputing plan state.
-
-        Contract:
-            - Uses the supplied plan directly and reuses artifact-owned runtime
-              context.
-            - Validates and updates signature cache metadata before writing the
-              compiled callable.
-
-        Args:
-            spell:
-                Spell for which executor code is being generated.
-            artifact:
-                Compiler artifact receiving the cached compiled callable.
-            execution_plan:
-                Concrete execution plan used to generate the executor.
-
-        Returns:
-            None.
-        """
-        self._phase_13.compile_no_overrides_executor_from_plan(
-            spell,
-            artifact,
-            execution_plan,
-        )
-
-    def compile_phase13_no_overrides_executor_from_payload(
-            self,
-            spellbook: Spellbook,
-            spell: Spell,
-            artifact: SpellCompilerArtifact,
-            no_overrides_payload: Dict[str, Any],
-    ) -> None:
-        """
-        Compile the phase-13 no-overrides executor from raw payload data.
-
-        Purpose:
-            Synthesize a no-overrides executor and cache it using payload-provided
-            execution-plan fields.
-
-        Contract:
-            - Allows direct compilation in payload-driven runners where the full
-              execution-plan object is not pre-materialized.
-            - Refreshes compile cache metadata according to the payload signature.
-
-        Args:
-            spellbook:
-                Spellbook providing explicit spell lookup context for payload
-                compilation.
-            spell:
-                Spell for which executor code is being generated.
-            artifact:
-                Compiler artifact receiving the compiled callable.
-            no_overrides_payload:
-                Serialized execution plan payload passed into phase-13.
-
-        Returns:
-            None.
-        """
-        self._phase_13.compile_no_overrides_executor_from_payload(
-            spellbook,
-            spell,
-            artifact,
-            no_overrides_payload,
-        )
 
