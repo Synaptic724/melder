@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
-from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy import (
-    SpellAnalyzerStrategy,
+from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder import (
+    SpellAnalyzerStrategyBuilder,
 )
 
 if TYPE_CHECKING:
@@ -23,65 +23,115 @@ class SpellAnalyzer:
     Contract:
         - Consumes `Spell` plus the existing `SpellCompilerArtifact`.
         - Does not choose or emit the final codegen plan.
-        - Runs the configured analyzer strategies in deterministic order.
+        - Exposes explicit analysis entrypoints by strategy chain.
+        - Runs the configured analyzer strategies in deterministic order inside
+          each exposed analysis method by resolving them from the strategy
+          builder.
         - Expects strategies to add or update compiler-owned analysis artifacts
           on `SpellCompilerArtifact`.
 
     Ownership:
         - Owns no runtime/compiler artifacts.
-        - Owns only the ordered analyzer-strategy registry.
+        - Owns only the analyzer strategy builder.
 
     Lifecycle:
         - Reusable across many spells.
-        - Safe to construct with an empty strategy list while the analyzer lane
+        - Safe to construct with an empty strategy registry while the analyzer lane
           is being scaffolded.
     """
 
     __slots__ = [
-        "_strategies",
+        "_strategy_builder",
     ]
 
     def __init__(
             self,
             *,
-            strategies: Optional[Sequence[SpellAnalyzerStrategy]] = None,
+            strategy_builder: Optional[SpellAnalyzerStrategyBuilder] = None,
     ) -> None:
         """
-        Build one analyzer with an ordered strategy registry.
+        Build one analyzer with a strategy builder.
+
+        Purpose:
+            Keep the analyzer itself small and make the strategy builder the
+            owner of the named strategy registry.
+
+        Contract:
+            - `None` means construct a default `SpellAnalyzerStrategyBuilder`.
+            - The analyzer does not clone strategy objects; it consumes them
+              from the builder.
 
         Args:
-            strategies:
-                Optional ordered analyzer strategies to run during
-                `analyze(...)`.
+            strategy_builder:
+                Optional analyzer strategy builder. When omitted, the analyzer
+                creates a default one.
         """
-        if strategies is None:
-            self._strategies: Tuple[SpellAnalyzerStrategy, ...] = ()
-        else:
-            self._strategies = tuple(strategies)
+        if strategy_builder is None:
+            self._strategy_builder = SpellAnalyzerStrategyBuilder()
+            return
+        self._strategy_builder = strategy_builder
 
-    def analyze(
+    def analyze_occurrence(
             self,
             spell: "Spell",
             artifact: "SpellCompilerArtifact",
     ) -> None:
         """
-        Run analyzer strategies against the current spell/artifact pair.
+        Run all registered occurrence-analysis strategies.
 
         Purpose:
-            Give strategies a clean place to inspect the current spell and the
-            already-built compiler artifacts from phases `1-7`, then add the
-            deeper analysis artifacts needed for later planning work.
+            Expose the occurrence-analysis entrypoint directly on the analyzer
+            so callers do not need to know how the individual occurrence
+            strategies are looked up or chained.
+
+        Contract:
+            - Runs the registered occurrence strategy chain in explicit order.
+            - Validates that the target artifact is still live before dispatch.
 
         Args:
             spell:
-                Spell whose current compiler state is being analyzed.
+                Spell whose occurrence/runtime-shape artifacts should be
+                analyzed.
             artifact:
                 Compiler-owned artifact that already contains the upstream
-                phase truth and will receive analyzer-produced artifacts.
+                phase truth and will receive analyzer-produced occurrence
+                artifacts.
 
         Returns:
             None.
         """
+        self._run_strategy_chain(
+            strategy_ids=(
+                "spell_occurrence_graph_analyzer",
+                "spell_occurrence_order_analyzer",
+                "spell_occurrence_instance_analyzer",
+                "spell_occurrence_contract_analyzer",
+            ),
+            spell=spell,
+            artifact=artifact,
+        )
+
+    def _run_strategy_chain(
+            self,
+            *,
+            strategy_ids: Tuple[str, ...],
+            spell: "Spell",
+            artifact: "SpellCompilerArtifact",
+    ) -> None:
+        """
+        Run one explicit analyzer strategy chain against the spell/artifact pair.
+
+        Purpose:
+            Centralize the common analyzer dispatch semantics so each exposed
+            analysis method can stay small and explicit while the builder keeps
+            the default strategy registry indexed by name.
+
+        Contract:
+            - Validates that the artifact is live before strategy dispatch.
+            - Resolves strategies by name from the stored registry.
+            - Missing strategy names are a hard contract error.
+        """
         artifact.check_cleaned()
-        for strategy in self._strategies:
+        strategies = self._strategy_builder.get_strategies(strategy_ids)
+        for strategy in strategies:
             strategy.analyze(spell, artifact)

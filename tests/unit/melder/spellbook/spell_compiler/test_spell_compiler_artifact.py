@@ -44,6 +44,11 @@ def test_artifact_later_phase_fields_start_empty() -> None:
 
     assert artifact._root_blueprint_phase5 is None
     assert artifact._requires_spellspace_request_phase5 is False
+    assert artifact._occurrence_graph_analysis is None
+    assert artifact._occurrence_order_analysis is None
+    assert artifact._occurrence_instance_analysis is None
+    assert artifact._occurrence_contract_analysis is None
+    assert artifact._occurrence_analysis_shape_profile is None
     assert artifact._occurrence_plan_phase8 is None
     assert artifact._injection_plan_phase9 is None
     assert artifact._override_patch_map_phase10 is None
@@ -66,6 +71,10 @@ def test_artifact_later_phase_fields_start_empty() -> None:
         "_validation_result_phase4",
         "_validation_result_phase6",
         "_root_blueprint_phase5",
+        "_occurrence_graph_analysis",
+        "_occurrence_order_analysis",
+        "_occurrence_instance_analysis",
+        "_occurrence_contract_analysis",
         "_occurrence_plan_phase8",
         "_injection_plan_phase9",
         "_override_patch_map_phase10",
@@ -140,6 +149,10 @@ def test_cleanup_deletes_spell_identity_and_later_phase_fields() -> None:
 
     assert not hasattr(artifact, "spell_id")
     assert not hasattr(artifact, "_root_blueprint_phase5")
+    assert not hasattr(artifact, "_occurrence_graph_analysis")
+    assert not hasattr(artifact, "_occurrence_order_analysis")
+    assert not hasattr(artifact, "_occurrence_instance_analysis")
+    assert not hasattr(artifact, "_occurrence_contract_analysis")
     assert not hasattr(artifact, "_occurrence_plan_phase8")
     assert not hasattr(artifact, "_injection_plan_phase9")
     assert not hasattr(artifact, "_override_patch_map_phase10")
@@ -201,6 +214,13 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     artifact = SpellCompilerArtifact("spell-1")
     artifact._root_blueprint_phase5 = object()
     artifact._requires_spellspace_request_phase5 = True
+    artifact._occurrence_analysis_input_signature = "occ"
+    artifact._occurrence_analysis_fast_key = ("occ-fast",)
+    artifact._occurrence_graph_analysis = CleanupTracker()
+    artifact._occurrence_order_analysis = CleanupTracker()
+    artifact._occurrence_instance_analysis = CleanupTracker()
+    artifact._occurrence_contract_analysis = CleanupTracker()
+    artifact._occurrence_analysis_shape_profile = {"graph": 1}
     artifact._phase8_occurrence_plan_input_signature = "phase8"
     artifact._phase9_injection_plan_input_signature = "phase9"
     artifact._phase10_patch_maps_input_signature = ("phase10",)
@@ -219,6 +239,13 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
 
     assert artifact._root_blueprint_phase5 is None
     assert artifact._requires_spellspace_request_phase5 is False
+    assert artifact._occurrence_analysis_input_signature is None
+    assert artifact._occurrence_analysis_fast_key is None
+    assert artifact._occurrence_graph_analysis is None
+    assert artifact._occurrence_order_analysis is None
+    assert artifact._occurrence_instance_analysis is None
+    assert artifact._occurrence_contract_analysis is None
+    assert artifact._occurrence_analysis_shape_profile is None
     assert artifact._phase8_occurrence_plan_input_signature is None
     assert artifact._phase9_injection_plan_input_signature is None
     assert artifact._phase10_patch_maps_input_signature is None

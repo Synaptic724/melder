@@ -4,6 +4,18 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, ClassVar
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_contract_analysis import (
+        SpellOccurrenceContractAnalysis,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_graph_analysis import (
+        SpellOccurrenceGraphAnalysis,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_instance_analysis import (
+        SpellOccurrenceInstanceAnalysis,
+    )
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_occurrence_order_analysis import (
+        SpellOccurrenceOrderAnalysis,
+    )
     from melder.aether.spellbook.spell_compiler.blueprints.injection_plan import InjectionPlan
     from melder.aether.spellbook.spell_compiler.blueprints.patch_maps import MutationPatchMap, OverridePatchMap
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
@@ -66,6 +78,13 @@ class SpellCompilerArtifact(Cleanable):
         "_validated",
         "_root_blueprint_phase5",
         "_requires_spellspace_request_phase5",
+        "_occurrence_analysis_input_signature",
+        "_occurrence_analysis_fast_key",
+        "_occurrence_graph_analysis",
+        "_occurrence_order_analysis",
+        "_occurrence_instance_analysis",
+        "_occurrence_contract_analysis",
+        "_occurrence_analysis_shape_profile",
         "_phase8_occurrence_plan_input_signature",
         "_phase8_occurrence_plan_fast_key",
         "_occurrence_plan_phase8",
@@ -134,6 +153,13 @@ class SpellCompilerArtifact(Cleanable):
         self._validated: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
         self._requires_spellspace_request_phase5: bool = False
+        self._occurrence_analysis_input_signature: Optional[str] = None
+        self._occurrence_analysis_fast_key: Optional[Tuple[Any, ...]] = None
+        self._occurrence_graph_analysis: Optional[SpellOccurrenceGraphAnalysis] = None
+        self._occurrence_order_analysis: Optional[SpellOccurrenceOrderAnalysis] = None
+        self._occurrence_instance_analysis: Optional[SpellOccurrenceInstanceAnalysis] = None
+        self._occurrence_contract_analysis: Optional[SpellOccurrenceContractAnalysis] = None
+        self._occurrence_analysis_shape_profile: Optional[Dict[str, Any]] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
@@ -255,6 +281,7 @@ class SpellCompilerArtifact(Cleanable):
                     self._entire_dag_blueprint_phase5.clear()
                 except Exception:
                     pass
+            self._cleanup_occurrence_analysis_artifacts()
             self._cleaned = True
             self._phase8_11_codegen_ir_dirty = False
             self._validated_phase4 = False
@@ -264,6 +291,13 @@ class SpellCompilerArtifact(Cleanable):
             del self.spell_id
             del self._root_blueprint_phase5
             del self._requires_spellspace_request_phase5
+            del self._occurrence_analysis_input_signature
+            del self._occurrence_analysis_fast_key
+            del self._occurrence_graph_analysis
+            del self._occurrence_order_analysis
+            del self._occurrence_instance_analysis
+            del self._occurrence_contract_analysis
+            del self._occurrence_analysis_shape_profile
             del self._requirements_shape_profile_phase1
             del self._phase8_occurrence_plan_input_signature
             del self._phase8_occurrence_plan_fast_key
@@ -392,6 +426,10 @@ class SpellCompilerArtifact(Cleanable):
         self.check_cleaned()
         self._root_blueprint_phase5 = None
         self._requires_spellspace_request_phase5 = False
+        self._occurrence_analysis_input_signature = None
+        self._occurrence_analysis_fast_key = None
+        self._occurrence_analysis_shape_profile = None
+        self._cleanup_occurrence_analysis_artifacts()
         self._phase8_occurrence_plan_input_signature = None
         self._phase8_occurrence_plan_fast_key = None
         self._occurrence_shape_profile_phase8 = None
@@ -438,6 +476,45 @@ class SpellCompilerArtifact(Cleanable):
         self._phase13_no_overrides_executor_signature = None
         self._phase11_no_overrides_input_signature = None
         self._phase11_no_overrides_fast_key = None
+
+    def _cleanup_occurrence_analysis_artifacts(self) -> None:
+        """
+        Deterministically clean all occurrence-analysis artifacts.
+
+        Contract:
+            - Best-effort cleans all four occurrence-analysis objects.
+            - Clears the occurrence-analysis slots regardless of individual cleanup
+              failures.
+            - Safe to call repeatedly.
+        """
+        occurrence_graph_analysis = self._occurrence_graph_analysis
+        if occurrence_graph_analysis is not None:
+            try:
+                occurrence_graph_analysis.cleanup()
+            except Exception:
+                pass
+        occurrence_order_analysis = self._occurrence_order_analysis
+        if occurrence_order_analysis is not None:
+            try:
+                occurrence_order_analysis.cleanup()
+            except Exception:
+                pass
+        occurrence_instance_analysis = self._occurrence_instance_analysis
+        if occurrence_instance_analysis is not None:
+            try:
+                occurrence_instance_analysis.cleanup()
+            except Exception:
+                pass
+        occurrence_contract_analysis = self._occurrence_contract_analysis
+        if occurrence_contract_analysis is not None:
+            try:
+                occurrence_contract_analysis.cleanup()
+            except Exception:
+                pass
+        self._occurrence_graph_analysis = None
+        self._occurrence_order_analysis = None
+        self._occurrence_instance_analysis = None
+        self._occurrence_contract_analysis = None
 
     def _cleanup_phase12_artifacts(self) -> None:
         """
