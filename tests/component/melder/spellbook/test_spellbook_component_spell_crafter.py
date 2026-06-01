@@ -1578,9 +1578,10 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
 def test_component_spell_crafter_executes_real_creation_context_override_lane_for_dependency_override() -> None:
     """
     Purpose:
-        Validate Phase 13 override execution against live phase8-11 artifacts.
+        Validate override codegen-creation execution against live phase8-11 artifacts.
     Contract:
-        - The compiled overrides executor runs from the real plan and patch map.
+        - The compiled overrides executor runs from the real codegen-creation
+          payload and override targeting bridge.
         - A targeted override value replaces the dependency for the root spell.
         - Execution uses a real conduit creations container instead of synthetic stubs.
     Returns:

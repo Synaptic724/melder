@@ -19,7 +19,7 @@ _MISSING = object()
 _EMPTY_OVERRIDE_VALUES: Dict[str, Any] = {}
 
 
-def compile_phase13_overrides_executor(
+def compile_overrides_codegen_creation_executor(
         *,
         execution_plan: Optional[Any],
         override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
@@ -30,14 +30,14 @@ def compile_phase13_overrides_executor(
         spell_lookup: Optional[Dict[str, Any]] = None,
 ) -> Callable[..., Any]:
     """
-    Compile a spell-scoped Phase 13 overrides executor specialization.
+    Compile a spell-scoped overrides codegen-creation executor specialization.
 
     Purpose:
         Build the runtime callable used for override-aware meld execution after
-        Phase 11 planning, without relying on legacy engine execution paths.
+        planner lane selection, without relying on legacy engine execution paths.
 
     Contract:
-        - Executes Phase 11 steps in plan order.
+        - Executes generalized lane steps in plan order.
         - Reuses and registers instances using the same Existence contracts as
           the no-overrides path.
         - Raises when overrides target an already-existing non-`many` instance.
@@ -46,7 +46,7 @@ def compile_phase13_overrides_executor(
 
     Args:
         execution_plan:
-            Phase 11 override-aware execution plan.
+            Generalized override-aware lane plan.
         override_targets_by_spell_id:
             Deterministic map of spell_id -> socket refs targeted by the current
             override shape.
@@ -56,7 +56,7 @@ def compile_phase13_overrides_executor(
             Path registry from the active root blueprint, used to pre-filter
             non-shared step socket targets at specialization compile time.
         plan_rows:
-            Optional schema-only step rows exported from Phase11 IR.
+            Optional schema-only step rows exported from codegen IR.
         root_spell_id:
             Optional root spell id for schema-row driven compilation.
         spell_lookup:
@@ -73,7 +73,7 @@ def compile_phase13_overrides_executor(
         RuntimeError:
             If the execution plan has no root instance key.
     """
-    compiled_executor, _ = _compile_phase13_overrides_executor_core(
+    compiled_executor, _ = _compile_overrides_codegen_creation_executor_core(
         source=None,
         code_object=None,
         execution_plan=execution_plan,
@@ -87,7 +87,7 @@ def compile_phase13_overrides_executor(
     return compiled_executor
 
 
-def compile_phase13_overrides_executor_from_source(
+def compile_overrides_codegen_creation_executor_from_source(
         *,
         source: str,
         execution_plan: Optional[Any],
@@ -105,7 +105,7 @@ def compile_phase13_overrides_executor_from_source(
         - Reuses the same schema/plan validation as fresh compilation.
         - Uses the supplied source verbatim for code object compilation.
     """
-    compiled_executor, _ = _compile_phase13_overrides_executor_core(
+    compiled_executor, _ = _compile_overrides_codegen_creation_executor_core(
         source=source,
         code_object=None,
         execution_plan=execution_plan,
@@ -119,7 +119,7 @@ def compile_phase13_overrides_executor_from_source(
     return compiled_executor
 
 
-def compile_phase13_overrides_executor_code_object(
+def compile_overrides_codegen_creation_executor_code_object(
         *,
         source: str,
 ) -> Any:
@@ -139,15 +139,15 @@ def compile_phase13_overrides_executor_code_object(
     try:
         return get_or_compile_executor_code(
             source=source,
-            source_name="<melder_phase13_overrides_executor>",
+            source_name="<melder_overrides_codegen_creation_executor>",
         )
     except Exception as exc:
         raise RuntimeError(
-            "Phase 13 overrides executor code generation failed."
+            "Overrides codegen creation executor generation failed."
         ) from exc
 
 
-def compile_phase13_overrides_executor_from_code_object(
+def compile_overrides_codegen_creation_executor_from_code_object(
         *,
         code_object: Any,
         execution_plan: Optional[Any],
@@ -165,7 +165,7 @@ def compile_phase13_overrides_executor_from_code_object(
         - Reuses schema/plan validation and namespace binding from core compile flow.
         - Executes `code_object` verbatim for specialization binding.
     """
-    return _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache(
+    return _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache(
         code_object=code_object,
         execution_plan=execution_plan,
         override_targets_by_spell_id=override_targets_by_spell_id,
@@ -177,7 +177,7 @@ def compile_phase13_overrides_executor_from_code_object(
     )
 
 
-def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache(
+def _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache(
         *,
         code_object: Any,
         execution_plan: Optional[Any],
@@ -201,7 +201,7 @@ def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache(
     """
     if code_object is None:
         raise ValueError("code_object must not be None.")
-    compiled_executor, _ = _compile_phase13_overrides_executor_core(
+    compiled_executor, _ = _compile_overrides_codegen_creation_executor_core(
         source=None,
         code_object=code_object,
         execution_plan=execution_plan,
@@ -218,23 +218,23 @@ def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache(
     return compiled_executor
 
 
-def emit_phase13_overrides_executor_source(
+def emit_overrides_codegen_creation_executor_source(
         *,
         step_count: int,
 ) -> str:
     """
-    Emit generated Phase12 override specialization source for a step count.
+    Emit generated override specialization source for a step count.
 
     Contract:
         - Source is deterministic for the same `step_count`.
         - Raises when step_count is invalid.
     """
-    return _build_phase13_overrides_executor_source(
+    return _build_overrides_codegen_creation_executor_source(
         step_count=step_count,
     )
 
 
-def emit_phase13_overrides_executor_shape_source(
+def emit_overrides_codegen_creation_executor_shape_source(
         *,
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
@@ -245,7 +245,7 @@ def emit_phase13_overrides_executor_shape_source(
         has_root_positional_override: bool = False,
 ) -> str:
     """
-    Emit shape-specialized Phase12 override source from static plan rows.
+    Emit shape-specialized override source from static plan rows.
 
     Purpose:
         Build generated source that specializes per-step target-kind and
@@ -266,12 +266,12 @@ def emit_phase13_overrides_executor_shape_source(
         override_target_counts_by_step=override_target_counts_by_step,
         has_root_positional_override=has_root_positional_override,
     )
-    return _build_phase13_overrides_executor_shape_source(
+    return _build_overrides_codegen_creation_executor_shape_source(
         step_source_metadata=step_source_metadata,
     )
 
 
-def build_phase13_override_step_target_counts_from_rows(
+def build_overrides_codegen_creation_step_target_counts_from_rows(
         *,
         plan_rows: Sequence[Dict[str, Any]],
         override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
@@ -309,7 +309,7 @@ def build_phase13_override_step_target_counts_from_rows(
         for field_name in required_fields:
             if field_name not in row:
                 raise RuntimeError(
-                    "Phase 13 overrides step schema is missing required field "
+                    "Overrides codegen creation step schema is missing required field "
                     f"'{field_name}' at index {row_index}."
                 )
         step_stubs.append(
@@ -339,7 +339,7 @@ def build_phase13_override_step_target_counts_from_rows(
     )
 
 
-def _compile_phase13_overrides_executor_core(
+def _compile_overrides_codegen_creation_executor_core(
         *,
         source: Optional[str],
         code_object: Optional[Any],
@@ -379,7 +379,7 @@ def _compile_phase13_overrides_executor_core(
             root_spell_id=resolved_root_spell_id,
         )
         if root_instance_key is None:
-            raise RuntimeError("Phase 13 override executor requires a root instance key.")
+            raise RuntimeError("Overrides codegen creation executor requires a root instance key.")
         root_spell_id = resolved_root_spell_id
     else:
         resolved_execution_plan = execution_plan
@@ -389,7 +389,7 @@ def _compile_phase13_overrides_executor_core(
             )
         root_instance_key = resolved_execution_plan.root_instance_key
         if root_instance_key is None:
-            raise RuntimeError("Phase 13 override executor requires a root instance key.")
+            raise RuntimeError("Overrides codegen creation executor requires a root instance key.")
         steps = tuple(resolved_execution_plan.steps)
         root_spell_id = resolved_execution_plan.root_spell_id
 
@@ -408,19 +408,19 @@ def _compile_phase13_overrides_executor_core(
     ):
         raise ValueError("source must be a non-empty string.")
     if source_to_compile is None and code_object is None:
-        source_to_compile = emit_phase13_overrides_executor_source(
+        source_to_compile = emit_overrides_codegen_creation_executor_source(
             step_count=len(steps),
         )
     if code_object is None:
         if source_to_compile is None:
             raise RuntimeError(
-                "Phase 13 override executor requires source text when no code object is supplied."
+                "Overrides codegen creation executor requires source text when no code object is supplied."
             )
-        code_object = compile_phase13_overrides_executor_code_object(
+        code_object = compile_overrides_codegen_creation_executor_code_object(
             source=source_to_compile,
         )
 
-    namespace = _build_phase13_overrides_executor_namespace(
+    namespace = _build_overrides_codegen_creation_executor_namespace(
         steps=steps,
         step_override_targets=step_override_targets,
         root_instance_key=root_instance_key,
@@ -436,18 +436,18 @@ def _compile_phase13_overrides_executor_core(
         )
     except Exception as exc:
         raise RuntimeError(
-            "Phase 13 overrides executor code generation failed."
+            "Overrides codegen creation executor generation failed."
         ) from exc
 
-    compiled_executor = local_namespace.get("_phase13_executor")
+    compiled_executor = local_namespace.get("_overrides_codegen_creation_executor")
     if callable(compiled_executor):
         return compiled_executor, source_to_compile
     raise RuntimeError(
-        "Phase 13 overrides executor source did not define a callable _phase13_executor."
+        "Overrides codegen creation executor source did not define a callable _overrides_codegen_creation_executor."
     )
 
 
-def _build_phase13_overrides_executor_namespace(
+def _build_overrides_codegen_creation_executor_namespace(
         *,
         steps: Tuple[Any, ...],
         step_override_targets: Tuple[Tuple[Any, ...], ...],
@@ -548,7 +548,7 @@ def _build_phase13_overrides_executor_namespace(
     }
 
 
-def _build_phase13_overrides_executor_source(
+def _build_overrides_codegen_creation_executor_source(
         *,
         step_count: int,
 ) -> str:
@@ -565,7 +565,7 @@ def _build_phase13_overrides_executor_source(
         raise ValueError("step_count must not be negative.")
 
     lines = [
-        "def _phase13_executor(",
+        "def _overrides_codegen_creation_executor(",
         "        caller_creations,",
         "        override_map,",
         "        root_positional_override,",
@@ -611,7 +611,7 @@ def _build_phase13_overrides_executor_source(
         "            spell_id=root_instance_key[0],",
         "            spell_name=root_instance_key[0],",
         "            message=(",
-        "                \"Phase 13 override executor did not produce the root \"",
+        "                \"Overrides codegen creation executor did not produce the root \"",
         "                f\"instance '{root_instance_key[0]}'.\"",
         "            ),",
         "        )",
@@ -669,7 +669,7 @@ def _build_shape_source_step_metadata(
         for field_name in required_fields:
             if field_name not in row:
                 raise RuntimeError(
-                    "Phase 13 overrides step schema is missing required field "
+                    "Overrides codegen creation step schema is missing required field "
                     f"'{field_name}' at index {row_index}."
                 )
         spell_id = row["spell_id"]
@@ -678,7 +678,7 @@ def _build_shape_source_step_metadata(
             existence = Existence[existence_name]
         except KeyError as exc:
             raise RuntimeError(
-                "Phase 13 overrides step schema contains unknown existence "
+                "Overrides codegen creation step schema contains unknown existence "
                 f"'{existence_name}' at index {row_index}."
             ) from exc
         dependency_resolution_order = tuple(
@@ -699,7 +699,7 @@ def _build_shape_source_step_metadata(
             step_target_counts = override_target_counts_by_step
             if step_target_counts is None:
                 raise RuntimeError(
-                    "Phase 13 overrides step schema requires step target counts."
+                    "Overrides codegen creation step schema requires step target counts."
                 )
             static_override_target_count = int(
                 step_target_counts[row_index]
@@ -771,7 +771,7 @@ def _build_shape_source_step_metadata(
     return tuple(step_metadata)
 
 
-def _build_phase13_overrides_executor_shape_source(
+def _build_overrides_codegen_creation_executor_shape_source(
         *,
         step_source_metadata: Sequence[Tuple[Any, ...]],
 ) -> str:
@@ -787,7 +787,7 @@ def _build_phase13_overrides_executor_shape_source(
         raise ValueError("step_source_metadata must not be None.")
 
     lines = [
-        "def _phase13_executor(",
+        "def _overrides_codegen_creation_executor(",
         "        caller_creations,",
         "        override_map,",
         "        root_positional_override,",
@@ -828,7 +828,7 @@ def _build_phase13_overrides_executor_shape_source(
         lines.extend([
             "    if caller_creations is None:",
             "        raise RuntimeError(",
-            "            \"Phase 13 CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "            \"Overrides codegen creation CALLER/SPELLSPACE execution requires caller_creations.\"",
             "        )",
         ])
 
@@ -880,7 +880,7 @@ def _build_phase13_overrides_executor_shape_source(
         "            spell_id=root_instance_key[0],",
         "            spell_name=root_instance_key[0],",
         "            message=(",
-        "                \"Phase 13 override executor did not produce the root \"",
+        "                \"Overrides codegen creation executor did not produce the root \"",
         "                f\"instance '{root_instance_key[0]}'.\"",
         "            ),",
         "        )",
@@ -1776,7 +1776,7 @@ def _append_overrides_shape_owner_creations_source(
         f"        creations_{step_index} = owner_creations_{step_index}",
         "    elif owner_creations is None:",
         "        raise RuntimeError(",
-        "            \"Phase 13 OWNER execution requires owner_creations.\"",
+        "            \"Overrides codegen creation OWNER execution requires owner_creations.\"",
         "        )",
         "    else:",
         f"        creations_{step_index} = owner_creations",
@@ -2298,7 +2298,7 @@ def _append_overrides_step_source(
         ),
         "        if caller_creations is None:",
         "            raise RuntimeError(",
-        "                \"Phase 13 CALLER/SPELLSPACE execution requires caller_creations.\"",
+        "                \"Overrides codegen creation CALLER/SPELLSPACE execution requires caller_creations.\"",
         "            )",
         f"        creations_{step_index} = caller_creations",
         f"    elif target_kind_{step_index} == SpellGeneralizedCodegenPlanTargetKind.OWNER:",
@@ -2307,7 +2307,7 @@ def _append_overrides_step_source(
         f"            creations_{step_index} = owner_creations_{step_index}",
         "        elif owner_creations is None:",
         "            raise RuntimeError(",
-        "                \"Phase 13 OWNER execution requires owner_creations.\"",
+        "                \"Overrides codegen creation OWNER execution requires owner_creations.\"",
         "            )",
         "        else:",
         f"            creations_{step_index} = owner_creations",
@@ -2496,7 +2496,7 @@ def _hydrate_steps_from_rows(
     """
     if spell_lookup is None:
         raise RuntimeError(
-            "Phase 13 overrides schema rows require spell_lookup for step hydration."
+            "Overrides codegen creation schema rows require spell_lookup for step hydration."
         )
 
     steps = []
@@ -2520,7 +2520,7 @@ def _hydrate_steps_from_rows(
         for field_name in required_fields:
             if field_name not in row:
                 raise RuntimeError(
-                    "Phase 13 overrides step schema is missing required field "
+                    "Overrides codegen creation step schema is missing required field "
                     f"'{field_name}' at index {row_index}."
                 )
 
@@ -2528,7 +2528,7 @@ def _hydrate_steps_from_rows(
         spell = spell_lookup.get(spell_id)
         if spell is None:
             raise RuntimeError(
-                f"Phase 13 overrides step schema references unknown spell_id '{spell_id}'."
+                f"Overrides codegen creation step schema references unknown spell_id '{spell_id}'."
             )
 
         existence_name = row["existence"]
@@ -2536,7 +2536,7 @@ def _hydrate_steps_from_rows(
             existence = Existence[existence_name]
         except KeyError as exc:
             raise RuntimeError(
-                "Phase 13 overrides step schema contains unknown existence "
+                "Overrides codegen creation step schema contains unknown existence "
                 f"'{existence_name}' at index {row_index}."
             ) from exc
 
@@ -3037,4 +3037,6 @@ def _invoke_spell_with_kwargs(
             message=f"Error invoking spell '{spell.spell_name}'.",
             inner=exc,
         ) from exc
+
+
 

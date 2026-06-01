@@ -725,7 +725,7 @@ class SpellCompilerSystem(Cleanable):
         Contract:
             - Clears Phase 5 rooted blueprints/index state.
             - Clears Phase 8-11 planning/codegen cache state.
-            - Clears the cached Phase 13 no-overrides executor state.
+            - Clears cached phase-11 codegen-creation executor state.
             - Preserves the spell-owned compiler artifact object itself.
 
         Args:
@@ -809,12 +809,10 @@ class SpellCompilerSystem(Cleanable):
             - Phase 5: Root blueprint construction.
             - Phase 6: System validation.
             - Phase 7: Change-control wiring.
-            - Phase 8: Occurrence plan compilation.
-            - Phase 9: Injection plan compilation.
-            - Phase 10: Patch map compilation.
-            - Phase 11: Execution plan compilation.
-            - Phase 12: Strategy-selection placeholder.
-            - Phase 13: No-overrides executor compilation.
+            - Phase 8: Occurrence graph analysis.
+            - Phase 9: Codegen-model processing.
+            - Phase 10: Codegen planning.
+            - Phase 11: Codegen creation.
 
         Each phase honours the optional `CancellationEvent`. If the event is
         set, the underlying phase methods rise through the shared cancellation

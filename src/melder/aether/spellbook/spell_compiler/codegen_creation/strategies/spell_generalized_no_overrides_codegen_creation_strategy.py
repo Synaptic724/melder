@@ -19,7 +19,7 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_mod
     SpellCodegenModel,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_no_overrides_codegen_creation_compiler import (
-    compile_phase13_no_overrides_executor_from_plan,
+    compile_no_overrides_codegen_creation_executor_from_plan,
 )
 
 
@@ -30,7 +30,7 @@ class SpellGeneralizedNoOverridesCodegenCreationStrategy(
     Generalized no-overrides codegen creation strategy.
 
     Purpose:
-        Port the current compiler-owned Phase 13 no-overrides packaging into
+        Port the current compiler-owned no-overrides codegen packaging into
         the codegen-creation layer by consuming the generalized no-overrides
         lane plan directly.
     """
@@ -57,7 +57,7 @@ class SpellGeneralizedNoOverridesCodegenCreationStrategy(
             - Requires the planner to have already produced a
               no-overrides lane plan.
             - Compiles the runtime callable from the generalized lane plan
-              directly, without lifting a legacy `ExecutionPlan`.
+              directly, without lifting a legacy execution-plan object.
             - Stores deterministic executor-signature provenance beside the
               compiled callable.
         """
@@ -72,7 +72,7 @@ class SpellGeneralizedNoOverridesCodegenCreationStrategy(
         transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
             no_overrides_plan.fast_transient_plan,
         )
-        compiled_executor = compile_phase13_no_overrides_executor_from_plan(
+        compiled_executor = compile_no_overrides_codegen_creation_executor_from_plan(
             plan=no_overrides_plan,
             transient_schema=transient_schema,
         )
@@ -107,12 +107,11 @@ class SpellGeneralizedNoOverridesCodegenCreationStrategy(
         Build the deterministic no-overrides executor signature.
 
         Contract:
-            - Mirrors the old Phase 11 -> Phase 13 no-overrides signature
-              semantics.
+            - Mirrors the old no-overrides executor signature semantics.
             - Uses only lane-plan and transient-schema truth.
         """
         step_signature_rows = tuple(
-            SharedCompilerExecutions.build_phase13_no_overrides_step_signature_row(
+            SharedCompilerExecutions.build_no_overrides_codegen_creation_step_signature_row(
                 step
             )
             for step in no_overrides_plan.steps

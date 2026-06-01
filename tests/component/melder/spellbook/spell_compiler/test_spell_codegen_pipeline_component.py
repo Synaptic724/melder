@@ -7,19 +7,19 @@ from types import SimpleNamespace
 _overrides_codegen_compiler_stub = ModuleType(
     "melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler"
 )
-_overrides_codegen_compiler_stub.compile_phase13_overrides_executor_code_object = (
+_overrides_codegen_compiler_stub.compile_overrides_codegen_creation_executor_code_object = (
     lambda *args, **kwargs: None
 )
-_overrides_codegen_compiler_stub.compile_phase13_overrides_executor = (
+_overrides_codegen_compiler_stub.compile_overrides_codegen_creation_executor = (
     lambda *args, **kwargs: None
 )
-_overrides_codegen_compiler_stub._compile_phase13_overrides_executor_from_code_object_with_prefilter_cache = (
+_overrides_codegen_compiler_stub._compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache = (
     lambda *args, **kwargs: None
 )
-_overrides_codegen_compiler_stub.build_phase13_override_step_target_counts_from_rows = (
+_overrides_codegen_compiler_stub.build_overrides_codegen_creation_step_target_counts_from_rows = (
     lambda *args, **kwargs: ()
 )
-_overrides_codegen_compiler_stub.emit_phase13_overrides_executor_shape_source = (
+_overrides_codegen_compiler_stub.emit_overrides_codegen_creation_executor_shape_source = (
     lambda *args, **kwargs: ""
 )
 sys.modules.setdefault(
@@ -153,3 +153,4 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
     assert plan.no_overrides_plan is not None
     assert plan.overrides_plan is not None
     assert plan.mutation_overrides_plan is not None
+

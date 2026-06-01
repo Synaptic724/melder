@@ -15,14 +15,14 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpac
 def test_no_overrides_compiler_requires_ir_payload() -> None:
     """The no-overrides compiler should reject a missing IR payload."""
     with pytest.raises(ValueError, match="codegen_ir must not be None"):
-        no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
             codegen_ir=None,
         )
 
 
 def test_no_overrides_compiler_returns_none_when_no_steps_exist() -> None:
     """The no-overrides compiler should no-op when the IR has no step rows."""
-    assert no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+    assert no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
         codegen_ir={},
         spell_lookup={},
     ) is None
@@ -31,11 +31,11 @@ def test_no_overrides_compiler_returns_none_when_no_steps_exist() -> None:
 def test_no_overrides_compiler_from_plan_validates_plan_and_empty_steps() -> None:
     """The plan entrypoint should reject None and no-op on empty plans."""
     with pytest.raises(ValueError, match="plan must not be None"):
-        no_overrides_compiler_module.compile_phase13_no_overrides_executor_from_plan(
+        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor_from_plan(
             plan=None,
         )
 
-    assert no_overrides_compiler_module.compile_phase13_no_overrides_executor_from_plan(
+    assert no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor_from_plan(
         plan=SimpleNamespace(steps=[]),
     ) is None
 
@@ -186,7 +186,7 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
 ) -> None:
     """The overrides compiler should validate inputs and delegate through the code-object path cleanly."""
     with pytest.raises(ValueError, match="source must be a non-empty string"):
-        overrides_compiler_module.compile_phase13_overrides_executor_code_object(
+        overrides_compiler_module.compile_overrides_codegen_creation_executor_code_object(
             source="",
         )
 
@@ -195,22 +195,22 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
         "get_or_compile_executor_code",
         lambda source, source_name: ("compiled", source, source_name),
     )
-    code_object = overrides_compiler_module.compile_phase13_overrides_executor_code_object(
+    code_object = overrides_compiler_module.compile_overrides_codegen_creation_executor_code_object(
         source="print('x')",
     )
     assert code_object == (
         "compiled",
         "print('x')",
-        "<melder_phase13_overrides_executor>",
+        "<melder_overrides_codegen_creation_executor>",
     )
 
     calls = []
     monkeypatch.setattr(
         overrides_compiler_module,
-        "_compile_phase13_overrides_executor_core",
+        "_compile_overrides_codegen_creation_executor_core",
         lambda **kwargs: (calls.append(kwargs) or (("executor",), None)),
     )
-    result = overrides_compiler_module.compile_phase13_overrides_executor_from_code_object(
+    result = overrides_compiler_module.compile_overrides_codegen_creation_executor_from_code_object(
         code_object=("compiled",),
         execution_plan=None,
         override_targets_by_spell_id={},
@@ -225,7 +225,7 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
 def test_overrides_compiler_code_object_entrypoint_requires_code_object() -> None:
     """The overrides code-object entrypoint should reject a missing code object."""
     with pytest.raises(ValueError, match="code_object must not be None"):
-        overrides_compiler_module.compile_phase13_overrides_executor_from_code_object(
+        overrides_compiler_module.compile_overrides_codegen_creation_executor_from_code_object(
             code_object=None,
             execution_plan=None,
             override_targets_by_spell_id={},
@@ -414,7 +414,7 @@ class _ExplodingLock:
 def test_no_overrides_compiler_requires_spell_lookup_for_schema_rows() -> None:
     """Schema-row no-overrides compile should fail fast when spell lookup is missing."""
     with pytest.raises(RuntimeError, match="require spell_lookup"):
-        no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
             codegen_ir={
                 "steps_rows": (_make_no_overrides_step_row("root"),),
                 "root_spell_id": "root",
@@ -429,7 +429,7 @@ def test_no_overrides_compiler_rejects_schema_rows_missing_required_field() -> N
     row.pop("instance_key")
 
     with pytest.raises(RuntimeError, match="missing required field 'instance_key'"):
-        no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
             codegen_ir={
                 "steps_rows": (row,),
                 "root_spell_id": "root",
@@ -441,7 +441,7 @@ def test_no_overrides_compiler_rejects_schema_rows_missing_required_field() -> N
 def test_no_overrides_compiler_rejects_unknown_spell_id_in_schema_rows() -> None:
     """Schema-row no-overrides compile should fail when spell lookup cannot resolve a row spell id."""
     with pytest.raises(RuntimeError, match="unknown spell_id 'root'"):
-        no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
             codegen_ir={
                 "steps_rows": (_make_no_overrides_step_row("root"),),
                 "root_spell_id": "root",
@@ -456,7 +456,7 @@ def test_no_overrides_compiler_rejects_unknown_existence_name() -> None:
     row["existence"] = "not_an_existence"
 
     with pytest.raises(RuntimeError, match="unknown existence"):
-        no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
             codegen_ir={
                 "steps_rows": (row,),
                 "root_spell_id": "root",
@@ -468,7 +468,7 @@ def test_no_overrides_compiler_rejects_unknown_existence_name() -> None:
 def test_no_overrides_compiler_supports_schema_rows_execution() -> None:
     """Schema-row no-overrides compile path should emit a callable executor that executes."""
     spell = _make_spell("root")
-    executor = no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
         codegen_ir={
             "steps_rows": (_make_no_overrides_step_row("root"),),
             "root_spell_id": "root",
@@ -478,7 +478,7 @@ def test_no_overrides_compiler_supports_schema_rows_execution() -> None:
     )
 
     assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase13_no_overrides_step_executor>"
+    assert executor.__code__.co_filename == "<melder_no_overrides_codegen_creation_step_executor>"
     caller_creations = SimpleNamespace(
         _lock=threading.RLock(),
         get_creation=lambda spell_id: None,
@@ -498,11 +498,11 @@ def test_no_overrides_compiler_uses_emitted_step_source_when_transient_source_un
     """Transient-source misses should still compile through emitted step source."""
     monkeypatch.setattr(
         no_overrides_compiler_module,
-        "_build_phase13_executor_source",
+        "_build_overrides_codegen_creation_executor_source",
         lambda transient_schema: None,
     )
 
-    executor = no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
         codegen_ir={
             "steps_rows": (_make_no_overrides_step_row("root"),),
             "root_spell_id": "root",
@@ -552,13 +552,13 @@ def test_no_overrides_compiler_uses_emitted_step_source_when_transient_source_un
     )
 
     assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase13_no_overrides_step_executor>"
+    assert executor.__code__.co_filename == "<melder_no_overrides_codegen_creation_step_executor>"
 
 
 def test_overrides_compiler_requires_spell_lookup_for_schema_rows() -> None:
     """Schema-row overrides compile should fail fast when spell lookup is missing."""
     with pytest.raises(RuntimeError, match="require spell_lookup"):
-        overrides_compiler_module.compile_phase13_overrides_executor(
+        overrides_compiler_module.compile_overrides_codegen_creation_executor(
             execution_plan=None,
             plan_rows=(_make_overrides_step_row("root"),),
             root_spell_id="root",
@@ -575,7 +575,7 @@ def test_overrides_compiler_rejects_schema_rows_missing_required_field() -> None
     row.pop("instance_key")
 
     with pytest.raises(RuntimeError, match="missing required field 'instance_key'"):
-        overrides_compiler_module.compile_phase13_overrides_executor(
+        overrides_compiler_module.compile_overrides_codegen_creation_executor(
             execution_plan=None,
             plan_rows=(row,),
             root_spell_id="root",
@@ -589,7 +589,7 @@ def test_overrides_compiler_rejects_schema_rows_missing_required_field() -> None
 def test_overrides_compiler_rejects_unknown_spell_id_and_existence_in_schema_rows() -> None:
     """Schema-row overrides compile should fail for unknown spell ids and invalid existence names."""
     with pytest.raises(RuntimeError, match="unknown spell_id 'root'"):
-        overrides_compiler_module.compile_phase13_overrides_executor(
+        overrides_compiler_module.compile_overrides_codegen_creation_executor(
             execution_plan=None,
             plan_rows=(_make_overrides_step_row("root"),),
             root_spell_id="root",
@@ -602,7 +602,7 @@ def test_overrides_compiler_rejects_unknown_spell_id_and_existence_in_schema_row
     row = _make_overrides_step_row("root")
     row["existence"] = "not_an_existence"
     with pytest.raises(RuntimeError, match="unknown existence"):
-        overrides_compiler_module.compile_phase13_overrides_executor(
+        overrides_compiler_module.compile_overrides_codegen_creation_executor(
             execution_plan=None,
             plan_rows=(row,),
             root_spell_id="root",
@@ -616,7 +616,7 @@ def test_overrides_compiler_rejects_unknown_spell_id_and_existence_in_schema_row
 def test_overrides_compiler_supports_schema_rows_execution_and_prebound_metadata() -> None:
     """Schema-row overrides compile path should emit a callable executor with prebound step metadata."""
     spell = _make_spell("root")
-    executor = overrides_compiler_module.compile_phase13_overrides_executor(
+    executor = overrides_compiler_module.compile_overrides_codegen_creation_executor(
         execution_plan=None,
         plan_rows=(_make_overrides_step_row("root"),),
         root_spell_id="root",
@@ -631,7 +631,7 @@ def test_overrides_compiler_supports_schema_rows_execution_and_prebound_metadata
     )
 
     assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_phase13_overrides_executor>"
+    assert executor.__code__.co_filename == "<melder_overrides_codegen_creation_executor>"
     assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
     assert "step_spells" in executor.__code__.co_varnames
     assert "step_existences" in executor.__code__.co_varnames
@@ -647,7 +647,7 @@ def test_overrides_compiler_supports_schema_rows_execution_and_prebound_metadata
 def test_overrides_compiler_emitted_source_rejects_negative_step_count() -> None:
     """The overrides emitted-source helper should enforce non-negative step counts."""
     with pytest.raises(ValueError, match="step_count must not be negative"):
-        overrides_compiler_module.emit_phase13_overrides_executor_source(
+        overrides_compiler_module.emit_overrides_codegen_creation_executor_source(
             step_count=-1,
         )
 
@@ -814,7 +814,7 @@ def test_no_overrides_compiler_spellspace_route_reuses_existing_spellspace_singl
     row["creations_target_kind"] = 3
     row["must_register"] = True
 
-    executor = no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -842,7 +842,7 @@ def test_no_overrides_compiler_existing_hit_skips_locks() -> None:
     row["use_spell_lock_hint"] = True
     row["must_register"] = True
 
-    executor = no_overrides_compiler_module.compile_phase13_no_overrides_executor(
+    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
         codegen_ir={
             "steps_rows": (row,),
             "root_spell_id": "root",
@@ -1261,7 +1261,7 @@ def test_overrides_compiler_namespace_prebinds_root_and_target_metadata() -> Non
         ),
     )
 
-    namespace = overrides_compiler_module._build_phase13_overrides_executor_namespace(
+    namespace = overrides_compiler_module._build_overrides_codegen_creation_executor_namespace(
         steps=steps,
         step_override_targets=((socket_ref,), ()),
         root_instance_key=("root", None),
@@ -1277,3 +1277,4 @@ def test_overrides_compiler_namespace_prebinds_root_and_target_metadata() -> Non
     assert namespace["step_is_root"] == (True, False)
     assert namespace["step_has_targeted_overrides"] == (True, False)
     assert namespace["step_override_target_counts"] == (1, 0)
+

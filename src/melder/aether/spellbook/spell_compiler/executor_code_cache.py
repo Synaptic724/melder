@@ -1,7 +1,7 @@
 """
 Process-wide compiled-executor code-object cache.
 
-Phase 13 emits Python source for spell executors and compiles it with the
+The codegen-creation layer emits Python source for spell executors and compiles it with the
 built-in ``compile``. That emitted source is *identity-free*: it is a pure
 function of plan **shape**, and every spell-identity value (spell objects,
 spell ids, instance keys, root key, dependency targets) is supplied later, at
@@ -10,9 +10,9 @@ the same spell, or two different Spellbooks -- that emit the same source can
 therefore safely share a single compiled code object.
 
 This module owns one process-wide, bounded cache keyed on the SHA-256 of the
-emitted source. It is consumed by both Phase 13 compile chokepoints:
+emitted source. It is consumed by both codegen-creation compile chokepoints:
 ``_compile_emitted_no_overrides_executor`` (no-overrides lane) and
-``compile_phase13_overrides_executor_code_object`` (overrides lane).
+``compile_overrides_codegen_creation_executor_code_object`` (overrides lane).
 
 Why source content is a safe key
 --------------------------------
@@ -96,7 +96,7 @@ def get_or_compile_executor_code(
 
     Returns:
         CodeType:
-            Compiled code object defining ``_phase13_executor``.
+            Compiled code object defining the emitted codegen executor.
     """
     global _hit_count, _miss_count
 

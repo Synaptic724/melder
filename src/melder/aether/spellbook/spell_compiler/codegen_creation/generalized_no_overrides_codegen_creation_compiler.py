@@ -54,13 +54,13 @@ _TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
     "dep8h",
 )
 
-def compile_phase13_no_overrides_executor(
+def compile_no_overrides_codegen_creation_executor(
         *,
         codegen_ir: Dict[str, Any],
         spell_lookup: Optional[Dict[str, Any]] = None,
 ) -> Optional[Callable[..., Any]]:
     """
-    Compile a spell-scoped Phase 13 no-overrides executor from Codegen IR.
+    Compile a spell-scoped no-overrides codegen executor from Codegen IR.
 
     Purpose:
         Build the no-overrides execution callable consumed by Meld's runtime path so
@@ -111,18 +111,18 @@ def compile_phase13_no_overrides_executor(
         root_spell_id=codegen_ir.get("root_spell_id"),
         transient_schema=codegen_ir.get("transient_schema"),
         missing_root_instance_key_message=(
-            "Phase 13 IR is missing a resolvable root instance key."
+            "No-overrides codegen IR is missing a resolvable root instance key."
         ),
     )
 
 
-def compile_phase13_no_overrides_executor_from_plan(
+def compile_no_overrides_codegen_creation_executor_from_plan(
         *,
         plan: Any,
         transient_schema: Optional[Dict[str, Any]] = None,
 ) -> Optional[Callable[..., Any]]:
     """
-    Compile a spell-scoped Phase 13 no-overrides executor from a Phase11 plan.
+    Compile a spell-scoped no-overrides codegen executor from a generalized lane plan.
 
     Purpose:
         Support hot phase11 compile wiring without requiring schema-row export
@@ -138,7 +138,7 @@ def compile_phase13_no_overrides_executor_from_plan(
 
     Args:
         plan:
-            ExecutionPlan-like object exposing `steps`, `root_instance_key`,
+            Lane-plan-like object exposing `steps`, `root_instance_key`,
             and `root_spell_id`.
         transient_schema:
             Optional schema-only transient payload derived from the plan's fast
@@ -167,7 +167,7 @@ def compile_phase13_no_overrides_executor_from_plan(
         root_spell_id=plan.root_spell_id,
         transient_schema=transient_schema,
         missing_root_instance_key_message=(
-            "Phase 13 plan is missing a resolvable root instance key."
+            "No-overrides codegen plan is missing a resolvable root instance key."
         ),
     )
 
@@ -194,7 +194,7 @@ def _compile_no_overrides_executor_from_entry_inputs(
 
     Args:
         steps:
-            Hydrated Phase 13 plan steps.
+            Hydrated no-overrides plan steps.
         root_instance_key:
             Optional pre-resolved root instance key from entrypoint payload.
         root_spell_id:
@@ -246,7 +246,7 @@ def _compile_no_overrides_executor_from_steps(
 
     Args:
         steps:
-            Hydrated Phase 13 plan steps.
+            Hydrated no-overrides plan steps.
         root_instance_key:
             Root instance lookup key used by emitted step-plan executors.
         transient_schema:
@@ -261,7 +261,7 @@ def _compile_no_overrides_executor_from_steps(
         normalized_transient_schema = _normalize_transient_schema(
             transient_schema=transient_schema,
         )
-        source = _build_phase13_executor_source(
+        source = _build_no_overrides_codegen_executor_source(
             transient_schema=normalized_transient_schema,
         )
         if source is not None:
@@ -272,9 +272,9 @@ def _compile_no_overrides_executor_from_steps(
             return _compile_emitted_no_overrides_executor(
                 source=source,
                 namespace=namespace,
-                source_name="<melder_phase13_no_overrides_transient_executor>",
+                source_name="<melder_no_overrides_codegen_creation_transient_executor>",
                 compile_failure_message=(
-                    "Phase 13 no-overrides transient executor code generation failed."
+                    "No-overrides codegen transient executor generation failed."
                 ),
             )
 
@@ -288,9 +288,9 @@ def _compile_no_overrides_executor_from_steps(
     return _compile_emitted_no_overrides_executor(
         source=step_source,
         namespace=step_namespace,
-        source_name="<melder_phase13_no_overrides_step_executor>",
+        source_name="<melder_no_overrides_codegen_creation_step_executor>",
         compile_failure_message=(
-            "Phase 13 no-overrides executor code generation failed."
+            "No-overrides codegen executor generation failed."
         ),
     )
 
@@ -311,7 +311,7 @@ def _hydrate_steps_from_rows(
     """
     if spell_lookup is None:
         raise RuntimeError(
-            "Phase 13 no-overrides schema rows require spell_lookup for step hydration."
+            "No-overrides codegen schema rows require spell_lookup for step hydration."
         )
 
     hydrated_steps = []
@@ -332,7 +332,7 @@ def _hydrate_steps_from_rows(
         for field_name in required_fields:
             if field_name not in row:
                 raise RuntimeError(
-                    "Phase 13 no-overrides schema row is missing required field "
+                    "No-overrides codegen schema row is missing required field "
                     f"'{field_name}' at index {row_index}."
                 )
 
@@ -340,7 +340,7 @@ def _hydrate_steps_from_rows(
         spell = spell_lookup.get(spell_id)
         if spell is None:
             raise RuntimeError(
-                f"Phase 13 no-overrides step schema references unknown spell_id '{spell_id}'."
+                f"No-overrides codegen step schema references unknown spell_id '{spell_id}'."
             )
 
         existence_name = row["existence"]
@@ -348,7 +348,7 @@ def _hydrate_steps_from_rows(
             existence = Existence[existence_name]
         except KeyError as exc:
             raise RuntimeError(
-                "Phase 13 no-overrides step schema contains unknown existence "
+                "No-overrides codegen step schema contains unknown existence "
                 f"'{existence_name}' at index {row_index}."
             ) from exc
 
@@ -400,20 +400,20 @@ def _normalize_transient_schema(
     for field_name in required_fields:
         if field_name not in transient_schema:
             raise RuntimeError(
-                "Phase 13 no-overrides transient schema is missing required "
+                "No-overrides codegen transient schema is missing required "
                 f"field '{field_name}'."
             )
 
     step_count = transient_schema["step_count"]
     if not isinstance(step_count, int) or step_count < 0:
         raise RuntimeError(
-            "Phase 13 no-overrides transient schema 'step_count' must be a non-negative int."
+            "No-overrides codegen transient schema 'step_count' must be a non-negative int."
         )
 
     root_step_index = transient_schema["root_step_index"]
     if not isinstance(root_step_index, int):
         raise RuntimeError(
-            "Phase 13 no-overrides transient schema 'root_step_index' must be an int."
+            "No-overrides codegen transient schema 'root_step_index' must be an int."
         )
 
     normalized: Dict[str, Any] = {
@@ -424,13 +424,13 @@ def _normalize_transient_schema(
         value = transient_schema[field_name]
         if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
             raise RuntimeError(
-                "Phase 13 no-overrides transient schema field "
+                "No-overrides codegen transient schema field "
                 f"'{field_name}' must be a sequence."
             )
         values = tuple(value)
         if len(values) != step_count:
             raise RuntimeError(
-                "Phase 13 no-overrides transient schema field "
+                "No-overrides codegen transient schema field "
                 f"'{field_name}' length must equal step_count."
             )
         normalized[field_name] = values
@@ -438,11 +438,11 @@ def _normalize_transient_schema(
     if step_count == 0:
         if root_step_index != 0:
             raise RuntimeError(
-                "Phase 13 no-overrides transient schema with step_count 0 must use root_step_index 0."
+                "No-overrides codegen transient schema with step_count 0 must use root_step_index 0."
             )
     elif root_step_index < 0 or root_step_index >= step_count:
         raise RuntimeError(
-            "Phase 13 no-overrides transient schema root_step_index is out of range."
+            "No-overrides codegen transient schema root_step_index is out of range."
         )
 
     return normalized
@@ -501,11 +501,11 @@ def _compile_emitted_no_overrides_executor(
         compile_failure_message: str,
 ) -> Callable[..., Any]:
     """
-    Compile generated no-overrides source and return `_phase13_executor`.
+    Compile generated no-overrides source and return the emitted executor.
 
     Contract:
         - Raises RuntimeError when source compilation/execution fails.
-        - Raises RuntimeError when `_phase13_executor` is not callable.
+        - Raises RuntimeError when the emitted executor symbol is not callable.
         - Resolves the code object through the process-wide executor code
           cache: identity-free source that has been compiled before (this
           conjure, an earlier conjure, or another Spellbook) reuses the cached
@@ -525,12 +525,12 @@ def _compile_emitted_no_overrides_executor(
         )
     except Exception as exc:
         raise RuntimeError(compile_failure_message) from exc
-    executor = local_namespace.get("_phase13_executor")
+    executor = local_namespace.get("_no_overrides_codegen_creation_executor")
     if callable(executor):
         compiled_executor: Callable[..., Any] = executor
         return compiled_executor
     raise RuntimeError(
-        "Phase 13 no-overrides executor source did not define a callable _phase13_executor."
+        "No-overrides codegen executor source did not define a callable _no_overrides_codegen_creation_executor."
     )
 
 
@@ -655,7 +655,7 @@ def _build_step_plan_executor_source(
     """
     step_count = len(steps)
     lines = [
-        "def _phase13_executor(",
+        "def _no_overrides_codegen_creation_executor(",
         "        caller_creations=None,",
         "        owner_creations=None,",
         "        caller_creations_lock_held=False,",
@@ -689,7 +689,7 @@ def _build_step_plan_executor_source(
         "        raise MeldExecutionError(",
         "            spell_id=root_instance_key[0],",
         "            spell_name=root_instance_key[0],",
-        "            message=f\"Phase 13 root instance '{root_instance_key[0]}' is missing.\",",
+        "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
         "        )",
         "    return instance_results[root_instance_key]",
     ])
@@ -716,7 +716,7 @@ def _append_step_creations_target_source(
         lines.extend([
             "    if caller_creations is None:",
             "        raise RuntimeError(",
-            "            \"Phase 13 CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
             "        )",
             f"    creations_{step_index} = caller_creations",
         ])
@@ -729,7 +729,7 @@ def _append_step_creations_target_source(
             f"        creations_{step_index} = owner_creations_{step_index}",
             "    elif owner_creations is None:",
             "        raise RuntimeError(",
-            "            \"Phase 13 OWNER execution requires owner_creations.\"",
+            "            \"No-overrides codegen OWNER execution requires owner_creations.\"",
             "        )",
             "    else:",
             f"        creations_{step_index} = owner_creations",
@@ -1091,7 +1091,7 @@ def _select_creations_for_target_kind(
     ):
         if caller_creations is None:
             raise RuntimeError(
-                "Phase 13 CALLER/SPELLSPACE execution requires caller_creations."
+                "No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations."
             )
         return caller_creations
 
@@ -1101,7 +1101,7 @@ def _select_creations_for_target_kind(
             return spell_owner_creations
         if owner_creations is None:
             raise RuntimeError(
-                "Phase 13 OWNER execution requires owner_creations."
+                "No-overrides codegen OWNER execution requires owner_creations."
             )
         return owner_creations
 
@@ -1434,12 +1434,12 @@ def _register_spell_instance_prebound(
     )
 
 
-def _build_phase13_executor_source(
+def _build_no_overrides_codegen_executor_source(
         *,
         transient_schema: Dict[str, Any],
 ) -> Optional[str]:
     """
-    Build Python source for a transient-schema unrolled Phase 13 executor.
+    Build Python source for a transient-schema unrolled no-overrides codegen executor.
 
     Contract:
         - Emits one direct call statement per transient step.
@@ -1487,7 +1487,7 @@ def _build_phase13_executor_source(
     transient_dep8h = transient_schema["dep8h"]
 
     lines = [
-        "def _phase13_executor(",
+        "def _no_overrides_codegen_creation_executor(",
         "        caller_creations=None,",
         "        owner_creations=None,",
         "        caller_creations_lock_held=False,",
@@ -1886,7 +1886,7 @@ def _resolve_transient_targets(
     """
     if transient_step_count != len(steps):
         raise RuntimeError(
-            "Phase 13 no-overrides transient schema step_count does not match hydrated steps."
+            "No-overrides codegen transient schema step_count does not match hydrated steps."
         )
 
     transient_targets = []
@@ -1894,7 +1894,7 @@ def _resolve_transient_targets(
         spell = plan_step.spell
         if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
             raise RuntimeError(
-                "Phase 13 no-overrides transient schema requires callable steps; "
+                "No-overrides codegen transient schema requires callable steps; "
                 f"step {step_index} is not callable."
             )
         transient_targets.append(spell.spell)

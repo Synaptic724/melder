@@ -116,8 +116,8 @@ class SharedCompilerExecutions:
             Build a deterministic signature from primitive IR parts.
             
             Purpose:
-                Produce stable fingerprints for phase-exported IR slices so Phase 13
-                compilation can skip unchanged payloads.
+                Produce stable fingerprints for phase-exported IR slices so
+                codegen-creation compilation can skip unchanged payloads.
             Contract:
                 - Signature is deterministic for equal-ordered inputs.
                 - Does not depend on process-randomized object identity.
@@ -1127,14 +1127,14 @@ class SharedCompilerExecutions:
         }
 
     @staticmethod
-    def build_phase13_no_overrides_step_signature_row(
+    def build_no_overrides_codegen_creation_step_signature_row(
             step: Any,
     ) -> Tuple[Any, ...]:
         """
             Build one deterministic signature row for no-overrides compile caching.
             
             Purpose:
-                Capture only the step fields that influence phase13 no-overrides
+                Capture only the step fields that influence no-overrides
                 compiled source/namespace behaviour without constructing full IR
                 payload dict rows.
             Contract:
@@ -1303,8 +1303,8 @@ class SharedCompilerExecutions:
             Export one Phase 11 execution-plan variant into IR fields.
             
             Purpose:
-                Normalize plan metadata and signatures so Phase 13 and runtime
-                dispatch can consume a deterministic payload.
+                Normalize plan metadata and signatures so codegen creation and
+                runtime dispatch can consume a deterministic payload.
             Contract:
                 - Returns a payload dictionary for any input; empty plan fields are
                   represented as None/empty tuples.

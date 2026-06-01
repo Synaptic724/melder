@@ -465,7 +465,7 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
     )
     monkeypatch.setattr(
         no_overrides_strategy_module.SharedCompilerExecutions,
-        "build_phase13_no_overrides_step_signature_row",
+        "build_no_overrides_codegen_creation_step_signature_row",
         lambda step: ("step", id(step)),
     )
     monkeypatch.setattr(
@@ -485,7 +485,7 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
     )
     monkeypatch.setattr(
         no_overrides_strategy_module,
-        "compile_phase13_no_overrides_executor_from_plan",
+        "compile_no_overrides_codegen_creation_executor_from_plan",
         lambda *, plan, transient_schema: ("executor", plan.lane_id, transient_schema),
     )
 
@@ -703,7 +703,7 @@ def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
     )
     monkeypatch.setattr(
         overrides_strategy_module,
-        "compile_phase13_overrides_executor",
+        "compile_overrides_codegen_creation_executor",
         lambda **kwargs: ("override-executor", kwargs["root_spell_id"]),
     )
 
@@ -798,7 +798,7 @@ def test_mutation_overrides_codegen_creation_strategy_publishes_mutation_route_p
     )
     monkeypatch.setattr(
         mutation_strategy_module,
-        "compile_phase13_overrides_executor",
+        "compile_overrides_codegen_creation_executor",
         lambda **kwargs: ("mutation-executor", kwargs["root_spell_id"]),
     )
 
@@ -831,3 +831,4 @@ def test_codegen_creation_system_cleanup_cleans_builder_and_drops_owned_refs() -
     assert builder.cleanup_called is True
     assert not hasattr(system, "_strategy_builder")
     assert not hasattr(system, "_discovery_system")
+

@@ -7,7 +7,7 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_mod
     SpellCodegenModel,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler import (
-    compile_phase13_overrides_executor,
+    compile_overrides_codegen_creation_executor,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
@@ -161,7 +161,7 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
         if graph_shape is not None:
             path_registry = graph_shape.path_registry
 
-        baseline_executor = compile_phase13_overrides_executor(
+        baseline_executor = compile_overrides_codegen_creation_executor(
             execution_plan=None,
             override_targets_by_spell_id={},
             any_overrides_present=False,

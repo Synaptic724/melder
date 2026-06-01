@@ -814,7 +814,7 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
     source_emit_count = {"value": 0}
     code_compile_count = {"value": 0}
 
-    def _emit_phase13_overrides_executor_shape_source(
+    def _emit_overrides_codegen_creation_executor_shape_source(
             *,
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
@@ -827,28 +827,28 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
         source_emit_count["value"] += 1
         return f"source:{len(plan_rows)}:{root_spell_id}"
 
-    def _compile_phase13_overrides_executor_code_object(*, source: str) -> Any:
+    def _compile_overrides_codegen_creation_executor_code_object(*, source: str) -> Any:
         code_compile_count["value"] += 1
         return f"code:{source}"
 
-    def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
+    def _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         compile_count["value"] += 1
         return lambda *args, **inner_kwargs: "compiled"
 
     monkeypatch.setattr(
         creation_context_module,
-        "emit_phase13_overrides_executor_shape_source",
-        _emit_phase13_overrides_executor_shape_source,
+        "emit_overrides_codegen_creation_executor_shape_source",
+        _emit_overrides_codegen_creation_executor_shape_source,
     )
     monkeypatch.setattr(
         creation_context_module,
-        "compile_phase13_overrides_executor_code_object",
-        _compile_phase13_overrides_executor_code_object,
+        "compile_overrides_codegen_creation_executor_code_object",
+        _compile_overrides_codegen_creation_executor_code_object,
     )
     monkeypatch.setattr(
         creation_context_module,
-        "_compile_phase13_overrides_executor_from_code_object_with_prefilter_cache",
-        _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub,
+        "_compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache",
+        _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub,
     )
 
     shape_key = (route_config.plan_signature, (), -1)
@@ -894,7 +894,7 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
     code_compile_count = {"value": 0}
     specialization_compile_count = {"value": 0}
 
-    def _emit_phase13_overrides_executor_shape_source(
+    def _emit_overrides_codegen_creation_executor_shape_source(
             *,
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
@@ -907,28 +907,28 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
         source_emit_count["value"] += 1
         return f"source:{len(plan_rows)}:{root_spell_id}"
 
-    def _compile_phase13_overrides_executor_code_object(*, source: str) -> Any:
+    def _compile_overrides_codegen_creation_executor_code_object(*, source: str) -> Any:
         code_compile_count["value"] += 1
         return f"code:{source}"
 
-    def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
+    def _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         specialization_compile_count["value"] += 1
         return lambda *args, **inner_kwargs: "compiled"
 
     monkeypatch.setattr(
         creation_context_module,
-        "emit_phase13_overrides_executor_shape_source",
-        _emit_phase13_overrides_executor_shape_source,
+        "emit_overrides_codegen_creation_executor_shape_source",
+        _emit_overrides_codegen_creation_executor_shape_source,
     )
     monkeypatch.setattr(
         creation_context_module,
-        "compile_phase13_overrides_executor_code_object",
-        _compile_phase13_overrides_executor_code_object,
+        "compile_overrides_codegen_creation_executor_code_object",
+        _compile_overrides_codegen_creation_executor_code_object,
     )
     monkeypatch.setattr(
         creation_context_module,
-        "_compile_phase13_overrides_executor_from_code_object_with_prefilter_cache",
-        _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub,
+        "_compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache",
+        _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub,
     )
 
     shape_key_a = (route_config.plan_signature, (("s1", 7, "a", "normal"),), -1)
@@ -974,14 +974,14 @@ def test_get_or_compile_override_executor_passes_prefilter_cache_contract(
 
     compile_calls: list[dict[str, Any]] = []
 
-    def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
+    def _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         compile_calls.append(kwargs)
         return lambda *args, **inner_kwargs: "compiled"
 
     monkeypatch.setattr(
         creation_context_module,
-        "_compile_phase13_overrides_executor_from_code_object_with_prefilter_cache",
-        _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub,
+        "_compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache",
+        _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub,
     )
 
     prefilter_cache_key = (route_config.plan_signature, (("s1", 7, "dep", "normal"),))
@@ -1035,18 +1035,18 @@ def test_get_or_compile_override_executor_without_plan_rows_uses_full_compiler(
 
     compile_count = {"value": 0}
 
-    def _compile_phase13_overrides_executor(**kwargs: Any) -> Any:
+    def _compile_overrides_codegen_creation_executor(**kwargs: Any) -> Any:
         compile_count["value"] += 1
         return lambda *args, **inner_kwargs: "compiled"
 
     monkeypatch.setattr(
         creation_context_module,
-        "compile_phase13_overrides_executor",
-        _compile_phase13_overrides_executor,
+        "compile_overrides_codegen_creation_executor",
+        _compile_overrides_codegen_creation_executor,
     )
     monkeypatch.setattr(
         creation_context_module,
-        "_compile_phase13_overrides_executor_from_code_object_with_prefilter_cache",
+        "_compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache",
         lambda **kwargs: (_ for _ in ()).throw(
             AssertionError("code-object path must not run when plan_rows are absent")
         ),
@@ -1250,7 +1250,7 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify override lane applies phase10 payload and caches phase13 specialization.
+    Verify override lane applies phase10 payload and caches override codegen-creation specialization.
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     class _PatchMap:
@@ -1284,7 +1284,7 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     apply_calls: list[Dict[str, Any]] = []
     compile_count = {"value": 0}
 
-    def _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
+    def _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         compile_count["value"] += 1
 
         def _executor(
@@ -1313,8 +1313,8 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     )
     monkeypatch.setattr(
         creation_context_module,
-        "_compile_phase13_overrides_executor_from_code_object_with_prefilter_cache",
-        _compile_phase13_overrides_executor_from_code_object_with_prefilter_cache_stub,
+        "_compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache",
+        _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache_stub,
     )
 
     caller_creations = object()
@@ -1388,7 +1388,7 @@ def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
         raise AssertionError("target grouping must not run on cache hit")
 
     def _unexpected_compile(**kwargs: Any) -> Any:
-        raise AssertionError("phase13 compile must not run on cache hit")
+        raise AssertionError("override codegen creation compile must not run on cache hit")
 
     monkeypatch.setattr(
         CreationContext,
@@ -1397,7 +1397,7 @@ def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
     )
     monkeypatch.setattr(
         creation_context_module,
-        "compile_phase13_overrides_executor",
+        "compile_overrides_codegen_creation_executor",
         _unexpected_compile,
     )
 
@@ -1567,4 +1567,6 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     assert not hasattr(context, '_override_apply_with_socket_shape_prechecked_phase10')
     assert not hasattr(route_config_no_mutation, 'plan_signature')
     assert not hasattr(route_config_mutation, 'plan_signature')
+
+
 
