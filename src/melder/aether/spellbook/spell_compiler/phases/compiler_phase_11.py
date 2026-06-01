@@ -26,7 +26,19 @@ class CompilerPhase11(Cleanable):
     Contract:
         - Owns one `CodegenCreationSystem`.
         - Consumes the artifact after planner work completed.
-        - Publishes `SpellCodegenCreation` onto the artifact.
+        - Publishes `SpellCodegenCreation` onto the artifact as
+          `_spell_codegen_creation`.
+        - Produces the spell-static runtime handoff later consumed by
+          `CreationContextBuilder`.
+        - Does not execute runtime meld calls or per-call override
+          specialization.
+
+    Threading:
+        Reusable facade with no per-call mutable state beyond the owned
+        codegen-creation facade.
+
+    Lifecycle:
+        Owns only the codegen-creation facade it delegates to.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -59,6 +71,17 @@ class CompilerPhase11(Cleanable):
     ) -> None:
         """
         Execute the codegen-creation-backed live phase 11.
+
+        Purpose:
+            Build the compiler-owned spell-static creation handoff from the
+            already-fitted model and plan so runtime binders can consume one
+            coherent artifact instead of rediscovering compiler packaging
+            logic.
+
+        Contract:
+            - Delegates directly to `CodegenCreationSystem.build(...)`.
+            - Treats `spell` and `spellbook` as compatibility-only parameters
+              for the current public phase signature.
 
         Args:
             spell:

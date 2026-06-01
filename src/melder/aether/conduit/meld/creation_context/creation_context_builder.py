@@ -24,6 +24,12 @@ class CreationContextBuilder:
         - Builder only consumes spell-static data.
         - This builder accepts no caller-conduit transients.
         - Output context is deterministic for the same spell state.
+        - Constructed spells read the compiler-owned
+          `_spell_codegen_creation` artifact as the primary handoff.
+        - Existing-creation spells still build a route-only context without
+          requiring a codegen-creation artifact.
+        - Builder assembles only spell-static context inputs. Runtime-only
+          specialization behavior remains inside `CreationContext`.
     """
 
     __slots__ = ()
@@ -38,6 +44,19 @@ class CreationContextBuilder:
     ) -> CreationContext:
         """
         Build one `CreationContext` bound to the provided spell.
+
+        Purpose:
+            Rehydrate the spell-static runtime handoff needed by
+            `CreationContext` from the spell-owned compiler artifact and the
+            conduit-owned gate context.
+
+        Contract:
+            - Constructed spells require `_spell_codegen_creation` to exist.
+            - Existing-creation spells do not require a codegen-creation
+              artifact.
+            - Rehydrates override route configs from flattened
+              `SpellCodegenCreation` fields instead of reading old execution or
+              patch-map artifacts directly.
 
         Args:
             spell:

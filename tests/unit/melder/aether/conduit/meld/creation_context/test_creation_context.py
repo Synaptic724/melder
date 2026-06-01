@@ -9,7 +9,9 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
     OverrideRouteConfig,
 )
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import ExecutionPlanTargetKind
+from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
+    SpellGeneralizedCodegenPlanTargetKind,
+)
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
@@ -63,7 +65,7 @@ def _make_plan_row(spell_id: str = "s1") -> Dict[str, Any]:
         "instance_key": (spell_id, None),
         "spell_id": spell_id,
         "existence": "many",
-        "creations_target_kind": ExecutionPlanTargetKind.CALLER,
+        "creations_target_kind": SpellGeneralizedCodegenPlanTargetKind.CALLER,
         "shared_instance": True,
         "dependency_resolution_order": (),
         "override_match_prefix": None,

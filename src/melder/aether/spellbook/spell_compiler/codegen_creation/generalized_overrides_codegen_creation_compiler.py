@@ -3,8 +3,8 @@ from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlanTargetKind,
+from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
+    SpellGeneralizedCodegenPlanTargetKind,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_no_overrides_codegen_creation_compiler import (
     _get_existing_creation,
@@ -467,7 +467,7 @@ def _build_phase13_overrides_executor_namespace(
         "MeldExecutionError": MeldExecutionError,
         "Sequence": Sequence,
         "Existence": Existence,
-        "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
+        "SpellGeneralizedCodegenPlanTargetKind": SpellGeneralizedCodegenPlanTargetKind,
         "_MISSING": _MISSING,
         "_construct_spell_instance_with_overrides": _construct_spell_instance_with_overrides,
         "_build_step_override_values": _build_step_override_values,
@@ -589,7 +589,7 @@ def _build_phase13_overrides_executor_source(
         "        root_spell_id=root_spell_id,",
         "        any_overrides_present=any_overrides_present,",
         "        Existence=Existence,",
-        "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
+        "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
         "        _construct_spell_instance_with_overrides=_construct_spell_instance_with_overrides,",
         "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
@@ -820,8 +820,8 @@ def _build_phase13_overrides_executor_shape_source(
     ]
     if any(
             metadata[1] in (
-                ExecutionPlanTargetKind.CALLER,
-                ExecutionPlanTargetKind.SPELLSPACE,
+                SpellGeneralizedCodegenPlanTargetKind.CALLER,
+                SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
             )
             for metadata in step_source_metadata
     ):
@@ -1893,11 +1893,11 @@ def _append_overrides_step_shape_source(
             )
 
     if creations_target_kind in (
-            ExecutionPlanTargetKind.CALLER,
-            ExecutionPlanTargetKind.SPELLSPACE,
+            SpellGeneralizedCodegenPlanTargetKind.CALLER,
+            SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
     ):
         lines.append(f"    creations_{step_index} = caller_creations")
-    elif creations_target_kind == ExecutionPlanTargetKind.OWNER:
+    elif creations_target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
         _append_overrides_shape_owner_creations_source(
             lines=lines,
             step_index=step_index,
@@ -2294,14 +2294,14 @@ def _append_overrides_step_source(
         f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
         (
             f"    if target_kind_{step_index} in ("
-            f"ExecutionPlanTargetKind.CALLER, ExecutionPlanTargetKind.SPELLSPACE):"
+            f"SpellGeneralizedCodegenPlanTargetKind.CALLER, SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE):"
         ),
         "        if caller_creations is None:",
         "            raise RuntimeError(",
         "                \"Phase 13 CALLER/SPELLSPACE execution requires caller_creations.\"",
         "            )",
         f"        creations_{step_index} = caller_creations",
-        f"    elif target_kind_{step_index} == ExecutionPlanTargetKind.OWNER:",
+        f"    elif target_kind_{step_index} == SpellGeneralizedCodegenPlanTargetKind.OWNER:",
         f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
         f"        if owner_creations_{step_index} is not None:",
         f"            creations_{step_index} = owner_creations_{step_index}",

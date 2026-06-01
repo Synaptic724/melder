@@ -25,7 +25,18 @@ class CompilerPhase9(Cleanable):
     Contract:
         - Owns one `SpellArtifactProcessor`.
         - Consumes the spell/artifact pair.
-        - Publishes `SpellCodegenModel` onto the artifact.
+        - Publishes `SpellCodegenModel` onto the artifact as
+          `_spell_codegen_model`.
+        - Assumes analyzer-owned graph truth is already attached when the spell
+          is plan-phase-eligible.
+        - Does not build the final plan or creation payload itself.
+
+    Threading:
+        Reusable facade with no per-call mutable state beyond the owned
+        processor facade.
+
+    Lifecycle:
+        Owns only the processor facade it delegates to.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -57,6 +68,15 @@ class CompilerPhase9(Cleanable):
     ) -> None:
         """
         Execute the processor-backed live phase 9.
+
+        Purpose:
+            Fit the processor-owned `SpellCodegenModel` from analyzer and
+            spell-static truth, then publish that model back onto the compiler
+            artifact for planner consumption.
+
+        Contract:
+            - Delegates directly to `SpellArtifactProcessor.process(...)`.
+            - Leaves planner and codegen-creation work untouched.
 
         Args:
             spell:

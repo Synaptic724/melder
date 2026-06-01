@@ -2,12 +2,12 @@ from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
+    SpellGeneralizedCodegenPlanCallMode,
+    SpellGeneralizedCodegenPlanTargetKind,
+)
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
-)
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlanCallMode,
-    ExecutionPlanTargetKind,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -668,7 +668,7 @@ def _build_step_plan_executor_source(
         "        step_instance_keys=step_instance_keys,",
         "        step_dep_keys=step_dep_keys,",
         "        root_instance_key=root_instance_key,",
-        "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
+        "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
         "        _raise_meld_construction_error=_raise_meld_construction_error,",
         "        _get_existing_creation=_get_existing_creation,",
@@ -700,7 +700,7 @@ def _append_step_creations_target_source(
         *,
         lines: list[str],
         step_index: int,
-        target_kind: ExecutionPlanTargetKind,
+        target_kind: int,
 ) -> None:
     """
     Append emitted source lines for static creations-target routing.
@@ -710,8 +710,8 @@ def _append_step_creations_target_source(
         - Avoids per-step runtime target-kind branch ladders.
     """
     if target_kind in (
-            ExecutionPlanTargetKind.CALLER,
-            ExecutionPlanTargetKind.SPELLSPACE,
+            SpellGeneralizedCodegenPlanTargetKind.CALLER,
+            SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
     ):
         lines.extend([
             "    if caller_creations is None:",
@@ -722,7 +722,7 @@ def _append_step_creations_target_source(
         ])
         return
 
-    if target_kind == ExecutionPlanTargetKind.OWNER:
+    if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
         lines.extend([
             f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
             f"    if owner_creations_{step_index} is not None:",
@@ -1026,7 +1026,7 @@ def _build_step_executor_namespace(
     return {
         "MeldExecutionError": MeldExecutionError,
         "SpellSpaceScopeError": SpellSpaceScopeError,
-        "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
+        "SpellGeneralizedCodegenPlanTargetKind": SpellGeneralizedCodegenPlanTargetKind,
         "_construct_spell_instance": _construct_spell_instance,
         "_raise_meld_construction_error": _raise_meld_construction_error,
         "_get_existing_creation": _get_existing_creation,
@@ -1086,8 +1086,8 @@ def _select_creations_for_target_kind(
     """
     target_kind = plan_step.creations_target_kind
     if target_kind in (
-            ExecutionPlanTargetKind.CALLER,
-            ExecutionPlanTargetKind.SPELLSPACE,
+            SpellGeneralizedCodegenPlanTargetKind.CALLER,
+            SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
     ):
         if caller_creations is None:
             raise RuntimeError(
@@ -1095,7 +1095,7 @@ def _select_creations_for_target_kind(
             )
         return caller_creations
 
-    if target_kind == ExecutionPlanTargetKind.OWNER:
+    if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
         spell_owner_creations = spell._owner_creations
         if spell_owner_creations is not None:
             return spell_owner_creations
@@ -1745,31 +1745,31 @@ def _build_unrolled_call_arg_refs(
         - Returns tuple of local variable references for CALL0..CALL8.
         - Returns None for unsupported call modes.
     """
-    if call_mode == ExecutionPlanCallMode.CALL0:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL0:
         return ()
-    if call_mode == ExecutionPlanCallMode.CALL1:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL1:
         return (
             f"v{transient_dep1[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL2:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL2:
         return (
             f"v{transient_dep2a[step_index]}",
             f"v{transient_dep2b[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL3:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL3:
         return (
             f"v{transient_dep3a[step_index]}",
             f"v{transient_dep3b[step_index]}",
             f"v{transient_dep3c[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL4:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL4:
         return (
             f"v{transient_dep4a[step_index]}",
             f"v{transient_dep4b[step_index]}",
             f"v{transient_dep4c[step_index]}",
             f"v{transient_dep4d[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL5:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL5:
         return (
             f"v{transient_dep5a[step_index]}",
             f"v{transient_dep5b[step_index]}",
@@ -1777,7 +1777,7 @@ def _build_unrolled_call_arg_refs(
             f"v{transient_dep5d[step_index]}",
             f"v{transient_dep5e[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL6:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL6:
         return (
             f"v{transient_dep6a[step_index]}",
             f"v{transient_dep6b[step_index]}",
@@ -1786,7 +1786,7 @@ def _build_unrolled_call_arg_refs(
             f"v{transient_dep6e[step_index]}",
             f"v{transient_dep6f[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL7:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL7:
         return (
             f"v{transient_dep7a[step_index]}",
             f"v{transient_dep7b[step_index]}",
@@ -1796,7 +1796,7 @@ def _build_unrolled_call_arg_refs(
             f"v{transient_dep7f[step_index]}",
             f"v{transient_dep7g[step_index]}",
         )
-    if call_mode == ExecutionPlanCallMode.CALL8:
+    if call_mode == SpellGeneralizedCodegenPlanCallMode.CALL8:
         return (
             f"v{transient_dep8a[step_index]}",
             f"v{transient_dep8b[step_index]}",

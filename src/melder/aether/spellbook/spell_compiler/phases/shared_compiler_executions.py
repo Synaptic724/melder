@@ -1297,7 +1297,7 @@ class SharedCompilerExecutions:
 
     @staticmethod
     def build_phase11_variant_ir_payload(
-            plan: Optional[ExecutionPlan],
+            plan: Optional[Any],
     ) -> Dict[str, Any]:
         """
             Export one Phase 11 execution-plan variant into IR fields.
@@ -1331,7 +1331,7 @@ class SharedCompilerExecutions:
 
         steps = plan.steps
         include_override_metadata = (
-                plan.plan_variant != ExecutionPlanVariant.NO_OVERRIDES_FAST
+                plan.plan_variant != "no_overrides_fast"
         )
         steps_rows = tuple(
             SharedCompilerExecutions.build_phase11_step_ir_row(

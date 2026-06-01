@@ -29,9 +29,22 @@ class CompilerPhase8(Cleanable):
     Contract:
         - Owns one `SpellAnalyzer`.
         - Consumes the existing spell/artifact pair.
-        - Publishes analyzer-owned occurrence graph truth onto the artifact.
+        - Publishes analyzer-owned occurrence graph truth onto the artifact as
+          `_occurrence_graph_analysis`.
+        - Leaves downstream model / plan / creation fitting to phases 9-11.
         - Ignores old spellbook/system-state phase inputs because the analyzer
           already reads through the spell/artifact relationship.
+        - Existing-creation spells are permitted through this wrapper; the
+          analyzer strategy itself decides whether a graph artifact should be
+          produced.
+
+    Threading:
+        Reusable facade with no per-call mutable state beyond the owned
+        analyzer facade.
+
+    Lifecycle:
+        Reusable across many spells and owns only the analyzer facade it
+        delegates to.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -69,6 +82,18 @@ class CompilerPhase8(Cleanable):
     ) -> None:
         """
         Execute the analyzer-backed live phase 8.
+
+        Purpose:
+            Bridge the live phase scheduler onto the analyzer seam without
+            forcing outer compiler callers to know about analyzer strategies or
+            analyzer-owned artifact names.
+
+        Contract:
+            - Delegates directly to `SpellAnalyzer.analyze_occurrence(...)`.
+            - Treats `spellbook` and `spell_system_states` as compatibility
+              signature parameters only.
+            - Publishes any analyzer output onto the supplied compiler
+              artifact.
 
         Args:
             spell:

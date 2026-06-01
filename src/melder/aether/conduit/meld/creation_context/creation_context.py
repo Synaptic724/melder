@@ -139,7 +139,21 @@ class CreationContext(Cleanable):
         - Per-call transients (`caller_creations`, `overrides`) are supplied
           to `execute(...)`.
         - Existence routing is selected once at build time and reused.
-        - Owns override specialization executors scoped to this spell.
+        - Consumes compiler-owned spell-static creation packaging through
+          `CreationContextBuilder`.
+        - Owns only runtime-side specialization caches and dispatch helpers
+          that remain genuinely call-shape-dependent.
+        - Does not rediscover planner or codegen-creation strategy choices.
+
+    Runtime Scope:
+        - Dispatches no-hooks/hooks and no-overrides/overrides lanes.
+        - Manages dynamic `CreationGate` admission for execute paths.
+        - Caches override executors keyed by structural override shape.
+
+    Non-goals:
+        - This object is not where planner output is chosen.
+        - This object is not where spell-static override route packaging is
+          assembled from scratch.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -454,6 +468,11 @@ class CreationContext(Cleanable):
               fail-fast on terminal close, wait while disabled, then
               register/unregister one ticket around execution.
 
+        Runtime dispatch policy:
+            - `overrides is None` takes the prebuilt no-overrides lane.
+            - Non-empty override payloads take the override lane and may hit
+              runtime specialization caches.
+
         Raises:
             RuntimeError:
                 If dynamic-mode spell-index gate is terminally closed.
@@ -507,6 +526,8 @@ class CreationContext(Cleanable):
             - `overrides is None` uses the no-overrides compiled door.
             - Override payloads route through the no-hooks compiled override door.
             - Caller must supply frontdoor-normalized overrides from Meld.
+            - Preserves the same dynamic gate semantics as `execute(...)` while
+              bypassing hook tuple return values.
 
         Dynamic gate policy:
             - Automatic mode bypasses gate checks.
@@ -607,6 +628,12 @@ class CreationContext(Cleanable):
         The override payload values themselves do not participate in executor
         cache identity. Only the structural shape matters for specialization
         reuse.
+
+        Contract:
+            - Uses the compiler-owned override-targeting handoff supplied by
+              `CreationContextBuilder`.
+            - Reuses baseline empty-shape executors when available.
+            - Compiles new override executors only on structural cache miss.
         """
         spell = self._spell
         override_route_config = self._override_route_config_active

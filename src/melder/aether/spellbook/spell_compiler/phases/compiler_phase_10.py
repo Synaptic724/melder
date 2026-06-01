@@ -25,7 +25,17 @@ class CompilerPhase10(Cleanable):
     Contract:
         - Owns one `SpellCodegenPlanner`.
         - Consumes the artifact after processor work completed.
-        - Publishes `SpellCodegenPlan` onto the artifact.
+        - Publishes `SpellCodegenPlan` onto the artifact as
+          `_spell_codegen_plan`.
+        - Uses the processor-owned model as its only planning input.
+        - Does not emit runtime-ready creation artifacts.
+
+    Threading:
+        Reusable facade with no per-call mutable state beyond the owned
+        planner facade.
+
+    Lifecycle:
+        Owns only the planner facade it delegates to.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -57,6 +67,15 @@ class CompilerPhase10(Cleanable):
     ) -> None:
         """
         Execute the planner-backed live phase 10.
+
+        Purpose:
+            Build the planner-owned execution-semantics artifact from the
+            processor-owned model already stored on the compiler artifact.
+
+        Contract:
+            - Delegates directly to `SpellCodegenPlanner.build(...)`.
+            - Treats the `spell` parameter as compatibility-only for the
+              current public phase signature.
 
         Args:
             spell:

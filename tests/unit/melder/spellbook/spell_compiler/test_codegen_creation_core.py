@@ -133,7 +133,7 @@ def test_codegen_creation_discovery_system_selects_generalized_chain_by_default(
         "generalized_mutation_overrides_codegen_creation",
     )
     assert discovery.discovery_reason == (
-        "default_generalized_plan_phase13_first_creation_chain"
+        "default_generalized_plan_codegen_creation_chain"
     )
 
 
