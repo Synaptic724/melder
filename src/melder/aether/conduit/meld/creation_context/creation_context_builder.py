@@ -100,9 +100,12 @@ class CreationContextBuilder:
                 )
 
             if (
-                    spell_codegen_creation.override_mutation_plan_signature is not None
-                    or spell_codegen_creation.override_mutation_plan_rows is not None
-                    or spell_codegen_creation.override_mutation_baseline_executor is not None
+                    spell.has_mutation_override
+                    and (
+                        spell_codegen_creation.override_mutation_plan_signature is not None
+                        or spell_codegen_creation.override_mutation_plan_rows is not None
+                        or spell_codegen_creation.override_mutation_baseline_executor is not None
+                    )
             ):
                 override_route_config_mutation = CreationContextBuilder._build_override_route_config_from_creation(
                     plan_signature=spell_codegen_creation.override_mutation_plan_signature,

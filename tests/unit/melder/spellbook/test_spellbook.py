@@ -2509,6 +2509,8 @@ def test_phase_factories_build_units_and_label():
     """
     sb = Spellbook()
     spell = DummySpell(spell_id="x")
+    spell.is_existing_creation = False
+    spell._compiler_artifact._root_blueprint_phase5 = object()
     sb._spells = {DummySpellIndex(): spell}
     scheduler = DummyPhaseScheduler(sb, None)
     compiler_system = SpellCompilerSystem()
@@ -2580,7 +2582,6 @@ def test_run_resolution_phases_success(monkeypatch):
         "occurrence_plan",
         "injection_plan",
         "execution_plan",
-        "executor_compile",
         "patch_maps",
         "system_validation",
         "change_control",
@@ -3278,7 +3279,6 @@ def test_run_resolution_phases_with_multiple_spells():
         "occurrence_plan",
         "injection_plan",
         "execution_plan",
-        "executor_compile",
         "patch_maps",
         "system_validation",
         "change_control",
@@ -3804,6 +3804,8 @@ def test_phase_factories_metadata_contains_spell_id():
     """
     sb = Spellbook()
     spell = DummySpell(spell_id="abc")
+    spell.is_existing_creation = False
+    spell._compiler_artifact._root_blueprint_phase5 = object()
     sb._spells = {DummySpellIndex(sid="abc"): spell}
     scheduler = DummyPhaseScheduler(sb, None)
     compiler_system = SpellCompilerSystem()

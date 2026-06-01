@@ -1,4 +1,4 @@
-"""Unit tests for SpellCompilerArtifact current-surface lifecycle semantics."""
+"""Unit tests for current-surface `SpellCompilerArtifact` lifecycle semantics."""
 
 import pytest
 
@@ -38,8 +38,8 @@ def test_artifact_structural_fields_start_empty() -> None:
     assert artifact._is_broken is False
 
 
-def test_artifact_later_phase_fields_start_empty() -> None:
-    """Later phase fields should start empty."""
+def test_artifact_later_fields_start_empty() -> None:
+    """Later compiler fields should start empty under the current model/plan/creation surface."""
     artifact = SpellCompilerArtifact("spell-1")
 
     assert artifact._root_blueprint_phase5 is None
@@ -48,15 +48,9 @@ def test_artifact_later_phase_fields_start_empty() -> None:
     assert artifact._occurrence_order_analysis is None
     assert artifact._occurrence_instance_analysis is None
     assert artifact._occurrence_contract_analysis is None
-    assert artifact._occurrence_analysis_shape_profile is None
-    assert artifact._occurrence_plan_phase8 is None
-    assert artifact._injection_plan_phase9 is None
-    assert artifact._override_patch_map_phase10 is None
-    assert artifact._mutation_patch_map_phase10 is None
-    assert artifact._execution_plan_phase11 is None
-    assert artifact._execution_plan_phase11_no_overrides is None
-    assert artifact._execution_plan_phase11_overrides is None
-    assert artifact._phase13_no_overrides_executor is None
+    assert artifact._spell_codegen_model is None
+    assert artifact._spell_codegen_plan is None
+    assert artifact._spell_codegen_creation is None
     assert artifact._spell_system_index_phase5 is None
     assert artifact._entire_dag_blueprint_phase5 is None
     assert artifact._phase8_11_codegen_ir_dirty is False
@@ -71,24 +65,18 @@ def test_artifact_later_phase_fields_start_empty() -> None:
         "_validation_result_phase4",
         "_validation_result_phase6",
         "_root_blueprint_phase5",
+        "_spell_system_index_phase5",
         "_occurrence_graph_analysis",
         "_occurrence_order_analysis",
         "_occurrence_instance_analysis",
         "_occurrence_contract_analysis",
-        "_occurrence_plan_phase8",
-        "_injection_plan_phase9",
-        "_override_patch_map_phase10",
-        "_mutation_patch_map_phase10",
-        "_execution_plan_phase11",
-        "_execution_plan_phase11_no_overrides",
-        "_execution_plan_phase11_overrides",
-        "_spell_system_index_phase5",
+        "_spell_codegen_model",
+        "_spell_codegen_plan",
+        "_spell_codegen_creation",
     ],
 )
-def test_cleanup_calls_cleanup_on_owned_single_artifact_fields(
-        field_name: str,
-) -> None:
-    """Cleanup should call cleanup once for every single owned artifact field."""
+def test_cleanup_calls_cleanup_on_owned_artifact_fields(field_name: str) -> None:
+    """Cleanup should call cleanup once for each owned artifact field that exposes it."""
     artifact = SpellCompilerArtifact("spell-1")
     child = CleanupTracker()
     setattr(artifact, field_name, child)
@@ -114,35 +102,8 @@ def test_cleanup_calls_cleanup_on_entire_dag_blueprint_map_values() -> None:
     assert root_b.cleanup_calls == 1
 
 
-def test_cleanup_swallows_child_cleanup_exceptions() -> None:
-    """Cleanup should continue even when owned child cleanup raises."""
-    artifact = SpellCompilerArtifact("spell-1")
-
-    class _FailingCleanupTracker(CleanupTracker):
-        """Cleanup tracker that raises after recording cleanup."""
-
-        def cleanup(self) -> None:
-            self.cleanup_calls += 1
-            self._cleaned = True
-            raise RuntimeError("cleanup boom")
-
-    requirements = _FailingCleanupTracker()
-    root_blueprint = _FailingCleanupTracker()
-    dag_blueprint = _FailingCleanupTracker()
-    artifact._requirements = requirements
-    artifact._root_blueprint_phase5 = root_blueprint
-    artifact._entire_dag_blueprint_phase5 = {"root": dag_blueprint}
-
-    artifact.cleanup()
-
-    assert artifact._cleaned is True
-    assert requirements.cleanup_calls == 1
-    assert root_blueprint.cleanup_calls == 1
-    assert dag_blueprint.cleanup_calls == 1
-
-
-def test_cleanup_deletes_spell_identity_and_later_phase_fields() -> None:
-    """Cleanup should delete identity and later-phase owned fields."""
+def test_cleanup_deletes_current_later_fields() -> None:
+    """Cleanup should delete the current later-phase and generic output fields."""
     artifact = SpellCompilerArtifact("spell-1")
 
     artifact.cleanup()
@@ -153,13 +114,9 @@ def test_cleanup_deletes_spell_identity_and_later_phase_fields() -> None:
     assert not hasattr(artifact, "_occurrence_order_analysis")
     assert not hasattr(artifact, "_occurrence_instance_analysis")
     assert not hasattr(artifact, "_occurrence_contract_analysis")
-    assert not hasattr(artifact, "_occurrence_plan_phase8")
-    assert not hasattr(artifact, "_injection_plan_phase9")
-    assert not hasattr(artifact, "_override_patch_map_phase10")
-    assert not hasattr(artifact, "_mutation_patch_map_phase10")
-    assert not hasattr(artifact, "_execution_plan_phase11")
-    assert not hasattr(artifact, "_execution_plan_phase11_no_overrides")
-    assert not hasattr(artifact, "_execution_plan_phase11_overrides")
+    assert not hasattr(artifact, "_spell_codegen_model")
+    assert not hasattr(artifact, "_spell_codegen_plan")
+    assert not hasattr(artifact, "_spell_codegen_creation")
     assert not hasattr(artifact, "_spell_system_index_phase5")
 
 
@@ -176,15 +133,15 @@ def test_cleanup_is_idempotent_for_owned_children() -> None:
 
 
 def test_reset_phase_artifacts_clears_structural_fields_only() -> None:
-    """Reset should clear structural-validation fields while preserving later state."""
+    """Reset should clear structural-validation fields while preserving rooted and later state."""
     artifact = SpellCompilerArtifact("spell-1")
-    artifact._requirements = object()
-    artifact._symbolic_graph = object()
-    artifact._resolution_frame = object()
-    artifact._validation_result_phase4 = object()
-    artifact._validation_result_phase6 = object()
+    artifact._requirements = CleanupTracker()
+    artifact._symbolic_graph = CleanupTracker()
+    artifact._resolution_frame = CleanupTracker()
+    artifact._validation_result_phase4 = CleanupTracker()
+    artifact._validation_result_phase6 = CleanupTracker()
     artifact._root_blueprint_phase5 = object()
-    artifact._occurrence_plan_phase8 = object()
+    artifact._spell_codegen_model = object()
 
     artifact.reset_phase_artifacts()
 
@@ -194,13 +151,13 @@ def test_reset_phase_artifacts_clears_structural_fields_only() -> None:
     assert artifact._validation_result_phase4 is None
     assert artifact._validation_result_phase6 is None
     assert artifact._root_blueprint_phase5 is not None
-    assert artifact._occurrence_plan_phase8 is not None
+    assert artifact._spell_codegen_model is not None
 
 
 def test_cleanup_phase_artifacts_alias_matches_reset_phase_artifacts() -> None:
     """cleanup_phase_artifacts should behave as the structural reset alias."""
     artifact = SpellCompilerArtifact("spell-1")
-    artifact._requirements = object()
+    artifact._requirements = CleanupTracker()
     artifact._root_blueprint_phase5 = object()
 
     artifact.cleanup_phase_artifacts()
@@ -209,8 +166,8 @@ def test_cleanup_phase_artifacts_alias_matches_reset_phase_artifacts() -> None:
     assert artifact._root_blueprint_phase5 is not None
 
 
-def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
-    """clear_phase5_artifacts should clear rooted and later-plan state."""
+def test_clear_phase5_artifacts_clears_rooted_occurrence_and_codegen_outputs() -> None:
+    """clear_phase5_artifacts should clear rooted state, occurrence analyses, and generic outputs."""
     artifact = SpellCompilerArtifact("spell-1")
     artifact._root_blueprint_phase5 = object()
     artifact._requires_spellspace_request_phase5 = True
@@ -220,20 +177,10 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     artifact._occurrence_order_analysis = CleanupTracker()
     artifact._occurrence_instance_analysis = CleanupTracker()
     artifact._occurrence_contract_analysis = CleanupTracker()
-    artifact._occurrence_analysis_shape_profile = {"graph": 1}
-    artifact._phase8_occurrence_plan_input_signature = "phase8"
-    artifact._phase9_injection_plan_input_signature = "phase9"
-    artifact._phase10_patch_maps_input_signature = ("phase10",)
-    artifact._occurrence_plan_phase8 = CleanupTracker()
-    artifact._injection_plan_phase9 = CleanupTracker()
-    artifact._override_patch_map_phase10 = CleanupTracker()
-    artifact._mutation_patch_map_phase10 = CleanupTracker()
-    artifact._execution_plan_phase11 = CleanupTracker()
-    artifact._execution_plan_phase11_no_overrides = CleanupTracker()
-    artifact._execution_plan_phase11_overrides = CleanupTracker()
+    artifact._spell_codegen_model = CleanupTracker()
+    artifact._spell_codegen_plan = CleanupTracker()
+    artifact._spell_codegen_creation = CleanupTracker()
     artifact._spell_system_index_phase5 = object()
-    artifact._phase13_no_overrides_executor = object()
-    artifact._phase11_no_overrides_input_signature = "phase11"
 
     artifact.clear_phase5_artifacts()
 
@@ -245,20 +192,10 @@ def test_clear_phase5_artifacts_clears_rooted_and_later_state() -> None:
     assert artifact._occurrence_order_analysis is None
     assert artifact._occurrence_instance_analysis is None
     assert artifact._occurrence_contract_analysis is None
-    assert artifact._occurrence_analysis_shape_profile is None
-    assert artifact._phase8_occurrence_plan_input_signature is None
-    assert artifact._phase9_injection_plan_input_signature is None
-    assert artifact._phase10_patch_maps_input_signature is None
-    assert artifact._occurrence_plan_phase8 is None
-    assert artifact._injection_plan_phase9 is None
-    assert artifact._override_patch_map_phase10 is None
-    assert artifact._mutation_patch_map_phase10 is None
-    assert artifact._execution_plan_phase11 is None
-    assert artifact._execution_plan_phase11_no_overrides is None
-    assert artifact._execution_plan_phase11_overrides is None
+    assert artifact._spell_codegen_model is None
+    assert artifact._spell_codegen_plan is None
+    assert artifact._spell_codegen_creation is None
     assert artifact._spell_system_index_phase5 is None
-    assert artifact._phase13_no_overrides_executor is None
-    assert artifact._phase11_no_overrides_input_signature is None
 
 
 def test_clear_phase5_artifacts_preserves_structural_fields() -> None:
@@ -277,53 +214,3 @@ def test_clear_phase5_artifacts_preserves_structural_fields() -> None:
     assert artifact._resolution_frame == "frame"
     assert artifact._validation_result_phase4 == "phase4"
     assert artifact._validation_result_phase6 == "phase6"
-
-
-def test_cleanup_execution_plans_phase11_cleans_variants_and_clears_fields() -> None:
-    """Phase 11 cleanup helper should clean all cached plans and clear their refs."""
-    artifact = SpellCompilerArtifact("spell-1")
-    main = CleanupTracker()
-    no_overrides = CleanupTracker()
-    overrides = CleanupTracker()
-    artifact._execution_plan_phase11 = main
-    artifact._execution_plan_phase11_no_overrides = no_overrides
-    artifact._execution_plan_phase11_overrides = overrides
-    artifact._phase11_no_overrides_plan_signature = "sig"
-    artifact._phase11_no_overrides_transient_schema = {"schema": 1}
-
-    artifact._cleanup_execution_plans_phase11()
-
-    assert main.cleanup_calls == 1
-    assert no_overrides.cleanup_calls == 1
-    assert overrides.cleanup_calls == 1
-    assert artifact._execution_plan_phase11 is None
-    assert artifact._execution_plan_phase11_no_overrides is None
-    assert artifact._execution_plan_phase11_overrides is None
-    assert artifact._phase11_no_overrides_plan_signature is None
-    assert artifact._phase11_no_overrides_transient_schema is None
-
-
-def test_cleanup_execution_plans_phase11_swallows_cleanup_failures() -> None:
-    """Phase 11 cleanup helper should swallow per-plan cleanup failures."""
-    artifact = SpellCompilerArtifact("spell-1")
-
-    class _FailingCleanupTracker(CleanupTracker):
-        """Cleanup tracker that raises after recording cleanup."""
-
-        def cleanup(self) -> None:
-            self.cleanup_calls += 1
-            self._cleaned = True
-            raise RuntimeError("cleanup boom")
-
-    main = _FailingCleanupTracker()
-    overrides = _FailingCleanupTracker()
-    artifact._execution_plan_phase11 = main
-    artifact._execution_plan_phase11_overrides = overrides
-
-    artifact._cleanup_execution_plans_phase11()
-
-    assert main.cleanup_calls == 1
-    assert overrides.cleanup_calls == 1
-    assert artifact._execution_plan_phase11 is None
-    assert artifact._execution_plan_phase11_overrides is None
-

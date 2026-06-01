@@ -585,7 +585,7 @@ def test_component_spell_compiler_system_phase7_local_registers_revalidator() ->
 
 
 def test_component_spell_compiler_system_phase8_builds_occurrence_plan() -> None:
-    """Phase 8 should build a real occurrence plan on current compiler surfaces."""
+    """Phase 8 should publish occurrence graph analysis on current compiler surfaces."""
     spellbook = make_spellbook()
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase8"
@@ -604,14 +604,14 @@ def test_component_spell_compiler_system_phase8_builds_occurrence_plan() -> None
         run_foundational_phases(compiler_system, spellbook, consumer_spell, conduit_id)
         compiler_system.run_phase_occurrence_plan(spellbook, consumer_spell)
 
-        assert consumer_spell._compiler_artifact._occurrence_plan_phase8 is not None
+        assert consumer_spell._compiler_artifact._occurrence_graph_analysis is not None
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()
 
 
 def test_component_spell_compiler_system_phase8_occurrence_plan_root_identity_matches_target() -> None:
-    """The built occurrence plan should carry the target spell id as its root identity."""
+    """The occurrence graph analysis should carry the target spell id as its root identity."""
     spellbook = make_spellbook()
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase8-root-id"
@@ -630,14 +630,17 @@ def test_component_spell_compiler_system_phase8_occurrence_plan_root_identity_ma
         run_foundational_phases(compiler_system, spellbook, consumer_spell, conduit_id)
         compiler_system.run_phase_occurrence_plan(spellbook, consumer_spell)
 
-        assert consumer_spell._compiler_artifact._occurrence_plan_phase8.root_spell_id == consumer_id
+        assert (
+            consumer_spell._compiler_artifact._occurrence_graph_analysis.root_spell_id
+            == consumer_id
+        )
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()
 
 
 def test_component_spell_compiler_system_phase9_builds_injection_plan() -> None:
-    """Phase 9 should build a real injection plan after occurrence planning."""
+    """Phase 9 should publish a fitted codegen model after occurrence analysis."""
     spellbook = make_spellbook()
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase9"
@@ -657,24 +660,22 @@ def test_component_spell_compiler_system_phase9_builds_injection_plan() -> None:
         compiler_system.run_phase_occurrence_plan(spellbook, consumer_spell)
         compiler_system.run_phase_injection_plan(consumer_spell)
 
-        assert consumer_spell._compiler_artifact._injection_plan_phase9 is not None
+        artifact = consumer_spell._compiler_artifact
+        model = artifact._spell_codegen_model
+        assert model is not None
+        assert model.graph_shape is artifact._occurrence_graph_analysis
+        assert model.injection_shape is not None
+        assert model.injection_shape.root_spell_id == consumer_id
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()
 
 
-@pytest.mark.parametrize(
-    ("builder", "field_name"),
-    [
-        ("override", "_override_patch_map_phase10"),
-        ("mutation", "_mutation_patch_map_phase10"),
-    ],
-)
-def test_component_spell_compiler_system_phase10_builds_patch_maps(
+@pytest.mark.parametrize("builder", ["override", "mutation"])
+def test_component_spell_compiler_system_phase10_builds_codegen_plan_lanes(
         builder: str,
-        field_name: str,
 ) -> None:
-    """Phase 10 should build both override and mutation patch maps where applicable."""
+    """Phase 10 should publish planner-owned generalized lane plans."""
     spellbook = make_spellbook()
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase10-{0}".format(builder)
@@ -712,14 +713,21 @@ def test_component_spell_compiler_system_phase10_builds_patch_maps(
         run_foundational_phases(compiler_system, spellbook, consumer_spell, conduit_id)
         run_plan_phases(compiler_system, spellbook, consumer_spell)
 
-        assert getattr(consumer_spell._compiler_artifact, field_name) is not None
+        artifact = consumer_spell._compiler_artifact
+        plan = artifact._spell_codegen_plan
+        assert plan is not None
+        assert plan.no_overrides_plan is not None
+        if builder == "override":
+            assert plan.overrides_plan is not None
+        else:
+            assert plan.mutation_overrides_plan is not None
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()
 
 
 def test_component_spell_compiler_system_phase11_builds_execution_plans() -> None:
-    """Phase 11 should build no-overrides, overrides, and main execution plans."""
+    """Phase 11 should publish the compiler-owned codegen creation artifact."""
     spellbook = make_spellbook()
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase11"
@@ -739,16 +747,18 @@ def test_component_spell_compiler_system_phase11_builds_execution_plans() -> Non
         run_plan_phases(compiler_system, spellbook, consumer_spell)
 
         artifact = consumer_spell._compiler_artifact
-        assert artifact._execution_plan_phase11 is not None
-        assert artifact._execution_plan_phase11_no_overrides is not None
-        assert artifact._execution_plan_phase11_overrides is not None
+        creation = artifact._spell_codegen_creation
+        assert creation is not None
+        assert creation.resolve_route_key is not None
+        assert creation.no_overrides_executor is not None
+        assert creation.no_overrides_executor_signature is not None
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()
 
 
-def test_component_spell_compiler_system_phase11_no_overrides_plan_root_identity_matches_target() -> None:
-    """The no-overrides execution plan should stay rooted on the target spell id."""
+def test_component_spell_compiler_system_phase10_no_overrides_plan_root_identity_matches_target() -> None:
+    """The no-overrides generalized lane plan should stay rooted on the target spell id."""
     spellbook = make_spellbook()
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase11-root-id"
@@ -767,7 +777,11 @@ def test_component_spell_compiler_system_phase11_no_overrides_plan_root_identity
         run_foundational_phases(compiler_system, spellbook, consumer_spell, conduit_id)
         run_plan_phases(compiler_system, spellbook, consumer_spell)
 
-        assert consumer_spell._compiler_artifact._execution_plan_phase11_no_overrides.root_spell_id == consumer_id
+        artifact = consumer_spell._compiler_artifact
+        plan = artifact._spell_codegen_plan
+        assert plan is not None
+        assert plan.no_overrides_plan is not None
+        assert plan.no_overrides_plan.root_spell_id == consumer_id
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()

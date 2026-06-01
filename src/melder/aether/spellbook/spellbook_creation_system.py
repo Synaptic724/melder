@@ -1198,12 +1198,6 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook, scheduler, compiler_system, conduit_id
             ),
         )
-        scheduler.register_phase(
-            "executor_compile",
-            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_executor_compile_factory(
-                spellbook, scheduler, compiler_system, conduit_id
-            ),
-        )
 
     @staticmethod
     def _new_phase_scheduler(
@@ -1653,6 +1647,8 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
+        if not SpellbookCreationSystem._is_spell_plan_phase_eligible(target_spell):
+            return {}
         compiler_system = SpellCompilerSystem()
         try:
             def _register(scheduler: PhaseScheduler) -> None:
@@ -1682,13 +1678,6 @@ class SpellbookCreationSystem(Cleanable):
                     phase_name="execution_plan_local",
                     target_spell_id=target_spell_id,
                     phase_func=compiler_system.run_phase_execution_plan,
-                    args=(spellbook, target_spell,),
-                )
-                SpellbookCreationSystem._register_target_single_phase(
-                    scheduler=scheduler,
-                    phase_name="executor_compile_local",
-                    target_spell_id=target_spell_id,
-                    phase_func=compiler_system.run_phase_executor_compile,
                     args=(spellbook, target_spell,),
                 )
 
@@ -1883,6 +1872,45 @@ class SpellbookCreationSystem(Cleanable):
         return units
 
     @staticmethod
+    def _is_spell_plan_phase_eligible(
+            spell: Spell,
+    ) -> bool:
+        """
+        Purpose:
+            Decide whether one spell should enter the live phase-8-to-phase-11
+            plan group.
+
+        Contract:
+            - Existing-creation spells are not eligible because they do not
+              build occurrence graph truth or downstream model/plan/creation
+              outputs.
+            - Constructed spells require a live Phase 5 root blueprint before
+              entering analyzer -> processor -> planner -> codegen creation.
+            - Returns only a boolean decision and does not mutate spell state.
+
+        Args:
+            spell: Spell candidate being considered for plan-phase scheduling.
+
+        Returns:
+            bool:
+                True when the spell should run live phases 8-11.
+        """
+        try:
+            is_existing_creation = spell.is_existing_creation
+        except AttributeError:
+            is_existing_creation = False
+        if is_existing_creation:
+            return False
+        try:
+            compiler_artifact = spell._compiler_artifact
+        except AttributeError:
+            return True
+        try:
+            return compiler_artifact._root_blueprint_phase5 is not None
+        except AttributeError:
+            return True
+
+    @staticmethod
     def phase_requirements_factory(
             spellbook: Spellbook,
             scheduler: PhaseScheduler,
@@ -2070,14 +2098,33 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
-        return SpellbookCreationSystem._build_per_spell_phase_units(
-            spellbook=spellbook,
-            scheduler=scheduler,
-            compiler_system=compiler_system,
-            phase_name="occurrence_plan",
-            phase_callable_attr="run_phase_occurrence_plan",
-            args_factory=lambda spell, cancel_event: (spellbook, spell),
-        )
+        spellbook.check_cleaned()
+        eligible_spells = [
+            spell
+            for spell in spellbook._spells.values()
+            if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
+        ]
+        if not eligible_spells:
+            return []
+
+        cancel_event = scheduler.cancel_event
+        create_unit_of_work = scheduler.create_unit_of_work
+        phase_func = compiler_system.run_phase_occurrence_plan
+        units: List[UnitOfWork] = []
+        for spell in eligible_spells:
+            spell_id = spell.spell_id
+            units.append(
+                create_unit_of_work(
+                    func=phase_func,
+                    args=(spellbook, spell),
+                    label=f"occurrence_plan:{spell_id}",
+                    metadata={
+                        "phase": "occurrence_plan",
+                        "spell_id": spell_id,
+                    },
+                )
+            )
+        return units
 
     @staticmethod
     def phase_injection_plan_factory(
@@ -2102,14 +2149,32 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
-        return SpellbookCreationSystem._build_per_spell_phase_units(
-            spellbook=spellbook,
-            scheduler=scheduler,
-            compiler_system=compiler_system,
-            phase_name="injection_plan",
-            phase_callable_attr="run_phase_injection_plan",
-            args_factory=lambda spell, cancel_event: (spell,),
-        )
+        spellbook.check_cleaned()
+        eligible_spells = [
+            spell
+            for spell in spellbook._spells.values()
+            if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
+        ]
+        if not eligible_spells:
+            return []
+
+        create_unit_of_work = scheduler.create_unit_of_work
+        phase_func = compiler_system.run_phase_injection_plan
+        units: List[UnitOfWork] = []
+        for spell in eligible_spells:
+            spell_id = spell.spell_id
+            units.append(
+                create_unit_of_work(
+                    func=phase_func,
+                    args=(spell,),
+                    label=f"injection_plan:{spell_id}",
+                    metadata={
+                        "phase": "injection_plan",
+                        "spell_id": spell_id,
+                    },
+                )
+            )
+        return units
 
     @staticmethod
     def phase_patch_maps_factory(
@@ -2134,14 +2199,32 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
-        return SpellbookCreationSystem._build_per_spell_phase_units(
-            spellbook=spellbook,
-            scheduler=scheduler,
-            compiler_system=compiler_system,
-            phase_name="patch_maps",
-            phase_callable_attr="run_phase_patch_maps",
-            args_factory=lambda spell, cancel_event: (spell,),
-        )
+        spellbook.check_cleaned()
+        eligible_spells = [
+            spell
+            for spell in spellbook._spells.values()
+            if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
+        ]
+        if not eligible_spells:
+            return []
+
+        create_unit_of_work = scheduler.create_unit_of_work
+        phase_func = compiler_system.run_phase_patch_maps
+        units: List[UnitOfWork] = []
+        for spell in eligible_spells:
+            spell_id = spell.spell_id
+            units.append(
+                create_unit_of_work(
+                    func=phase_func,
+                    args=(spell,),
+                    label=f"patch_maps:{spell_id}",
+                    metadata={
+                        "phase": "patch_maps",
+                        "spell_id": spell_id,
+                    },
+                )
+            )
+        return units
 
     @staticmethod
     def phase_execution_plan_factory(
@@ -2166,49 +2249,34 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
-        return SpellbookCreationSystem._build_per_spell_phase_units(
-            spellbook=spellbook,
-            scheduler=scheduler,
-            compiler_system=compiler_system,
-            phase_name="execution_plan",
-            phase_callable_attr="run_phase_execution_plan",
-            args_factory=lambda spell, cancel_event: (spellbook, spell),
-        )
+        spellbook.check_cleaned()
+        eligible_spells = [
+            spell
+            for spell in spellbook._spells.values()
+            if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
+        ]
+        if not eligible_spells:
+            return []
+
+        create_unit_of_work = scheduler.create_unit_of_work
+        phase_func = compiler_system.run_phase_execution_plan
+        units: List[UnitOfWork] = []
+        for spell in eligible_spells:
+            spell_id = spell.spell_id
+            units.append(
+                create_unit_of_work(
+                    func=phase_func,
+                    args=(spellbook, spell),
+                    label=f"execution_plan:{spell_id}",
+                    metadata={
+                        "phase": "execution_plan",
+                        "spell_id": spell_id,
+                    },
+                )
+            )
+        return units
 
     @staticmethod
-    def phase_executor_compile_factory(
-            spellbook: Spellbook,
-            scheduler: PhaseScheduler,
-            compiler_system: SpellCompilerSystem,
-            conduit_id: str,
-    ) -> Sequence[UnitOfWork]:
-        """
-        Purpose:
-            Build phase-12 executor-compile units for all local spells.
-        Contract:
-            - Returns empty when no local spells exist.
-            - Produces one unit per local spell otherwise.
-            - Each unit compiles the Phase 13 no-overrides executor from the
-              Phase 11 `11 -> 12` artifact handoff.
-        Args:
-            spellbook: Owning Spellbook instance.
-            scheduler: Scheduler creating units of work.
-            compiler_system: Compiler-system instance used for this run.
-            conduit_id: Conduit scope id.
-        Returns:
-            Sequence[UnitOfWork]: Executor-compile phase units.
-        Raises:
-            RuntimeError: If the spellbook has already been cleaned.
-        """
-        return SpellbookCreationSystem._build_per_spell_phase_units(
-            spellbook=spellbook,
-            scheduler=scheduler,
-            compiler_system=compiler_system,
-            phase_name="executor_compile",
-            phase_callable_attr="run_phase_executor_compile",
-            args_factory=lambda spell, cancel_event: (spellbook, spell),
-        )
-
     @staticmethod
     def phase_system_validation_factory(
             spellbook: Spellbook,

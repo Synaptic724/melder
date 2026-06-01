@@ -251,6 +251,7 @@ def _make_spell_stub(
         _compiler_artifact=artifact,
         is_existing_creation=is_existing_creation,
     )
+    spell._cleanup_creation_context = lambda: None
     spellbook._spell_id_pool[spell_id] = spell
     if not is_existing_creation:
         spellbook._spells_by_id[spell_id] = spell
@@ -258,20 +259,14 @@ def _make_spell_stub(
 
 
 def _patch_ir_exports(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[tuple[Any, Any]]]:
-    """Disable real IR export/reset and record calls instead."""
+    """Disable real IR export and record capture calls instead."""
     captured = {
         "capture": [],
-        "reset": [],
     }
     monkeypatch.setattr(
         compiler_phase_5_module.SharedCompilerExecutions,
         "capture_phase2_5_codegen_ir",
         lambda spell, artifact: captured["capture"].append((spell, artifact)),
-    )
-    monkeypatch.setattr(
-        compiler_phase_5_module.SharedCompilerExecutions,
-        "reset_phase8_11_codegen_ir",
-        lambda spell, artifact: captured["reset"].append((spell, artifact)),
     )
     return captured
 
@@ -301,7 +296,6 @@ def test_set_root_blueprint_phase5_rejects_none(
         )
 
     assert captured["capture"] == []
-    assert captured["reset"] == []
 
 
 def test_set_root_blueprint_phase5_sets_value_and_refreshes_ir(
@@ -332,7 +326,6 @@ def test_set_root_blueprint_phase5_sets_value_and_refreshes_ir(
     assert spell._compiler_artifact._requires_spellspace_request_phase5 is False
     assert spell.requires_spellspace_request is False
     assert captured["capture"] == [(spell, spell._compiler_artifact)]
-    assert captured["reset"] == [(spell, spell._compiler_artifact)]
 
 
 def test_set_root_blueprint_phase5_sets_spellspace_request_flag(
@@ -363,7 +356,6 @@ def test_set_root_blueprint_phase5_sets_spellspace_request_flag(
     assert spell._compiler_artifact._requires_spellspace_request_phase5 is True
     assert spell.requires_spellspace_request is True
     assert captured["capture"] == [(spell, spell._compiler_artifact)]
-    assert captured["reset"] == [(spell, spell._compiler_artifact)]
 
 
 def test_set_spell_system_index_phase5_rejects_none(
@@ -387,7 +379,6 @@ def test_set_spell_system_index_phase5_rejects_none(
         phase._set_spell_system_index_phase5(spell, spell._compiler_artifact, None)
 
     assert captured["capture"] == []
-    assert captured["reset"] == []
 
 
 def test_set_spell_system_index_phase5_sets_value_and_refreshes_ir(
@@ -412,7 +403,6 @@ def test_set_spell_system_index_phase5_sets_value_and_refreshes_ir(
 
     assert spell._compiler_artifact._spell_system_index_phase5 is index
     assert captured["capture"] == [(spell, spell._compiler_artifact)]
-    assert captured["reset"] == [(spell, spell._compiler_artifact)]
 
 
 def test_run_frame_wide_builds_index_and_attaches_blueprints(
@@ -490,7 +480,6 @@ def test_run_frame_wide_builds_index_and_attaches_blueprints(
         "root": blueprint,
     }
     assert captured["capture"][-1] == (root_spell, root_spell._compiler_artifact)
-    assert captured["reset"][-1] == (root_spell, root_spell._compiler_artifact)
 
 
 def test_run_frame_wide_attaches_fallback_blueprint_when_root_missing(

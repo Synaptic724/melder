@@ -852,3 +852,428 @@ def test_no_overrides_compiler_existing_hit_skips_locks() -> None:
     )
 
     assert executor(creations, caller_creations_lock_held=False) == "existing-root"
+
+
+class _OverrideSocketRef:
+    """Hashable override-target probe for overrides compiler helper tests."""
+
+    def __init__(
+            self,
+            node_id: str,
+            param_name: str,
+            param_path_id: int,
+            socket_kind_value: int = 0,
+    ) -> None:
+        """Store stable target metadata for override-helper paths."""
+        self.node_id = node_id
+        self.param_name = param_name
+        self.param_path_id = param_path_id
+        self.socket_kind_value = socket_kind_value
+
+    def __hash__(self) -> int:
+        """Keep the probe usable as a dictionary key."""
+        return hash(
+            (
+                self.node_id,
+                self.param_name,
+                self.param_path_id,
+                self.socket_kind_value,
+            )
+        )
+
+
+def test_overrides_compiler_build_kwargs_fast_path_returns_override_copy() -> None:
+    """Override-only kwargs path should return a detached copy of override values."""
+    override_values = {"value": "override"}
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values=override_values,
+    )
+
+    assert kwargs == {"value": "override"}
+    assert kwargs is not override_values
+
+
+def test_overrides_compiler_build_kwargs_contract_payload_only_returns_copy() -> None:
+    """Contract-payload-only kwargs should return a detached payload copy."""
+    contract_payload = {"value": "contract"}
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload=contract_payload,
+        uses_positional_override=False,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={},
+    )
+
+    assert kwargs == {"value": "contract"}
+    assert kwargs is not contract_payload
+
+
+def test_overrides_compiler_build_kwargs_contract_payload_only_filters_args_key() -> None:
+    """Contract-payload-only kwargs should filter `__args__` when positional override mode is enabled."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload={"__args__": ("left",), "value": "contract"},
+        uses_positional_override=True,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={},
+    )
+
+    assert kwargs == {"value": "contract"}
+
+
+def test_overrides_compiler_build_kwargs_single_and_multi_dependency_shapes() -> None:
+    """Override-aware kwargs helper should preserve single-value and list-aggregation dependency semantics."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("single", (("dep-a", None),)),
+            ("multi", (("dep-b", None), ("dep-c", None))),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={
+            ("dep-a", None): "v1",
+            ("dep-b", None): "v2",
+            ("dep-c", None): "v3",
+        },
+        override_values={},
+    )
+
+    assert kwargs == {
+        "single": "v1",
+        "multi": ["v2", "v3"],
+    }
+
+
+def test_overrides_compiler_build_kwargs_override_precedence_skips_dependency_lookup() -> None:
+    """Override values should bypass dependency lookup for the same parameter."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(("value", (("dep-missing", None),)),),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={"value": "override"},
+    )
+
+    assert kwargs == {"value": "override"}
+
+
+def test_overrides_compiler_build_kwargs_override_precedence_beats_contract_payload() -> None:
+    """Override values should outrank contract payload values too."""
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(("value", (("dep-missing", None),)),),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload={"value": "contract"},
+        uses_positional_override=False,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={"value": "override"},
+    )
+
+    assert kwargs == {"value": "override"}
+
+
+def test_overrides_compiler_build_kwargs_two_dependency_fast_path_skips_iteration() -> None:
+    """Two-dependency override-aware kwargs should not fall back to generic iteration."""
+    first_dependency_key = ("dep-a", None)
+    second_dependency_key = ("dep-b", None)
+
+    class _TwoDependencyKeys:
+        """Two-key dependency sequence that fails if generic iteration runs."""
+
+        def __len__(self) -> int:
+            return 2
+
+        def __getitem__(self, index: int) -> Any:
+            if index == 0:
+                return first_dependency_key
+            if index == 1:
+                return second_dependency_key
+            raise IndexError(index)
+
+        def __iter__(self) -> Any:
+            raise AssertionError("two-dependency fast path must not iterate dependency keys")
+
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(("multi", _TwoDependencyKeys()),),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        uses_positional_override=False,
+    )
+
+    kwargs = overrides_compiler_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={
+            first_dependency_key: "v1",
+            second_dependency_key: "v2",
+        },
+        override_values={},
+    )
+
+    assert kwargs == {
+        "multi": ["v1", "v2"],
+    }
+
+
+def test_overrides_compiler_build_step_override_values_fast_path_returns_empty_when_no_targets() -> None:
+    """No targets and no root args should return an empty override payload."""
+    original_builder = overrides_compiler_module._build_instance_override_map
+    overrides_compiler_module._build_instance_override_map = (
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("target helper must not run for empty targets")
+        )
+    )
+    try:
+        override_values = overrides_compiler_module._build_step_override_values(
+            override_targets=(),
+            override_map={},
+            root_positional_override=None,
+        )
+    finally:
+        overrides_compiler_module._build_instance_override_map = original_builder
+
+    assert override_values == {}
+
+
+def test_overrides_compiler_build_step_override_values_fast_path_returns_root_positional_payload() -> None:
+    """No targets plus root args should return only the root positional payload."""
+    original_builder = overrides_compiler_module._build_instance_override_map
+    overrides_compiler_module._build_instance_override_map = (
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("target helper must not run for empty targets")
+        )
+    )
+    try:
+        override_values = overrides_compiler_module._build_step_override_values(
+            override_targets=(),
+            override_map={},
+            root_positional_override=("left",),
+        )
+    finally:
+        overrides_compiler_module._build_instance_override_map = original_builder
+
+    assert override_values == {
+        "__args__": ("left",),
+    }
+
+
+def test_overrides_compiler_build_step_override_values_single_target_fast_paths() -> None:
+    """Single-target helper path should bypass the generic map builder and preserve root args when supplied."""
+    socket_ref = _OverrideSocketRef("root", "value", 7)
+    override_map = {socket_ref: "override"}
+    original_builder = overrides_compiler_module._build_instance_override_map
+    overrides_compiler_module._build_instance_override_map = (
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("generic target helper must not run for single target")
+        )
+    )
+    try:
+        without_args = overrides_compiler_module._build_step_override_values(
+            override_targets=(socket_ref,),
+            override_map=override_map,
+            root_positional_override=None,
+        )
+        with_args = overrides_compiler_module._build_step_override_values(
+            override_targets=(socket_ref,),
+            override_map=override_map,
+            root_positional_override=("left",),
+        )
+    finally:
+        overrides_compiler_module._build_instance_override_map = original_builder
+
+    assert without_args == {"value": "override"}
+    assert with_args == {
+        "value": "override",
+        "__args__": ("left",),
+    }
+
+
+def test_overrides_compiler_build_step_override_values_two_target_fast_paths() -> None:
+    """Two-target helper path should bypass the generic map builder and preserve root args when supplied."""
+    first_socket_ref = _OverrideSocketRef("root", "value_a", 7)
+    second_socket_ref = _OverrideSocketRef("root", "value_b", 8)
+    override_map = {
+        first_socket_ref: "override-a",
+        second_socket_ref: "override-b",
+    }
+    original_builder = overrides_compiler_module._build_instance_override_map
+    overrides_compiler_module._build_instance_override_map = (
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("generic target helper must not run for two targets")
+        )
+    )
+    try:
+        without_args = overrides_compiler_module._build_step_override_values(
+            override_targets=(first_socket_ref, second_socket_ref),
+            override_map=override_map,
+            root_positional_override=None,
+        )
+        with_args = overrides_compiler_module._build_step_override_values(
+            override_targets=(first_socket_ref, second_socket_ref),
+            override_map=override_map,
+            root_positional_override=("left",),
+        )
+    finally:
+        overrides_compiler_module._build_instance_override_map = original_builder
+
+    assert without_args == {
+        "value_a": "override-a",
+        "value_b": "override-b",
+    }
+    assert with_args == {
+        "value_a": "override-a",
+        "value_b": "override-b",
+        "__args__": ("left",),
+    }
+
+
+def test_overrides_compiler_invoke_spell_with_kwargs_preserves_args_payload_mapping() -> None:
+    """Override-aware invocation should preserve the caller payload while unpacking `__args__`."""
+    captured = {}
+
+    def _callable(*args, **kwargs):
+        captured["args"] = args
+        captured["kwargs"] = dict(kwargs)
+        return "ok"
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+    kwargs_payload = {"__args__": [1, 2], "value": "override"}
+
+    result = overrides_compiler_module._invoke_spell_with_kwargs(
+        spell=spell,
+        kwargs=kwargs_payload,
+    )
+
+    assert result == "ok"
+    assert captured["args"] == (1, 2)
+    assert captured["kwargs"] == {"value": "override"}
+    assert kwargs_payload == {"__args__": [1, 2], "value": "override"}
+
+
+def test_overrides_compiler_invoke_spell_with_kwargs_accepts_tuple_args_payload_and_preserves_mapping() -> None:
+    """Tuple `__args__` payloads should be forwarded unchanged without mutating the input mapping."""
+    captured = {}
+
+    def _callable(*args, **kwargs):
+        captured["args"] = args
+        captured["kwargs"] = dict(kwargs)
+        return "ok"
+
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = _callable
+    kwargs_payload = {"__args__": (1, 2), "value": "override"}
+
+    result = overrides_compiler_module._invoke_spell_with_kwargs(
+        spell=spell,
+        kwargs=kwargs_payload,
+    )
+
+    assert result == "ok"
+    assert captured["args"] == (1, 2)
+    assert captured["kwargs"] == {"value": "override"}
+    assert kwargs_payload == {"__args__": (1, 2), "value": "override"}
+
+
+def test_overrides_compiler_invoke_spell_with_kwargs_rejects_invalid_args_payload_type() -> None:
+    """Invalid non-sequence `__args__` payloads should fail fast in the override path too."""
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = lambda **kwargs: kwargs
+
+    with pytest.raises(MeldExecutionError, match="__args__ override must be a list or tuple"):
+        overrides_compiler_module._invoke_spell_with_kwargs(
+            spell=spell,
+            kwargs={"__args__": None},
+        )
+
+
+def test_overrides_compiler_namespace_prebinds_root_and_target_metadata() -> None:
+    """Namespace builder should prebind the root and per-step metadata used by emitted override source."""
+    root_spell = _make_spell("root")
+    dep_spell = _make_spell("dep")
+    socket_ref = _OverrideSocketRef("root", "value", 7)
+    steps = (
+        SimpleNamespace(
+            instance_key=("root", None),
+            spell=root_spell,
+            existence=Existence.unique,
+            creations_target_kind=1,
+            use_spell_lock_hint=True,
+            must_register=True,
+            is_existing_creation=False,
+        ),
+        SimpleNamespace(
+            instance_key=("dep", 1),
+            spell=dep_spell,
+            existence=Existence.many,
+            creations_target_kind=2,
+            use_spell_lock_hint=False,
+            must_register=False,
+            is_existing_creation=False,
+        ),
+    )
+
+    namespace = overrides_compiler_module._build_phase13_overrides_executor_namespace(
+        steps=steps,
+        step_override_targets=((socket_ref,), ()),
+        root_instance_key=("root", None),
+        root_spell_id="root",
+        any_overrides_present=True,
+    )
+
+    assert namespace["root_instance_key"] == ("root", None)
+    assert namespace["root_spell_id"] == "root"
+    assert namespace["any_overrides_present"] is True
+    assert namespace["step_spells"] == (root_spell, dep_spell)
+    assert namespace["step_instance_keys"] == (("root", None), ("dep", 1))
+    assert namespace["step_is_root"] == (True, False)
+    assert namespace["step_has_targeted_overrides"] == (True, False)
+    assert namespace["step_override_target_counts"] == (1, 0)

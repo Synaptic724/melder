@@ -162,6 +162,7 @@ def _make_spell_stub(
         _compiler_artifact=artifact,
         is_existing_creation=is_existing_creation,
     )
+    spell._cleanup_creation_context = lambda: None
     spellbook._spell_id_pool[spell_id] = spell
     if not is_existing_creation:
         spellbook._spells_by_id[spell_id] = spell
@@ -169,20 +170,14 @@ def _make_spell_stub(
 
 
 def _patch_ir_exports(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[tuple[Any, Any]]]:
-    """Disable real IR export/reset and record calls instead."""
+    """Disable real IR export and record capture calls instead."""
     captured = {
         "capture": [],
-        "reset": [],
     }
     monkeypatch.setattr(
         compiler_phase_5_module.SharedCompilerExecutions,
         "capture_phase2_5_codegen_ir",
         lambda spell, artifact: captured["capture"].append((spell, artifact)),
-    )
-    monkeypatch.setattr(
-        compiler_phase_5_module.SharedCompilerExecutions,
-        "reset_phase8_11_codegen_ir",
-        lambda spell, artifact: captured["reset"].append((spell, artifact)),
     )
     return captured
 
@@ -354,7 +349,6 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(
     assert outside_spell._compiler_artifact._root_blueprint_phase5 is None
     assert root_builder.build_blueprint_for_spell_id_calls == [("dep", snapshot)]
     assert captured["capture"] != []
-    assert captured["reset"] != []
 
 
 def test_run_local_scopes_to_dependency_closure(
@@ -439,4 +433,3 @@ def test_run_local_scopes_to_dependency_closure(
     assert dep_spell._compiler_artifact._root_blueprint_phase5 is not None
     assert outside_spell._compiler_artifact._root_blueprint_phase5 is None
     assert captured["capture"][-1] == (root_spell, root_spell._compiler_artifact)
-    assert captured["reset"][-1] == (root_spell, root_spell._compiler_artifact)

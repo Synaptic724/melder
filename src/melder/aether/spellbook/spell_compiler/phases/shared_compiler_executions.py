@@ -11,10 +11,6 @@ if TYPE_CHECKING:
 
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.blueprints.execution_plan import (
-    ExecutionPlan,
-    ExecutionPlanVariant,
-)
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 
 class SharedCompilerExecutions:
@@ -1381,157 +1377,94 @@ class SharedCompilerExecutions:
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-            Export phases 8-11 artifacts into the spell-scoped Codegen IR payload.
-            
+            Export current live phases 8-11 artifacts into the spell-scoped
+            Codegen IR payload.
+
             Purpose:
-                Publish normalized execution-planning metadata needed by Phase 13
-                compilation and runtime plan dispatch.
+                Preserve a spell-scoped diagnostic/export snapshot for the
+                substituted analyzer -> processor -> planner -> codegen creation
+                path without dereferencing the deleted legacy artifact family.
             Contract:
-                - Safe to call repeatedly; latest phase artifacts overwrite prior IR.
+                - Safe to call repeatedly; latest live phase outputs overwrite
+                  prior IR.
                 - Updates `signatures.phase8_11` on each export.
-                - Keeps override/mutation variants distinct.
+                - Uses only the current artifact-owned analyzer/model/plan/
+                  creation surfaces.
             Returns:
                 None.
         """
-        occurrence_execution_order: Tuple[str, ...] = ()
-        occurrence_root_instance_key: Optional[Tuple[str, Optional[int]]] = None
-        occurrence_shared_spell_ids: Tuple[str, ...] = ()
-        occurrence_contract_complete: Optional[bool] = None
-        occurrence_graph_rows: Tuple[Tuple[Any, ...], ...] = ()
-        occurrence_instance_key_rows: Tuple[Tuple[Any, ...], ...] = ()
-        occurrence_canonical_rows: Tuple[Tuple[Any, ...], ...] = ()
-        occurrence_contract_override_rows: Tuple[Tuple[Any, ...], ...] = ()
-        occurrence_contract_override_spell_rows: Tuple[Tuple[Any, ...], ...] = ()
-        if artifact._occurrence_plan_phase8 is not None:
-            occurrence_execution_order = tuple(artifact._occurrence_plan_phase8.execution_order)
-            occurrence_root_instance_key = artifact._occurrence_plan_phase8.root_instance_key
-            occurrence_shared_spell_ids = tuple(sorted(artifact._occurrence_plan_phase8.shared_spell_ids))
-            occurrence_contract_complete = artifact._occurrence_plan_phase8.contract_dependencies_complete
-            try:
-                occurrence_graph_rows = SharedCompilerExecutions.build_occurrence_graph_rows(
-                    artifact._occurrence_plan_phase8.occurrence_graph,
-                )
-            except AttributeError:
-                occurrence_graph_rows = ()
-            try:
-                occurrence_instance_key_rows = SharedCompilerExecutions.build_occurrence_instance_key_rows(
-                    artifact._occurrence_plan_phase8.instance_keys_by_spell_id,
-                )
-            except AttributeError:
-                occurrence_instance_key_rows = ()
-            try:
-                occurrence_canonical_rows = SharedCompilerExecutions.build_occurrence_canonical_rows(
-                    artifact._occurrence_plan_phase8.canonical_occurrences_by_spell_id,
-                )
-            except AttributeError:
-                occurrence_canonical_rows = ()
-            try:
-                occurrence_contract_override_rows = SharedCompilerExecutions.build_occurrence_contract_override_rows(
-                    artifact._occurrence_plan_phase8.contract_overrides_by_occurrence,
-                )
-            except AttributeError:
-                occurrence_contract_override_rows = ()
-            try:
-                occurrence_contract_override_spell_rows = SharedCompilerExecutions.build_occurrence_contract_override_spell_rows(
-                    artifact._occurrence_plan_phase8.contract_overrides_by_spell_id,
-                )
-            except AttributeError:
-                occurrence_contract_override_spell_rows = ()
+        occurrence_graph_analysis = artifact._occurrence_graph_analysis
+        spell_codegen_model = artifact._spell_codegen_model
+        spell_codegen_plan = artifact._spell_codegen_plan
+        spell_codegen_creation = artifact._spell_codegen_creation
 
-        injection_instance_keys: Tuple[Tuple[str, Optional[int]], ...] = ()
-        injection_instance_rows: Tuple[Tuple[Any, ...], ...] = ()
-        if artifact._injection_plan_phase9 is not None:
-            injection_instance_keys = tuple(
-                sorted(
-                    artifact._injection_plan_phase9.instance_injections.keys(),
-                    key=lambda key: (key[0], -1 if key[1] is None else key[1]),
-                )
-            )
-            try:
-                injection_instance_rows = SharedCompilerExecutions.build_injection_instance_rows(
-                    artifact._injection_plan_phase9.instance_injections,
-                )
-            except AttributeError:
-                injection_instance_rows = ()
-
-        override_target_specs: Tuple[str, ...] = ()
-        override_target_rows: Tuple[Tuple[Any, ...], ...] = ()
-        if artifact._override_patch_map_phase10 is not None:
-            override_target_specs = tuple(
-                sorted(artifact._override_patch_map_phase10.targets_by_spec.keys())
-            )
-            override_target_rows = SharedCompilerExecutions.build_override_target_rows(
-                artifact._override_patch_map_phase10,
-            )
-
-        mutation_target_specs: Tuple[str, ...] = ()
-        mutation_target_rows: Tuple[Tuple[Any, ...], ...] = ()
-        if artifact._mutation_patch_map_phase10 is not None:
-            mutation_target_specs = tuple(
-                sorted(artifact._mutation_patch_map_phase10.targets_by_spec.keys())
-            )
-            mutation_target_rows = SharedCompilerExecutions.build_mutation_target_rows(
-                artifact._mutation_patch_map_phase10,
-            )
-
-        no_overrides_payload = SharedCompilerExecutions.build_phase11_variant_ir_payload(
-            artifact._execution_plan_phase11_no_overrides
-        )
-        overrides_payload = SharedCompilerExecutions.build_phase11_variant_ir_payload(
-            artifact._execution_plan_phase11_overrides
-        )
-        overrides_with_mutations_payload = SharedCompilerExecutions.build_phase11_variant_ir_payload(
-            artifact._execution_plan_phase11
-        )
+        no_overrides_plan = None
+        overrides_plan = None
+        mutation_overrides_plan = None
+        if spell_codegen_plan is not None:
+            no_overrides_plan = spell_codegen_plan.no_overrides_plan
+            overrides_plan = spell_codegen_plan.overrides_plan
+            mutation_overrides_plan = spell_codegen_plan.mutation_overrides_plan
 
         phase8_11_signature = SharedCompilerExecutions.hash_codegen_signature(
-            occurrence_execution_order,
-            occurrence_root_instance_key,
-            occurrence_shared_spell_ids,
-            occurrence_contract_complete,
-            occurrence_graph_rows,
-            occurrence_instance_key_rows,
-            occurrence_canonical_rows,
-            occurrence_contract_override_rows,
-            occurrence_contract_override_spell_rows,
-            injection_instance_keys,
-            injection_instance_rows,
-            override_target_specs,
-            override_target_rows,
-            mutation_target_specs,
-            mutation_target_rows,
-            no_overrides_payload["signature"],
-            overrides_payload["signature"],
-            overrides_with_mutations_payload["signature"],
+            None if occurrence_graph_analysis is None else occurrence_graph_analysis.root_spell_id,
+            None if occurrence_graph_analysis is None else occurrence_graph_analysis.occurrence_count,
+            None if occurrence_graph_analysis is None else occurrence_graph_analysis.edge_count,
+            None if spell_codegen_model is None else spell_codegen_model.build_kind,
+            None if spell_codegen_model is None else spell_codegen_model.route_family,
+            None if spell_codegen_model is None else spell_codegen_model.node_count,
+            None if spell_codegen_model is None else spell_codegen_model.max_dependency_count,
+            None if no_overrides_plan is None else no_overrides_plan.root_spell_id,
+            None if no_overrides_plan is None else len(no_overrides_plan.steps),
+            None if overrides_plan is None else overrides_plan.root_spell_id,
+            None if overrides_plan is None else len(overrides_plan.steps),
+            None if mutation_overrides_plan is None else mutation_overrides_plan.root_spell_id,
+            None if mutation_overrides_plan is None else len(mutation_overrides_plan.steps),
+            None if spell_codegen_creation is None else spell_codegen_creation.resolve_route_key,
+            None if spell_codegen_creation is None else spell_codegen_creation.no_overrides_executor_signature,
         )
 
         phase8_11_payload = {
-            "occurrence": {
-                "execution_order": occurrence_execution_order,
-                "root_instance_key": occurrence_root_instance_key,
-                "shared_spell_ids": occurrence_shared_spell_ids,
-                "contract_dependencies_complete": occurrence_contract_complete,
-                "graph_rows": occurrence_graph_rows,
-                "instance_key_rows": occurrence_instance_key_rows,
-                "canonical_occurrence_rows": occurrence_canonical_rows,
-                "contract_override_rows": occurrence_contract_override_rows,
-                "contract_override_spell_rows": occurrence_contract_override_spell_rows,
+            "occurrence": None if occurrence_graph_analysis is None else {
+                "root_spell_id": occurrence_graph_analysis.root_spell_id,
+                "occurrence_count": occurrence_graph_analysis.occurrence_count,
+                "edge_count": occurrence_graph_analysis.edge_count,
+                "topology_dependency_count": occurrence_graph_analysis.topology_dependency_count,
+                "dag_fallback_dependency_count": occurrence_graph_analysis.dag_fallback_dependency_count,
+                "mutation_override_dependency_count": occurrence_graph_analysis.mutation_override_dependency_count,
+                "shared_collapse_enabled": occurrence_graph_analysis.shared_collapse_enabled,
             },
-            "injection": {
-                "instance_keys": injection_instance_keys,
-                "instance_key_count": len(injection_instance_keys),
-                "instance_rows": injection_instance_rows,
+            "model": None if spell_codegen_model is None else {
+                "build_kind": spell_codegen_model.build_kind,
+                "route_family": spell_codegen_model.route_family,
+                "node_count": spell_codegen_model.node_count,
+                "max_dependency_count": spell_codegen_model.max_dependency_count,
+                "target_spec_count": spell_codegen_model.target_spec_count,
+                "mutation_target_spec_count": spell_codegen_model.mutation_target_spec_count,
+                "applied_strategy_ids": tuple(spell_codegen_model.applied_strategy_ids),
             },
-            "patch_maps": {
-                "override_target_specs": override_target_specs,
-                "override_target_rows": override_target_rows,
-                "mutation_target_specs": mutation_target_specs,
-                "mutation_target_rows": mutation_target_rows,
+            "plan": None if spell_codegen_plan is None else {
+                "processor_strategy_ids": spell_codegen_plan.processor_strategy_ids,
+                "plan_strategy_ids": spell_codegen_plan.plan_strategy_ids,
+                "no_overrides_step_count": (
+                    0 if no_overrides_plan is None else len(no_overrides_plan.steps)
+                ),
+                "overrides_step_count": (
+                    0 if overrides_plan is None else len(overrides_plan.steps)
+                ),
+                "mutation_overrides_step_count": (
+                    0 if mutation_overrides_plan is None else len(mutation_overrides_plan.steps)
+                ),
             },
-            "execution": {
-                "no_overrides": no_overrides_payload,
-                "overrides": overrides_payload,
-                "overrides_with_mutations": overrides_with_mutations_payload,
+            "creation": None if spell_codegen_creation is None else {
+                "selected_strategy_ids": spell_codegen_creation.selected_strategy_ids,
+                "resolve_route_key": spell_codegen_creation.resolve_route_key,
+                "fast_transient_no_overrides_enabled": (
+                    spell_codegen_creation.fast_transient_no_overrides_enabled
+                ),
+                "no_overrides_executor_signature": (
+                    spell_codegen_creation.no_overrides_executor_signature
+                ),
             },
             "signature": phase8_11_signature,
         }
@@ -1584,83 +1517,20 @@ class SharedCompilerExecutions:
         artifact._codegen_ir["signatures"].pop("phase2_5", None)
 
     @staticmethod
-    def try_build_execution_plan_variant_from_base(
-            *,
-            base_plan: Any,
-            plan_variant: str,
-    ) -> Optional[ExecutionPlan]:
-        """
-            Attempt to derive a non-fast Phase 11 variant from an existing base plan.
-            
-            Purpose:
-                Reuse the shared step / index structure from the no-overrides plan to avoid
-                repeated full `ExecutionPlanBuilder.build()` passes for sibling
-                variants.
-            Contract:
-                - Returns a fresh `ExecutionPlan` with copied list/dict containers so
-                  cleanup remains isolated per variant.
-                - Returns `None` when the base plan does not expose the required
-                  structure (for example, in test stubs), allowing a safe fallback to
-                  the legacy full-build path.
-                - Derived variants do not carry fast-path arrays/transient plans.
-            Args:
-                base_plan:
-                    Source plan expected to expose execution-plan structural fields.
-                plan_variant:
-                    Target the variant label for the derived plan.
-            Returns:
-                Optional[ExecutionPlan]:
-                    Derived plan when compatible, otherwise `None`.
-        """
-        try:
-            root_spell_id = base_plan.root_spell_id
-            root_instance_key = base_plan.root_instance_key
-            steps = base_plan.steps
-            spell_id_step_index = base_plan.spell_id_step_index
-            optimistic_object_refs_by_spell_id = base_plan.optimistic_object_refs_by_spell_id
-            available_param_by_spell_id = base_plan.available_param_by_spell_id
-        except AttributeError:
-            return None
-
-        if root_spell_id is None or root_instance_key is None:
-            return None
-        if (
-                steps is None
-                or spell_id_step_index is None
-                or optimistic_object_refs_by_spell_id is None
-                or available_param_by_spell_id is None
-        ):
-            return None
-
-        try:
-            return ExecutionPlan(
-                root_spell_id=root_spell_id,
-                root_instance_key=root_instance_key,
-                steps=list(steps),
-                spell_id_step_index=dict(spell_id_step_index),
-                optimistic_object_refs_by_spell_id=dict(optimistic_object_refs_by_spell_id),
-                available_param_by_spell_id=dict(available_param_by_spell_id),
-                plan_variant=plan_variant,
-            )
-        except (TypeError, ValueError):
-            return None
-
-    @staticmethod
     def reset_phase8_11_codegen_ir(
             spell: Spell,
             artifact: SpellCompilerArtifact,
     ) -> None:
         """
-        Clear the phase8_11 segment from Codegen IR and Phase 13 artifacts.
+        Clear the live phase-8-to-phase-11 export segment and dependent outputs.
 
         Purpose:
-            Invalidate runtime execution artifacts whenever Phase8+ state is
-            cleared or invalidated.
+            Invalidate exported analyzer/model/plan/creation snapshots whenever
+            the live post-phase5 compiler surfaces are being discarded.
         Contract:
             - No-op when IR is not initialized.
-            - Always clears the compiled no-overrides executor cache and phase
-              intermediate signatures/keys.
-            - Preserves mutable artifact shape for live callers.
+            - Clears occurrence-analysis signatures plus generic codegen outputs.
+            - Leaves phase-2-to-phase-5 IR intact.
         Returns:
             None.
         """
@@ -1668,12 +1538,9 @@ class SharedCompilerExecutions:
             artifact._codegen_ir["phase8_11"] = {}
             artifact._codegen_ir["signatures"].pop("phase8_11", None)
         artifact._phase8_11_codegen_ir_dirty = False
+        artifact._occurrence_analysis_input_signature = None
+        artifact._occurrence_analysis_fast_key = None
+        artifact._cleanup_occurrence_analysis_artifacts()
+        artifact._cleanup_codegen_outputs()
         spell.resolution_complete = False
-
-        artifact._phase8_occurrence_plan_input_signature = None
-        artifact._phase8_occurrence_plan_fast_key = None
-        artifact._phase9_injection_plan_input_signature = None
-        artifact._phase10_patch_maps_input_signature = None
-        artifact._phase11_no_overrides_input_signature = None
-        artifact._phase11_no_overrides_fast_key = None
 

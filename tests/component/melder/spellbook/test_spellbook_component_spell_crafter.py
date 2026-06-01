@@ -3,6 +3,9 @@ from typing import Optional
 import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.creation_context.creation_context_builder import (
+    CreationContextBuilder,
+)
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
@@ -10,12 +13,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.blueprints.occurrence_plan import (
-    select_occurrence_plan,
-)
-from melder.aether.spellbook.spell_compiler.blueprints.phase13_overrides_executor import (
-    compile_phase13_overrides_executor,
-)
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -1321,7 +1318,9 @@ def test_component_spell_crafter_builds_real_execution_plan_for_dependency_chain
         assert consumer_spell is not None
 
         artifact = consumer_spell._compiler_artifact
-        plan = artifact._execution_plan_phase11_no_overrides
+        codegen_plan = artifact._spell_codegen_plan
+        assert codegen_plan is not None
+        plan = codegen_plan.no_overrides_plan
 
         assert plan is not None
         assert plan.root_spell_id == consumer_id
@@ -1331,8 +1330,8 @@ def test_component_spell_crafter_builds_real_execution_plan_for_dependency_chain
         assert any(step.spell.spell_id == consumer_id for step in plan.steps)
         assert any(step.spell.spell_id == service_id for step in plan.steps)
         assert plan.fast_plan is not None
-        assert artifact._execution_plan_step_count_phase11 == 2
-        assert artifact._execution_plan_unique_spell_count_phase11 == 2
+        assert artifact._spell_codegen_model is not None
+        assert artifact._spell_codegen_model.node_count == 2
     finally:
         spellbook.cleanup()
 
@@ -1392,16 +1391,17 @@ def test_component_spell_crafter_builds_real_injection_plan_for_dependency_chain
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        plan = consumer_spell._compiler_artifact._injection_plan_phase9
+        model = consumer_spell._compiler_artifact._spell_codegen_model
+        assert model is not None
+        plan = model.injection_shape
 
         assert plan is not None
         assert plan.root_spell_id == consumer_id
-        assert plan.select_for_runtime(root_spell_id=consumer_id) is plan.instance_injections
-        assert plan.select_for_runtime(root_spell_id="other-root") is None
+        assert plan.root_instance_key[0] == consumer_id
 
         consumer_specs = [
             spec
-            for instance_key, spec in plan.instance_injections.items()
+            for instance_key, spec in plan.instance_specs_by_instance_key.items()
             if instance_key[0] == consumer_id
         ]
         assert len(consumer_specs) >= 1
@@ -1471,19 +1471,14 @@ def test_component_spell_crafter_builds_real_occurrence_plan_for_dependency_chai
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        plan = consumer_spell._compiler_artifact._occurrence_plan_phase8
+        graph_analysis = consumer_spell._compiler_artifact._occurrence_graph_analysis
 
-        assert plan is not None
-        assert plan.root_spell_id == consumer_id
-        assert set(plan.execution_order) == {service_id, consumer_id}
-        assert plan.root_instance_key[0] == consumer_id
-        assert consumer_id in plan.instance_keys_by_spell_id
-        assert service_id in plan.instance_keys_by_spell_id
-
-        selection = select_occurrence_plan(plan, root_spell_id=consumer_id)
-        assert selection is not None
-        assert selection.root_instance_key == plan.root_instance_key
-        assert set(selection.execution_order) == {service_id, consumer_id}
+        assert graph_analysis is not None
+        assert graph_analysis.root_spell_id == consumer_id
+        assert graph_analysis.occurrence_count >= 2
+        assert graph_analysis.edge_count >= 1
+        assert any(key[0] == consumer_id for key in graph_analysis.occurrence_graph)
+        assert any(key[0] == service_id for key in graph_analysis.occurrence_graph)
     finally:
         spellbook.cleanup()
 
@@ -1556,31 +1551,31 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
         assert consumer_spell is not None
 
         artifact = consumer_spell._compiler_artifact
-        override_patch_map = artifact._override_patch_map_phase10
-        mutation_patch_map = artifact._mutation_patch_map_phase10
+        model = artifact._spell_codegen_model
+        assert model is not None
+        override_targeting = model.override_targeting_shape
+        mutation_targeting = model.mutation_targeting_shape
 
-        assert override_patch_map is not None
-        assert mutation_patch_map is not None
-        assert override_patch_map.root_spell_id == consumer_id
-        assert mutation_patch_map.root_spell_id == consumer_id
+        assert override_targeting is not None
+        assert mutation_targeting is not None
+        assert "*service" in override_targeting.targets_by_spec
+        assert "*mutation" in mutation_targeting.patches_by_spec
 
-        override_socket_map = override_patch_map.apply({"*service": "override"})
-        assert len(override_socket_map) == 1
-        override_socket = next(iter(override_socket_map))
-        assert override_socket.param_name == "service"
-        assert override_socket.node_id == consumer_id
-        assert override_socket_map[override_socket] == "override"
+        override_targets = override_targeting.targets_by_spec["*service"]
+        assert len(override_targets) == 1
+        assert override_targets[0].param_name == "service"
+        assert override_targets[0].node_id == consumer_id
 
-        mutation_patches = mutation_patch_map.apply({"*mutation": service_id})
+        mutation_patches = mutation_targeting.patches_by_spec["*mutation"]
         assert len(mutation_patches) == 1
         assert mutation_patches[0].child_spell_id == consumer_id
         assert mutation_patches[0].param_name == "mutation"
-        assert mutation_patches[0].new_parent_id == service_id
+        assert mutation_patches[0].old_parent_id is None
     finally:
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_executes_real_overrides_executor_for_dependency_override() -> None:
+def test_component_spell_crafter_executes_real_creation_context_override_lane_for_dependency_override() -> None:
     """
     Purpose:
         Validate Phase 13 override execution against live phase8-11 artifacts.
@@ -1639,29 +1634,15 @@ def test_component_spell_crafter_executes_real_overrides_executor_for_dependency
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
 
-        artifact = consumer_spell._compiler_artifact
-        override_patch_map = artifact._override_patch_map_phase10
-        execution_plan = artifact._execution_plan_phase11_overrides
-
-        assert override_patch_map is not None
-        assert execution_plan is not None
-
-        targeted_sockets = tuple(override_patch_map._targets_by_spec["*service"])
-        executor = compile_phase13_overrides_executor(
-            execution_plan=execution_plan,
-            override_targets_by_spell_id={consumer_id: targeted_sockets},
-            any_overrides_present=True,
-            path_registry=artifact._root_blueprint_phase5.path_registry,
-        )
-
         override_value = object()
-        result = executor(
-            conduit._creations,
-            {targeted_sockets[0]: override_value},
-            None,
-            owner_creations=conduit._creations,
-            caller_creations_lock_held=False,
-        )
+        context = CreationContextBuilder.build(consumer_spell)
+        try:
+            result = context.execute_no_hooks(
+                conduit._creations,
+                {"*service": override_value},
+            )
+        finally:
+            context.cleanup()
 
         assert isinstance(result, Consumer)
         assert result.service is override_value

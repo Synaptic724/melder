@@ -281,7 +281,6 @@ def _install_stub_phase_factories(
     _install("phase_injection_plan_factory", "injection_plan")
     _install("phase_patch_maps_factory", "patch_maps")
     _install("phase_execution_plan_factory", "execution_plan")
-    _install("phase_executor_compile_factory", "executor_compile")
 
 
 def test_run_resolution_phases_for_conduit_uses_one_scheduler_lifecycle(
@@ -350,7 +349,6 @@ def test_run_resolution_phases_for_conduit_uses_one_scheduler_lifecycle(
         "injection_plan",
         "patch_maps",
         "execution_plan",
-        "executor_compile",
     ]
     assert results["root_blueprints"] == ["root_blueprints"]
     assert results["system_validation"] == ["system_validation"]
@@ -359,7 +357,6 @@ def test_run_resolution_phases_for_conduit_uses_one_scheduler_lifecycle(
     assert results["injection_plan"] == ["injection_plan"]
     assert results["patch_maps"] == ["patch_maps"]
     assert results["execution_plan"] == ["execution_plan"]
-    assert results["executor_compile"] == ["executor_compile"]
     assert phase_calls == {
         "root_blueprints": 1,
         "system_validation": 1,
@@ -368,7 +365,6 @@ def test_run_resolution_phases_for_conduit_uses_one_scheduler_lifecycle(
         "injection_plan": 1,
         "patch_maps": 1,
         "execution_plan": 1,
-        "executor_compile": 1,
     }
 
 
@@ -442,12 +438,10 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_foundational_er
         "root_blueprints",
         "system_validation",
         "change_control",
-        "executor_compile",
     ]
     assert results["root_blueprints"] == ["root_blueprints"]
     assert results["system_validation"] == ["system_validation"]
     assert results["change_control"] == ["change_control"]
-    assert results["executor_compile"] == []
     assert phase_calls == {
         "root_blueprints": 1,
         "system_validation": 1,
@@ -456,7 +450,6 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_foundational_er
         "injection_plan": 0,
         "patch_maps": 0,
         "execution_plan": 0,
-        "executor_compile": 0,
     }
 
 
@@ -526,12 +519,10 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_jit_mode_is_ena
         "root_blueprints",
         "system_validation",
         "change_control",
-        "executor_compile",
     ]
     assert results["root_blueprints"] == ["root_blueprints"]
     assert results["system_validation"] == ["system_validation"]
     assert results["change_control"] == ["change_control"]
-    assert results["executor_compile"] == []
     assert phase_calls == {
         "root_blueprints": 1,
         "system_validation": 1,
@@ -540,7 +531,6 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_jit_mode_is_ena
         "injection_plan": 0,
         "patch_maps": 0,
         "execution_plan": 0,
-        "executor_compile": 0,
     }
 
 
@@ -1224,6 +1214,8 @@ def test_run_target_foundational_and_plan_resolution_phase_wrappers_register_exp
     )
 
     target_spell = types.SimpleNamespace(
+        is_existing_creation=False,
+        _compiler_artifact=types.SimpleNamespace(_root_blueprint_phase5=object()),
         run_phase_root_blueprints_local=lambda conduit_id, cancel_event: None,
         run_phase_system_validation_local=lambda conduit_id, cancel_event: None,
         run_phase_change_control_local=lambda conduit_id, cancel_event: None,
@@ -1258,7 +1250,6 @@ def test_run_target_foundational_and_plan_resolution_phase_wrappers_register_exp
         "injection_plan_local",
         "patch_maps_local",
         "execution_plan_local",
-        "executor_compile_local",
     ]
     assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_target_spell"
     assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_target_spell"
@@ -1321,12 +1312,6 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         "phase_execution_plan_factory",
         staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["execution_plan"]),
     )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_executor_compile_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["executor_compile"]),
-    )
-
     foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
         spellbook=_StubSpellbook(),
         conduit_id="cid",
@@ -1348,7 +1333,6 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         "injection_plan",
         "patch_maps",
         "execution_plan",
-        "executor_compile",
     }
     assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
     assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"

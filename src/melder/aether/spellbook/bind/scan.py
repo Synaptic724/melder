@@ -217,7 +217,7 @@ class Scan(Cleanable):
     """
     __slots__ = tuple(Cleanable.__slots__) + ("_spellbook",)
 
-    def __init__(self, spellbook: Spellbook) -> None:
+    def __init__(self, spellbook: "Spellbook") -> None:
         """
         Initialize a Scan helper bound to a specific Spellbook.
 

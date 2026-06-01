@@ -120,7 +120,7 @@ def _make_override_harness(
     context._execute_no_hooks_overrides_compiled = None
     context._execute_no_hooks_no_overrides_compiled = None
     context._no_overrides_executor = None
-    context._override_patch_map_phase10 = patch_map
+    context._override_targeting = patch_map
     if patch_map is None or not hasattr(
             patch_map,
             "_apply_with_socket_shape_prechecked",
@@ -273,7 +273,7 @@ def test_creation_context_init_selects_mutation_route_and_seeds_baseline_executo
         resolve_route_key=CreationContext.ROUTE_MANY,
         fast_transient_no_overrides_enabled=True,
         no_overrides_executor=lambda *args, **kwargs: "direct-no-overrides",
-        override_patch_map_phase10=patch_map,
+        override_targeting=patch_map,
         override_route_config_no_mutation=route_config_no_mutation,
         override_route_config_mutation=route_config_mutation,
     )
@@ -338,7 +338,7 @@ def test_creation_context_init_non_mutation_route_uses_no_override_compilers(
         resolve_route_key=CreationContext.ROUTE_MANY,
         fast_transient_no_overrides_enabled=True,
         no_overrides_executor=lambda *args, **kwargs: "direct-no-overrides",
-        override_patch_map_phase10=None,
+        override_targeting=None,
         override_route_config_no_mutation=route_config_no_mutation,
         override_route_config_mutation=None,
     )

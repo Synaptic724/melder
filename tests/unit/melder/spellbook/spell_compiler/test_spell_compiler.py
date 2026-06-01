@@ -1,6 +1,6 @@
-"""Unit tests for SpellCompiler current-surface phase delegation."""
+"""Unit tests for current-surface `SpellCompiler` delegation."""
 
-from typing import Any
+from typing import Any, Callable
 
 import pytest
 
@@ -11,8 +11,8 @@ from tests.unit.melder.spellbook.spell_compiler.support.compiler_test_support im
 )
 
 
-def test_compiler_initializes_all_phase_surfaces() -> None:
-    """SpellCompiler should own one instantiated phase surface for phases 1-13."""
+def test_compiler_initializes_live_phase_surfaces_1_through_11() -> None:
+    """SpellCompiler should own the current live phase-1-to-phase-11 surfaces only."""
     compiler = SpellCompiler()
 
     assert compiler._phase_1 is not None
@@ -26,135 +26,125 @@ def test_compiler_initializes_all_phase_surfaces() -> None:
     assert compiler._phase_9 is not None
     assert compiler._phase_10 is not None
     assert compiler._phase_11 is not None
-    assert compiler._phase_12 is not None
-    assert compiler._phase_13 is not None
+    assert not hasattr(compiler, "_phase_12")
+    assert not hasattr(compiler, "_phase_13")
 
 
-def test_compiler_run_phase_strategy_selection_delegates_to_phase12() -> None:
-    """SpellCompiler should route Phase 12 strategy selection to `_phase_12.run(...)`."""
+def test_compiler_phase_methods_delegate_to_current_phase_surfaces(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each compiler method should delegate to the current phase surface with the current signature."""
     compiler = SpellCompiler()
     spell = make_spell()
+    artifact = spell._compiler_artifact
     spellbook = make_spellbook()
-    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
-    phase_surface = type(
-        "_Phase12Stub",
+    spell_system_states = spellbook._spell_system_states
+    calls: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
+
+    def _record(name: str) -> Callable[..., None]:
+        """Build one recorder callable for the delegated phase entry."""
+        return lambda *args, **kwargs: calls.append((name, args, kwargs))
+
+    compiler._phase_1 = type("_Phase1Stub", (), {"run": staticmethod(_record("phase1"))})()
+    compiler._phase_2 = type("_Phase2Stub", (), {"run": staticmethod(_record("phase2"))})()
+    compiler._phase_3 = type("_Phase3Stub", (), {"run": staticmethod(_record("phase3"))})()
+    compiler._phase_4 = type("_Phase4Stub", (), {"run": staticmethod(_record("phase4"))})()
+    compiler._phase_5 = type(
+        "_Phase5Stub",
         (),
         {
-            "run": staticmethod(
-                lambda *args, **kwargs: calls.append((args, kwargs))
-            ),
+            "run_frame_wide": staticmethod(_record("phase5_frame")),
+            "run_local": staticmethod(_record("phase5_local")),
         },
     )()
-    compiler._phase_12 = phase_surface
+    compiler._phase_6 = type(
+        "_Phase6Stub",
+        (),
+        {
+            "run_frame_wide": staticmethod(_record("phase6_frame")),
+            "run_local": staticmethod(_record("phase6_local")),
+        },
+    )()
+    compiler._phase_7 = type(
+        "_Phase7Stub",
+        (),
+        {
+            "run_frame_wide": staticmethod(_record("phase7_frame")),
+            "run_local": staticmethod(_record("phase7_local")),
+        },
+    )()
+    compiler._phase_8 = type("_Phase8Stub", (), {"run": staticmethod(_record("phase8"))})()
+    compiler._phase_9 = type("_Phase9Stub", (), {"run": staticmethod(_record("phase9"))})()
+    compiler._phase_10 = type("_Phase10Stub", (), {"run": staticmethod(_record("phase10"))})()
+    compiler._phase_11 = type("_Phase11Stub", (), {"run": staticmethod(_record("phase11"))})()
 
-    compiler.run_phase_strategy_selection(
-        spellbook,
+    compiler.run_phase_requirements(spell, artifact, cancel_event="cancel")
+    compiler.run_phase_symbolic_graph(spell, artifact, cancel_event="cancel")
+    compiler.run_phase_local_frame(
         spell,
-        spell._compiler_artifact,
+        artifact,
+        spellbook,
+        spell_system_states,
+        cancel_event="cancel",
     )
+    compiler.run_phase_validation(
+        spell,
+        artifact,
+        "validator",
+        spell_system_states,
+        cancel_event="cancel",
+    )
+    compiler.run_phase_root_blueprints(
+        spell,
+        artifact,
+        spellbook,
+        spell_system_states,
+        "cid",
+        cancel_event="cancel",
+    )
+    compiler.run_phase_root_blueprints_local(
+        spell,
+        artifact,
+        spellbook,
+        spell_system_states,
+        "cid",
+        cancel_event="cancel",
+    )
+    compiler.run_phase_system_validation(
+        artifact,
+        spellbook,
+        spell_system_states,
+        "cid",
+        cancel_event="cancel",
+    )
+    compiler.run_phase_system_validation_local(
+        spell,
+        artifact,
+        spellbook,
+        spell_system_states,
+        "cid",
+        cancel_event="cancel",
+    )
+    compiler.run_phase_change_control(artifact, spellbook, "cid")
+    compiler.run_phase_change_control_local(artifact, spellbook, "cid")
+    compiler.run_phase_occurrence_plan(spell, artifact, spellbook, spell_system_states)
+    compiler.run_phase_injection_plan(spell, artifact)
+    compiler.run_phase_patch_maps(spell, artifact)
+    compiler.run_phase_execution_plan(spell, artifact, spellbook)
 
     assert calls == [
-        (
-            (
-                spellbook,
-                spell,
-                spell._compiler_artifact,
-            ),
-            {},
-        )
-    ]
-
-
-@pytest.mark.parametrize(
-    ("method_name", "phase_attr", "args_builder", "kwargs_builder"),
-    [
-        ("run_phase_requirements", "_phase_1", lambda spell, spellbook: (spell, spell._compiler_artifact), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_symbolic_graph", "_phase_2", lambda spell, spellbook: (spell, spell._compiler_artifact), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_local_frame", "_phase_3", lambda spell, spellbook: (spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_validation", "_phase_4", lambda spell, spellbook: (spell, spell._compiler_artifact, "validator", spellbook._spell_system_states), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_root_blueprints", "_phase_5", lambda spell, spellbook: (spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid"), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_root_blueprints_local", "_phase_5", lambda spell, spellbook: (spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid"), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_system_validation", "_phase_6", lambda spell, spellbook: (spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid"), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_system_validation_local", "_phase_6", lambda spell, spellbook: (spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid"), lambda: {"cancel_event": "cancel"}),
-        ("run_phase_change_control", "_phase_7", lambda spell, spellbook: (spell._compiler_artifact, spellbook, "cid"), lambda: {}),
-        ("run_phase_change_control_local", "_phase_7", lambda spell, spellbook: (spell._compiler_artifact, spellbook, "cid"), lambda: {}),
-        ("run_phase_occurrence_plan", "_phase_8", lambda spell, spellbook: (spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states), lambda: {}),
-        ("run_phase_injection_plan", "_phase_9", lambda spell, spellbook: (spell, spell._compiler_artifact), lambda: {}),
-        ("run_phase_patch_maps", "_phase_10", lambda spell, spellbook: (spell, spell._compiler_artifact), lambda: {}),
-        ("run_phase_execution_plan", "_phase_11", lambda spell, spellbook: (spell, spell._compiler_artifact, spellbook), lambda: {}),
-    ],
-)
-def test_compiler_phase_methods_delegate_to_the_expected_phase_surface(
-        monkeypatch: pytest.MonkeyPatch,
-        method_name: str,
-        phase_attr: str,
-        args_builder: Any,
-        kwargs_builder: Any,
-) -> None:
-    """Each compiler method should delegate to the matching phase surface with current args."""
-    compiler = SpellCompiler()
-    spell = make_spell()
-    spellbook = make_spellbook()
-    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
-    if method_name in ("run_phase_root_blueprints", "run_phase_system_validation", "run_phase_change_control"):
-        phase_surface = type(
-            "_PhaseStub",
-            (),
-            {
-                "run_frame_wide": staticmethod(
-                    lambda *args, **kwargs: calls.append((args, kwargs))
-                ),
-            },
-        )()
-    elif method_name in ("run_phase_root_blueprints_local", "run_phase_system_validation_local", "run_phase_change_control_local"):
-        phase_surface = type(
-            "_PhaseStub",
-            (),
-            {
-                "run_local": staticmethod(
-                    lambda *args, **kwargs: calls.append((args, kwargs))
-                ),
-            },
-        )()
-    else:
-        phase_surface = type(
-            "_PhaseStub",
-            (),
-            {
-                "run": staticmethod(
-                    lambda *args, **kwargs: calls.append((args, kwargs))
-                ),
-            },
-        )()
-    setattr(
-        compiler,
-        phase_attr,
-        phase_surface,
-    )
-
-    method = getattr(compiler, method_name)
-    if method_name == "run_phase_validation":
-        method(spell, spell._compiler_artifact, "validator", spellbook._spell_system_states, cancel_event="cancel")
-    elif method_name in ("run_phase_local_frame",):
-        method(spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states, cancel_event="cancel")
-    elif method_name in ("run_phase_root_blueprints", "run_phase_root_blueprints_local"):
-        method(spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid", cancel_event="cancel")
-    elif method_name in ("run_phase_system_validation_local",):
-        method(spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid", cancel_event="cancel")
-    elif method_name in ("run_phase_system_validation",):
-        method(spell._compiler_artifact, spellbook, spellbook._spell_system_states, "cid", cancel_event="cancel")
-    elif method_name in ("run_phase_change_control", "run_phase_change_control_local"):
-        method(spell._compiler_artifact, spellbook, "cid")
-    elif method_name == "run_phase_occurrence_plan":
-        method(spell, spell._compiler_artifact, spellbook, spellbook._spell_system_states)
-    elif method_name == "run_phase_execution_plan":
-        method(spell, spell._compiler_artifact, spellbook)
-    else:
-        method(*args_builder(spell, spellbook), **kwargs_builder())
-
-    assert calls == [
-        (
-            args_builder(spell, spellbook),
-            kwargs_builder(),
-        )
+        ("phase1", (spell, artifact), {"cancel_event": "cancel"}),
+        ("phase2", (spell, artifact), {"cancel_event": "cancel"}),
+        ("phase3", (spell, artifact, spellbook, spell_system_states), {"cancel_event": "cancel"}),
+        ("phase4", (spell, artifact, "validator", spell_system_states), {"cancel_event": "cancel"}),
+        ("phase5_frame", (spell, artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
+        ("phase5_local", (spell, artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
+        ("phase6_frame", (artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
+        ("phase6_local", (spell, artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
+        ("phase7_frame", (artifact, spellbook, "cid"), {}),
+        ("phase7_local", (artifact, spellbook, "cid"), {}),
+        ("phase8", (spell, artifact, spellbook, spell_system_states), {}),
+        ("phase9", (spell, artifact), {}),
+        ("phase10", (spell, artifact), {}),
+        ("phase11", (spell, artifact, spellbook), {}),
     ]

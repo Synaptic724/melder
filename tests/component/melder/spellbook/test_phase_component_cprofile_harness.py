@@ -378,7 +378,7 @@ def _run_group_8_11(
 ) -> Dict[str, Any]:
     """
     Purpose:
-        Execute conduit plan phases 8-11 via per-spell direct calls and measure totals.
+        Execute live phases 8-11 via per-spell direct calls and measure totals.
     Contract:
         - `cold_plan_reset` resets phase-5/8-11 artifacts before running.
         - `warm_plan_reuse` reruns without artifact reset.
@@ -386,7 +386,7 @@ def _run_group_8_11(
         spellbook: Spellbook fixture to execute against.
         conduit_id: Conduit scope id.
         variant: `cold_plan_reset` or `warm_plan_reuse`.
-        metric_spell_id: Spell id used to extract execution-plan metric fields.
+        metric_spell_id: Spell id used to extract new analyzer/model/plan/creation metrics.
     Returns:
         Dict[str, Any]: Timing/result fields for this group execution.
     """
@@ -422,6 +422,15 @@ def _run_group_8_11(
 
     metric_spell = _get_spell_by_id(spellbook, metric_spell_id)
     metric_artifact = metric_spell._compiler_artifact
+    occurrence_graph_analysis = metric_artifact._occurrence_graph_analysis
+    spell_codegen_model = metric_artifact._spell_codegen_model
+    spell_codegen_plan = metric_artifact._spell_codegen_plan
+    spell_codegen_creation = metric_artifact._spell_codegen_creation
+    no_overrides_plan = (
+        None
+        if spell_codegen_plan is None
+        else spell_codegen_plan.no_overrides_plan
+    )
     group_total_ms = (
         phase_occurrence_plan_ms
         + phase_injection_plan_ms
@@ -437,17 +446,46 @@ def _run_group_8_11(
         "phase_execution_plan_ms": round(phase_execution_plan_ms, 3),
         "group_8_11_total_ms": round(group_total_ms, 3),
         "resolution_has_errors": _get_conduit_resolution_has_errors(spellbook, conduit_id),
-        "execution_plan_step_count": metric_artifact._execution_plan_step_count_phase11,
-        "execution_plan_unique_spell_count": (
-            metric_artifact._execution_plan_unique_spell_count_phase11
+        "occurrence_count": (
+            0
+            if occurrence_graph_analysis is None
+            else occurrence_graph_analysis.occurrence_count
         ),
-        "execution_plan_max_occurrence_depth": (
-            metric_artifact._execution_plan_max_occurrence_depth_phase11
+        "occurrence_edge_count": (
+            0
+            if occurrence_graph_analysis is None
+            else occurrence_graph_analysis.edge_count
         ),
-        "execution_plan_max_dependency_count": (
-            metric_artifact._execution_plan_max_dependency_count_phase11
+        "model_node_count": (
+            0
+            if spell_codegen_model is None
+            else spell_codegen_model.node_count
         ),
-        "execution_plan_dispatch_route": metric_spell.execution_plan_dispatch_route,
+        "model_max_dependency_count": (
+            0
+            if spell_codegen_model is None
+            else spell_codegen_model.max_dependency_count
+        ),
+        "no_overrides_step_count": (
+            0
+            if no_overrides_plan is None
+            else len(no_overrides_plan.steps)
+        ),
+        "no_overrides_fast_transient_available": (
+            False
+            if no_overrides_plan is None
+            else no_overrides_plan.fast_transient_plan is not None
+        ),
+        "creation_route_key": (
+            None
+            if spell_codegen_creation is None
+            else spell_codegen_creation.resolve_route_key
+        ),
+        "creation_no_overrides_executor_built": (
+            False
+            if spell_codegen_creation is None
+            else spell_codegen_creation.no_overrides_executor is not None
+        ),
     }
 
 

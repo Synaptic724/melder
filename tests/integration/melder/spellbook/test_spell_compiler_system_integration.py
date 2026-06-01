@@ -179,7 +179,7 @@ def test_integration_spell_compiler_system_run_all_phases_supports_core_shapes(
 
         conduit_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
         assert conduit_state.get_spell_validity(spell_id) is SpellValidity.valid
-        assert spell._compiler_artifact._execution_plan_phase11_no_overrides is not None
+        assert spell._compiler_artifact._spell_codegen_creation is not None
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()
@@ -336,9 +336,10 @@ def test_integration_spell_compiler_system_post_conjure_local_plan_phases_build_
             run_plan_phases(compiler_system, spellbook, consumer_spell)
 
             artifact = consumer_spell._compiler_artifact
-            assert artifact._occurrence_plan_phase8 is not None
-            assert artifact._injection_plan_phase9 is not None
-            assert artifact._execution_plan_phase11_no_overrides is not None
+            assert artifact._occurrence_graph_analysis is not None
+            assert artifact._spell_codegen_model is not None
+            assert artifact._spell_codegen_plan is not None
+            assert artifact._spell_codegen_creation is not None
         finally:
             conduit.cleanup()
     finally:
