@@ -6,16 +6,16 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_overrides_codegen_creation_compiler import (
     compile_overrides_codegen_creation_executor,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_creation import (
     SpellCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_override_targeting_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
     SpellOverrideTargetingCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (

@@ -19,7 +19,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_codegen import
     compile_creation_context_instance_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_overrides_codegen_creation_compiler import (
     compile_overrides_codegen_creation_executor_code_object,
     compile_overrides_codegen_creation_executor,
     _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache,

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence, Tuple
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spell_compiler.codegen_creation.spell_override_targeting_codegen_creation import (
+    from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
         SpellOverrideTargetingCodegenCreation,
     )
 

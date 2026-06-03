@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
         SpellCodegenModel,
     )
-    from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
+    from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_creation import (
         SpellCodegenCreation,
     )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (

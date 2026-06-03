@@ -5,38 +5,38 @@ from typing import Any, Dict, Tuple
 
 import pytest
 
-import melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_no_overrides_codegen_creation_strategy as no_overrides_strategy_module
-import melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_overrides_codegen_creation_strategy as overrides_strategy_module
-import melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy as mutation_strategy_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy as no_overrides_strategy_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy as overrides_strategy_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy as mutation_strategy_module
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.codegen_creation_discovery_system import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system import (
     CodegenCreationDiscovery,
     CodegenCreationDiscoverySystem,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.codegen_creation_system import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
     CodegenCreationSystem,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_creation import (
     SpellCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy_builder import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder import (
     SpellCodegenStrategyBuilder,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_override_targeting_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
     SpellOverrideTargetingCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
     SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
     SpellGeneralizedMutationOverridesCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
     SpellGeneralizedNoOverridesCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_overrides_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy import (
     SpellGeneralizedOverridesCodegenCreationStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (

@@ -1,9 +1,9 @@
 from typing import Any, Optional, Tuple
 
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_creation import (
     SpellCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
@@ -18,7 +18,7 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.generalized_no_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
 )
 

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.spellbook.spell_compiler.codegen_creation.codegen_creation_system import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
     CodegenCreationSystem,
 )
 from melder.utilities.general_base.cleanable import Cleanable

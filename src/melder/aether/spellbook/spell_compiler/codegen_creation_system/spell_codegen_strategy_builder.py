@@ -2,19 +2,19 @@ from typing import Dict, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 
-from melder.aether.spellbook.spell_compiler.codegen_creation.spell_codegen_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
     SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
     SpellGeneralizedNoOverridesCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_overrides_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy import (
     SpellGeneralizedOverridesCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
     SpellGeneralizedMutationOverridesCodegenCreationStrategy,
 )
 
