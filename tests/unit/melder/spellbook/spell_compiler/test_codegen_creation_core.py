@@ -1,7 +1,7 @@
 """Direct unit tests for the codegen_creation object layer."""
 
 from types import SimpleNamespace
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 import pytest
 
@@ -18,7 +18,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_crea
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
     CodegenCreationSystem,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder import (

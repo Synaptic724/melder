@@ -1,6 +1,6 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
