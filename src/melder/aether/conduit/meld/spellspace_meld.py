@@ -237,6 +237,7 @@ class SpellSpaceMeld(Meld):
             creations = self._owner_conduit_creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
+        mutation_override_enabled = target_spell.has_mutation_override
 
         if not (meld_hooks or spell_hooks_enabled):
             if target_spell._creation_context_switch.state >= 2:
@@ -245,7 +246,7 @@ class SpellSpaceMeld(Meld):
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None:
+            if override_map is None and not mutation_override_enabled:
                 execute_no_hooks_no_overrides_compiled = (
                     creation_context._execute_no_hooks_no_overrides_compiled
                 )
@@ -272,7 +273,7 @@ class SpellSpaceMeld(Meld):
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None:
+            if override_map is None and not mutation_override_enabled:
                 execute_hooks_no_overrides_compiled = (
                     creation_context._execute_hooks_no_overrides_compiled
                 )
