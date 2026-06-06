@@ -99,7 +99,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
                 continue
 
             for socket in topology.iter_sockets():
-                if socket.socket_kind not in (SocketKind.SPELL_CONTRACT, SocketKind.MUTATION_CONTRACT):
+                if socket.socket_kind is not SocketKind.SPELL_CONTRACT:
                     continue
                 if socket.contract_key is None:
                     diagnostics.append(

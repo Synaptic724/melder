@@ -154,9 +154,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         ):
             return
 
-        collapse_shared_occurrences = self._should_collapse_shared_occurrences(
-            spell_lookup=spellbook._spell_id_pool,
-        )
+        collapse_shared_occurrences = True
         occurrence_graph = self._build_occurrence_graph(
             dag=root_blueprint.dag,
             root_spell_id=root_blueprint.root_spell_id,
@@ -192,9 +190,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 spell_system_states=spell._spell_system_states,
                 occurrence_graph=occurrence_graph,
             ),
-            mutation_override_dependency_count=self._count_mutation_override_dependencies(
-                spell_lookup=spellbook._spell_id_pool,
-            ),
+            mutation_override_dependency_count=0,
             shared_collapse_enabled=collapse_shared_occurrences,
         )
 
@@ -261,8 +257,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         try:
             spell_rows_list: List[Tuple[Any, ...]] = []
             for spell_id, candidate_spell in sorted(spell_lookup.items()):
-                if candidate_spell.mutation_override:
-                    return None
                 spell_rows_list.append(
                     (
                         spell_id,
@@ -395,7 +389,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                     candidate_spell.spell_index.current,
                     candidate_spell.existence.name,
                     bool(candidate_spell.is_existing_creation),
-                    self._freeze_schema_value(candidate_spell.mutation_override),
                 )
                 for spell_id, candidate_spell in sorted(spell_lookup.items())
             )
@@ -715,14 +708,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             spellbook=spellbook,
             path_registry=path_registry,
         )
-        self._apply_mutation_overrides_to_dependencies(
-            dependencies=dependencies,
-            occurrence=occurrence,
-            spell_lookup=spell_lookup,
-            path_registry=path_registry,
-            root_blueprint=root_blueprint,
-        )
-
         return dependencies
 
     @staticmethod
@@ -768,7 +753,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         node = dag.get_node(spell_id)
         if node is None:
             return
-        mutated_params: Set[str] = set()
         parent_entries: List[Tuple[str, str, Any]] = []
         for parent_node in node.dependencies:
             incoming_name = node.incoming_params.get(parent_node)
@@ -776,20 +760,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 continue
             parent_entries.append((incoming_name, parent_node.id, parent_node))
         for param_name, _, parent_node in sorted(parent_entries):
-            socket_kind = dag._socket_kinds.get((parent_node, node))
             child_path_id = path_registry.extend_path(path_id, param_name)
             child_occurrence = (parent_node.id, child_path_id)
-
-            if socket_kind is SocketKind.MUTATION_CONTRACT:
-                if param_name not in mutated_params:
-                    dependencies[param_name] = []
-                    mutated_params.add(param_name)
-                if child_occurrence not in dependencies[param_name]:
-                    dependencies[param_name].append(child_occurrence)
-                continue
-
-            if param_name in mutated_params:
-                continue
 
             dependencies.setdefault(param_name, []).append(child_occurrence)
 
@@ -1120,15 +1092,13 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 spell_name=root_spell.spell_name,
                 message=f"Path override key {raw_key!r} did not contain any segments.",
             )
-        matches = self._filter_mutation_contract_sockets(
-            dag_index.get_by_exact_path(spec.path)
-        )
+        matches = list(dag_index.get_by_exact_path(spec.path))
         if not matches:
             raise MeldExecutionError(
                 spell_id=root_spell.spell_index.current or root_spell.spell_id,
                 spell_name=root_spell.spell_name,
                 message=(
-                    "No mutation sockets found for override path "
+                    "No sockets found for override path "
                     f"'{'>'.join(spec.path)}'."
                 ),
             )
@@ -1151,21 +1121,19 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 spell_name=root_spell.spell_name,
                 message=f"Unique override key {raw_key!r} is missing a parameter name.",
             )
-        matches = self._filter_mutation_contract_sockets(
-            dag_index.get_by_name(spec.param_name)
-        )
+        matches = list(dag_index.get_by_name(spec.param_name))
         if len(matches) == 0:
             raise MeldExecutionError(
                 spell_id=root_spell.spell_index.current or root_spell.spell_id,
                 spell_name=root_spell.spell_name,
-                message=f"No mutation sockets found for unique override '*{spec.param_name}'.",
+                message=f"No sockets found for unique override '*{spec.param_name}'.",
             )
         if len(matches) > 1:
             raise MeldExecutionError(
                 spell_id=root_spell.spell_index.current or root_spell.spell_id,
                 spell_name=root_spell.spell_name,
                 message=(
-                    "Unique override matched multiple mutation sockets "
+                    "Unique override matched multiple sockets "
                     f"for '*{spec.param_name}'."
                 ),
             )
@@ -1188,32 +1156,17 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 spell_name=root_spell.spell_name,
                 message=f"Broadcast override key {raw_key!r} is missing a parameter name.",
             )
-        matches = self._filter_mutation_contract_sockets(
-            dag_index.get_by_name(spec.param_name)
-        )
+        matches = list(dag_index.get_by_name(spec.param_name))
         if not matches:
             raise MeldExecutionError(
                 spell_id=root_spell.spell_index.current or root_spell.spell_id,
                 spell_name=root_spell.spell_name,
                 message=(
-                    "No mutation sockets found for broadcast override "
+                    "No sockets found for broadcast override "
                     f"'**{spec.param_name}'."
                 ),
             )
         return matches
-
-    @staticmethod
-    def _filter_mutation_contract_sockets(
-            sockets: Sequence["SocketRef"],
-    ) -> List["SocketRef"]:
-        """
-        Filter sockets to only mutation contract sockets.
-        """
-        return [
-            socket
-            for socket in sockets
-            if socket.socket_kind is SocketKind.MUTATION_CONTRACT
-        ]
 
     def _apply_mutation_overrides_to_dependencies(
             self,

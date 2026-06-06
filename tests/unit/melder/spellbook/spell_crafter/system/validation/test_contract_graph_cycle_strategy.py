@@ -418,15 +418,15 @@ def test_contract_graph_cycle_reports_missing_contract_key() -> None:
     assert diag.details["socket_kind"] == "SPELL_CONTRACT"
 
 
-def test_contract_graph_cycle_skips_contract_socket_without_visible_provider() -> None:
+def test_contract_graph_cycle_skips_spell_contract_without_visible_provider() -> None:
     states = _StatesStub(
         {
             "A": _TopologyStub(
                 [
                     _SocketStub(
-                        socket_kind=SocketKind.MUTATION_CONTRACT,
+                        socket_kind=SocketKind.SPELL_CONTRACT,
                         contract_key=("missing", "provider"),
-                        param_name="mutation_dep",
+                        param_name="contract_dep",
                     ),
                 ]
             ),

@@ -128,8 +128,8 @@ def test_spell_analyzer_strategy_builder_registers_graph_strategy_by_default() -
     )
 
 
-def test_occurrence_graph_analyzer_fast_key_serializes_visible_state_and_rejects_mutations() -> None:
-    """The analyzer fast-key helper should serialize visible state and reject mutation overrides."""
+def test_occurrence_graph_analyzer_fast_key_serializes_visible_state_and_ignores_mutations() -> None:
+    """The analyzer fast-key helper should ignore stored mutation override payloads."""
     strategy = SpellOccurrenceGraphAnalyzerStrategy()
     spellbook = _make_spellbook_and_spell()[0]
     root_spell = spellbook._spell_id_pool["spell-1"]
@@ -206,13 +206,13 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state_and_rejects
         spell_lookup=spellbook._spell_id_pool,
         spellbook=spellbook,
         spell_system_states=spell_system_states,
-    ) is None
+    ) == fast_key
 
 
-def test_occurrence_graph_analyzer_input_signature_hashes_mutation_payloads(
+def test_occurrence_graph_analyzer_input_signature_ignores_mutation_payloads(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The analyzer input-signature helper should hash normalized mutation payload semantics."""
+    """The analyzer input-signature helper should ignore stored mutation override payloads."""
     strategy = SpellOccurrenceGraphAnalyzerStrategy()
     spellbook, spell = _make_spellbook_and_spell()
     spell.mutation_override = {"svc": ["x", "y"]}
@@ -258,7 +258,6 @@ def test_occurrence_graph_analyzer_input_signature_hashes_mutation_payloads(
             "spell-1",
             Existence.unique.name,
             False,
-            strategy._freeze_schema_value({"svc": ["x", "y"]}),
         ),
     )
 
@@ -300,3 +299,4 @@ def test_occurrence_graph_analyzer_reuses_cached_graph_when_fast_key_and_signatu
     strategy.analyze(spell, artifact)
 
     assert artifact._occurrence_graph_analysis is cached_graph
+
