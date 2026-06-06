@@ -2387,7 +2387,6 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
                 target_spell_ids=(),
                 dependency_key=None,
                 contract_key=contract_key,
-                contract_late_binding=None,
             )
             for contract_key in keys_a
         ],
@@ -2405,7 +2404,6 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
                 target_spell_ids=(),
                 dependency_key=None,
                 contract_key=contract_key,
-                contract_late_binding=None,
             )
             for contract_key in keys_b
         ],
@@ -2498,7 +2496,6 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
                 target_spell_ids=(),
                 dependency_key=None,
                 contract_key=contract_key,
-                contract_late_binding=None,
             )
             for contract_key in keys_a
         ],
@@ -2516,7 +2513,6 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
                 target_spell_ids=(),
                 dependency_key=None,
                 contract_key=contract_key,
-                contract_late_binding=None,
             )
             for contract_key in keys_b
         ],
