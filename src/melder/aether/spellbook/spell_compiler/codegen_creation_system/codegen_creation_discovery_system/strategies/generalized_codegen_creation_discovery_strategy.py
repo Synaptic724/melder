@@ -26,8 +26,9 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
 
     Contract:
         - Claims only generalized planner output.
-        - Emits the generalized creation-chain result selected from planner
-          output.
+        - Emits the generalized creation-chain result for the generalized plan
+          family.
+        - Chooses one concrete codegen style from the plan's candidate list.
     """
 
     __slots__ = ()
@@ -45,7 +46,7 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Claim generalized planner output and return the current creation chain.
+        Claim generalized planner output and return the generalized creation chain.
         """
         _ = spell_codegen_model
         selected_plan_strategy_id = spell_codegen_plan.metadata.get(
@@ -53,6 +54,12 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
         )
         if selected_plan_strategy_id != "generalized_codegen_plan":
             return None
+        selected_codegen_style_id = "generalized_default"
+        candidate_codegen_style_ids = (
+            spell_codegen_plan.candidate_codegen_style_ids
+        )
+        if candidate_codegen_style_ids:
+            selected_codegen_style_id = candidate_codegen_style_ids[0]
         return CodegenCreationDiscovery(
             selected_strategy_ids=(
                 "generalized_creation_context_setup_codegen_creation",
@@ -61,4 +68,5 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
                 "general_creation_context_codegen_creation",
             ),
             discovery_reason="default_generalized_plan_codegen_creation_chain",
+            selected_codegen_style_id=selected_codegen_style_id,
         )

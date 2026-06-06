@@ -21,7 +21,10 @@ class CodegenPlanDiscoverySystem(Cleanable):
     Contract:
         - Discovery reads the model only.
         - Discovery does not build plans itself.
-        - For now it always selects the generalized model-native strategy.
+        - Discovery chooses the planner strategy plus the higher-level plan
+          family that phase 11 will later consume.
+        - For now it always selects the generalized model-native strategy and
+          generalized family.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -54,9 +57,9 @@ class CodegenPlanDiscoverySystem(Cleanable):
 
         Contract:
             - Does not mutate the model.
-            - Returns exactly one selected strategy result.
-            - Defaults to `generalized_codegen_plan` until real ranking logic
-              is implemented.
+            - Returns exactly one selected strategy/family result.
+            - Defaults to the generalized strategy/family pair until real
+              ranking logic is implemented.
         """
         strategies = self._strategy_builder.get_strategies(
             self._strategy_builder.registered_strategy_names()

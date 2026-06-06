@@ -211,7 +211,10 @@ def test_codegen_creation_system_build_runs_selected_strategy_chain_and_cleans_p
     )
     previous_creation = _CleanupProbe()
     model = object()
-    plan = object()
+    plan = SimpleNamespace(
+        plan_family_id="generalized",
+        candidate_codegen_style_ids=("generalized_default",),
+    )
     artifact = type(
         "ArtifactProbe",
         (),

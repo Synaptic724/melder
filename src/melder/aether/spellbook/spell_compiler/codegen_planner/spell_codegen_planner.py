@@ -70,6 +70,8 @@ class SpellCodegenPlanner(Cleanable):
         Contract:
             - Reads `artifact._spell_codegen_model`.
             - Uses discovery to choose the current best plan strategy.
+            - Records the chosen plan family plus candidate codegen styles on
+              `SpellCodegenPlan`.
             - Resolves the selected strategy through the builder.
             - Publishes `artifact._spell_codegen_plan`.
             - Does not return the plan object directly.
@@ -88,6 +90,16 @@ class SpellCodegenPlanner(Cleanable):
         )
         spell_codegen_plan.metadata["discovery_reason"] = (
             discovery.discovery_reason
+        )
+        spell_codegen_plan.plan_family_id = discovery.plan_family_id
+        spell_codegen_plan.candidate_codegen_style_ids = (
+            discovery.candidate_codegen_style_ids
+        )
+        spell_codegen_plan.metadata["plan_family_id"] = (
+            discovery.plan_family_id
+        )
+        spell_codegen_plan.metadata["candidate_codegen_style_ids"] = (
+            discovery.candidate_codegen_style_ids
         )
         selected_strategy = self._strategy_builder.get_strategy(
             discovery.selected_strategy_id
@@ -125,6 +137,8 @@ class SpellCodegenPlanner(Cleanable):
         return SpellCodegenPlan(
             processor_strategy_ids=spell_codegen_model.snapshot_applied_strategy_ids(),
             plan_strategy_ids=(),
+            plan_family_id=None,
+            candidate_codegen_style_ids=(),
             no_overrides_plan=None,
             overrides_plan=None,
             metadata={},

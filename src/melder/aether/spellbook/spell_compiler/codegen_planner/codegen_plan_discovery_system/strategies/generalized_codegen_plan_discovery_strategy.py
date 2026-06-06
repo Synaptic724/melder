@@ -17,8 +17,9 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
 
     Contract:
         - Claims every model for now.
-        - Emits the same generalized planner result the old discovery facade
-          returned directly.
+        - Emits the generalized planner strategy plus the generalized planning
+          family that phase 11 will later consume.
+        - Provides the current candidate codegen style list for that family.
     """
 
     __slots__ = ()
@@ -35,10 +36,12 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
             spell_codegen_model: SpellCodegenModel,
     ) -> CodegenPlanDiscovery:
         """
-        Claim the model and return the generalized planner selection.
+        Claim the model and return the generalized planner-family selection.
         """
         _ = spell_codegen_model
         return CodegenPlanDiscovery(
             selected_strategy_id="generalized_codegen_plan",
             discovery_reason="default_generalized_model_native_strategy",
+            plan_family_id="generalized",
+            candidate_codegen_style_ids=("generalized_default",),
         )

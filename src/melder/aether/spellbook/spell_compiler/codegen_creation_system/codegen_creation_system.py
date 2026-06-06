@@ -98,6 +98,15 @@ class CodegenCreationSystem(Cleanable):
             discovery.selected_strategy_ids
         )
         spell_codegen_creation.discovery_reason = discovery.discovery_reason
+        spell_codegen_creation.metadata["selected_codegen_style_id"] = (
+            discovery.selected_codegen_style_id
+        )
+        spell_codegen_creation.metadata["selected_plan_family_id"] = (
+            spell_codegen_plan.plan_family_id
+        )
+        spell_codegen_creation.metadata["candidate_codegen_style_ids"] = (
+            spell_codegen_plan.candidate_codegen_style_ids
+        )
         selected_strategies = self._strategy_builder.get_strategies(
             discovery.selected_strategy_ids
         )

@@ -24,7 +24,8 @@ class CodegenCreationDiscoverySystem(Cleanable):
     Contract:
         - Reads the model and plan only.
         - Does not produce emitted code or runtime artifacts itself.
-        - Defaults to the first generalized Phase-13 migration chain until the
+        - Chooses the concrete codegen style for the current plan family.
+        - Defaults to the first generalized creation chain/style until the
           remaining creation lanes are ported fully.
     """
 
@@ -60,7 +61,8 @@ class CodegenCreationDiscoverySystem(Cleanable):
         Contract:
             - Reads planner metadata only for the current migration selection
               rule.
-            - Returns a deterministic strategy tuple in execution order.
+            - Returns a deterministic strategy tuple in execution order plus
+              one selected codegen style.
             - Does not mutate the model or plan.
         """
         strategies = self._strategy_builder.get_strategies(

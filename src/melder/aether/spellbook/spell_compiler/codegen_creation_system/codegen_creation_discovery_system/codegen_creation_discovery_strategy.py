@@ -23,6 +23,8 @@ class CodegenCreationDiscoveryStrategy(ABC):
     Contract:
         - Discovery strategies read only the current model and plan.
         - Discovery strategies do not build runtime artifacts directly.
+        - Discovery strategies choose the concrete codegen style for the
+          already-selected phase-10 plan family.
         - Returning `None` means the strategy declines the pair.
         - Returning `CodegenCreationDiscovery` means discovery should stop and
           use that result.
@@ -45,6 +47,6 @@ class CodegenCreationDiscoveryStrategy(ABC):
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Inspect the model/plan pair and optionally produce a discovery result.
+        Inspect the model/plan pair and optionally produce a codegen-style result.
         """
         raise NotImplementedError

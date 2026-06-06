@@ -20,6 +20,8 @@ class CodegenPlanDiscoveryStrategy(ABC):
     Contract:
         - Discovery strategies read only `SpellCodegenModel`.
         - Discovery strategies do not build planner artifacts directly.
+        - Discovery strategies choose a planning family, not the final emitted
+          runtime executors.
         - Returning `None` means the strategy declines the model.
         - Returning `CodegenPlanDiscovery` means discovery should stop and use
           that result.
@@ -41,6 +43,6 @@ class CodegenPlanDiscoveryStrategy(ABC):
             spell_codegen_model: SpellCodegenModel,
     ) -> Optional[CodegenPlanDiscovery]:
         """
-        Inspect the model and optionally produce a discovery result.
+        Inspect the model and optionally produce a planning-family result.
         """
         raise NotImplementedError
