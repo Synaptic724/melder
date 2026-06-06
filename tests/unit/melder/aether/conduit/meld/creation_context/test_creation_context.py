@@ -101,9 +101,7 @@ def _make_route_config(
 
 def _make_override_harness(
         *,
-        route_config_active: OverrideRouteConfig,
-        route_config_no_mutation: Optional[OverrideRouteConfig] = None,
-        route_config_mutation: Optional[OverrideRouteConfig] = None,
+        route_config: OverrideRouteConfig,
         patch_map: Optional[Any] = None,
 ) -> CreationContext:
     """
@@ -132,11 +130,9 @@ def _make_override_harness(
         context._override_apply_with_socket_shape_prechecked_phase10 = (
             patch_map._apply_with_socket_shape_prechecked
         )
-    context._override_route_config_no_mutation = route_config_no_mutation
-    context._override_route_config_mutation = route_config_mutation
-    context._override_route_config_active = route_config_active
+    context._override_route_config = route_config
     context._override_empty_shape_key = (
-        route_config_active.plan_signature,
+        route_config.plan_signature,
         (),
         -1,
     )
@@ -256,13 +252,9 @@ def test_creation_context_init_ignores_mutation_route_and_keeps_normal_baseline_
 
     baseline_no_mutation = lambda *args, **kwargs: "baseline-no-mutation"
     baseline_mutation = lambda *args, **kwargs: "baseline-mutation"
-    route_config_no_mutation = _make_route_config(
-        plan_signature=("phase11", "no-mutation", "rows"),
+    route_config = _make_route_config(
+        plan_signature=("phase11", "override", "rows"),
         baseline_executor=baseline_no_mutation,
-    )
-    route_config_mutation = _make_route_config(
-        plan_signature=("phase11", "mutation", "rows"),
-        baseline_executor=baseline_mutation,
     )
     patch_map = SimpleNamespace(
         _apply_with_socket_shape_prechecked=lambda **kwargs: ({}, ()),
@@ -277,22 +269,18 @@ def test_creation_context_init_ignores_mutation_route_and_keeps_normal_baseline_
         fast_transient_no_overrides_enabled=True,
         no_overrides_executor=lambda *args, **kwargs: "direct-no-overrides",
         override_targeting=patch_map,
-        override_route_config_no_mutation=route_config_no_mutation,
-        override_route_config_mutation=route_config_mutation,
+        override_route_config=route_config,
     )
 
-    assert context._override_route_config_active is route_config_no_mutation
+    assert context._override_route_config is route_config
     assert context._override_empty_shape_key == (
-        route_config_no_mutation.plan_signature,
+        route_config.plan_signature,
         (),
         -1,
     )
     assert context._override_specialization_cache[
-        (route_config_no_mutation.plan_signature, (), -1)
+        (route_config.plan_signature, (), -1)
     ] is baseline_no_mutation
-    assert context._override_specialization_cache[
-        (route_config_mutation.plan_signature, (), -1)
-    ] is baseline_mutation
     assert context._execute_hooks_no_overrides_compiled is hook_no_overrides
     assert context._execute_no_hooks_no_overrides_compiled is no_hooks_no_overrides
 
@@ -329,8 +317,8 @@ def test_creation_context_init_non_mutation_route_uses_no_override_compilers(
         lambda **kwargs: no_hooks_no_overrides,
     )
 
-    route_config_no_mutation = _make_route_config(
-        plan_signature=("phase11", "no-mutation", "rows"),
+    route_config = _make_route_config(
+        plan_signature=("phase11", "override", "rows"),
     )
 
     context = CreationContext(
@@ -342,11 +330,10 @@ def test_creation_context_init_non_mutation_route_uses_no_override_compilers(
         fast_transient_no_overrides_enabled=True,
         no_overrides_executor=lambda *args, **kwargs: "direct-no-overrides",
         override_targeting=None,
-        override_route_config_no_mutation=route_config_no_mutation,
-        override_route_config_mutation=None,
+        override_route_config=route_config,
     )
 
-    assert context._override_route_config_active is route_config_no_mutation
+    assert context._override_route_config is route_config
     assert context._execute_hooks_overrides_compiled is hook_overrides
     assert context._execute_hooks_no_overrides_compiled is hook_no_overrides
     assert context._execute_no_hooks_overrides_compiled is no_hooks_overrides
@@ -360,8 +347,7 @@ def test_execute_routes_automatic_mode_to_compiled_lanes() -> None:
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     context._execute_hooks_no_overrides_compiled = lambda caller_creations: ("auto-no-overrides", False)
@@ -377,8 +363,7 @@ def test_execute_dynamic_mode_waits_registers_and_unregisters_gate() -> None:
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     gate = _Gate(enabled=False, closed=False)
@@ -401,8 +386,7 @@ def test_execute_dynamic_mode_raises_when_gate_is_closed() -> None:
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     gate = _Gate(enabled=True, closed=True)
@@ -423,8 +407,7 @@ def test_execute_no_hooks_dynamic_mode_routes_overrides_and_balances_gate() -> N
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     gate = _Gate(enabled=True, closed=False)
@@ -446,8 +429,7 @@ def test_execute_no_hooks_routes_automatic_mode_to_compiled_lanes() -> None:
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     context._execute_no_hooks_no_overrides_compiled = lambda caller_creations: "auto-no-hooks-no-overrides"
@@ -463,8 +445,7 @@ def test_execute_no_hooks_dynamic_mode_waits_registers_and_returns_no_overrides(
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     gate = _Gate(enabled=False, closed=False)
@@ -493,8 +474,7 @@ def test_execute_no_hooks_dynamic_mode_raises_when_gate_closes_after_wait() -> N
 
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     gate = _ClosingGate(enabled=False, closed=False)
@@ -523,22 +503,17 @@ def test_cleanup_swallows_route_config_cleanup_failures_and_nulls_runtime_refs()
             self.calls += 1
             raise RuntimeError("boom")
 
-    route_config_active = _make_route_config(plan_signature=("phase11", "sig", "rows"))
+    route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config_active,
-        route_config_no_mutation=None,
-        route_config_mutation=None,
+        route_config=route_config,
         patch_map=object(),
     )
-    failing_no_mutation = _FailingRouteConfig()
-    failing_mutation = _FailingRouteConfig()
-    context._override_route_config_no_mutation = failing_no_mutation
-    context._override_route_config_mutation = failing_mutation
+    failing_route_config = _FailingRouteConfig()
+    context._override_route_config = failing_route_config
 
     context.cleanup()
 
-    assert failing_no_mutation.calls == 1
-    assert failing_mutation.calls == 1
+    assert failing_route_config.calls == 1
     assert not hasattr(context, "_spell")
     assert not hasattr(context, "_spell_id")
     assert not hasattr(context, "_override_specialization_cache")
@@ -551,8 +526,7 @@ def test_seed_baseline_override_executor_noops_without_shape_or_executor() -> No
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     context._override_specialization_cache.clear()
@@ -806,8 +780,7 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -886,8 +859,7 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -968,8 +940,7 @@ def test_get_or_compile_override_executor_passes_prefilter_cache_contract(
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -1029,8 +1000,7 @@ def test_get_or_compile_override_executor_without_plan_rows_uses_full_compiler(
         plan_rows=(),
     )
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -1083,8 +1053,7 @@ def test_get_or_build_override_executor_source_caches_emitted_source() -> None:
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     source_cache_key = (route_config.plan_signature, (), -1)
@@ -1119,8 +1088,7 @@ def test_get_or_build_override_executor_code_object_caches_compiled_code_object(
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     source_cache_key = (route_config.plan_signature, (), -1)
@@ -1167,8 +1135,7 @@ def test_execute_with_overrides_uses_baseline_executor_for_none_payload() -> Non
         baseline_executor=_baseline_executor,
     )
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -1198,8 +1165,7 @@ def test_execute_with_overrides_without_baseline_executor_uses_empty_shape_compi
         baseline_executor=None,
     )
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
     calls: list[dict[str, Any]] = []
@@ -1276,8 +1242,7 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
 
     patch_map = _PatchMap()
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=patch_map,
     )
     socket_ref = _SocketRef("s1", "dep", 7, "normal")
@@ -1356,8 +1321,7 @@ def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
 
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=_PatchMap(),
     )
     socket_ref = _SocketRef("s1", "dep", 7, "normal")
@@ -1416,8 +1380,7 @@ def test_collect_override_socket_shape_cached_handles_empty_and_cache_hit() -> N
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -1437,8 +1400,7 @@ def test_collect_override_socket_shape_cached_two_and_many_paths_reuse_cache() -
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=object(),
     )
 
@@ -1478,8 +1440,7 @@ def test_execute_with_overrides_wraps_phase10_apply_failures(
 
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=_PatchMap(),
     )
 
@@ -1497,8 +1458,7 @@ def test_execute_with_overrides_missing_patch_map_raises_meld_execution_error() 
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=None,
     )
 
@@ -1529,8 +1489,7 @@ def test_execute_with_overrides_reraises_meld_execution_error_from_phase10() -> 
 
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config,
-        route_config_no_mutation=route_config,
+        route_config=route_config,
         patch_map=_PatchMap(),
     )
 
@@ -1546,12 +1505,9 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     """
     Verify cleanup clears override cache and cleans route-config children.
     """
-    route_config_no_mutation = _make_route_config(plan_signature=("phase11", "a", "rows"))
-    route_config_mutation = _make_route_config(plan_signature=("phase11", "b", "rows"))
+    route_config = _make_route_config(plan_signature=("phase11", "a", "rows"))
     context = _make_override_harness(
-        route_config_active=route_config_no_mutation,
-        route_config_no_mutation=route_config_no_mutation,
-        route_config_mutation=route_config_mutation,
+        route_config=route_config,
         patch_map=object(),
     )
     context._override_specialization_cache[("k",)] = lambda *args, **kwargs: None
@@ -1566,8 +1522,8 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     assert not hasattr(context, '_override_prefilter_step_targets_cache')
     assert not hasattr(context, '_override_prefilter_path_metadata_cache')
     assert not hasattr(context, '_override_apply_with_socket_shape_prechecked_phase10')
-    assert not hasattr(route_config_no_mutation, 'plan_signature')
-    assert not hasattr(route_config_mutation, 'plan_signature')
+    assert not hasattr(route_config, 'plan_signature')
+
 
 
 

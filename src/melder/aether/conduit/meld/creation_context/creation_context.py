@@ -177,9 +177,7 @@ class CreationContext(Cleanable):
         "_no_overrides_executor",
         "_override_targeting",
         "_override_apply_with_socket_shape_prechecked_phase10",
-        "_override_route_config_no_mutation",
-        "_override_route_config_mutation",
-        "_override_route_config_active",
+        "_override_route_config",
         "_override_empty_shape_key",
         "_override_specialization_cache",
         "_override_executor_source_cache_by_plan_signature",
@@ -204,8 +202,7 @@ class CreationContext(Cleanable):
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
             override_targeting: Optional[Any] = None,
-            override_route_config_no_mutation: Optional[OverrideRouteConfig] = None,
-            override_route_config_mutation: Optional[OverrideRouteConfig] = None,
+            override_route_config: Optional[OverrideRouteConfig] = None,
     ) -> None:
         """
         Build one spell-shaped runtime context.
@@ -232,11 +229,8 @@ class CreationContext(Cleanable):
             override_targeting:
                 Prebound compiler-owned override targeting artifact for this
                 spell.
-            override_route_config_no_mutation:
-                Prebound override route config for non-mutation calls.
-            override_route_config_mutation:
-                Compatibility-only mutation route config retained while the
-                runtime migrates away from a separate mutation override lane.
+            override_route_config:
+                Prebound normal override route config for this spell.
         """
         super().__init__()
         self._spell: Spell = spell
@@ -264,19 +258,12 @@ class CreationContext(Cleanable):
             self._override_apply_with_socket_shape_prechecked_phase10 = (
                 override_targeting._apply_with_socket_shape_prechecked
             )
-        self._override_route_config_no_mutation: Optional[OverrideRouteConfig] = (
-            override_route_config_no_mutation
+        self._override_route_config: Optional[OverrideRouteConfig] = (
+            override_route_config
         )
-        self._override_route_config_mutation: Optional[OverrideRouteConfig] = (
-            override_route_config_mutation
-        )
-        self._override_route_config_active: Optional[OverrideRouteConfig] = (
-            override_route_config_no_mutation
-        )
-        override_route_config_active = self._override_route_config_active
-        if override_route_config_active is not None:
+        if override_route_config is not None:
             self._override_empty_shape_key: Optional[Tuple[Any, ...]] = (
-                override_route_config_active.plan_signature,
+                override_route_config.plan_signature,
                 (),
                 -1,
             )
@@ -303,8 +290,7 @@ class CreationContext(Cleanable):
         self._override_last_socket_shape: Optional[Tuple[Tuple[Any, ...], ...]] = None
         self._override_last_root_positional_arity: int = -2
         self._override_last_executor: Optional[Callable[..., Any]] = None
-        self._seed_baseline_override_executor(override_route_config_no_mutation)
-        self._seed_baseline_override_executor(override_route_config_mutation)
+        self._seed_baseline_override_executor(override_route_config)
         self._execute_hooks_overrides_compiled: Callable[..., tuple[Any, bool]] = (
             compile_creation_context_hooks_overrides_only_executor(
                 resolve_route_key=resolve_route_key,
@@ -389,17 +375,10 @@ class CreationContext(Cleanable):
         override_socket_shape_cache.clear()
         self._override_last_root_positional_arity = -2
 
-        override_route_config_no_mutation = self._override_route_config_no_mutation
-        if override_route_config_no_mutation is not None:
+        override_route_config = self._override_route_config
+        if override_route_config is not None:
             try:
-                override_route_config_no_mutation.cleanup()
-            except Exception:
-                pass
-
-        override_route_config_mutation = self._override_route_config_mutation
-        if override_route_config_mutation is not None:
-            try:
-                override_route_config_mutation.cleanup()
+                override_route_config.cleanup()
             except Exception:
                 pass
 
@@ -418,9 +397,7 @@ class CreationContext(Cleanable):
         del self._no_overrides_executor
         del self._override_targeting
         del self._override_apply_with_socket_shape_prechecked_phase10
-        del self._override_route_config_no_mutation
-        del self._override_route_config_mutation
-        del self._override_route_config_active
+        del self._override_route_config
         del self._override_empty_shape_key
         del self._override_specialization_cache
         del self._override_executor_source_cache_by_plan_signature
@@ -623,7 +600,7 @@ class CreationContext(Cleanable):
             - Compiles new override executors only on structural cache miss.
         """
         spell = self._spell
-        override_route_config = self._override_route_config_active
+        override_route_config = self._override_route_config
         owner_creations = self._owner_creations
         if override_route_config is None:
             raise RuntimeError(

@@ -14,9 +14,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.s
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy import (
     SpellGeneralizedOverridesCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
-    SpellGeneralizedMutationOverridesCodegenCreationStrategy,
-)
 
 
 class SpellCodegenStrategyBuilder(Cleanable):
@@ -56,7 +53,7 @@ class SpellCodegenStrategyBuilder(Cleanable):
 
         Contract:
             - Current defaults are the first Phase-13 migration strategies:
-              setup, no-overrides, overrides, and mutation-overrides.
+              setup, no-overrides, and overrides.
             - Registration order is execution order.
         """
         generalized_creation_context_setup_codegen_creation_strategy = (
@@ -77,12 +74,6 @@ class SpellCodegenStrategyBuilder(Cleanable):
         self._strategies_by_name[
             generalized_overrides_codegen_creation_strategy.strategy_id
         ] = generalized_overrides_codegen_creation_strategy
-        generalized_mutation_overrides_codegen_creation_strategy = (
-            SpellGeneralizedMutationOverridesCodegenCreationStrategy()
-        )
-        self._strategies_by_name[
-            generalized_mutation_overrides_codegen_creation_strategy.strategy_id
-        ] = generalized_mutation_overrides_codegen_creation_strategy
 
     def get_strategy(
             self,

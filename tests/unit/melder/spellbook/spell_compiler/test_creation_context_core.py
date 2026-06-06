@@ -146,20 +146,13 @@ def _make_codegen_creation(
         fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
         no_overrides_executor=no_overrides_executor,
         override_targeting=None,
-        override_no_mutation_plan_signature=None,
-        override_no_mutation_path_registry=None,
-        override_no_mutation_plan_rows=None,
-        override_no_mutation_root_spell_id=None,
-        override_no_mutation_spell_lookup=None,
-        override_no_mutation_empty_shape_key=None,
-        override_no_mutation_baseline_executor=None,
-        override_mutation_plan_signature=None,
-        override_mutation_path_registry=None,
-        override_mutation_plan_rows=None,
-        override_mutation_root_spell_id=None,
-        override_mutation_spell_lookup=None,
-        override_mutation_empty_shape_key=None,
-        override_mutation_baseline_executor=None,
+        override_plan_signature=None,
+        override_path_registry=None,
+        override_plan_rows=None,
+        override_root_spell_id=None,
+        override_spell_lookup=None,
+        override_empty_shape_key=None,
+        override_baseline_executor=None,
     )
 
 
@@ -170,8 +163,7 @@ def _make_spell(
         user_created_object=None,
         resolve_route_key: str = "many",
         has_codegen_creation: bool = True,
-        has_mutation_override: bool = False,
-) -> object:
+        ) -> object:
     """Build the minimal spell surface needed by creation-context tests."""
     artifact = SpellCompilerArtifact(spell_id)
     if has_codegen_creation:
@@ -191,7 +183,6 @@ def _make_spell(
         user_created_object=user_created_object,
         _owner_creations=SimpleNamespace(),
         _compiler_artifact=artifact,
-        has_mutation_override=has_mutation_override,
         _creation_context=None,
         _creation_context_factory=None,
         _creation_context_switch=_CounterSwitchStub(),
@@ -378,3 +369,4 @@ def test_creation_context_override_shape_helpers_cache_and_group_targets_by_spel
         "dep": (third_socket_ref,),
         "root": (first_socket_ref, second_socket_ref),
     }
+

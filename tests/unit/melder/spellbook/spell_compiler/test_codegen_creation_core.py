@@ -7,7 +7,6 @@ import pytest
 
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy as no_overrides_strategy_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy as overrides_strategy_module
-import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy as mutation_strategy_module
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
 )
@@ -29,9 +28,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_overri
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
     SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_mutation_overrides_codegen_creation_strategy import (
-    SpellGeneralizedMutationOverridesCodegenCreationStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
     SpellGeneralizedNoOverridesCodegenCreationStrategy,
@@ -121,7 +117,6 @@ def test_codegen_creation_discovery_system_selects_generalized_chain_by_default(
             plan_strategy_ids=("generalized_codegen_plan",),
             no_overrides_plan=None,
             overrides_plan=None,
-            mutation_overrides_plan=None,
             metadata={"selected_strategy_id": "generalized_codegen_plan"},
         ),
     )
@@ -130,7 +125,6 @@ def test_codegen_creation_discovery_system_selects_generalized_chain_by_default(
         "generalized_creation_context_setup_codegen_creation",
         "generalized_no_overrides_codegen_creation",
         "generalized_overrides_codegen_creation",
-        "generalized_mutation_overrides_codegen_creation",
     )
     assert discovery.discovery_reason == (
         "default_generalized_plan_codegen_creation_chain"
@@ -146,7 +140,6 @@ def test_codegen_creation_discovery_system_falls_back_to_no_overrides_chain() ->
             plan_strategy_ids=(),
             no_overrides_plan=None,
             overrides_plan=None,
-            mutation_overrides_plan=None,
             metadata={"selected_strategy_id": "other_plan"},
         ),
     )
@@ -165,7 +158,6 @@ def test_spell_codegen_strategy_builder_registers_default_order() -> None:
         "generalized_creation_context_setup_codegen_creation",
         "generalized_no_overrides_codegen_creation",
         "generalized_overrides_codegen_creation",
-        "generalized_mutation_overrides_codegen_creation",
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_creation'"):
         builder.get_strategy("missing_creation")
@@ -182,20 +174,13 @@ def test_spell_codegen_creation_cleanup_cleans_override_targeting_and_metadata()
         no_overrides_executor=object(),
         no_overrides_executor_signature="sig",
         override_targeting=override_targeting,
-        override_no_mutation_plan_signature=("a",),
-        override_no_mutation_path_registry=object(),
-        override_no_mutation_plan_rows=(),
-        override_no_mutation_root_spell_id="root",
-        override_no_mutation_spell_lookup={},
-        override_no_mutation_empty_shape_key=("k",),
-        override_no_mutation_baseline_executor=object(),
-        override_mutation_plan_signature=("b",),
-        override_mutation_path_registry=object(),
-        override_mutation_plan_rows=(),
-        override_mutation_root_spell_id="root",
-        override_mutation_spell_lookup={},
-        override_mutation_empty_shape_key=("m",),
-        override_mutation_baseline_executor=object(),
+        override_plan_signature=("a",),
+        override_path_registry=object(),
+        override_plan_rows=(),
+        override_root_spell_id="root",
+        override_spell_lookup={},
+        override_empty_shape_key=("k",),
+        override_baseline_executor=object(),
         metadata={"hello": "world"},
     )
 
@@ -367,7 +352,6 @@ def test_creation_context_setup_strategy_resolves_route_key_and_transient_flag()
             {"fast_transient_plan": object()},
         )(),
         overrides_plan=None,
-        mutation_overrides_plan=None,
         metadata={},
     )
     creation = SpellCodegenCreation(
@@ -378,20 +362,13 @@ def test_creation_context_setup_strategy_resolves_route_key_and_transient_flag()
         no_overrides_executor=None,
         no_overrides_executor_signature=None,
         override_targeting=None,
-        override_no_mutation_plan_signature=None,
-        override_no_mutation_path_registry=None,
-        override_no_mutation_plan_rows=None,
-        override_no_mutation_root_spell_id=None,
-        override_no_mutation_spell_lookup=None,
-        override_no_mutation_empty_shape_key=None,
-        override_no_mutation_baseline_executor=None,
-        override_mutation_plan_signature=None,
-        override_mutation_path_registry=None,
-        override_mutation_plan_rows=None,
-        override_mutation_root_spell_id=None,
-        override_mutation_spell_lookup=None,
-        override_mutation_empty_shape_key=None,
-        override_mutation_baseline_executor=None,
+        override_plan_signature=None,
+        override_path_registry=None,
+        override_plan_rows=None,
+        override_root_spell_id=None,
+        override_spell_lookup=None,
+        override_empty_shape_key=None,
+        override_baseline_executor=None,
         metadata={},
     )
 
@@ -430,7 +407,6 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
             },
         )(),
         overrides_plan=None,
-        mutation_overrides_plan=None,
         metadata={},
     )
     creation = SpellCodegenCreation(
@@ -441,20 +417,13 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
         no_overrides_executor=None,
         no_overrides_executor_signature=None,
         override_targeting=None,
-        override_no_mutation_plan_signature=None,
-        override_no_mutation_path_registry=None,
-        override_no_mutation_plan_rows=None,
-        override_no_mutation_root_spell_id=None,
-        override_no_mutation_spell_lookup=None,
-        override_no_mutation_empty_shape_key=None,
-        override_no_mutation_baseline_executor=None,
-        override_mutation_plan_signature=None,
-        override_mutation_path_registry=None,
-        override_mutation_plan_rows=None,
-        override_mutation_root_spell_id=None,
-        override_mutation_spell_lookup=None,
-        override_mutation_empty_shape_key=None,
-        override_mutation_baseline_executor=None,
+        override_plan_signature=None,
+        override_path_registry=None,
+        override_plan_rows=None,
+        override_root_spell_id=None,
+        override_spell_lookup=None,
+        override_empty_shape_key=None,
+        override_baseline_executor=None,
         metadata={},
     )
 
@@ -640,7 +609,6 @@ def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
                 ),
             },
         )(),
-        mutation_overrides_plan=None,
         metadata={},
     )
     creation = SpellCodegenCreation(
@@ -651,20 +619,13 @@ def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
         no_overrides_executor=None,
         no_overrides_executor_signature=None,
         override_targeting=None,
-        override_no_mutation_plan_signature=None,
-        override_no_mutation_path_registry=None,
-        override_no_mutation_plan_rows=None,
-        override_no_mutation_root_spell_id=None,
-        override_no_mutation_spell_lookup=None,
-        override_no_mutation_empty_shape_key=None,
-        override_no_mutation_baseline_executor=None,
-        override_mutation_plan_signature=None,
-        override_mutation_path_registry=None,
-        override_mutation_plan_rows=None,
-        override_mutation_root_spell_id=None,
-        override_mutation_spell_lookup=None,
-        override_mutation_empty_shape_key=None,
-        override_mutation_baseline_executor=None,
+        override_plan_signature=None,
+        override_path_registry=None,
+        override_plan_rows=None,
+        override_root_spell_id=None,
+        override_spell_lookup=None,
+        override_empty_shape_key=None,
+        override_baseline_executor=None,
         metadata={},
     )
     state = type(
@@ -714,109 +675,15 @@ def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
     )
 
     assert creation.override_targeting is not None
-    assert creation.override_no_mutation_root_spell_id == "root"
-    assert creation.override_no_mutation_path_registry == "PATH_REG"
-    assert creation.override_no_mutation_baseline_executor == (
+    assert creation.override_root_spell_id == "root"
+    assert creation.override_path_registry == "PATH_REG"
+    assert creation.override_baseline_executor == (
         "override-executor",
         "root",
     )
     assert creation.metadata["override_lane_id"] == "overrides"
     assert creation.metadata["override_root_spell_id"] == "root"
     assert creation.metadata["override_step_count"] == 1
-
-
-def test_mutation_overrides_codegen_creation_strategy_publishes_mutation_route_payload(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The mutation-overrides creation strategy should package the mutation-aware override route onto the creation artifact."""
-    plan = SpellCodegenPlan(
-        processor_strategy_ids=(),
-        plan_strategy_ids=(),
-        no_overrides_plan=None,
-        overrides_plan=None,
-        mutation_overrides_plan=type(
-            "LanePlanProbe",
-            (),
-            {
-                "lane_id": "mutation_overrides",
-                "root_spell_id": "root",
-                "steps": (
-                    SimpleNamespace(
-                        spell=SimpleNamespace(
-                            spell_index=SimpleNamespace(current="root"),
-                        )
-                    ),
-                ),
-            },
-        )(),
-        metadata={},
-    )
-    creation = SpellCodegenCreation(
-        selected_strategy_ids=(),
-        discovery_reason=None,
-        resolve_route_key=None,
-        fast_transient_no_overrides_enabled=False,
-        no_overrides_executor=None,
-        no_overrides_executor_signature=None,
-        override_targeting=None,
-        override_no_mutation_plan_signature=None,
-        override_no_mutation_path_registry=None,
-        override_no_mutation_plan_rows=None,
-        override_no_mutation_root_spell_id=None,
-        override_no_mutation_spell_lookup=None,
-        override_no_mutation_empty_shape_key=None,
-        override_no_mutation_baseline_executor=None,
-        override_mutation_plan_signature=None,
-        override_mutation_path_registry=None,
-        override_mutation_plan_rows=None,
-        override_mutation_root_spell_id=None,
-        override_mutation_spell_lookup=None,
-        override_mutation_empty_shape_key=None,
-        override_mutation_baseline_executor=None,
-        metadata={},
-    )
-    state = type(
-        "ModelProbe",
-        (),
-        {
-            "graph_shape": SimpleNamespace(path_registry="PATH_REG"),
-        },
-    )()
-
-    monkeypatch.setattr(
-        mutation_strategy_module.SharedCompilerExecutions,
-        "build_phase11_step_ir_row",
-        lambda step, include_override_metadata: {
-            "step": step.spell.spell_index.current,
-            "include_override_metadata": include_override_metadata,
-        },
-    )
-    monkeypatch.setattr(
-        mutation_strategy_module.SharedCompilerExecutions,
-        "hash_codegen_signature",
-        lambda *parts: ("sig", len(parts)),
-    )
-    monkeypatch.setattr(
-        mutation_strategy_module,
-        "compile_overrides_codegen_creation_executor",
-        lambda **kwargs: ("mutation-executor", kwargs["root_spell_id"]),
-    )
-
-    SpellGeneralizedMutationOverridesCodegenCreationStrategy().apply(
-        state,
-        plan,
-        creation,
-    )
-
-    assert creation.override_mutation_root_spell_id == "root"
-    assert creation.override_mutation_path_registry == "PATH_REG"
-    assert creation.override_mutation_baseline_executor == (
-        "mutation-executor",
-        "root",
-    )
-    assert creation.metadata["override_mutation_lane_id"] == "mutation_overrides"
-    assert creation.metadata["override_mutation_root_spell_id"] == "root"
-    assert creation.metadata["override_mutation_step_count"] == 1
 
 
 def test_codegen_creation_system_cleanup_cleans_builder_and_drops_owned_refs() -> None:
@@ -831,4 +698,6 @@ def test_codegen_creation_system_cleanup_cleans_builder_and_drops_owned_refs() -
     assert builder.cleanup_called is True
     assert not hasattr(system, "_strategy_builder")
     assert not hasattr(system, "_discovery_system")
+
+
 

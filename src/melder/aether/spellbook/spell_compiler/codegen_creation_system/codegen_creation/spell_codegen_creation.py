@@ -37,20 +37,13 @@ class SpellCodegenCreation(Cleanable):
         "no_overrides_executor",
         "no_overrides_executor_signature",
         "override_targeting",
-        "override_no_mutation_plan_signature",
-        "override_no_mutation_path_registry",
-        "override_no_mutation_plan_rows",
-        "override_no_mutation_root_spell_id",
-        "override_no_mutation_spell_lookup",
-        "override_no_mutation_empty_shape_key",
-        "override_no_mutation_baseline_executor",
-        "override_mutation_plan_signature",
-        "override_mutation_path_registry",
-        "override_mutation_plan_rows",
-        "override_mutation_root_spell_id",
-        "override_mutation_spell_lookup",
-        "override_mutation_empty_shape_key",
-        "override_mutation_baseline_executor",
+        "override_plan_signature",
+        "override_path_registry",
+        "override_plan_rows",
+        "override_root_spell_id",
+        "override_spell_lookup",
+        "override_empty_shape_key",
+        "override_baseline_executor",
         "metadata",
     ]
 
@@ -64,20 +57,13 @@ class SpellCodegenCreation(Cleanable):
             no_overrides_executor: Optional[Callable[..., Any]],
             no_overrides_executor_signature: Optional[str],
             override_targeting: Optional["SpellOverrideTargetingCodegenCreation"],
-            override_no_mutation_plan_signature: Optional[Tuple[Any, ...]],
-            override_no_mutation_path_registry: Optional[Any],
-            override_no_mutation_plan_rows: Optional[Sequence[Dict[str, Any]]],
-            override_no_mutation_root_spell_id: Optional[str],
-            override_no_mutation_spell_lookup: Optional[Dict[str, Any]],
-            override_no_mutation_empty_shape_key: Optional[Tuple[Any, ...]],
-            override_no_mutation_baseline_executor: Optional[Callable[..., Any]],
-            override_mutation_plan_signature: Optional[Tuple[Any, ...]],
-            override_mutation_path_registry: Optional[Any],
-            override_mutation_plan_rows: Optional[Sequence[Dict[str, Any]]],
-            override_mutation_root_spell_id: Optional[str],
-            override_mutation_spell_lookup: Optional[Dict[str, Any]],
-            override_mutation_empty_shape_key: Optional[Tuple[Any, ...]],
-            override_mutation_baseline_executor: Optional[Callable[..., Any]],
+            override_plan_signature: Optional[Tuple[Any, ...]],
+            override_path_registry: Optional[Any],
+            override_plan_rows: Optional[Sequence[Dict[str, Any]]],
+            override_root_spell_id: Optional[str],
+            override_spell_lookup: Optional[Dict[str, Any]],
+            override_empty_shape_key: Optional[Tuple[Any, ...]],
+            override_baseline_executor: Optional[Callable[..., Any]],
             metadata: Dict[str, Any],
     ) -> None:
         """
@@ -86,8 +72,7 @@ class SpellCodegenCreation(Cleanable):
         Contract:
             - Top-level fields describe the spell-static creation handoff.
             - Lane fields may be `None` until that lane's strategy is ported.
-            - Override fields are split explicitly into non-mutation and
-              mutation-aware sections to mirror the current runtime seam.
+            - Override fields describe one normal override route only.
         """
         super().__init__()
         self.selected_strategy_ids = selected_strategy_ids
@@ -99,44 +84,13 @@ class SpellCodegenCreation(Cleanable):
         self.no_overrides_executor = no_overrides_executor
         self.no_overrides_executor_signature = no_overrides_executor_signature
         self.override_targeting = override_targeting
-        self.override_no_mutation_plan_signature = (
-            override_no_mutation_plan_signature
-        )
-        self.override_no_mutation_path_registry = (
-            override_no_mutation_path_registry
-        )
-        self.override_no_mutation_plan_rows = override_no_mutation_plan_rows
-        self.override_no_mutation_root_spell_id = (
-            override_no_mutation_root_spell_id
-        )
-        self.override_no_mutation_spell_lookup = (
-            override_no_mutation_spell_lookup
-        )
-        self.override_no_mutation_empty_shape_key = (
-            override_no_mutation_empty_shape_key
-        )
-        self.override_no_mutation_baseline_executor = (
-            override_no_mutation_baseline_executor
-        )
-        self.override_mutation_plan_signature = (
-            override_mutation_plan_signature
-        )
-        self.override_mutation_path_registry = (
-            override_mutation_path_registry
-        )
-        self.override_mutation_plan_rows = override_mutation_plan_rows
-        self.override_mutation_root_spell_id = (
-            override_mutation_root_spell_id
-        )
-        self.override_mutation_spell_lookup = (
-            override_mutation_spell_lookup
-        )
-        self.override_mutation_empty_shape_key = (
-            override_mutation_empty_shape_key
-        )
-        self.override_mutation_baseline_executor = (
-            override_mutation_baseline_executor
-        )
+        self.override_plan_signature = override_plan_signature
+        self.override_path_registry = override_path_registry
+        self.override_plan_rows = override_plan_rows
+        self.override_root_spell_id = override_root_spell_id
+        self.override_spell_lookup = override_spell_lookup
+        self.override_empty_shape_key = override_empty_shape_key
+        self.override_baseline_executor = override_baseline_executor
         self.metadata = metadata
 
     def cleanup(self) -> None:
@@ -159,18 +113,11 @@ class SpellCodegenCreation(Cleanable):
         del self.no_overrides_executor
         del self.no_overrides_executor_signature
         del self.override_targeting
-        del self.override_no_mutation_plan_signature
-        del self.override_no_mutation_path_registry
-        del self.override_no_mutation_plan_rows
-        del self.override_no_mutation_root_spell_id
-        del self.override_no_mutation_spell_lookup
-        del self.override_no_mutation_empty_shape_key
-        del self.override_no_mutation_baseline_executor
-        del self.override_mutation_plan_signature
-        del self.override_mutation_path_registry
-        del self.override_mutation_plan_rows
-        del self.override_mutation_root_spell_id
-        del self.override_mutation_spell_lookup
-        del self.override_mutation_empty_shape_key
-        del self.override_mutation_baseline_executor
+        del self.override_plan_signature
+        del self.override_path_registry
+        del self.override_plan_rows
+        del self.override_root_spell_id
+        del self.override_spell_lookup
+        del self.override_empty_shape_key
+        del self.override_baseline_executor
         del self.metadata

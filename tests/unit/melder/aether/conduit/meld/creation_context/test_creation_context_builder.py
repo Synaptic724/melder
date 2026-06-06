@@ -22,20 +22,13 @@ def _make_creation_artifact(
         fast_transient_no_overrides_enabled: bool = False,
         no_overrides_executor: Optional[Any] = None,
         override_targeting: Optional[Any] = None,
-        override_no_mutation_plan_signature: Optional[tuple[Any, ...]] = None,
-        override_no_mutation_path_registry: Optional[Any] = None,
-        override_no_mutation_plan_rows: Optional[Any] = None,
-        override_no_mutation_root_spell_id: Optional[str] = None,
-        override_no_mutation_spell_lookup: Optional[Any] = None,
-        override_no_mutation_empty_shape_key: Optional[tuple[Any, ...]] = None,
-        override_no_mutation_baseline_executor: Optional[Any] = None,
-        override_mutation_plan_signature: Optional[tuple[Any, ...]] = None,
-        override_mutation_path_registry: Optional[Any] = None,
-        override_mutation_plan_rows: Optional[Any] = None,
-        override_mutation_root_spell_id: Optional[str] = None,
-        override_mutation_spell_lookup: Optional[Any] = None,
-        override_mutation_empty_shape_key: Optional[tuple[Any, ...]] = None,
-        override_mutation_baseline_executor: Optional[Any] = None,
+        override_plan_signature: Optional[tuple[Any, ...]] = None,
+        override_path_registry: Optional[Any] = None,
+        override_plan_rows: Optional[Any] = None,
+        override_root_spell_id: Optional[str] = None,
+        override_spell_lookup: Optional[Any] = None,
+        override_empty_shape_key: Optional[tuple[Any, ...]] = None,
+        override_baseline_executor: Optional[Any] = None,
 ) -> Any:
     """Build a minimal `SpellCodegenCreation`-shaped stub for builder tests."""
     return SimpleNamespace(
@@ -43,20 +36,13 @@ def _make_creation_artifact(
         fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
         no_overrides_executor=no_overrides_executor,
         override_targeting=override_targeting,
-        override_no_mutation_plan_signature=override_no_mutation_plan_signature,
-        override_no_mutation_path_registry=override_no_mutation_path_registry,
-        override_no_mutation_plan_rows=override_no_mutation_plan_rows,
-        override_no_mutation_root_spell_id=override_no_mutation_root_spell_id,
-        override_no_mutation_spell_lookup=override_no_mutation_spell_lookup,
-        override_no_mutation_empty_shape_key=override_no_mutation_empty_shape_key,
-        override_no_mutation_baseline_executor=override_no_mutation_baseline_executor,
-        override_mutation_plan_signature=override_mutation_plan_signature,
-        override_mutation_path_registry=override_mutation_path_registry,
-        override_mutation_plan_rows=override_mutation_plan_rows,
-        override_mutation_root_spell_id=override_mutation_root_spell_id,
-        override_mutation_spell_lookup=override_mutation_spell_lookup,
-        override_mutation_empty_shape_key=override_mutation_empty_shape_key,
-        override_mutation_baseline_executor=override_mutation_baseline_executor,
+        override_plan_signature=override_plan_signature,
+        override_path_registry=override_path_registry,
+        override_plan_rows=override_plan_rows,
+        override_root_spell_id=override_root_spell_id,
+        override_spell_lookup=override_spell_lookup,
+        override_empty_shape_key=override_empty_shape_key,
+        override_baseline_executor=override_baseline_executor,
     )
 
 
@@ -64,7 +50,6 @@ def _make_spell(
         *,
         is_existing_creation: bool = False,
         existence: Existence = Existence.unique,
-        has_mutation_override: bool = False,
         creation_artifact: Optional[Any] = None,
 ) -> Any:
     """Build a minimal spell stub for `CreationContextBuilder` tests."""
@@ -77,7 +62,6 @@ def _make_spell(
         spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
         existence=existence,
         is_existing_creation=is_existing_creation,
-        has_mutation_override=has_mutation_override,
         _owner_creations=object(),
         _compiler_artifact=compiler_artifact,
         _spellbook=SimpleNamespace(_spell_id_pool={"spell-1": object()}),
@@ -114,8 +98,7 @@ def test_build_allows_existing_creation_without_codegen_creation(
     assert captured["resolve_route_key"] == CreationContext.ROUTE_EXISTING_CREATION
     assert captured["no_overrides_executor"] is None
     assert captured["override_targeting"] is None
-    assert captured["override_route_config_no_mutation"] is None
-    assert captured["override_route_config_mutation"] is None
+    assert captured["override_route_config"] is None
 
 
 def test_build_forwards_creation_artifact_fields_into_creation_context(
@@ -128,22 +111,14 @@ def test_build_forwards_creation_artifact_fields_into_creation_context(
             fast_transient_no_overrides_enabled=True,
             no_overrides_executor="executor",
             override_targeting="targeting",
-            override_no_mutation_plan_signature=("no-mutation",),
-            override_no_mutation_path_registry="path-registry",
-            override_no_mutation_plan_rows=("rows",),
-            override_no_mutation_root_spell_id="spell-1",
-            override_no_mutation_spell_lookup={"spell-1": object()},
-            override_no_mutation_empty_shape_key=("empty",),
-            override_no_mutation_baseline_executor="baseline",
-            override_mutation_plan_signature=("mutation",),
-            override_mutation_path_registry="mutation-path-registry",
-            override_mutation_plan_rows=("mutation-rows",),
-            override_mutation_root_spell_id="spell-1",
-            override_mutation_spell_lookup={"spell-1": object()},
-            override_mutation_empty_shape_key=("mutation-empty",),
-            override_mutation_baseline_executor="mutation-baseline",
+            override_plan_signature=("override",),
+            override_path_registry="path-registry",
+            override_plan_rows=("rows",),
+            override_root_spell_id="spell-1",
+            override_spell_lookup={"spell-1": object()},
+            override_empty_shape_key=("empty",),
+            override_baseline_executor="baseline",
         ),
-        has_mutation_override=True,
     )
     captured: dict[str, Any] = {}
 
@@ -170,10 +145,8 @@ def test_build_forwards_creation_artifact_fields_into_creation_context(
     assert captured["fast_transient_no_overrides_enabled"] is True
     assert captured["no_overrides_executor"] == "executor"
     assert captured["override_targeting"] == "targeting"
-    assert isinstance(captured["override_route_config_no_mutation"], OverrideRouteConfig)
-    assert isinstance(captured["override_route_config_mutation"], OverrideRouteConfig)
-    assert captured["override_route_config_no_mutation"].plan_signature == ("no-mutation",)
-    assert captured["override_route_config_mutation"].plan_signature == ("mutation",)
+    assert isinstance(captured["override_route_config"], OverrideRouteConfig)
+    assert captured["override_route_config"].plan_signature == ("override",)
 
 
 def test_resolve_route_key_uses_existing_creation_shortcut() -> None:

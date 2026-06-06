@@ -31,12 +31,12 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 
 class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
     """
-    Generalized non-mutation overrides codegen creation strategy.
+    Generalized overrides codegen creation strategy.
 
     Purpose:
-        Port the non-mutation override packaging that is currently assembled in
-        `CreationContextBuilder` into the codegen-creation layer, using the new
-        generalized overrides lane plan as the spell-static source of truth.
+        Port the normal override packaging into the codegen-creation layer,
+        using the generalized overrides lane plan as the spell-static source
+        of truth.
     """
 
     __slots__ = ()
@@ -55,7 +55,7 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
             spell_codegen_creation: SpellCodegenCreation,
     ) -> None:
         """
-        Populate the non-mutation overrides creation payload.
+        Populate the normal overrides creation payload.
 
         Contract:
             - Requires the planner to have already produced an overrides lane
@@ -90,27 +90,13 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
                 specificity_by_spec=override_targeting_shape.specificity_by_spec,
             )
         )
-        spell_codegen_creation.override_no_mutation_plan_signature = (
-            override_route_config.plan_signature
-        )
-        spell_codegen_creation.override_no_mutation_path_registry = (
-            override_route_config.path_registry
-        )
-        spell_codegen_creation.override_no_mutation_plan_rows = (
-            override_route_config.plan_rows
-        )
-        spell_codegen_creation.override_no_mutation_root_spell_id = (
-            override_route_config.root_spell_id
-        )
-        spell_codegen_creation.override_no_mutation_spell_lookup = (
-            override_route_config.spell_lookup
-        )
-        spell_codegen_creation.override_no_mutation_empty_shape_key = (
-            override_route_config.empty_shape_key
-        )
-        spell_codegen_creation.override_no_mutation_baseline_executor = (
-            override_route_config.baseline_executor
-        )
+        spell_codegen_creation.override_plan_signature = override_route_config.plan_signature
+        spell_codegen_creation.override_path_registry = override_route_config.path_registry
+        spell_codegen_creation.override_plan_rows = override_route_config.plan_rows
+        spell_codegen_creation.override_root_spell_id = override_route_config.root_spell_id
+        spell_codegen_creation.override_spell_lookup = override_route_config.spell_lookup
+        spell_codegen_creation.override_empty_shape_key = override_route_config.empty_shape_key
+        spell_codegen_creation.override_baseline_executor = override_route_config.baseline_executor
         spell_codegen_creation.metadata["override_lane_id"] = overrides_plan.lane_id
         spell_codegen_creation.metadata["override_root_spell_id"] = (
             overrides_plan.root_spell_id
@@ -129,7 +115,7 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
             overrides_plan: SpellGeneralizedCodegenLanePlan,
     ) -> OverrideRouteConfig:
         """
-        Build the spell-static non-mutation override route config.
+        Build the spell-static override route config.
 
         Contract:
             - Uses the generalized overrides lane plan as the source of truth.

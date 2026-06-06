@@ -97,43 +97,24 @@ class CreationContextBuilder:
         )
         no_overrides_executor = None
         override_targeting = None
-        override_route_config_no_mutation = None
-        override_route_config_mutation = None
+        override_route_config = None
         if spell_codegen_creation is not None:
             no_overrides_executor = spell_codegen_creation.no_overrides_executor
             override_targeting = spell_codegen_creation.override_targeting
 
             if (
-                    spell_codegen_creation.override_no_mutation_plan_signature is not None
-                    or spell_codegen_creation.override_no_mutation_plan_rows is not None
-                    or spell_codegen_creation.override_no_mutation_baseline_executor is not None
+                    spell_codegen_creation.override_plan_signature is not None
+                    or spell_codegen_creation.override_plan_rows is not None
+                    or spell_codegen_creation.override_baseline_executor is not None
             ):
-                override_route_config_no_mutation = CreationContextBuilder._build_override_route_config_from_creation(
-                    plan_signature=spell_codegen_creation.override_no_mutation_plan_signature,
-                    path_registry=spell_codegen_creation.override_no_mutation_path_registry,
-                    plan_rows=spell_codegen_creation.override_no_mutation_plan_rows,
-                    root_spell_id=spell_codegen_creation.override_no_mutation_root_spell_id,
-                    spell_lookup=spell_codegen_creation.override_no_mutation_spell_lookup,
-                    empty_shape_key=spell_codegen_creation.override_no_mutation_empty_shape_key,
-                    baseline_executor=spell_codegen_creation.override_no_mutation_baseline_executor,
-                )
-
-            if (
-                    spell.has_mutation_override
-                    and (
-                        spell_codegen_creation.override_mutation_plan_signature is not None
-                        or spell_codegen_creation.override_mutation_plan_rows is not None
-                        or spell_codegen_creation.override_mutation_baseline_executor is not None
-                    )
-            ):
-                override_route_config_mutation = CreationContextBuilder._build_override_route_config_from_creation(
-                    plan_signature=spell_codegen_creation.override_mutation_plan_signature,
-                    path_registry=spell_codegen_creation.override_mutation_path_registry,
-                    plan_rows=spell_codegen_creation.override_mutation_plan_rows,
-                    root_spell_id=spell_codegen_creation.override_mutation_root_spell_id,
-                    spell_lookup=spell_codegen_creation.override_mutation_spell_lookup,
-                    empty_shape_key=spell_codegen_creation.override_mutation_empty_shape_key,
-                    baseline_executor=spell_codegen_creation.override_mutation_baseline_executor,
+                override_route_config = CreationContextBuilder._build_override_route_config_from_creation(
+                    plan_signature=spell_codegen_creation.override_plan_signature,
+                    path_registry=spell_codegen_creation.override_path_registry,
+                    plan_rows=spell_codegen_creation.override_plan_rows,
+                    root_spell_id=spell_codegen_creation.override_root_spell_id,
+                    spell_lookup=spell_codegen_creation.override_spell_lookup,
+                    empty_shape_key=spell_codegen_creation.override_empty_shape_key,
+                    baseline_executor=spell_codegen_creation.override_baseline_executor,
                 )
 
         return CreationContext(
@@ -145,8 +126,7 @@ class CreationContextBuilder:
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             no_overrides_executor=no_overrides_executor,
             override_targeting=override_targeting,
-            override_route_config_no_mutation=override_route_config_no_mutation,
-            override_route_config_mutation=override_route_config_mutation,
+            override_route_config=override_route_config,
         )
 
     @staticmethod
