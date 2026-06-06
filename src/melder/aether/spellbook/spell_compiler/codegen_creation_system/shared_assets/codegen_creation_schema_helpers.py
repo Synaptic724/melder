@@ -3,7 +3,7 @@ import pickle
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 
-class Phase11CodegenCreationShared:
+class CodegenCreationSchemaHelpers:
     """
     Shared phase-11 helper surface for codegen-creation families.
 
@@ -68,7 +68,7 @@ class Phase11CodegenCreationShared:
         digest = hashlib.sha256()
         for part in parts:
             digest.update(
-                Phase11CodegenCreationShared.serialize_codegen_signature_part(part)
+                CodegenCreationSchemaHelpers.serialize_codegen_signature_part(part)
             )
             digest.update(b"|")
         return digest.hexdigest()
@@ -85,21 +85,21 @@ class Phase11CodegenCreationShared:
                 sorted(
                     (
                         key,
-                        Phase11CodegenCreationShared.freeze_phase11_schema_value(item),
+                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item),
                     )
                     for key, item in value.items()
                 )
             )
         if isinstance(value, (list, tuple)):
             return tuple(
-                Phase11CodegenCreationShared.freeze_phase11_schema_value(item)
+                CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
                 for item in value
             )
         if isinstance(value, set):
             return tuple(
                 sorted(
                     (
-                        Phase11CodegenCreationShared.freeze_phase11_schema_value(item)
+                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
                         for item in value
                     ),
                     key=repr,
@@ -176,7 +176,7 @@ class Phase11CodegenCreationShared:
         """
         if transient_schema is None:
             return None
-        return Phase11CodegenCreationShared.hash_codegen_signature(
+        return CodegenCreationSchemaHelpers.hash_codegen_signature(
             transient_schema["step_count"],
             transient_schema["root_step_index"],
             transient_schema["call_modes"],
@@ -240,7 +240,7 @@ class Phase11CodegenCreationShared:
                 sorted(
                     (
                         param_name,
-                        Phase11CodegenCreationShared.freeze_phase11_schema_value(value),
+                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(value),
                     )
                     for param_name, value in step.contract_payload.items()
                 )
@@ -269,7 +269,7 @@ class Phase11CodegenCreationShared:
             "allow_list_aggregation": step.allow_list_aggregation,
             "uses_positional_override": step.uses_positional_override,
             "contract_positional_override": (
-                Phase11CodegenCreationShared.freeze_phase11_schema_value(
+                CodegenCreationSchemaHelpers.freeze_phase11_schema_value(
                     step.contract_positional_override,
                 )
             ),
@@ -303,7 +303,7 @@ class Phase11CodegenCreationShared:
                 sorted(
                     (
                         param_name,
-                        Phase11CodegenCreationShared.freeze_phase11_schema_value(value),
+                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(value),
                     )
                     for param_name, value in step.contract_payload.items()
                 )
@@ -315,7 +315,7 @@ class Phase11CodegenCreationShared:
             step.creations_target_kind,
             dependency_resolution_order,
             bool(step.uses_positional_override),
-            Phase11CodegenCreationShared.freeze_phase11_schema_value(
+            CodegenCreationSchemaHelpers.freeze_phase11_schema_value(
                 step.contract_positional_override
             ),
             bool(step.has_contract_payload),

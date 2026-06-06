@@ -10,8 +10,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     compile_overrides_codegen_creation_executor_code_object,
     emit_overrides_codegen_creation_executor_shape_source,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.phase11_codegen_creation_shared import (
-    Phase11CodegenCreationShared as SharedCompilerExecutions,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers as SharedCompilerExecutions,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
     GeneralizedCodegenCreationState,

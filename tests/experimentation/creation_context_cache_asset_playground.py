@@ -38,8 +38,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     SpellOverrideTargetSocketRef,
     SpellOverrideTargetingCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.phase11_codegen_creation_shared import (
-    Phase11CodegenCreationShared as SharedCompilerExecutions,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers as SharedCompilerExecutions,
 )
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
