@@ -29,6 +29,9 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.contract_provi
     ContractProviderPresenceStrategy,
 )
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import (
+    MeldExecutionError,
+)
 from melder.utilities.custom_exceptions.phase_execution_error import (
     PhaseExecutionError,
 )
@@ -376,7 +379,9 @@ def test_experiment_mutation_override_added_after_conjure_requires_mutation_cont
         plain_conduit.cleanup()
 
 
-def test_experiment_mutation_override_after_shared_instance_exists_fails() -> None:
+def test_experiment_mutation_override_after_shared_instance_exists_fails(
+        allow_mutation_contract_runtime_path: None,
+) -> None:
     """
     Prove the shared-instance reuse guard once a unique host has already melded.
 
@@ -390,6 +395,8 @@ def test_experiment_mutation_override_after_shared_instance_exists_fails() -> No
     Returns:
         None.
     """
+    _ = allow_mutation_contract_runtime_path
+
     mutation_spellbook = _make_spellbook()
     mutation_override_spell_id = mutation_spellbook.bind(
         spell=OverrideMutationProvider,
