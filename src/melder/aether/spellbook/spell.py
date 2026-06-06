@@ -437,25 +437,22 @@ class Spell(Cleanable):
                 except Exception:
                     pass
 
-            if self._compiler_artifact is not None:
-                try:
-                    self._compiler_artifact.cleanup()
-                except Exception:
-                    pass
+            try:
+                self._compiler_artifact.cleanup()
+            except Exception:
+                pass
 
             try:
-                if self.spell_index is not None:
-                    self.spell_index.cleanup()
+                self.spell_index.cleanup()
             except Exception:
                 pass
             # Drop references to help GC and enforce immutability after cleanup.
             self._cleanup_creation_context()
             self._cleanup_creation_context_factory()
-            if self._creation_context_switch is not None:
-                try:
-                    self._creation_context_switch.cleanup()
-                except Exception:
-                    pass
+            try:
+                self._creation_context_switch.cleanup()
+            except Exception:
+                pass
 
             if self._pre_hooks:
                 self._pre_hooks.clear()
@@ -467,6 +464,8 @@ class Spell(Cleanable):
                 self.tags.clear()
             if self.metadata:
                 self.metadata.clear()
+            if self._mutation_override:
+                self._mutation_override.clear()
             if self.dependencies:
                 self.dependencies.clear()
             if self.disposal_method_names:
@@ -483,28 +482,16 @@ class Spell(Cleanable):
             del self._post_hooks
             del self.tags
             del self.metadata
+            del self._mutation_override
             del self.dependencies
             del self.disposal_method_names
-            del self.has_disposal_methods
             del self.dependency_graph
             del self.profile
             del self.spell
-            del self._key
-            del self._is_existing_creation
-            del self._is_class_spell
-            del self._is_method_spell
-            del self._is_lambda_spell
-            del self._owner_conduit_id
-            del self._owner_conduit_name
             del self._creation_context
             del self._creation_context_factory
             del self._creation_context_switch
             del self._compiler_artifact
-            del self._dynamic_environment
-            del self.resolution_required
-            del self.resolution_complete
-            del self.requires_spellspace_request
-            del self.aetheric_frame
             del self.spell_index
 
 

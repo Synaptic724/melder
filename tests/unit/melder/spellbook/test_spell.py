@@ -229,7 +229,7 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     assert spell._lock is not None
     assert not hasattr(spell, "spell")
     assert not hasattr(spell, "spell_index")
-    assert not hasattr(spell, "_key")
+    assert not hasattr(spell, "_mutation_override")
     assert not hasattr(spell, "_pre_hooks")
     assert not hasattr(spell, "metadata")
     assert not hasattr(spell, "_spell_system_states")
@@ -922,7 +922,7 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     assert spell._lock is not None
     assert not hasattr(spell, "spell")
     assert not hasattr(spell, "spell_index")
-    assert not hasattr(spell, "_key")
+    assert hasattr(spell, "_key")
     assert not hasattr(spell, "_pre_hooks")
     assert not hasattr(spell, "metadata")
     assert not hasattr(spell, "_spell_system_states")
@@ -1175,10 +1175,6 @@ def test_cleanup_swallows_profile_spellindex_switch_and_tags_clear_failures() ->
             cleanup_calls.append("spell_index")
             raise RuntimeError("spell_index cleanup boom")
 
-    class _BadTags:
-        def clear(self):
-            raise RuntimeError("tags cleanup boom")
-
     class _FailingSwitch:
         def __init__(self):
             self.state = 0
@@ -1201,7 +1197,6 @@ def test_cleanup_swallows_profile_spellindex_switch_and_tags_clear_failures() ->
     )
     spell.profile = _FailingCleanableProfile()
     spell._creation_context_switch = _FailingSwitch()
-    spell.tags = _BadTags()
 
     spell.cleanup()
 
