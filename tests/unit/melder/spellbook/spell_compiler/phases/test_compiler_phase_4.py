@@ -208,6 +208,41 @@ def test_run_marks_lineage_gated_when_contract_provider_is_missing() -> None:
     ]
 
 
+def test_run_marks_lineage_gated_when_mutation_binding_is_missing() -> None:
+    """Phase 4 should gate the lineage when a MutationContract is unresolved."""
+    spell = make_spell("spell-1")
+    artifact = spell._compiler_artifact
+    _prime_structural_artifacts(artifact)
+    state = _StateStub(compiler_phase_4_module.SpellValidity.unknown)
+    issue = SimpleNamespace(code="MUTATION_CONTRACT_MISSING_PROVIDER")
+    result = SimpleNamespace(has_errors=False, issues=[issue])
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(
+        compiler_phase_4_module.SharedCompilerExecutions,
+        "capture_phase2_5_codegen_ir",
+        lambda _spell, _artifact: None,
+    )
+
+    try:
+        phase = CompilerPhase4()
+        phase.run(
+            spell,
+            artifact,
+            _make_validator(result, []),
+            _make_states(state),
+        )
+    finally:
+        monkeypatch.undo()
+
+    assert state.set_validity_calls[-1]["validity"] is compiler_phase_4_module.SpellValidity.gated
+    assert state.set_validity_calls[-1]["change_reason"] is (
+        compiler_phase_4_module.SpellStateChangeReason.contract_unvalidated
+    )
+    assert state.set_validity_calls[-1]["flags_to_add"] == [
+        compiler_phase_4_module.SpellState.contract_unvalidated
+    ]
+
+
 def test_run_skips_revalidation_when_cached_and_still_valid() -> None:
     """Phase 4 should short-circuit when the cached result is still valid."""
     spell = make_spell("spell-1")

@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 
 
+from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -32,8 +33,9 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         - Emits errors when contract descriptors are malformed.
         - Emits errors when more than one provider matches a contract key.
         - Emits warnings for missing SpellContract providers in dynamic mode.
+        - Emits warnings for unresolved MutationContract sockets in dynamic mode.
         - Emits errors for contract sockets in automatic system state.
-        - Emits errors for mutation contracts while mutation systems are on hold.
+        - Emits errors for MutationContract sockets in automatic system state.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -119,21 +121,59 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                 continue
 
             if param.di_shape is ParameterDIShape.MUTATION_CONTRACT:
-                context.issues.append(
-                    SpellValidationIssue(
-                        severity="error",
-                        code="MUTATION_CONTRACT_DISABLED",
-                        message=(
-                            f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                            "declares a MutationContract, but mutation systems are "
-                            "on hold."
-                        ),
-                        details={
-                            "spell_id": current_spell_id,
-                            "parameter_name": param.name,
-                        },
+                if automatic_mode:
+                    context.issues.append(
+                        SpellValidationIssue(
+                            severity="error",
+                            code="MUTATION_CONTRACT_IN_AUTOMATIC_MODE",
+                            message=(
+                                f"Spell {spell.spell_name!r} declares a mutation socket for "
+                                f"parameter {param.name!r} while system_state is automatic. "
+                                "Mutation contracts require dynamic mode."
+                            ),
+                            details={
+                                "spell_id": current_spell_id,
+                                "parameter_name": param.name,
+                                "system_state": str(system_state),
+                            },
+                        )
                     )
-                )
+                    continue
+
+                contract = param.default_value
+                if not isinstance(contract, MutationContract):
+                    context.issues.append(
+                        SpellValidationIssue(
+                            severity="error",
+                            code="MUTATION_CONTRACT_INVALID",
+                            message=(
+                                f"Spell {spell.spell_name!r} parameter {param.name!r} "
+                                "is marked as MutationContract but the default is not a MutationContract."
+                            ),
+                            details={
+                                "parameter_name": param.name,
+                                "default_value_type": type(contract).__name__,
+                            },
+                        )
+                    )
+                    continue
+
+                if not spell.has_mutation_override:
+                    context.issues.append(
+                        SpellValidationIssue(
+                            severity="warning",
+                            code="MUTATION_CONTRACT_MISSING_PROVIDER",
+                            message=(
+                                f"Spell {spell.spell_name!r} parameter {param.name!r} "
+                                "declares a MutationContract but no active mutation binding is present."
+                            ),
+                            details={
+                                "spell_id": current_spell_id,
+                                "parameter_name": param.name,
+                                "contract_key": contract.canonical_key,
+                            },
+                        )
+                    )
                 continue
 
             if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode:

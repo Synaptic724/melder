@@ -106,7 +106,13 @@ class _SpellStub:
         Exposes spell_name and spell_index.current.
     """
 
-    def __init__(self, *, spell_id: str = "spell-id", spell_name: str = "spell-name") -> None:
+    def __init__(
+            self,
+            *,
+            spell_id: str = "spell-id",
+            spell_name: str = "spell-name",
+            mutation_override: Optional[dict] = None,
+    ) -> None:
         """
         Purpose:
             Initialize the spell stub with identifiers.
@@ -120,6 +126,21 @@ class _SpellStub:
         """
         self.spell_name = spell_name
         self.spell_index = _SpellIndexStub(spell_id)
+        self._mutation_override = (
+            dict(mutation_override) if mutation_override is not None else {}
+        )
+
+    @property
+    def has_mutation_override(self) -> bool:
+        """
+        Purpose:
+            Mirror the real spell convenience flag used by the validation strategy.
+        Contract:
+            Returns True when the stored mutation payload is non-empty.
+        Returns:
+            bool: Whether a mutation binding is currently present.
+        """
+        return bool(self._mutation_override)
 
 
 class _ProviderSpellStub:
@@ -281,6 +302,7 @@ def _make_context(
     requirements: _RequirementsStub,
     contracted_spells: Optional[List[Tuple[_SpellIndexStub, _ProviderSpellStub]]],
     system_state: Optional[SystemState],
+    mutation_override: Optional[dict] = None,
 ) -> tuple[SpellValidationContext, list]:
     """
     Purpose:
@@ -301,7 +323,7 @@ def _make_context(
         contracted_spells=contracted_spells,
     )
     context = SpellValidationContext(
-        spell=_SpellStub(),
+        spell=_SpellStub(mutation_override=mutation_override),
         spellbook=spellbook,
         requirements=requirements,
         symbolic_graph=None,
@@ -443,12 +465,12 @@ def test_contract_provider_presence_ambiguous_spell_contract_errors() -> None:
     assert len(issues[0].details.get("provider_spell_ids", [])) == 2
 
 
-def test_contract_provider_presence_mutation_contract_disabled_early_errors() -> None:
+def test_contract_provider_presence_mutation_contract_missing_provider_warns_early_binding() -> None:
     """
     Purpose:
-        Verify MutationContract sockets are rejected for early-binding.
+        Verify unresolved MutationContract sockets warn in dynamic mode.
     Contract:
-        Emits MUTATION_CONTRACT_DISABLED.
+        Emits MUTATION_CONTRACT_MISSING_PROVIDER warning severity.
     Returns:
         None.
     Raises:
@@ -481,16 +503,16 @@ def test_contract_provider_presence_mutation_contract_disabled_early_errors() ->
     ContractProviderPresenceStrategy().validate(context)
 
     assert len(issues) == 1
-    assert issues[0].severity == "error"
-    assert issues[0].code == "MUTATION_CONTRACT_DISABLED"
+    assert issues[0].severity == "warning"
+    assert issues[0].code == "MUTATION_CONTRACT_MISSING_PROVIDER"
 
 
-def test_contract_provider_presence_mutation_contract_disabled_late_errors() -> None:
+def test_contract_provider_presence_mutation_contract_missing_provider_warns_late_binding() -> None:
     """
     Purpose:
-        Verify MutationContract sockets are rejected for late-binding.
+        Verify late-binding MutationContract sockets also warn when unresolved.
     Contract:
-        Emits MUTATION_CONTRACT_DISABLED.
+        Emits MUTATION_CONTRACT_MISSING_PROVIDER warning severity.
     Returns:
         None.
     Raises:
@@ -523,8 +545,93 @@ def test_contract_provider_presence_mutation_contract_disabled_late_errors() -> 
     ContractProviderPresenceStrategy().validate(context)
 
     assert len(issues) == 1
+    assert issues[0].severity == "warning"
+    assert issues[0].code == "MUTATION_CONTRACT_MISSING_PROVIDER"
+
+
+def test_contract_provider_presence_mutation_contract_in_automatic_mode_errors() -> None:
+    """
+    Purpose:
+        Verify MutationContract sockets are rejected in automatic mode.
+    Contract:
+        Emits MUTATION_CONTRACT_IN_AUTOMATIC_MODE error severity.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the automatic-mode error is missing.
+    """
+
+    class IService:
+        """
+        Purpose:
+            Dummy interface for mutation key generation.
+        Contract:
+            Acts as a stable spellframe identifier.
+        """
+
+    contract = MutationContract(spellframe=IService, binding_name="primary")
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="mutation",
+                di_shape=ParameterDIShape.MUTATION_CONTRACT,
+                default_value=contract,
+            )
+        ]
+    )
+    context, issues = _make_context(
+        requirements=requirements,
+        contracted_spells=[],
+        system_state=SystemState.automatic,
+    )
+
+    ContractProviderPresenceStrategy().validate(context)
+
+    assert len(issues) == 1
     assert issues[0].severity == "error"
-    assert issues[0].code == "MUTATION_CONTRACT_DISABLED"
+    assert issues[0].code == "MUTATION_CONTRACT_IN_AUTOMATIC_MODE"
+
+
+def test_contract_provider_presence_mutation_contract_with_binding_is_clean() -> None:
+    """
+    Purpose:
+        Verify a spell-local mutation binding satisfies the phase-4 mutation socket.
+    Contract:
+        Emits no issues when the spell currently carries a non-empty mutation binding.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If validation still reports the mutation socket as unresolved.
+    """
+
+    class IService:
+        """
+        Purpose:
+            Dummy interface for mutation key generation.
+        Contract:
+            Acts as a stable spellframe identifier.
+        """
+
+    contract = MutationContract(spellframe=IService, binding_name="primary")
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="mutation",
+                di_shape=ParameterDIShape.MUTATION_CONTRACT,
+                default_value=contract,
+            )
+        ]
+    )
+    context, issues = _make_context(
+        requirements=requirements,
+        contracted_spells=[],
+        system_state=None,
+        mutation_override={"mutation": "provider-spell-id"},
+    )
+
+    ContractProviderPresenceStrategy().validate(context)
+
+    assert issues == []
 
 
 def test_contract_provider_presence_honors_cancellation_before_scan() -> None:
