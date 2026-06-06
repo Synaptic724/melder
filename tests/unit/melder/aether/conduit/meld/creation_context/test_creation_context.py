@@ -1,4 +1,4 @@
-"""Focused runtime contract tests for the thin CreationContext dispatcher."""
+"""Focused runtime contract tests for the direct CreationContext doors."""
 
 from types import SimpleNamespace
 from typing import Any, Optional
@@ -35,9 +35,12 @@ class _Gate:
 
 def _make_spell(spell_id: str = "spell-1") -> Any:
     """Build a minimal spell stub for CreationContext tests."""
+    owner_creations = SimpleNamespace(get_creation=lambda target_spell_id: None)
     return SimpleNamespace(
         spell_id=spell_id,
         spell_name=spell_id,
+        spell_index=SimpleNamespace(current=spell_id),
+        _owner_creations=owner_creations,
     )
 
 
@@ -49,6 +52,9 @@ def test_init_requires_creation_gate_in_dynamic_mode() -> None:
             dynamic_environment=True,
             creation_gate=None,
             creation_gate_index_id="index-1",
+            resolve_route_key="many",
+            no_overrides_executor=lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "plain",
+            overrides_executor=lambda caller_creations, overrides, caller_creations_lock_held=False: "override",
         )
 
 
@@ -56,19 +62,25 @@ def test_execute_automatic_mode_uses_no_overrides_executor() -> None:
     """Automatic execution should route to the no-overrides door when overrides are absent."""
     calls = []
 
-    def _no_overrides_executor(caller_creations: Any) -> tuple[str, bool]:
-        calls.append(caller_creations)
-        return "plain", True
+    def _no_overrides_executor(
+            caller_creations: Any,
+            owner_creations: Any = None,
+            caller_creations_lock_held: bool = False,
+    ) -> str:
+        calls.append((caller_creations, owner_creations, caller_creations_lock_held))
+        return "plain"
 
     context = CreationContext(
         spell=_make_spell(),
+        resolve_route_key="many",
+        fast_transient_no_overrides_enabled=False,
         no_overrides_executor=_no_overrides_executor,
-        overrides_executor=lambda caller_creations, overrides: ("override", False),
+        overrides_executor=lambda caller_creations, overrides, caller_creations_lock_held=False: "override",
     )
     caller_creations = object()
 
     assert context.execute(caller_creations) == ("plain", True)
-    assert calls == [caller_creations]
+    assert calls == [(caller_creations, context._owner_creations, False)]
 
 
 def test_execute_automatic_mode_uses_overrides_executor() -> None:
@@ -78,27 +90,30 @@ def test_execute_automatic_mode_uses_overrides_executor() -> None:
     def _overrides_executor(
             caller_creations: Any,
             overrides: dict[str, Any],
-    ) -> tuple[str, bool]:
-        calls.append((caller_creations, overrides))
-        return "override", False
+            caller_creations_lock_held: bool = False,
+    ) -> str:
+        calls.append((caller_creations, overrides, caller_creations_lock_held))
+        return "override"
 
     context = CreationContext(
         spell=_make_spell(),
-        no_overrides_executor=lambda caller_creations: ("plain", True),
+        resolve_route_key="many",
+        no_overrides_executor=lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "plain",
         overrides_executor=_overrides_executor,
     )
     caller_creations = object()
 
-    assert context.execute(caller_creations, {"dep": "value"}) == ("override", False)
-    assert calls == [(caller_creations, {"dep": "value"})]
+    assert context.execute(caller_creations, {"dep": "value"}) == ("override", True)
+    assert calls == [(caller_creations, {"dep": "value"}, False)]
 
 
 def test_execute_no_hooks_discards_created_flag() -> None:
     """No-hooks execution should return only the instance value."""
     context = CreationContext(
         spell=_make_spell(),
-        no_overrides_executor=lambda caller_creations: ("plain", True),
-        overrides_executor=lambda caller_creations, overrides: ("override", False),
+        resolve_route_key="many",
+        no_overrides_executor=lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "plain",
+        overrides_executor=lambda caller_creations, overrides, caller_creations_lock_held=False: "override",
     )
 
     assert context.execute_no_hooks(object()) == "plain"
@@ -113,8 +128,9 @@ def test_dynamic_execute_waits_registers_and_unregisters_gate() -> None:
         dynamic_environment=True,
         creation_gate=gate,
         creation_gate_index_id="index-1",
-        no_overrides_executor=lambda caller_creations: ("plain", True),
-        overrides_executor=lambda caller_creations, overrides: ("override", False),
+        resolve_route_key="many",
+        no_overrides_executor=lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "plain",
+        overrides_executor=lambda caller_creations, overrides, caller_creations_lock_held=False: "override",
     )
 
     assert context.execute(object()) == ("plain", True)
@@ -131,8 +147,9 @@ def test_dynamic_execute_raises_when_gate_is_closed() -> None:
         dynamic_environment=True,
         creation_gate=gate,
         creation_gate_index_id="index-closed",
-        no_overrides_executor=lambda caller_creations: ("plain", True),
-        overrides_executor=lambda caller_creations, overrides: ("override", False),
+        resolve_route_key="many",
+        no_overrides_executor=lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "plain",
+        overrides_executor=lambda caller_creations, overrides, caller_creations_lock_held=False: "override",
     )
 
     with pytest.raises(RuntimeError, match="CreationGate is closed"):
@@ -142,15 +159,16 @@ def test_dynamic_execute_raises_when_gate_is_closed() -> None:
     assert gate.unregister_calls == 0
 
 
-def test_dynamic_execute_raises_when_executor_is_missing() -> None:
-    """Dynamic or automatic dispatch should fail honestly when a required door is absent."""
+def test_execute_fails_when_base_executor_inputs_are_missing() -> None:
+    """Direct contexts without required base executors should fail when invoked."""
     context = CreationContext(
         spell=_make_spell(),
+        resolve_route_key="many",
         no_overrides_executor=None,
         overrides_executor=None,
     )
 
-    with pytest.raises(RuntimeError, match="No-overrides executor is unavailable"):
+    with pytest.raises(TypeError, match="callable"):
         context.execute(object())
-    with pytest.raises(RuntimeError, match="Overrides executor is unavailable"):
+    with pytest.raises(TypeError, match="callable"):
         context.execute(object(), {"dep": "value"})

@@ -17,6 +17,8 @@ class SpellCodegenCreation(Cleanable):
           produced this artifact.
         - Runtime-facing output is intentionally narrow:
           `no_overrides_executor` and `overrides_executor`.
+        - These are the spell-static executor inputs consumed by
+          `CreationContext`, not the final public hook/no-hook dispatch doors.
         - `metadata` is the mutable diagnostics/provenance bag.
     """
 
@@ -33,15 +35,15 @@ class SpellCodegenCreation(Cleanable):
             *,
             selected_strategy_ids: Tuple[str, ...],
             discovery_reason: Optional[str],
-            no_overrides_executor: Optional[Callable[..., Tuple[Any, bool]]],
-            overrides_executor: Optional[Callable[..., Tuple[Any, bool]]],
+            no_overrides_executor: Optional[Callable[..., Any]],
+            overrides_executor: Optional[Callable[..., Any]],
             metadata: Dict[str, Any],
     ) -> None:
         """
         Build one codegen creation container.
 
         Contract:
-            - Stores only the final runtime doors required by
+            - Stores only the spell-static executor inputs required by
               `CreationContext`.
             - Executor fields may be `None` while a strategy scaffold is still
               incomplete.

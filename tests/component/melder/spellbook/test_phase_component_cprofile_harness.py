@@ -479,7 +479,7 @@ def _run_group_8_11(
         "creation_route_key": (
             None
             if spell_codegen_creation is None
-            else spell_codegen_creation.resolve_route_key
+            else spell_codegen_creation.metadata.get("resolve_route_key")
         ),
         "creation_no_overrides_executor_built": (
             False

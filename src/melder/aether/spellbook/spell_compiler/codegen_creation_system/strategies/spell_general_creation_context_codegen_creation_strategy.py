@@ -1,6 +1,5 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
@@ -30,27 +29,24 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
     SharedCompilerExecutions,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
-from melder.utilities.custom_exceptions.spell_space_scope_error import (
-    SpellSpaceScopeError,
-)
 
 
 class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
     """
-    Fat phase-11 strategy that emits the final CreationContext runtime doors.
+    Fat phase-11 strategy that emits the spell-static CreationContext inputs.
 
     Purpose:
-        Collapse the generalized phase-11 handoff down to the actual runtime
-        contract `CreationContext` needs:
-        - one `no_overrides_executor`
-        - one `overrides_executor`
+        Collapse the generalized phase-11 handoff down to the actual
+        spell-static executor inputs `CreationContext` needs:
+        - one base no-overrides executor
+        - one override execution callable
 
     Contract:
         - Consumes the generalized no-overrides and overrides lane plans.
         - Owns the override specialization/caching machinery that previously
           lived inside `CreationContext`.
-        - Emits executors that return `(instance, created)` so meld can keep
-          hook orchestration outside the phase-11 output contract.
+        - Emits the underlying runtime callables that the restored
+          `CreationContext` compiles into its direct hooks/no-hooks doors.
     """
 
     __slots__ = ()
@@ -73,9 +69,10 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
 
         Contract:
             - Requires generalized no-overrides and overrides lane plans.
-            - Emits only final runtime executors onto `SpellCodegenCreation`.
-            - Keeps the old phase-11 strategy files on disk but does not depend
-              on them for the generalized path.
+            - Emits the spell-static executor inputs consumed by
+              `CreationContext`.
+            - Keeps the old phase-11 strategy files on disk and extends them
+              with a finalizer instead of replacing them.
         """
         no_overrides_plan = spell_codegen_plan.no_overrides_plan
         overrides_plan = spell_codegen_plan.overrides_plan
@@ -105,12 +102,6 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             base_no_overrides_executor = (
                 self._build_base_no_overrides_executor(no_overrides_plan)
             )
-        no_overrides_executor = self._build_final_no_overrides_executor(
-            root_spell=root_spell,
-            route_key=route_key,
-            base_no_overrides_executor=base_no_overrides_executor,
-        )
-
         overrides_runtime = self._build_overrides_runtime(
             spell_codegen_model=spell_codegen_model,
             overrides_plan=overrides_plan,
@@ -125,16 +116,13 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             empty_shape_key=metadata.pop("_override_empty_shape_key", None),
             baseline_executor=metadata.pop("_override_baseline_executor", None),
         )
-        overrides_executor = self._build_final_overrides_executor(
-            root_spell=root_spell,
-            route_key=route_key,
-            execute_with_overrides=overrides_runtime,
-        )
-
-        spell_codegen_creation.no_overrides_executor = no_overrides_executor
-        spell_codegen_creation.overrides_executor = overrides_executor
+        spell_codegen_creation.no_overrides_executor = base_no_overrides_executor
+        spell_codegen_creation.overrides_executor = overrides_runtime
         spell_codegen_creation.metadata["creation_context_strategy"] = self.strategy_id
         spell_codegen_creation.metadata["resolve_route_key"] = route_key
+        spell_codegen_creation.metadata["fast_transient_no_overrides_enabled"] = (
+            fast_transient_no_overrides_enabled
+        )
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
             no_overrides_plan.lane_id
         )
@@ -144,90 +132,6 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
         )
         spell_codegen_creation.metadata["override_step_count"] = (
             len(overrides_plan.steps)
-        )
-
-    @staticmethod
-    def _build_final_no_overrides_executor(
-            *,
-            root_spell: Any,
-            route_key: str,
-            base_no_overrides_executor: Callable[..., Any],
-    ) -> Callable[..., Tuple[Any, bool]]:
-        """
-        Build the final no-overrides runtime door expected by CreationContext.
-        """
-        spell_id = root_spell.spell_index.current or root_spell.spell_id
-
-        def execute(caller_creations: Any) -> Tuple[Any, bool]:
-            owner_creations = root_spell._owner_creations
-            created = SpellGeneralCreationContextCodegenCreationStrategy._will_create_instance(
-                route_key=route_key,
-                spell_id=spell_id,
-                caller_creations=caller_creations,
-                owner_creations=owner_creations,
-            )
-            instance = base_no_overrides_executor(
-                caller_creations,
-                owner_creations=owner_creations,
-                caller_creations_lock_held=False,
-            )
-            return instance, created
-
-        return execute
-
-    @staticmethod
-    def _build_final_overrides_executor(
-            *,
-            root_spell: Any,
-            route_key: str,
-            execute_with_overrides: Callable[..., Any],
-    ) -> Callable[..., Tuple[Any, bool]]:
-        """
-        Build the final overrides runtime door expected by CreationContext.
-        """
-        spell_id = root_spell.spell_index.current or root_spell.spell_id
-
-        def execute(
-                caller_creations: Any,
-                overrides: Optional[dict[str, Any]],
-        ) -> Tuple[Any, bool]:
-            owner_creations = root_spell._owner_creations
-            created = SpellGeneralCreationContextCodegenCreationStrategy._will_create_instance(
-                route_key=route_key,
-                spell_id=spell_id,
-                caller_creations=caller_creations,
-                owner_creations=owner_creations,
-            )
-            instance = execute_with_overrides(
-                caller_creations,
-                overrides,
-                False,
-            )
-            return instance, created
-
-        return execute
-
-    @staticmethod
-    def _will_create_instance(
-            *,
-            route_key: str,
-            spell_id: str,
-            caller_creations: Any,
-            owner_creations: Any,
-    ) -> bool:
-        """
-        Determine whether the root instance will be created on this call.
-        """
-        if route_key == "many":
-            return True
-        if route_key == "existing_creation":
-            return False
-        if route_key in ("unique_per_conduit", "spellspace"):
-            return caller_creations.get_creation(spell_id) is None
-        if route_key == "shared":
-            return owner_creations.get_creation(spell_id) is None
-        raise RuntimeError(
-            f"Unsupported general creation-context route key: {route_key}"
         )
 
     @staticmethod
@@ -382,13 +286,13 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             override_specialization_cache[empty_shape_key] = baseline_executor
 
         root_spell_id = root_spell.spell_index.current or root_spell.spell_id
-        owner_creations = root_spell._owner_creations
 
         def execute_with_overrides(
                 caller_creations: Any,
                 overrides: Optional[dict[str, Any]],
                 caller_creations_lock_held: bool,
         ) -> Any:
+            owner_creations = root_spell._owner_creations
             override_payload = overrides
             root_positional_override: Optional[Sequence[Any]] = None
             override_map: Dict[Any, Any] = {}

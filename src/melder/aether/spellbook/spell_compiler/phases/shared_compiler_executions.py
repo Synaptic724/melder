@@ -1353,6 +1353,11 @@ class SharedCompilerExecutions:
         if spell_codegen_plan is not None:
             no_overrides_plan = spell_codegen_plan.no_overrides_plan
             overrides_plan = spell_codegen_plan.overrides_plan
+        creation_metadata = (
+            {}
+            if spell_codegen_creation is None
+            else spell_codegen_creation.metadata
+        )
 
         phase8_11_signature = SharedCompilerExecutions.hash_codegen_signature(
             None if occurrence_graph_analysis is None else occurrence_graph_analysis.root_spell_id,
@@ -1366,8 +1371,8 @@ class SharedCompilerExecutions:
             None if no_overrides_plan is None else len(no_overrides_plan.steps),
             None if overrides_plan is None else overrides_plan.root_spell_id,
             None if overrides_plan is None else len(overrides_plan.steps),
-            None if spell_codegen_creation is None else spell_codegen_creation.resolve_route_key,
-            None if spell_codegen_creation is None else spell_codegen_creation.no_overrides_executor_signature,
+            creation_metadata.get("resolve_route_key"),
+            creation_metadata.get("_no_overrides_executor_signature"),
         )
 
         phase8_11_payload = {
@@ -1399,12 +1404,12 @@ class SharedCompilerExecutions:
             },
             "creation": None if spell_codegen_creation is None else {
                 "selected_strategy_ids": spell_codegen_creation.selected_strategy_ids,
-                "resolve_route_key": spell_codegen_creation.resolve_route_key,
+                "resolve_route_key": creation_metadata.get("resolve_route_key"),
                 "fast_transient_no_overrides_enabled": (
-                    spell_codegen_creation.fast_transient_no_overrides_enabled
+                    creation_metadata.get("fast_transient_no_overrides_enabled")
                 ),
                 "no_overrides_executor_signature": (
-                    spell_codegen_creation.no_overrides_executor_signature
+                    creation_metadata.get("_no_overrides_executor_signature")
                 ),
             },
             "signature": phase8_11_signature,

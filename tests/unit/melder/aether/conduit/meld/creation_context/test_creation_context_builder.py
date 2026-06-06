@@ -16,11 +16,13 @@ def _make_creation_artifact(
         *,
         no_overrides_executor: Optional[Any] = None,
         overrides_executor: Optional[Any] = None,
+        metadata: Optional[dict[str, Any]] = None,
 ) -> Any:
     """Build a minimal `SpellCodegenCreation`-shaped stub for builder tests."""
     return SimpleNamespace(
         no_overrides_executor=no_overrides_executor,
         overrides_executor=overrides_executor,
+        metadata={} if metadata is None else metadata,
     )
 
 
@@ -61,13 +63,15 @@ def test_build_requires_both_runtime_executors_for_constructed_spell() -> None:
     spell_missing_no_overrides = _make_spell(
         creation_artifact=_make_creation_artifact(
             no_overrides_executor=None,
-            overrides_executor=lambda creations, overrides: ("value", True),
+            overrides_executor=lambda creations, overrides, caller_creations_lock_held=False: "value",
+            metadata={"resolve_route_key": "many"},
         ),
     )
     spell_missing_overrides = _make_spell(
         creation_artifact=_make_creation_artifact(
-            no_overrides_executor=lambda creations: ("value", True),
+            no_overrides_executor=lambda creations, owner_creations=None, caller_creations_lock_held=False: "value",
             overrides_executor=None,
+            metadata={"resolve_route_key": "many"},
         ),
     )
 
@@ -106,25 +110,38 @@ def test_existing_creation_overrides_raise_contract_error() -> None:
 
 
 def test_build_constructed_spell_uses_phase11_runtime_doors() -> None:
-    """Builder should pass through the two final phase-11 runtime doors for constructed spells."""
+    """Builder should compile direct runtime doors from the phase-11 executor inputs."""
     no_overrides_calls = []
     overrides_calls = []
 
-    def _no_overrides_executor(caller_creations: Any) -> tuple[str, bool]:
-        no_overrides_calls.append(caller_creations)
-        return "plain", True
+    def _no_overrides_executor(
+            caller_creations: Any,
+            owner_creations: Any = None,
+            caller_creations_lock_held: bool = False,
+    ) -> str:
+        no_overrides_calls.append(
+            (caller_creations, owner_creations, caller_creations_lock_held)
+        )
+        return "plain"
 
     def _overrides_executor(
             caller_creations: Any,
             overrides: dict[str, Any],
-    ) -> tuple[str, bool]:
-        overrides_calls.append((caller_creations, overrides))
-        return "override", False
+            caller_creations_lock_held: bool = False,
+    ) -> str:
+        overrides_calls.append(
+            (caller_creations, overrides, caller_creations_lock_held)
+        )
+        return "override"
 
     spell = _make_spell(
         creation_artifact=_make_creation_artifact(
             no_overrides_executor=_no_overrides_executor,
             overrides_executor=_overrides_executor,
+            metadata={
+                "resolve_route_key": "many",
+                "fast_transient_no_overrides_enabled": False,
+            },
         ),
     )
     caller_creations = object()
@@ -132,6 +149,10 @@ def test_build_constructed_spell_uses_phase11_runtime_doors() -> None:
     context = CreationContextBuilder.build(spell)
 
     assert context.execute(caller_creations) == ("plain", True)
-    assert context.execute(caller_creations, {"dep": "value"}) == ("override", False)
-    assert no_overrides_calls == [caller_creations]
-    assert overrides_calls == [(caller_creations, {"dep": "value"})]
+    assert context.execute(caller_creations, {"dep": "value"}) == ("override", True)
+    assert no_overrides_calls == [
+        (caller_creations, spell._owner_creations, False)
+    ]
+    assert overrides_calls == [
+        (caller_creations, {"dep": "value"}, False)
+    ]

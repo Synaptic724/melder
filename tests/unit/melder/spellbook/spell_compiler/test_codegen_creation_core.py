@@ -439,9 +439,9 @@ def test_overrides_strategy_records_override_runtime_scratch(
     )
 
 
-def test_general_creation_context_strategy_finalizes_two_runtime_doors(
+def test_general_creation_context_strategy_preserves_base_no_overrides_and_builds_override_runtime(
 ) -> None:
-    """The new fat finalizer should consume scratch and emit the two final runtime doors."""
+    """The finalizer should preserve the base no-overrides executor and build the override runtime callable."""
     strategy = SpellGeneralCreationContextCodegenCreationStrategy()
     creations = SimpleNamespace(get_creation=lambda spell_id: None)
     root_spell = SimpleNamespace(
@@ -472,10 +472,11 @@ def test_general_creation_context_strategy_finalizes_two_runtime_doors(
         ),
         metadata={},
     )
+    base_no_overrides_executor = lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "base-no-overrides"
     creation = SpellCodegenCreation(
         selected_strategy_ids=(),
         discovery_reason=None,
-        no_overrides_executor="base-no-overrides",
+        no_overrides_executor=base_no_overrides_executor,
         overrides_executor=None,
         metadata={
             "_resolve_route_key": "many",
@@ -493,9 +494,10 @@ def test_general_creation_context_strategy_finalizes_two_runtime_doors(
 
     strategy.apply(state, plan, creation)
 
-    assert callable(creation.no_overrides_executor)
+    assert creation.no_overrides_executor is base_no_overrides_executor
     assert callable(creation.overrides_executor)
     assert creation.metadata["creation_context_strategy"] == (
         "general_creation_context_codegen_creation"
     )
     assert creation.metadata["resolve_route_key"] == "many"
+    assert creation.metadata["fast_transient_no_overrides_enabled"] is True
