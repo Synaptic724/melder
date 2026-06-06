@@ -99,12 +99,14 @@ def test_build_allows_existing_creation_without_codegen_creation(
     spell = _make_spell(is_existing_creation=True, creation_artifact=None)
     captured: dict[str, Any] = {}
 
-    def _fake_creation_context(**kwargs: Any) -> Any:
-        """Capture constructor kwargs without building a real context."""
-        captured.update(kwargs)
-        return "context"
+    class _FakeCreationContext:
+        ROUTE_EXISTING_CREATION = CreationContext.ROUTE_EXISTING_CREATION
 
-    monkeypatch.setattr(builder_module, "CreationContext", _fake_creation_context)
+        def __new__(cls, **kwargs: Any) -> Any:
+            captured.update(kwargs)
+            return "context"
+
+    monkeypatch.setattr(builder_module, "CreationContext", _FakeCreationContext)
 
     result = CreationContextBuilder.build(spell)
 

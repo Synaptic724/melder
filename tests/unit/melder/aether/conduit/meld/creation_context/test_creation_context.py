@@ -221,11 +221,12 @@ def test_creation_context_init_requires_creation_gate_in_dynamic_mode() -> None:
         )
 
 
-def test_creation_context_init_selects_mutation_route_and_seeds_baseline_executor(
+def test_creation_context_init_ignores_mutation_route_and_keeps_normal_baseline_executor(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify __init__ selects the mutation override route and seeds baseline executors.
+    Verify __init__ keeps the normal override route active even when a
+    mutation route config exists.
     """
     hook_overrides = lambda *args, **kwargs: ("hooks-overrides", True)
     hook_no_overrides = lambda *args, **kwargs: ("hooks-no-overrides", True)
@@ -280,9 +281,9 @@ def test_creation_context_init_selects_mutation_route_and_seeds_baseline_executo
         override_route_config_mutation=route_config_mutation,
     )
 
-    assert context._override_route_config_active is route_config_mutation
+    assert context._override_route_config_active is route_config_no_mutation
     assert context._override_empty_shape_key == (
-        route_config_mutation.plan_signature,
+        route_config_no_mutation.plan_signature,
         (),
         -1,
     )
@@ -292,8 +293,8 @@ def test_creation_context_init_selects_mutation_route_and_seeds_baseline_executo
     assert context._override_specialization_cache[
         (route_config_mutation.plan_signature, (), -1)
     ] is baseline_mutation
-    assert context._execute_hooks_no_overrides_compiled is hook_overrides
-    assert context._execute_no_hooks_no_overrides_compiled is no_hooks_overrides
+    assert context._execute_hooks_no_overrides_compiled is hook_no_overrides
+    assert context._execute_no_hooks_no_overrides_compiled is no_hooks_no_overrides
 
 
 def test_creation_context_init_non_mutation_route_uses_no_override_compilers(

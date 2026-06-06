@@ -240,6 +240,7 @@ class _SpellStub:
         has_disposal_methods: bool = True,
         disposal_method_names: list[str] | None = None,
         has_mutation_override: bool = False,
+        mutation_override: dict[str, Any] | None = None,
         owner_creations: Any | None = None,
         owner_conduit_id: str = "conduit-1",
         owner_conduit_name: str = "Conduit",
@@ -272,7 +273,8 @@ class _SpellStub:
             is_lambda_spell: Whether the spell is lambda-based.
             has_disposal_methods: Whether the spell declares disposal methods.
             disposal_method_names: Optional list of disposal method names.
-            has_mutation_override: Whether meld-time mutation overrides exist.
+            has_mutation_override: Legacy convenience flag for mutation payload presence.
+            mutation_override: Optional pre-normalized persistent default override payload.
             owner_creations: Owner creations container.
             owner_conduit_id: Owning conduit id.
             owner_conduit_name: Owning conduit name.
@@ -311,7 +313,10 @@ class _SpellStub:
             self.disposal_method_names = ["cleanup"] if self.has_disposal_methods else []
         else:
             self.disposal_method_names = list(disposal_method_names)
-        self.has_mutation_override = bool(has_mutation_override)
+        if mutation_override is None and has_mutation_override:
+            mutation_override = {"mutation": "default"}
+        self.mutation_override = dict(mutation_override) if mutation_override is not None else {}
+        self.has_mutation_override = bool(self.mutation_override)
         self.requires_spellspace_request = (
             existence is Existence.unique_per_spell_space
         )
@@ -881,6 +886,57 @@ def test_meld_no_hooks_empty_dict_override_uses_no_overrides_door(monkeypatch: p
     assert meld.meld(spell="spell-1", spell_override={}) == "instance"
     assert context.calls == ["no_hooks_no_overrides"]
     assert context.last_overrides is None
+
+
+def test_meld_no_hooks_uses_mutation_override_as_default_override_payload(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify a spell-owned mutation override routes through the normal overrides door.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    context = _CreationContextStub(no_hooks_overrides_result="mutation-default")
+    spell = _SpellStub(
+        spell_id="spell-1",
+        owner_creations=creations,
+        creation_context=context,
+        mutation_override={"svc": "mutated"},
+    )
+    spell._hooks_enabled = False
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
+
+    assert meld.meld(spell="spell-1") == "mutation-default"
+    assert context.calls == ["no_hooks_overrides"]
+    assert context.last_overrides == {"svc": "mutated"}
+
+
+def test_meld_runtime_override_wins_over_mutation_override_payload(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify caller overrides replace the stored mutation payload.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    context = _CreationContextStub(no_hooks_overrides_result="merged-overrides")
+    spell = _SpellStub(
+        spell_id="spell-1",
+        owner_creations=creations,
+        creation_context=context,
+        mutation_override={"svc": "mutated", "__args__": [1]},
+    )
+    spell._hooks_enabled = False
+    resolve_spell_by_id = MagicMock(return_value=spell)
+    _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
+
+    assert meld.meld(
+        spell="spell-1",
+        spell_override={"svc": "runtime"},
+    ) == "merged-overrides"
+    assert context.calls == ["no_hooks_overrides"]
+    assert context.last_overrides == {"svc": "runtime"}
 
 
 def test_meld_non_string_cache_hit_reuses_input_resolution_entry(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -119,9 +119,10 @@ def test_existing_creation_flags_and_existing_object_presence():
     assert spell.is_lambda_spell is False
 
 
-def test_mutation_override_signals_structural_change():
+def test_mutation_override_updates_payload_without_structural_change_signal():
     """
-    Applying and clearing mutation overlays should update payloads and signal structural changes to DevOps state.
+    Applying and clearing mutation overlays should update payloads without
+    signaling structural invalidation.
     """
 
     states = _RecordingStates()
@@ -142,12 +143,11 @@ def test_mutation_override_signals_structural_change():
     spell._dynamic_environment = True
     spell.apply_mutation_override({"mode": "overlay"})
     assert spell.mutation_override == {"mode": "overlay"}
-    assert states.calls[-1][1] is SpellStateChangeReason.mutation_contract_set
+    assert states.calls == []
 
     spell.apply_mutation_override(None)
     assert spell.mutation_override == {}
-    assert states.calls[-1][1] is SpellStateChangeReason.mutation_contract_cleared
-    assert len(states.calls) == 2
+    assert states.calls == []
 
 
 def test_clear_mutation_override_is_noop_when_empty():
@@ -781,18 +781,24 @@ def test_add_build_details_rejects_none_inputs(dag, deps, error_msg):
 
 
 @pytest.mark.parametrize(
-    "payload,expected_reason,expected_payload",
+    "payload,expected_payload",
     [
-        ({"mode": "overlay"}, SpellStateChangeReason.mutation_contract_set, {"mode": "overlay"}),
-        ({}, SpellStateChangeReason.mutation_contract_cleared, {}),
+        ({"mode": "overlay"}, {"mode": "overlay"}),
+        ({}, {}),
+        (None, {}),
+        ([1, 2], {"__args__": [1, 2]}),
+        ((1, 2), {"__args__": [1, 2]}),
     ],
 )
-def test_apply_mutation_override_signals_devops(payload, expected_reason, expected_payload):
+def test_apply_mutation_override_normalizes_payload_without_devops_signal(
+        payload,
+        expected_payload,
+):
     states = _RecordingStates()
     spell = _make_spell(states=states, dynamic_environment=True)
     spell.apply_mutation_override(payload)
     assert spell.mutation_override == expected_payload
-    assert states.calls[-1][1] is expected_reason
+    assert states.calls == []
 
 
 def test_clear_mutation_override_noop_when_empty():
@@ -803,12 +809,12 @@ def test_clear_mutation_override_noop_when_empty():
     assert spell.mutation_override == {}
 
 
-def test_clear_mutation_override_signals_when_overlay_present():
+def test_clear_mutation_override_clears_payload_without_devops_signal():
     states = _RecordingStates()
     spell = _make_spell(states=states, dynamic_environment=True)
     spell.apply_mutation_override({"v": 1})
     spell.clear_mutation_override()
-    assert states.calls[-1][1] is SpellStateChangeReason.mutation_contract_cleared
+    assert states.calls == []
     assert spell.mutation_override == {}
 
 

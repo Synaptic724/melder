@@ -61,6 +61,7 @@ class _SpellStub:
         has_disposal_methods: bool = True,
         disposal_method_names: list[str] | None = None,
         has_mutation_override: bool = False,
+        mutation_override: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize the stub with the attributes Meld expects.
@@ -81,7 +82,8 @@ class _SpellStub:
             is_lambda_spell: True for lambda-based spells.
             has_disposal_methods: Whether the spell declares disposal methods.
             disposal_method_names: Optional list of disposal method names.
-            has_mutation_override: Whether mutation overrides are present.
+            has_mutation_override: Legacy convenience flag for mutation payload presence.
+            mutation_override: Optional pre-normalized persistent default override payload.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -97,7 +99,10 @@ class _SpellStub:
         self.is_class_spell = is_class_spell
         self.is_method_spell = is_method_spell
         self.is_lambda_spell = is_lambda_spell
-        self.has_mutation_override = bool(has_mutation_override)
+        if mutation_override is None and has_mutation_override:
+            mutation_override = {"mutation": "default"}
+        self.mutation_override = dict(mutation_override) if mutation_override is not None else {}
+        self.has_mutation_override = bool(self.mutation_override)
         self.requires_spellspace_request = (
             existence is Existence.unique_per_spell_space
         )
