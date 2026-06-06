@@ -11,9 +11,6 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy import (
     SpellInjectionProcessorStrategy,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_mutation_targeting_processor_strategy import (
-    SpellMutationTargetingProcessorStrategy,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy import (
     SpellOccurrenceInstanceProcessorStrategy,
 )
@@ -85,7 +82,8 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
             - Clears and rebuilds the registry each time it runs.
             - Keys are the strategies' stable `strategy_id` values.
             - Current defaults are the 3 occurrence-derived processor
-              strategies plus injection and patch-targeting fitting strategies.
+              strategies plus runtime, injection, and override-targeting
+              fitting strategies.
             - Registration order is execution order.
         """
         order_strategy = SpellOccurrenceOrderProcessorStrategy()
@@ -94,7 +92,6 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
         runtime_strategy = SpellRuntimeProcessorStrategy()
         injection_strategy = SpellInjectionProcessorStrategy()
         override_targeting_strategy = SpellOverrideTargetingProcessorStrategy()
-        mutation_targeting_strategy = SpellMutationTargetingProcessorStrategy()
 
         self._strategies_by_name[order_strategy.strategy_id] = order_strategy
         self._strategies_by_name[instance_strategy.strategy_id] = instance_strategy
@@ -104,9 +101,6 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
         self._strategies_by_name[
             override_targeting_strategy.strategy_id
         ] = override_targeting_strategy
-        self._strategies_by_name[
-            mutation_targeting_strategy.strategy_id
-        ] = mutation_targeting_strategy
 
     def get_strategy(
             self,

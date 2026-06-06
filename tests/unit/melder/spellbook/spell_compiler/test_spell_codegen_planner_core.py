@@ -176,7 +176,6 @@ def test_spell_codegen_planner_build_plan_shell_starts_empty() -> None:
     assert plan.plan_strategy_ids == ()
     assert plan.no_overrides_plan is None
     assert plan.overrides_plan is None
-    assert plan.mutation_overrides_plan is None
     assert plan.metadata == {}
 
 
@@ -184,13 +183,11 @@ def test_spell_codegen_plan_cleanup_cleans_lane_payloads_and_metadata() -> None:
     """Plan cleanup should cleanup lane payloads and clear metadata."""
     no_overrides_plan = _CleanupTracker()
     overrides_plan = _CleanupTracker()
-    mutation_plan = _CleanupTracker()
     plan = SpellCodegenPlan(
         processor_strategy_ids=("processor_a",),
         plan_strategy_ids=("plan_a",),
         no_overrides_plan=no_overrides_plan,
         overrides_plan=overrides_plan,
-        mutation_overrides_plan=mutation_plan,
         metadata={"key": "value"},
     )
 
@@ -198,7 +195,6 @@ def test_spell_codegen_plan_cleanup_cleans_lane_payloads_and_metadata() -> None:
 
     assert no_overrides_plan.cleanup_called is True
     assert overrides_plan.cleanup_called is True
-    assert mutation_plan.cleanup_called is True
     assert not hasattr(plan, "metadata")
 
 

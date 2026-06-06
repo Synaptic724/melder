@@ -7,10 +7,6 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_inject
     SpellInjectionInstanceSpec,
     SpellInjectionParamSource,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_mutation_targeting_analysis import (
-    SpellMutationPatchRef,
-    SpellMutationTargetingAnalysis,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
     SpellOccurrenceContractAnalysis,
 )
@@ -192,40 +188,6 @@ def test_override_targeting_analysis_replaces_override_patch_map_summary() -> No
     analysis.cleanup()
 
     assert not hasattr(analysis, "targets_by_spec")
-
-
-def test_mutation_targeting_analysis_replaces_mutation_patch_map_summary() -> None:
-    """Mutation-targeting analysis should summarize patch fan-out and child coverage."""
-    patch_a = SpellMutationPatchRef(
-        child_spell_id="child-a",
-        param_name="svc",
-        param_path_id=3,
-        old_parent_id="old-a",
-    )
-    patch_b = SpellMutationPatchRef(
-        child_spell_id="child-b",
-        param_name="svc",
-        param_path_id=4,
-        old_parent_id=None,
-    )
-    analysis = SpellMutationTargetingAnalysis(
-        patches_by_spec={
-            "root>svc": (patch_a,),
-            "**svc": (patch_a, patch_b),
-        },
-        path_depth_histogram=((1, 1), (3, 1)),
-    )
-
-    assert analysis.target_spec_count == 2
-    assert analysis.patch_count == 2
-    assert analysis.targeted_child_spell_count == 2
-    assert analysis.max_patches_per_spec == 2
-    assert analysis.max_target_path_depth == 3
-
-    analysis.cleanup()
-
-    assert not hasattr(analysis, "patches_by_spec")
-
 
 def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
     """Runtime analysis should own the planner-facing per-spell static runtime rows."""

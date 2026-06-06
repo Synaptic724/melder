@@ -130,7 +130,6 @@ def test_spell_artifact_processor_builder_registers_default_order() -> None:
         "spell_runtime_processor",
         "spell_injection_processor",
         "spell_override_targeting_processor",
-        "spell_mutation_targeting_processor",
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_processor'"):
         builder.get_strategy("missing_processor")
@@ -200,7 +199,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
     contract_shape = _CleanupTracker()
     injection_shape = _CleanupTracker()
     override_targeting_shape = _CleanupTracker()
-    mutation_targeting_shape = _CleanupTracker()
     spell_runtime_shape = _CleanupTracker()
     model = SpellCodegenModel(
         build_kind="construct",
@@ -212,7 +210,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
         contract_shape=contract_shape,
         injection_shape=injection_shape,
         override_targeting_shape=override_targeting_shape,
-        mutation_targeting_shape=mutation_targeting_shape,
         spell_runtime_shape=spell_runtime_shape,
     )
 
@@ -223,7 +220,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
         "contract_shape",
         "injection_shape",
         "override_targeting_shape",
-        "mutation_targeting_shape",
         "spell_runtime_shape",
         "assessment",
     )
@@ -236,6 +232,5 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
     assert contract_shape.cleanup_called is True
     assert injection_shape.cleanup_called is True
     assert override_targeting_shape.cleanup_called is True
-    assert mutation_targeting_shape.cleanup_called is True
     assert spell_runtime_shape.cleanup_called is True
     assert not hasattr(model, "assessment")

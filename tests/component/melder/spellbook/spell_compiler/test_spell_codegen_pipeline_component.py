@@ -151,5 +151,4 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
     assert plan.metadata["selected_strategy_id"] == "generalized_codegen_plan"
     assert plan.no_overrides_plan is not None
     assert plan.overrides_plan is not None
-    assert plan.mutation_overrides_plan is not None
 

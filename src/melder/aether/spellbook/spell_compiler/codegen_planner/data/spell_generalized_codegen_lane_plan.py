@@ -28,15 +28,14 @@ class SpellGeneralizedCodegenPlanVariant:
 
     Purpose:
         Identify which generalized lane the model-native builder is compiling
-        so one builder can produce no-overrides, overrides, and
-        mutation-overrides payloads deterministically.
+        so one builder can produce no-overrides and overrides payloads
+        deterministically.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     NO_OVERRIDES: ClassVar[str] = "no_overrides"
     OVERRIDES: ClassVar[str] = "overrides"
-    MUTATION_OVERRIDES: ClassVar[str] = "mutation_overrides"
 
 
 class SpellGeneralizedCodegenPlanTargetKind:

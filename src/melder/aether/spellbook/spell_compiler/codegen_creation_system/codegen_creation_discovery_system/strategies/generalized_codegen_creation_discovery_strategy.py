@@ -27,7 +27,7 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
     Contract:
         - Claims only generalized planner output.
         - Emits the same generalized creation-chain result the old discovery
-          facade returned directly.
+          facade returned directly, minus the removed mutation-specific lane.
     """
 
     __slots__ = ()
@@ -58,7 +58,6 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
                 "generalized_creation_context_setup_codegen_creation",
                 "generalized_no_overrides_codegen_creation",
                 "generalized_overrides_codegen_creation",
-                "generalized_mutation_overrides_codegen_creation",
             ),
             discovery_reason="default_generalized_plan_codegen_creation_chain",
         )

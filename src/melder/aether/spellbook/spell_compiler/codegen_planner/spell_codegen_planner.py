@@ -127,6 +127,5 @@ class SpellCodegenPlanner(Cleanable):
             plan_strategy_ids=(),
             no_overrides_plan=None,
             overrides_plan=None,
-            mutation_overrides_plan=None,
             metadata={},
         )

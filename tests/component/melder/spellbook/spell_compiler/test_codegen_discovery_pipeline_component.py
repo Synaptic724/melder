@@ -85,7 +85,6 @@ def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_
             plan_strategy_ids=("generalized_codegen_plan",),
             no_overrides_plan=None,
             overrides_plan=None,
-            mutation_overrides_plan=None,
             metadata={"selected_strategy_id": "generalized_codegen_plan"},
         ),
     )
@@ -95,7 +94,6 @@ def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_
         "generalized_creation_context_setup_codegen_creation",
         "generalized_no_overrides_codegen_creation",
         "generalized_overrides_codegen_creation",
-        "generalized_mutation_overrides_codegen_creation",
     )
 
 
@@ -108,7 +106,6 @@ def test_component_codegen_creation_discovery_system_uses_fallback_chain_for_non
             plan_strategy_ids=(),
             no_overrides_plan=None,
             overrides_plan=None,
-            mutation_overrides_plan=None,
             metadata={"selected_strategy_id": "other_plan"},
         ),
     )
@@ -169,7 +166,6 @@ def test_component_codegen_creation_system_uses_real_discovery_and_selected_stra
                 plan_strategy_ids=(),
                 no_overrides_plan=None,
                 overrides_plan=None,
-                mutation_overrides_plan=None,
                 metadata={"selected_strategy_id": "other_plan"},
             ),
             "_spell_codegen_creation": None,

@@ -8,12 +8,12 @@ class SpellCodegenPlan(Cleanable):
     Planner-owned codegen plan container for one spell.
 
     Purpose:
-        Hold the 3 planner output lanes the planner will eventually define:
-        `no_overrides`, `overrides`, and `mutation_overrides`.
+        Hold the planner output lanes for one spell:
+        `no_overrides` and `overrides`.
 
     Contract:
         - Lives on `SpellCompilerArtifact` as generic codegen output.
-        - Stores planner provenance plus 3 lane homes.
+        - Stores planner provenance plus 2 lane homes.
         - Does not pretend lane families or emitter choices are already solved
           before planner strategies exist.
     """
@@ -23,7 +23,6 @@ class SpellCodegenPlan(Cleanable):
         "plan_strategy_ids",
         "no_overrides_plan",
         "overrides_plan",
-        "mutation_overrides_plan",
         "metadata",
     ]
 
@@ -34,7 +33,6 @@ class SpellCodegenPlan(Cleanable):
             plan_strategy_ids: Tuple[str, ...],
             no_overrides_plan: Optional[Any],
             overrides_plan: Optional[Any],
-            mutation_overrides_plan: Optional[Any],
             metadata: Dict[str, Any],
     ) -> None:
         """
@@ -50,7 +48,6 @@ class SpellCodegenPlan(Cleanable):
         self.plan_strategy_ids: Tuple[str, ...] = plan_strategy_ids
         self.no_overrides_plan: Optional[Any] = no_overrides_plan
         self.overrides_plan: Optional[Any] = overrides_plan
-        self.mutation_overrides_plan: Optional[Any] = mutation_overrides_plan
         self.metadata: Dict[str, Any] = metadata
 
     def cleanup(self) -> None:
@@ -77,16 +74,10 @@ class SpellCodegenPlan(Cleanable):
                 self.overrides_plan.cleanup()
             except Exception:
                 pass
-        if self.mutation_overrides_plan is not None:
-            try:
-                self.mutation_overrides_plan.cleanup()
-            except Exception:
-                pass
         self.metadata.clear()
 
         del self.processor_strategy_ids
         del self.plan_strategy_ids
         del self.no_overrides_plan
         del self.overrides_plan
-        del self.mutation_overrides_plan
         del self.metadata

@@ -1400,11 +1400,9 @@ class SharedCompilerExecutions:
 
         no_overrides_plan = None
         overrides_plan = None
-        mutation_overrides_plan = None
         if spell_codegen_plan is not None:
             no_overrides_plan = spell_codegen_plan.no_overrides_plan
             overrides_plan = spell_codegen_plan.overrides_plan
-            mutation_overrides_plan = spell_codegen_plan.mutation_overrides_plan
 
         phase8_11_signature = SharedCompilerExecutions.hash_codegen_signature(
             None if occurrence_graph_analysis is None else occurrence_graph_analysis.root_spell_id,
@@ -1418,8 +1416,6 @@ class SharedCompilerExecutions:
             None if no_overrides_plan is None else len(no_overrides_plan.steps),
             None if overrides_plan is None else overrides_plan.root_spell_id,
             None if overrides_plan is None else len(overrides_plan.steps),
-            None if mutation_overrides_plan is None else mutation_overrides_plan.root_spell_id,
-            None if mutation_overrides_plan is None else len(mutation_overrides_plan.steps),
             None if spell_codegen_creation is None else spell_codegen_creation.resolve_route_key,
             None if spell_codegen_creation is None else spell_codegen_creation.no_overrides_executor_signature,
         )
@@ -1439,7 +1435,6 @@ class SharedCompilerExecutions:
                 "node_count": spell_codegen_model.node_count,
                 "max_dependency_count": spell_codegen_model.max_dependency_count,
                 "target_spec_count": spell_codegen_model.target_spec_count,
-                "mutation_target_spec_count": spell_codegen_model.mutation_target_spec_count,
                 "applied_strategy_ids": tuple(spell_codegen_model.applied_strategy_ids),
             },
             "plan": None if spell_codegen_plan is None else {
@@ -1450,9 +1445,6 @@ class SharedCompilerExecutions:
                 ),
                 "overrides_step_count": (
                     0 if overrides_plan is None else len(overrides_plan.steps)
-                ),
-                "mutation_overrides_step_count": (
-                    0 if mutation_overrides_plan is None else len(mutation_overrides_plan.steps)
                 ),
             },
             "creation": None if spell_codegen_creation is None else {

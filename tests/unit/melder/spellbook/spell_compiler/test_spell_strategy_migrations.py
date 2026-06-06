@@ -24,9 +24,6 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy import (
     SpellInjectionProcessorStrategy,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_mutation_targeting_processor_strategy import (
-    SpellMutationTargetingProcessorStrategy,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy import (
     SpellOccurrenceOrderProcessorStrategy,
 )
@@ -60,7 +57,6 @@ class _ModelProbe:
         self.contract_shape = None
         self.injection_shape = None
         self.override_targeting_shape = None
-        self.mutation_targeting_shape = None
         self.spell_runtime_shape = None
         self.node_count = 0
         self.shared_node_count = 0
@@ -73,11 +69,6 @@ class _ModelProbe:
         self.max_targets_per_spec = 0
         self.max_target_path_depth = 0
         self.override_shape_family = "unclassified"
-        self.mutation_target_spec_count = 0
-        self.mutation_patch_count = 0
-        self.mutation_targeted_child_spell_count = 0
-        self.max_mutation_patches_per_spec = 0
-        self.max_mutation_target_path_depth = 0
         self.section_names = lambda: (
             "graph_shape",
             "order_shape",
@@ -118,39 +109,6 @@ class _PathRegistryProbe:
         """Return a deterministic child path id."""
         _ = param_name
         return path_id + 10
-
-
-class _NodeProbe:
-    """Minimal DAG node double for mutation-targeting tests."""
-
-    def __init__(self, dependencies: List[Any], incoming_params: Dict[Any, str]) -> None:
-        """Store dependency nodes and incoming parameter mapping."""
-        self.dependencies = dependencies
-        self.incoming_params = incoming_params
-
-
-class _DagProbe:
-    """Minimal DAG double exposing get_node()."""
-
-    def __init__(self, node_map: Dict[str, Any]) -> None:
-        """Store nodes by id for later lookup."""
-        self._node_map = node_map
-
-    def get_node(self, node_id: str) -> Any:
-        """Return the configured node for the supplied id."""
-        return self._node_map.get(node_id)
-
-
-class _ParentNodeProbe:
-    """Hashable parent-node double for mutation-targeting tests."""
-
-    def __init__(self, node_id: str) -> None:
-        """Store the stable node id."""
-        self.id = node_id
-
-    def __hash__(self) -> int:
-        """Keep the node usable as a dictionary key."""
-        return hash(self.id)
 
 
 class _SpellIndexProbe:
@@ -537,81 +495,6 @@ def test_override_targeting_processor_strategy_helper_methods_port_patchmap_key_
     ) == "deep"
 
 
-def test_mutation_targeting_processor_strategy_ports_mutation_patch_rows() -> None:
-    """The mutation-targeting processor should derive normalized mutation patch rows from mutation sockets."""
-    strategy = SpellMutationTargetingProcessorStrategy()
-    model = _ModelProbe()
-    previous = _PreviousCleanup()
-    model.mutation_targeting_shape = previous
-    parent = _ParentNodeProbe("old-parent")
-    child_node = _NodeProbe(
-        dependencies=[parent],
-        incoming_params={parent: "mut"},
-    )
-    root_blueprint = SimpleNamespace(
-        socket_refs=(
-            SimpleNamespace(
-                node_id="child",
-                param_name="mut",
-                param_path_id=3,
-                socket_kind=SocketKind.MUTATION_CONTRACT,
-            ),
-        ),
-        path_registry=_PathRegistryProbe({3: 3}),
-        dag=_DagProbe({"child": child_node}),
-        ensure_dag_index_built=lambda: None,
-    )
-
-    strategy.process(
-        object(),
-        SimpleNamespace(_root_blueprint_phase5=root_blueprint),
-        model,
-    )
-
-    assert model.mutation_target_spec_count == 3
-    assert model.mutation_patch_count == 1
-    assert model.mutation_targeted_child_spell_count == 1
-    assert model.max_mutation_patches_per_spec == 1
-    assert model.max_mutation_target_path_depth == 3
-    assert previous.cleanup_called is True
-
-
-def test_mutation_targeting_processor_strategy_helper_methods_port_patchmap_key_rules() -> None:
-    """Mutation-targeting helpers should preserve the old target-key and parent-resolution rules."""
-    parent = _ParentNodeProbe("old-parent")
-    other_parent = _ParentNodeProbe("other-parent")
-    child_node = _NodeProbe(
-        dependencies=[parent, other_parent],
-        incoming_params={parent: "svc", other_parent: "other"},
-    )
-    root_blueprint = SimpleNamespace(
-        dag=_DagProbe({"child": child_node}),
-    )
-
-    patch_ref = SpellMutationTargetingProcessorStrategy._build_patch_ref(
-        root_blueprint=root_blueprint,
-        node_id="child",
-        param_name="svc",
-        param_path_id=9,
-    )
-
-    assert patch_ref.child_spell_id == "child"
-    assert patch_ref.old_parent_id == "old-parent"
-    assert SpellMutationTargetingProcessorStrategy._build_target_key(
-        kind=TargetSpecKind.BROADCAST,
-        param_name="svc",
-    ) == "**svc"
-    assert SpellMutationTargetingProcessorStrategy._build_target_key(
-        kind=TargetSpecKind.UNIQUE,
-        param_name="svc",
-    ) == "*svc"
-    with pytest.raises(RuntimeError, match="Unsupported mutation target key kind"):
-        SpellMutationTargetingProcessorStrategy._build_target_key(
-            kind="bad",
-            param_name="svc",
-        )
-
-
 def test_runtime_processor_strategy_ports_execution_runtime_rows() -> None:
     """The runtime processor should derive per-spell runtime rows from ordered spell ids."""
     strategy = SpellRuntimeProcessorStrategy()
@@ -684,7 +567,7 @@ def test_runtime_processor_strategy_raises_when_visible_spell_id_is_missing() ->
 def test_generalized_codegen_plan_strategy_ports_execution_plan_builder_intent(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The generalized planner strategy should delegate to the lane builder for all 3 planner outputs."""
+    """The generalized planner strategy should delegate to the lane builder for both planner outputs."""
     state = SimpleNamespace(
         section_names=lambda: (
             "graph_shape",
@@ -698,7 +581,6 @@ def test_generalized_codegen_plan_strategy_ports_execution_plan_builder_intent(
         plan_strategy_ids=(),
         no_overrides_plan=None,
         overrides_plan=None,
-        mutation_overrides_plan=None,
         metadata={},
     )
     build_calls: List[Any] = []
@@ -727,14 +609,11 @@ def test_generalized_codegen_plan_strategy_ports_execution_plan_builder_intent(
     assert build_calls == [
         ("init", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES, state),
         ("init", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.OVERRIDES, state),
-        ("init", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.MUTATION_OVERRIDES, state),
         ("build", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES),
         ("build", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.OVERRIDES),
-        ("build", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.MUTATION_OVERRIDES),
     ]
     assert plan.no_overrides_plan == "lane:no_overrides"
     assert plan.overrides_plan == "lane:overrides"
-    assert plan.mutation_overrides_plan == "lane:mutation_overrides"
     assert plan.metadata["selected_strategy_id"] == "generalized_codegen_plan"
     assert plan.metadata["discovery_reason"] == "default_generalized_model_native_strategy"
     assert plan.metadata["model_sections"] == (

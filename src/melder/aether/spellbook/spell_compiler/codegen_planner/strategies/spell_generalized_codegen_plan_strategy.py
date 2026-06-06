@@ -60,13 +60,8 @@ class SpellGeneralizedCodegenPlanStrategy(SpellCodegenPlanStrategy):
             state=state,
             plan_variant=SpellGeneralizedCodegenPlanVariant.OVERRIDES,
         )
-        mutation_overrides_builder = SpellGeneralizedCodegenPlanBuilder(
-            state=state,
-            plan_variant=SpellGeneralizedCodegenPlanVariant.MUTATION_OVERRIDES,
-        )
         plan.no_overrides_plan = no_overrides_builder.build()
         plan.overrides_plan = overrides_builder.build()
-        plan.mutation_overrides_plan = mutation_overrides_builder.build()
         plan.metadata["selected_strategy_id"] = self.strategy_id
         plan.metadata["discovery_reason"] = (
             "default_generalized_model_native_strategy"
