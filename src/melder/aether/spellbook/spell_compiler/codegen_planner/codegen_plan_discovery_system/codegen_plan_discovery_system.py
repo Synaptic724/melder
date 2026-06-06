@@ -1,25 +1,16 @@
-from dataclasses import dataclass
-
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery import (
+    CodegenPlanDiscovery,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder import (
+    CodegenPlanDiscoveryStrategyBuilder,
+)
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-@dataclass(frozen=True, slots=True)
-class CodegenPlanDiscovery:
-    """
-    Discovery result for one codegen-plan selection pass.
-
-    Purpose:
-        Hold the planner's current selected plan strategy id plus any compact
-        reason metadata explaining why that strategy was chosen.
-    """
-
-    selected_strategy_id: str
-    discovery_reason: str
-
-
-class CodegenPlanDiscoverySystem:
+class CodegenPlanDiscoverySystem(Cleanable):
     """
     Select the best current codegen-plan strategy for one model.
 
@@ -33,7 +24,26 @@ class CodegenPlanDiscoverySystem:
         - For now it always selects the generalized model-native strategy.
     """
 
-    __slots__ = ()
+    __slots__ = Cleanable.__slots__ + [
+        "_strategy_builder",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Build one phase-10 discovery facade with an owned strategy builder.
+        """
+        super().__init__()
+        self._strategy_builder = CodegenPlanDiscoveryStrategyBuilder()
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release discovery-owned state.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._strategy_builder.cleanup()
+        del self._strategy_builder
 
     def discover(
             self,
@@ -48,8 +58,13 @@ class CodegenPlanDiscoverySystem:
             - Defaults to `generalized_codegen_plan` until real ranking logic
               is implemented.
         """
-        _ = spell_codegen_model
-        return CodegenPlanDiscovery(
-            selected_strategy_id="generalized_codegen_plan",
-            discovery_reason="default_generalized_model_native_strategy",
+        strategies = self._strategy_builder.get_strategies(
+            self._strategy_builder.registered_strategy_names()
+        )
+        for strategy in strategies:
+            discovery = strategy.discover(spell_codegen_model)
+            if discovery is not None:
+                return discovery
+        raise RuntimeError(
+            "CodegenPlanDiscoverySystem could not select a plan discovery result."
         )

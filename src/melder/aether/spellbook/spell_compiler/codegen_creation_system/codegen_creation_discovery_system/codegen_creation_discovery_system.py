@@ -1,29 +1,19 @@
-from dataclasses import dataclass
-from typing import Tuple
-
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery import (
+    CodegenCreationDiscovery,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder import (
+    CodegenCreationDiscoveryStrategyBuilder,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-@dataclass(frozen=True, slots=True)
-class CodegenCreationDiscovery:
-    """
-    Discovery result for one codegen creation selection pass.
-
-    Purpose:
-        Hold the ordered codegen creation strategy chain plus one compact
-        reason describing why that chain was chosen.
-    """
-
-    selected_strategy_ids: Tuple[str, ...]
-    discovery_reason: str
-
-
-class CodegenCreationDiscoverySystem:
+class CodegenCreationDiscoverySystem(Cleanable):
     """
     Select the best current codegen creation strategy for one model/plan pair.
 
@@ -38,7 +28,26 @@ class CodegenCreationDiscoverySystem:
           remaining creation lanes are ported fully.
     """
 
-    __slots__ = ()
+    __slots__ = Cleanable.__slots__ + [
+        "_strategy_builder",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Build one phase-11 discovery facade with an owned strategy builder.
+        """
+        super().__init__()
+        self._strategy_builder = CodegenCreationDiscoveryStrategyBuilder()
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release discovery-owned state.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._strategy_builder.cleanup()
+        del self._strategy_builder
 
     def discover(
             self,
@@ -54,25 +63,16 @@ class CodegenCreationDiscoverySystem:
             - Returns a deterministic strategy tuple in execution order.
             - Does not mutate the model or plan.
         """
-        _ = spell_codegen_model
-        selected_plan_strategy_id = spell_codegen_plan.metadata.get(
-            "selected_strategy_id"
+        strategies = self._strategy_builder.get_strategies(
+            self._strategy_builder.registered_strategy_names()
         )
-        if selected_plan_strategy_id == "generalized_codegen_plan":
-            return CodegenCreationDiscovery(
-                selected_strategy_ids=(
-                    "generalized_creation_context_setup_codegen_creation",
-                    "generalized_no_overrides_codegen_creation",
-                    "generalized_overrides_codegen_creation",
-                    "generalized_mutation_overrides_codegen_creation",
-                ),
-                discovery_reason=(
-                    "default_generalized_plan_codegen_creation_chain"
-                ),
+        for strategy in strategies:
+            discovery = strategy.discover(
+                spell_codegen_model,
+                spell_codegen_plan,
             )
-        return CodegenCreationDiscovery(
-            selected_strategy_ids=(
-                "generalized_no_overrides_codegen_creation",
-            ),
-            discovery_reason="fallback_no_overrides_creation_strategy",
+            if discovery is not None:
+                return discovery
+        raise RuntimeError(
+            "CodegenCreationDiscoverySystem could not select a creation discovery result."
         )
