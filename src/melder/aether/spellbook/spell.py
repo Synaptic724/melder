@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence, ClassVar
+from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence, ClassVar, Union
 import ulid
 from threading import RLock
 from types import TracebackType
@@ -457,22 +457,19 @@ class Spell(Cleanable):
                 except Exception:
                     pass
 
-            if self._pre_hooks is not None:
+            if self._pre_hooks:
                 self._pre_hooks.clear()
-            if self._activation_hooks is not None:
+            if self._activation_hooks:
                 self._activation_hooks.clear()
-            if self._post_hooks is not None:
+            if self._post_hooks:
                 self._post_hooks.clear()
-            if self.tags is not None and hasattr(self.tags, "clear"):
-                try:
-                    self.tags.clear()
-                except Exception:
-                    pass
-            if isinstance(self.metadata, dict):
+            if self.tags:
+                self.tags.clear()
+            if self.metadata:
                 self.metadata.clear()
-            if isinstance(self.dependencies, list):
+            if self.dependencies:
                 self.dependencies.clear()
-            if isinstance(self.disposal_method_names, list):
+            if self.disposal_method_names:
                 self.disposal_method_names.clear()
             self._cleaned = True
             self._hooks_enabled = False
@@ -1105,27 +1102,28 @@ class Spell(Cleanable):
     @property
     def mutation_override(self) -> dict:
         """
-        Current mutation override payload for this spell's DAG.
+        Current persistent default override payload for this spell.
 
-        This is a structural overlay that the mutation pipeline can apply to the
-        spell's DI shape in Dynamic or AI-native mode. It is conceptually separate
-        from normal SpellMap overrides:
+        This payload is pre-normalized into the same override-map shape that
+        meld-time runtime overrides use. It is conceptually separate from the
+        caller-supplied `spell_override` argument passed into `meld(...)`:
 
-        - `SpellMap.spell_override` -> per-call or per-site DI override.
-        - `Spell.mutation_override` -> per-spell graph overlay used by the mutation hub.
+        - meld `spell_override` -> one-call runtime override payload
+        - `Spell.mutation_override` -> persistent default override payload
+          stored on the spell itself
 
         Semantics:
-            - An empty dict (`{}`) is treated as "no active overlay" by default.
-            - Higher-level mutation systems may refine that distinction later, but the
-              Spell layer exposes the raw payload exactly as stored.
+            - An empty dict (`{}`) means no active default payload.
+            - Positional payloads are normalized into `{"__args__": [...]}`.
+            - Keyword payloads are copied into a fresh dict so later meld calls
+              do not depend on caller-owned containers.
 
         Returns:
             dict:
-                The concrete overlay payload currently attached to this spell.
+                The normalized persistent default override payload currently
+                attached to this spell.
 
         """
-        # Expose the concrete container; callers can decide if '{}' means
-        # "no overlay" or an explicit empty overlay.
         return self._mutation_override
 
     @property
@@ -1143,36 +1141,41 @@ class Spell(Cleanable):
         """
         return bool(self._mutation_override)
 
-    def apply_mutation_override(self, override: Optional[dict]) -> None:
+    def apply_mutation_override(
+            self,
+            override: Optional[Union[dict, list, tuple]],
+    ) -> None:
         """
-        Apply or update the DAG-level mutation override for this spell.
+        Apply or replace the persistent default override payload for this spell.
 
         Contract:
             - Requires the spell to be attached to a dynamic runtime
               environment.
-            - Requires overrides-enabled posture for this spell.
-            - Stores the raw overlay payload on the spell.
-            - Clears the spell-owned `CreationContext` so the runtime shape is rebuilt
-              on the next meld path.
-            - Marks spell lineage state through SpellSystemStates when that service
-              is available.
-            - Treats `None` the same as an empty overlay payload.
-
-        The actual rebuild or revalidation of the system graph is expected to be
-        owned by the Phase 5-7 pipelines and the mutation hub.
+            - Normalizes the payload into the same runtime override-map shape
+              that meld-time caller overrides use.
+            - Stores only the normalized runtime payload shape on the spell.
+            - Does not invalidate the spell, clear CreationContext, or mark
+              structural change state.
+            - Treats `None` and empty dict payloads as "no active default
+              override payload."
 
         Args:
             override:
-                New overlay payload. `None` or `{}` clears the overlay and leaves
-                this spell in a no-active-overlay state.
+                New persistent default override payload. Supported shapes match
+                meld-time override payloads:
+                - `dict` for targeted keyword-style overrides
+                - `list` / `tuple` for root positional overrides
+                - `None` to clear the default payload
 
         Returns:
             None.
 
         Raises:
             RuntimeError:
-                If the spell is not attached to a dynamic runtime environment,
-                or if overrides are disabled for this spell.
+                If the spell is not attached to a dynamic runtime environment.
+            TypeError:
+                If `override` is not one of the supported override payload
+                shapes.
 
         """
         self.check_cleaned()
@@ -1181,39 +1184,29 @@ class Spell(Cleanable):
                 "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
             )
 
-        new_payload: dict = override if override is not None else {}
-        self._mutation_override = new_payload
-        if new_payload:
-            change_reason = SpellStateChangeReason.mutation_contract_set
+        normalized_payload = self._normalize_mutation_override_payload(override)
+        if normalized_payload is None:
+            self._mutation_override = {}
         else:
-            change_reason = SpellStateChangeReason.mutation_contract_cleared
-        self.invalidate_spell(change_reason=change_reason)
+            self._mutation_override = normalized_payload
 
 
     def clear_mutation_override(self) -> None:
         """
-        Clear any active mutation overlay for this spell.
+        Clear any active persistent default override payload for this spell.
 
         Contract:
             - Requires the spell to be attached to a dynamic runtime
               environment.
-            - Requires overrides-enabled posture for this spell.
-            - Resets the local overlay payload back to the default empty dict.
-            - Clears the spell-owned `CreationContext` so future meld work rebuilds
-              runtime shape without the previous overlay.
-            - Marks the lineage as mutation-cleared when SpellSystemStates is
-              available.
-
-        The actual effect on the compiled or system DAG remains owned by the
-        higher-level mutation and validation pipelines.
+            - Resets the stored payload back to the default empty dict.
+            - Does not invalidate the spell or rebuild runtime shape.
 
         Returns:
             None.
 
         Raises:
             RuntimeError:
-                If the spell is not attached to a dynamic runtime environment,
-                or if overrides are disabled for this spell.
+                If the spell is not attached to a dynamic runtime environment.
 
         """
         self.check_cleaned()
@@ -1227,8 +1220,33 @@ class Spell(Cleanable):
             return
 
         self._mutation_override = {}
-        self.invalidate_spell(
-            change_reason=SpellStateChangeReason.mutation_contract_cleared,
+
+    @staticmethod
+    def _normalize_mutation_override_payload(
+            override: Optional[Union[dict, list, tuple]],
+    ) -> Optional[dict[str, Any]]:
+        """
+        Normalize one stored mutation override payload into runtime shape.
+
+        Contract:
+            - `None` and empty dict payloads normalize to `None`.
+            - Dict payloads are shallow-copied into a fresh mapping.
+            - Positional list/tuple payloads normalize to `{"__args__": [...]}`.
+            - Raises on unsupported payload shapes instead of coercing them.
+        """
+        if override is None:
+            return None
+
+        if isinstance(override, dict):
+            if not override:
+                return None
+            return dict(override)
+
+        if isinstance(override, (list, tuple)):
+            return {"__args__": list(override)}
+
+        raise TypeError(
+            "mutation_override must be a dict, list, or tuple."
         )
 
     #endregion Spell Mutations
