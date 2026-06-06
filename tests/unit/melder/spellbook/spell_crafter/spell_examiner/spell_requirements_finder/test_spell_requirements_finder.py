@@ -9,7 +9,6 @@ from typing import List, Optional, Union, get_args, get_origin
 import pytest
 
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -553,7 +552,6 @@ def test_remaining_helper_edges_for_builtins_sentinels_and_tuple_paths(monkeypat
 
 def test_parameter_classification_shapes_and_optional_logic():
     spellmap_default = SpellMap(spellframe="frame-key")
-    mutation_default = MutationContract(spellframe="frame-key")
     contract_default = SpellContract(spellframe="frame-key")
 
     def target(
@@ -565,7 +563,6 @@ def test_parameter_classification_shapes_and_optional_logic():
         opt_plain="x",
         builtin_list: list[str] = None,
         spellmap=spellmap_default,
-        mutation: MutationContract = mutation_default,
         contract: SpellContract = contract_default,
         opt_union: Optional[Dep] = None,
         union_multi: Union[Dep, str, None] = None,
@@ -580,7 +577,6 @@ def test_parameter_classification_shapes_and_optional_logic():
             opt_plain,
             builtin_list,
             spellmap,
-            mutation,
             contract,
             opt_union,
             union_multi,
@@ -620,7 +616,6 @@ def test_parameter_classification_shapes_and_optional_logic():
     assert shape("spellmap") is ParameterDIShape.SPELLMAP_DEFAULT
     assert by_name["spellmap"].spellmap_default is spellmap_default
 
-    assert shape("mutation") is ParameterDIShape.MUTATION_CONTRACT
     assert shape("contract") is ParameterDIShape.SPELL_CONTRACT
 
     assert shape("opt_union") is ParameterDIShape.SINGLE_BY_ANNOTATION

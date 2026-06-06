@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 
 
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -166,7 +165,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             Normalize dependency requirements into canonical binding keys.
         Contract:
             - Returns None for non-DI parameters.
-            - Uses SpellMap / SpellContract / MutationContract canonical keys.
+            - Uses SpellMap / SpellContract canonical keys.
         Args:
             requirement: SpellParameterRequirement to normalize.
         Returns:
@@ -198,12 +197,6 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         if requirement.di_shape is ParameterDIShape.SPELL_CONTRACT:
             contract = requirement.default_value
             if not isinstance(contract, SpellContract):
-                return None
-            return contract.canonical_key
-
-        if requirement.di_shape is ParameterDIShape.MUTATION_CONTRACT:
-            contract = requirement.default_value
-            if not isinstance(contract, MutationContract):
                 return None
             return contract.canonical_key
 

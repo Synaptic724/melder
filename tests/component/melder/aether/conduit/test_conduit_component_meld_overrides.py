@@ -4,7 +4,6 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
@@ -35,46 +34,6 @@ def reset_aether_singleton_for_component_meld_overrides() -> None:
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
-
-
-class DefaultMutationProvider:
-    """
-    Purpose:
-        Provide a default mutation provider shape for MutationContract sockets.
-    Contract:
-        - marker is set to "default" for identification in tests.
-    """
-
-    def __init__(self) -> None:
-        """
-        Purpose:
-            Initialize the default provider marker.
-        Contract:
-            Stores marker="default" on the instance.
-        Returns:
-            None.
-        """
-        self.marker = "default"
-
-
-class OverrideMutationProvider:
-    """
-    Purpose:
-        Provide an alternate mutation provider for override tests.
-    Contract:
-        - marker is set to "override" for identification in tests.
-    """
-
-    def __init__(self) -> None:
-        """
-        Purpose:
-            Initialize the override provider marker.
-        Contract:
-            Stores marker="override" on the instance.
-        Returns:
-            None.
-        """
-        self.marker = "override"
 
 
 class BasicRepo:
@@ -315,125 +274,6 @@ def _run_all_spellbook_phases_through_blueprints(spellbook: Spellbook) -> None:
             compiler_system.run_phase_root_blueprints(spellbook, spell, "cid")
     finally:
         compiler_system.cleanup()
-
-
-def _make_mutation_host_class() -> type:
-    """
-    Purpose:
-        Build a host spell class with a MutationContract default.
-    Contract:
-        - The MutationContract default is created per call for isolation.
-        - The host stores the resolved mutant on the instance.
-    Returns:
-        type: A host class suitable for mutation override tests.
-    """
-    contract = MutationContract(spellframe=DefaultMutationProvider)
-
-    class MutationHost:
-        """
-        Purpose:
-            Provide a spell with a MutationContract socket for override tests.
-        Contract:
-            - Stores the resolved mutant dependency on the instance.
-        """
-
-        def __init__(self, mutant: object = contract) -> None:
-            """
-            Purpose:
-                Capture the resolved mutant dependency.
-            Contract:
-                Stores the supplied mutant on the instance.
-            Args:
-                mutant: MutationContract default or resolved provider instance.
-            Returns:
-                None.
-            """
-            self.mutant = mutant
-
-    return MutationHost
-
-
-@pytest.mark.xfail(
-    reason="Mutation contracts are disabled; conjure fails before override handling.",
-    raises=SpellbookValidationError,
-)
-def test_component_meld_mutation_override_rewires_dependency() -> None:
-    """
-    Purpose:
-        Validate mutation_override rewires a MutationContract socket at meld-time.
-    Contract:
-        - Mutation override replaces the default MutationContract with a provider instance.
-        - The resolved provider marker matches the override target.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If mutation overrides do not affect resolution.
-    """
-    spellbook = _make_spellbook()
-    override_spell_id = spellbook.bind(
-        spell=OverrideMutationProvider,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    host_class = _make_mutation_host_class()
-    host_spell_id = spellbook.bind(
-        spell=host_class,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    conduit = spellbook.conjure(name="root")
-    try:
-        host_spell = _get_spell_by_version_id(spellbook, host_spell_id)
-        assert host_spell is not None
-        host_spell.apply_mutation_override({"mutant": override_spell_id})
-
-        instance = conduit.meld(spell=host_spell_id)
-
-        assert isinstance(instance, host_class)
-        assert isinstance(instance.mutant, OverrideMutationProvider)
-        assert instance.mutant.marker == "override"
-    finally:
-        conduit.cleanup()
-
-
-@pytest.mark.xfail(
-    reason="Mutation contracts are disabled; conjure fails before override handling.",
-    raises=SpellbookValidationError,
-)
-def test_component_meld_mutation_override_invalid_key_raises() -> None:
-    """
-    Purpose:
-        Validate invalid mutation_override keys surface as MeldExecutionError.
-    Contract:
-        - Invalid override paths are rejected when applying mutation overrides.
-        - Conduit.meld raises MeldExecutionError for the failure.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If invalid override keys do not raise.
-    """
-    spellbook = _make_spellbook()
-    override_spell_id = spellbook.bind(
-        spell=OverrideMutationProvider,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    host_class = _make_mutation_host_class()
-    host_spell_id = spellbook.bind(
-        spell=host_class,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    conduit = spellbook.conjure(name="root")
-    try:
-        host_spell = _get_spell_by_version_id(spellbook, host_spell_id)
-        assert host_spell is not None
-        host_spell.apply_mutation_override({"missing": override_spell_id})
-
-        with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
-            conduit.meld(spell=host_spell_id)
-    finally:
-        conduit.cleanup()
 
 
 def test_component_meld_spell_override_path_targets_nested_param() -> None:

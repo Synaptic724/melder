@@ -95,10 +95,6 @@ class CompilerPhase1:
                 ParameterDIShape.SPELL_CONTRACT.name,
                 0,
             ),
-            "mutation_contract_parameter_count": di_shape_counts.get(
-                ParameterDIShape.MUTATION_CONTRACT.name,
-                0,
-            ),
             "di_shape_counts": tuple(sorted(di_shape_counts.items())),
         }
 

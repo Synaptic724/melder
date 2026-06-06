@@ -5,7 +5,6 @@ from typing import Optional
 import pytest
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -72,7 +71,6 @@ def _bind_basic_service_pair(spellbook: Spellbook) -> tuple[str, str]:
         ("collection", 1, "collection"),
         ("spellmap", 1, "spellmap"),
         ("contract", 1, "contract"),
-        ("mutation", 1, "mutation"),
     ],
 )
 def test_component_spell_compiler_system_structural_entry_surfaces(
@@ -161,31 +159,6 @@ def test_component_spell_compiler_system_structural_entry_surfaces(
                 existence=Existence.unique,
                 permissions="create",
             )
-        else:
-            spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-                spellframe=IService,
-                binding_name="primary",
-            )
-
-            class MutationConsumer:
-                def __init__(
-                    self,
-                    mutation: MutationContract = MutationContract(
-                        spellframe=IService,
-                        binding_name="primary",
-                    ),
-                ) -> None:
-                    self.mutation = mutation
-
-            spell_id = spellbook.bind(
-                spell=MutationConsumer,
-                existence=Existence.unique,
-                permissions="create",
-            )
-
         spell = get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
@@ -205,7 +178,7 @@ def test_component_spell_compiler_system_structural_entry_surfaces(
             assert len(spell.dependencies) >= 2
         elif expected_shape == "spellmap":
             assert len(spell.dependencies) == 1
-        elif expected_shape in ("contract", "mutation"):
+        elif expected_shape == "contract":
             assert spell.dependencies == []
     finally:
         compiler_system.cleanup()
@@ -331,7 +304,6 @@ def test_component_spell_compiler_system_phase3_records_spellmap_dependency() ->
     ("default_value", "expected_kind"),
     [
         (SpellContract(spellframe=IService, binding_name="primary"), SocketKind.SPELL_CONTRACT),
-        (MutationContract(spellframe=IService, binding_name="primary"), SocketKind.MUTATION_CONTRACT),
     ],
 )
 def test_component_spell_compiler_system_phase3_records_contract_topology_only(
@@ -671,7 +643,7 @@ def test_component_spell_compiler_system_phase9_builds_injection_plan() -> None:
         spellbook.cleanup()
 
 
-@pytest.mark.parametrize("builder", ["override", "mutation"])
+@pytest.mark.parametrize("builder", ["override"])
 def test_component_spell_compiler_system_phase10_builds_codegen_plan_lanes(
         builder: str,
 ) -> None:
@@ -680,30 +652,10 @@ def test_component_spell_compiler_system_phase10_builds_codegen_plan_lanes(
     compiler_system = SpellCompilerSystem()
     conduit_id = "component-phase10-{0}".format(builder)
     try:
-        if builder == "mutation":
-            class Consumer:
-                def __init__(
-                    self,
-                    service: BasicService,
-                    mutation: MutationContract = MutationContract(
-                        spellframe=IService,
-                        binding_name="primary",
-                    ),
-                ) -> None:
-                    self.service = service
-                    self.mutation = mutation
-            spellbook.bind(
-                spell=BasicService,
-                existence=Existence.unique,
-                permissions="create",
-                spellframe=IService,
-                binding_name="primary",
-            )
-        else:
-            class Consumer:
-                def __init__(self, service: BasicService) -> None:
-                    self.service = service
-            spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
+        class Consumer:
+            def __init__(self, service: BasicService) -> None:
+                self.service = service
+        spellbook.bind(spell=BasicService, existence=Existence.unique, permissions="create")
 
         consumer_id = spellbook.bind(spell=Consumer, existence=Existence.unique, permissions="create")
         consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
@@ -717,10 +669,7 @@ def test_component_spell_compiler_system_phase10_builds_codegen_plan_lanes(
         plan = artifact._spell_codegen_plan
         assert plan is not None
         assert plan.no_overrides_plan is not None
-        if builder == "override":
-            assert plan.overrides_plan is not None
-        else:
-            assert plan.mutation_overrides_plan is not None
+        assert plan.overrides_plan is not None
     finally:
         compiler_system.cleanup()
         spellbook.cleanup()

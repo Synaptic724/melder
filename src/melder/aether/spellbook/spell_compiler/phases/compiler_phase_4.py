@@ -141,12 +141,9 @@ class CompilerPhase4:
         # For now: any error -> broken. You can refine this later via severity.
         artifact._is_broken = result.has_errors
         has_contract_missing_provider = False
-        has_mutation_missing_provider = False
         for issue in result.issues:
             if issue.code == "SPELL_CONTRACT_MISSING_PROVIDER":
                 has_contract_missing_provider = True
-            elif issue.code == "MUTATION_CONTRACT_MISSING_PROVIDER":
-                has_mutation_missing_provider = True
 
         # Update global structural validity for this lineage.
         if spell_system_states is not None and spell.spell_index is not None:
@@ -160,10 +157,7 @@ class CompilerPhase4:
                     )
                 else:
                     state.clear_dirty(time.time())
-                    if (
-                            has_contract_missing_provider
-                            or has_mutation_missing_provider
-                    ):
+                    if has_contract_missing_provider:
                         state.set_validity(
                             SpellValidity.gated,
                             change_reason=SpellStateChangeReason.contract_unvalidated,

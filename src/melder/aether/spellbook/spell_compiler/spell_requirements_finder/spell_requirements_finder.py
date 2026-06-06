@@ -21,7 +21,6 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requ
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -1046,19 +1045,17 @@ class SpellRequirementsFinder(Cleanable):
         annotation-based inference.
 
         Precedence order:
-            1. "MutationContract" defaults win first because they describe a
-               dedicated mutation socket rather than a normal dependency.
-            2. "SpellContract" defaults win next for the same reason: the
+            1. "SpellContract" defaults win first because the
                parameter is explicitly asking for a spell contract object.
-            3. "SpellMap" defaults win over annotations because an explicit
+            2. "SpellMap" defaults win over annotations because an explicit
                map is a stronger statement than an inferred type-based lookup.
-            4. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
-            5. Optional wrappers are removed only far enough to inspect the
+            3. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
+            4. Optional wrappers are removed only far enough to inspect the
                underlying dependency shape.
-            6. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
+            5. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
                looks like a DI candidate.
-            7. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-            8. Everything else stays: data:`ParameterDIShape.PLAIN`.
+            6. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            7. Everything else stays: data:`ParameterDIShape.PLAIN`.
 
         The returned "is_optional" flag answers a Melder-specific question:
         can Phase 1 treat failure to supply this dependency as acceptable
@@ -1083,16 +1080,8 @@ class SpellRequirementsFinder(Cleanable):
                 metadata later phases need for collection resolution or explicit
                 SpellMap fallback handling.
         """
-        # Mutation / contract defaults are explicit sockets controlled by
-        # dynamic/mutation flows. They take precedence over normal DI hints.
-        if has_default and isinstance(default_value, MutationContract):
-            return (
-                ParameterDIShape.MUTATION_CONTRACT,
-                True,   # logically optional - the contract object itself is fallback
-                None,   # no collection element annotation
-                None,   # no SpellMap default
-            )
-
+        # Contract defaults are explicit sockets controlled by dynamic flows.
+        # They take precedence over normal DI hints.
         if has_default and isinstance(default_value, SpellContract):
             return (
                 ParameterDIShape.SPELL_CONTRACT,

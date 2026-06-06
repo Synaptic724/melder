@@ -900,7 +900,7 @@ def test_build_local_frame_dag_handles_spellmap_default_success() -> None:
 
 
 def test_build_local_frame_dag_ignores_contract_shapes() -> None:
-    """Phase 3 local DAG build should not create edges for contract sockets."""
+    """Phase 3 local DAG build should not create edges for SpellContract sockets."""
     phase = CompilerPhase3()
     root_spell = _make_spell_stub(
         "root",
@@ -917,13 +917,6 @@ def test_build_local_frame_dag_ignores_contract_shapes() -> None:
                 param_name="contract",
                 position=0,
                 di_shape=ParameterDIShape.SPELL_CONTRACT,
-                target_annotation=object(),
-            ),
-            _make_dependency(
-                spell_version_id="root",
-                param_name="mutation",
-                position=1,
-                di_shape=ParameterDIShape.MUTATION_CONTRACT,
                 target_annotation=object(),
             ),
         ],
@@ -945,7 +938,6 @@ def test_build_local_frame_dag_ignores_contract_shapes() -> None:
     topology = spell_system_states.topology_calls[0][1]
     assert [socket.socket_kind.name for socket in topology.sockets] == [
         "SPELL_CONTRACT",
-        "MUTATION_CONTRACT",
     ]
 
 
@@ -1060,7 +1052,6 @@ def test_run_builds_resolution_frame_and_updates_topology(
         (ParameterDIShape.COLLECTION_BY_ANNOTATION, "NORMAL"),
         (ParameterDIShape.SPELLMAP_DEFAULT, "NORMAL"),
         (ParameterDIShape.SPELL_CONTRACT, "SPELL_CONTRACT"),
-        (ParameterDIShape.MUTATION_CONTRACT, "MUTATION_CONTRACT"),
     ],
 )
 def test_socket_kind_for_dep_mapping(

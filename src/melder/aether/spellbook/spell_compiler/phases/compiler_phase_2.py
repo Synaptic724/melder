@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -63,9 +62,8 @@ class CompilerPhase2:
                   - plain (caller-supplied) parameters,
                   - normal DI sockets (single, collection, SpellMap),
                   - SpellContract sockets,
-                  - MutationContract sockets.
-            * Store the symbolic graph on this compiler artifact
-              (`artifact._symbolic_graph`) for later phases.
+                * Store the symbolic graph on this compiler artifact
+                  (`artifact._symbolic_graph`) for later phases.
 
         Contracts:
             * Phase 1 (requirements) must already have run successfully.
@@ -120,7 +118,6 @@ class CompilerPhase2:
                     ParameterDIShape.SPELLMAP_DEFAULT,
                     ParameterDIShape.PLAIN,
                     ParameterDIShape.SPELL_CONTRACT,
-                    ParameterDIShape.MUTATION_CONTRACT,
             ):
                 # Shapes like IGNORE do not participate in sockets.
                 continue
@@ -157,19 +154,6 @@ class CompilerPhase2:
                 spellmap_default = None
                 if isinstance(param.default_value, SpellContract):
                     contract_key = param.default_value.canonical_key
-
-            elif di_shape is ParameterDIShape.MUTATION_CONTRACT:
-                # Mutation socket.
-                #
-                # The same approach as SPELL_CONTRACT: we record the socket +
-                # annotation so that later contract/mutation logic (early vs
-                # late binding, _mutation_overrides, etc.) has visibility.
-                target_annotation = param.annotation
-                is_collection = False
-                spellmap_default = None
-                if isinstance(param.default_value, MutationContract):
-                    contract_key = param.default_value.canonical_key
-                    contract_late_binding = param.default_value.late_binding
 
             else:
                 # Should not happen given the filter above, but kept for

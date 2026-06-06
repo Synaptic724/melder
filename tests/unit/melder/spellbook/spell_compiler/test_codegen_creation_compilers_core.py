@@ -498,7 +498,7 @@ def test_no_overrides_compiler_uses_emitted_step_source_when_transient_source_un
     """Transient-source misses should still compile through emitted step source."""
     monkeypatch.setattr(
         no_overrides_compiler_module,
-        "_build_overrides_codegen_creation_executor_source",
+        "_build_no_overrides_codegen_executor_source",
         lambda transient_schema: None,
     )
 

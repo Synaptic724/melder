@@ -248,15 +248,15 @@ def test_component_spell_resolution_properties_follow_real_phase_artifacts() -> 
 def test_component_spell_mutation_override_updates_real_system_state() -> None:
     """
     Purpose:
-        Validate mutation overrides update real SpellSystemStates change reasons.
+        Validate mutation overrides do not dirty or structurally invalidate the spell.
     Contract:
-        - Applying an override marks the lineage with mutation_contract_set.
-        - Clearing the override marks the lineage with mutation_contract_cleared.
-        - Dirty lineage tracking reflects the mutation events.
+        - Applying an override updates the stored payload only.
+        - Clearing the override removes the stored payload only.
+        - SpellSystemStates change reasons and dirty-lineage tracking remain unchanged.
     Returns:
         None.
     Raises:
-        AssertionError: If state change reasons or dirty tracking are incorrect.
+        AssertionError: If mutation payload or system-state stability is incorrect.
     """
     spellbook = _make_spellbook()
     spell_id = spellbook.bind(
@@ -275,20 +275,21 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
         )
         states = spellbook._spell_system_states
         states.consume_dirty_indexes()
-
-        spell.apply_mutation_override({"mode": "overlay"})
         state = spell.system_state
         assert state is not None
-        assert state.change_reason is SpellStateChangeReason.mutation_contract_set
+        initial_reason = state.change_reason
+
+        spell.apply_mutation_override({"mode": "overlay"})
+        assert state.change_reason is initial_reason
         assert spell.has_mutation_override is True
         assert spell.mutation_override == {"mode": "overlay"}
-        assert states.consume_dirty_indexes() == [spell.spell_index.id]
+        assert states.consume_dirty_indexes() == []
 
         spell.clear_mutation_override()
-        assert state.change_reason is SpellStateChangeReason.mutation_contract_cleared
+        assert state.change_reason is initial_reason
         assert spell.has_mutation_override is False
-        assert spell.mutation_override == {}
-        assert states.consume_dirty_indexes() == [spell.spell_index.id]
+        assert spell.mutation_override is None
+        assert states.consume_dirty_indexes() == []
     finally:
         spellbook.cleanup()
 

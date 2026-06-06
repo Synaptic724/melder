@@ -94,13 +94,6 @@ def test_run_builds_graph_for_supported_dependency_shapes(
         def __init__(self, canonical_key) -> None:
             self.canonical_key = canonical_key
 
-    class _FakeMutationContract:
-        """Minimal stand-in for MutationContract metadata extraction."""
-
-        def __init__(self, canonical_key, late_binding) -> None:
-            self.canonical_key = canonical_key
-            self.late_binding = late_binding
-
     artifact._requirements = SimpleNamespace(
         parameters=[
             _make_param(
@@ -136,18 +129,8 @@ def test_run_builds_graph_for_supported_dependency_shapes(
                 default_value=_FakeSpellContract(("frame-a", "__default__")),
             ),
             _make_param(
-                "mutation",
-                5,
-                ParameterDIShape.MUTATION_CONTRACT,
-                annotation="frame-b",
-                default_value=_FakeMutationContract(
-                    ("frame-b", "__default__"),
-                    True,
-                ),
-            ),
-            _make_param(
                 "ignored",
-                6,
+                5,
                 ParameterDIShape.IGNORE,
                 annotation=bytes,
             ),
@@ -158,11 +141,6 @@ def test_run_builds_graph_for_supported_dependency_shapes(
         compiler_phase_2_module,
         "SpellContract",
         _FakeSpellContract,
-    )
-    monkeypatch.setattr(
-        compiler_phase_2_module,
-        "MutationContract",
-        _FakeMutationContract,
     )
     monkeypatch.setattr(
         compiler_phase_2_module.SharedCompilerExecutions,
@@ -178,7 +156,7 @@ def test_run_builds_graph_for_supported_dependency_shapes(
     graph = artifact._symbolic_graph
     assert graph is not None
     assert graph.spell_id == "root"
-    assert len(graph.dependencies) == 6
+    assert len(graph.dependencies) == 5
 
     dependencies = {dep.param_name: dep for dep in graph.dependencies}
 
@@ -190,8 +168,6 @@ def test_run_builds_graph_for_supported_dependency_shapes(
     assert dependencies["spellmap"].spellmap_default is spellmap_default
     assert dependencies["plain"].target_annotation is float
     assert dependencies["contract"].contract_key == ("frame-a", "__default__")
-    assert dependencies["mutation"].contract_key == ("frame-b", "__default__")
-    assert dependencies["mutation"].contract_late_binding is True
     assert captured_calls == [(spell, artifact)]
 
 

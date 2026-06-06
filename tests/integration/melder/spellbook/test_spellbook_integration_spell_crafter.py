@@ -3,7 +3,6 @@ import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_h
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -390,88 +389,6 @@ def test_spell_crafter_spellmap_default_resolves_dependency() -> None:
         )
     finally:
         conduit.cleanup()
-
-@pytest.mark.xfail(
-    reason="Mutation contracts are disabled; conjure fails before override handling.",
-    raises=SpellbookValidationError,
-)
-def test_spell_crafter_contract_shapes_register_topology_without_dependencies() -> None:
-    """
-    Purpose:
-        Validate SpellContract and MutationContract sockets are metadata-only in Phase 3.
-    Contract:
-        - dependencies remain empty for contract-only parameters.
-        - local topology records contract socket kinds with no targets.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If contract sockets create dependencies or targets.
-    """
-    spellbook = _make_spellbook()
-
-    class Consumer:
-        """
-        Purpose:
-            Spell declaring contract sockets only.
-        Contract:
-            - Declares SpellContract and MutationContract sockets.
-        Args:
-            service: SpellContract socket.
-            mutation: MutationContract socket.
-        """
-        def __init__(
-            self,
-            service: SpellContract = SpellContract(spellframe=IService, binding_name="primary"),
-            mutation: MutationContract = MutationContract(spellframe=IService, binding_name="primary"),
-        ) -> None:
-            """
-            Purpose:
-                Capture contract socket defaults without resolution.
-            Contract:
-                - Stores the contract placeholders as-is.
-            Args:
-                service: SpellContract socket.
-                mutation: MutationContract socket.
-            Returns:
-                None.
-            """
-            self.service = service
-            self.mutation = mutation
-
-    consumer_id = spellbook.bind(
-        spell=Consumer,
-        existence=Existence.unique,
-        permissions="create",
-    )
-
-    conduit = spellbook.conjure(name="root")
-    try:
-        consumer_spell = conduit.get_spell_by_id(consumer_id)
-        assert consumer_spell is not None
-        compiler_test_helpers.run_phase_requirements(consumer_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
-        compiler_test_helpers.run_phase_local_frame(consumer_spell)
-
-        assert consumer_spell.dependencies == []
-        state = consumer_spell.system_state
-        assert state is not None
-        assert state.direct_dependencies == set()
-
-        topology = consumer_spell._spell_system_states.get_local_topology(
-            consumer_spell.spell_index
-        )
-        assert topology is not None
-        service_sockets = topology.get_sockets_for_param("service")
-        mutation_sockets = topology.get_sockets_for_param("mutation")
-        assert len(service_sockets) == 1
-        assert len(mutation_sockets) == 1
-        assert service_sockets[0].socket_kind is SocketKind.SPELL_CONTRACT
-        assert mutation_sockets[0].socket_kind is SocketKind.MUTATION_CONTRACT
-        assert service_sockets[0].target_spell_ids == ()
-        assert mutation_sockets[0].target_spell_ids == ()
-    finally:
-        conduit.cleanup()
-
 
 def test_spell_crafter_phase2_uses_seeded_profile_requirements() -> None:
     """

@@ -3,7 +3,6 @@ import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_h
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndexBuilder
@@ -143,89 +142,6 @@ def test_component_dag_index_builder_builds_from_local_topology() -> None:
         assert path_registry.materialize_path(count_refs[0].param_path_id) == ("count",)
         assert service_refs[0].socket_kind is SocketKind.NORMAL
         assert count_refs[0].socket_kind is SocketKind.NORMAL
-    finally:
-        spellbook.cleanup()
-
-
-def test_component_dag_index_builder_preserves_contract_socket_kinds() -> None:
-    """
-    Purpose:
-        Validate DagIndexBuilder preserves contract socket kinds.
-    Contract:
-        - SpellContract sockets are indexed as SPELL_CONTRACT.
-        - MutationContract sockets are indexed as MUTATION_CONTRACT.
-    Returns:
-        None.
-    """
-    spellbook = _make_spellbook()
-
-    class Consumer:
-        """
-        Purpose:
-            Provide a spell with contract sockets.
-        Contract:
-            - Declares SpellContract and MutationContract parameters.
-        Args:
-            service: SpellContract socket.
-            mutation: MutationContract socket.
-        """
-
-        def __init__(
-            self,
-            service: SpellContract = SpellContract(
-                spellframe=IService,
-                binding_name="primary",
-            ),
-            mutation: MutationContract = MutationContract(
-                spellframe=IService,
-                binding_name="primary",
-            ),
-        ) -> None:
-            """
-            Purpose:
-                Capture contract sockets for diagnostics.
-            Contract:
-                - Stores sockets on the instance.
-            Args:
-                service: SpellContract socket.
-                mutation: MutationContract socket.
-            Returns:
-                None.
-            """
-            self.service = service
-            self.mutation = mutation
-
-    try:
-        consumer_id = spellbook.bind(
-            spell=Consumer,
-            existence=Existence.unique,
-            permissions="create",
-        )
-        spell = _get_spell_by_version_id(spellbook, consumer_id)
-        assert spell is not None
-        compiler_test_helpers.run_phase_requirements(spell)
-        compiler_test_helpers.run_phase_symbolic_graph(spell)
-        compiler_test_helpers.run_phase_local_frame(spell)
-
-        states = spell._spell_system_states
-        assert states is not None
-        topology = states.get_local_topology(spell.spell_index)
-        assert topology is not None
-
-        index = DagIndexBuilder.build_shallow(
-            spell.spell_index.current,
-            topology.sockets,
-        )
-
-        service_refs = index.get_by_name("service")
-        mutation_refs = index.get_by_name("mutation")
-        path_registry = index.path_registry
-        assert len(service_refs) == 1
-        assert len(mutation_refs) == 1
-        assert service_refs[0].socket_kind is SocketKind.SPELL_CONTRACT
-        assert mutation_refs[0].socket_kind is SocketKind.MUTATION_CONTRACT
-        assert path_registry.materialize_path(service_refs[0].param_path_id) == ("service",)
-        assert path_registry.materialize_path(mutation_refs[0].param_path_id) == ("mutation",)
     finally:
         spellbook.cleanup()
 

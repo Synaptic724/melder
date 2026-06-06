@@ -2,7 +2,6 @@ from typing import Dict, List, Optional
 
 import pytest
 
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -663,16 +662,6 @@ def test_binding_key_for_requirement_covers_supported_shapes() -> None:
     assert strategy._binding_key_for_requirement(contract_requirement) is None  # noqa: SLF001
     contract_requirement.default_value = SpellContract(spellframe=FrameA, binding_name="contract")
     assert strategy._binding_key_for_requirement(contract_requirement) == ("framea", "contract")  # noqa: SLF001
-
-    mutation_requirement = _RequirementStub(
-        name="mutation",
-        di_shape=ParameterDIShape.MUTATION_CONTRACT,
-        spellmap_default=None,
-    )
-    mutation_requirement.default_value = None
-    assert strategy._binding_key_for_requirement(mutation_requirement) is None  # noqa: SLF001
-    mutation_requirement.default_value = MutationContract(spellframe=FrameA, binding_name="mutation")
-    assert strategy._binding_key_for_requirement(mutation_requirement) == ("framea", "mutation")  # noqa: SLF001
 
     plain_requirement = _RequirementStub(
         name="plain",

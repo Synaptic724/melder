@@ -353,9 +353,6 @@ class CompilerPhase3:
                 plain constructor socket.
             SPELL_CONTRACT:
                 SpellContract socket - must be satisfied by a provider.
-            MUTATION_CONTRACT:
-                MutationContract socket - can be rewired at meld-time.
-            
             For now, we classify based solely on `dep.di_shape`. If we later
             introduce additional DI shapes, this is the central mapping point.
         """
@@ -363,8 +360,6 @@ class CompilerPhase3:
 
         if di_shape is ParameterDIShape.SPELL_CONTRACT:
             return SocketKind.SPELL_CONTRACT
-        if di_shape is ParameterDIShape.MUTATION_CONTRACT:
-            return SocketKind.MUTATION_CONTRACT
 
         return SocketKind.NORMAL
 
@@ -508,10 +503,9 @@ class CompilerPhase3:
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
                     "(param_name, position)". Normal DI sockets may have one or
-                    many targets; contract, mutation, and plain sockets will
+                    many targets; contract and plain sockets will
                     typically have none at this phase.
-                * Preserve contract metadata for SpellContract / MutationContract
-                  sockets (canonical key, late-binding flag).
+                * Preserve contract metadata for SpellContract sockets.
                 * Create a: class:`SpellSocketDescriptor` for that parameter.
             
             The resulting: class:`SpellLocalTopology` is a per-spell, constructor-
@@ -592,7 +586,7 @@ class CompilerPhase3:
                   SpellSystemStates.
                 * If "return_dependencies" is True, it returns a tuple of
                   "(dag, dependency_spell_ids)"; otherwise it returns only the DAG.
-                * SpellContract and MutationContract sockets take part in the
+                * SpellContract sockets take part in the
                   symbolic graph and topology but do not produce DAG edges or
                   concrete targets at this stage.
         """
@@ -632,7 +626,7 @@ class CompilerPhase3:
             elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
                 resolved = self._resolve_spellmap_default(spell, spellbook, dep)
             else:
-                # SpellContract / MutationContract / PLAIN and any future shapes
+                # SpellContract / PLAIN and any future shapes
                 # are currently metadata-only at the DAG level. They still
                 # participate in the local topology below.
                 resolved = {}
@@ -694,8 +688,8 @@ class CompilerPhase3:
                   - dependency spells are parents,
                   - this spell is the child/root node.
             * Build and register a :class:`SpellLocalTopology` describing the
-              constructor sockets (normal sockets, SpellContract sockets,
-              MutationContract sockets) and the resolved target spell ids.
+              constructor sockets (normal sockets and SpellContract sockets)
+              and the resolved target spell ids.
             * Persist:
                   - the ordered local frame
                     (:class:`SpellResolutionFrame`) on this compiler artifact,

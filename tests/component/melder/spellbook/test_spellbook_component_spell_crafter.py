@@ -6,7 +6,6 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
-from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
@@ -967,85 +966,6 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_contract_sockets_register_topology() -> None:
-    """
-    Purpose:
-        Validate contract sockets register topology without dependencies.
-    Contract:
-        - dependencies remain empty for contract sockets.
-        - topology includes SPELL_CONTRACT and MUTATION_CONTRACT socket kinds.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If contract sockets do not register correctly.
-    """
-    spellbook = _make_spellbook()
-    states = _SpellSystemStatesStub()
-    spellbook._spell_system_states = states
-
-    class Consumer:
-        """
-        Purpose:
-            Spell that declares contract sockets.
-        Contract:
-            - Declares SpellContract and MutationContract sockets.
-        Args:
-            service: SpellContract socket.
-            mutation: MutationContract socket.
-        """
-        def __init__(
-            self,
-            service: SpellContract = SpellContract(
-                spellframe=IService,
-                binding_name="primary",
-            ),
-            mutation: MutationContract = MutationContract(
-                spellframe=IService,
-                binding_name="primary",
-            ),
-        ) -> None:
-            """
-            Purpose:
-                Capture contract socket defaults.
-            Contract:
-                - Stores the sockets for assertions.
-            Args:
-                service: SpellContract socket.
-                mutation: MutationContract socket.
-            Returns:
-                None.
-            """
-            self.service = service
-            self.mutation = mutation
-
-    consumer_id = spellbook.bind(
-        spell=Consumer,
-        existence=Existence.unique,
-        permissions="create",
-    )
-
-    try:
-        spell = _get_spell_by_version_id(spellbook, consumer_id)
-        assert spell is not None
-        _run_phase_requirements(spell)
-        _run_phase_symbolic_graph(spell)
-        _run_phase_local_frame(spell)
-
-        assert spell.dependencies == []
-        topology = states.get_local_topology(spell.spell_index)
-        assert topology is not None
-        service_socket = topology.get_sockets_for_param("service")
-        mutation_socket = topology.get_sockets_for_param("mutation")
-        assert len(service_socket) == 1
-        assert len(mutation_socket) == 1
-        assert service_socket[0].socket_kind is SocketKind.SPELL_CONTRACT
-        assert mutation_socket[0].socket_kind is SocketKind.MUTATION_CONTRACT
-        assert service_socket[0].target_spell_ids == ()
-        assert mutation_socket[0].target_spell_ids == ()
-    finally:
-        spellbook.cleanup()
-
-
 def test_component_spell_crafter_collection_di_allows_empty_collection() -> None:
     """
     Purpose:
@@ -1501,22 +1421,16 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
     class Consumer:
         """
         Purpose:
-            Provide one normal dependency and one mutation socket.
+            Provide one normal dependency.
         Contract:
             - `service` is a normal runtime dependency.
-            - `mutation` is a mutation-contract socket.
         """
 
         def __init__(
             self,
             service: BasicService,
-            mutation: MutationContract = MutationContract(
-                spellframe=IService,
-                binding_name="primary",
-            ),
         ) -> None:
             self.service = service
-            self.mutation = mutation
 
     service_id = spellbook.bind(
         spell=BasicService,
@@ -1554,23 +1468,14 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
         model = artifact._spell_codegen_model
         assert model is not None
         override_targeting = model.override_targeting_shape
-        mutation_targeting = model.mutation_targeting_shape
 
         assert override_targeting is not None
-        assert mutation_targeting is not None
         assert "*service" in override_targeting.targets_by_spec
-        assert "*mutation" in mutation_targeting.patches_by_spec
 
         override_targets = override_targeting.targets_by_spec["*service"]
         assert len(override_targets) == 1
         assert override_targets[0].param_name == "service"
         assert override_targets[0].node_id == consumer_id
-
-        mutation_patches = mutation_targeting.patches_by_spec["*mutation"]
-        assert len(mutation_patches) == 1
-        assert mutation_patches[0].child_spell_id == consumer_id
-        assert mutation_patches[0].param_name == "mutation"
-        assert mutation_patches[0].old_parent_id is None
     finally:
         spellbook.cleanup()
 

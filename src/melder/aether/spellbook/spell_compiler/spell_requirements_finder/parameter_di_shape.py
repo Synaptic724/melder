@@ -38,10 +38,6 @@ class ParameterDIShape(Enum):
         Parameter default is a: class:`SpellContract`. This indicates that
         the parameter expects a single resolved spell matching the contract.
 
-    MUTATION_CONTRACT
-        Parameter default is a: class:`MutationContract`. This indicates that
-        the parameter expects a mutation lineage matching the contract.
-
     """
     __melder_internal__ = _mrg.sentinel
     IGNORE = auto()
@@ -50,4 +46,3 @@ class ParameterDIShape(Enum):
     COLLECTION_BY_ANNOTATION = auto()
     SPELLMAP_DEFAULT = auto()
     SPELL_CONTRACT = auto()
-    MUTATION_CONTRACT = auto()
