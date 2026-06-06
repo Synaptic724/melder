@@ -18,7 +18,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step import (
     GeneralizedOverridesCodegenCreationStep,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.shared_strategy_assets.codegen_creation_family_step import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
     CodegenCreationFamilyStep,
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
