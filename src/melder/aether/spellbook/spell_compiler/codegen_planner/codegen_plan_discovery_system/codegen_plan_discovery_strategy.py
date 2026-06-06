@@ -22,6 +22,9 @@ class CodegenPlanDiscoveryStrategy(ABC):
         - Discovery strategies do not build planner artifacts directly.
         - Discovery strategies choose a planning family, not the final emitted
           runtime executors.
+        - Discovery strategies may narrow the set of concrete codegen styles
+          that phase 11 is allowed to consider, but they do not choose the
+          final style themselves.
         - Returning `None` means the strategy declines the model.
         - Returning `CodegenPlanDiscovery` means discovery should stop and use
           that result.

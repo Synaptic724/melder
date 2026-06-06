@@ -25,6 +25,8 @@ class CodegenCreationDiscoverySystem(Cleanable):
         - Reads the model and plan only.
         - Does not produce emitted code or runtime artifacts itself.
         - Chooses the concrete codegen style for the current plan family.
+        - Chooses the ordered creation strategy chain that will materialize the
+          final two executor outputs.
         - Defaults to the first generalized creation chain/style until the
           remaining creation lanes are ported fully.
     """

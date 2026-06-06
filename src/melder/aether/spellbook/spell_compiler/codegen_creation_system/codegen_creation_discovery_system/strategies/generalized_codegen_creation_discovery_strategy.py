@@ -29,6 +29,8 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
         - Emits the generalized creation-chain result for the generalized plan
           family.
         - Chooses one concrete codegen style from the plan's candidate list.
+        - Leaves the runtime contract narrow by choosing only the chain and
+          style, not any new top-level output fields.
     """
 
     __slots__ = ()

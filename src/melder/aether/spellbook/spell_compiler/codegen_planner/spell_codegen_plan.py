@@ -18,6 +18,8 @@ class SpellCodegenPlan(Cleanable):
           10 discovery.
         - `candidate_codegen_style_ids` is the bounded set of codegen styles
           phase 11 may consider for this plan.
+        - The plan owns structural family selection, not the final emitted
+          codegen style.
         - Does not store final emitted executors.
     """
 

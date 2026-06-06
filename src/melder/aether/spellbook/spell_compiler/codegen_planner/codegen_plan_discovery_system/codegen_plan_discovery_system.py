@@ -23,6 +23,8 @@ class CodegenPlanDiscoverySystem(Cleanable):
         - Discovery does not build plans itself.
         - Discovery chooses the planner strategy plus the higher-level plan
           family that phase 11 will later consume.
+        - Discovery may return a bounded set of candidate codegen styles for
+          that family, but it does not choose the final style.
         - For now it always selects the generalized model-native strategy and
           generalized family.
     """

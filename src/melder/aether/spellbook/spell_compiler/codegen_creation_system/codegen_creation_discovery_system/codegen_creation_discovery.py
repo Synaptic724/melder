@@ -17,6 +17,10 @@ class CodegenCreationDiscovery:
         - `selected_codegen_style_id` is the concrete codegen style chosen for
           this creation pass.
         - `discovery_reason` is compact provenance for the selection.
+        - Phase 11 owns the final concrete codegen-style choice for the already
+          selected phase-10 plan family.
+        - This discovery result does not widen the runtime contract; it only
+          selects how the final two executors will be built.
     """
 
     selected_strategy_ids: Tuple[str, ...]

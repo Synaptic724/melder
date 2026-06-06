@@ -25,6 +25,9 @@ class CodegenCreationDiscoveryStrategy(ABC):
         - Discovery strategies do not build runtime artifacts directly.
         - Discovery strategies choose the concrete codegen style for the
           already-selected phase-10 plan family.
+        - Discovery strategies may choose an ordered creation strategy chain,
+          but they do not widen the final runtime contract beyond the two
+          executor outputs.
         - Returning `None` means the strategy declines the pair.
         - Returning `CodegenCreationDiscovery` means discovery should stop and
           use that result.

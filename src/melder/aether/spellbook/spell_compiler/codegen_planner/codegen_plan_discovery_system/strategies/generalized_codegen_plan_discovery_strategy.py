@@ -20,6 +20,8 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
         - Emits the generalized planner strategy plus the generalized planning
           family that phase 11 will later consume.
         - Provides the current candidate codegen style list for that family.
+        - Does not choose the final codegen style; it only bounds what phase
+          11 is allowed to pick from.
     """
 
     __slots__ = ()

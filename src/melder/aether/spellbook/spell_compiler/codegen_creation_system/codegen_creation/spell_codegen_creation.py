@@ -17,6 +17,8 @@ class SpellCodegenCreation(Cleanable):
           produced this artifact.
         - Runtime-facing output is intentionally narrow:
           `no_overrides_executor` and `overrides_executor`.
+        - The concrete codegen style chosen by phase 11 is provenance only and
+          belongs in metadata, not in the top-level runtime contract.
         - These are the spell-static executor inputs consumed by
           `CreationContext`, not the final public hook/no-hook dispatch doors.
         - `metadata` is the mutable diagnostics/provenance bag.

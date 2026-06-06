@@ -20,6 +20,9 @@ class CodegenPlanDiscovery:
           phase 11 is allowed to consider for this plan family.
         - `discovery_reason` is compact provenance for why the result was
           chosen.
+        - Phase 10 owns family selection, not final runtime-emitter choice.
+        - The candidate style ids are a bounded allow-list for phase 11, not a
+          final emitted-runtime decision.
     """
 
     selected_strategy_id: str
