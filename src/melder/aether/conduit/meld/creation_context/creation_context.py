@@ -188,6 +188,56 @@ class CreationContext(Cleanable):
         del self._no_overrides_executor
         del self._execute_with_overrides
 
+    @classmethod
+    def load_cached(
+            cls,
+            *,
+            spell: "Spell",
+            dynamic_environment: bool = False,
+            creation_gate: Optional["CreationGate"] = None,
+            creation_gate_index_id: Optional[str] = None,
+            resolve_route_key: str,
+            fast_transient_no_overrides_enabled: bool = False,
+            no_overrides_executor: Optional[Callable[..., Any]],
+            overrides_executor: Optional[Callable[..., Any]],
+            publish: bool = False,
+    ) -> "CreationContext":
+        """
+        Build one generic CreationContext from already-rehydrated cache outputs.
+
+        Purpose:
+            Keep cache rehydration out of the constructor call sites while still
+            letting experiments or future cache loaders publish a spell-bound
+            context from prebuilt executors.
+        """
+        loaded_creation_context = cls(
+            spell=spell,
+            dynamic_environment=dynamic_environment,
+            creation_gate=creation_gate,
+            creation_gate_index_id=creation_gate_index_id,
+            resolve_route_key=resolve_route_key,
+            fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
+            no_overrides_executor=no_overrides_executor,
+            overrides_executor=overrides_executor,
+        )
+        if publish:
+            previous_creation_context = spell._creation_context
+            spell._creation_context = loaded_creation_context
+            current_state = spell._creation_context_switch.state
+            if current_state < 2:
+                spell._creation_context_switch.advance(2 - current_state)
+            elif current_state > 2:
+                spell._creation_context_switch.advance(-(current_state - 2))
+            if (
+                    previous_creation_context is not None
+                    and previous_creation_context is not loaded_creation_context
+            ):
+                try:
+                    previous_creation_context.cleanup()
+                except Exception:
+                    pass
+        return loaded_creation_context
+
     def execute(
             self,
             caller_creations: "Creations",
