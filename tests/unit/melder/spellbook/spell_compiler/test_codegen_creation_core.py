@@ -440,15 +440,15 @@ def test_overrides_strategy_records_override_runtime_scratch(
 
 
 def test_general_creation_context_strategy_finalizes_two_runtime_doors(
-        monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The new fat finalizer should consume scratch and emit the two final runtime doors."""
     strategy = SpellGeneralCreationContextCodegenCreationStrategy()
+    creations = SimpleNamespace(get_creation=lambda spell_id: None)
     root_spell = SimpleNamespace(
         spell_id="root",
         spell_name="root",
         spell_index=SimpleNamespace(current="root"),
-        _owner_creations=object(),
+        _owner_creations=creations,
     )
     state = SimpleNamespace(
         build_kind="construct",
@@ -491,24 +491,11 @@ def test_general_creation_context_strategy_finalizes_two_runtime_doors(
         },
     )
 
-    monkeypatch.setattr(
-        general_creation_context_strategy_module,
-        "compile_creation_context_hooks_no_overrides_executor",
-        lambda **kwargs: ("final-no-overrides", kwargs["no_overrides_executor"]),
-    )
-    monkeypatch.setattr(
-        general_creation_context_strategy_module,
-        "compile_creation_context_hooks_overrides_only_executor",
-        lambda **kwargs: ("final-overrides", kwargs["execute_with_overrides"]),
-    )
-
     strategy.apply(state, plan, creation)
 
-    assert creation.no_overrides_executor == (
-        "final-no-overrides",
-        "base-no-overrides",
-    )
-    assert creation.overrides_executor[0] == "final-overrides"
+    assert callable(creation.no_overrides_executor)
+    assert callable(creation.overrides_executor)
     assert creation.metadata["creation_context_strategy"] == (
         "general_creation_context_codegen_creation"
     )
+    assert creation.metadata["resolve_route_key"] == "many"

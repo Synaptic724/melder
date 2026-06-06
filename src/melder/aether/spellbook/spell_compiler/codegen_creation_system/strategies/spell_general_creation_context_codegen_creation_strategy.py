@@ -102,9 +102,9 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
 
         base_no_overrides_executor = spell_codegen_creation.no_overrides_executor
         if base_no_overrides_executor is None:
-        base_no_overrides_executor = (
-            self._build_base_no_overrides_executor(no_overrides_plan)
-        )
+            base_no_overrides_executor = (
+                self._build_base_no_overrides_executor(no_overrides_plan)
+            )
         no_overrides_executor = self._build_final_no_overrides_executor(
             root_spell=root_spell,
             route_key=route_key,

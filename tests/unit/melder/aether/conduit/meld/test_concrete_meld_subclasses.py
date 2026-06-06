@@ -62,7 +62,7 @@ class _CreationContextStub:
             hooks_overrides_result: tuple[Any, bool] = (None, False),
     ) -> None:
         """
-        Initialize one compiled-door stub with tracked calls.
+        Initialize one public creation-context stub with tracked calls.
         """
         self._cleaned = False
         self.calls: list[str] = []
@@ -73,48 +73,37 @@ class _CreationContextStub:
         self._hooks_no_overrides_result = hooks_no_overrides_result
         self._hooks_overrides_result = hooks_overrides_result
 
-    def _execute_no_hooks_no_overrides_compiled(self, caller_creations: Any) -> Any:
-        """
-        Simulate the no-hooks/no-overrides compiled door.
-        """
-        self.calls.append("no_hooks_no_overrides")
-        self.last_caller_creations = caller_creations
-        self.last_overrides = None
-        return self._no_hooks_no_overrides_result
-
-    def _execute_no_hooks_overrides_compiled(
+    def execute_no_hooks(
             self,
             caller_creations: Any,
-            overrides: dict[str, Any],
+            overrides: dict[str, Any] | None = None,
     ) -> Any:
         """
-        Simulate the no-hooks/overrides compiled door.
+        Simulate the public no-hooks door.
         """
+        if overrides is None:
+            self.calls.append("no_hooks_no_overrides")
+            self.last_caller_creations = caller_creations
+            self.last_overrides = None
+            return self._no_hooks_no_overrides_result
         self.calls.append("no_hooks_overrides")
         self.last_caller_creations = caller_creations
         self.last_overrides = overrides
         return self._no_hooks_overrides_result
 
-    def _execute_hooks_no_overrides_compiled(
+    def execute(
             self,
             caller_creations: Any,
+            overrides: dict[str, Any] | None = None,
     ) -> tuple[Any, bool]:
         """
-        Simulate the hooks/no-overrides compiled door.
+        Simulate the public hook-aware door.
         """
-        self.calls.append("hooks_no_overrides")
-        self.last_caller_creations = caller_creations
-        self.last_overrides = None
-        return self._hooks_no_overrides_result
-
-    def _execute_hooks_overrides_compiled(
-            self,
-            caller_creations: Any,
-            overrides: dict[str, Any],
-    ) -> tuple[Any, bool]:
-        """
-        Simulate the hooks/overrides compiled door.
-        """
+        if overrides is None:
+            self.calls.append("hooks_no_overrides")
+            self.last_caller_creations = caller_creations
+            self.last_overrides = None
+            return self._hooks_no_overrides_result
         self.calls.append("hooks_overrides")
         self.last_caller_creations = caller_creations
         self.last_overrides = overrides
@@ -165,6 +154,7 @@ class _SpellStub:
         )
         self.is_existing_creation = is_existing_creation
         self.user_created_object = user_created_object
+        self.mutation_override = None
         if requires_spellspace_request is None:
             requires_spellspace_request = (
                 existence is Existence.unique_per_spell_space
