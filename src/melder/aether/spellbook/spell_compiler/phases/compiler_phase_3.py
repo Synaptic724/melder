@@ -538,7 +538,6 @@ class CompilerPhase3:
                 target_spell_ids=target_spell_ids,
                 dependency_key=dependency_key,
                 contract_key=dep.contract_key,
-                contract_late_binding=dep.contract_late_binding,
             )
             descriptors.append(descriptor)
 

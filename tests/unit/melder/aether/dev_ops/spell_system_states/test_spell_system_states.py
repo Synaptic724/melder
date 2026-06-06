@@ -842,7 +842,7 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
     Contract:
     - Non-collection NORMAL sockets do not enter the collection index.
     - Collection sockets without dependency keys are ignored.
-    - MUTATION_CONTRACT sockets do not enter the SpellContract index.
+    - Only SPELL_CONTRACT sockets enter the SpellContract index.
     """
     spell = _build_owned_spell("book-filter")
     index = SpellIndex("spell-filter")
@@ -875,18 +875,8 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
             ),
             SpellSocketDescriptor(
                 spell_id=index.current,
-                param_name="mutation_contract",
-                position=2,
-                socket_kind=SocketKind.MUTATION_CONTRACT,
-                is_collection=False,
-                is_optional=False,
-                target_spell_ids=(),
-                contract_key=("iface", "mutation"),
-            ),
-            SpellSocketDescriptor(
-                spell_id=index.current,
                 param_name="valid_collection",
-                position=3,
+                position=2,
                 socket_kind=SocketKind.NORMAL,
                 is_collection=True,
                 is_optional=False,
@@ -896,7 +886,7 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
             SpellSocketDescriptor(
                 spell_id=index.current,
                 param_name="valid_contract",
-                position=4,
+                position=3,
                 socket_kind=SocketKind.SPELL_CONTRACT,
                 is_collection=False,
                 is_optional=False,

@@ -518,9 +518,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         """
         Determine whether shared occurrences can be collapsed during expansion.
         """
-        for spell in spell_lookup.values():
-            if spell.mutation_override:
-                return False
+        _ = spell_lookup
         return True
 
     def _build_occurrence_graph(

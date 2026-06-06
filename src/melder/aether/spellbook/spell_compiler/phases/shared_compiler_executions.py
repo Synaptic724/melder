@@ -290,7 +290,6 @@ class SharedCompilerExecutions:
                     dependency.is_optional,
                     dependency.is_collection,
                     dependency.contract_key,
-                    dependency.contract_late_binding,
                 )
                 for dependency in artifact._symbolic_graph.dependencies
             )
@@ -999,55 +998,6 @@ class SharedCompilerExecutions:
                     tuple(socket_rows),
                 )
             )
-        return tuple(rows)
-
-    @staticmethod
-    def build_mutation_target_rows(
-            mutation_patch_map: Any,
-    ) -> Tuple[Tuple[Any, ...], ...]:
-        """
-            Build deterministic schema rows for Phase10 mutation patch-map targets.
-            
-            Purpose:
-                Export concrete mutation-edge patch descriptors grouped by TargetSpec
-                for codegen contract completeness and signature invalidation.
-            Contract:
-                - Returns only primitive tuple rows.
-                - Expects MutationPatchMap target contract fields.
-                - Fails fast when malformed/cleaned artifacts violate contract.
-            Args:
-                mutation_patch_map:
-                    MutationPatchMap-like object.
-            Returns:
-                Tuple[Tuple[Any, ...], ...]:
-                    Rows `(spec_key, patch_rows)`.
-        """
-        if mutation_patch_map is None:
-            return ()
-        targets_by_spec = mutation_patch_map.targets_by_spec
-        rows: List[Tuple[Any, ...]] = []
-        for spec_key in sorted(targets_by_spec.keys()):
-            raw_patches = targets_by_spec[spec_key]
-            patch_rows: List[Tuple[Any, ...]] = []
-            for patch in raw_patches:
-                patch_rows.append(
-                    (
-                        patch.child_spell_id,
-                        patch.param_name,
-                        patch.param_path_id,
-                        patch.old_parent_id,
-                    )
-                )
-            if len(patch_rows) > 1:
-                patch_rows.sort(
-                    key=lambda row: (
-                        row[0],
-                        row[1],
-                        row[2],
-                        "" if row[3] is None else row[3],
-                    )
-                )
-            rows.append((spec_key, tuple(patch_rows)))
         return tuple(rows)
 
     @staticmethod

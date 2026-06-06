@@ -186,9 +186,8 @@ class DirectedAcyclicWorkGraph(Cleanable):
                 is wired to ``parent``. When provided, param-aware metadata
                 is updated on both nodes.
             socket_kind:
-                Optional classification of the socket (normal / SpellContract /
-                MutationContract). When provided, the DAG records this for
-                later override/mutation logic.
+                Optional classification of the socket (normal / SpellContract).
+                When provided, the DAG records this for later override logic.
         """
         self.check_cleaned()
         with self._lock:
@@ -304,3 +303,4 @@ class DirectedAcyclicWorkGraph(Cleanable):
     def __repr__(self) -> str:
         """Return a compact debug representation of the DAG and node count."""
         return f"DirectedAcyclicWorkGraph(id={self._id!r}, nodes={len(self._nodes)})"
+

@@ -95,7 +95,7 @@ def test_socket_flags_and_targets_preserved():
         spell_id="sid",
         param_name="col_opt",
         position=3,
-        socket_kind=SocketKind.MUTATION_CONTRACT,
+        socket_kind=SocketKind.SPELL_CONTRACT,
         is_collection=True,
         is_optional=True,
         target_spell_ids=("t1", "t2"),
@@ -104,7 +104,7 @@ def test_socket_flags_and_targets_preserved():
     (recorded,) = topo.sockets
     assert recorded.is_collection is True
     assert recorded.is_optional is True
-    assert recorded.socket_kind is SocketKind.MUTATION_CONTRACT
+    assert recorded.socket_kind is SocketKind.SPELL_CONTRACT
     assert recorded.target_spell_ids == ("t1", "t2")
 
 

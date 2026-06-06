@@ -49,7 +49,6 @@ def _make_spellbook_and_spell() -> tuple[Any, Any]:
         spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
         existence=Existence.unique,
         is_existing_creation=False,
-        mutation_override=None,
         _spellbook=spellbook,
         _spell_system_states=SimpleNamespace(_local_topologies={}),
     )
@@ -139,7 +138,6 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
         spell_index=_SpellIndexProbe("dep"),
         existence=Existence.unique,
         is_existing_creation=False,
-        mutation_override=None,
     )
     spellbook._spell_id_pool["dep"] = dep_spell
     spellbook._lookup_contracted_spells = {

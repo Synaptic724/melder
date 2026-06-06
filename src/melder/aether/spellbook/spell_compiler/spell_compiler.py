@@ -184,8 +184,7 @@ class SpellCompiler(Cleanable):
                   parameter that should be represented as a socket, including:
                       - plain (caller-supplied) parameters,
                       - normal DI sockets (single, collection, SpellMap),
-                      - SpellContract sockets,
-                      - MutationContract sockets.
+                      - SpellContract sockets.
                 * Store the symbolic graph on this SpellCrafter
                   (``_symbolic_graph``) for later phases.
             
@@ -225,7 +224,7 @@ class SpellCompiler(Cleanable):
                 * Track, per constructor parameter, which dependency spell ids were
                   bound during resolution.
                 * Build a: class:`SpellLocalTopology` snapshot that describes all
-                  sockets (normal, SpellContract, MutationContract) and their
+                  sockets (normal, SpellContract) and their
                   concrete targets where applicable.
                 * Register both:
                       - direct dependency spell ids, and
@@ -235,7 +234,7 @@ class SpellCompiler(Cleanable):
             Socket semantics:
                 * Normal DI shapes (single, collection, SpellMap) produce DAG nodes,
                   DAG edges, and concrete "target_spell_ids" entries in topology.
-                * SpellContract and MutationContract sockets are **metadata-only** at
+                * SpellContract sockets are **metadata-only** at
                   this phase:
                       - they appear in the symbolic graph and topology,
                       - they do **not** produce DAG edges or bound targets yet.
@@ -685,5 +684,6 @@ class SpellCompiler(Cleanable):
             artifact,
             spellbook,
         )
+
 
 

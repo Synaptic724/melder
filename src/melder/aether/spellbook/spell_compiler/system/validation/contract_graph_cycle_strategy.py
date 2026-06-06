@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
@@ -33,7 +33,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
     Guard that contract-only edges do not introduce cycles outside the normal DAG.
 
     The rooted system graph is primarily built from NORMAL dependency edges, but
-    SpellContract and MutationContract sockets can add an extra contract graph
+    SpellContract sockets can add an extra contract graph
     on top of that structure. This strategy builds that contract-only view and
     checks whether it introduces loops that are invisible to the ordinary DAG
     cycle checks.
@@ -245,6 +245,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
         rotated = trimmed[min_index:] + trimmed[:min_index]
         rotated.append(rotated[0])
         return tuple(rotated)
+
 
 
 

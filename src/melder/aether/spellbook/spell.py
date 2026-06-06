@@ -1172,8 +1172,7 @@ class Spell(Cleanable):
                 "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
             )
 
-        normalized_payload = self._normalize_mutation_override_payload(override)
-        self._mutation_override = normalized_payload
+        self._mutation_override = self._normalize_mutation_override_payload(override)
 
 
     def clear_mutation_override(self) -> None:
@@ -1199,11 +1198,6 @@ class Spell(Cleanable):
             raise RuntimeError(
                 "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
             )
-
-        if self._mutation_override is None:
-            # Nothing to do; avoid spurious state changes.
-            return
-
         self._mutation_override = None
 
     @staticmethod

@@ -126,7 +126,6 @@ class SpellSymbolicGraph(Cleanable):
             * COLLECTION_BY_ANNOTATION
             * SPELLMAP_DEFAULT
             * SPELL_CONTRACT
-            * MUTATION_CONTRACT
             * PLAIN
 
         Returns:
@@ -136,3 +135,4 @@ class SpellSymbolicGraph(Cleanable):
         """
         self.check_cleaned()
         return list(self._dependencies)
+

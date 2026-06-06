@@ -43,7 +43,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         """
         super().__init__(
             name="contract_provider_presence",
-            description="Validates SpellContract and MutationContract provider availability.",
+            description="Validates SpellContract provider availability.",
         )
 
     def validate(self, context: SpellValidationContext) -> None:
@@ -188,3 +188,4 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                         )
                     )
                 continue
+

@@ -685,38 +685,6 @@ def test_apply_path_targets_spell_contract_socket() -> None:
     assert result == {socket_ref: "value"}
 
 
-def test_apply_unique_targets_mutation_contract_socket() -> None:
-    """
-    Purpose:
-        Validate UNIQUE overrides target MutationContract sockets.
-    Contract:
-        - Unique targeting still applies for mutation contract sockets.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If mutation contract sockets are skipped.
-    """
-    path_registry = PathRegistry()
-    socket_ref = _make_socket_ref(
-        node_id="node-a",
-        param_name="mutant",
-        param_path=("root", "mutant"),
-        path_registry=path_registry,
-        socket_kind=SocketKind.MUTATION_CONTRACT,
-    )
-    blueprint = _make_blueprint(
-        root_id="root",
-        root_lineage_id="lineage-1",
-        socket_refs=[socket_ref],
-        path_registry=path_registry,
-    )
-    overrider = SpellOverrider(blueprint)
-
-    result = overrider.apply({"*mutant": "value"})
-
-    assert result == {socket_ref: "value"}
-
-
 def test_apply_broadcast_targets_spell_contract_socket() -> None:
     """
     Purpose:

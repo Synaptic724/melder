@@ -26,8 +26,8 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
 
     Contract:
         - Claims only generalized planner output.
-        - Emits the same generalized creation-chain result the old discovery
-          facade returned directly, minus the removed mutation-specific lane.
+        - Emits the generalized creation-chain result selected from planner
+          output.
     """
 
     __slots__ = ()

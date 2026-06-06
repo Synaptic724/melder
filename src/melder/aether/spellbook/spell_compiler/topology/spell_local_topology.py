@@ -35,7 +35,6 @@ class SpellSocketDescriptor:
 
             * NORMAL – standard DI edge or plain parameter socket.
             * SPELL_CONTRACT – cross-conduit spell contract socket.
-            * MUTATION_CONTRACT – mutation contract socket.
 
         is_collection:
             True if this socket is a collection DI shape (e.g. list[...]).
@@ -59,12 +58,8 @@ class SpellSocketDescriptor:
 
         contract_key:
             Canonical "(frame_key, binding_key)" for contract sockets.
-            This is populated with SPELL_CONTRACT and MUTATION_CONTRACT
-            sockets to support system-level contract validation.
-
-        contract_late_binding:
-            For MUTATION_CONTRACT sockets, indicates whether the contract is
-            declared late-binding. This is None for non-mutation sockets.
+            This is populated with SPELL_CONTRACT sockets to support
+            system-level contract validation.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     spell_id: str
@@ -76,7 +71,6 @@ class SpellSocketDescriptor:
     target_spell_ids: Tuple[str, ...]
     dependency_key: Optional[Tuple[str, str]] = None
     contract_key: Optional[Tuple[str, str]] = None
-    contract_late_binding: Optional[bool] = None
 
 
 class SpellLocalTopology(Cleanable):

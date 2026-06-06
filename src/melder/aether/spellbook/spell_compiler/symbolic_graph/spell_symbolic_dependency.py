@@ -61,12 +61,8 @@ class SpellSymbolicDependency(Cleanable):
          instance is attached to the parameter.
 
     contract_key:
-        For SPELL_CONTRACT and MUTATION_CONTRACT shapes, the canonical
+        For SPELL_CONTRACT shapes, the canonical
         "(frame_key, binding_key)" derived from the contract object.
-
-    contract_late_binding:
-        For MUTATION_CONTRACT shapes, whether the contract declares
-        late binding semantics. For all other shapes, this is None.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -80,7 +76,6 @@ class SpellSymbolicDependency(Cleanable):
         "_is_collection",
         "_spellmap_default",
         "_contract_key",
-        "_contract_late_binding",
     ]
 
     def __init__(
@@ -95,7 +90,6 @@ class SpellSymbolicDependency(Cleanable):
             is_collection: bool,
             spellmap_default: Any = None,
             contract_key: Optional[Tuple[str, str]] = None,
-            contract_late_binding: Optional[bool] = None,
     ) -> None:
         """
         Initialize one symbolic dependency edge for a spell version.
@@ -127,7 +121,6 @@ class SpellSymbolicDependency(Cleanable):
         self._is_collection: bool = is_collection
         self._spellmap_default: Any = spellmap_default
         self._contract_key: Optional[Tuple[str, str]] = contract_key
-        self._contract_late_binding: Optional[bool] = contract_late_binding
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -158,7 +151,6 @@ class SpellSymbolicDependency(Cleanable):
             del self._target_annotation
             del self._spellmap_default
             del self._contract_key
-            del self._contract_late_binding
         del self._lock
 
     # ------------------------------------------------------------------
@@ -242,20 +234,8 @@ class SpellSymbolicDependency(Cleanable):
         """
         Canonical "(frame_key, binding_key)" for contract sockets.
 
-        For SPELL_CONTRACT and MUTATION_CONTRACT shapes, this is derived from
-        the contract descriptor. For all other shapes, this is None.
+        For SPELL_CONTRACT shapes, this is derived from the contract
+        descriptor. For all other shapes, this is None.
         """
         self.check_cleaned()
         return self._contract_key
-
-    @property
-    def contract_late_binding(self) -> Optional[bool]:
-        """
-        Late-binding flag for mutation contracts.
-
-        Returns:
-            Optional[bool]:
-                True/False for MUTATION_CONTRACT sockets, otherwise None.
-        """
-        self.check_cleaned()
-        return self._contract_late_binding

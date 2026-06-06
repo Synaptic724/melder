@@ -100,7 +100,6 @@ class _SpellStub:
         self.existence = Existence.unique
         self.is_existing_creation = False
         self.user_created_object = None
-        self.has_mutation_override = False
         self.execution_plan_dispatch_route = None
         self._owner_creations = SimpleNamespace(_creations={}, _lock=RLock())
         self._spellbook = SimpleNamespace(_spell_id_pool={})
@@ -313,3 +312,4 @@ def test_index_id_for_spell_returns_spell_index_id() -> None:
         assert factory._index_id_for_spell(spell) == spell.spell_index.id
     finally:
         factory.cleanup()
+

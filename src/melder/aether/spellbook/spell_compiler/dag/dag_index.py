@@ -257,7 +257,7 @@ class SocketRef:
             Interned path id from the RootResolutionBlueprint PathRegistry.
 
         socket_kind:
-            The logical kind of socket – normal DI, SpellContract, MutationContract.
+            The logical kind of socket – normal DI, SpellContract.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     node_id: str
@@ -288,8 +288,8 @@ class DagIndex(Cleanable):
     * exact param path id (interned in a PathRegistry) and
     * param name (``"repo"``).
 
-    This is the shared substrate for `spell_override` and `mutation_override`
-    targeting. It is intentionally dumb: no graph logic, no Melder awareness.
+    This is the shared substrate for `spell_override` targeting. It is
+    intentionally dumb: no graph logic, no Melder awareness.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -632,3 +632,4 @@ class DagIndexBuilder:
             )
             index.add_socket(ref)
         return index
+

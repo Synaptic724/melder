@@ -109,7 +109,6 @@ class CompilerPhase2:
         for param in artifact._requirements.parameters:
             di_shape: ParameterDIShape = param.di_shape
             contract_key = None
-            contract_late_binding = None
 
             # Only shapes that participate in the symbolic socket graph.
             if di_shape not in (
@@ -170,7 +169,6 @@ class CompilerPhase2:
                 is_collection=is_collection,
                 spellmap_default=spellmap_default,
                 contract_key=contract_key,
-                contract_late_binding=contract_late_binding,
             )
             deps.append(dep)
 

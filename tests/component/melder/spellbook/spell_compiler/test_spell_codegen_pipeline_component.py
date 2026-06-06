@@ -127,7 +127,6 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
         has_disposal_methods=False,
         disposal_method_names=(),
         user_created_object=None,
-        mutation_override=None,
         _spellbook=spellbook,
         _compiler_artifact=artifact,
     )
