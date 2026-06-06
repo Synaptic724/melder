@@ -1,10 +1,10 @@
 """Direct unit tests for the codegen planner facade, builder, discovery, and plan."""
 
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 import pytest
 
-from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system import (
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_system import (
     CodegenPlanDiscovery,
     CodegenPlanDiscoverySystem,
 )

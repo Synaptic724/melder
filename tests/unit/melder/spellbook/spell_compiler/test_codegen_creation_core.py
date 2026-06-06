@@ -11,7 +11,7 @@ import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_system import (
     CodegenCreationDiscovery,
     CodegenCreationDiscoverySystem,
 )
