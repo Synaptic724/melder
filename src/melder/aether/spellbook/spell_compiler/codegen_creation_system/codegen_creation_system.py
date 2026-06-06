@@ -86,18 +86,8 @@ class CodegenCreationSystem(Cleanable):
         spell_codegen_creation = SpellCodegenCreation(
             selected_strategy_ids=(),
             discovery_reason=None,
-            resolve_route_key=None,
-            fast_transient_no_overrides_enabled=False,
             no_overrides_executor=None,
-            no_overrides_executor_signature=None,
-            override_targeting=None,
-            override_plan_signature=None,
-            override_path_registry=None,
-            override_plan_rows=None,
-            override_root_spell_id=None,
-            override_spell_lookup=None,
-            override_empty_shape_key=None,
-            override_baseline_executor=None,
+            overrides_executor=None,
             metadata={},
         )
         discovery = self._discovery_system.discover(

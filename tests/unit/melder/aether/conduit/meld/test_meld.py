@@ -619,12 +619,13 @@ class _ContextStub:
 
 class _CreationContextStub:
     """
-    Minimal CreationContext stub exposing the four compiled execution doors.
+    Minimal CreationContext stub exposing the new public execution surface.
 
     Contract:
         - Tracks invocation door and payloads for assertions.
         - Exposes `_cleaned` so Meld cache-miss logic can rebuild when needed.
-        - Returns caller-configurable payloads per door.
+        - Preserves the old four-door result configuration so existing tests
+          can keep expressing the created/non-created hook cases.
     """
 
     def __init__(
@@ -637,7 +638,7 @@ class _CreationContextStub:
         cleaned: bool = False,
     ) -> None:
         """
-        Initialize one four-door CreationContext test stub.
+        Initialize one CreationContext test stub.
 
         Args:
             no_hooks_no_overrides_result:
@@ -660,48 +661,37 @@ class _CreationContextStub:
         self._hooks_no_overrides_result = hooks_no_overrides_result
         self._hooks_overrides_result = hooks_overrides_result
 
-    def _execute_no_hooks_no_overrides_compiled(self, caller_creations: Any) -> Any:
-        """
-        Simulate no-hooks no-overrides compiled door.
-        """
-        self.calls.append("no_hooks_no_overrides")
-        self.last_caller_creations = caller_creations
-        self.last_overrides = None
-        return self._no_hooks_no_overrides_result
-
-    def _execute_no_hooks_overrides_compiled(
+    def execute_no_hooks(
             self,
             caller_creations: Any,
-            overrides: dict[str, Any],
+            overrides: dict[str, Any] | None = None,
     ) -> Any:
         """
-        Simulate no-hooks overrides compiled door.
+        Simulate the no-hooks public CreationContext surface.
         """
+        if overrides is None:
+            self.calls.append("no_hooks_no_overrides")
+            self.last_caller_creations = caller_creations
+            self.last_overrides = None
+            return self._no_hooks_no_overrides_result
         self.calls.append("no_hooks_overrides")
         self.last_caller_creations = caller_creations
         self.last_overrides = overrides
         return self._no_hooks_overrides_result
 
-    def _execute_hooks_no_overrides_compiled(
+    def execute(
             self,
             caller_creations: Any,
+            overrides: dict[str, Any] | None = None,
     ) -> tuple[Any, bool]:
         """
-        Simulate hooks no-overrides compiled door.
+        Simulate the hook-aware public CreationContext surface.
         """
-        self.calls.append("hooks_no_overrides")
-        self.last_caller_creations = caller_creations
-        self.last_overrides = None
-        return self._hooks_no_overrides_result
-
-    def _execute_hooks_overrides_compiled(
-            self,
-            caller_creations: Any,
-            overrides: dict[str, Any],
-    ) -> tuple[Any, bool]:
-        """
-        Simulate hooks overrides compiled door.
-        """
+        if overrides is None:
+            self.calls.append("hooks_no_overrides")
+            self.last_caller_creations = caller_creations
+            self.last_overrides = None
+            return self._hooks_no_overrides_result
         self.calls.append("hooks_overrides")
         self.last_caller_creations = caller_creations
         self.last_overrides = overrides
@@ -2188,15 +2178,16 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch:
     )
     context = _CreationContextStub(no_hooks_no_overrides_result="resolved")
 
-    def _execute_no_hooks_no_overrides(caller_creations: Any) -> Any:
+    def _execute_no_hooks(caller_creations: Any, overrides: Any = None) -> Any:
         """
         Record compiled execution invocation after deferred runtime gate.
         """
         assert caller_creations is creations
+        assert overrides is None
         call_order.append("context")
         return "resolved"
 
-    context._execute_no_hooks_no_overrides_compiled = _execute_no_hooks_no_overrides
+    context.execute_no_hooks = _execute_no_hooks
     spell = _SpellStub(
         spell_id="spell-1",
         owner_creations=creations,

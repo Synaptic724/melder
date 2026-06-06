@@ -1,8 +1,5 @@
 from typing import Any, Dict, Sequence, Tuple
 
-from melder.aether.conduit.meld.creation_context.creation_context import (
-    OverrideRouteConfig,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
@@ -79,24 +76,38 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
                 "Overrides codegen creation requires override_targeting_shape."
             )
 
-        override_route_config = self._build_override_route_config(
+        override_runtime_inputs = self._build_override_runtime_inputs(
             spell_codegen_model=spell_codegen_model,
             overrides_plan=overrides_plan,
         )
-        spell_codegen_creation.override_targeting = (
+        spell_codegen_creation.metadata["_override_targeting"] = (
             SpellOverrideTargetingCodegenCreation.from_analysis(
                 root_spell_id=overrides_plan.root_spell_id,
                 targets_by_spec=override_targeting_shape.targets_by_spec,
                 specificity_by_spec=override_targeting_shape.specificity_by_spec,
             )
         )
-        spell_codegen_creation.override_plan_signature = override_route_config.plan_signature
-        spell_codegen_creation.override_path_registry = override_route_config.path_registry
-        spell_codegen_creation.override_plan_rows = override_route_config.plan_rows
-        spell_codegen_creation.override_root_spell_id = override_route_config.root_spell_id
-        spell_codegen_creation.override_spell_lookup = override_route_config.spell_lookup
-        spell_codegen_creation.override_empty_shape_key = override_route_config.empty_shape_key
-        spell_codegen_creation.override_baseline_executor = override_route_config.baseline_executor
+        spell_codegen_creation.metadata["_override_plan_signature"] = (
+            override_runtime_inputs["plan_signature"]
+        )
+        spell_codegen_creation.metadata["_override_path_registry"] = (
+            override_runtime_inputs["path_registry"]
+        )
+        spell_codegen_creation.metadata["_override_plan_rows"] = (
+            override_runtime_inputs["plan_rows"]
+        )
+        spell_codegen_creation.metadata["_override_root_spell_id"] = (
+            override_runtime_inputs["root_spell_id"]
+        )
+        spell_codegen_creation.metadata["_override_spell_lookup"] = (
+            override_runtime_inputs["spell_lookup"]
+        )
+        spell_codegen_creation.metadata["_override_empty_shape_key"] = (
+            override_runtime_inputs["empty_shape_key"]
+        )
+        spell_codegen_creation.metadata["_override_baseline_executor"] = (
+            override_runtime_inputs["baseline_executor"]
+        )
         spell_codegen_creation.metadata["override_lane_id"] = overrides_plan.lane_id
         spell_codegen_creation.metadata["override_root_spell_id"] = (
             overrides_plan.root_spell_id
@@ -105,17 +116,17 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
             len(overrides_plan.steps)
         )
         spell_codegen_creation.metadata["override_steps_rows_signature"] = (
-            override_route_config.plan_signature[2]
+            override_runtime_inputs["plan_signature"][2]
         )
 
-    def _build_override_route_config(
+    def _build_override_runtime_inputs(
             self,
             *,
             spell_codegen_model: SpellCodegenModel,
             overrides_plan: SpellGeneralizedCodegenLanePlan,
-    ) -> OverrideRouteConfig:
+    ) -> Dict[str, Any]:
         """
-        Build the spell-static override route config.
+        Build the spell-static override runtime scratch inputs.
 
         Contract:
             - Uses the generalized overrides lane plan as the source of truth.
@@ -156,19 +167,19 @@ class SpellGeneralizedOverridesCodegenCreationStrategy(SpellCodegenStrategy):
             root_spell_id=overrides_plan.root_spell_id,
             spell_lookup=spell_lookup,
         )
-        return OverrideRouteConfig(
-            plan_signature=plan_signature,
-            path_registry=path_registry,
-            plan_rows=steps_rows,
-            root_spell_id=overrides_plan.root_spell_id,
-            spell_lookup=spell_lookup,
-            empty_shape_key=(
+        return {
+            "plan_signature": plan_signature,
+            "path_registry": path_registry,
+            "plan_rows": steps_rows,
+            "root_spell_id": overrides_plan.root_spell_id,
+            "spell_lookup": spell_lookup,
+            "empty_shape_key": (
                 plan_signature,
                 (),
                 -1,
             ),
-            baseline_executor=baseline_executor,
-        )
+            "baseline_executor": baseline_executor,
+        }
 
     @staticmethod
     def _build_spell_lookup(

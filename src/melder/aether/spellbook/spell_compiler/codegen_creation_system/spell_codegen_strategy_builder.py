@@ -5,6 +5,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_general_creation_context_codegen_creation_strategy import (
+    SpellGeneralCreationContextCodegenCreationStrategy,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
     SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
 )
@@ -53,9 +56,16 @@ class SpellCodegenStrategyBuilder(Cleanable):
 
         Contract:
             - Current defaults are the first Phase-13 migration strategies:
-              setup, no-overrides, and overrides.
+              one converged general creation-context strategy plus the older
+              generalized strategy objects kept on disk for later breakup.
             - Registration order is execution order.
         """
+        general_creation_context_codegen_creation_strategy = (
+            SpellGeneralCreationContextCodegenCreationStrategy()
+        )
+        self._strategies_by_name[
+            general_creation_context_codegen_creation_strategy.strategy_id
+        ] = general_creation_context_codegen_creation_strategy
         generalized_creation_context_setup_codegen_creation_strategy = (
             SpellGeneralizedCreationContextSetupCodegenCreationStrategy()
         )

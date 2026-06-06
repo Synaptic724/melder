@@ -1,48 +1,26 @@
-"""CreationContextBuilder current-surface contract tests."""
+"""Focused contract tests for CreationContextBuilder."""
 
 from types import SimpleNamespace
 from typing import Any, Optional
 
 import pytest
 
-import melder.aether.conduit.meld.creation_context.creation_context_builder as builder_module
-from melder.aether.conduit.meld.creation_context.creation_context import (
-    CreationContext,
-    OverrideRouteConfig,
-)
 from melder.aether.conduit.meld.creation_context.creation_context_builder import (
     CreationContextBuilder,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
 def _make_creation_artifact(
         *,
-        resolve_route_key: Optional[str] = CreationContext.ROUTE_SHARED,
-        fast_transient_no_overrides_enabled: bool = False,
         no_overrides_executor: Optional[Any] = None,
-        override_targeting: Optional[Any] = None,
-        override_plan_signature: Optional[tuple[Any, ...]] = None,
-        override_path_registry: Optional[Any] = None,
-        override_plan_rows: Optional[Any] = None,
-        override_root_spell_id: Optional[str] = None,
-        override_spell_lookup: Optional[Any] = None,
-        override_empty_shape_key: Optional[tuple[Any, ...]] = None,
-        override_baseline_executor: Optional[Any] = None,
+        overrides_executor: Optional[Any] = None,
 ) -> Any:
     """Build a minimal `SpellCodegenCreation`-shaped stub for builder tests."""
     return SimpleNamespace(
-        resolve_route_key=resolve_route_key,
-        fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
         no_overrides_executor=no_overrides_executor,
-        override_targeting=override_targeting,
-        override_plan_signature=override_plan_signature,
-        override_path_registry=override_path_registry,
-        override_plan_rows=override_plan_rows,
-        override_root_spell_id=override_root_spell_id,
-        override_spell_lookup=override_spell_lookup,
-        override_empty_shape_key=override_empty_shape_key,
-        override_baseline_executor=override_baseline_executor,
+        overrides_executor=overrides_executor,
     )
 
 
@@ -51,8 +29,9 @@ def _make_spell(
         is_existing_creation: bool = False,
         existence: Existence = Existence.unique,
         creation_artifact: Optional[Any] = None,
+        user_created_object: Any = None,
 ) -> Any:
-    """Build a minimal spell stub for `CreationContextBuilder` tests."""
+    """Build a minimal spell stub for CreationContextBuilder tests."""
     compiler_artifact = SimpleNamespace(
         _spell_codegen_creation=creation_artifact,
     )
@@ -62,13 +41,14 @@ def _make_spell(
         spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
         existence=existence,
         is_existing_creation=is_existing_creation,
+        user_created_object=user_created_object,
         _owner_creations=object(),
         _compiler_artifact=compiler_artifact,
         _spellbook=SimpleNamespace(_spell_id_pool={"spell-1": object()}),
     )
 
 
-def test_build_requires_spell_codegen_creation_for_constructed_spell() -> None:
+def test_build_requires_codegen_creation_for_constructed_spell() -> None:
     """Constructed spells should not build contexts before codegen creation exists."""
     spell = _make_spell(is_existing_creation=False, creation_artifact=None)
 
@@ -76,133 +56,82 @@ def test_build_requires_spell_codegen_creation_for_constructed_spell() -> None:
         CreationContextBuilder.build(spell)
 
 
-def test_build_allows_existing_creation_without_codegen_creation(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Existing-creation spells should still build through the dedicated existing route."""
-    spell = _make_spell(is_existing_creation=True, creation_artifact=None)
-    captured: dict[str, Any] = {}
-
-    class _FakeCreationContext:
-        ROUTE_EXISTING_CREATION = CreationContext.ROUTE_EXISTING_CREATION
-
-        def __new__(cls, **kwargs: Any) -> Any:
-            captured.update(kwargs)
-            return "context"
-
-    monkeypatch.setattr(builder_module, "CreationContext", _FakeCreationContext)
-
-    result = CreationContextBuilder.build(spell)
-
-    assert result == "context"
-    assert captured["resolve_route_key"] == CreationContext.ROUTE_EXISTING_CREATION
-    assert captured["no_overrides_executor"] is None
-    assert captured["override_targeting"] is None
-    assert captured["override_route_config"] is None
-
-
-def test_build_forwards_creation_artifact_fields_into_creation_context(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Builder should forward the flattened `SpellCodegenCreation` contract into `CreationContext`."""
-    spell = _make_spell(
+def test_build_requires_both_runtime_executors_for_constructed_spell() -> None:
+    """Constructed spells should fail hard if phase 11 omitted one of the 2 runtime doors."""
+    spell_missing_no_overrides = _make_spell(
         creation_artifact=_make_creation_artifact(
-            resolve_route_key=CreationContext.ROUTE_MANY,
-            fast_transient_no_overrides_enabled=True,
-            no_overrides_executor="executor",
-            override_targeting="targeting",
-            override_plan_signature=("override",),
-            override_path_registry="path-registry",
-            override_plan_rows=("rows",),
-            override_root_spell_id="spell-1",
-            override_spell_lookup={"spell-1": object()},
-            override_empty_shape_key=("empty",),
-            override_baseline_executor="baseline",
+            no_overrides_executor=None,
+            overrides_executor=lambda creations, overrides: ("value", True),
         ),
     )
-    captured: dict[str, Any] = {}
-
-    def _fake_creation_context(**kwargs: Any) -> Any:
-        """Capture constructor kwargs without building a real context."""
-        captured.update(kwargs)
-        return "context"
-
-    monkeypatch.setattr(builder_module, "CreationContext", _fake_creation_context)
-
-    result = CreationContextBuilder.build(
-        spell,
-        dynamic_environment=True,
-        creation_gate="gate",
-        creation_gate_index_id="index",
-    )
-
-    assert result == "context"
-    assert captured["spell"] is spell
-    assert captured["dynamic_environment"] is True
-    assert captured["creation_gate"] == "gate"
-    assert captured["creation_gate_index_id"] == "index"
-    assert captured["resolve_route_key"] == CreationContext.ROUTE_MANY
-    assert captured["fast_transient_no_overrides_enabled"] is True
-    assert captured["no_overrides_executor"] == "executor"
-    assert captured["override_targeting"] == "targeting"
-    assert isinstance(captured["override_route_config"], OverrideRouteConfig)
-    assert captured["override_route_config"].plan_signature == ("override",)
-
-
-def test_resolve_route_key_uses_existing_creation_shortcut() -> None:
-    """Existing-creation spells should always resolve to the existing route."""
-    spell = _make_spell(is_existing_creation=True, creation_artifact=None)
-
-    assert CreationContextBuilder._resolve_route_key(
-        spell=spell,
-        spell_codegen_creation=None,
-    ) == CreationContext.ROUTE_EXISTING_CREATION
-
-
-def test_resolve_route_key_requires_creation_artifact_route_for_constructed_spell() -> None:
-    """Constructed spells should resolve their route from the creation artifact."""
-    spell = _make_spell(
-        is_existing_creation=False,
+    spell_missing_overrides = _make_spell(
         creation_artifact=_make_creation_artifact(
-            resolve_route_key=CreationContext.ROUTE_UNIQUE_PER_CONDUIT,
+            no_overrides_executor=lambda creations: ("value", True),
+            overrides_executor=None,
         ),
     )
 
-    assert CreationContextBuilder._resolve_route_key(
-        spell=spell,
-        spell_codegen_creation=spell._compiler_artifact._spell_codegen_creation,
-    ) == CreationContext.ROUTE_UNIQUE_PER_CONDUIT
+    with pytest.raises(RuntimeError, match="no_overrides_executor"):
+        CreationContextBuilder.build(spell_missing_no_overrides)
+    with pytest.raises(RuntimeError, match="overrides_executor"):
+        CreationContextBuilder.build(spell_missing_overrides)
 
 
-def test_build_override_route_config_from_creation_returns_none_when_all_fields_missing() -> None:
-    """Route-config rehydration should no-op when the flattened payload is completely absent."""
-    assert CreationContextBuilder._build_override_route_config_from_creation(
-        plan_signature=None,
-        path_registry=None,
-        plan_rows=None,
-        root_spell_id=None,
-        spell_lookup=None,
-        empty_shape_key=None,
-        baseline_executor=None,
-    ) is None
-
-
-def test_build_override_route_config_from_creation_rehydrates_runtime_config() -> None:
-    """Route-config rehydration should rebuild the runtime `OverrideRouteConfig` carrier."""
-    config = CreationContextBuilder._build_override_route_config_from_creation(
-        plan_signature=("sig",),
-        path_registry="path-registry",
-        plan_rows=("rows",),
-        root_spell_id="spell-1",
-        spell_lookup={"spell-1": object()},
-        empty_shape_key=("empty",),
-        baseline_executor="baseline",
+def test_build_existing_creation_without_codegen_creation_uses_local_runtime_doors() -> None:
+    """Existing-creation spells should still build a context without phase-11 codegen output."""
+    spell = _make_spell(
+        is_existing_creation=True,
+        creation_artifact=None,
+        user_created_object="existing-root",
     )
+    caller_creations = object()
 
-    assert config is not None
-    assert config.plan_signature == ("sig",)
-    assert config.path_registry == "path-registry"
-    assert config.plan_rows == ("rows",)
-    assert config.root_spell_id == "spell-1"
-    assert config.empty_shape_key == ("empty",)
-    assert config.baseline_executor == "baseline"
+    context = CreationContextBuilder.build(spell)
+
+    assert context.execute_no_hooks(caller_creations) == "existing-root"
+    assert context.execute(caller_creations) == ("existing-root", False)
+
+
+def test_existing_creation_overrides_raise_contract_error() -> None:
+    """Existing creations must still reject override payloads."""
+    spell = _make_spell(
+        is_existing_creation=True,
+        creation_artifact=None,
+        user_created_object="existing-root",
+    )
+    context = CreationContextBuilder.build(spell)
+
+    with pytest.raises(MeldExecutionError, match="already exists"):
+        context.execute(object(), {"dep": "value"})
+
+
+def test_build_constructed_spell_uses_phase11_runtime_doors() -> None:
+    """Builder should pass through the two final phase-11 runtime doors for constructed spells."""
+    no_overrides_calls = []
+    overrides_calls = []
+
+    def _no_overrides_executor(caller_creations: Any) -> tuple[str, bool]:
+        no_overrides_calls.append(caller_creations)
+        return "plain", True
+
+    def _overrides_executor(
+            caller_creations: Any,
+            overrides: dict[str, Any],
+    ) -> tuple[str, bool]:
+        overrides_calls.append((caller_creations, overrides))
+        return "override", False
+
+    spell = _make_spell(
+        creation_artifact=_make_creation_artifact(
+            no_overrides_executor=_no_overrides_executor,
+            overrides_executor=_overrides_executor,
+        ),
+    )
+    caller_creations = object()
+
+    context = CreationContextBuilder.build(spell)
+
+    assert context.execute(caller_creations) == ("plain", True)
+    assert context.execute(caller_creations, {"dep": "value"}) == ("override", False)
+    assert no_overrides_calls == [caller_creations]
+    assert overrides_calls == [(caller_creations, {"dep": "value"})]

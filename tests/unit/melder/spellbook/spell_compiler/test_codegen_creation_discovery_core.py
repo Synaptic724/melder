@@ -111,6 +111,7 @@ def test_generalized_codegen_creation_discovery_strategy_claims_generalized_plan
         "generalized_creation_context_setup_codegen_creation",
         "generalized_no_overrides_codegen_creation",
         "generalized_overrides_codegen_creation",
+        "general_creation_context_codegen_creation",
     )
     assert discovery.discovery_reason == "default_generalized_plan_codegen_creation_chain"
 

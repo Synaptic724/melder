@@ -235,19 +235,10 @@ class ConduitMeld(Meld):
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None:
-                execute_no_hooks_no_overrides_compiled = (
-                    creation_context._execute_no_hooks_no_overrides_compiled
-                )
-                instance = execute_no_hooks_no_overrides_compiled(creations)
-            else:
-                execute_no_hooks_overrides_compiled = (
-                    creation_context._execute_no_hooks_overrides_compiled
-                )
-                instance = execute_no_hooks_overrides_compiled(
-                    creations,
-                    override_map,
-                )
+            instance = creation_context.execute_no_hooks(
+                creations,
+                override_map,
+            )
 
             # 7) Return the resolved instance.
             return instance
@@ -262,21 +253,10 @@ class ConduitMeld(Meld):
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None:
-                execute_hooks_no_overrides_compiled = (
-                    creation_context._execute_hooks_no_overrides_compiled
-                )
-                instance, created = execute_hooks_no_overrides_compiled(
-                    creations
-                )
-            else:
-                execute_hooks_overrides_compiled = (
-                    creation_context._execute_hooks_overrides_compiled
-                )
-                instance, created = execute_hooks_overrides_compiled(
-                    creations,
-                    override_map,
-                )
+            instance, created = creation_context.execute(
+                creations,
+                override_map,
+            )
 
             if created:
                 # Activation hooks fire only when the instance is newly created.

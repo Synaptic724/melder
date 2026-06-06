@@ -1,14 +1,18 @@
-"""Direct unit tests for the codegen_creation object layer."""
+"""Focused unit tests for the phase-11 codegen-creation contract."""
 
 from types import SimpleNamespace
 from typing import Any, Tuple
 
 import pytest
 
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_general_creation_context_codegen_creation_strategy as general_creation_context_strategy_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy as no_overrides_strategy_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy as overrides_strategy_module
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
+    SpellCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_system import (
     CodegenCreationDiscovery,
@@ -17,14 +21,14 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_crea
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
     CodegenCreationSystem,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
-    SpellCodegenCreation,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder import (
     SpellCodegenStrategyBuilder,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
     SpellOverrideTargetingCodegenCreation,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_general_creation_context_codegen_creation_strategy import (
+    SpellGeneralCreationContextCodegenCreationStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
     SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
@@ -44,11 +48,9 @@ class _CleanupProbe:
     """Simple cleanup double used to prove previous-creation cleanup."""
 
     def __init__(self) -> None:
-        """Start with cleanup not yet called."""
         self.cleanup_called = False
 
     def cleanup(self) -> None:
-        """Record one cleanup call."""
         self.cleanup_called = True
 
 
@@ -56,7 +58,6 @@ class _CreationStrategyProbe:
     """Minimal creation strategy double for facade tests."""
 
     def __init__(self, strategy_id: str) -> None:
-        """Store the stable strategy id."""
         self.strategy_id = strategy_id
 
     def apply(
@@ -65,7 +66,6 @@ class _CreationStrategyProbe:
             spell_codegen_plan: Any,
             spell_codegen_creation: SpellCodegenCreation,
     ) -> None:
-        """Write one visible marker onto the output artifact."""
         _ = spell_codegen_model
         _ = spell_codegen_plan
         spell_codegen_creation.metadata[self.strategy_id] = True
@@ -75,17 +75,14 @@ class _StrategyBuilderProbe:
     """Minimal strategy-builder double for creation-system facade tests."""
 
     def __init__(self, strategies: Tuple[Any, ...]) -> None:
-        """Store the strategy tuple returned by resolution."""
         self._strategies = strategies
         self.requested_strategy_ids: Tuple[str, ...] = ()
         self.cleanup_called = False
 
     def cleanup(self) -> None:
-        """Record one cleanup call."""
         self.cleanup_called = True
 
     def get_strategies(self, strategy_ids: Tuple[str, ...]) -> Tuple[Any, ...]:
-        """Return the configured strategies and record the requested ids."""
         self.requested_strategy_ids = strategy_ids
         return self._strategies
 
@@ -94,7 +91,6 @@ class _DiscoveryProbe:
     """Minimal discovery-system double for creation-system facade tests."""
 
     def __init__(self, discovery: CodegenCreationDiscovery) -> None:
-        """Store the discovery result returned during build."""
         self._discovery = discovery
         self.discovered_pair: Tuple[Any, Any] | None = None
 
@@ -103,13 +99,12 @@ class _DiscoveryProbe:
             spell_codegen_model: Any,
             spell_codegen_plan: Any,
     ) -> CodegenCreationDiscovery:
-        """Return the configured discovery result and record the input pair."""
         self.discovered_pair = (spell_codegen_model, spell_codegen_plan)
         return self._discovery
 
 
 def test_codegen_creation_discovery_system_selects_generalized_chain_by_default() -> None:
-    """The discovery system should choose the full generalized chain for generalized plans."""
+    """The discovery system should extend the generalized chain with the final creation-context strategy."""
     discovery = CodegenCreationDiscoverySystem().discover(
         object(),
         SpellCodegenPlan(
@@ -125,14 +120,12 @@ def test_codegen_creation_discovery_system_selects_generalized_chain_by_default(
         "generalized_creation_context_setup_codegen_creation",
         "generalized_no_overrides_codegen_creation",
         "generalized_overrides_codegen_creation",
-    )
-    assert discovery.discovery_reason == (
-        "default_generalized_plan_codegen_creation_chain"
+        "general_creation_context_codegen_creation",
     )
 
 
 def test_codegen_creation_discovery_system_falls_back_to_no_overrides_chain() -> None:
-    """The discovery system should fall back to the no-overrides creation strategy when the plan is not generalized."""
+    """The discovery system should still fall back to the no-overrides strategy for non-generalized plans."""
     discovery = CodegenCreationDiscoverySystem().discover(
         object(),
         SpellCodegenPlan(
@@ -147,14 +140,14 @@ def test_codegen_creation_discovery_system_falls_back_to_no_overrides_chain() ->
     assert discovery.selected_strategy_ids == (
         "generalized_no_overrides_codegen_creation",
     )
-    assert discovery.discovery_reason == "fallback_no_overrides_creation_strategy"
 
 
-def test_spell_codegen_strategy_builder_registers_default_order() -> None:
-    """The real codegen-creation strategy builder should expose the stable default strategy order."""
+def test_spell_codegen_strategy_builder_registers_extended_order() -> None:
+    """The real strategy builder should expose the new finalizer plus the existing generalized strategies."""
     builder = SpellCodegenStrategyBuilder()
 
     assert builder.registered_strategy_names() == (
+        "general_creation_context_codegen_creation",
         "generalized_creation_context_setup_codegen_creation",
         "generalized_no_overrides_codegen_creation",
         "generalized_overrides_codegen_creation",
@@ -163,30 +156,18 @@ def test_spell_codegen_strategy_builder_registers_default_order() -> None:
         builder.get_strategy("missing_creation")
 
 
-def test_spell_codegen_creation_cleanup_cleans_override_targeting_and_metadata() -> None:
-    """The creation container should cleanup owned override-targeting state and clear metadata."""
-    override_targeting = _CleanupProbe()
+def test_spell_codegen_creation_cleanup_cleans_metadata() -> None:
+    """The creation container should only carry the two runtime doors plus metadata."""
     creation = SpellCodegenCreation(
         selected_strategy_ids=("setup",),
         discovery_reason="reason",
-        resolve_route_key="many",
-        fast_transient_no_overrides_enabled=True,
-        no_overrides_executor=object(),
-        no_overrides_executor_signature="sig",
-        override_targeting=override_targeting,
-        override_plan_signature=("a",),
-        override_path_registry=object(),
-        override_plan_rows=(),
-        override_root_spell_id="root",
-        override_spell_lookup={},
-        override_empty_shape_key=("k",),
-        override_baseline_executor=object(),
+        no_overrides_executor=lambda caller_creations: ("plain", True),
+        overrides_executor=lambda caller_creations, overrides: ("override", False),
         metadata={"hello": "world"},
     )
 
     creation.cleanup()
 
-    assert override_targeting.cleanup_called is True
     assert not hasattr(creation, "metadata")
 
 
@@ -216,7 +197,7 @@ def test_codegen_creation_system_build_requires_model_and_plan_first() -> None:
         system.build(missing_plan)
 
 
-def test_codegen_creation_system_build_publishes_creation_and_cleans_previous() -> None:
+def test_codegen_creation_system_build_runs_selected_strategy_chain_and_cleans_previous() -> None:
     """The creation facade should publish the new artifact and cleanup the superseded one."""
     system = CodegenCreationSystem()
     strategy_a = _CreationStrategyProbe("a")
@@ -256,92 +237,8 @@ def test_codegen_creation_system_build_publishes_creation_and_cleans_previous() 
     assert previous_creation.cleanup_called is True
 
 
-def test_spell_override_targeting_codegen_creation_from_analysis_and_apply_prechecked() -> None:
-    """The override-targeting creation artifact should normalize analysis rows and cache single-key applications."""
-    artifact = SpellOverrideTargetingCodegenCreation.from_analysis(
-        root_spell_id="root",
-        targets_by_spec={
-            "root>svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-            "**svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-                SpellOverrideTargetRef(
-                    node_id="dep",
-                    param_path_id=2,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-        },
-        specificity_by_spec={
-            "root>svc": 3,
-            "**svc": 1,
-        },
-    )
-
-    first_map, first_shape = artifact._apply_with_socket_shape_prechecked(
-        spell_override={"root>svc": "value"},
-    )
-    second_map, second_shape = artifact._apply_with_socket_shape_prechecked(
-        spell_override={"root>svc": "value"},
-    )
-
-    assert len(first_map) == 1
-    assert first_shape == (("root", 1, "svc", 0),)
-    assert second_map is first_map
-    assert second_shape is first_shape
-
-
-def test_spell_override_targeting_codegen_creation_detects_conflicting_same_specificity_rules() -> None:
-    """The override-targeting creation artifact should reject conflicting equal-specificity multi-key applications."""
-    artifact = SpellOverrideTargetingCodegenCreation.from_analysis(
-        root_spell_id="root",
-        targets_by_spec={
-            "*svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-            "root>svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-        },
-        specificity_by_spec={
-            "*svc": 2,
-            "root>svc": 2,
-        },
-    )
-
-    with pytest.raises(RuntimeError, match="Conflicting overrides"):
-        artifact._apply_with_socket_shape_prechecked(
-            spell_override={
-                "*svc": "a",
-                "root>svc": "b",
-            },
-        )
-
-
-def test_creation_context_setup_strategy_resolves_route_key_and_transient_flag() -> None:
-    """The setup strategy should derive route key and transient enablement from model and no-overrides plan truth."""
+def test_setup_strategy_records_route_and_transient_scratch() -> None:
+    """The setup strategy should store route and transient scratch for the finalizer."""
     strategy = SpellGeneralizedCreationContextSetupCodegenCreationStrategy()
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
@@ -357,18 +254,8 @@ def test_creation_context_setup_strategy_resolves_route_key_and_transient_flag()
     creation = SpellCodegenCreation(
         selected_strategy_ids=(),
         discovery_reason=None,
-        resolve_route_key=None,
-        fast_transient_no_overrides_enabled=False,
         no_overrides_executor=None,
-        no_overrides_executor_signature=None,
-        override_targeting=None,
-        override_plan_signature=None,
-        override_path_registry=None,
-        override_plan_rows=None,
-        override_root_spell_id=None,
-        override_spell_lookup=None,
-        override_empty_shape_key=None,
-        override_baseline_executor=None,
+        overrides_executor=None,
         metadata={},
     )
 
@@ -382,16 +269,14 @@ def test_creation_context_setup_strategy_resolves_route_key_and_transient_flag()
         creation,
     )
 
-    assert creation.resolve_route_key == "many"
-    assert creation.fast_transient_no_overrides_enabled is True
-    assert creation.metadata["resolve_route_key"] == "many"
-    assert creation.metadata["fast_transient_no_overrides_enabled"] is True
+    assert creation.metadata["_resolve_route_key"] == "many"
+    assert creation.metadata["_fast_transient_no_overrides_enabled"] is True
 
 
-def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and_metadata(
+def test_no_overrides_strategy_records_base_executor_and_signature(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The no-overrides creation strategy should package the lane executor directly from the generalized lane plan."""
+    """The no-overrides strategy should still produce the base executor scratch used by the finalizer."""
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -412,18 +297,8 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
     creation = SpellCodegenCreation(
         selected_strategy_ids=(),
         discovery_reason=None,
-        resolve_route_key=None,
-        fast_transient_no_overrides_enabled=False,
         no_overrides_executor=None,
-        no_overrides_executor_signature=None,
-        override_targeting=None,
-        override_plan_signature=None,
-        override_path_registry=None,
-        override_plan_rows=None,
-        override_root_spell_id=None,
-        override_spell_lookup=None,
-        override_empty_shape_key=None,
-        override_baseline_executor=None,
+        overrides_executor=None,
         metadata={},
     )
 
@@ -469,127 +344,18 @@ def test_no_overrides_codegen_creation_strategy_publishes_executor_signature_and
         "no_overrides",
         {"schema": ("transient",)},
     )
-    assert creation.no_overrides_executor_signature == "sig:4"
-    assert creation.metadata["no_overrides_lane_id"] == "no_overrides"
-    assert creation.metadata["no_overrides_root_spell_id"] == "root"
-    assert creation.metadata["no_overrides_step_count"] == 2
-    assert creation.metadata["no_overrides_fast_transient_available"] is True
-
-
-def test_override_targeting_codegen_creation_resolves_and_caches_target_keys() -> None:
-    """The override-targeting creation artifact should preserve path/unique/broadcast resolution and caching."""
-    artifact = SpellOverrideTargetingCodegenCreation.from_analysis(
-        root_spell_id="root",
-        targets_by_spec={
-            "root>svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-            "*svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-            "**svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-                SpellOverrideTargetRef(
-                    node_id="dep",
-                    param_path_id=2,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-        },
-        specificity_by_spec={
-            "root>svc": 3,
-            "*svc": 2,
-            "**svc": 1,
-        },
+    assert creation.metadata["_no_overrides_base_executor"] == (
+        "executor",
+        "no_overrides",
+        {"schema": ("transient",)},
     )
-
-    path_matches, path_level, path_shape = artifact._resolve_targets_for_raw_key(
-        "root>svc"
-    )
-    unique_matches, unique_level, unique_shape = artifact._resolve_targets_for_raw_key(
-        "*svc"
-    )
-    broadcast_matches, broadcast_level, broadcast_shape = artifact._resolve_targets_for_raw_key(
-        "**svc"
-    )
-    cached_matches, cached_level, cached_shape = artifact._resolve_targets_for_raw_key(
-        "root>svc"
-    )
-
-    assert len(path_matches) == 1
-    assert path_level.value == 3
-    assert path_shape == (("root", 1, "svc", 0),)
-    assert len(unique_matches) == 1
-    assert unique_level.value == 2
-    assert unique_shape == (("root", 1, "svc", 0),)
-    assert len(broadcast_matches) == 2
-    assert broadcast_level.value == 1
-    assert broadcast_shape == (
-        ("dep", 2, "svc", 0),
-        ("root", 1, "svc", 0),
-    )
-    assert cached_matches is path_matches
-    assert cached_level is path_level
-    assert cached_shape is path_shape
+    assert creation.metadata["_no_overrides_executor_signature"] == "sig:4"
 
 
-def test_override_targeting_codegen_creation_rejects_missing_and_ambiguous_targets() -> None:
-    """The override-targeting creation artifact should fail hard on missing/ambiguous target rules."""
-    artifact = SpellOverrideTargetingCodegenCreation.from_analysis(
-        root_spell_id="root",
-        targets_by_spec={
-            "*svc": (
-                SpellOverrideTargetRef(
-                    node_id="root",
-                    param_path_id=1,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-                SpellOverrideTargetRef(
-                    node_id="dep",
-                    param_path_id=2,
-                    param_name="svc",
-                    socket_kind_value=0,
-                ),
-            ),
-        },
-        specificity_by_spec={"*svc": 2},
-    )
-
-    with pytest.raises(RuntimeError, match="No sockets found for override path"):
-        artifact._resolve_targets_for_raw_key("root>missing")
-    with pytest.raises(RuntimeError, match="matched 2 sockets"):
-        artifact._resolve_targets_for_raw_key("*svc")
-
-
-def test_override_targeting_codegen_creation_spec_key_rejects_unknown_kind() -> None:
-    """The override-targeting creation artifact should reject unsupported parsed target kinds."""
-    with pytest.raises(RuntimeError, match="Unsupported TargetSpecKind"):
-        SpellOverrideTargetingCodegenCreation._spec_key(
-            type("SpecProbe", (), {"kind": "bad", "param_name": "svc", "path": ()})()
-        )
-
-
-def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
+def test_overrides_strategy_records_override_runtime_scratch(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The overrides creation strategy should package the non-mutation override route onto the creation artifact."""
+    """The overrides strategy should write override runtime scratch into metadata for the finalizer."""
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -614,18 +380,8 @@ def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
     creation = SpellCodegenCreation(
         selected_strategy_ids=(),
         discovery_reason=None,
-        resolve_route_key=None,
-        fast_transient_no_overrides_enabled=False,
         no_overrides_executor=None,
-        no_overrides_executor_signature=None,
-        override_targeting=None,
-        override_plan_signature=None,
-        override_path_registry=None,
-        override_plan_rows=None,
-        override_root_spell_id=None,
-        override_spell_lookup=None,
-        override_empty_shape_key=None,
-        override_baseline_executor=None,
+        overrides_executor=None,
         metadata={},
     )
     state = type(
@@ -674,30 +430,85 @@ def test_overrides_codegen_creation_strategy_publishes_override_route_payload(
         creation,
     )
 
-    assert creation.override_targeting is not None
-    assert creation.override_root_spell_id == "root"
-    assert creation.override_path_registry == "PATH_REG"
-    assert creation.override_baseline_executor == (
+    assert creation.metadata["_override_targeting"] is not None
+    assert creation.metadata["_override_root_spell_id"] == "root"
+    assert creation.metadata["_override_path_registry"] == "PATH_REG"
+    assert creation.metadata["_override_baseline_executor"] == (
         "override-executor",
         "root",
     )
-    assert creation.metadata["override_lane_id"] == "overrides"
-    assert creation.metadata["override_root_spell_id"] == "root"
-    assert creation.metadata["override_step_count"] == 1
 
 
-def test_codegen_creation_system_cleanup_cleans_builder_and_drops_owned_refs() -> None:
-    """The creation facade cleanup should clean the builder and drop both owned references."""
-    system = CodegenCreationSystem()
-    builder = _StrategyBuilderProbe(())
-    system._strategy_builder = builder
-    system._discovery_system = object()
+def test_general_creation_context_strategy_finalizes_two_runtime_doors(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The new fat finalizer should consume scratch and emit the two final runtime doors."""
+    strategy = SpellGeneralCreationContextCodegenCreationStrategy()
+    root_spell = SimpleNamespace(
+        spell_id="root",
+        spell_name="root",
+        spell_index=SimpleNamespace(current="root"),
+        _owner_creations=object(),
+    )
+    state = SimpleNamespace(
+        build_kind="construct",
+        route_family="many",
+        spell_runtime_shape=SimpleNamespace(
+            records_by_spell_id={"root": SimpleNamespace(spell=root_spell)}
+        ),
+    )
+    plan = SpellCodegenPlan(
+        processor_strategy_ids=(),
+        plan_strategy_ids=(),
+        no_overrides_plan=SimpleNamespace(
+            lane_id="no_overrides",
+            root_spell_id="root",
+            fast_transient_plan=("transient",),
+        ),
+        overrides_plan=SimpleNamespace(
+            lane_id="overrides",
+            root_spell_id="root",
+            steps=(),
+        ),
+        metadata={},
+    )
+    creation = SpellCodegenCreation(
+        selected_strategy_ids=(),
+        discovery_reason=None,
+        no_overrides_executor="base-no-overrides",
+        overrides_executor=None,
+        metadata={
+            "_resolve_route_key": "many",
+            "_fast_transient_no_overrides_enabled": True,
+            "_override_targeting": "targeting",
+            "_override_plan_signature": ("sig",),
+            "_override_path_registry": "registry",
+            "_override_plan_rows": (),
+            "_override_root_spell_id": "root",
+            "_override_spell_lookup": {"root": root_spell},
+            "_override_empty_shape_key": (("sig",), (), -1),
+            "_override_baseline_executor": "baseline",
+        },
+    )
 
-    system.cleanup()
+    monkeypatch.setattr(
+        general_creation_context_strategy_module,
+        "compile_creation_context_hooks_no_overrides_executor",
+        lambda **kwargs: ("final-no-overrides", kwargs["no_overrides_executor"]),
+    )
+    monkeypatch.setattr(
+        general_creation_context_strategy_module,
+        "compile_creation_context_hooks_overrides_only_executor",
+        lambda **kwargs: ("final-overrides", kwargs["execute_with_overrides"]),
+    )
 
-    assert builder.cleanup_called is True
-    assert not hasattr(system, "_strategy_builder")
-    assert not hasattr(system, "_discovery_system")
+    strategy.apply(state, plan, creation)
 
-
-
+    assert creation.no_overrides_executor == (
+        "final-no-overrides",
+        "base-no-overrides",
+    )
+    assert creation.overrides_executor[0] == "final-overrides"
+    assert creation.metadata["creation_context_strategy"] == (
+        "general_creation_context_codegen_creation"
+    )

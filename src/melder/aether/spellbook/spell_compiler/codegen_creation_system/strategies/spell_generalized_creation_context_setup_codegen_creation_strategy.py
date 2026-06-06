@@ -46,10 +46,9 @@ class SpellGeneralizedCreationContextSetupCodegenCreationStrategy(
             - Derives `resolve_route_key` from processor-owned model truth.
             - Derives `fast_transient_no_overrides_enabled` from the
               no-overrides lane plan plus the resolved route key.
-            - Does not populate lane payloads directly.
+            - Records setup scratch into metadata for the later finalizer.
         """
         route_key = self._resolve_route_key(spell_codegen_model)
-        spell_codegen_creation.resolve_route_key = route_key
 
         no_overrides_plan = spell_codegen_plan.no_overrides_plan
         fast_transient_no_overrides_enabled = False
@@ -58,9 +57,10 @@ class SpellGeneralizedCreationContextSetupCodegenCreationStrategy(
                 route_key == "many"
                 and no_overrides_plan.fast_transient_plan is not None
             )
-        spell_codegen_creation.fast_transient_no_overrides_enabled = (
-            fast_transient_no_overrides_enabled
-        )
+        spell_codegen_creation.metadata["_resolve_route_key"] = route_key
+        spell_codegen_creation.metadata[
+            "_fast_transient_no_overrides_enabled"
+        ] = fast_transient_no_overrides_enabled
         spell_codegen_creation.metadata["resolve_route_key"] = route_key
         spell_codegen_creation.metadata[
             "fast_transient_no_overrides_enabled"

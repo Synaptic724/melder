@@ -82,7 +82,10 @@ class SpellGeneralizedNoOverridesCodegenCreationStrategy(
         )
 
         spell_codegen_creation.no_overrides_executor = compiled_executor
-        spell_codegen_creation.no_overrides_executor_signature = (
+        spell_codegen_creation.metadata["_no_overrides_base_executor"] = (
+            compiled_executor
+        )
+        spell_codegen_creation.metadata["_no_overrides_executor_signature"] = (
             executor_signature
         )
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
