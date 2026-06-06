@@ -5,9 +5,8 @@ from typing import Any, Tuple
 
 import pytest
 
-import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_general_creation_context_codegen_creation_strategy as general_creation_context_strategy_module
-import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy as no_overrides_strategy_module
-import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy as overrides_strategy_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step as no_overrides_step_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step as overrides_step_module
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
 )
@@ -24,20 +23,26 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_crea
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder import (
     SpellCodegenStrategyBuilder,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation import (
     SpellOverrideTargetingCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_general_creation_context_codegen_creation_strategy import (
-    SpellGeneralCreationContextCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy import (
+    GeneralizedCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
-    SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
+    GeneralizedCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
-    SpellGeneralizedNoOverridesCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_creation_context_setup_step import (
+    GeneralizedCreationContextSetupStep,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy import (
-    SpellGeneralizedOverridesCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
+    GeneralizedFinalizeCreationContextStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step import (
+    GeneralizedNoOverridesCodegenCreationStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step import (
+    GeneralizedOverridesCodegenCreationStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
@@ -103,6 +108,20 @@ class _DiscoveryProbe:
         return self._discovery
 
 
+def _make_generalized_state(
+        *,
+        spell_codegen_model: Any,
+        spell_codegen_plan: SpellCodegenPlan,
+        spell_codegen_creation: SpellCodegenCreation,
+) -> GeneralizedCodegenCreationState:
+    """Build one generalized family state object for direct step tests."""
+    return GeneralizedCodegenCreationState(
+        spell_codegen_model=spell_codegen_model,
+        spell_codegen_plan=spell_codegen_plan,
+        spell_codegen_creation=spell_codegen_creation,
+    )
+
+
 def test_codegen_creation_discovery_system_selects_generalized_chain_by_default() -> None:
     """The discovery system should extend the generalized chain with the final creation-context strategy."""
     discovery = CodegenCreationDiscoverySystem().discover(
@@ -117,10 +136,7 @@ def test_codegen_creation_discovery_system_selects_generalized_chain_by_default(
     )
 
     assert discovery.selected_strategy_ids == (
-        "generalized_creation_context_setup_codegen_creation",
-        "generalized_no_overrides_codegen_creation",
-        "generalized_overrides_codegen_creation",
-        "general_creation_context_codegen_creation",
+        "generalized_codegen_creation",
     )
 
 
@@ -143,14 +159,12 @@ def test_codegen_creation_discovery_system_falls_back_to_no_overrides_chain() ->
 
 
 def test_spell_codegen_strategy_builder_registers_extended_order() -> None:
-    """The real strategy builder should expose the new finalizer plus the existing generalized strategies."""
+    """The real strategy builder should expose the generalized family facade plus fallback no-overrides strategy."""
     builder = SpellCodegenStrategyBuilder()
 
     assert builder.registered_strategy_names() == (
-        "general_creation_context_codegen_creation",
-        "generalized_creation_context_setup_codegen_creation",
+        "generalized_codegen_creation",
         "generalized_no_overrides_codegen_creation",
-        "generalized_overrides_codegen_creation",
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_creation'"):
         builder.get_strategy("missing_creation")
@@ -240,9 +254,9 @@ def test_codegen_creation_system_build_runs_selected_strategy_chain_and_cleans_p
     assert previous_creation.cleanup_called is True
 
 
-def test_setup_strategy_records_route_and_transient_scratch() -> None:
-    """The setup strategy should store route and transient scratch for the finalizer."""
-    strategy = SpellGeneralizedCreationContextSetupCodegenCreationStrategy()
+def test_setup_step_records_route_and_transient_state() -> None:
+    """The generalized setup step should store route and transient state on the family object."""
+    step = GeneralizedCreationContextSetupStep()
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -262,24 +276,25 @@ def test_setup_strategy_records_route_and_transient_scratch() -> None:
         metadata={},
     )
 
-    strategy.apply(
-        type(
+    state = _make_generalized_state(
+        spell_codegen_model=type(
             "ModelProbe",
             (),
             {"build_kind": "construct", "route_family": "many"},
         )(),
-        plan,
-        creation,
+        spell_codegen_plan=plan,
+        spell_codegen_creation=creation,
     )
+    step.apply(state)
 
-    assert creation.metadata["_resolve_route_key"] == "many"
-    assert creation.metadata["_fast_transient_no_overrides_enabled"] is True
+    assert state.resolve_route_key == "many"
+    assert state.fast_transient_no_overrides_enabled is True
 
 
-def test_no_overrides_strategy_records_base_executor_and_signature(
+def test_no_overrides_step_records_base_executor_and_signature(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The no-overrides strategy should still produce the base executor scratch used by the finalizer."""
+    """The generalized no-overrides step should produce the base executor and signature on family state/output."""
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -306,59 +321,60 @@ def test_no_overrides_strategy_records_base_executor_and_signature(
     )
 
     monkeypatch.setattr(
-        no_overrides_strategy_module.SharedCompilerExecutions,
+        no_overrides_step_module.SharedCompilerExecutions,
         "build_fast_transient_schema",
         lambda fast_transient_plan: {"schema": fast_transient_plan},
     )
     monkeypatch.setattr(
-        no_overrides_strategy_module.SharedCompilerExecutions,
+        no_overrides_step_module.SharedCompilerExecutions,
         "build_no_overrides_codegen_creation_step_signature_row",
         lambda step: ("step", id(step)),
     )
     monkeypatch.setattr(
-        no_overrides_strategy_module.SharedCompilerExecutions,
+        no_overrides_step_module.SharedCompilerExecutions,
         "build_fast_transient_signature",
         lambda transient_schema: ("transient", transient_schema["schema"]),
     )
     monkeypatch.setattr(
-        no_overrides_strategy_module.SharedCompilerExecutions,
+        no_overrides_step_module.SharedCompilerExecutions,
         "normalize_instance_key",
         lambda instance_key: instance_key,
     )
     monkeypatch.setattr(
-        no_overrides_strategy_module.SharedCompilerExecutions,
+        no_overrides_step_module.SharedCompilerExecutions,
         "hash_codegen_signature",
         lambda *parts: "sig:{0}".format(len(parts)),
     )
     monkeypatch.setattr(
-        no_overrides_strategy_module,
+        no_overrides_step_module,
         "compile_no_overrides_codegen_creation_executor_from_plan",
         lambda *, plan, transient_schema: ("executor", plan.lane_id, transient_schema),
     )
 
-    SpellGeneralizedNoOverridesCodegenCreationStrategy().apply(
-        object(),
-        plan,
-        creation,
+    state = _make_generalized_state(
+        spell_codegen_model=object(),
+        spell_codegen_plan=plan,
+        spell_codegen_creation=creation,
     )
+    GeneralizedNoOverridesCodegenCreationStep().apply(state)
 
     assert creation.no_overrides_executor == (
         "executor",
         "no_overrides",
         {"schema": ("transient",)},
     )
-    assert creation.metadata["_no_overrides_base_executor"] == (
+    assert state.base_no_overrides_executor == (
         "executor",
         "no_overrides",
         {"schema": ("transient",)},
     )
-    assert creation.metadata["_no_overrides_executor_signature"] == "sig:4"
+    assert creation.metadata["no_overrides_executor_signature"] == "sig:4"
 
 
-def test_overrides_strategy_records_override_runtime_scratch(
+def test_overrides_step_records_override_runtime_state(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The overrides strategy should write override runtime scratch into metadata for the finalizer."""
+    """The generalized overrides step should write override runtime state onto the family object."""
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -409,7 +425,7 @@ def test_overrides_strategy_records_override_runtime_scratch(
     )()
 
     monkeypatch.setattr(
-        overrides_strategy_module.SharedCompilerExecutions,
+        overrides_step_module.SharedCompilerExecutions,
         "build_phase11_step_ir_row",
         lambda step, include_override_metadata: {
             "step": step.spell.spell_index.current,
@@ -417,35 +433,37 @@ def test_overrides_strategy_records_override_runtime_scratch(
         },
     )
     monkeypatch.setattr(
-        overrides_strategy_module.SharedCompilerExecutions,
+        overrides_step_module.SharedCompilerExecutions,
         "hash_codegen_signature",
         lambda *parts: ("sig", len(parts)),
     )
     monkeypatch.setattr(
-        overrides_strategy_module,
+        overrides_step_module,
         "compile_overrides_codegen_creation_executor",
         lambda **kwargs: ("override-executor", kwargs["root_spell_id"]),
     )
 
-    SpellGeneralizedOverridesCodegenCreationStrategy().apply(
-        state,
-        plan,
-        creation,
+    family_state = _make_generalized_state(
+        spell_codegen_model=state,
+        spell_codegen_plan=plan,
+        spell_codegen_creation=creation,
     )
+    GeneralizedOverridesCodegenCreationStep().apply(family_state)
 
-    assert creation.metadata["_override_targeting"] is not None
-    assert creation.metadata["_override_root_spell_id"] == "root"
-    assert creation.metadata["_override_path_registry"] == "PATH_REG"
-    assert creation.metadata["_override_baseline_executor"] == (
+    assert family_state.override_targeting is not None
+    assert family_state.override_root_spell_id == "root"
+    assert family_state.override_path_registry == "PATH_REG"
+    assert family_state.override_baseline_executor == (
         "override-executor",
         "root",
     )
+    assert creation.metadata["override_lane_id"] == "overrides"
 
 
 def test_general_creation_context_strategy_preserves_base_no_overrides_and_builds_override_runtime(
 ) -> None:
-    """The finalizer should preserve the base no-overrides executor and build the override runtime callable."""
-    strategy = SpellGeneralCreationContextCodegenCreationStrategy()
+    """The generalized finalization step should preserve the base no-overrides executor and build the override runtime callable."""
+    strategy = GeneralizedFinalizeCreationContextStep()
     creations = SimpleNamespace(get_creation=lambda spell_id: None)
     root_spell = SimpleNamespace(
         spell_id="root",
@@ -459,6 +477,7 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
         spell_runtime_shape=SimpleNamespace(
             records_by_spell_id={"root": SimpleNamespace(spell=root_spell)}
         ),
+        graph_shape=None,
     )
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
@@ -495,12 +514,26 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
         },
     )
 
-    strategy.apply(state, plan, creation)
+    family_state = _make_generalized_state(
+        spell_codegen_model=state,
+        spell_codegen_plan=plan,
+        spell_codegen_creation=creation,
+    )
+    family_state.resolve_route_key = "many"
+    family_state.fast_transient_no_overrides_enabled = True
+    family_state.override_targeting = "targeting"
+    family_state.override_plan_signature = ("sig",)
+    family_state.override_path_registry = "registry"
+    family_state.override_plan_rows = ()
+    family_state.override_root_spell_id = "root"
+    family_state.override_spell_lookup = {"root": root_spell}
+    family_state.override_empty_shape_key = (("sig",), (), -1)
+    family_state.override_baseline_executor = "baseline"
+    family_state.base_no_overrides_executor = base_no_overrides_executor
+
+    strategy.apply(family_state)
 
     assert creation.no_overrides_executor is base_no_overrides_executor
     assert callable(creation.overrides_executor)
-    assert creation.metadata["creation_context_strategy"] == (
-        "general_creation_context_codegen_creation"
-    )
     assert creation.metadata["resolve_route_key"] == "many"
     assert creation.metadata["fast_transient_no_overrides_enabled"] is True

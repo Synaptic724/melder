@@ -210,6 +210,7 @@ class Spell(Cleanable):
         "_owner_creations",
         "_post_hooks",
         "_pre_hooks",
+        "_spellbook_cleanup",
         "_spell_system_states",
         "_spellbook",
         "aetheric_frame",
@@ -330,6 +331,7 @@ class Spell(Cleanable):
 
         # Spellbook
         self._spellbook: Spellbook = spellbook
+        self._spellbook_cleanup: bool = False
 
         # Spell Metadata
         self.tags = list(args) if args else []
@@ -423,6 +425,9 @@ class Spell(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
+            if not self._spellbook_cleanup:
+                self._spellbook.cleanup_and_remove_spell(self)
+                return
 
             if self.dependency_graph is not None:
                 try:
@@ -439,11 +444,6 @@ class Spell(Cleanable):
 
             try:
                 self._compiler_artifact.cleanup()
-            except Exception:
-                pass
-
-            try:
-                self.spell_index.cleanup()
             except Exception:
                 pass
             # Drop references to help GC and enforce immutability after cleanup.
@@ -475,6 +475,7 @@ class Spell(Cleanable):
 
             del self._owner_creations
             del self.user_created_object
+            del self._spellbook_cleanup
             del self._spell_system_states
             del self._spellbook
             del self._pre_hooks

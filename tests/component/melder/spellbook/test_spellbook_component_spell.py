@@ -294,3 +294,35 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
         spellbook.cleanup()
 
 
+def test_component_spell_cleanup_delegates_to_spellbook_removal_path() -> None:
+    """
+    Purpose:
+        Validate `Spell.cleanup()` routes through the Spellbook single-spell removal path.
+    Contract:
+        - A normal external `spell.cleanup()` call removes the spell from the
+          owning Spellbook pools/maps.
+        - The spell is cleaned as the final step of that flow.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the spell remains reachable from the Spellbook.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        spell.cleanup()
+
+        assert spell._cleaned is True
+        assert spell_id not in spellbook._spell_id_pool
+        assert spell_id not in spellbook._spells_by_id
+    finally:
+        spellbook.cleanup()
+
+

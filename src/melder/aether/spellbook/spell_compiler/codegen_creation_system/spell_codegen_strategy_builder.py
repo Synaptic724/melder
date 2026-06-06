@@ -5,17 +5,11 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_general_creation_context_codegen_creation_strategy import (
-    SpellGeneralCreationContextCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy import (
+    GeneralizedCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_creation_context_setup_codegen_creation_strategy import (
-    SpellGeneralizedCreationContextSetupCodegenCreationStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_no_overrides_codegen_creation_strategy import (
-    SpellGeneralizedNoOverridesCodegenCreationStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.spell_generalized_overrides_codegen_creation_strategy import (
-    SpellGeneralizedOverridesCodegenCreationStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy import (
+    FallbackNoOverridesCodegenCreationStrategy,
 )
 
 
@@ -55,35 +49,26 @@ class SpellCodegenStrategyBuilder(Cleanable):
         Populate the default codegen creation strategy registry.
 
         Contract:
-            - Current defaults are the first Phase-13 migration strategies:
-              one converged general creation-context strategy plus the older
-              generalized strategy objects kept on disk for later breakup.
+            - Generalized planner output now resolves to one family facade.
+            - The standalone generalized no-overrides strategy remains
+              registered as the fallback public creation strategy.
+            - Older generalized step wrappers remain importable for
+              compatibility, but are no longer discovery-selected public
+              strategies here.
             - Registration order is execution order.
         """
-        general_creation_context_codegen_creation_strategy = (
-            SpellGeneralCreationContextCodegenCreationStrategy()
+        generalized_codegen_creation_strategy = (
+            GeneralizedCodegenCreationStrategy()
         )
         self._strategies_by_name[
-            general_creation_context_codegen_creation_strategy.strategy_id
-        ] = general_creation_context_codegen_creation_strategy
-        generalized_creation_context_setup_codegen_creation_strategy = (
-            SpellGeneralizedCreationContextSetupCodegenCreationStrategy()
-        )
-        self._strategies_by_name[
-            generalized_creation_context_setup_codegen_creation_strategy.strategy_id
-        ] = generalized_creation_context_setup_codegen_creation_strategy
+            generalized_codegen_creation_strategy.strategy_id
+        ] = generalized_codegen_creation_strategy
         generalized_no_overrides_codegen_creation_strategy = (
-            SpellGeneralizedNoOverridesCodegenCreationStrategy()
+            FallbackNoOverridesCodegenCreationStrategy()
         )
         self._strategies_by_name[
             generalized_no_overrides_codegen_creation_strategy.strategy_id
         ] = generalized_no_overrides_codegen_creation_strategy
-        generalized_overrides_codegen_creation_strategy = (
-            SpellGeneralizedOverridesCodegenCreationStrategy()
-        )
-        self._strategies_by_name[
-            generalized_overrides_codegen_creation_strategy.strategy_id
-        ] = generalized_overrides_codegen_creation_strategy
 
     def get_strategy(
             self,

@@ -91,10 +91,7 @@ def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_
 
     assert isinstance(discovery, CodegenCreationDiscovery)
     assert discovery.selected_strategy_ids == (
-        "generalized_creation_context_setup_codegen_creation",
-        "generalized_no_overrides_codegen_creation",
-        "generalized_overrides_codegen_creation",
-        "general_creation_context_codegen_creation",
+        "generalized_codegen_creation",
     )
 
 

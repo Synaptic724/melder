@@ -108,12 +108,9 @@ def test_generalized_codegen_creation_discovery_strategy_claims_generalized_plan
 
     assert discovery is not None
     assert discovery.selected_strategy_ids == (
-        "generalized_creation_context_setup_codegen_creation",
-        "generalized_no_overrides_codegen_creation",
-        "generalized_overrides_codegen_creation",
-        "general_creation_context_codegen_creation",
+        "generalized_codegen_creation",
     )
-    assert discovery.discovery_reason == "default_generalized_plan_codegen_creation_chain"
+    assert discovery.discovery_reason == "default_generalized_plan_codegen_creation_family"
 
 
 def test_generalized_codegen_creation_discovery_strategy_declines_non_generalized_plan() -> None:

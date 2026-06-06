@@ -6,7 +6,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
     SpellGeneralizedCodegenPlanTargetKind,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_no_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     _get_existing_creation,
     _register_spell_instance_prebound,
 )

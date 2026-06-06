@@ -1201,6 +1201,80 @@ def test_component_spellbook_cleanup_unregisters_lineages() -> None:
     assert len(states.unregistered_lineages) == len(expected)
 
 
+def test_component_spellbook_cleanup_and_remove_spell_unregisters_and_removes_local_spell() -> None:
+    """
+    Purpose:
+        Validate the single-spell removal path unregisters local state before cleanup.
+    Contract:
+        - The spell index is unregistered from SpellSystemStates.
+        - The spell is removed from local Spellbook pools/maps.
+        - The removed spell is cleaned locally at the end of the flow.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If local spell removal leaves stale registry entries.
+    """
+    spellbook = _make_spellbook()
+    states = _SpellSystemStatesStub()
+    spellbook._spell_system_states = states
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        spell_index = spell.spell_index
+
+        spellbook.cleanup_and_remove_spell(spell)
+
+        assert spell._cleaned is True
+        assert spell_index in states.unregistered_lineages
+        assert spell_id not in spellbook._spell_id_pool
+        assert spell_id not in spellbook._spells_by_id
+        assert spell_index not in spellbook._spells
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_cleanup_and_remove_spell_accepts_spell_id() -> None:
+    """
+    Purpose:
+        Validate the single-spell removal path accepts a versioned spell id.
+    Contract:
+        - The spell is resolved from `_spells_by_id`.
+        - Removal semantics match the direct Spell-object path.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If spell-id removal leaves stale local entries.
+    """
+    spellbook = _make_spellbook()
+    states = _SpellSystemStatesStub()
+    spellbook._spell_system_states = states
+
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        spell_index = spell.spell_index
+
+        spellbook.cleanup_and_remove_spell(spell_id)
+
+        assert spell._cleaned is True
+        assert spell_index in states.unregistered_lineages
+        assert spell_id not in spellbook._spell_id_pool
+        assert spell_id not in spellbook._spells_by_id
+    finally:
+        spellbook.cleanup()
+
+
 def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     """
     Purpose:

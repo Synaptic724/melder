@@ -404,6 +404,7 @@ and logging.
                     exc_info=True,
                 )
             try:
+                spell._spellbook_cleanup = True
                 spell.cleanup()
             except Exception as e:
                 self._logger.error(
@@ -419,6 +420,94 @@ and logging.
                     "_cleanup_spells",
                     exc_info=True,
                 )
+
+    def cleanup_and_remove_spell(self, spell: Spell | str) -> None:
+        """
+        Public API
+
+        Remove one locally owned spell from this Spellbook and clean it.
+
+        Purpose:
+            Provide a single authoritative local-spell removal path that
+            unregisters system state, removes Spellbook/Aether/Nexus/risk
+            references, and only then performs local spell teardown.
+
+        Contract:
+            - Accepts either a live `Spell` or its current `spell_id`.
+            - Supports only locally owned spells in this Spellbook.
+            - Unregisters the spell index from `SpellSystemStates` before local
+              spell cleanup.
+            - Removes Spellbook id maps and lookup maps before local spell
+              cleanup so no cleaned spell stays reachable from the pools.
+            - Best-effort unregisters the spell from RiskManager when a
+              conjured conduit currently owns it.
+            - Removes local spell indexes from Aether for the current conduit
+              when conjured.
+            - Cleans the local `Spell` and `SpellIndex` as the final step.
+
+        Args:
+            spell:
+                Live local spell instance or current versioned `spell_id`.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the spell is not found locally or is not owned by this
+                Spellbook.
+        """
+        self.check_cleaned()
+        target_spell: Optional[Spell]
+        target_spell_id: str
+        with self._lock:
+            if isinstance(spell, str):
+                target_spell_id = spell
+                target_spell = self._spells_by_id.get(target_spell_id)
+            else:
+                target_spell_id = spell.spell_id
+                target_spell = self._spells_by_id.get(target_spell_id)
+
+            if target_spell is None:
+                raise RuntimeError("Spellbook could not resolve the requested local spell.")
+            if not isinstance(spell, str) and target_spell is not spell:
+                raise RuntimeError("Spellbook can only remove the exact local spell instance.")
+            if target_spell._cleaned:
+                return
+
+            target_spell_index = target_spell.spell_index
+            target_lookup_key = target_spell.key
+            owner_conduit_id = target_spell._owner_conduit_id
+
+            self._spell_system_states.unregister_index(target_spell_index)
+
+            self._spells.pop(target_spell_index, None)
+            existing_lookup = self._lookup_spells.get(target_lookup_key)
+            if existing_lookup is target_spell_index:
+                self._lookup_spells.pop(target_lookup_key, None)
+
+        if self._conjured and owner_conduit_id:
+            self._unregister_spell_with_risk_manager(owner_conduit_id, target_spell)
+            self._aether._remove_spells_from_aether(
+                owner_conduit_id,
+                {target_spell_index},
+                self._aetheric_frame,
+            )
+
+        self._unregister_owned_spell_id(target_spell_id, target_spell)
+
+        target_spell._spellbook_cleanup = True
+        target_spell.cleanup()
+
+        try:
+            target_spell_index.cleanup()
+        except Exception as e:
+            self._logger.error(
+                f"Error cleaning spell index '{target_spell_id}': {e}",
+                "cleanup_and_remove_spell",
+                exc_info=True,
+            )
+            raise
 
 
     # -------------------------
@@ -702,12 +791,6 @@ and logging.
             - Acquires the Spellbook lock.
         """
         with self._lock:
-            if self._spells_by_id is None:
-                self._logger.error(
-                    "Owned spell_id map is not available.",
-                    "_unregister_owned_spell_id",
-                )
-                raise RuntimeError("Owned spell_id map is not available.")
             existing = self._spells_by_id.get(spell_id)
             if existing is not None and existing is not spell:
                 self._logger.error(
@@ -731,6 +814,7 @@ and logging.
                     f"spell_id_pool mapped to a different spell (spell_id={spell_id})."
                 )
             self._spell_id_pool.pop(spell_id, None)
+            self._spell_versions.discard(spell_id)
         if self._nexus_publish_enabled:
             self._nexus._remove_spell_record(
                 self._id,

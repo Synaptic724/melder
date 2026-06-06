@@ -1,127 +1,109 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
-from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
-    SpellCodegenModel,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
-    SpellCodegenCreation,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_no_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
     _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache,
     build_overrides_codegen_creation_step_target_counts_from_rows,
     compile_overrides_codegen_creation_executor,
     compile_overrides_codegen_creation_executor_code_object,
     emit_overrides_codegen_creation_executor_shape_source,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
-    SpellCodegenStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.phase11_codegen_creation_shared import (
+    Phase11CodegenCreationShared as SharedCompilerExecutions,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
-    SpellOverrideTargetingCodegenCreation,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
+    GeneralizedCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
-    SpellCodegenPlan,
-)
-from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
-    SharedCompilerExecutions,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.shared_strategy_assets.codegen_creation_family_step import (
+    CodegenCreationFamilyStep,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
-class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
+class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
     """
-    Fat phase-11 strategy that emits the spell-static CreationContext inputs.
+    Generalized family final output step.
 
     Purpose:
-        Collapse the generalized phase-11 handoff down to the actual
-        spell-static executor inputs `CreationContext` needs:
-        - one base no-overrides executor
-        - one override execution callable
-
-    Contract:
-        - Consumes the generalized no-overrides and overrides lane plans.
-        - Owns the override specialization/caching machinery that previously
-          lived inside `CreationContext`.
-        - Emits the underlying runtime callables that the restored
-          `CreationContext` compiles into its direct hooks/no-hooks doors.
+        Build the final override runtime callable and finish the narrow
+        `SpellCodegenCreation` output from family-local scratch state.
     """
 
     __slots__ = ()
 
     @property
-    def strategy_id(self) -> str:
+    def step_id(self) -> str:
         """
-        Return the stable fat creation-context strategy id.
+        Return the stable finalization step id.
         """
-        return "general_creation_context_codegen_creation"
+        return "generalized_finalize_creation_context"
 
     def apply(
             self,
-            spell_codegen_model: SpellCodegenModel,
-            spell_codegen_plan: SpellCodegenPlan,
-            spell_codegen_creation: SpellCodegenCreation,
+            state: GeneralizedCodegenCreationState,
     ) -> None:
         """
-        Build the final phase-11 runtime doors for CreationContext.
-
-        Contract:
-            - Requires generalized no-overrides and overrides lane plans.
-            - Emits the spell-static executor inputs consumed by
-              `CreationContext`.
-            - Keeps the old phase-11 strategy files on disk and extends them
-              with a finalizer instead of replacing them.
+        Build the final runtime doors from generalized family scratch state.
         """
+        spell_codegen_model = state.spell_codegen_model
+        spell_codegen_plan = state.spell_codegen_plan
+        spell_codegen_creation = state.spell_codegen_creation
+
         no_overrides_plan = spell_codegen_plan.no_overrides_plan
         overrides_plan = spell_codegen_plan.overrides_plan
         if no_overrides_plan is None:
             raise RuntimeError(
-                "general_creation_context_codegen_creation requires a no_overrides_plan."
+                "Generalized finalize creation-context step requires a no_overrides_plan."
             )
         if overrides_plan is None:
             raise RuntimeError(
-                "general_creation_context_codegen_creation requires an overrides_plan."
+                "Generalized finalize creation-context step requires an overrides_plan."
             )
 
-        metadata = spell_codegen_creation.metadata
-        root_spell = self._resolve_root_spell(
-            spell_codegen_model=spell_codegen_model,
-            spell_codegen_plan=spell_codegen_plan,
-        )
-        route_key = metadata.get("_resolve_route_key")
-        if not isinstance(route_key, str):
+        route_key = state.resolve_route_key
+        if route_key is None:
             route_key = self._resolve_route_key(spell_codegen_model)
-        fast_transient_no_overrides_enabled = bool(
-            metadata.get("_fast_transient_no_overrides_enabled")
-        )
-
-        base_no_overrides_executor = spell_codegen_creation.no_overrides_executor
+        base_no_overrides_executor = state.base_no_overrides_executor
         if base_no_overrides_executor is None:
             base_no_overrides_executor = (
                 self._build_base_no_overrides_executor(no_overrides_plan)
             )
+            state.base_no_overrides_executor = base_no_overrides_executor
+            spell_codegen_creation.no_overrides_executor = (
+                base_no_overrides_executor
+            )
+
+        root_spell = state.root_spell
+        if root_spell is None:
+            root_spell = self._resolve_root_spell(
+                spell_codegen_model=spell_codegen_model,
+                spell_codegen_plan=spell_codegen_plan,
+            )
+            state.root_spell = root_spell
+
         overrides_runtime = self._build_overrides_runtime(
             spell_codegen_model=spell_codegen_model,
             overrides_plan=overrides_plan,
             root_spell=root_spell,
             base_no_overrides_executor=base_no_overrides_executor,
-            override_targeting=metadata.pop("_override_targeting", None),
-            plan_signature=metadata.pop("_override_plan_signature", None),
-            path_registry=metadata.pop("_override_path_registry", None),
-            plan_rows=metadata.pop("_override_plan_rows", None),
-            override_root_spell_id=metadata.pop("_override_root_spell_id", None),
-            spell_lookup=metadata.pop("_override_spell_lookup", None),
-            empty_shape_key=metadata.pop("_override_empty_shape_key", None),
-            baseline_executor=metadata.pop("_override_baseline_executor", None),
+            override_targeting=state.override_targeting,
+            plan_signature=state.override_plan_signature,
+            path_registry=state.override_path_registry,
+            plan_rows=state.override_plan_rows,
+            override_root_spell_id=state.override_root_spell_id,
+            spell_lookup=state.override_spell_lookup,
+            empty_shape_key=state.override_empty_shape_key,
+            baseline_executor=state.override_baseline_executor,
         )
+
+        state.overrides_executor = overrides_runtime
         spell_codegen_creation.no_overrides_executor = base_no_overrides_executor
         spell_codegen_creation.overrides_executor = overrides_runtime
-        spell_codegen_creation.metadata["creation_context_strategy"] = self.strategy_id
         spell_codegen_creation.metadata["resolve_route_key"] = route_key
         spell_codegen_creation.metadata["fast_transient_no_overrides_enabled"] = (
-            fast_transient_no_overrides_enabled
+            state.fast_transient_no_overrides_enabled
         )
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
             no_overrides_plan.lane_id
@@ -136,7 +118,7 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
 
     @staticmethod
     def _resolve_route_key(
-            spell_codegen_model: SpellCodegenModel,
+            spell_codegen_model: object,
     ) -> str:
         """
         Resolve the current runtime route key from processor-owned truth.
@@ -153,15 +135,15 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
         ):
             return route_family
         raise RuntimeError(
-            "SpellCodegenModel route_family is not ready for general creation-context "
+            "SpellCodegenModel route_family is not ready for generalized creation-context "
             f"build: {route_family!r}."
         )
 
     @staticmethod
     def _resolve_root_spell(
             *,
-            spell_codegen_model: SpellCodegenModel,
-            spell_codegen_plan: SpellCodegenPlan,
+            spell_codegen_model: object,
+            spell_codegen_plan: object,
     ) -> Any:
         """
         Resolve the root runtime spell object for phase-11 executor construction.
@@ -178,7 +160,7 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
                 if step.spell.spell_index.current == root_spell_id:
                     return step.spell
         raise RuntimeError(
-            "general_creation_context_codegen_creation could not resolve the root spell object."
+            "generalized creation-context finalize step could not resolve the root spell object."
         )
 
     @staticmethod
@@ -197,14 +179,14 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
         )
         if executor is None:
             raise RuntimeError(
-                "general_creation_context_codegen_creation could not build a no-overrides executor."
+                "generalized creation-context finalize step could not build a no-overrides executor."
             )
         return executor
 
     def _build_overrides_runtime(
             self,
             *,
-            spell_codegen_model: SpellCodegenModel,
+            spell_codegen_model: object,
             overrides_plan: Any,
             root_spell: Any,
             base_no_overrides_executor: Callable[..., Any],
@@ -218,18 +200,11 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             baseline_executor: Optional[Callable[..., Any]],
     ) -> Callable[..., Any]:
         """
-        Build the heavy override runtime callable closed over phase-11 state.
+        Build the heavy override runtime callable closed over generalized state.
         """
         if override_targeting is None:
-            override_targeting_shape = spell_codegen_model.override_targeting_shape
-            if override_targeting_shape is None:
-                raise RuntimeError(
-                    "general_creation_context_codegen_creation requires override_targeting_shape."
-                )
-            override_targeting = SpellOverrideTargetingCodegenCreation.from_analysis(
-                root_spell_id=overrides_plan.root_spell_id,
-                targets_by_spec=override_targeting_shape.targets_by_spec,
-                specificity_by_spec=override_targeting_shape.specificity_by_spec,
+            raise RuntimeError(
+                "generalized creation-context finalize step requires override_targeting."
             )
         if path_registry is None:
             graph_shape = spell_codegen_model.graph_shape
@@ -263,7 +238,10 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             )
 
         override_specialization_cache: Dict[Tuple[Any, ...], Callable[..., Any]] = {}
-        override_executor_source_cache_by_plan_signature: Dict[Tuple[Any, ...], str] = {}
+        override_executor_source_cache_by_plan_signature: Dict[
+            Tuple[Any, ...],
+            str,
+        ] = {}
         override_executor_code_object_cache_by_plan_signature: Dict[
             Tuple[Any, ...],
             Any,
@@ -273,10 +251,6 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             Tuple[Tuple[Any, ...], ...],
         ] = {}
         override_prefilter_path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
-        override_socket_shape_cache: Dict[
-            Tuple[Any, ...],
-            Tuple[Tuple[Any, ...], ...],
-        ] = {}
         override_last_state: Dict[str, Any] = {
             "socket_shape": None,
             "root_positional_arity": -2,
@@ -308,18 +282,26 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
                         caller_creations_lock_held=caller_creations_lock_held,
                     )
                 executor = self._get_or_compile_override_executor(
-                        shape_key=empty_shape_key,
-                        override_targets_by_spell_id={},
-                        any_overrides_present=False,
-                        path_registry=path_registry,
-                        plan_rows=plan_rows,
-                        root_spell_id=override_root_spell_id,
-                        spell_lookup=spell_lookup,
+                    shape_key=empty_shape_key,
+                    override_targets_by_spell_id={},
+                    any_overrides_present=False,
+                    path_registry=path_registry,
+                    plan_rows=plan_rows,
+                    root_spell_id=override_root_spell_id,
+                    spell_lookup=spell_lookup,
                     override_specialization_cache=override_specialization_cache,
-                    override_executor_source_cache_by_plan_signature=override_executor_source_cache_by_plan_signature,
-                    override_executor_code_object_cache_by_plan_signature=override_executor_code_object_cache_by_plan_signature,
-                    override_prefilter_step_targets_cache=override_prefilter_step_targets_cache,
-                    override_prefilter_path_metadata_cache=override_prefilter_path_metadata_cache,
+                    override_executor_source_cache_by_plan_signature=(
+                        override_executor_source_cache_by_plan_signature
+                    ),
+                    override_executor_code_object_cache_by_plan_signature=(
+                        override_executor_code_object_cache_by_plan_signature
+                    ),
+                    override_prefilter_step_targets_cache=(
+                        override_prefilter_step_targets_cache
+                    ),
+                    override_prefilter_path_metadata_cache=(
+                        override_prefilter_path_metadata_cache
+                    ),
                 )
                 return executor(
                     caller_creations,
@@ -357,7 +339,8 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
                 root_positional_arity = len(root_positional_override)
             if (
                     socket_shape is override_last_state["socket_shape"]
-                    and root_positional_arity == override_last_state["root_positional_arity"]
+                    and root_positional_arity
+                    == override_last_state["root_positional_arity"]
             ):
                 executor = override_last_state["executor"]
             else:
@@ -382,24 +365,36 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
                         override_targets_by_spell_id = {}
                     executor = self._get_or_compile_override_executor(
                         shape_key=shape_key,
-                            override_targets_by_spell_id=override_targets_by_spell_id,
-                            any_overrides_present=overrides is not None,
-                            path_registry=path_registry,
-                            plan_rows=plan_rows,
-                            root_spell_id=override_root_spell_id,
-                            spell_lookup=spell_lookup,
-                        override_specialization_cache=override_specialization_cache,
-                        override_executor_source_cache_by_plan_signature=override_executor_source_cache_by_plan_signature,
-                        override_executor_code_object_cache_by_plan_signature=override_executor_code_object_cache_by_plan_signature,
-                        override_prefilter_step_targets_cache=override_prefilter_step_targets_cache,
-                        override_prefilter_path_metadata_cache=override_prefilter_path_metadata_cache,
+                        override_targets_by_spell_id=override_targets_by_spell_id,
+                        any_overrides_present=overrides is not None,
+                        path_registry=path_registry,
+                        plan_rows=plan_rows,
+                        root_spell_id=override_root_spell_id,
+                        spell_lookup=spell_lookup,
+                        override_specialization_cache=(
+                            override_specialization_cache
+                        ),
+                        override_executor_source_cache_by_plan_signature=(
+                            override_executor_source_cache_by_plan_signature
+                        ),
+                        override_executor_code_object_cache_by_plan_signature=(
+                            override_executor_code_object_cache_by_plan_signature
+                        ),
+                        override_prefilter_step_targets_cache=(
+                            override_prefilter_step_targets_cache
+                        ),
+                        override_prefilter_path_metadata_cache=(
+                            override_prefilter_path_metadata_cache
+                        ),
                         prefilter_cache_key=(
                             plan_signature,
                             socket_shape,
                         ),
                     )
                 override_last_state["socket_shape"] = socket_shape
-                override_last_state["root_positional_arity"] = root_positional_arity
+                override_last_state["root_positional_arity"] = (
+                    root_positional_arity
+                )
                 override_last_state["executor"] = executor
 
             if executor is None:
@@ -447,7 +442,7 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             for step in overrides_plan.steps
         )
         return (
-            "general_creation_context_overrides_lane_plan",
+            "generalized_overrides_lane_plan",
             SharedCompilerExecutions.hash_codegen_signature(
                 overrides_plan.lane_id,
                 overrides_plan.root_spell_id,
@@ -527,7 +522,7 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
                     socket_ref.node_id,
                     socket_ref.param_path_id,
                     socket_ref.param_name,
-                    SpellGeneralCreationContextCodegenCreationStrategy._socket_kind_value(
+                    GeneralizedFinalizeCreationContextStep._socket_kind_value(
                         socket_ref
                     ),
                 )
@@ -575,8 +570,14 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
             spell_lookup: Dict[str, Any],
-            override_specialization_cache: Dict[Tuple[Any, ...], Callable[..., Any]],
-            override_executor_source_cache_by_plan_signature: Dict[Tuple[Any, ...], str],
+            override_specialization_cache: Dict[
+                Tuple[Any, ...],
+                Callable[..., Any],
+            ],
+            override_executor_source_cache_by_plan_signature: Dict[
+                Tuple[Any, ...],
+                str,
+            ],
             override_executor_code_object_cache_by_plan_signature: Dict[
                 Tuple[Any, ...],
                 Any,
@@ -602,10 +603,18 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
             spell_lookup=spell_lookup,
-            override_executor_source_cache_by_plan_signature=override_executor_source_cache_by_plan_signature,
-            override_executor_code_object_cache_by_plan_signature=override_executor_code_object_cache_by_plan_signature,
-            override_prefilter_step_targets_cache=override_prefilter_step_targets_cache,
-            override_prefilter_path_metadata_cache=override_prefilter_path_metadata_cache,
+            override_executor_source_cache_by_plan_signature=(
+                override_executor_source_cache_by_plan_signature
+            ),
+            override_executor_code_object_cache_by_plan_signature=(
+                override_executor_code_object_cache_by_plan_signature
+            ),
+            override_prefilter_step_targets_cache=(
+                override_prefilter_step_targets_cache
+            ),
+            override_prefilter_path_metadata_cache=(
+                override_prefilter_path_metadata_cache
+            ),
             prefilter_cache_key=prefilter_cache_key,
         )
         override_specialization_cache[shape_key] = executor
@@ -621,7 +630,10 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
             spell_lookup: Dict[str, Any],
-            override_executor_source_cache_by_plan_signature: Dict[Tuple[Any, ...], str],
+            override_executor_source_cache_by_plan_signature: Dict[
+                Tuple[Any, ...],
+                str,
+            ],
             override_executor_code_object_cache_by_plan_signature: Dict[
                 Tuple[Any, ...],
                 Any,
@@ -652,9 +664,13 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
                 plan_rows=plan_rows,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 path_registry=path_registry,
-                prefilter_step_targets_cache=override_prefilter_step_targets_cache,
+                prefilter_step_targets_cache=(
+                    override_prefilter_step_targets_cache
+                ),
                 prefilter_cache_key=prefilter_cache_key,
-                prefilter_path_metadata_cache=override_prefilter_path_metadata_cache,
+                prefilter_path_metadata_cache=(
+                    override_prefilter_path_metadata_cache
+                ),
             )
         )
         has_root_positional_override = shape_key[2] >= 0
@@ -667,12 +683,16 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             override_target_counts_by_spell_id=override_target_counts_by_spell_id,
             override_target_counts_by_step=override_target_counts_by_step,
             has_root_positional_override=has_root_positional_override,
-            override_executor_source_cache_by_plan_signature=override_executor_source_cache_by_plan_signature,
+            override_executor_source_cache_by_plan_signature=(
+                override_executor_source_cache_by_plan_signature
+            ),
         )
         code_object = self._get_or_build_override_executor_code_object(
             source_cache_key=shape_key,
             source=source,
-            override_executor_code_object_cache_by_plan_signature=override_executor_code_object_cache_by_plan_signature,
+            override_executor_code_object_cache_by_plan_signature=(
+                override_executor_code_object_cache_by_plan_signature
+            ),
         )
         return _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache(
             code_object=code_object,
@@ -725,7 +745,10 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
             override_target_counts_by_step: Tuple[int, ...],
             has_root_positional_override: bool,
-            override_executor_source_cache_by_plan_signature: Dict[Tuple[Any, ...], str],
+            override_executor_source_cache_by_plan_signature: Dict[
+                Tuple[Any, ...],
+                str,
+            ],
     ) -> str:
         """
         Return emitted override source for one specialization shape.
@@ -744,5 +767,7 @@ class SpellGeneralCreationContextCodegenCreationStrategy(SpellCodegenStrategy):
             override_target_counts_by_step=override_target_counts_by_step,
             has_root_positional_override=has_root_positional_override,
         )
-        override_executor_source_cache_by_plan_signature[source_cache_key] = source
+        override_executor_source_cache_by_plan_signature[
+            source_cache_key
+        ] = source
         return source

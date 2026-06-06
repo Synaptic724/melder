@@ -19,12 +19,12 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
     _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache,
     compile_overrides_codegen_creation_executor_code_object,
     emit_overrides_codegen_creation_executor_shape_source,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_no_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     _build_executor_namespace,
     _build_no_overrides_codegen_executor_source,
     _build_step_plan_executor_source,
@@ -34,15 +34,15 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.generalized_
     _resolve_root_instance_key,
     _supports_transient_unrolled_plan,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_override_targeting_codegen_creation import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation import (
     SpellOverrideTargetSocketRef,
     SpellOverrideTargetingCodegenCreation,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.phase11_codegen_creation_shared import (
+    Phase11CodegenCreationShared as SharedCompilerExecutions,
+)
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
-)
-from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
-    SharedCompilerExecutions,
 )
 
 
