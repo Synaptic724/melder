@@ -128,8 +128,8 @@ def test_spell_analyzer_strategy_builder_registers_graph_strategy_by_default() -
     )
 
 
-def test_occurrence_graph_analyzer_fast_key_serializes_visible_state_and_ignores_mutations() -> None:
-    """The analyzer fast-key helper should ignore stored mutation override payloads."""
+def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
+    """The analyzer fast-key helper should serialize the visible graph state only."""
     strategy = SpellOccurrenceGraphAnalyzerStrategy()
     spellbook = _make_spellbook_and_spell()[0]
     root_spell = spellbook._spell_id_pool["spell-1"]
@@ -199,69 +199,6 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state_and_ignores
         SystemState.dynamic,
         (("peer", "frame", "binding", "dep"),),
     )
-
-    dep_spell.mutation_override = {"svc": "mutated"}
-    assert strategy._build_occurrence_graph_fast_key(
-        root_blueprint=blueprint,
-        spell_lookup=spellbook._spell_id_pool,
-        spellbook=spellbook,
-        spell_system_states=spell_system_states,
-    ) == fast_key
-
-
-def test_occurrence_graph_analyzer_input_signature_ignores_mutation_payloads(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The analyzer input-signature helper should ignore stored mutation override payloads."""
-    strategy = SpellOccurrenceGraphAnalyzerStrategy()
-    spellbook, spell = _make_spellbook_and_spell()
-    spell.mutation_override = {"svc": ["x", "y"]}
-    spellbook._lookup_contracted_spells = {}
-    spellbook._contracted_spells = {}
-    spellbook._aetheric_frame_configuration = SimpleNamespace(
-        system_state=SystemState.dynamic,
-    )
-    captured_parts: list[tuple[Any, ...]] = []
-
-    monkeypatch.setattr(
-        occurrence_graph_strategy_module.SharedCompilerExecutions,
-        "hash_codegen_signature",
-        lambda *parts: captured_parts.append(parts) or "occurrence-signature",
-    )
-    blueprint = SimpleNamespace(
-        root_spell_id="spell-1",
-        ordered_node_ids=("spell-1",),
-        path_registry=object(),
-        socket_refs=[
-            SimpleNamespace(
-                node_id="spell-1",
-                param_name="svc",
-                param_path_id=7,
-                socket_kind=SocketKind.NORMAL,
-            )
-        ],
-    )
-
-    signature = strategy._build_occurrence_graph_input_signature(
-        root_blueprint=blueprint,
-        spell_lookup=spellbook._spell_id_pool,
-        spellbook=spellbook,
-        spell_system_states=None,
-    )
-
-    assert signature == "occurrence-signature"
-    assert captured_parts
-    spell_rows = captured_parts[0][4]
-    assert spell_rows == (
-        (
-            "spell-1",
-            "spell-1",
-            Existence.unique.name,
-            False,
-        ),
-    )
-
-
 def test_occurrence_graph_analyzer_reuses_cached_graph_when_fast_key_and_signature_match(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -299,4 +236,3 @@ def test_occurrence_graph_analyzer_reuses_cached_graph_when_fast_key_and_signatu
     strategy.analyze(spell, artifact)
 
     assert artifact._occurrence_graph_analysis is cached_graph
-

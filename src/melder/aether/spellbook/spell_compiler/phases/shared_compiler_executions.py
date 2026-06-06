@@ -1431,7 +1431,6 @@ class SharedCompilerExecutions:
                 "edge_count": occurrence_graph_analysis.edge_count,
                 "topology_dependency_count": occurrence_graph_analysis.topology_dependency_count,
                 "dag_fallback_dependency_count": occurrence_graph_analysis.dag_fallback_dependency_count,
-                "mutation_override_dependency_count": occurrence_graph_analysis.mutation_override_dependency_count,
                 "shared_collapse_enabled": occurrence_graph_analysis.shared_collapse_enabled,
             },
             "model": None if spell_codegen_model is None else {

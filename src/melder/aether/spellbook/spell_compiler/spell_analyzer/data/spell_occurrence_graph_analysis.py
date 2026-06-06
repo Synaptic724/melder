@@ -28,7 +28,6 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         "edge_count",
         "topology_dependency_count",
         "dag_fallback_dependency_count",
-        "mutation_override_dependency_count",
         "shared_collapse_enabled",
     ]
 
@@ -42,7 +41,6 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
             edge_count: int,
             topology_dependency_count: int,
             dag_fallback_dependency_count: int,
-            mutation_override_dependency_count: int,
             shared_collapse_enabled: bool,
     ) -> None:
         """
@@ -56,7 +54,6 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         self.edge_count = edge_count
         self.topology_dependency_count = topology_dependency_count
         self.dag_fallback_dependency_count = dag_fallback_dependency_count
-        self.mutation_override_dependency_count = mutation_override_dependency_count
         self.shared_collapse_enabled = shared_collapse_enabled
 
     def cleanup(self) -> None:
@@ -74,5 +71,4 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         del self.edge_count
         del self.topology_dependency_count
         del self.dag_fallback_dependency_count
-        del self.mutation_override_dependency_count
         del self.shared_collapse_enabled

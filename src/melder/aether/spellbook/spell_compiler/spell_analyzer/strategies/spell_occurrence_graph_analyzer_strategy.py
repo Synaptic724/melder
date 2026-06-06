@@ -6,10 +6,6 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_compiler.dag.target_spec import (
-    TargetSpec,
-    TargetSpecKind,
-)
 from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
     SpellOccurrenceGraphAnalysis,
 )
@@ -19,7 +15,6 @@ from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strate
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -190,7 +185,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 spell_system_states=spell._spell_system_states,
                 occurrence_graph=occurrence_graph,
             ),
-            mutation_override_dependency_count=0,
             shared_collapse_enabled=collapse_shared_occurrences,
         )
 
@@ -937,266 +931,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         )
         return state_enum is SystemState.dynamic
 
-    def _resolve_mutation_override_targets(
-            self,
-            *,
-            mutation_override: Dict[str, Any],
-            root_blueprint: "RootResolutionBlueprint",
-            root_spell: "Spell",
-    ) -> List[Tuple["SocketRef", str]]:
-        """
-        Resolve mutation override entries into socket references and targets.
-        """
-        if not mutation_override:
-            return []
-
-        root_blueprint.ensure_dag_index_built()
-        dag_index = root_blueprint.dag_index
-        if dag_index is None:
-            raise RuntimeError("Phase 5 root blueprint has no dag index.")
-
-        if not isinstance(mutation_override, dict):
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current,
-                spell_name=root_spell.spell_name,
-                message="mutation_override must be a dict of override_key -> spell_id.",
-            )
-
-        resolved: List[Tuple["SocketRef", str]] = []
-        if all(isinstance(key, str) for key in mutation_override.keys()):
-            mutation_items = [
-                (raw_key, mutation_override[raw_key])
-                for raw_key in sorted(mutation_override.keys())
-            ]
-        else:
-            mutation_items = list(mutation_override.items())
-
-        for raw_key, target_id in mutation_items:
-            self._validate_mutation_override_entry(
-                raw_key=raw_key,
-                target_id=target_id,
-                root_spell=root_spell,
-            )
-            spec = self._parse_mutation_override_spec(
-                raw_key=raw_key,
-                root_spell=root_spell,
-            )
-            for socket_ref in self._resolve_mutation_override_spec(
-                    spec=spec,
-                    dag_index=dag_index,
-                    raw_key=raw_key,
-                    root_spell=root_spell,
-            ):
-                resolved.append((socket_ref, target_id))
-
-        return resolved
-
-    @staticmethod
-    def _validate_mutation_override_entry(
-            *,
-            raw_key: Any,
-            target_id: Any,
-            root_spell: "Spell",
-    ) -> None:
-        """
-        Validate a single mutation override entry.
-        """
-        if not isinstance(raw_key, str) or not raw_key.strip():
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=f"Invalid mutation_override key: {raw_key!r}.",
-            )
-        if not isinstance(target_id, str) or not target_id.strip():
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=(
-                    f"Invalid mutation_override target for key {raw_key!r}: "
-                    "expected non-empty spell_id string."
-                ),
-            )
-
-    @staticmethod
-    def _parse_mutation_override_spec(
-            *,
-            raw_key: str,
-            root_spell: "Spell",
-    ) -> TargetSpec:
-        """
-        Parse a mutation override key into a TargetSpec.
-        """
-        try:
-            return TargetSpec.parse(raw_key)
-        except Exception as exc:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=f"Invalid mutation_override key: {raw_key!r}.",
-                inner=exc,
-            ) from exc
-
-    def _resolve_mutation_override_spec(
-            self,
-            *,
-            spec: TargetSpec,
-            dag_index: "DagIndex",
-            raw_key: str,
-            root_spell: "Spell",
-    ) -> List["SocketRef"]:
-        """
-        Resolve a TargetSpec into matching mutation sockets.
-        """
-        if spec.kind is TargetSpecKind.PATH:
-            return self._resolve_mutation_override_by_path(
-                spec=spec,
-                dag_index=dag_index,
-                raw_key=raw_key,
-                root_spell=root_spell,
-            )
-        if spec.kind is TargetSpecKind.UNIQUE:
-            return self._resolve_mutation_override_by_unique(
-                spec=spec,
-                dag_index=dag_index,
-                raw_key=raw_key,
-                root_spell=root_spell,
-            )
-        if spec.kind is TargetSpecKind.BROADCAST:
-            return self._resolve_mutation_override_by_broadcast(
-                spec=spec,
-                dag_index=dag_index,
-                raw_key=raw_key,
-                root_spell=root_spell,
-            )
-
-        raise MeldExecutionError(
-            spell_id=root_spell.spell_index.current,
-            spell_name=root_spell.spell_name,
-            message=f"Unsupported TargetSpecKind for override {raw_key!r}.",
-        )
-
-    def _resolve_mutation_override_by_path(
-            self,
-            *,
-            spec: TargetSpec,
-            dag_index: "DagIndex",
-            raw_key: str,
-            root_spell: "Spell",
-    ) -> List["SocketRef"]:
-        """
-        Resolve a PATH TargetSpec to mutation sockets.
-        """
-        if not spec.path:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=f"Path override key {raw_key!r} did not contain any segments.",
-            )
-        matches = list(dag_index.get_by_exact_path(spec.path))
-        if not matches:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=(
-                    "No sockets found for override path "
-                    f"'{'>'.join(spec.path)}'."
-                ),
-            )
-        return matches
-
-    def _resolve_mutation_override_by_unique(
-            self,
-            *,
-            spec: TargetSpec,
-            dag_index: "DagIndex",
-            raw_key: str,
-            root_spell: "Spell",
-    ) -> List["SocketRef"]:
-        """
-        Resolve a UNIQUE TargetSpec to a single mutation socket.
-        """
-        if not spec.param_name:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=f"Unique override key {raw_key!r} is missing a parameter name.",
-            )
-        matches = list(dag_index.get_by_name(spec.param_name))
-        if len(matches) == 0:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=f"No sockets found for unique override '*{spec.param_name}'.",
-            )
-        if len(matches) > 1:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=(
-                    "Unique override matched multiple sockets "
-                    f"for '*{spec.param_name}'."
-                ),
-            )
-        return matches
-
-    def _resolve_mutation_override_by_broadcast(
-            self,
-            *,
-            spec: TargetSpec,
-            dag_index: "DagIndex",
-            raw_key: str,
-            root_spell: "Spell",
-    ) -> List["SocketRef"]:
-        """
-        Resolve a BROADCAST TargetSpec to mutation sockets.
-        """
-        if not spec.param_name:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=f"Broadcast override key {raw_key!r} is missing a parameter name.",
-            )
-        matches = list(dag_index.get_by_name(spec.param_name))
-        if not matches:
-            raise MeldExecutionError(
-                spell_id=root_spell.spell_index.current or root_spell.spell_id,
-                spell_name=root_spell.spell_name,
-                message=(
-                    "No sockets found for broadcast override "
-                    f"'**{spec.param_name}'."
-                ),
-            )
-        return matches
-
-    def _apply_mutation_overrides_to_dependencies(
-            self,
-            *,
-            dependencies: Dict[str, List[OccurrenceKey]],
-            occurrence: OccurrenceKey,
-            spell_lookup: Dict[str, "Spell"],
-            path_registry: Any,
-            root_blueprint: "RootResolutionBlueprint",
-    ) -> None:
-        """
-        Overlay mutation overrides onto dependency occurrences.
-        """
-        spell = spell_lookup[occurrence[0]]
-        if not spell.mutation_override:
-            return
-
-        for socket_ref, target_id in self._resolve_mutation_override_targets(
-                mutation_override=spell.mutation_override,
-                root_blueprint=root_blueprint,
-                root_spell=spell,
-        ):
-            if socket_ref.node_id != occurrence[0]:
-                continue
-            parent_id = path_registry.parent_id(socket_ref.param_path_id)
-            if parent_id is None or parent_id != occurrence[1]:
-                continue
-            child_path_id = path_registry.extend_path(occurrence[1], socket_ref.param_name)
-            dependencies[socket_ref.param_name] = [(target_id, child_path_id)]
-
     @staticmethod
     def _count_occurrence_edges(
             occurrence_graph: Dict[Tuple[str, int], Dict[str, List[Tuple[str, int]]]],
@@ -1244,16 +978,4 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 fallback_count += len(dependency_occurrences)
         return fallback_count
 
-    @staticmethod
-    def _count_mutation_override_dependencies(
-            *,
-            spell_lookup: Dict[str, "Spell"],
-    ) -> int:
-        """
-        Count spells currently carrying mutation overrides.
-        """
-        mutation_override_count = 0
-        for spell in spell_lookup.values():
-            if spell.mutation_override:
-                mutation_override_count += 1
-        return mutation_override_count
+

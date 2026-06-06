@@ -99,7 +99,6 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
         edge_count=0,
         topology_dependency_count=0,
         dag_fallback_dependency_count=0,
-        mutation_override_dependency_count=0,
         shared_collapse_enabled=True,
     )
 
