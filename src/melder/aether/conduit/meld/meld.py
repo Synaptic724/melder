@@ -1089,13 +1089,9 @@ class Meld(Cleanable, ABC):
         if isinstance(spell_override, dict):
             if not spell_override:
                 return None
-            # Shallow copy to avoid side-effects if the caller mutates
-            # their dictionary after passing it into meld(...).
             return dict(spell_override)
 
         if isinstance(spell_override, (list, tuple)):
-            # MVP positional override support: caller is explicitly saying
-            # "treat these as *args for the constructor/factory".
             return {"__args__": list(spell_override)}
 
         raise TypeError(

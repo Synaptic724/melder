@@ -101,7 +101,7 @@ class _SpellStub:
         self.is_lambda_spell = is_lambda_spell
         if mutation_override is None and has_mutation_override:
             mutation_override = {"mutation": "default"}
-        self.mutation_override = dict(mutation_override) if mutation_override is not None else {}
+        self.mutation_override = dict(mutation_override) if mutation_override is not None else None
         self.has_mutation_override = bool(self.mutation_override)
         self.requires_spellspace_request = (
             existence is Existence.unique_per_spell_space

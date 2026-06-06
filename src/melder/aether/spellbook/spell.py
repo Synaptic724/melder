@@ -334,7 +334,7 @@ class Spell(Cleanable):
         # Spell Metadata
         self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
-        self._mutation_override: dict = {}
+        self._mutation_override: Optional[dict[str, Any]] = None
         self.disposal_method_names: List[str] = []
         self.has_disposal_methods: bool = False
 
@@ -1106,9 +1106,10 @@ class Spell(Cleanable):
               do not depend on caller-owned containers.
 
         Returns:
-            dict:
+            Optional[dict[str, Any]]:
                 The normalized persistent default override payload currently
-                attached to this spell.
+                attached to this spell, or `None` when no default payload is
+                active.
 
         """
         return self._mutation_override
@@ -1172,10 +1173,7 @@ class Spell(Cleanable):
             )
 
         normalized_payload = self._normalize_mutation_override_payload(override)
-        if normalized_payload is None:
-            self._mutation_override = {}
-        else:
-            self._mutation_override = normalized_payload
+        self._mutation_override = normalized_payload
 
 
     def clear_mutation_override(self) -> None:
@@ -1185,7 +1183,7 @@ class Spell(Cleanable):
         Contract:
             - Requires the spell to be attached to a dynamic runtime
               environment.
-            - Resets the stored payload back to the default empty dict.
+            - Resets the stored payload back to `None`.
             - Does not invalidate the spell or rebuild runtime shape.
 
         Returns:
@@ -1202,11 +1200,11 @@ class Spell(Cleanable):
                 "Dynamic environment is not enabled. Mutation overrides require dynamic mode."
             )
 
-        if not self._mutation_override and not self.has_mutation_override:
+        if self._mutation_override is None:
             # Nothing to do; avoid spurious state changes.
             return
 
-        self._mutation_override = {}
+        self._mutation_override = None
 
     @staticmethod
     def _normalize_mutation_override_payload(

@@ -146,7 +146,7 @@ def test_mutation_override_updates_payload_without_structural_change_signal():
     assert states.calls == []
 
     spell.apply_mutation_override(None)
-    assert spell.mutation_override == {}
+    assert spell.mutation_override is None
     assert states.calls == []
 
 
@@ -172,7 +172,7 @@ def test_clear_mutation_override_is_noop_when_empty():
 
     spell._dynamic_environment = True
     spell.clear_mutation_override()
-    assert spell.mutation_override == {}
+    assert spell.mutation_override is None
     assert states.calls == []
 
 
@@ -784,8 +784,8 @@ def test_add_build_details_rejects_none_inputs(dag, deps, error_msg):
     "payload,expected_payload",
     [
         ({"mode": "overlay"}, {"mode": "overlay"}),
-        ({}, {}),
-        (None, {}),
+        ({}, None),
+        (None, None),
         ([1, 2], {"__args__": [1, 2]}),
         ((1, 2), {"__args__": [1, 2]}),
     ],
@@ -806,7 +806,7 @@ def test_clear_mutation_override_noop_when_empty():
     spell = _make_spell(states=states, dynamic_environment=True)
     spell.clear_mutation_override()
     assert states.calls == []
-    assert spell.mutation_override == {}
+    assert spell.mutation_override is None
 
 
 def test_clear_mutation_override_clears_payload_without_devops_signal():
@@ -815,7 +815,7 @@ def test_clear_mutation_override_clears_payload_without_devops_signal():
     spell.apply_mutation_override({"v": 1})
     spell.clear_mutation_override()
     assert states.calls == []
-    assert spell.mutation_override == {}
+    assert spell.mutation_override is None
 
 
 def test_invalidate_spell_clears_context_and_marks_revalidation_state() -> None:
@@ -1116,7 +1116,7 @@ def test_clear_mutation_override_no_states_safely_clears():
     spell._spell_system_states = None
     spell.apply_mutation_override({"k": "v"})
     spell.clear_mutation_override()
-    assert spell.mutation_override == {}
+    assert spell.mutation_override is None
 
 
 def test_apply_mutation_override_raises_outside_dynamic_mode():

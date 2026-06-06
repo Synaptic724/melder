@@ -235,7 +235,8 @@ class CreationContext(Cleanable):
             override_route_config_no_mutation:
                 Prebound override route config for non-mutation calls.
             override_route_config_mutation:
-                Prebound override route config for mutation calls.
+                Compatibility-only mutation route config retained while the
+                runtime migrates away from a separate mutation override lane.
         """
         super().__init__()
         self._spell: Spell = spell
@@ -269,13 +270,9 @@ class CreationContext(Cleanable):
         self._override_route_config_mutation: Optional[OverrideRouteConfig] = (
             override_route_config_mutation
         )
-        mutation_override_enabled = override_route_config_mutation is not None
-        if mutation_override_enabled:
-            self._override_route_config_active: Optional[OverrideRouteConfig] = (
-                override_route_config_mutation
-            )
-        else:
-            self._override_route_config_active = override_route_config_no_mutation
+        self._override_route_config_active: Optional[OverrideRouteConfig] = (
+            override_route_config_no_mutation
+        )
         override_route_config_active = self._override_route_config_active
         if override_route_config_active is not None:
             self._override_empty_shape_key: Optional[Tuple[Any, ...]] = (
@@ -320,25 +317,20 @@ class CreationContext(Cleanable):
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
         )
-        if mutation_override_enabled:
-            self._execute_hooks_no_overrides_compiled: Callable[..., tuple[Any, bool]] = (
-                self._execute_hooks_overrides_compiled
+        self._execute_hooks_no_overrides_compiled = (
+            compile_creation_context_hooks_no_overrides_executor(
+                resolve_route_key=resolve_route_key,
+                fast_transient_no_overrides_enabled=(
+                    resolve_route_key == self.ROUTE_MANY
+                    and fast_transient_no_overrides_enabled
+                ),
+                spell=spell,
+                spell_id=self._spell_id,
+                owner_creations=self._owner_creations,
+                no_overrides_executor=self._no_overrides_executor,
+                spell_space_scope_error_type=SpellSpaceScopeError,
             )
-        else:
-            self._execute_hooks_no_overrides_compiled = (
-                compile_creation_context_hooks_no_overrides_executor(
-                    resolve_route_key=resolve_route_key,
-                    fast_transient_no_overrides_enabled=(
-                        resolve_route_key == self.ROUTE_MANY
-                        and fast_transient_no_overrides_enabled
-                    ),
-                    spell=spell,
-                    spell_id=self._spell_id,
-                    owner_creations=self._owner_creations,
-                    no_overrides_executor=self._no_overrides_executor,
-                    spell_space_scope_error_type=SpellSpaceScopeError,
-                )
-            )
+        )
         self._execute_no_hooks_overrides_compiled: Callable[..., Any] = (
             compile_creation_context_instance_overrides_only_executor(
                 resolve_route_key=resolve_route_key,
@@ -351,25 +343,20 @@ class CreationContext(Cleanable):
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
         )
-        if mutation_override_enabled:
-            self._execute_no_hooks_no_overrides_compiled: Callable[..., Any] = (
-                self._execute_no_hooks_overrides_compiled
+        self._execute_no_hooks_no_overrides_compiled = (
+            compile_creation_context_instance_no_overrides_executor(
+                resolve_route_key=resolve_route_key,
+                fast_transient_no_overrides_enabled=(
+                    resolve_route_key == self.ROUTE_MANY
+                    and fast_transient_no_overrides_enabled
+                ),
+                spell=spell,
+                spell_id=self._spell_id,
+                owner_creations=self._owner_creations,
+                no_overrides_executor=self._no_overrides_executor,
+                spell_space_scope_error_type=SpellSpaceScopeError,
             )
-        else:
-            self._execute_no_hooks_no_overrides_compiled = (
-                compile_creation_context_instance_no_overrides_executor(
-                    resolve_route_key=resolve_route_key,
-                    fast_transient_no_overrides_enabled=(
-                        resolve_route_key == self.ROUTE_MANY
-                        and fast_transient_no_overrides_enabled
-                    ),
-                    spell=spell,
-                    spell_id=self._spell_id,
-                    owner_creations=self._owner_creations,
-                    no_overrides_executor=self._no_overrides_executor,
-                    spell_space_scope_error_type=SpellSpaceScopeError,
-                )
-            )
+        )
 
     def cleanup(self) -> None:
         """

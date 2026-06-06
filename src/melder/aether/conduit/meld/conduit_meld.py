@@ -213,9 +213,9 @@ class ConduitMeld(Meld):
                     self._describe_spellspace_request_target(target_spell),
                 )
             )
-        # 2) Normalize per-call overrides into a stable dict shape.
+        # 2) Caller overrides replace the stored mutation override payload.
         if spell_override is None:
-            override_map = None
+            override_map = target_spell.mutation_override
         else:
             override_map = self._normalize_spell_override(spell_override)
 
@@ -228,8 +228,6 @@ class ConduitMeld(Meld):
         creations = self._creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
-        mutation_override_enabled = target_spell.has_mutation_override
-
         if not (meld_hooks or spell_hooks_enabled):
             if target_spell._creation_context_switch.state >= 2:
                 creation_context = target_spell._creation_context
@@ -237,7 +235,7 @@ class ConduitMeld(Meld):
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None and not mutation_override_enabled:
+            if override_map is None:
                 execute_no_hooks_no_overrides_compiled = (
                     creation_context._execute_no_hooks_no_overrides_compiled
                 )
@@ -264,7 +262,7 @@ class ConduitMeld(Meld):
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            if override_map is None and not mutation_override_enabled:
+            if override_map is None:
                 execute_hooks_no_overrides_compiled = (
                     creation_context._execute_hooks_no_overrides_compiled
                 )
