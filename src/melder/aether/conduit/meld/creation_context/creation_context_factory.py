@@ -118,12 +118,15 @@ class CreationContextFactory(Cleanable):
         Contract:
             - No-op when spell-level caching is disabled.
             - Uses the just-published CreationContext bundle directly.
-            - Keeps file emission outside this seam.
+            - On the JIT/meld path, when a new payload is actually staged,
+              flushes the conduit cache file so dynamically built contexts are
+              persisted (creation_context -> spell -> spellbook -> CachingSystem).
         """
         if not spell._caching_enabled:
             return
         _ = creation_context
-        spell.emit_cache()
+        if spell.emit_cache():
+            spell.emit_cache_file()
 
 
     def _index_id_for_spell(self, spell: Spell) -> str:

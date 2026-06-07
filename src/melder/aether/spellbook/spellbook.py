@@ -763,14 +763,23 @@ and logging.
         caching_system = self._get_or_create_caching_system()
         if caching_system.has_spell_payload(spell.spell_id):
             return False
-        spell_codegen_creation = spell._compiler_artifact._spell_codegen_creation
-        if spell_codegen_creation is None:
+        artifact = spell._compiler_artifact
+        if artifact is None or artifact._spell_codegen_creation is None:
             return False
-        spell_payload = (
-            spell_codegen_creation.no_overrides_code_object,
-            spell_codegen_creation.overrides_code_object,
+        # Local import avoids a module-load cycle between Spellbook and the
+        # compiler-facing codec.
+        from melder.aether.conduit.meld.creation_context.creation_context_cache_codec import (
+            build_no_overrides_package,
         )
-        if spell_payload == (None, None):
+        try:
+            spell_payload = build_no_overrides_package(spell)
+        except Exception as exc:
+            if self._logger is not None:
+                self._logger.error(
+                    f"Failed to build cache payload for spell_id={spell.spell_id}: {exc}",
+                    "_emit_spell_cache",
+                    exc_info=True,
+                )
             return False
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
         return True

@@ -593,7 +593,7 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "shared":
         return [
-            "creation = _owner_creations.get_creation(_spell_id)",
+            "creation = _spell._owner_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -603,7 +603,7 @@ def _build_no_overrides_lines(
                 ),
             ),
             "with _spell._lock:",
-            "    creation = _owner_creations.get_creation(_spell_id)",
+            "    creation = _spell._owner_creations.get_creation(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -813,7 +813,7 @@ def _build_with_overrides_lines(
     if resolve_route_key == "shared":
         if not overrides_maybe_none:
             return [
-                "creation = _owner_creations.get_creation(_spell_id)",
+                "creation = _spell._owner_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
                 "        spell_id=_spell.spell_index.current,",
@@ -821,7 +821,7 @@ def _build_with_overrides_lines(
                 "        message=_existing_override_message,",
                 "    )",
                 "with _spell._lock:",
-                "    creation = _owner_creations.get_creation(_spell_id)",
+                "    creation = _spell._owner_creations.get_creation(_spell_id)",
                 "    if creation is None:",
                 "        instance = _execute_with_overrides(caller_creations, overrides, False)",
                 _prefix_two_indent(
@@ -838,7 +838,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "creation = _owner_creations.get_creation(_spell_id)",
+            "creation = _spell._owner_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",
                 "        raise _MeldExecutionError(",
@@ -854,7 +854,7 @@ def _build_with_overrides_lines(
                 ),
             ),
             "with _spell._lock:",
-            "    creation = _owner_creations.get_creation(_spell_id)",
+            "    creation = _spell._owner_creations.get_creation(_spell_id)",
             "    if creation is None:",
                 "        instance = _execute_with_overrides(caller_creations, overrides, False)",
             _prefix_two_indent(
@@ -898,7 +898,7 @@ def _build_no_overrides_create_lines(
     return [
         "instance = _no_overrides_executor(",
         "    caller_creations,",
-        "    _owner_creations,",
+        "    _spell._owner_creations,",
         f"    {caller_creations_lock_held},",
         ")",
         _build_return_statement(

@@ -1,6 +1,6 @@
-import hashlib
-import json
 import logging
+import marshal
+import sys
 import threading
 from pathlib import Path
 from types import MappingProxyType
@@ -30,10 +30,14 @@ class CachingSystem(Cleanable):
         - `upsert_spell_payload(...)` and `remove_spell_payload(...)` mutate
           only the in-memory dict.
         - `emit()` writes the current in-memory dict to disk.
-        - The persisted cache format is one top-level dict:
-          `version`, `conduit_name`, `spell_payloads`, and `sha256`.
-        - Integrity is bundle-level only: `sha256` covers the serialized cache
-          payload excluding the `sha256` field itself.
+        - The persisted cache format is one `marshal`-serialized top-level dict:
+          `version`, `python`, `frame_name`, `conduit_name`, and
+          `spell_payloads`.
+        - `spell_payloads` maps `spell_id` -> `(no_overrides_code,
+          overrides_code)` tuples of compiled `CodeType` objects, which is why
+          the bundle is `marshal`-encoded rather than JSON.
+        - Integrity is regeneration-based: a corrupt or version-mismatched
+          bundle is treated as a cold cache, not repaired.
 
     Threading / Concurrency:
         - Uses one instance `RLock` to serialize load, mutation, and emit work.
@@ -47,7 +51,7 @@ class CachingSystem(Cleanable):
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     CURRENT_VERSION: ClassVar[int] = 1
-    BUNDLE_FILENAME: ClassVar[str] = "bundle.json"
+    BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -94,8 +98,7 @@ class CachingSystem(Cleanable):
         self._bundle_path: Path = (
             cache_root_path
             / frame_name
-            / conduit_name
-            / self.BUNDLE_FILENAME
+            / f"{conduit_name}{self.BUNDLE_SUFFIX}"
         )
         if isinstance(logger, SafeLogger):
             self._logger = logger
@@ -307,13 +310,13 @@ class CachingSystem(Cleanable):
             dict[str, Any]:
                 Empty cache payload with stamped metadata and hash.
         """
-        cache_data = {
+        return {
             "version": self.CURRENT_VERSION,
+            "python": sys.implementation.cache_tag,
+            "frame_name": self._frame_name,
             "conduit_name": self._conduit_name,
             "spell_payloads": {},
         }
-        cache_data["sha256"] = self._build_sha256_for_cache_data(cache_data)
-        return cache_data
 
     def _load_or_initialize_from_disk(self) -> None:
         """
@@ -328,18 +331,11 @@ class CachingSystem(Cleanable):
             return
 
         try:
-            raw_json = bundle_path.read_text(encoding="utf-8")
-            loaded_cache_data = json.loads(raw_json)
-            normalized_cache_data = self._normalize_loaded_cache_data(
+            raw_bytes = bundle_path.read_bytes()
+            loaded_cache_data = marshal.loads(raw_bytes)
+            self._cache_data = self._normalize_loaded_cache_data(
                 loaded_cache_data
             )
-            expected_sha256 = normalized_cache_data["sha256"]
-            actual_sha256 = self._build_sha256_for_cache_data(
-                normalized_cache_data
-            )
-            if actual_sha256 != expected_sha256:
-                raise ValueError("Cache bundle sha256 mismatch.")
-            self._cache_data = normalized_cache_data
         except Exception as e:
             self._logger.warning(
                 f"Failed to load cache bundle '{bundle_path}': {e}. Resetting to empty cache.",
@@ -362,14 +358,21 @@ class CachingSystem(Cleanable):
             dict[str, Any]:
                 Normalized cache dict.
         """
+        if not isinstance(loaded_cache_data, dict):
+            raise ValueError("Cache bundle is not a dict.")
         version = loaded_cache_data["version"]
+        python_tag = loaded_cache_data["python"]
         conduit_name = loaded_cache_data["conduit_name"]
         spell_payloads = loaded_cache_data["spell_payloads"]
-        sha256 = loaded_cache_data["sha256"]
 
         if version != self.CURRENT_VERSION:
             raise ValueError(
                 f"Unsupported cache version '{version}'."
+            )
+        if python_tag != sys.implementation.cache_tag:
+            raise ValueError(
+                f"Cache python tag '{python_tag}' does not match runtime "
+                f"'{sys.implementation.cache_tag}'."
             )
         if conduit_name != self._conduit_name:
             raise ValueError(
@@ -377,9 +380,10 @@ class CachingSystem(Cleanable):
             )
         return {
             "version": version,
+            "python": python_tag,
+            "frame_name": loaded_cache_data.get("frame_name", self._frame_name),
             "conduit_name": conduit_name,
             "spell_payloads": dict(spell_payloads),
-            "sha256": sha256,
         }
 
     def _write_current_cache_to_disk_locked(self) -> None:
@@ -395,48 +399,19 @@ class CachingSystem(Cleanable):
         """
         cache_data = {
             "version": self._cache_data["version"],
+            "python": self._cache_data.get(
+                "python", sys.implementation.cache_tag
+            ),
+            "frame_name": self._cache_data.get("frame_name", self._frame_name),
             "conduit_name": self._cache_data["conduit_name"],
             "spell_payloads": self._cache_data["spell_payloads"],
         }
-        cache_data["sha256"] = self._build_sha256_for_cache_data(cache_data)
-        serialized_cache_data = json.dumps(
-            cache_data,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=True,
-        )
+        serialized_cache_data = marshal.dumps(cache_data)
         bundle_path = self._bundle_path
         bundle_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_bundle_path = bundle_path.with_suffix(".json.tmp")
-        temp_bundle_path.write_text(serialized_cache_data, encoding="utf-8")
+        temp_bundle_path = bundle_path.with_suffix(
+            self.BUNDLE_SUFFIX + ".tmp"
+        )
+        temp_bundle_path.write_bytes(serialized_cache_data)
         temp_bundle_path.replace(bundle_path)
         self._cache_data = cache_data
-
-    def _build_sha256_for_cache_data(
-            self,
-            cache_data: Mapping[str, Any],
-    ) -> str:
-        """
-        Build the bundle-level sha256 for one cache dict.
-
-        Args:
-            cache_data:
-                Cache dict whose `sha256` field should be excluded from the
-                hash input.
-
-        Returns:
-            str:
-                Lowercase hex sha256 digest.
-        """
-        payload_without_sha256 = {
-            "version": cache_data["version"],
-            "conduit_name": cache_data["conduit_name"],
-            "spell_payloads": cache_data["spell_payloads"],
-        }
-        serialized_payload = json.dumps(
-            payload_without_sha256,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=True,
-        ).encode("utf-8")
-        return hashlib.sha256(serialized_payload).hexdigest()

@@ -654,6 +654,9 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             conduit=conduit,
         )
+        SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
+            spellbook=spellbook,
+        )
         spellbook._publish_nexus_state_for_conjure(conduit)
         spellbook._register_conduit_with_risk_manager(conduit)
         if hook_map:
@@ -663,6 +666,42 @@ class SpellbookCreationSystem(Cleanable):
                 "on_conduit_post_created",
                 conduit,
             )
+
+    @staticmethod
+    def _emit_conduit_cache_file_at_conjure_end(
+            *,
+            spellbook: Spellbook,
+    ) -> None:
+        """
+        Form the conduit cache file once at the end of conjure.
+
+        Purpose:
+            Materialize the conduit-scoped cache bundle after ownership wiring
+            so a rooted conduit always has a cache file, even when no spell
+            assets were staged during conjure.
+
+        Contract:
+            - No-op when root caching is disabled for this Spellbook.
+            - Emits the current in-memory cache (which may be empty) to disk.
+            - Never propagates cache failures into the conjure path.
+
+        Args:
+            spellbook: Owning Spellbook whose conduit cache should be emitted.
+
+        Returns:
+            None.
+        """
+        if not spellbook._system_caching_enabled_in_aether():
+            return
+        try:
+            spellbook._get_or_create_caching_system().emit()
+        except Exception as exc:
+            if spellbook._logger is not None:
+                spellbook._logger.error(
+                    f"Failed to emit conduit cache file at conjure end: {exc}",
+                    "_emit_conduit_cache_file_at_conjure_end",
+                    exc_info=True,
+                )
 
     @staticmethod
     def check_system_state(spellbook: Spellbook, policy: str, dynamic: bool) -> None:
