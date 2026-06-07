@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -111,12 +111,10 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             - Performs no registry add and no `prepare_object(...)` call.
         """
         with self._lock:
-            pooled_space: SpellSpace | None = None
-            if self._enabled and self._idle:
-                pooled_space = self._idle.pop()
+            pooled_space: Optional[SpellSpace] = self._acquire_idle_object_locked()
             if pooled_space is None:
                 pooled_space = self.create_object(*args, **kwargs)
-            self._in_use_count += 1
+                self._in_use_count += 1
         return pooled_space
 
     def acquire(
@@ -143,12 +141,10 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               `track_registry=False`.
         """
         with self._lock:
-            pooled_space: SpellSpace | None = None
-            if self._enabled and self._idle:
-                pooled_space = self._idle.pop()
+            pooled_space: Optional[SpellSpace] = self._acquire_idle_object_locked()
             if pooled_space is None:
                 pooled_space = self.create_object(*args, **kwargs)
-            self._in_use_count += 1
+                self._in_use_count += 1
         return self.prepare_object(
             pooled_space,
             *args,
@@ -176,9 +172,6 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               elastic-pool time/decay bookkeeping that this pool does not need.
         """
         with self._lock:
-            if self._in_use_count > 0:
-                self._in_use_count -= 1
-            if self._enabled and len(self._idle) < self._target_idle:
-                self._idle.append(obj)
+            if self._retain_released_object_locked(obj, strict=False):
                 return
             self.destroy_object(obj)

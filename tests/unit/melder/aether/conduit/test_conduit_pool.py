@@ -116,3 +116,51 @@ def test_conduit_pool_destroy_object_calls_permanent_cleanup() -> None:
     pool.destroy_object(pooled)
 
     assert pooled.cleanup_calls == 1
+
+
+def test_conduit_pool_fixed_capacity_full_path_skips_decay_clock() -> None:
+    """
+    Verify a full fixed-capacity pool destroys overflow without clock access.
+    """
+    root = _RootConduitStub("root-1")
+    pool = ConduitPool(
+        root_conduit=root,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    retained = type(
+        "_RetainedConduitStub",
+        (),
+        {
+            "__init__": lambda self: setattr(self, "cleanup_calls", 0),
+            "permanent_cleanup": lambda self: setattr(
+                self,
+                "cleanup_calls",
+                self.cleanup_calls + 1,
+            ),
+        },
+    )()
+    overflow = type(
+        "_OverflowConduitStub",
+        (),
+        {
+            "__init__": lambda self: setattr(self, "cleanup_calls", 0),
+            "permanent_cleanup": lambda self: setattr(
+                self,
+                "cleanup_calls",
+                self.cleanup_calls + 1,
+            ),
+        },
+    )()
+
+    pool.return_lesser_conduit(retained)
+
+    def exploding_clock() -> float:
+        raise AssertionError("Fixed-capacity full path should not touch the decay clock.")
+
+    pool._time_func = exploding_clock
+    pool.return_lesser_conduit(overflow)
+
+    assert pool.idle_count == 1
+    assert retained.cleanup_calls == 0
+    assert overflow.cleanup_calls == 1

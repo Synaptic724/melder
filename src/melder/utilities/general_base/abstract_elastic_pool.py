@@ -233,14 +233,12 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         with self._lock:
             now = self._time_func()
             self._apply_decay_locked(now)
-            pooled_object: Optional[_T] = None
+            pooled_object = self._acquire_idle_object_locked()
             created_new = False
-            if self._enabled and self._idle:
-                pooled_object = self._idle.pop()
             if pooled_object is None:
                 created_new = True
                 pooled_object = self.create_object(*args, **kwargs)
-            self._in_use_count += 1
+                self._in_use_count += 1
             if created_new:
                 self._maybe_stretch_locked(now)
             return self.prepare_object(pooled_object, *args, **kwargs)
@@ -266,11 +264,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         with self._lock:
             if self._in_use_count <= 0:
                 raise RuntimeError("release() called with no in-use objects.")
-            self._in_use_count -= 1
             now = self._time_func()
             self._apply_decay_locked(now)
-            if self._enabled and len(self._idle) < self._target_idle:
-                self._idle.append(obj)
+            if self._retain_released_object_locked(obj, strict=False):
                 return
             self.destroy_object(obj)
 
@@ -308,6 +304,105 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             _T: Prepared object. Default implementation returns `obj` unchanged.
         """
         return obj
+
+    def _acquire_idle_object_locked(self) -> Optional[_T]:
+        """
+        Return one retained idle object and mark it in use.
+
+        Purpose:
+            Give specialized pools one shared idle-pop fast path so they can
+            reuse the base bookkeeping without re-encoding the same operations
+            in each subclass.
+
+        Contract:
+            - Call only while holding `_lock`.
+            - Returns `None` when pooling is disabled or the idle pool is
+              empty.
+            - Increments `_in_use_count` exactly once only when an idle object
+              is actually reused.
+
+        Returns:
+            Optional[_T]:
+                Reused idle object when one is available, otherwise `None`.
+        """
+        if not self._enabled or not self._idle:
+            return None
+        pooled_object = self._idle.pop()
+        self._in_use_count += 1
+        return pooled_object
+
+    def _retain_released_object_locked(
+            self,
+            obj: _T,
+            *,
+            strict: bool = True,
+    ) -> bool:
+        """
+        Try to retain one released object in the idle pool.
+
+        Purpose:
+            Share the core "decrement in-use and append to idle when capacity
+            allows" bookkeeping across the generic release path and any
+            fixed-capacity pool specializations.
+
+        Contract:
+            - Call only while holding `_lock`.
+            - Decrements `_in_use_count` exactly once when it is positive.
+            - Raises on underflow when `strict=True`.
+            - Returns `True` only when the object was retained in `_idle`.
+            - Does not destroy the object; callers own the destroy decision
+              when retention is not possible.
+
+        Args:
+            obj:
+                Released object being considered for idle retention.
+            strict:
+                When `True`, enforce the public release underflow contract.
+                Specialized trusted callers may pass `False` to preserve their
+                existing soft-underflow behavior.
+
+        Returns:
+            bool:
+                `True` when the object was retained, otherwise `False`.
+
+        Raises:
+            RuntimeError:
+                If `strict=True` and the pool has no checked-out object count.
+        """
+        if self._in_use_count <= 0:
+            if strict:
+                raise RuntimeError("release() called with no in-use objects.")
+        else:
+            self._in_use_count -= 1
+        if self._enabled and len(self._idle) < self._target_idle:
+            self._idle.append(obj)
+            return True
+        return False
+
+    def _is_fixed_capacity_target_locked(self) -> bool:
+        """
+        Return whether the current retention target is effectively fixed.
+
+        Purpose:
+            Let specialized pools skip stretch and decay work when the current
+            runtime policy is already pinned to a fixed-capacity retained-idle
+            target.
+
+        Contract:
+            - Call only while holding `_lock`.
+            - Returns `True` only when the current target matches both the
+              baseline and the hard idle ceiling.
+
+        Returns:
+            bool:
+                `True` when the current policy behaves as a fixed-capacity
+                pool, otherwise `False`.
+        """
+        return (
+            self._enabled
+            and self._target_idle == self._baseline_idle
+            and self._target_idle == self._max_idle
+        )
 
     @abstractmethod
     def create_object(self, *args: Any, **kwargs: Any) -> _T:

@@ -91,11 +91,7 @@ class ConduitPool(AbstractElasticPool[Any]):
               creation, hook order, and lineage-link timing.
         """
         with self._lock:
-            if not self._enabled or not self._idle:
-                return None
-            pooled_object = self._idle.pop()
-            self._in_use_count += 1
-            return pooled_object
+            return self._acquire_idle_object_locked()
 
     def destroy_object(self, obj: Conduit) -> None:
         """
@@ -123,15 +119,11 @@ class ConduitPool(AbstractElasticPool[Any]):
               at the current retained limit.
         """
         with self._lock:
-            if self._in_use_count > 0:
-                self._in_use_count -= 1
-            if self._enabled and len(self._idle) < self._target_idle:
-                self._idle.append(conduit)
+            if self._retain_released_object_locked(conduit, strict=False):
                 return
-            if self._enabled:
+            if self._enabled and not self._is_fixed_capacity_target_locked():
                 now = self._time_func()
                 self._apply_decay_once_locked(now)
-                if len(self._idle) < self._target_idle:
-                    self._idle.append(conduit)
+                if self._retain_released_object_locked(conduit, strict=False):
                     return
             self.destroy_object(conduit)

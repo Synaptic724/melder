@@ -2,6 +2,9 @@ import threading
 from typing import Any, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.custom_exceptions.spell_space_scope_error import (
+    SpellSpaceScopeError,
+)
 
 
 class _SpellSpaceLocal(threading.local):
@@ -139,6 +142,37 @@ class SpellSpaceThreadState(Cleanable):
                 If the current thread stack is empty.
         """
         return self._local.spellspace_stack.pop()
+
+    def pop_expected(self, expected: Any) -> Any:
+        """
+        Pop the current active spellspace only when it matches `expected`.
+
+        Purpose:
+            Fuse top-of-stack validation and pop into one hot-path operation so
+            managed spellspace exit does not need separate `get_active()` and
+            `pop()` calls.
+
+        Args:
+            expected:
+                Spellspace object that must currently be the top-of-stack
+                entry for the active thread.
+
+        Returns:
+            Any:
+                The same spellspace object that was popped from the current
+                thread stack.
+
+        Raises:
+            SpellSpaceScopeError:
+                If the current thread stack is empty or the active spellspace
+                is not `expected`.
+        """
+        stack = self._local.spellspace_stack
+        if not stack or stack[-1] is not expected:
+            raise SpellSpaceScopeError(
+                "SpellSpace stack corruption detected while exiting."
+            )
+        return stack.pop()
 
     def clear_current_thread(self) -> None:
         """

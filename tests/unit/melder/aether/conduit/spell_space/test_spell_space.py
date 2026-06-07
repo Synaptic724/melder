@@ -295,6 +295,34 @@ def test_cleanup_returns_spellspace_to_pool(
     assert space.cleaned is False
 
 
+def test_recycle_from_managed_context_returns_untracked_spellspace_to_pool(
+        owner_conduit_id: str,
+        conduit_meld_stub: _ConduitMeldStub,
+        owner_conduit_creations_stub: _ConduitCreationsStub,
+        spellspace_registry: set[SpellSpace],
+) -> None:
+    """Verify managed recycle clears local state and returns to the pool."""
+    pool = SpellSpacePool(
+        owner_conduit_id=owner_conduit_id,
+        conduit_meld=conduit_meld_stub,
+        owner_conduit_creations=owner_conduit_creations_stub,
+        spellspace_registry=spellspace_registry,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    space = pool.acquire_untracked()
+    created = object()
+    space._creations._creations["spell-id"] = created
+    assert space._creations.get_creation("spell-id") is created
+
+    space.recycle_from_managed_context()
+
+    assert pool.idle_count == 1
+    assert space._creations.get_creation("spell-id") is None
+    assert space not in spellspace_registry
+    assert space.cleaned is False
+
+
 def test_pool_reuses_spellspace_after_cleanup(
         owner_conduit_id: str,
         conduit_meld_stub: _ConduitMeldStub,

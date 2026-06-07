@@ -144,6 +144,37 @@ class SpellSpace(Cleanable):
         """
         self._permanent_cleanup_requested = True
         self.cleanup()
+
+    def recycle_from_managed_context(self) -> None:
+        """
+        Recycle one managed pooled spellspace through the fast common lane.
+
+        Purpose:
+            Avoid the generic cleanup branch work on the common
+            `enter_spellspace()` managed exit path, where the spellspace is
+            untracked in the registry and is expected to return directly to the
+            conduit-local pool after clearing only spellspace-local state.
+
+        Contract:
+            - Valid only for live managed spellspaces acquired through the
+              untracked pool path.
+            - Falls back to the generic cleanup entrypoint when permanent
+              teardown was requested or the spellspace is registry-tracked.
+            - Clears spellspace-local creations before returning this
+              spellspace to the pool.
+            - Keeps collaborator references intact for later reuse.
+        """
+        if self._cleaned:
+            return
+        if self._permanent_cleanup_requested or self._registry_tracked:
+            self.cleanup()
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._creations.reset_for_pool()
+            self._permanent_cleanup_requested = False
+        self._spellspace_pool.release(self)
         
     def _cleanup_for_pool_reuse(self) -> None:
         """

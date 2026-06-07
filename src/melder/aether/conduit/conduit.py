@@ -115,14 +115,11 @@ class _SpellSpaceContextManager:
             - Validates that the current-thread active spellspace matches the
               spellspace acquired by this wrapper.
             - Pops exactly one spellspace from the current-thread stack.
-            - Cleans the owned spellspace before releasing wrapper references.
+            - Recycles the owned spellspace through the managed pooled fast
+              path before releasing wrapper references.
         """
-        if self._conduit._spellspace_stack.get_active() is not self._space:
-            raise SpellSpaceScopeError(
-                "SpellSpace stack corruption detected while exiting."
-            )
-        self._conduit._spellspace_stack.pop()
-        self._space.cleanup()
+        self._conduit._spellspace_stack.pop_expected(self._space)
+        self._space.recycle_from_managed_context()
         self.cleanup()
         return None
 
