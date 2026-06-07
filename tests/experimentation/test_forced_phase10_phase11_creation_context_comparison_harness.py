@@ -72,6 +72,17 @@ class _SoloConfigurableRoot:
         self.value = value
 
 
+class _ManyOnlyConfigurableLeaf:
+    """
+    Extra visible all-many spell used to make the many-only family legal.
+    """
+
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        return None
+
+
 class _FreshCreationsProbe:
     """
     Minimal creations store used to control create-versus-reuse behavior per iteration.
@@ -366,6 +377,7 @@ def _make_spell_for_existence(
         *,
         existence: Existence,
         bind_mode: str,
+        extra_many_visible_spell: bool = False,
 ) -> Tuple[Any, Any, Any]:
     """
     Build one fresh one-spell runtime environment for a solo existence scenario.
@@ -387,6 +399,12 @@ def _make_spell_for_existence(
                 existence=existence,
                 permissions="create",
             )
+            if extra_many_visible_spell:
+                spellbook.bind(
+                    spell=_ManyOnlyConfigurableLeaf,
+                    existence=Existence.many,
+                    permissions="create",
+                )
         conduit = spellbook.conjure(name="root")
         root_spell = get_spell_by_version_id(spellbook, root_spell_id)
         assert root_spell is not None
@@ -440,6 +458,7 @@ def _benchmark_forced_family_no_overrides(
         caller_mode: str,
         iterations: int,
         warmup: int,
+        extra_many_visible_spell: bool = False,
 ) -> float:
     """
     Time one forced family on the solo no-overrides path for one exact existence.
@@ -447,6 +466,7 @@ def _benchmark_forced_family_no_overrides(
     spellbook, conduit, root_spell = _make_spell_for_existence(
         existence=existence,
         bind_mode=bind_mode,
+        extra_many_visible_spell=extra_many_visible_spell,
     )
     try:
         caller_creations = conduit._creations
@@ -495,6 +515,7 @@ def _benchmark_forced_family_overrides(
         caller_mode: str,
         iterations: int,
         warmup: int,
+        extra_many_visible_spell: bool = False,
 ) -> Tuple[Optional[float], Optional[str]]:
     """
     Time or classify one forced family on the solo overrides path for one exact existence.
@@ -502,6 +523,7 @@ def _benchmark_forced_family_overrides(
     spellbook, conduit, root_spell = _make_spell_for_existence(
         existence=existence,
         bind_mode=bind_mode,
+        extra_many_visible_spell=extra_many_visible_spell,
     )
     try:
         override_payload = {"value": object()}
@@ -566,6 +588,7 @@ def _benchmark_forced_family_meld_no_overrides(
         meld_mode: str,
         iterations: int,
         warmup: int,
+        extra_many_visible_spell: bool = False,
 ) -> Optional[float]:
     """
     Time one forced family through the real meld front door on the no-overrides path.
@@ -578,6 +601,7 @@ def _benchmark_forced_family_meld_no_overrides(
     spellbook, conduit, root_spell = _make_spell_for_existence(
         existence=existence,
         bind_mode=bind_mode,
+        extra_many_visible_spell=extra_many_visible_spell,
     )
     try:
         _build_forced_creation_context(
@@ -661,7 +685,11 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                 "strategy_family": "generalized",
                 "phase10_strategy_id": "generalized_codegen_plan",
                 "phase11_strategy_id": "generalized_codegen_creation",
-                "no_ns": f"{row['no_generalized_ns_per_iter']:.3f}",
+                "no_ns": (
+                    "-"
+                    if row["no_generalized_ns_per_iter"] is None
+                    else f"{row['no_generalized_ns_per_iter']:.3f}"
+                ),
                 "meld_cold_ns": (
                     "-"
                     if row["meld_cold_generalized_ns_per_iter"] is None
@@ -672,12 +700,19 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                     if row["meld_warm_generalized_ns_per_iter"] is None
                     else f"{row['meld_warm_generalized_ns_per_iter']:.3f}"
                 ),
-                "ov_ns": f"{row['overrides_generalized_ns_per_iter']:.3f}",
+                "ov_ns": (
+                    "-"
+                    if row["overrides_generalized_ns_per_iter"] is None
+                    else f"{row['overrides_generalized_ns_per_iter']:.3f}"
+                ),
                 "note": (
-                    "warm_reuse_bypassed=always_creates"
-                    if row["meld_warm_generalized_ns_per_iter"] is None
-                    and row["route"] == "many"
-                    else ""
+                    row["generalized_note"]
+                    or (
+                        "warm_reuse_bypassed=always_creates"
+                        if row["meld_warm_generalized_ns_per_iter"] is None
+                        and row["route"] == "many"
+                        else ""
+                    )
                 ),
             }
         )
@@ -689,7 +724,11 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                 "strategy_family": "solo",
                 "phase10_strategy_id": "generalized_solo_codegen_plan",
                 "phase11_strategy_id": "solo_codegen_creation",
-                "no_ns": f"{row['no_solo_ns_per_iter']:.3f}",
+                "no_ns": (
+                    "-"
+                    if row["no_solo_ns_per_iter"] is None
+                    else f"{row['no_solo_ns_per_iter']:.3f}"
+                ),
                 "meld_cold_ns": (
                     "-"
                     if row["meld_cold_solo_ns_per_iter"] is None
@@ -700,23 +739,80 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                     if row["meld_warm_solo_ns_per_iter"] is None
                     else f"{row['meld_warm_solo_ns_per_iter']:.3f}"
                 ),
-                "ov_ns": f"{row['overrides_solo_ns_per_iter']:.3f}",
-                "note": (
+                "ov_ns": (
                     "-"
-                    if row["no_solo_over_generalized_ratio"] is None
-                    else f"no={row['no_solo_over_generalized_ratio']:.6f}; "
-                    f"cold={row['meld_cold_solo_over_generalized_ratio']:.6f}; "
-                    + (
-                        "warm=always_creates; "
-                        if row["meld_warm_solo_over_generalized_ratio"] is None
-                        else f"warm={row['meld_warm_solo_over_generalized_ratio']:.6f}; "
-                    )
-                    + (
-                    f"ov={row['overrides_solo_over_generalized_ratio']:.6f}"
+                    if row["overrides_solo_ns_per_iter"] is None
+                    else f"{row['overrides_solo_ns_per_iter']:.3f}"
+                ),
+                "note": (
+                    row["solo_note"]
+                    or (
+                        "-"
+                        if row["no_solo_over_generalized_ratio"] is None
+                        else f"no={row['no_solo_over_generalized_ratio']:.6f}; "
+                        f"cold={row['meld_cold_solo_over_generalized_ratio']:.6f}; "
+                        + (
+                            "warm=always_creates; "
+                            if row["meld_warm_solo_over_generalized_ratio"] is None
+                            else f"warm={row['meld_warm_solo_over_generalized_ratio']:.6f}; "
+                        )
+                        + (
+                            f"ov={row['overrides_solo_over_generalized_ratio']:.6f}"
+                        )
                     )
                 ),
             }
         )
+        if row["route"] == "many":
+            string_rows.append(
+                {
+                    "existence": str(row["existence"]),
+                    "route": str(row["route"]),
+                    "bind_mode": str(row["bind_mode"]),
+                    "strategy_family": "many_only",
+                    "phase10_strategy_id": "generalized_many_only_codegen_plan",
+                    "phase11_strategy_id": "many_only_codegen_creation",
+                    "no_ns": (
+                        "-"
+                        if row["no_many_only_ns_per_iter"] is None
+                        else f"{row['no_many_only_ns_per_iter']:.3f}"
+                    ),
+                    "meld_cold_ns": (
+                        "-"
+                        if row["meld_cold_many_only_ns_per_iter"] is None
+                        else f"{row['meld_cold_many_only_ns_per_iter']:.3f}"
+                    ),
+                    "meld_warm_ns": (
+                        "-"
+                        if row["meld_warm_many_only_ns_per_iter"] is None
+                        else f"{row['meld_warm_many_only_ns_per_iter']:.3f}"
+                    ),
+                    "ov_ns": (
+                        "-"
+                        if row["overrides_many_only_ns_per_iter"] is None
+                        else f"{row['overrides_many_only_ns_per_iter']:.3f}"
+                    ),
+                    "note": (
+                        row["many_only_note"]
+                        or (
+                            "-"
+                            if row["no_many_only_over_generalized_ratio"] is None
+                            else f"no={row['no_many_only_over_generalized_ratio']:.6f}; "
+                            f"cold={row['meld_cold_many_only_over_generalized_ratio']:.6f}; "
+                            + (
+                                "warm=always_creates; "
+                                if row["meld_warm_many_only_over_generalized_ratio"] is None
+                                else f"warm={row['meld_warm_many_only_over_generalized_ratio']:.6f}; "
+                            )
+                            + (
+                                "-"
+                                if row["overrides_many_only_over_generalized_ratio"] is None
+                                else f"ov={row['overrides_many_only_over_generalized_ratio']:.6f}"
+                            )
+                        )
+                    ),
+                }
+            )
     widths = {header: len(header) for header in headers}
     for row in string_rows:
         for header in headers:
@@ -739,6 +835,30 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
     for row in string_rows:
         lines.append(_line(row))
     return "\n".join(lines)
+
+
+def _capture_benchmark_result(
+        action: Callable[[], Optional[float]],
+) -> Tuple[Optional[float], Optional[str]]:
+    """
+    Run one benchmark action and capture an honest failure note on exception.
+    """
+    try:
+        return action(), None
+    except Exception as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+
+
+def _capture_overrides_benchmark_result(
+        action: Callable[[], Tuple[Optional[float], Optional[str]]],
+) -> Tuple[Optional[float], Optional[str]]:
+    """
+    Run one overrides benchmark and capture an honest failure note on exception.
+    """
+    try:
+        return action()
+    except Exception as exc:
+        return None, f"{type(exc).__name__}: {exc}"
 
 
 def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
@@ -798,99 +918,122 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
         if scenario["bind_mode"] == "existing_creation":
             no_generalized_ns = None
             no_solo_ns = None
+            no_many_only_ns = None
             meld_cold_generalized_ns = None
             meld_cold_solo_ns = None
+            meld_cold_many_only_ns = None
             meld_cold_ratio = None
+            meld_cold_many_only_ratio = None
             meld_warm_generalized_ns = None
             meld_warm_solo_ns = None
+            meld_warm_many_only_ns = None
             meld_warm_ratio = None
+            meld_warm_many_only_ratio = None
             overrides_generalized_ns = None
             overrides_solo_ns = None
+            overrides_many_only_ns = None
             overrides_ratio = None
+            overrides_many_only_ratio = None
             overrides_note = "phase10_11_bypassed"
             no_ratio = None
+            no_many_only_ratio = None
+            generalized_note = None
+            solo_note = None
+            many_only_note = "not_applicable=requires_multi_spell_all_many"
         else:
-            no_generalized_ns = _benchmark_forced_family_no_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_codegen_plan",
-                plan_family_id="generalized",
-                candidate_codegen_style_ids=("generalized_default",),
-                creation_strategy_ids=("generalized_codegen_creation",),
-                selected_codegen_style_id="generalized_default",
-                discovery_reason="forced_generalized_creation_family",
-                caller_mode=scenario["caller_mode"],
-                iterations=iterations,
-                warmup=warmup,
+            no_generalized_ns, generalized_note = _capture_benchmark_result(
+                lambda: _benchmark_forced_family_no_overrides(
+                    existence=scenario["existence"],
+                    bind_mode=scenario["bind_mode"],
+                    plan_strategy_id="generalized_codegen_plan",
+                    plan_family_id="generalized",
+                    candidate_codegen_style_ids=("generalized_default",),
+                    creation_strategy_ids=("generalized_codegen_creation",),
+                    selected_codegen_style_id="generalized_default",
+                    discovery_reason="forced_generalized_creation_family",
+                    caller_mode=scenario["caller_mode"],
+                    iterations=iterations,
+                    warmup=warmup,
+                )
             )
-            no_solo_ns = _benchmark_forced_family_no_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_solo_codegen_plan",
-                plan_family_id="solo",
-                candidate_codegen_style_ids=("generalized_solo",),
-                creation_strategy_ids=("solo_codegen_creation",),
-                selected_codegen_style_id="generalized_solo",
-                discovery_reason="forced_solo_creation_family",
-                caller_mode=scenario["caller_mode"],
-                iterations=iterations,
-                warmup=warmup,
+            no_solo_ns, solo_note = _capture_benchmark_result(
+                lambda: _benchmark_forced_family_no_overrides(
+                    existence=scenario["existence"],
+                    bind_mode=scenario["bind_mode"],
+                    plan_strategy_id="generalized_solo_codegen_plan",
+                    plan_family_id="solo",
+                    candidate_codegen_style_ids=("generalized_solo",),
+                    creation_strategy_ids=("solo_codegen_creation",),
+                    selected_codegen_style_id="generalized_solo",
+                    discovery_reason="forced_solo_creation_family",
+                    caller_mode=scenario["caller_mode"],
+                    iterations=iterations,
+                    warmup=warmup,
+                )
             )
-            meld_cold_generalized_ns = _benchmark_forced_family_meld_no_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_codegen_plan",
-                plan_family_id="generalized",
-                candidate_codegen_style_ids=("generalized_default",),
-                creation_strategy_ids=("generalized_codegen_creation",),
-                selected_codegen_style_id="generalized_default",
-                discovery_reason="forced_generalized_creation_family",
-                route=scenario["route"],
-                meld_mode="cold_create",
-                iterations=iterations,
-                warmup=warmup,
+            meld_cold_generalized_ns, generalized_meld_cold_note = _capture_benchmark_result(
+                lambda: _benchmark_forced_family_meld_no_overrides(
+                    existence=scenario["existence"],
+                    bind_mode=scenario["bind_mode"],
+                    plan_strategy_id="generalized_codegen_plan",
+                    plan_family_id="generalized",
+                    candidate_codegen_style_ids=("generalized_default",),
+                    creation_strategy_ids=("generalized_codegen_creation",),
+                    selected_codegen_style_id="generalized_default",
+                    discovery_reason="forced_generalized_creation_family",
+                    route=scenario["route"],
+                    meld_mode="cold_create",
+                    iterations=iterations,
+                    warmup=warmup,
+                )
             )
-            meld_cold_solo_ns = _benchmark_forced_family_meld_no_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_solo_codegen_plan",
-                plan_family_id="solo",
-                candidate_codegen_style_ids=("generalized_solo",),
-                creation_strategy_ids=("solo_codegen_creation",),
-                selected_codegen_style_id="generalized_solo",
-                discovery_reason="forced_solo_creation_family",
-                route=scenario["route"],
-                meld_mode="cold_create",
-                iterations=iterations,
-                warmup=warmup,
+            meld_cold_solo_ns, solo_meld_cold_note = _capture_benchmark_result(
+                lambda: _benchmark_forced_family_meld_no_overrides(
+                    existence=scenario["existence"],
+                    bind_mode=scenario["bind_mode"],
+                    plan_strategy_id="generalized_solo_codegen_plan",
+                    plan_family_id="solo",
+                    candidate_codegen_style_ids=("generalized_solo",),
+                    creation_strategy_ids=("solo_codegen_creation",),
+                    selected_codegen_style_id="generalized_solo",
+                    discovery_reason="forced_solo_creation_family",
+                    route=scenario["route"],
+                    meld_mode="cold_create",
+                    iterations=iterations,
+                    warmup=warmup,
+                )
             )
-            meld_warm_generalized_ns = _benchmark_forced_family_meld_no_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_codegen_plan",
-                plan_family_id="generalized",
-                candidate_codegen_style_ids=("generalized_default",),
-                creation_strategy_ids=("generalized_codegen_creation",),
-                selected_codegen_style_id="generalized_default",
-                discovery_reason="forced_generalized_creation_family",
-                route=scenario["route"],
-                meld_mode="warm_reuse",
-                iterations=iterations,
-                warmup=warmup,
+            meld_warm_generalized_ns, generalized_meld_warm_note = _capture_benchmark_result(
+                lambda: _benchmark_forced_family_meld_no_overrides(
+                    existence=scenario["existence"],
+                    bind_mode=scenario["bind_mode"],
+                    plan_strategy_id="generalized_codegen_plan",
+                    plan_family_id="generalized",
+                    candidate_codegen_style_ids=("generalized_default",),
+                    creation_strategy_ids=("generalized_codegen_creation",),
+                    selected_codegen_style_id="generalized_default",
+                    discovery_reason="forced_generalized_creation_family",
+                    route=scenario["route"],
+                    meld_mode="warm_reuse",
+                    iterations=iterations,
+                    warmup=warmup,
+                )
             )
-            meld_warm_solo_ns = _benchmark_forced_family_meld_no_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_solo_codegen_plan",
-                plan_family_id="solo",
-                candidate_codegen_style_ids=("generalized_solo",),
-                creation_strategy_ids=("solo_codegen_creation",),
-                selected_codegen_style_id="generalized_solo",
-                discovery_reason="forced_solo_creation_family",
-                route=scenario["route"],
-                meld_mode="warm_reuse",
-                iterations=iterations,
-                warmup=warmup,
+            meld_warm_solo_ns, solo_meld_warm_note = _capture_benchmark_result(
+                lambda: _benchmark_forced_family_meld_no_overrides(
+                    existence=scenario["existence"],
+                    bind_mode=scenario["bind_mode"],
+                    plan_strategy_id="generalized_solo_codegen_plan",
+                    plan_family_id="solo",
+                    candidate_codegen_style_ids=("generalized_solo",),
+                    creation_strategy_ids=("solo_codegen_creation",),
+                    selected_codegen_style_id="generalized_solo",
+                    discovery_reason="forced_solo_creation_family",
+                    route=scenario["route"],
+                    meld_mode="warm_reuse",
+                    iterations=iterations,
+                    warmup=warmup,
+                )
             )
             meld_cold_ratio = None
             if (
@@ -905,41 +1048,176 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
             ):
                 meld_warm_ratio = meld_warm_solo_ns / meld_warm_generalized_ns
             overrides_generalized_ns, overrides_generalized_note = (
-                _benchmark_forced_family_overrides(
+                _capture_overrides_benchmark_result(
+                    lambda: _benchmark_forced_family_overrides(
+                        existence=scenario["existence"],
+                        bind_mode=scenario["bind_mode"],
+                        plan_strategy_id="generalized_codegen_plan",
+                        plan_family_id="generalized",
+                        candidate_codegen_style_ids=("generalized_default",),
+                        creation_strategy_ids=("generalized_codegen_creation",),
+                        selected_codegen_style_id="generalized_default",
+                        discovery_reason="forced_generalized_creation_family",
+                        caller_mode=scenario["caller_mode"],
+                        iterations=iterations,
+                        warmup=warmup,
+                    )
+                )
+            )
+            overrides_solo_ns, overrides_solo_note = _capture_overrides_benchmark_result(
+                lambda: _benchmark_forced_family_overrides(
                     existence=scenario["existence"],
                     bind_mode=scenario["bind_mode"],
-                    plan_strategy_id="generalized_codegen_plan",
-                    plan_family_id="generalized",
-                    candidate_codegen_style_ids=("generalized_default",),
-                    creation_strategy_ids=("generalized_codegen_creation",),
-                    selected_codegen_style_id="generalized_default",
-                    discovery_reason="forced_generalized_creation_family",
+                    plan_strategy_id="generalized_solo_codegen_plan",
+                    plan_family_id="solo",
+                    candidate_codegen_style_ids=("generalized_solo",),
+                    creation_strategy_ids=("solo_codegen_creation",),
+                    selected_codegen_style_id="generalized_solo",
+                    discovery_reason="forced_solo_creation_family",
                     caller_mode=scenario["caller_mode"],
                     iterations=iterations,
                     warmup=warmup,
                 )
             )
-            overrides_solo_ns, overrides_solo_note = _benchmark_forced_family_overrides(
-                existence=scenario["existence"],
-                bind_mode=scenario["bind_mode"],
-                plan_strategy_id="generalized_solo_codegen_plan",
-                plan_family_id="solo",
-                candidate_codegen_style_ids=("generalized_solo",),
-                creation_strategy_ids=("solo_codegen_creation",),
-                selected_codegen_style_id="generalized_solo",
-                discovery_reason="forced_solo_creation_family",
-                caller_mode=scenario["caller_mode"],
-                iterations=iterations,
-                warmup=warmup,
+            overrides_note = (
+                overrides_generalized_note
+                or overrides_solo_note
+                or ""
             )
-            overrides_note = overrides_generalized_note or overrides_solo_note or ""
             overrides_ratio = None
             if (
                     overrides_generalized_ns is not None
                     and overrides_solo_ns is not None
             ):
                 overrides_ratio = overrides_solo_ns / overrides_generalized_ns
-            no_ratio = no_solo_ns / no_generalized_ns
+            no_ratio = None
+            if no_generalized_ns is not None and no_solo_ns is not None:
+                no_ratio = no_solo_ns / no_generalized_ns
+
+            no_many_only_ns = None
+            meld_cold_many_only_ns = None
+            meld_warm_many_only_ns = None
+            overrides_many_only_ns = None
+            no_many_only_ratio = None
+            meld_cold_many_only_ratio = None
+            meld_warm_many_only_ratio = None
+            overrides_many_only_ratio = None
+            many_only_note = "not_applicable=requires_multi_spell_all_many"
+            if scenario["route"] == "many":
+                no_many_only_ns, many_no_note = _capture_benchmark_result(
+                    lambda: _benchmark_forced_family_no_overrides(
+                        existence=scenario["existence"],
+                        bind_mode=scenario["bind_mode"],
+                        plan_strategy_id="generalized_many_only_codegen_plan",
+                        plan_family_id="many_only",
+                        candidate_codegen_style_ids=("generalized_many_only",),
+                        creation_strategy_ids=("many_only_codegen_creation",),
+                        selected_codegen_style_id="generalized_many_only",
+                        discovery_reason="forced_many_only_creation_family",
+                        caller_mode=scenario["caller_mode"],
+                        iterations=iterations,
+                        warmup=warmup,
+                        extra_many_visible_spell=True,
+                    )
+                )
+                meld_cold_many_only_ns, many_meld_cold_note = _capture_benchmark_result(
+                    lambda: _benchmark_forced_family_meld_no_overrides(
+                        existence=scenario["existence"],
+                        bind_mode=scenario["bind_mode"],
+                        plan_strategy_id="generalized_many_only_codegen_plan",
+                        plan_family_id="many_only",
+                        candidate_codegen_style_ids=("generalized_many_only",),
+                        creation_strategy_ids=("many_only_codegen_creation",),
+                        selected_codegen_style_id="generalized_many_only",
+                        discovery_reason="forced_many_only_creation_family",
+                        route=scenario["route"],
+                        meld_mode="cold_create",
+                        iterations=iterations,
+                        warmup=warmup,
+                        extra_many_visible_spell=True,
+                    )
+                )
+                meld_warm_many_only_ns, many_meld_warm_note = _capture_benchmark_result(
+                    lambda: _benchmark_forced_family_meld_no_overrides(
+                        existence=scenario["existence"],
+                        bind_mode=scenario["bind_mode"],
+                        plan_strategy_id="generalized_many_only_codegen_plan",
+                        plan_family_id="many_only",
+                        candidate_codegen_style_ids=("generalized_many_only",),
+                        creation_strategy_ids=("many_only_codegen_creation",),
+                        selected_codegen_style_id="generalized_many_only",
+                        discovery_reason="forced_many_only_creation_family",
+                        route=scenario["route"],
+                        meld_mode="warm_reuse",
+                        iterations=iterations,
+                        warmup=warmup,
+                        extra_many_visible_spell=True,
+                    )
+                )
+                overrides_many_only_ns, many_overrides_note = _capture_overrides_benchmark_result(
+                    lambda: _benchmark_forced_family_overrides(
+                        existence=scenario["existence"],
+                        bind_mode=scenario["bind_mode"],
+                        plan_strategy_id="generalized_many_only_codegen_plan",
+                        plan_family_id="many_only",
+                        candidate_codegen_style_ids=("generalized_many_only",),
+                        creation_strategy_ids=("many_only_codegen_creation",),
+                        selected_codegen_style_id="generalized_many_only",
+                        discovery_reason="forced_many_only_creation_family",
+                        caller_mode=scenario["caller_mode"],
+                        iterations=iterations,
+                        warmup=warmup,
+                        extra_many_visible_spell=True,
+                    )
+                )
+                many_only_note = (
+                    many_no_note
+                    or many_meld_cold_note
+                    or many_meld_warm_note
+                    or many_overrides_note
+                    or ""
+                )
+                if (
+                        no_generalized_ns is not None
+                        and no_many_only_ns is not None
+                ):
+                    no_many_only_ratio = (
+                        no_many_only_ns / no_generalized_ns
+                    )
+                if (
+                        meld_cold_generalized_ns is not None
+                        and meld_cold_many_only_ns is not None
+                ):
+                    meld_cold_many_only_ratio = (
+                        meld_cold_many_only_ns / meld_cold_generalized_ns
+                    )
+                if (
+                        meld_warm_generalized_ns is not None
+                        and meld_warm_many_only_ns is not None
+                ):
+                    meld_warm_many_only_ratio = (
+                        meld_warm_many_only_ns / meld_warm_generalized_ns
+                    )
+                if (
+                        overrides_generalized_ns is not None
+                        and overrides_many_only_ns is not None
+                ):
+                    overrides_many_only_ratio = (
+                        overrides_many_only_ns / overrides_generalized_ns
+                    )
+
+            if generalized_note is None:
+                generalized_note = (
+                    generalized_meld_cold_note
+                    or generalized_meld_warm_note
+                    or overrides_generalized_note
+                )
+            if solo_note is None:
+                solo_note = (
+                    solo_meld_cold_note
+                    or solo_meld_warm_note
+                    or overrides_solo_note
+                )
 
         rows.append(
             {
@@ -948,23 +1226,40 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                 "bind_mode": scenario["bind_mode"],
                 "iterations": iterations,
                 "warmup": warmup,
+                "generalized_note": generalized_note,
+                "solo_note": solo_note,
+                "many_only_note": many_only_note,
                 "no_generalized_ns_per_iter": no_generalized_ns,
                 "no_solo_ns_per_iter": no_solo_ns,
                 "no_solo_over_generalized_ratio": no_ratio,
+                "no_many_only_ns_per_iter": no_many_only_ns,
+                "no_many_only_over_generalized_ratio": no_many_only_ratio,
                 "meld_cold_generalized_ns_per_iter": meld_cold_generalized_ns,
                 "meld_cold_solo_ns_per_iter": meld_cold_solo_ns,
                 "meld_cold_solo_over_generalized_ratio": meld_cold_ratio,
+                "meld_cold_many_only_ns_per_iter": meld_cold_many_only_ns,
+                "meld_cold_many_only_over_generalized_ratio": (
+                    meld_cold_many_only_ratio
+                ),
                 "meld_warm_generalized_ns_per_iter": meld_warm_generalized_ns,
                 "meld_warm_solo_ns_per_iter": meld_warm_solo_ns,
                 "meld_warm_solo_over_generalized_ratio": meld_warm_ratio,
+                "meld_warm_many_only_ns_per_iter": meld_warm_many_only_ns,
+                "meld_warm_many_only_over_generalized_ratio": (
+                    meld_warm_many_only_ratio
+                ),
                 "overrides_generalized_ns_per_iter": overrides_generalized_ns,
                 "overrides_solo_ns_per_iter": overrides_solo_ns,
                 "overrides_solo_over_generalized_ratio": overrides_ratio,
+                "overrides_many_only_ns_per_iter": overrides_many_only_ns,
+                "overrides_many_only_over_generalized_ratio": (
+                    overrides_many_only_ratio
+                ),
                 "overrides_note": overrides_note,
             }
         )
 
-    print("FORCED_PHASE10_PHASE11_CREATION_CONTEXT_SOLO_EXISTENCE_TABLE")
+    print("FORCED_PHASE10_PHASE11_CREATION_CONTEXT_STRATEGY_TABLE")
     print(_format_results_table(rows))
     return rows
 
@@ -980,15 +1275,47 @@ def test_forced_phase10_phase11_creation_context_solo_existence_matrix() -> None
         if row["bind_mode"] == "existing_creation":
             assert row["overrides_note"] == "phase10_11_bypassed"
         else:
+            assert row["no_generalized_ns_per_iter"] is not None
             assert row["no_generalized_ns_per_iter"] > 0
-            assert row["no_solo_ns_per_iter"] > 0
+            assert row["meld_cold_generalized_ns_per_iter"] is not None
             assert row["meld_cold_generalized_ns_per_iter"] > 0
-            assert row["meld_cold_solo_ns_per_iter"] > 0
             if row["route"] != "many":
+                assert row["meld_warm_generalized_ns_per_iter"] is not None
                 assert row["meld_warm_generalized_ns_per_iter"] > 0
-                assert row["meld_warm_solo_ns_per_iter"] > 0
+            assert row["overrides_generalized_ns_per_iter"] is not None
             assert row["overrides_generalized_ns_per_iter"] > 0
-            assert row["overrides_solo_ns_per_iter"] > 0
+
+            if row["no_solo_ns_per_iter"] is None:
+                assert row["solo_note"]
+            else:
+                assert row["no_solo_ns_per_iter"] > 0
+            if row["meld_cold_solo_ns_per_iter"] is None:
+                assert row["solo_note"]
+            else:
+                assert row["meld_cold_solo_ns_per_iter"] > 0
+            if row["route"] != "many":
+                if row["meld_warm_solo_ns_per_iter"] is None:
+                    assert row["solo_note"]
+                else:
+                    assert row["meld_warm_solo_ns_per_iter"] > 0
+            if row["overrides_solo_ns_per_iter"] is None:
+                assert row["solo_note"] or row["overrides_note"]
+            else:
+                assert row["overrides_solo_ns_per_iter"] > 0
+
+            if row["route"] == "many":
+                if row["no_many_only_ns_per_iter"] is None:
+                    assert row["many_only_note"]
+                else:
+                    assert row["no_many_only_ns_per_iter"] > 0
+                if row["meld_cold_many_only_ns_per_iter"] is None:
+                    assert row["many_only_note"]
+                else:
+                    assert row["meld_cold_many_only_ns_per_iter"] > 0
+                if row["overrides_many_only_ns_per_iter"] is None:
+                    assert row["many_only_note"]
+                else:
+                    assert row["overrides_many_only_ns_per_iter"] > 0
 
 
 def _run_experiment() -> None:

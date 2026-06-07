@@ -363,14 +363,14 @@ class Conduit(Cleanable):
             conduit_meld=self._meld,
             owner_conduit_creations=self._creations,
             spellspace_registry=self._spellspace_registry,
-            baseline_idle=10,
-            max_idle=10,
+            baseline_idle=20,
+            max_idle=20,
         )
         if conduit_state is ConduitState.normal:
             self._conduit_pool: ConduitPool = ConduitPool(
                 root_conduit=self,
-                baseline_idle=10,
-                max_idle=10,
+                baseline_idle=20,
+                max_idle=20,
             )
         else:
             root_conduits = self._aetheric_frame._conduits
