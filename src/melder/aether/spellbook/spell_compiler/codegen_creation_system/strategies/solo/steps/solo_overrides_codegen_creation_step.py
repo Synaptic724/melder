@@ -35,13 +35,13 @@ class SoloOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         Populate the solo overrides executor.
         """
         root_spell = state.root_spell
-        resolve_route_key = state.resolve_route_key
+        solo_emit_key = state.solo_emit_key
         spell_codegen_creation = state.spell_codegen_creation
         spell_codegen_plan = state.spell_codegen_plan
 
         executor = compile_solo_overrides_codegen_creation_executor(
             spell=root_spell,
-            resolve_route_key=resolve_route_key,
+            solo_emit_key=solo_emit_key,
         )
         lane_id = spell_codegen_plan.overrides_plan.lane_id
 
@@ -52,3 +52,9 @@ class SoloOverridesCodegenCreationStep(CodegenCreationFamilyStep):
             state.root_spell_id
         )
         spell_codegen_creation.metadata["override_step_count"] = 1
+        spell_codegen_creation.metadata["override_executor_signature"] = (
+            "solo",
+            solo_emit_key,
+            int(root_spell.has_disposal_methods),
+            int(root_spell.is_existing_creation),
+        )

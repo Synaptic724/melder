@@ -365,8 +365,9 @@ class Spell(Cleanable):
         self._creation_context_factory: Optional[CreationContextFactory] = None
         # Spell-owned selector latch for one-leader CreationContext publication.
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
-        # Runtime cache gate stamped from the owning Spellbook/Aether posture.
-        self._caching_enabled: bool = False
+        # Runtime cache policy mirror. Defaults to enabled and may be overridden
+        # later by the owning Spellbook/Aether posture during conduit stamping.
+        self._caching_enabled: bool = True
         # Runtime mode carried from owning conduit for context factory wiring.
         self._dynamic_environment: bool = False
         # Runtime resolution gate flag (False for full AOT by default).

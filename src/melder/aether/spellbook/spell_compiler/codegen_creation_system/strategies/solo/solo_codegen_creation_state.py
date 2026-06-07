@@ -29,6 +29,7 @@ class SoloCodegenCreationState:
         "root_spell",
         "root_spell_id",
         "resolve_route_key",
+        "solo_emit_key",
         "fast_transient_no_overrides_enabled",
         "no_overrides_executor",
         "overrides_executor",
@@ -50,6 +51,7 @@ class SoloCodegenCreationState:
         self.root_spell: Optional[Any] = None
         self.root_spell_id: Optional[str] = None
         self.resolve_route_key: Optional[str] = None
+        self.solo_emit_key: Optional[str] = None
         self.fast_transient_no_overrides_enabled: bool = False
         self.no_overrides_executor: Optional[Callable[..., Any]] = None
         self.overrides_executor: Optional[Callable[..., Any]] = None

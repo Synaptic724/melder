@@ -38,14 +38,19 @@ class SoloCreationContextSetupStep(CodegenCreationFamilyStep):
         runtime_record = spell_runtime_shape.records_by_spell_id[root_spell_id]
 
         route_key = self._resolve_route_key(spell_codegen_model)
+        solo_emit_key = self._resolve_solo_emit_key(
+            spell_codegen_model=spell_codegen_model,
+            runtime_record=runtime_record,
+        )
         fast_transient_no_overrides_enabled = (
-            route_key == "many"
+            solo_emit_key == "many"
             and not runtime_record.has_disposal_methods
         )
 
         state.root_spell = runtime_record.spell
         state.root_spell_id = root_spell_id
         state.resolve_route_key = route_key
+        state.solo_emit_key = solo_emit_key
         state.fast_transient_no_overrides_enabled = (
             fast_transient_no_overrides_enabled
         )
@@ -73,4 +78,28 @@ class SoloCreationContextSetupStep(CodegenCreationFamilyStep):
         """
         if spell_codegen_model.build_kind == "existing_creation":
             return "existing_creation"
+        return spell_codegen_model.route_family
+
+    @staticmethod
+    def _resolve_solo_emit_key(
+            *,
+            spell_codegen_model: object,
+            runtime_record: object,
+    ) -> str:
+        """
+        Resolve the exact solo emit key from root-only model truth.
+
+        Purpose:
+            Keep `CreationContext` route metadata coarse while giving the solo
+            phase-11 compilers the exact root existence so they can emit one
+            specific closure family per solo lifetime.
+        """
+        if spell_codegen_model.build_kind == "existing_creation":
+            return "existing_creation"
+        record_existence = getattr(runtime_record, "existence", None)
+        if record_existence is not None:
+            return record_existence.name
+        spell_existence = getattr(runtime_record.spell, "existence", None)
+        if spell_existence is not None:
+            return spell_existence.name
         return spell_codegen_model.route_family

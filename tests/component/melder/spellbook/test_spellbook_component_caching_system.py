@@ -181,9 +181,9 @@ def test_component_spellbook_cache_gate_returns_true_when_enabled() -> None:
     assert spellbook._system_caching_enabled_in_aether() is True
 
 
-def test_component_spell_defaults_caching_disabled_before_conjure() -> None:
+def test_component_spell_defaults_caching_enabled_before_conjure() -> None:
     """
-    Verify newly bound spells start with caching disabled before ownership stamp.
+    Verify newly bound spells start with caching enabled before ownership stamp.
 
     Returns:
         None.
@@ -197,7 +197,7 @@ def test_component_spell_defaults_caching_disabled_before_conjure() -> None:
     spell = _get_spell_by_version_id(spellbook, spell_id)
 
     assert spell is not None
-    assert spell._caching_enabled is False
+    assert spell._caching_enabled is True
 
 
 def test_component_spellbook_cache_gate_returns_false_when_disabled() -> None:
