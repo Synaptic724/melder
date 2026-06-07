@@ -1,0 +1,61 @@
+from typing import Optional
+
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+    SpellCodegenModel,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery import (
+    CodegenPlanDiscovery,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy import (
+    CodegenPlanDiscoveryStrategy,
+)
+
+
+class ManyOnlyCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
+    """
+    Phase-10 discovery strategy for graphs made only of `Existence.many` spells.
+
+    Purpose:
+        Claim any model whose visible spell set contains more than one spell
+        and every visible spell is `Existence.many`, so phase 10 can emit the
+        dedicated many-only planning family.
+    """
+
+    __slots__ = ()
+
+    @property
+    def strategy_id(self) -> str:
+        """
+        Return the stable discovery strategy id.
+        """
+        return "many_only_codegen_plan_discovery"
+
+    def discover(
+            self,
+            spell_codegen_model: SpellCodegenModel,
+    ) -> Optional[CodegenPlanDiscovery]:
+        """
+        Claim the model when every visible spell is `Existence.many`.
+        """
+        existence_occurrence_shape = spell_codegen_model.existence_occurrence_shape
+        if existence_occurrence_shape is None:
+            return None
+        total_spell_count = existence_occurrence_shape.total_spell_count
+        if total_spell_count <= 1:
+            return None
+
+        many_count = 0
+        for existence, count in existence_occurrence_shape.existence_counts:
+            if existence is Existence.many:
+                many_count = count
+                break
+        if many_count != total_spell_count:
+            return None
+
+        return CodegenPlanDiscovery(
+            selected_strategy_id="generalized_many_only_codegen_plan",
+            discovery_reason="many_only_visible_spell_set",
+            plan_family_id="many_only",
+            candidate_codegen_style_ids=("generalized_many_only",),
+        )
