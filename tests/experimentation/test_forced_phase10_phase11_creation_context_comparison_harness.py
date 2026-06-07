@@ -317,6 +317,7 @@ def _measure_execute_no_hooks(
 def _measure_meld(
         *,
         action: Any,
+        reset: Optional[Any],
         iterations: int,
         warmup: int,
 ) -> float:
@@ -324,9 +325,13 @@ def _measure_meld(
     Measure one prepared `meld(...)` action.
     """
     for _ in range(warmup):
+        if reset is not None:
+            reset()
         action()
     start_ns = time.perf_counter_ns()
     for _ in range(iterations):
+        if reset is not None:
+            reset()
         action()
     end_ns = time.perf_counter_ns()
     return (end_ns - start_ns) / iterations
@@ -553,6 +558,7 @@ def _benchmark_forced_family_meld_no_overrides(
         selected_codegen_style_id: str,
         discovery_reason: str,
         route: str,
+        meld_mode: str,
         iterations: int,
         warmup: int,
 ) -> Optional[float]:
@@ -560,6 +566,8 @@ def _benchmark_forced_family_meld_no_overrides(
     Time one forced family through the real meld front door on the no-overrides path.
     """
     if bind_mode == "existing_creation":
+        return None
+    if meld_mode == "warm_reuse" and route == "many":
         return None
 
     spellbook, conduit, root_spell = _make_spell_for_existence(
@@ -580,14 +588,22 @@ def _benchmark_forced_family_meld_no_overrides(
 
         if route == "spellspace":
             with conduit.enter_spellspace() as space:
+                reset = None
+                if meld_mode == "cold_create":
+                    reset = space._creations.clear_all
                 return _measure_meld(
                     action=lambda: space.meld(spell=root_spell_id),
+                    reset=reset,
                     iterations=iterations,
                     warmup=warmup,
                 )
 
+        reset = None
+        if meld_mode == "cold_create":
+            reset = conduit._creations.clear_all
         return _measure_meld(
             action=lambda: conduit.meld(spell=root_spell_id),
+            reset=reset,
             iterations=iterations,
             warmup=warmup,
         )
@@ -607,7 +623,8 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
         "phase10_strategy_id",
         "phase11_strategy_id",
         "no_ns",
-        "meld_ns",
+        "meld_cold_ns",
+        "meld_warm_ns",
         "ov_ns",
         "note",
     )
@@ -623,7 +640,8 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                     "phase10_strategy_id": "-",
                     "phase11_strategy_id": "-",
                     "no_ns": "-",
-                    "meld_ns": "-",
+                    "meld_cold_ns": "-",
+                    "meld_warm_ns": "-",
                     "ov_ns": "-",
                     "note": row["overrides_note"],
                 }
@@ -639,9 +657,23 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                 "phase10_strategy_id": "generalized_codegen_plan",
                 "phase11_strategy_id": "generalized_codegen_creation",
                 "no_ns": f"{row['no_generalized_ns_per_iter']:.3f}",
-                "meld_ns": f"{row['meld_generalized_ns_per_iter']:.3f}",
+                "meld_cold_ns": (
+                    "-"
+                    if row["meld_cold_generalized_ns_per_iter"] is None
+                    else f"{row['meld_cold_generalized_ns_per_iter']:.3f}"
+                ),
+                "meld_warm_ns": (
+                    "-"
+                    if row["meld_warm_generalized_ns_per_iter"] is None
+                    else f"{row['meld_warm_generalized_ns_per_iter']:.3f}"
+                ),
                 "ov_ns": f"{row['overrides_generalized_ns_per_iter']:.3f}",
-                "note": "",
+                "note": (
+                    "warm_reuse_bypassed=always_creates"
+                    if row["meld_warm_generalized_ns_per_iter"] is None
+                    and row["route"] == "many"
+                    else ""
+                ),
             }
         )
         string_rows.append(
@@ -653,14 +685,30 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                 "phase10_strategy_id": "generalized_solo_codegen_plan",
                 "phase11_strategy_id": "solo_codegen_creation",
                 "no_ns": f"{row['no_solo_ns_per_iter']:.3f}",
-                "meld_ns": f"{row['meld_solo_ns_per_iter']:.3f}",
+                "meld_cold_ns": (
+                    "-"
+                    if row["meld_cold_solo_ns_per_iter"] is None
+                    else f"{row['meld_cold_solo_ns_per_iter']:.3f}"
+                ),
+                "meld_warm_ns": (
+                    "-"
+                    if row["meld_warm_solo_ns_per_iter"] is None
+                    else f"{row['meld_warm_solo_ns_per_iter']:.3f}"
+                ),
                 "ov_ns": f"{row['overrides_solo_ns_per_iter']:.3f}",
                 "note": (
                     "-"
                     if row["no_solo_over_generalized_ratio"] is None
                     else f"no={row['no_solo_over_generalized_ratio']:.6f}; "
-                    f"meld={row['meld_solo_over_generalized_ratio']:.6f}; "
+                    f"cold={row['meld_cold_solo_over_generalized_ratio']:.6f}; "
+                    + (
+                        "warm=always_creates; "
+                        if row["meld_warm_solo_over_generalized_ratio"] is None
+                        else f"warm={row['meld_warm_solo_over_generalized_ratio']:.6f}; "
+                    )
+                    + (
                     f"ov={row['overrides_solo_over_generalized_ratio']:.6f}"
+                    )
                 ),
             }
         )
@@ -745,9 +793,12 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
         if scenario["bind_mode"] == "existing_creation":
             no_generalized_ns = None
             no_solo_ns = None
-            meld_generalized_ns = None
-            meld_solo_ns = None
-            meld_ratio = None
+            meld_cold_generalized_ns = None
+            meld_cold_solo_ns = None
+            meld_cold_ratio = None
+            meld_warm_generalized_ns = None
+            meld_warm_solo_ns = None
+            meld_warm_ratio = None
             overrides_generalized_ns = None
             overrides_solo_ns = None
             overrides_ratio = None
@@ -780,7 +831,7 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                 iterations=iterations,
                 warmup=warmup,
             )
-            meld_generalized_ns = _benchmark_forced_family_meld_no_overrides(
+            meld_cold_generalized_ns = _benchmark_forced_family_meld_no_overrides(
                 existence=scenario["existence"],
                 bind_mode=scenario["bind_mode"],
                 plan_strategy_id="generalized_codegen_plan",
@@ -790,10 +841,11 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                 selected_codegen_style_id="generalized_default",
                 discovery_reason="forced_generalized_creation_family",
                 route=scenario["route"],
+                meld_mode="cold_create",
                 iterations=iterations,
                 warmup=warmup,
             )
-            meld_solo_ns = _benchmark_forced_family_meld_no_overrides(
+            meld_cold_solo_ns = _benchmark_forced_family_meld_no_overrides(
                 existence=scenario["existence"],
                 bind_mode=scenario["bind_mode"],
                 plan_strategy_id="generalized_solo_codegen_plan",
@@ -803,15 +855,50 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                 selected_codegen_style_id="generalized_solo",
                 discovery_reason="forced_solo_creation_family",
                 route=scenario["route"],
+                meld_mode="cold_create",
                 iterations=iterations,
                 warmup=warmup,
             )
-            meld_ratio = None
+            meld_warm_generalized_ns = _benchmark_forced_family_meld_no_overrides(
+                existence=scenario["existence"],
+                bind_mode=scenario["bind_mode"],
+                plan_strategy_id="generalized_codegen_plan",
+                plan_family_id="generalized",
+                candidate_codegen_style_ids=("generalized_default",),
+                creation_strategy_ids=("generalized_codegen_creation",),
+                selected_codegen_style_id="generalized_default",
+                discovery_reason="forced_generalized_creation_family",
+                route=scenario["route"],
+                meld_mode="warm_reuse",
+                iterations=iterations,
+                warmup=warmup,
+            )
+            meld_warm_solo_ns = _benchmark_forced_family_meld_no_overrides(
+                existence=scenario["existence"],
+                bind_mode=scenario["bind_mode"],
+                plan_strategy_id="generalized_solo_codegen_plan",
+                plan_family_id="solo",
+                candidate_codegen_style_ids=("generalized_solo",),
+                creation_strategy_ids=("solo_codegen_creation",),
+                selected_codegen_style_id="generalized_solo",
+                discovery_reason="forced_solo_creation_family",
+                route=scenario["route"],
+                meld_mode="warm_reuse",
+                iterations=iterations,
+                warmup=warmup,
+            )
+            meld_cold_ratio = None
             if (
-                    meld_generalized_ns is not None
-                    and meld_solo_ns is not None
+                    meld_cold_generalized_ns is not None
+                    and meld_cold_solo_ns is not None
             ):
-                meld_ratio = meld_solo_ns / meld_generalized_ns
+                meld_cold_ratio = meld_cold_solo_ns / meld_cold_generalized_ns
+            meld_warm_ratio = None
+            if (
+                    meld_warm_generalized_ns is not None
+                    and meld_warm_solo_ns is not None
+            ):
+                meld_warm_ratio = meld_warm_solo_ns / meld_warm_generalized_ns
             overrides_generalized_ns, overrides_generalized_note = (
                 _benchmark_forced_family_overrides(
                     existence=scenario["existence"],
@@ -859,9 +946,12 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                 "no_generalized_ns_per_iter": no_generalized_ns,
                 "no_solo_ns_per_iter": no_solo_ns,
                 "no_solo_over_generalized_ratio": no_ratio,
-                "meld_generalized_ns_per_iter": meld_generalized_ns,
-                "meld_solo_ns_per_iter": meld_solo_ns,
-                "meld_solo_over_generalized_ratio": meld_ratio,
+                "meld_cold_generalized_ns_per_iter": meld_cold_generalized_ns,
+                "meld_cold_solo_ns_per_iter": meld_cold_solo_ns,
+                "meld_cold_solo_over_generalized_ratio": meld_cold_ratio,
+                "meld_warm_generalized_ns_per_iter": meld_warm_generalized_ns,
+                "meld_warm_solo_ns_per_iter": meld_warm_solo_ns,
+                "meld_warm_solo_over_generalized_ratio": meld_warm_ratio,
                 "overrides_generalized_ns_per_iter": overrides_generalized_ns,
                 "overrides_solo_ns_per_iter": overrides_solo_ns,
                 "overrides_solo_over_generalized_ratio": overrides_ratio,
@@ -887,8 +977,11 @@ def test_forced_phase10_phase11_creation_context_solo_existence_matrix() -> None
         else:
             assert row["no_generalized_ns_per_iter"] > 0
             assert row["no_solo_ns_per_iter"] > 0
-            assert row["meld_generalized_ns_per_iter"] > 0
-            assert row["meld_solo_ns_per_iter"] > 0
+            assert row["meld_cold_generalized_ns_per_iter"] > 0
+            assert row["meld_cold_solo_ns_per_iter"] > 0
+            if row["route"] != "many":
+                assert row["meld_warm_generalized_ns_per_iter"] > 0
+                assert row["meld_warm_solo_ns_per_iter"] > 0
             assert row["overrides_generalized_ns_per_iter"] > 0
             assert row["overrides_solo_ns_per_iter"] > 0
 
