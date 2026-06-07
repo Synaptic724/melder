@@ -12,6 +12,7 @@ from typing import (
     Dict,
     Generator,
     ClassVar,
+    Type,
 )
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -53,6 +54,77 @@ if TYPE_CHECKING:
     from melder.utilities.logger.safe_logger import SafeLogger
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+
+
+class _SpellSpaceContextManager:
+    """
+    Lightweight spellspace context manager for one conduit.
+
+    Purpose:
+        Preserve the public `with conduit.enter_spellspace()` API while
+        avoiding generator-based `@contextmanager` overhead on the hot path.
+
+    Contract:
+        - Acquires one spellspace on `__enter__`.
+        - Pushes that spellspace onto the conduit's current-thread stack.
+        - Enforces LIFO integrity on `__exit__`.
+        - Cleans the spellspace exactly once on exit.
+        - Releases held references after exit so this temporary wrapper does
+          not retain conduit or spellspace state longer than necessary.
+    """
+
+    __slots__ = ["_conduit", "_space"]
+
+    def __init__(self, conduit: "Conduit") -> None:
+        self._conduit = conduit
+        self._space: Optional[SpellSpace] = None
+
+    def __enter__(self) -> SpellSpace:
+        """
+        Acquire and activate one spellspace for this conduit.
+
+        Contract:
+            - Creates one spellspace through the owning conduit.
+            - Pushes that spellspace onto the current-thread stack.
+        """
+        self._space = self._conduit.create_spellspace()
+        self._conduit._spellspace_stack.push(self._space)
+        return self._space
+
+    def cleanup(self) -> None:
+        """
+        Release the wrapper-owned references.
+
+        Contract:
+            - Does not manage spellspace lifecycle.
+            - Releases only the wrapper's own held references.
+        """
+        del self._space
+        del self._conduit
+
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
+        """
+        Pop the active spellspace and clean it.
+
+        Contract:
+            - Validates that the current-thread active spellspace matches the
+              spellspace acquired by this wrapper.
+            - Pops exactly one spellspace from the current-thread stack.
+            - Cleans the owned spellspace before releasing wrapper references.
+        """
+        if self._conduit._spellspace_stack.get_active() is not self._space:
+            raise SpellSpaceScopeError(
+                "SpellSpace stack corruption detected while exiting."
+            )
+        self._conduit._spellspace_stack.pop()
+        self._space.cleanup()
+        self.cleanup()
+        return None
 
 #region Conduit
 
@@ -384,7 +456,13 @@ class Conduit(Cleanable):
 
         Soft-clean active and registered spellspaces without destroying the pool.
         """
-        for spellspace in self._spellspace_stack.get():
+        stack_holder = self._spellspace_stack
+        if isinstance(stack_holder, SpellSpaceThreadState):
+            active_spellspaces = stack_holder.drain()
+        else:
+            active_spellspaces = stack_holder.get()
+            stack_holder.set([])
+        for spellspace in active_spellspaces:
             try:
                 spellspace.cleanup()
             except Exception:
@@ -393,8 +471,6 @@ class Conduit(Cleanable):
                     "_cleanup_spellspaces_for_pool",
                     exc_info=True,
                 )
-
-        self._spellspace_stack.set([])
 
         while self._spellspace_registry:
             try:
@@ -710,7 +786,12 @@ class Conduit(Cleanable):
         if self._spellspace_stack is None:
             return
         try:
-            stack = list(self._spellspace_stack.get())
+            stack_holder = self._spellspace_stack
+            if isinstance(stack_holder, SpellSpaceThreadState):
+                stack = list(stack_holder.drain())
+            else:
+                stack = list(stack_holder.get())
+                stack_holder.set([])
         except Exception:
             self._logger.error(
                 "Error flushing spellspace stack",
@@ -720,7 +801,6 @@ class Conduit(Cleanable):
             return
         registry = list(self._spellspace_registry) if self._spellspace_registry is not None else []
         spellspaces = list(dict.fromkeys([*stack, *registry]))
-        self._spellspace_stack.set([])
         if self._spellspace_registry is not None:
             self._spellspace_registry.clear()
         for spellspace in spellspaces:
@@ -808,8 +888,7 @@ class Conduit(Cleanable):
         """
         self._spellspace_registry.discard(space)
 
-    @contextmanager
-    def enter_spellspace(self) -> Generator[SpellSpace, None, None]:
+    def enter_spellspace(self) -> _SpellSpaceContextManager:
         """
         Context-managed SpellSpace. Pushes one thread-local scope, yields it,
         and cleans it on exit.
@@ -832,21 +911,7 @@ class Conduit(Cleanable):
             SpellSpaceScopeError:
                 If stack integrity is violated on exit.
         """
-        space = self.create_spellspace()
-        stack = self._spellspace_stack.get()
-        stack.append(space)
-        self._spellspace_stack.set(stack)
-        try:
-            yield space
-        finally:
-            stack = self._spellspace_stack.get()
-            if not stack or stack[-1] is not space:
-                raise SpellSpaceScopeError(
-                    "SpellSpace stack corruption detected while exiting."
-                )
-            stack.pop()
-            self._spellspace_stack.set(stack)
-            space.cleanup()
+        return _SpellSpaceContextManager(self)
 
 
 

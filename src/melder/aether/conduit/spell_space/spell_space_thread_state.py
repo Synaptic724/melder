@@ -108,6 +108,63 @@ class SpellSpaceThreadState(Cleanable):
             raise TypeError("spellspace stack must be a list.")
         self._local.spellspace_stack = list(stack)
 
+    def push(self, space: Any) -> None:
+        """
+        Push one active spellspace onto the current thread stack.
+
+        Purpose:
+            Provide a direct hot-path append operation so callers that only
+            need stack mutation do not have to round-trip through list-copy
+            `get()` / `set()` helpers.
+
+        Args:
+            space:
+                Spellspace object becoming active on the current thread.
+
+        Returns:
+            None.
+        """
+        self._local.spellspace_stack.append(space)
+
+    def pop(self) -> Any:
+        """
+        Pop and return the current thread's active spellspace.
+
+        Returns:
+            Any:
+                Previously active spellspace object.
+
+        Raises:
+            IndexError:
+                If the current thread stack is empty.
+        """
+        return self._local.spellspace_stack.pop()
+
+    def clear_current_thread(self) -> None:
+        """
+        Clear the current thread's spellspace stack in place.
+
+        Returns:
+            None.
+        """
+        self._local.spellspace_stack.clear()
+
+    def drain(self) -> List[Any]:
+        """
+        Detach and return the current thread's full spellspace stack.
+
+        Purpose:
+            Provide a destructive read for cleanup paths that need the current
+            thread's stack exactly once before resetting it to empty.
+
+        Returns:
+            List[Any]:
+                Previously active spellspace stack for the current thread.
+        """
+        stack = self._local.spellspace_stack
+        self._local.spellspace_stack = []
+        return stack
+
     def get_active(self) -> Optional[Any]:
         """
         Return the current thread's active spellspace, if any.

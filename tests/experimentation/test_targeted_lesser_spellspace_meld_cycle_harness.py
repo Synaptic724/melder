@@ -234,6 +234,23 @@ def _prime_spellspace_pool(lesser: Conduit) -> None:
     spellspace_context.__exit__(None, None, None)
 
 
+def _prime_spellspace_pool_depth(lesser: Conduit, depth: int) -> None:
+    """
+    Seed the spellspace pool with one nested spellspace chain.
+    """
+    if depth <= 0:
+        raise AssertionError("depth must be > 0")
+    context_stack = []
+    try:
+        for _ in range(depth):
+            spellspace_context = lesser.enter_spellspace()
+            spellspace_context.__enter__()
+            context_stack.append(spellspace_context)
+    finally:
+        while context_stack:
+            context_stack.pop().__exit__(None, None, None)
+
+
 def _measure_average_ns(
     action: Callable[[], None],
     *,
@@ -262,11 +279,20 @@ def _measure_lesser_cycle_components(
     *,
     iterations: int,
     warmup: int,
+    pooled: bool,
 ) -> Dict[str, float]:
     """
-    Measure pooled lesser acquire and cleanup cost separately and together.
+    Measure lesser acquire and cleanup cost separately and together.
     """
-    _prime_lesser_pool(root_conduit)
+    pool = root_conduit._conduit_pool
+    previous_enabled = pool._enabled
+    if pooled:
+        _prime_lesser_pool(root_conduit)
+        pool._enabled = True
+    else:
+        with pool._lock:
+            pool._idle.clear()
+        pool._enabled = False
 
     def acquire_only() -> Conduit:
         return root_conduit.create_lesser_conduit()
@@ -275,22 +301,25 @@ def _measure_lesser_cycle_components(
         lesser = root_conduit.create_lesser_conduit()
         lesser.cleanup()
 
-    for _ in range(warmup):
-        lesser = acquire_only()
-        lesser.cleanup()
+    try:
+        for _ in range(warmup):
+            lesser = acquire_only()
+            lesser.cleanup()
 
-    acquire_total_ns = 0
-    cleanup_total_ns = 0
-    cycle_total_ns = 0
-    for _ in range(iterations):
-        cycle_t0 = time.perf_counter_ns()
-        lesser = root_conduit.create_lesser_conduit()
-        acquire_t1 = time.perf_counter_ns()
-        lesser.cleanup()
-        cleanup_t2 = time.perf_counter_ns()
-        acquire_total_ns += acquire_t1 - cycle_t0
-        cleanup_total_ns += cleanup_t2 - acquire_t1
-        cycle_total_ns += cleanup_t2 - cycle_t0
+        acquire_total_ns = 0
+        cleanup_total_ns = 0
+        cycle_total_ns = 0
+        for _ in range(iterations):
+            cycle_t0 = time.perf_counter_ns()
+            lesser = root_conduit.create_lesser_conduit()
+            acquire_t1 = time.perf_counter_ns()
+            lesser.cleanup()
+            cleanup_t2 = time.perf_counter_ns()
+            acquire_total_ns += acquire_t1 - cycle_t0
+            cleanup_total_ns += cleanup_t2 - acquire_t1
+            cycle_total_ns += cleanup_t2 - cycle_t0
+    finally:
+        pool._enabled = previous_enabled
 
     _ = cycle_action
     return {
@@ -305,35 +334,113 @@ def _measure_spellspace_cycle_components(
     *,
     iterations: int,
     warmup: int,
+    pooled: bool,
 ) -> Dict[str, float]:
     """
-    Measure pooled spellspace enter and exit cost separately and together.
+    Measure spellspace enter and exit cost separately and together.
     """
-    _prime_spellspace_pool(lesser)
+    pool = lesser._spellspace_pool
+    previous_enabled = pool._enabled
+    if pooled:
+        _prime_spellspace_pool(lesser)
+        pool._enabled = True
+    else:
+        with pool._lock:
+            pool._idle.clear()
+        pool._enabled = False
 
-    for _ in range(warmup):
-        spellspace_context = lesser.enter_spellspace()
-        spellspace_context.__enter__()
-        spellspace_context.__exit__(None, None, None)
+    try:
+        for _ in range(warmup):
+            spellspace_context = lesser.enter_spellspace()
+            spellspace_context.__enter__()
+            spellspace_context.__exit__(None, None, None)
 
-    enter_total_ns = 0
-    exit_total_ns = 0
-    cycle_total_ns = 0
-    for _ in range(iterations):
-        cycle_t0 = time.perf_counter_ns()
-        spellspace_context = lesser.enter_spellspace()
-        spellspace_context.__enter__()
-        enter_t1 = time.perf_counter_ns()
-        spellspace_context.__exit__(None, None, None)
-        exit_t2 = time.perf_counter_ns()
-        enter_total_ns += enter_t1 - cycle_t0
-        exit_total_ns += exit_t2 - enter_t1
-        cycle_total_ns += exit_t2 - cycle_t0
+        enter_total_ns = 0
+        exit_total_ns = 0
+        cycle_total_ns = 0
+        for _ in range(iterations):
+            cycle_t0 = time.perf_counter_ns()
+            spellspace_context = lesser.enter_spellspace()
+            spellspace_context.__enter__()
+            enter_t1 = time.perf_counter_ns()
+            spellspace_context.__exit__(None, None, None)
+            exit_t2 = time.perf_counter_ns()
+            enter_total_ns += enter_t1 - cycle_t0
+            exit_total_ns += exit_t2 - enter_t1
+            cycle_total_ns += exit_t2 - cycle_t0
+    finally:
+        pool._enabled = previous_enabled
 
     return {
         "spellspace_enter_ns": enter_total_ns / float(iterations),
         "spellspace_exit_ns": exit_total_ns / float(iterations),
         "spellspace_cycle_total_ns": cycle_total_ns / float(iterations),
+    }
+
+
+def _measure_recursive_spellspace_cycle_components(
+    lesser: Conduit,
+    *,
+    depth: int,
+    iterations: int,
+    warmup: int,
+    pooled: bool,
+) -> Dict[str, float]:
+    """
+    Measure nested spellspace enter/exit cycle cost at one recursion depth.
+    """
+    if depth <= 0:
+        raise AssertionError("depth must be > 0")
+
+    pool = lesser._spellspace_pool
+    previous_enabled = pool._enabled
+    if pooled:
+        _prime_spellspace_pool_depth(lesser, depth)
+        pool._enabled = True
+    else:
+        with pool._lock:
+            pool._idle.clear()
+        pool._enabled = False
+
+    def enter_nested() -> list[Any]:
+        stack = []
+        for _ in range(depth):
+            spellspace_context = lesser.enter_spellspace()
+            spellspace_context.__enter__()
+            stack.append(spellspace_context)
+        return stack
+
+    def exit_nested(context_stack: list[Any]) -> None:
+        while context_stack:
+            context_stack.pop().__exit__(None, None, None)
+
+    try:
+        for _ in range(warmup):
+            context_stack = enter_nested()
+            exit_nested(context_stack)
+
+        enter_total_ns = 0
+        exit_total_ns = 0
+        cycle_total_ns = 0
+        for _ in range(iterations):
+            cycle_t0 = time.perf_counter_ns()
+            context_stack = enter_nested()
+            enter_t1 = time.perf_counter_ns()
+            exit_nested(context_stack)
+            exit_t2 = time.perf_counter_ns()
+            enter_total_ns += enter_t1 - cycle_t0
+            exit_total_ns += exit_t2 - enter_t1
+            cycle_total_ns += exit_t2 - cycle_t0
+    finally:
+        pool._enabled = previous_enabled
+
+    return {
+        "spellspace_enter_ns": enter_total_ns / float(iterations),
+        "spellspace_exit_ns": exit_total_ns / float(iterations),
+        "spellspace_cycle_total_ns": cycle_total_ns / float(iterations),
+        "spellspace_enter_per_level_ns": (enter_total_ns / float(iterations)) / float(depth),
+        "spellspace_exit_per_level_ns": (exit_total_ns / float(iterations)) / float(depth),
+        "spellspace_cycle_per_level_ns": (cycle_total_ns / float(iterations)) / float(depth),
     }
 
 
@@ -452,6 +559,7 @@ def _format_results_table(rows: Sequence[Dict[str, str]]) -> str:
     """
     headers = (
         "surface",
+        "mode",
         "scope",
         "route",
         "cold_ns",
@@ -459,6 +567,8 @@ def _format_results_table(rows: Sequence[Dict[str, str]]) -> str:
         "enter_or_acquire_ns",
         "exit_or_cleanup_ns",
         "total_ns",
+        "delta_ns",
+        "ratio",
         "note",
     )
     widths: Dict[str, int] = {}
@@ -495,17 +605,51 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
             root_conduit,
             iterations=iterations,
             warmup=warmup,
+            pooled=False,
+        )
+        pooled_lesser_cycle = _measure_lesser_cycle_components(
+            root_conduit,
+            iterations=iterations,
+            warmup=warmup,
+            pooled=True,
+        )
+        lesser_delta_ns = (
+            lesser_cycle["lesser_cycle_total_ns"]
+            - pooled_lesser_cycle["lesser_cycle_total_ns"]
+        )
+        lesser_ratio = (
+            pooled_lesser_cycle["lesser_cycle_total_ns"]
+            / lesser_cycle["lesser_cycle_total_ns"]
         )
         rows.append(
             {
                 "surface": "lesser_cycle",
-                "scope": "pooled",
+                "mode": "cold",
+                "scope": "fresh",
                 "route": "lesser_only",
                 "cold_ns": "-",
                 "warm_ns": "-",
                 "enter_or_acquire_ns": f"{lesser_cycle['lesser_acquire_ns']:.3f}",
                 "exit_or_cleanup_ns": f"{lesser_cycle['lesser_cleanup_ns']:.3f}",
                 "total_ns": f"{lesser_cycle['lesser_cycle_total_ns']:.3f}",
+                "delta_ns": "-",
+                "ratio": "-",
+                "note": "pool_disabled_fresh_cycle",
+            }
+        )
+        rows.append(
+            {
+                "surface": "lesser_cycle",
+                "mode": "hot",
+                "scope": "pooled",
+                "route": "lesser_only",
+                "cold_ns": "-",
+                "warm_ns": "-",
+                "enter_or_acquire_ns": f"{pooled_lesser_cycle['lesser_acquire_ns']:.3f}",
+                "exit_or_cleanup_ns": f"{pooled_lesser_cycle['lesser_cleanup_ns']:.3f}",
+                "total_ns": f"{pooled_lesser_cycle['lesser_cycle_total_ns']:.3f}",
+                "delta_ns": f"{lesser_delta_ns:.3f}",
+                "ratio": f"{lesser_ratio:.6f}",
                 "note": "steady_state_pooled_reuse",
             }
         )
@@ -516,20 +660,116 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                 persistent_lesser,
                 iterations=iterations,
                 warmup=warmup,
+                pooled=False,
+            )
+            pooled_spellspace_cycle = _measure_spellspace_cycle_components(
+                persistent_lesser,
+                iterations=iterations,
+                warmup=warmup,
+                pooled=True,
+            )
+            spellspace_delta_ns = (
+                spellspace_cycle["spellspace_cycle_total_ns"]
+                - pooled_spellspace_cycle["spellspace_cycle_total_ns"]
+            )
+            spellspace_ratio = (
+                pooled_spellspace_cycle["spellspace_cycle_total_ns"]
+                / spellspace_cycle["spellspace_cycle_total_ns"]
             )
             rows.append(
                 {
                     "surface": "spellspace_cycle",
-                    "scope": "pooled",
+                    "mode": "cold",
+                    "scope": "fresh",
                     "route": "spellspace_only",
                     "cold_ns": "-",
                     "warm_ns": "-",
                     "enter_or_acquire_ns": f"{spellspace_cycle['spellspace_enter_ns']:.3f}",
                     "exit_or_cleanup_ns": f"{spellspace_cycle['spellspace_exit_ns']:.3f}",
                     "total_ns": f"{spellspace_cycle['spellspace_cycle_total_ns']:.3f}",
+                    "delta_ns": "-",
+                    "ratio": "-",
+                    "note": "pool_disabled_fresh_cycle",
+                }
+            )
+            rows.append(
+                {
+                    "surface": "spellspace_cycle",
+                    "mode": "hot",
+                    "scope": "pooled",
+                    "route": "spellspace_only",
+                    "cold_ns": "-",
+                    "warm_ns": "-",
+                    "enter_or_acquire_ns": f"{pooled_spellspace_cycle['spellspace_enter_ns']:.3f}",
+                    "exit_or_cleanup_ns": f"{pooled_spellspace_cycle['spellspace_exit_ns']:.3f}",
+                    "total_ns": f"{pooled_spellspace_cycle['spellspace_cycle_total_ns']:.3f}",
+                    "delta_ns": f"{spellspace_delta_ns:.3f}",
+                    "ratio": f"{spellspace_ratio:.6f}",
                     "note": "steady_state_pooled_reuse",
                 }
             )
+
+            for depth in (1, 2, 4, 8):
+                recursive_cold = _measure_recursive_spellspace_cycle_components(
+                    persistent_lesser,
+                    depth=depth,
+                    iterations=iterations,
+                    warmup=warmup,
+                    pooled=False,
+                )
+                recursive_hot = _measure_recursive_spellspace_cycle_components(
+                    persistent_lesser,
+                    depth=depth,
+                    iterations=iterations,
+                    warmup=warmup,
+                    pooled=True,
+                )
+                recursive_delta_ns = (
+                    recursive_cold["spellspace_cycle_total_ns"]
+                    - recursive_hot["spellspace_cycle_total_ns"]
+                )
+                recursive_ratio = (
+                    recursive_hot["spellspace_cycle_total_ns"]
+                    / recursive_cold["spellspace_cycle_total_ns"]
+                )
+                rows.append(
+                    {
+                        "surface": "spellspace_depth_cycle",
+                        "mode": "cold",
+                        "scope": "fresh",
+                        "route": f"depth_{depth}",
+                        "cold_ns": "-",
+                        "warm_ns": "-",
+                        "enter_or_acquire_ns": f"{recursive_cold['spellspace_enter_ns']:.3f}",
+                        "exit_or_cleanup_ns": f"{recursive_cold['spellspace_exit_ns']:.3f}",
+                        "total_ns": f"{recursive_cold['spellspace_cycle_total_ns']:.3f}",
+                        "delta_ns": "-",
+                        "ratio": "-",
+                        "note": (
+                            "per_level_total="
+                            f"{recursive_cold['spellspace_cycle_per_level_ns']:.3f}"
+                        ),
+                    }
+                )
+                rows.append(
+                    {
+                        "surface": "spellspace_depth_cycle",
+                        "mode": "hot",
+                        "scope": "pooled",
+                        "route": f"depth_{depth}",
+                        "cold_ns": "-",
+                        "warm_ns": "-",
+                        "enter_or_acquire_ns": f"{recursive_hot['spellspace_enter_ns']:.3f}",
+                        "exit_or_cleanup_ns": f"{recursive_hot['spellspace_exit_ns']:.3f}",
+                        "total_ns": f"{recursive_hot['spellspace_cycle_total_ns']:.3f}",
+                        "delta_ns": f"{recursive_delta_ns:.3f}",
+                        "ratio": f"{recursive_ratio:.6f}",
+                        "note": (
+                            "per_level_total="
+                            f"{recursive_hot['spellspace_cycle_per_level_ns']:.3f}"
+                        ),
+                    }
+                )
 
             conduit_unique_metrics = _measure_lesser_meld_route(
                 persistent_lesser,
@@ -541,6 +781,7 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
             rows.append(
                 {
                     "surface": "meld",
+                    "mode": "cold_hot",
                     "scope": "persistent_lesser",
                     "route": "unique_per_conduit",
                     "cold_ns": f"{conduit_unique_metrics['cold_ns']:.3f}",
@@ -548,6 +789,8 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                     "enter_or_acquire_ns": "-",
                     "exit_or_cleanup_ns": "-",
                     "total_ns": "-",
+                    "delta_ns": f"{(conduit_unique_metrics['cold_ns'] - conduit_unique_metrics['warm_ns']):.3f}",
+                    "ratio": f"{(conduit_unique_metrics['warm_ns'] / conduit_unique_metrics['cold_ns']):.6f}",
                     "note": "direct_spell_id_frontdoor",
                 }
             )
@@ -565,6 +808,7 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
             rows.append(
                 {
                     "surface": "meld",
+                    "mode": "cold_hot",
                     "scope": "persistent_lesser",
                     "route": "shared_unique",
                     "cold_ns": f"{shared_metrics['cold_ns']:.3f}",
@@ -572,6 +816,8 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                     "enter_or_acquire_ns": "-",
                     "exit_or_cleanup_ns": "-",
                     "total_ns": "-",
+                    "delta_ns": f"{(shared_metrics['cold_ns'] - shared_metrics['warm_ns']):.3f}",
+                    "ratio": f"{(shared_metrics['warm_ns'] / shared_metrics['cold_ns']):.6f}",
                     "note": "owner_creations_plus_spell_lock",
                 }
             )
@@ -586,6 +832,7 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
             rows.append(
                 {
                     "surface": "meld",
+                    "mode": "cold_only",
                     "scope": "persistent_lesser",
                     "route": "many",
                     "cold_ns": f"{many_ns:.3f}",
@@ -593,6 +840,8 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                     "enter_or_acquire_ns": "-",
                     "exit_or_cleanup_ns": "-",
                     "total_ns": "-",
+                    "delta_ns": "-",
+                    "ratio": "-",
                     "note": "always_creates",
                 }
             )
@@ -610,6 +859,7 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                 rows.append(
                     {
                         "surface": "meld",
+                        "mode": "cold_hot",
                         "scope": "persistent_spellspace",
                         "route": "unique_per_spell_space",
                         "cold_ns": f"{spellspace_metrics['cold_ns']:.3f}",
@@ -617,6 +867,8 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                         "enter_or_acquire_ns": "-",
                         "exit_or_cleanup_ns": "-",
                         "total_ns": "-",
+                        "delta_ns": f"{(spellspace_metrics['cold_ns'] - spellspace_metrics['warm_ns']):.3f}",
+                        "ratio": f"{(spellspace_metrics['warm_ns'] / spellspace_metrics['cold_ns']):.6f}",
                         "note": "space_frontdoor_only",
                     }
                 )
@@ -637,27 +889,31 @@ def test_targeted_lesser_spellspace_meld_cycle_harness() -> None:
     Run the targeted cycle-cost harness and assert it produced usable output.
     """
     rows = _run_targeted_cycle_harness()
-    if len(rows) != 6:
+    if len(rows) != 16:
         raise AssertionError("Targeted cycle harness did not produce the expected row count.")
     by_route = {}
     for row in rows:
-        by_route[(row["surface"], row["route"])] = row
+        by_route[(row["surface"], row["mode"], row["route"])] = row
 
-    if float(by_route[("lesser_cycle", "lesser_only")]["total_ns"]) <= 0.0:
+    if float(by_route[("lesser_cycle", "cold", "lesser_only")]["total_ns"]) <= 0.0:
         raise AssertionError("Targeted lesser cycle metric must be positive.")
-    if float(by_route[("spellspace_cycle", "spellspace_only")]["total_ns"]) <= 0.0:
+    if float(by_route[("lesser_cycle", "hot", "lesser_only")]["total_ns"]) <= 0.0:
+        raise AssertionError("Targeted pooled lesser cycle metric must be positive.")
+    if float(by_route[("spellspace_cycle", "cold", "spellspace_only")]["total_ns"]) <= 0.0:
         raise AssertionError("Targeted spellspace cycle metric must be positive.")
-    if float(by_route[("meld", "unique_per_conduit")]["cold_ns"]) <= 0.0:
+    if float(by_route[("spellspace_cycle", "hot", "spellspace_only")]["total_ns"]) <= 0.0:
+        raise AssertionError("Targeted pooled spellspace cycle metric must be positive.")
+    if float(by_route[("meld", "cold_hot", "unique_per_conduit")]["cold_ns"]) <= 0.0:
         raise AssertionError("Targeted unique_per_conduit cold meld metric must be positive.")
-    if float(by_route[("meld", "unique_per_conduit")]["warm_ns"]) <= 0.0:
+    if float(by_route[("meld", "cold_hot", "unique_per_conduit")]["warm_ns"]) <= 0.0:
         raise AssertionError("Targeted unique_per_conduit warm meld metric must be positive.")
-    if float(by_route[("meld", "shared_unique")]["cold_ns"]) <= 0.0:
+    if float(by_route[("meld", "cold_hot", "shared_unique")]["cold_ns"]) <= 0.0:
         raise AssertionError("Targeted shared cold meld metric must be positive.")
-    if float(by_route[("meld", "shared_unique")]["warm_ns"]) <= 0.0:
+    if float(by_route[("meld", "cold_hot", "shared_unique")]["warm_ns"]) <= 0.0:
         raise AssertionError("Targeted shared warm meld metric must be positive.")
-    if float(by_route[("meld", "many")]["cold_ns"]) <= 0.0:
+    if float(by_route[("meld", "cold_only", "many")]["cold_ns"]) <= 0.0:
         raise AssertionError("Targeted many meld metric must be positive.")
-    if float(by_route[("meld", "unique_per_spell_space")]["cold_ns"]) <= 0.0:
+    if float(by_route[("meld", "cold_hot", "unique_per_spell_space")]["cold_ns"]) <= 0.0:
         raise AssertionError("Targeted spellspace cold meld metric must be positive.")
-    if float(by_route[("meld", "unique_per_spell_space")]["warm_ns"]) <= 0.0:
+    if float(by_route[("meld", "cold_hot", "unique_per_spell_space")]["warm_ns"]) <= 0.0:
         raise AssertionError("Targeted spellspace warm meld metric must be positive.")

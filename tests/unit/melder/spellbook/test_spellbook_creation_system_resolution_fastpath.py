@@ -201,6 +201,45 @@ class _StubLogger:
         self.error_calls.append(args + (kwargs,))
 
 
+class _StubCachingSystem:
+    """
+    Purpose:
+        Provide the minimum cache-utility surface for cache-path helper tests.
+    Contract:
+        - Exposes `cached_spell_ids` as a live key view.
+        - Resolves cached spell payloads by spell id.
+    Lifecycle:
+        - Test-only helper with in-memory payload storage only.
+    """
+
+    def __init__(self, payloads_by_spell_id: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Purpose:
+            Initialize the in-memory spell-payload map.
+        Contract:
+            - Starts with the provided payload mapping or an empty mapping.
+        Args:
+            payloads_by_spell_id:
+                Optional spell-id keyed cache payload mapping.
+        Returns:
+            None.
+        """
+        self._payloads_by_spell_id = payloads_by_spell_id or {}
+
+    @property
+    def cached_spell_ids(self):
+        """
+        Return the live spell-id key view.
+        """
+        return self._payloads_by_spell_id.keys()
+
+    def get_spell_payload(self, spell_id: str) -> Optional[Any]:
+        """
+        Return one cached spell payload by spell id.
+        """
+        return self._payloads_by_spell_id.get(spell_id)
+
+
 class _HookConfiguration:
     """
     Minimal hook/configuration double for hook-map and AOT helper tests.
@@ -1531,3 +1570,212 @@ def test_run_deferred_resolution_phases_for_target_spell_success_and_non_visibil
             conduit_id="cid",
             target_spell=types.SimpleNamespace(spell_id="spell-1"),
         )
+
+
+def test_build_conjure_cache_state_reports_disabled_path(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify disabled Spellbook cache posture returns the disabled cache path.
+
+    Returns:
+        None.
+    """
+    spellbook = types.SimpleNamespace(
+        _spell_id_pool={"spell-a": object()},
+        _system_caching_enabled_in_aether=lambda: False,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_read_full_ahead_of_time_compilation",
+        staticmethod(lambda **kwargs: True),
+    )
+
+    cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+        spellbook=spellbook,
+        dynamic=True,
+    )
+
+    assert cache_state["caching_enabled"] is False
+    assert cache_state["dynamic_mode"] is True
+    assert cache_state["automatic_mode"] is False
+    assert cache_state["full_ahead_of_time_compilation"] is True
+    assert cache_state["jit_mode"] is False
+    assert cache_state["cache_path"] == "disabled"
+    assert cache_state["caching_system"] is None
+    assert cache_state["live_spell_ids"] == {"spell-a"}
+    assert cache_state["cached_spell_ids"] == set()
+
+
+def test_build_conjure_cache_state_reports_full_hit_path(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify exact spell-id coverage is classified as a full cache hit.
+
+    Returns:
+        None.
+    """
+    caching_system = _StubCachingSystem(
+        {
+            "spell-a": {"spell_id": "spell-a"},
+            "spell-b": {"spell_id": "spell-b"},
+        }
+    )
+    spellbook = types.SimpleNamespace(
+        _spell_id_pool={"spell-a": object(), "spell-b": object()},
+        _system_caching_enabled_in_aether=lambda: True,
+        _get_or_create_caching_system=lambda: caching_system,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_read_full_ahead_of_time_compilation",
+        staticmethod(lambda **kwargs: True),
+    )
+
+    cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+        spellbook=spellbook,
+        dynamic=False,
+    )
+
+    assert cache_state["caching_enabled"] is True
+    assert cache_state["dynamic_mode"] is False
+    assert cache_state["automatic_mode"] is True
+    assert cache_state["cache_path"] == "full_hit"
+    assert cache_state["is_full_hit"] is True
+    assert cache_state["is_mixed"] is False
+    assert cache_state["is_full_miss"] is False
+    assert cache_state["matched_spell_ids"] == {"spell-a", "spell-b"}
+    assert cache_state["missing_spell_ids"] == set()
+    assert cache_state["stale_cached_spell_ids"] == set()
+
+
+def test_build_conjure_cache_state_reports_mixed_path(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify partial coverage is classified as a mixed cache run.
+
+    Returns:
+        None.
+    """
+    caching_system = _StubCachingSystem(
+        {
+            "spell-a": {"spell_id": "spell-a"},
+            "stale-spell": {"spell_id": "stale-spell"},
+        }
+    )
+    spellbook = types.SimpleNamespace(
+        _spell_id_pool={"spell-a": object(), "spell-b": object()},
+        _system_caching_enabled_in_aether=lambda: True,
+        _get_or_create_caching_system=lambda: caching_system,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_read_full_ahead_of_time_compilation",
+        staticmethod(lambda **kwargs: False),
+    )
+
+    cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+        spellbook=spellbook,
+        dynamic=True,
+    )
+
+    assert cache_state["full_ahead_of_time_compilation"] is False
+    assert cache_state["jit_mode"] is True
+    assert cache_state["cache_path"] == "mixed"
+    assert cache_state["is_full_hit"] is False
+    assert cache_state["is_mixed"] is True
+    assert cache_state["is_full_miss"] is False
+    assert cache_state["matched_spell_ids"] == {"spell-a"}
+    assert cache_state["missing_spell_ids"] == {"spell-b"}
+    assert cache_state["stale_cached_spell_ids"] == {"stale-spell"}
+
+
+def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flags(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify the conjure cache-load helper publishes cached payloads onto spells.
+
+    Returns:
+        None.
+    """
+    loaded_calls: List[tuple[str, Dict[str, Any], bool]] = []
+
+    def _fake_load_spell_cache_payload(
+            spell: Any,
+            *,
+            publish: bool = True,
+    ) -> object:
+        loaded_calls.append((spell.spell_id, publish))
+        return object()
+    spell_a = types.SimpleNamespace(
+        spell_id="spell-a",
+        resolution_complete=False,
+        resolution_required=True,
+    )
+    spell_b = types.SimpleNamespace(
+        spell_id="spell-b",
+        resolution_complete=False,
+        resolution_required=True,
+    )
+    spellbook = types.SimpleNamespace(
+        _spell_id_pool={
+            "spell-a": spell_a,
+            "spell-b": spell_b,
+        }
+    )
+    caching_system = _StubCachingSystem(
+        {
+            "spell-a": {"spell_id": "spell-a"},
+            "missing": {"spell_id": "missing"},
+        }
+    )
+    caching_system.load_spell_payload_into_spell = _fake_load_spell_cache_payload
+
+    loaded_spell_ids = SpellbookCreationSystem._load_cached_spell_payloads_for_conjure(
+        spellbook=spellbook,
+        caching_system=caching_system,
+        spell_ids=("spell-a", "missing", "spell-z"),
+    )
+
+    assert loaded_spell_ids == {"spell-a"}
+    assert loaded_calls == [("spell-a", True)]
+    assert spell_a.resolution_complete is True
+    assert spell_a.resolution_required is False
+    assert spell_b.resolution_complete is False
+    assert spell_b.resolution_required is True
+
+
+def test_emit_spell_payloads_for_conjure_returns_only_successful_spell_ids() -> None:
+    """
+    Verify the conjure cache-save helper reports only successful emits.
+
+    Returns:
+        None.
+    """
+    emit_calls: List[str] = []
+
+    def _emit_true() -> bool:
+        emit_calls.append("spell-a")
+        return True
+
+    def _emit_false() -> bool:
+        emit_calls.append("spell-b")
+        return False
+
+    spellbook = types.SimpleNamespace(
+        _spell_id_pool={
+            "spell-a": types.SimpleNamespace(emit_cache=_emit_true),
+            "spell-b": types.SimpleNamespace(emit_cache=_emit_false),
+        }
+    )
+
+    emitted_spell_ids = SpellbookCreationSystem._emit_spell_payloads_for_conjure(
+        spellbook=spellbook,
+        spell_ids=("spell-a", "spell-b", "spell-z"),
+    )
+
+    assert emitted_spell_ids == {"spell-a"}
+    assert sorted(emit_calls) == ["spell-a", "spell-b"]

@@ -179,6 +179,7 @@ def test_component_spellbook_cache_gate_returns_true_when_enabled() -> None:
     spellbook = _make_spellbook()
 
     assert spellbook._system_caching_enabled_in_aether() is True
+    assert spellbook._caching_enabled is True
 
 
 def test_component_spell_defaults_caching_enabled_before_conjure() -> None:
@@ -218,6 +219,7 @@ def test_component_spellbook_cache_gate_returns_false_when_disabled() -> None:
     spellbook = _make_spellbook()
 
     assert spellbook._system_caching_enabled_in_aether() is False
+    assert spellbook._caching_enabled is False
 
 
 def test_component_spell_stamps_caching_enabled_from_root_posture() -> None:

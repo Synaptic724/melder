@@ -27,6 +27,7 @@ def _ensure_src_on_path() -> None:
 _ensure_src_on_path()
 
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit import _SpellSpaceContextManager
 from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
@@ -82,7 +83,15 @@ def _format_breakdown_table(rows: Sequence[Dict[str, str]]) -> str:
     """
     Format one compact terminal table for pooled breakdown output.
     """
-    headers = ("surface", "metric", "avg_ns", "note")
+    headers = (
+        "surface",
+        "phase",
+        "metric",
+        "avg_ns",
+        "pct_of_phase",
+        "pct_of_surface",
+        "note",
+    )
     widths: Dict[str, int] = {}
     for header in headers:
         widths[header] = len(header)
@@ -108,13 +117,81 @@ def _build_rows(surface: str, metrics: Dict[str, float], notes: Dict[str, str]) 
     """
     Convert one metric dictionary into printable table rows.
     """
+    if surface == "pooled_lesser":
+        phase_totals = {
+            "cycle": metrics["cycle_total_ns"],
+            "acquire": metrics["acquire_total_ns"],
+            "cleanup": metrics["cleanup_total_ns"],
+            "prepare": metrics["prepare_for_pool_ns"],
+        }
+        phase_map = {
+            "cycle_total_ns": "cycle",
+            "acquire_total_ns": "acquire",
+            "pool_create_ns": "acquire",
+            "ward_link_ns": "acquire",
+            "acquire_residual_ns": "acquire",
+            "cleanup_total_ns": "cleanup",
+            "prepare_for_pool_ns": "prepare",
+            "cleanup_spellspaces_for_pool_ns": "prepare",
+            "lesser_creations_reset_ns": "prepare",
+            "ward_detach_ns": "prepare",
+            "pool_return_ns": "prepare",
+            "prepare_residual_ns": "prepare",
+            "cleanup_residual_ns": "cleanup",
+        }
+    elif surface == "pooled_spellspace":
+        phase_totals = {
+            "cycle": metrics["cycle_total_ns"],
+            "enter": metrics["enter_total_ns"],
+            "exit": metrics["exit_total_ns"],
+            "context_enter": metrics["context_enter_ns"],
+            "context_exit": metrics["context_exit_ns"],
+            "cleanup": metrics["spellspace_cleanup_total_ns"],
+        }
+        phase_map = {
+            "cycle_total_ns": "cycle",
+            "enter_total_ns": "enter",
+            "context_manager_create_ns": "enter",
+            "pool_acquire_ns": "enter",
+            "pool_acquire_core_ns": "enter",
+            "context_enter_ns": "context_enter",
+            "pool_prepare_ns": "enter",
+            "stack_push_ns": "context_enter",
+            "enter_residual_ns": "enter",
+            "exit_total_ns": "exit",
+            "context_exit_ns": "context_exit",
+            "stack_get_active_ns": "context_exit",
+            "stack_pop_ns": "context_exit",
+            "spellspace_cleanup_total_ns": "cleanup",
+            "cleanup_for_pool_reuse_ns": "cleanup",
+            "spellspace_creations_reset_ns": "cleanup",
+            "pool_release_ns": "cleanup",
+            "cleanup_for_pool_reuse_residual_ns": "cleanup",
+            "cleanup_residual_ns": "exit",
+            "exit_residual_ns": "exit",
+        }
+    else:
+        raise AssertionError(f"Unknown breakdown surface: {surface}")
+
+    surface_total = metrics["cycle_total_ns"]
     rows: List[Dict[str, str]] = []
     for key, value in metrics.items():
+        phase = phase_map[key]
+        phase_total = phase_totals[phase]
+        pct_of_phase = (
+            (value / phase_total) * 100.0 if phase_total > 0.0 else 0.0
+        )
+        pct_of_surface = (
+            (value / surface_total) * 100.0 if surface_total > 0.0 else 0.0
+        )
         rows.append(
             {
                 "surface": surface,
+                "phase": phase,
                 "metric": key,
                 "avg_ns": f"{value:.3f}",
+                "pct_of_phase": f"{pct_of_phase:.2f}%",
+                "pct_of_surface": f"{pct_of_surface:.2f}%",
                 "note": notes.get(key, ""),
             }
         )
@@ -318,10 +395,14 @@ def _measure_pooled_spellspace_breakdown(
         "enter_total_ns": 0,
         "exit_total_ns": 0,
         "cycle_total_ns": 0,
+        "context_manager_create_ns": 0,
         "pool_acquire_ns": 0,
         "pool_prepare_ns": 0,
-        "stack_get_ns": 0,
-        "stack_set_ns": 0,
+        "context_enter_ns": 0,
+        "stack_push_ns": 0,
+        "context_exit_ns": 0,
+        "stack_get_active_ns": 0,
+        "stack_pop_ns": 0,
         "spellspace_cleanup_total_ns": 0,
         "cleanup_for_pool_reuse_ns": 0,
         "spellspace_creations_reset_ns": 0,
@@ -361,27 +442,64 @@ def _measure_pooled_spellspace_breakdown(
 
         return wrapped
 
-    def make_stack_get_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
+    def make_context_enter_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapped(self: _SpellSpaceContextManager) -> Any:
+            return _timed_call(
+                totals,
+                "context_enter_ns",
+                lambda: original(self),
+            )
+
+        return wrapped
+
+    def make_context_exit_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapped(
+                self: _SpellSpaceContextManager,
+                exc_type: Any,
+                exc_value: Any,
+                traceback: Any,
+        ) -> Any:
+            return _timed_call(
+                totals,
+                "context_exit_ns",
+                lambda: original(self, exc_type, exc_value, traceback),
+            )
+
+        return wrapped
+
+    def make_stack_push_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapped(self: SpellSpaceThreadState, space: Any) -> Any:
+            if self is target_thread_state:
+                return _timed_call(
+                    totals,
+                    "stack_push_ns",
+                    lambda: original(self, space),
+                )
+            return original(self, space)
+
+        return wrapped
+
+    def make_stack_get_active_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
         def wrapped(self: SpellSpaceThreadState) -> Any:
             if self is target_thread_state:
                 return _timed_call(
                     totals,
-                    "stack_get_ns",
+                    "stack_get_active_ns",
                     lambda: original(self),
                 )
             return original(self)
 
         return wrapped
 
-    def make_stack_set_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
-        def wrapped(self: SpellSpaceThreadState, stack: List[Any]) -> Any:
+    def make_stack_pop_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapped(self: SpellSpaceThreadState) -> Any:
             if self is target_thread_state:
                 return _timed_call(
                     totals,
-                    "stack_set_ns",
-                    lambda: original(self, stack),
+                    "stack_pop_ns",
+                    lambda: original(self),
                 )
-            return original(self, stack)
+            return original(self)
 
         return wrapped
 
@@ -438,13 +556,26 @@ def _measure_pooled_spellspace_breakdown(
             _patch_method(AbstractElasticPool, "acquire", make_pool_acquire_wrapper)
         )
         stack.enter_context(
+            _patch_method(_SpellSpaceContextManager, "__enter__", make_context_enter_wrapper)
+        )
+        stack.enter_context(
+            _patch_method(_SpellSpaceContextManager, "__exit__", make_context_exit_wrapper)
+        )
+        stack.enter_context(
             _patch_method(SpellSpacePool, "prepare_object", make_pool_prepare_wrapper)
         )
         stack.enter_context(
-            _patch_method(SpellSpaceThreadState, "get", make_stack_get_wrapper)
+            _patch_method(SpellSpaceThreadState, "push", make_stack_push_wrapper)
         )
         stack.enter_context(
-            _patch_method(SpellSpaceThreadState, "set", make_stack_set_wrapper)
+            _patch_method(
+                SpellSpaceThreadState,
+                "get_active",
+                make_stack_get_active_wrapper,
+            )
+        )
+        stack.enter_context(
+            _patch_method(SpellSpaceThreadState, "pop", make_stack_pop_wrapper)
         )
         stack.enter_context(_patch_method(SpellSpace, "cleanup", make_cleanup_wrapper))
         stack.enter_context(
@@ -462,32 +593,39 @@ def _measure_pooled_spellspace_breakdown(
         )
 
         for _ in range(warmup):
+            create_t0 = time.perf_counter_ns()
             context_manager = lesser.enter_spellspace()
+            totals["context_manager_create_ns"] += time.perf_counter_ns() - create_t0
             context_manager.__enter__()
             context_manager.__exit__(None, None, None)
 
         for _ in range(iterations):
             cycle_t0 = time.perf_counter_ns()
+            create_t0 = time.perf_counter_ns()
             context_manager = lesser.enter_spellspace()
+            create_t1 = time.perf_counter_ns()
             context_manager.__enter__()
             enter_t1 = time.perf_counter_ns()
             context_manager.__exit__(None, None, None)
             exit_t2 = time.perf_counter_ns()
+            totals["context_manager_create_ns"] += create_t1 - create_t0
             totals["enter_total_ns"] += enter_t1 - cycle_t0
             totals["exit_total_ns"] += exit_t2 - enter_t1
             totals["cycle_total_ns"] += exit_t2 - cycle_t0
 
+    pool_acquire_core_ns = (
+        totals["pool_acquire_ns"] - totals["pool_prepare_ns"]
+    )
     enter_residual = (
         totals["enter_total_ns"]
+        - totals["context_manager_create_ns"]
         - totals["pool_acquire_ns"]
-        - totals["stack_get_ns"]
-        - totals["stack_set_ns"]
+        - totals["context_enter_ns"]
     )
     exit_residual = (
         totals["exit_total_ns"]
+        - totals["context_exit_ns"]
         - totals["spellspace_cleanup_total_ns"]
-        - totals["stack_get_ns"]
-        - totals["stack_set_ns"]
     )
     cleanup_residual = (
         totals["spellspace_cleanup_total_ns"]
@@ -500,6 +638,7 @@ def _measure_pooled_spellspace_breakdown(
     )
     totals["enter_residual_ns"] = max(0, enter_residual)
     totals["exit_residual_ns"] = max(0, exit_residual)
+    totals["pool_acquire_core_ns"] = max(0, pool_acquire_core_ns)
     totals["cleanup_residual_ns"] = max(0, cleanup_residual)
     totals["cleanup_for_pool_reuse_residual_ns"] = max(
         0,
@@ -563,10 +702,15 @@ def _run_pooled_breakdown_harness() -> List[Dict[str, str]]:
                         "enter_total_ns": "full enter_spellspace steady-state enter",
                         "exit_total_ns": "full spellspace context exit",
                         "cycle_total_ns": "outer steady-state pooled spellspace cycle",
+                        "context_manager_create_ns": "Conduit.enter_spellspace() wrapper construction",
                         "pool_acquire_ns": "AbstractElasticPool.acquire on SpellSpacePool",
+                        "pool_acquire_core_ns": "pool acquire excluding prepare_object",
+                        "context_enter_ns": "_SpellSpaceContextManager.__enter__",
                         "pool_prepare_ns": "SpellSpacePool.prepare_object",
-                        "stack_get_ns": "SpellSpaceThreadState.get",
-                        "stack_set_ns": "SpellSpaceThreadState.set",
+                        "stack_push_ns": "SpellSpaceThreadState.push during enter",
+                        "context_exit_ns": "_SpellSpaceContextManager.__exit__",
+                        "stack_get_active_ns": "SpellSpaceThreadState.get_active during exit",
+                        "stack_pop_ns": "SpellSpaceThreadState.pop during exit",
                         "spellspace_cleanup_total_ns": "SpellSpace.cleanup",
                         "cleanup_for_pool_reuse_ns": "SpellSpace._cleanup_for_pool_reuse",
                         "spellspace_creations_reset_ns": "Creations.reset_for_pool on spellspace",
@@ -606,7 +750,15 @@ def test_targeted_pooled_cycle_breakdown_harness() -> None:
         ("pooled_lesser", "ward_detach_ns"),
         ("pooled_spellspace", "enter_total_ns"),
         ("pooled_spellspace", "exit_total_ns"),
+        ("pooled_spellspace", "context_manager_create_ns"),
         ("pooled_spellspace", "pool_acquire_ns"),
+        ("pooled_spellspace", "pool_acquire_core_ns"),
+        ("pooled_spellspace", "context_enter_ns"),
+        ("pooled_spellspace", "pool_prepare_ns"),
+        ("pooled_spellspace", "stack_push_ns"),
+        ("pooled_spellspace", "context_exit_ns"),
+        ("pooled_spellspace", "stack_get_active_ns"),
+        ("pooled_spellspace", "stack_pop_ns"),
         ("pooled_spellspace", "spellspace_cleanup_total_ns"),
         ("pooled_spellspace", "spellspace_creations_reset_ns"),
         ("pooled_spellspace", "pool_release_ns"),
