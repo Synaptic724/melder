@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, Lis
 
 
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spell_cache_payload_builder import (
+    load_spell_cache_payload,
+)
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
@@ -36,6 +39,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+    from melder.utilities.caching_system.caching_system import CachingSystem
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
@@ -271,6 +275,203 @@ class SpellbookCreationSystem(Cleanable):
             phase_scheduler_cls=phase_scheduler_cls,
         )
         return conduit_id
+
+    @staticmethod
+    def _build_conjure_cache_state(
+            *,
+            spellbook: Spellbook,
+            dynamic: bool,
+    ) -> Dict[str, Any]:
+        """
+        Build the cache-state summary used by conjure cache orchestration.
+
+        Purpose:
+            Provide one bounded helper that classifies the current Spellbook
+            spell set against the owned conduit cache so later conjure slices
+            can choose between full-hit, mixed, and full-miss cache paths.
+
+        Contract:
+            - Uses the Spellbook-owned cache-enabled bool as the first gate.
+            - Reads dynamic/automatic posture from the caller and AOT/JIT
+              posture from configuration.
+            - Builds exact-match, mixed, and miss sets from live spell ids and
+              cached spell ids.
+            - Creates the Spellbook-owned CachingSystem only when caching is
+              enabled.
+
+        Args:
+            spellbook:
+                Owning Spellbook instance whose local spell set should be
+                compared to cache state.
+            dynamic:
+                True when conjure is running in dynamic mode.
+
+        Returns:
+            Dict[str, Any]:
+                Cache-state summary containing the cache utility, runtime
+                posture flags, spell-id sets, and the classified cache path.
+        """
+        full_ahead_of_time_compilation = (
+            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+                spellbook=spellbook,
+                context_name="_build_conjure_cache_state",
+            )
+        )
+        caching_enabled = spellbook._system_caching_enabled_in_aether()
+        live_spell_ids = set(spellbook._spell_id_pool.keys())
+        caching_system: Optional[CachingSystem] = None
+        cached_spell_ids: Set[str] = set()
+        if caching_enabled:
+            caching_system = spellbook._get_or_create_caching_system()
+            cached_spell_ids = set(caching_system.cached_spell_ids)
+        matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
+        missing_spell_ids = live_spell_ids.difference(cached_spell_ids)
+        stale_cached_spell_ids = cached_spell_ids.difference(live_spell_ids)
+        is_full_hit = bool(live_spell_ids) and live_spell_ids == cached_spell_ids
+        is_mixed = bool(matched_spell_ids) and bool(missing_spell_ids)
+        is_full_miss = not is_full_hit and not is_mixed
+        return {
+            "caching_enabled": caching_enabled,
+            "caching_system": caching_system,
+            "dynamic_mode": bool(dynamic),
+            "automatic_mode": not bool(dynamic),
+            "full_ahead_of_time_compilation": full_ahead_of_time_compilation,
+            "jit_mode": not full_ahead_of_time_compilation,
+            "live_spell_ids": live_spell_ids,
+            "cached_spell_ids": cached_spell_ids,
+            "matched_spell_ids": matched_spell_ids,
+            "missing_spell_ids": missing_spell_ids,
+            "stale_cached_spell_ids": stale_cached_spell_ids,
+            "cache_path": SpellbookCreationSystem._resolve_conjure_cache_path(
+                caching_enabled=caching_enabled,
+                is_full_hit=is_full_hit,
+                is_mixed=is_mixed,
+            ),
+            "is_full_hit": is_full_hit,
+            "is_mixed": is_mixed,
+            "is_full_miss": is_full_miss,
+        }
+
+    @staticmethod
+    def _resolve_conjure_cache_path(
+            *,
+            caching_enabled: bool,
+            is_full_hit: bool,
+            is_mixed: bool,
+    ) -> str:
+        """
+        Resolve the current conjure cache classification label.
+
+        Args:
+            caching_enabled:
+                True when the Spellbook cache policy is enabled.
+            is_full_hit:
+                True when the live spell set matches the cached spell set.
+            is_mixed:
+                True when the live spell set partially overlaps the cache.
+
+        Returns:
+            str:
+                One of `disabled`, `full_hit`, `mixed`, or `full_miss`.
+        """
+        if not caching_enabled:
+            return "disabled"
+        if is_full_hit:
+            return "full_hit"
+        if is_mixed:
+            return "mixed"
+        return "full_miss"
+
+    @staticmethod
+    def _load_cached_spell_payloads_for_conjure(
+            *,
+            spellbook: Spellbook,
+            caching_system: "CachingSystem",
+            spell_ids: Iterable[str],
+    ) -> Set[str]:
+        """
+        Load cached spell payloads into live spells for the conjure path.
+
+        Purpose:
+            Provide the production cache-load surface for conjure-owned cache
+            orchestration without forcing the caller to rebuild individual
+            payload-loading logic.
+
+        Contract:
+            - Requires a live Spellbook-owned cache utility.
+            - Loads only the current production payload shape.
+            - Publishes the rebuilt CreationContext back onto each loaded spell.
+            - Marks loaded spells as runtime-resolution complete.
+
+        Args:
+            spellbook:
+                Owning Spellbook instance.
+            caching_system:
+                Spellbook-owned cache utility.
+            spell_ids:
+                Spell ids whose cached payloads should be loaded.
+
+        Returns:
+            Set[str]:
+                Spell ids successfully loaded from cache.
+        """
+        loaded_spell_ids: Set[str] = set()
+        requested_spell_ids = set(spell_ids)
+        matched_spell_ids = requested_spell_ids.intersection(
+            spellbook._spell_id_pool.keys(),
+            caching_system.cached_spell_ids,
+        )
+        for spell_id in matched_spell_ids:
+            spell = spellbook._spell_id_pool.get(spell_id)
+            spell_payload = caching_system.get_spell_payload(spell_id)
+            if spell_payload is None:
+                continue
+            load_spell_cache_payload(
+                spell=spell,
+                spell_payload=spell_payload,
+                publish=True,
+            )
+            spell.resolution_complete = True
+            spell.resolution_required = False
+            loaded_spell_ids.add(spell_id)
+        return loaded_spell_ids
+
+    @staticmethod
+    def _emit_spell_payloads_for_conjure(
+            *,
+            spellbook: Spellbook,
+            spell_ids: Iterable[str],
+    ) -> Set[str]:
+        """
+        Emit current spell payloads through the Spellbook-owned cache path.
+
+        Purpose:
+            Provide the save-side helper surface for later conjure cache
+            branches while keeping cache ownership on Spellbook.
+
+        Contract:
+            - Delegates payload emission to `Spell.emit_cache()`.
+            - Returns only the spell ids whose emit call reported success.
+            - Uses the current production write behavior of the cache utility.
+
+        Args:
+            spellbook:
+                Owning Spellbook instance.
+            spell_ids:
+                Spell ids to emit into cache.
+
+        Returns:
+            Set[str]:
+                Spell ids whose payloads were emitted successfully.
+        """
+        matched_spell_ids = set(spell_ids).intersection(
+            spellbook._spell_id_pool.keys(),
+        )
+        return {
+            spell_id
+            for spell_id in matched_spell_ids
+            if spellbook._spell_id_pool[spell_id].emit_cache()
+        }
 
     @staticmethod
     def _resolve_conjure_policy(

@@ -12,12 +12,12 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
 from melder.aether.spellbook.bind.scan import Scan
+from melder.aether.spellbook.spell_cache_payload_builder import (
+    build_spell_cache_payload,
+)
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.caching_system.caching_system import CachingSystem
-from melder.utilities.caching_system.spell_cache_payload_builder import (
-    build_spell_cache_payload,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -124,6 +124,7 @@ and logging.
         "_configuration",
         "_configuration_locked",
         "_conjured",
+        "_caching_enabled",
         "_caching_system",
         "_contracted_spells",
         "_contracted_spells_by_id",
@@ -188,6 +189,7 @@ and logging.
         self._id: str = IDBuilder.create_id()
         self._nexus: Nexus = Nexus()
         self._conjured = False
+        self._caching_enabled: bool = True
         self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
@@ -226,6 +228,9 @@ and logging.
         self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()
         self._initialize_configuration()
+        root_configuration = Spellbook._aether.configuration
+        if root_configuration is not None:
+            self._caching_enabled = root_configuration.system_caching_enabled
 
         # Logger setup
         self._initialize_logging(logger)
@@ -377,6 +382,7 @@ and logging.
                     exc_info=True,
                 )
         del self._caching_system
+        del self._caching_enabled
 
         self._aetheric_frame_configuration = None
 
@@ -675,14 +681,17 @@ and logging.
         """
         Internal
 
-        Return whether the Aether root config currently enables system caching.
+        Return whether this Spellbook currently treats system caching as enabled.
 
         Returns:
             bool:
-                True when the installed Aether root config enables system
-                caching.
+                True when this Spellbook currently mirrors an enabled root cache
+                posture.
         """
-        return Spellbook._aether.configuration.system_caching_enabled
+        root_configuration = Spellbook._aether.configuration
+        if root_configuration is not None:
+            self._caching_enabled = root_configuration.system_caching_enabled
+        return self._caching_enabled
 
     def _get_or_create_caching_system(self) -> CachingSystem:
         """

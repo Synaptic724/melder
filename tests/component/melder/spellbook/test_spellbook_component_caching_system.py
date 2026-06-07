@@ -498,3 +498,5 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     assert spell_payload is not None
     assert spell_payload["spell_id"] == spell_id
     assert spell_payload["spell_name"] == spell.spell_name
+    assert "no_overrides" in spell_payload
+    assert "overrides" in spell_payload

@@ -19,22 +19,24 @@ class CachingSystem(Cleanable):
 
     Purpose:
         Own one rooted-conduit cache file, keep the decoded cache dictionary in
-        memory after first load, and expose small mutation helpers that flush
-        the cache back to disk immediately after each successful change.
+        memory after first load, and provide the small storage operations the
+        Spellbook/runtime cache lane needs.
 
     Contract:
-        - One instance represents one cache file for one `(frame_name, conduit_name)` pair.
+        - One instance represents one cache file for one
+          `(frame_name, conduit_name)` pair.
         - The in-memory cache dictionary is loaded once during construction.
-        - Mutations are serialized by the instance lock.
-        - Successful mutations are flushed immediately to the owned cache file.
+        - `spell_payloads` is the single source of truth for cached spell data.
+        - `upsert_spell_payload(...)` and `remove_spell_payload(...)` mutate
+          only the in-memory dict.
+        - `emit()` writes the current in-memory dict to disk.
         - The persisted cache format is one top-level dict:
           `version`, `conduit_name`, `spell_payloads`, and `sha256`.
-        - `spell_payloads` is the single source of truth for cached spell data.
         - Integrity is bundle-level only: `sha256` covers the serialized cache
           payload excluding the `sha256` field itself.
 
     Threading / Concurrency:
-        - Uses one instance `RLock` to serialize load, mutation, and flush work.
+        - Uses one instance `RLock` to serialize load, mutation, and emit work.
         - Does not rely on OS-level file locks as the primary coordination
           mechanism inside one process.
 
@@ -82,29 +84,8 @@ class CachingSystem(Cleanable):
 
         Returns:
             None.
-
-        Raises:
-            TypeError:
-                If frame_name or conduit_name is not a string, or if
-                cache_root_path is not a `Path`.
-            ValueError:
-                If frame_name or conduit_name is empty, or if cache_root_path
-                is not absolute.
         """
         super().__init__()
-        if not isinstance(frame_name, str):
-            raise TypeError("frame_name must be a string.")
-        if not frame_name.strip():
-            raise ValueError("frame_name must not be empty.")
-        if not isinstance(conduit_name, str):
-            raise TypeError("conduit_name must be a string.")
-        if not conduit_name.strip():
-            raise ValueError("conduit_name must not be empty.")
-        if not isinstance(cache_root_path, Path):
-            raise TypeError("cache_root_path must be a Path.")
-        if not cache_root_path.is_absolute():
-            raise ValueError("cache_root_path must be absolute.")
-
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
@@ -144,7 +125,6 @@ class CachingSystem(Cleanable):
             Path:
                 Absolute cache bundle path.
         """
-        self.check_cleaned()
         return self._bundle_path
 
     @property
@@ -156,7 +136,6 @@ class CachingSystem(Cleanable):
             str:
                 Conduit name for this cache.
         """
-        self.check_cleaned()
         return self._conduit_name
 
     @property
@@ -168,7 +147,6 @@ class CachingSystem(Cleanable):
             Mapping[str, Any]:
                 Spell-id keyed cache payload view.
         """
-        self.check_cleaned()
         return MappingProxyType(self._cache_data["spell_payloads"])
 
     @property
@@ -180,7 +158,6 @@ class CachingSystem(Cleanable):
             KeysView[str]:
                 Live `dict.keys()` view over cached spell ids.
         """
-        self.check_cleaned()
         return self._cache_data["spell_payloads"].keys()
 
     def cleanup(self) -> None:
@@ -224,7 +201,6 @@ class CachingSystem(Cleanable):
             bool:
                 True when the cache currently has a payload for `spell_id`.
         """
-        self.check_cleaned()
         return spell_id in self._cache_data["spell_payloads"]
 
     def get_spell_payload(self, spell_id: str) -> Optional[Any]:
@@ -239,48 +215,27 @@ class CachingSystem(Cleanable):
             Optional[Any]:
                 Cached payload when present, otherwise `None`.
         """
-        self.check_cleaned()
         return self._cache_data["spell_payloads"].get(spell_id)
 
     def upsert_spell_payload(self, spell_id: str, spell_payload: Any) -> None:
         """
-        Add or replace one spell payload and flush the cache file.
+        Add or replace one spell payload in memory.
 
         Args:
             spell_id:
                 Spell id to add or replace.
             spell_payload:
-                JSON-serializable spell payload for this spell id.
+                Spell payload for this spell id.
 
         Returns:
             None.
-
-        Raises:
-            RuntimeError:
-                If the flush fails after mutation.
         """
-        self.check_cleaned()
-        if not isinstance(spell_id, str):
-            raise TypeError("spell_id must be a string.")
-        if not spell_id:
-            raise ValueError("spell_id must not be empty.")
         with self._lock:
-            spell_payloads = self._cache_data["spell_payloads"]
-            had_existing_payload = spell_id in spell_payloads
-            previous_payload = spell_payloads.get(spell_id)
-            spell_payloads[spell_id] = spell_payload
-            try:
-                self._write_current_cache_to_disk_locked()
-            except Exception:
-                if had_existing_payload:
-                    spell_payloads[spell_id] = previous_payload
-                else:
-                    spell_payloads.pop(spell_id, None)
-                raise
+            self._cache_data["spell_payloads"][spell_id] = spell_payload
 
     def remove_spell_payload(self, spell_id: str) -> bool:
         """
-        Remove one spell payload and flush the cache file.
+        Remove one spell payload from memory.
 
         Args:
             spell_id:
@@ -290,21 +245,11 @@ class CachingSystem(Cleanable):
             bool:
                 True when a payload existed and was removed, otherwise False.
         """
-        self.check_cleaned()
-        if not isinstance(spell_id, str):
-            raise TypeError("spell_id must be a string.")
-        if not spell_id:
-            raise ValueError("spell_id must not be empty.")
         with self._lock:
             spell_payloads = self._cache_data["spell_payloads"]
             if spell_id not in spell_payloads:
                 return False
-            previous_payload = spell_payloads.pop(spell_id)
-            try:
-                self._write_current_cache_to_disk_locked()
-            except Exception:
-                spell_payloads[spell_id] = previous_payload
-                raise
+            spell_payloads.pop(spell_id)
             return True
 
     def transfer_spell_payload_to(
@@ -317,13 +262,13 @@ class CachingSystem(Cleanable):
 
         Purpose:
             Provide the ownership-transfer seam for cache payloads without
-            requiring the caller to manually load, add, and remove across two
-            cache files.
+            forcing the caller to manually load, add, and remove across two
+            cache utilities.
 
         Contract:
             - Favors no data loss over perfect atomicity.
-            - Writes the target cache first.
-            - Removes the source payload only after the target write succeeds.
+            - Writes into the target in memory first.
+            - Removes the source payload only after the target update succeeds.
 
         Args:
             spell_id:
@@ -335,7 +280,6 @@ class CachingSystem(Cleanable):
             bool:
                 True when a payload existed and moved, otherwise False.
         """
-        self.check_cleaned()
         if target_caching_system is self:
             return False
         spell_payload = self.get_spell_payload(spell_id)
@@ -345,14 +289,13 @@ class CachingSystem(Cleanable):
         self.remove_spell_payload(spell_id)
         return True
 
-    def flush(self) -> None:
+    def emit(self) -> None:
         """
         Write the current in-memory cache dict to disk.
 
         Returns:
             None.
         """
-        self.check_cleaned()
         with self._lock:
             self._write_current_cache_to_disk_locked()
 
@@ -419,40 +362,23 @@ class CachingSystem(Cleanable):
             dict[str, Any]:
                 Normalized cache dict.
         """
-        if not isinstance(loaded_cache_data, dict):
-            raise TypeError("Loaded cache data must be a dict.")
-        version = loaded_cache_data.get("version")
-        conduit_name = loaded_cache_data.get("conduit_name")
-        spell_payloads = loaded_cache_data.get("spell_payloads")
-        sha256 = loaded_cache_data.get("sha256")
+        version = loaded_cache_data["version"]
+        conduit_name = loaded_cache_data["conduit_name"]
+        spell_payloads = loaded_cache_data["spell_payloads"]
+        sha256 = loaded_cache_data["sha256"]
 
-        if not isinstance(version, int):
-            raise TypeError("Cache version must be an int.")
         if version != self.CURRENT_VERSION:
             raise ValueError(
                 f"Unsupported cache version '{version}'."
             )
-        if not isinstance(conduit_name, str):
-            raise TypeError("Cache conduit_name must be a string.")
         if conduit_name != self._conduit_name:
             raise ValueError(
                 "Cache conduit_name does not match the requested conduit."
             )
-        if not isinstance(spell_payloads, dict):
-            raise TypeError("Cache spell_payloads must be a dict.")
-        if not isinstance(sha256, str):
-            raise TypeError("Cache sha256 must be a string.")
-
-        normalized_spell_payloads: dict[str, Any] = {}
-        for spell_id, spell_payload in spell_payloads.items():
-            if not isinstance(spell_id, str):
-                raise TypeError("Cache spell ids must be strings.")
-            normalized_spell_payloads[spell_id] = spell_payload
-
         return {
             "version": version,
             "conduit_name": conduit_name,
-            "spell_payloads": normalized_spell_payloads,
+            "spell_payloads": dict(spell_payloads),
             "sha256": sha256,
         }
 

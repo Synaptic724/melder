@@ -1704,12 +1704,17 @@ def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flag
     loaded_calls: List[tuple[str, Dict[str, Any], bool]] = []
 
     def _fake_load_spell_cache_payload(
-            spell: Any,
             *,
+            spell: Any,
+            spell_payload: Dict[str, Any],
             publish: bool = True,
     ) -> object:
-        loaded_calls.append((spell.spell_id, publish))
+        loaded_calls.append((spell.spell_id, spell_payload, publish))
         return object()
+    monkeypatch.setattr(
+        "melder.aether.spellbook.spellbook_creation_system.load_spell_cache_payload",
+        _fake_load_spell_cache_payload,
+    )
     spell_a = types.SimpleNamespace(
         spell_id="spell-a",
         resolution_complete=False,
@@ -1732,8 +1737,6 @@ def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flag
             "missing": {"spell_id": "missing"},
         }
     )
-    caching_system.load_spell_payload_into_spell = _fake_load_spell_cache_payload
-
     loaded_spell_ids = SpellbookCreationSystem._load_cached_spell_payloads_for_conjure(
         spellbook=spellbook,
         caching_system=caching_system,
@@ -1741,7 +1744,7 @@ def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flag
     )
 
     assert loaded_spell_ids == {"spell-a"}
-    assert loaded_calls == [("spell-a", True)]
+    assert loaded_calls == [("spell-a", {"spell_id": "spell-a"}, True)]
     assert spell_a.resolution_complete is True
     assert spell_a.resolution_required is False
     assert spell_b.resolution_complete is False

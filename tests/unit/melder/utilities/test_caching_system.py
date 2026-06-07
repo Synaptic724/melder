@@ -90,6 +90,7 @@ def test_caching_system_upsert_remove_and_reload_round_trip() -> None:
 
     caching_system = _make_cache_utility(cache_root_path=cache_root_path)
     caching_system.upsert_spell_payload(spell_id, spell_payload)
+    caching_system.emit()
 
     assert caching_system.has_spell_payload(spell_id) is True
     assert caching_system.get_spell_payload(spell_id) == spell_payload
@@ -100,6 +101,7 @@ def test_caching_system_upsert_remove_and_reload_round_trip() -> None:
 
     assert loaded_caching_system.remove_spell_payload(spell_id) is True
     assert loaded_caching_system.has_spell_payload(spell_id) is False
+    loaded_caching_system.emit()
 
     reloaded_caching_system = _make_cache_utility(cache_root_path=cache_root_path)
     assert reloaded_caching_system.has_spell_payload(spell_id) is False
@@ -231,7 +233,7 @@ def test_caching_system_upsert_replaces_existing_payload() -> None:
 
     assert caching_system.get_spell_payload(spell_id) == _make_spell_payload("after")
 
-def test_caching_system_flush_writes_expected_file_shape() -> None:
+def test_caching_system_emit_writes_expected_file_shape() -> None:
     """
     Verify flush persists the top-level cache dict shape.
 
@@ -245,6 +247,7 @@ def test_caching_system_flush_writes_expected_file_shape() -> None:
     spell_payload = _make_spell_payload("flush")
     caching_system = _make_cache_utility(cache_root_path=cache_root_path)
     caching_system.upsert_spell_payload(spell_id, spell_payload)
+    caching_system.emit()
 
     loaded_json = json.loads(caching_system.bundle_path.read_text(encoding="utf-8"))
 
@@ -342,131 +345,6 @@ def test_caching_system_resets_to_empty_cache_on_invalid_bundle_file(
 
     assert tuple(caching_system.cached_spell_ids) == ()
     assert caching_system.spell_payloads == {}
-
-
-def test_caching_system_upsert_rolls_back_when_write_fails(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Verify add/replace rollback when file persistence fails.
-
-    Args:
-        monkeypatch:
-            Pytest monkeypatch fixture.
-
-    Returns:
-        None.
-    """
-    cache_root_path = _prepare_cache_root(
-        Path("tests/unit/melder/utilities/_caching_system_tmp_upsert_rollback")
-    )
-    spell_id = "g" * 64
-    caching_system = _make_cache_utility(cache_root_path=cache_root_path)
-
-    def _fail_write(self: CachingSystem) -> None:
-        raise RuntimeError("write failed")
-
-    monkeypatch.setattr(
-        CachingSystem,
-        "_write_current_cache_to_disk_locked",
-        _fail_write,
-    )
-
-    with pytest.raises(RuntimeError, match="write failed"):
-        caching_system.upsert_spell_payload(spell_id, _make_spell_payload("rollback"))
-
-    assert caching_system.has_spell_payload(spell_id) is False
-
-
-def test_caching_system_remove_rolls_back_when_write_fails(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Verify removal rollback when file persistence fails.
-
-    Args:
-        monkeypatch:
-            Pytest monkeypatch fixture.
-
-    Returns:
-        None.
-    """
-    cache_root_path = _prepare_cache_root(
-        Path("tests/unit/melder/utilities/_caching_system_tmp_remove_rollback")
-    )
-    spell_id = "h" * 64
-    payload = _make_spell_payload("remove-rollback")
-    caching_system = _make_cache_utility(cache_root_path=cache_root_path)
-    caching_system.upsert_spell_payload(spell_id, payload)
-
-    def _fail_write(self: CachingSystem) -> None:
-        raise RuntimeError("write failed")
-
-    monkeypatch.setattr(
-        CachingSystem,
-        "_write_current_cache_to_disk_locked",
-        _fail_write,
-    )
-
-    with pytest.raises(RuntimeError, match="write failed"):
-        caching_system.remove_spell_payload(spell_id)
-
-    assert caching_system.get_spell_payload(spell_id) == payload
-
-
-def test_caching_system_transfer_preserves_source_when_target_write_fails(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """
-    Verify source payload survives when the target transfer write fails.
-
-    Args:
-        monkeypatch:
-            Pytest monkeypatch fixture.
-
-    Returns:
-        None.
-    """
-    cache_root_path = _prepare_cache_root(
-        Path("tests/unit/melder/utilities/_caching_system_tmp_transfer_rollback")
-    )
-    spell_id = "i" * 64
-    payload = _make_spell_payload("transfer-rollback")
-    source_caching_system = _make_cache_utility(
-        conduit_name="source",
-        cache_root_path=cache_root_path,
-    )
-    target_caching_system = _make_cache_utility(
-        conduit_name="target",
-        cache_root_path=cache_root_path,
-    )
-    source_caching_system.upsert_spell_payload(spell_id, payload)
-
-    original_upsert = CachingSystem.upsert_spell_payload
-
-    def _conditional_fail_upsert(
-            self: CachingSystem,
-            spell_id_arg: str,
-            spell_payload_arg: object,
-    ) -> None:
-        if self is target_caching_system:
-            raise RuntimeError("target write failed")
-        original_upsert(self, spell_id_arg, spell_payload_arg)
-
-    monkeypatch.setattr(
-        CachingSystem,
-        "upsert_spell_payload",
-        _conditional_fail_upsert,
-    )
-
-    with pytest.raises(RuntimeError, match="target write failed"):
-        source_caching_system.transfer_spell_payload_to(
-            spell_id,
-            target_caching_system,
-        )
-
-    assert source_caching_system.get_spell_payload(spell_id) == payload
-    assert target_caching_system.has_spell_payload(spell_id) is False
 
 
 def test_caching_system_transfer_to_self_returns_false() -> None:
