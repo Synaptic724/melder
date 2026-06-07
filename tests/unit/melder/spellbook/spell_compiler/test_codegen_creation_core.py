@@ -395,7 +395,7 @@ def test_many_only_setup_step_records_many_route_and_transient_state() -> None:
 def test_no_overrides_step_records_base_executor_and_signature(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The generalized no-overrides step should no longer own the transient schema path."""
+    """The generalized no-overrides step should pass through the transient schema path when present."""
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -462,15 +462,15 @@ def test_no_overrides_step_records_base_executor_and_signature(
     assert creation.no_overrides_executor == (
         "executor",
         "no_overrides",
-        None,
+        {"schema": ("transient",)},
     )
     assert state.base_no_overrides_executor == (
         "executor",
         "no_overrides",
-        None,
+        {"schema": ("transient",)},
     )
     assert creation.metadata["no_overrides_executor_signature"] == "sig:4"
-    assert creation.metadata["no_overrides_fast_transient_available"] is False
+    assert creation.metadata["no_overrides_fast_transient_available"] is True
 
 
 def test_many_only_no_overrides_step_records_transient_executor_and_signature(

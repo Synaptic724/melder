@@ -103,14 +103,14 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         spell_codegen_creation.overrides_executor = overrides_runtime
         spell_codegen_creation.metadata["resolve_route_key"] = route_key
         spell_codegen_creation.metadata["fast_transient_no_overrides_enabled"] = (
-            state.fast_transient_no_overrides_enabled
+            no_overrides_plan.fast_transient_plan is not None
         )
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
             no_overrides_plan.lane_id
         )
         spell_codegen_creation.metadata["override_lane_id"] = overrides_plan.lane_id
         spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
-            False
+            no_overrides_plan.fast_transient_plan is not None
         )
         spell_codegen_creation.metadata["override_step_count"] = (
             len(overrides_plan.steps)

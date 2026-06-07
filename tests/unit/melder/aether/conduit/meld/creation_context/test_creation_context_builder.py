@@ -140,7 +140,6 @@ def test_build_constructed_spell_uses_phase11_runtime_doors() -> None:
             overrides_executor=_overrides_executor,
             metadata={
                 "resolve_route_key": "many",
-                "fast_transient_no_overrides_enabled": False,
             },
         ),
     )

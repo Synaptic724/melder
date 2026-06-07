@@ -46,13 +46,17 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
                 "Generalized no-overrides codegen creation requires a no_overrides_plan."
             )
 
+        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
+            no_overrides_plan.fast_transient_plan,
+        )
+
         compiled_executor = compile_no_overrides_codegen_creation_executor_from_plan(
             plan=no_overrides_plan,
-            transient_schema=None,
+            transient_schema=transient_schema,
         )
         executor_signature = self._build_executor_signature(
             no_overrides_plan=no_overrides_plan,
-            transient_schema=None,
+            transient_schema=transient_schema,
         )
 
         state.base_no_overrides_executor = compiled_executor
@@ -67,7 +71,7 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
             len(no_overrides_plan.steps)
         )
         spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
-            False
+            no_overrides_plan.fast_transient_plan is not None
         )
         spell_codegen_creation.metadata["no_overrides_executor_signature"] = (
             executor_signature

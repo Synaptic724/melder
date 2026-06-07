@@ -444,6 +444,99 @@ def _measure_recursive_spellspace_cycle_components(
     }
 
 
+def _measure_spellspace_cycle_with_use_components(
+    lesser: Conduit,
+    *,
+    spellspace_spell_id: str,
+    conduit_spell_id: str,
+    shared_spell_id: str,
+    shared_owner_creations: Any,
+    iterations: int,
+    warmup: int,
+    pooled: bool,
+) -> Dict[str, float]:
+    """
+    Measure one spellspace cycle while actually melding a few spells inside it.
+
+    Purpose:
+        Stop treating an empty enter/exit loop as the only representative
+        spellspace cycle. This surface measures:
+        - enter spellspace
+        - meld a spellspace-scoped spell
+        - meld a conduit-scoped spell
+        - meld a shared spell
+        - exit spellspace
+    """
+    pool = lesser._spellspace_pool
+    previous_enabled = pool._enabled
+    if pooled:
+        _prime_spellspace_pool(lesser)
+        pool._enabled = True
+    else:
+        with pool._lock:
+            pool._idle.clear()
+        pool._enabled = False
+
+    def reset_external_state() -> None:
+        lesser._creations.clear_all()
+        shared_owner_creations.clear_all()
+
+    def run_one_cycle() -> Tuple[int, int, int, int]:
+        cycle_t0 = time.perf_counter_ns()
+        spellspace_context = lesser.enter_spellspace()
+        spellspace_context.__enter__()
+        enter_t1 = time.perf_counter_ns()
+        active_spellspace = lesser.get_active_spellspace()
+        if active_spellspace is None:
+            raise AssertionError("Active spellspace was not established.")
+        if active_spellspace.meld(spell=spellspace_spell_id) is None:
+            raise AssertionError("Spellspace-scoped meld returned None.")
+        if active_spellspace.meld(spell=conduit_spell_id) is None:
+            raise AssertionError("Conduit-scoped spellspace meld returned None.")
+        if active_spellspace.meld(spell=shared_spell_id) is None:
+            raise AssertionError("Shared spellspace meld returned None.")
+        use_t2 = time.perf_counter_ns()
+        spellspace_context.__exit__(None, None, None)
+        exit_t3 = time.perf_counter_ns()
+        return (
+            enter_t1 - cycle_t0,
+            use_t2 - enter_t1,
+            exit_t3 - use_t2,
+            exit_t3 - cycle_t0,
+        )
+
+    try:
+        for _ in range(warmup):
+            reset_external_state()
+            run_one_cycle()
+
+        enter_total_ns = 0
+        use_total_ns = 0
+        exit_total_ns = 0
+        cycle_total_ns = 0
+        for _ in range(iterations):
+            reset_external_state()
+            (
+                enter_ns,
+                use_ns,
+                exit_ns,
+                cycle_ns,
+            ) = run_one_cycle()
+            enter_total_ns += enter_ns
+            use_total_ns += use_ns
+            exit_total_ns += exit_ns
+            cycle_total_ns += cycle_ns
+    finally:
+        pool._enabled = previous_enabled
+
+    return {
+        "spellspace_enter_ns": enter_total_ns / float(iterations),
+        "spellspace_use_ns": use_total_ns / float(iterations),
+        "spellspace_exit_ns": exit_total_ns / float(iterations),
+        "spellspace_cycle_total_ns": cycle_total_ns / float(iterations),
+    }
+
+
 def _measure_lesser_meld_route(
     lesser: Conduit,
     spell_id: str,
@@ -709,6 +802,88 @@ def _run_targeted_cycle_harness() -> Sequence[Dict[str, str]]:
                 }
             )
 
+            shared_owner_creations = spells["shared"]._owner_creations
+            if shared_owner_creations is None:
+                raise AssertionError("Shared route spell has no owner creations.")
+            spellspace_cycle_with_use = _measure_spellspace_cycle_with_use_components(
+                persistent_lesser,
+                spellspace_spell_id=spell_ids["spellspace"],
+                conduit_spell_id=spell_ids["conduit"],
+                shared_spell_id=spell_ids["shared"],
+                shared_owner_creations=shared_owner_creations,
+                iterations=iterations,
+                warmup=warmup,
+                pooled=False,
+            )
+            pooled_spellspace_cycle_with_use = _measure_spellspace_cycle_with_use_components(
+                persistent_lesser,
+                spellspace_spell_id=spell_ids["spellspace"],
+                conduit_spell_id=spell_ids["conduit"],
+                shared_spell_id=spell_ids["shared"],
+                shared_owner_creations=shared_owner_creations,
+                iterations=iterations,
+                warmup=warmup,
+                pooled=True,
+            )
+            spellspace_use_delta_ns = (
+                spellspace_cycle_with_use["spellspace_cycle_total_ns"]
+                - pooled_spellspace_cycle_with_use["spellspace_cycle_total_ns"]
+            )
+            spellspace_use_ratio = (
+                pooled_spellspace_cycle_with_use["spellspace_cycle_total_ns"]
+                / spellspace_cycle_with_use["spellspace_cycle_total_ns"]
+            )
+            rows.append(
+                {
+                    "surface": "spellspace_cycle_with_use",
+                    "mode": "cold",
+                    "scope": "fresh",
+                    "route": "mixed_triplet",
+                    "cold_ns": "-",
+                    "warm_ns": "-",
+                    "enter_or_acquire_ns": (
+                        f"{spellspace_cycle_with_use['spellspace_enter_ns']:.3f}"
+                    ),
+                    "exit_or_cleanup_ns": (
+                        f"{spellspace_cycle_with_use['spellspace_exit_ns']:.3f}"
+                    ),
+                    "total_ns": (
+                        f"{spellspace_cycle_with_use['spellspace_cycle_total_ns']:.3f}"
+                    ),
+                    "delta_ns": "-",
+                    "ratio": "-",
+                    "note": (
+                        "use_ns="
+                        f"{spellspace_cycle_with_use['spellspace_use_ns']:.3f}"
+                    ),
+                }
+            )
+            rows.append(
+                {
+                    "surface": "spellspace_cycle_with_use",
+                    "mode": "hot",
+                    "scope": "pooled",
+                    "route": "mixed_triplet",
+                    "cold_ns": "-",
+                    "warm_ns": "-",
+                    "enter_or_acquire_ns": (
+                        f"{pooled_spellspace_cycle_with_use['spellspace_enter_ns']:.3f}"
+                    ),
+                    "exit_or_cleanup_ns": (
+                        f"{pooled_spellspace_cycle_with_use['spellspace_exit_ns']:.3f}"
+                    ),
+                    "total_ns": (
+                        f"{pooled_spellspace_cycle_with_use['spellspace_cycle_total_ns']:.3f}"
+                    ),
+                    "delta_ns": f"{spellspace_use_delta_ns:.3f}",
+                    "ratio": f"{spellspace_use_ratio:.6f}",
+                    "note": (
+                        "use_ns="
+                        f"{pooled_spellspace_cycle_with_use['spellspace_use_ns']:.3f}"
+                    ),
+                }
+            )
+
             for depth in (1, 2, 4, 8):
                 recursive_cold = _measure_recursive_spellspace_cycle_components(
                     persistent_lesser,
@@ -889,7 +1064,7 @@ def test_targeted_lesser_spellspace_meld_cycle_harness() -> None:
     Run the targeted cycle-cost harness and assert it produced usable output.
     """
     rows = _run_targeted_cycle_harness()
-    if len(rows) != 16:
+    if len(rows) != 18:
         raise AssertionError("Targeted cycle harness did not produce the expected row count.")
     by_route = {}
     for row in rows:
@@ -903,6 +1078,10 @@ def test_targeted_lesser_spellspace_meld_cycle_harness() -> None:
         raise AssertionError("Targeted spellspace cycle metric must be positive.")
     if float(by_route[("spellspace_cycle", "hot", "spellspace_only")]["total_ns"]) <= 0.0:
         raise AssertionError("Targeted pooled spellspace cycle metric must be positive.")
+    if float(by_route[("spellspace_cycle_with_use", "cold", "mixed_triplet")]["total_ns"]) <= 0.0:
+        raise AssertionError("Targeted spellspace cycle-with-use metric must be positive.")
+    if float(by_route[("spellspace_cycle_with_use", "hot", "mixed_triplet")]["total_ns"]) <= 0.0:
+        raise AssertionError("Targeted pooled spellspace cycle-with-use metric must be positive.")
     if float(by_route[("meld", "cold_hot", "unique_per_conduit")]["cold_ns"]) <= 0.0:
         raise AssertionError("Targeted unique_per_conduit cold meld metric must be positive.")
     if float(by_route[("meld", "cold_hot", "unique_per_conduit")]["warm_ns"]) <= 0.0:

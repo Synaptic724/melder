@@ -38,7 +38,6 @@ class CreationContextBuilder:
         spell_codegen_creation = artifact._spell_codegen_creation
         if spell.is_existing_creation:
             resolve_route_key = CreationContext.ROUTE_EXISTING_CREATION
-            fast_transient_no_overrides_enabled = False
             no_overrides_executor = CreationContextBuilder._build_existing_creation_no_overrides_executor(
                 spell
             )
@@ -67,9 +66,6 @@ class CreationContextBuilder:
                 raise RuntimeError(
                     "SpellCodegenCreation did not publish resolve_route_key."
                 )
-            fast_transient_no_overrides_enabled = bool(
-                metadata.get("fast_transient_no_overrides_enabled")
-            )
 
         return CreationContext(
             spell=spell,
@@ -77,9 +73,6 @@ class CreationContextBuilder:
             creation_gate=creation_gate,
             creation_gate_index_id=creation_gate_index_id,
             resolve_route_key=resolve_route_key,
-            fast_transient_no_overrides_enabled=(
-                fast_transient_no_overrides_enabled
-            ),
             no_overrides_executor=no_overrides_executor,
             overrides_executor=overrides_executor,
         )

@@ -96,7 +96,6 @@ def _make_codegen_creation() -> object:
         ),
         metadata={
             "resolve_route_key": "many",
-            "fast_transient_no_overrides_enabled": False,
         },
     )
 
