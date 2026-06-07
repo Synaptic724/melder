@@ -915,6 +915,7 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
     rows = []
     for scenario in scenarios:
         overrides_note = ""
+        use_all_many_visible_shape = scenario["route"] == "many"
         if scenario["bind_mode"] == "existing_creation":
             no_generalized_ns = None
             no_solo_ns = None
@@ -954,6 +955,7 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                     caller_mode=scenario["caller_mode"],
                     iterations=iterations,
                     warmup=warmup,
+                    extra_many_visible_spell=use_all_many_visible_shape,
                 )
             )
             no_solo_ns, solo_note = _capture_benchmark_result(
@@ -985,6 +987,7 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                     meld_mode="cold_create",
                     iterations=iterations,
                     warmup=warmup,
+                    extra_many_visible_spell=use_all_many_visible_shape,
                 )
             )
             meld_cold_solo_ns, solo_meld_cold_note = _capture_benchmark_result(
@@ -1017,6 +1020,7 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                     meld_mode="warm_reuse",
                     iterations=iterations,
                     warmup=warmup,
+                    extra_many_visible_spell=use_all_many_visible_shape,
                 )
             )
             meld_warm_solo_ns, solo_meld_warm_note = _capture_benchmark_result(
@@ -1061,6 +1065,7 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
                         caller_mode=scenario["caller_mode"],
                         iterations=iterations,
                         warmup=warmup,
+                        extra_many_visible_spell=use_all_many_visible_shape,
                     )
                 )
             )
