@@ -478,8 +478,12 @@ def _run_group_8_11(
         ),
         "creation_route_key": (
             None
-            if spell_codegen_creation is None
-            else spell_codegen_creation.metadata.get("resolve_route_key")
+            if spell_codegen_model is None
+            else (
+                "existing_creation"
+                if spell_codegen_model.build_kind == "existing_creation"
+                else spell_codegen_model.route_family
+            )
         ),
         "creation_no_overrides_executor_built": (
             False

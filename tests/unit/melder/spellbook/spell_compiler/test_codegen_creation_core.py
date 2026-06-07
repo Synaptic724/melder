@@ -354,7 +354,6 @@ def test_setup_step_records_route_and_transient_state() -> None:
     step.apply(state)
 
     assert state.resolve_route_key == "many"
-    assert state.fast_transient_no_overrides_enabled is False
 
 
 def test_many_only_setup_step_records_many_route() -> None:
@@ -678,8 +677,6 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
         no_overrides_executor=base_no_overrides_executor,
         overrides_executor=None,
         metadata={
-            "_resolve_route_key": "many",
-            "_fast_transient_no_overrides_enabled": True,
             "_override_targeting": "targeting",
             "_override_plan_signature": ("sig",),
             "_override_path_registry": "registry",
@@ -697,7 +694,6 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
         spell_codegen_creation=creation,
     )
     family_state.resolve_route_key = "many"
-    family_state.fast_transient_no_overrides_enabled = True
     family_state.override_targeting = "targeting"
     family_state.override_plan_signature = ("sig",)
     family_state.override_path_registry = "registry"

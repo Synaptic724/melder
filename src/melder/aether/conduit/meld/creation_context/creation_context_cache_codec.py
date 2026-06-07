@@ -18,8 +18,8 @@ Contract:
       dicts, and one `CodeType`) covering both lanes.
     - `load_creation_context(spell, package, publish=...)` rebuilds both inner
       executors against the live Spellbook + live phase-5 path registry, wraps
-      each with the owner-aware outer template using `spell._owner_creations`,
-      and returns a published-or-detached `CreationContext`.
+      each with the final hook-aware doors phase 11 would emit for the live
+      spell, and returns a published-or-detached `CreationContext`.
     - The payload excludes any per-conduit runtime object, so a cached package
       is reusable across conduits/runs (subject to the Python-version stamp
       owned by `CachingSystem`).
@@ -81,13 +81,6 @@ _NO_OVERRIDES_STEP_SOURCE_NAME = (
     "<melder_no_overrides_codegen_creation_step_executor>"
 )
 
-_SHARED_ROUTE_FAMILIES = (
-    "spellspace",
-    "unique_per_conduit",
-    "many",
-    "shared",
-)
-
 
 # ---------------------------------------------------------------------------
 # Build (emit)
@@ -120,10 +113,6 @@ def build_package(spell: Any) -> Dict[str, Any]:
     package = {
         "package_version": PACKAGE_VERSION,
         "spell_id": spell.spell_id,
-        "resolve_route_key": _resolve_route_key(spell_codegen_model),
-        "fast_transient_no_overrides_enabled": bool(
-            spell_codegen_plan.no_overrides_plan.fast_transient_plan is not None
-        ),
         "no_overrides": _build_no_overrides_subpackage(
             no_overrides_plan=spell_codegen_plan.no_overrides_plan,
         ),
@@ -226,18 +215,20 @@ def load_creation_context(
 
     Contract:
         - Rebuilds both runtime lanes against the live Spellbook and the live
-          phase-5 path registry, then wraps each with the owner-aware outer
-          template using `spell._owner_creations`.
+          phase-5 path registry, then wraps each with the final hook-aware
+          phase-11 doors for the live spell.
         - Requires phases 1-7 to have already run for `spell` (so the phase-5
           blueprint + path registry are live) and ownership to be wired (so
           `spell._owner_creations` is set).
     """
+    resolve_route_key = _resolve_route_key_for_spell(spell)
+    fast_transient_no_overrides_enabled = _has_fast_transient_no_overrides(
+        package
+    )
     inner_no_overrides = _build_inner_no_overrides_executor(spell, package)
     outer_no_overrides = compile_creation_context_hooks_no_overrides_executor(
-        resolve_route_key=package["resolve_route_key"],
-        fast_transient_no_overrides_enabled=bool(
-            package["fast_transient_no_overrides_enabled"]
-        ),
+        resolve_route_key=resolve_route_key,
+        fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
         spell=spell,
         spell_id=spell.spell_id,
         owner_creations=spell._owner_creations,
@@ -255,7 +246,7 @@ def load_creation_context(
             base_no_overrides_executor=inner_no_overrides,
         )
         outer_overrides = compile_creation_context_hooks_overrides_only_executor(
-            resolve_route_key=package["resolve_route_key"],
+            resolve_route_key=resolve_route_key,
             spell=spell,
             spell_id=spell.spell_id,
             owner_creations=spell._owner_creations,
@@ -394,7 +385,7 @@ def _build_missing_overrides_executor(spell: Any) -> Any:
         )
 
     return compile_creation_context_hooks_overrides_only_executor(
-        resolve_route_key="many",
+        resolve_route_key=_resolve_route_key_for_spell(spell),
         spell=spell,
         spell_id=spell.spell_id,
         owner_creations=spell._owner_creations,
@@ -472,16 +463,31 @@ def _build_no_overrides_source_package(
     return step_source, _NO_OVERRIDES_STEP_SOURCE_NAME
 
 
-def _resolve_route_key(spell_codegen_model: Any) -> str:
-    """Resolve the runtime route key from the codegen model (mirrors finalize)."""
-    if spell_codegen_model.build_kind == "existing_creation":
+def _resolve_route_key_for_spell(spell: Any) -> str:
+    """Resolve the runtime route key directly from the live spell contract."""
+    if spell.is_existing_creation:
         return "existing_creation"
-    route_family = spell_codegen_model.route_family
-    if route_family in _SHARED_ROUTE_FAMILIES:
-        return route_family
+    existence = spell.existence
+    if existence is Existence.unique_per_spell_space:
+        return "spellspace"
+    if existence is Existence.unique_per_conduit:
+        return "unique_per_conduit"
+    if existence is Existence.many:
+        return "many"
+    if existence in (
+            Existence.unique,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
+    ):
+        return "shared"
     raise RuntimeError(
-        f"SpellCodegenModel route_family is not cacheable: {route_family!r}."
+        f"Spell route is not cacheable for existence {existence!r}."
     )
+
+
+def _has_fast_transient_no_overrides(package: Dict[str, Any]) -> bool:
+    """Return whether the cached no-overrides lane used transient unrolling."""
+    return package["no_overrides"]["transient_schema"] is not None
 
 
 def _serialize_targets_by_spec(

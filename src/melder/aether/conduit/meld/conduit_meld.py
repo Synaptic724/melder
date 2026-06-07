@@ -239,6 +239,7 @@ class ConduitMeld(Meld):
                 creations,
                 override_map,
             )
+            self._spellbook._emit_cache_file_if_required()
 
             # 7) Return the resolved instance.
             return instance
@@ -266,6 +267,7 @@ class ConduitMeld(Meld):
             # 2) Execute post-cast hooks (still no arguments for now).
             self._execute_hooks(target_spell._post_hooks, "post_cast")
             self._fire_meld_hooks("on_meld_post_resolve", target_spell)
+            self._spellbook._emit_cache_file_if_required()
 
             # 3) Return the resolved instance.
             return instance

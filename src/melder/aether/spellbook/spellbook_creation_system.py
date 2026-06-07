@@ -754,7 +754,7 @@ class SpellbookCreationSystem(Cleanable):
 
         Contract:
             - No-op when root caching is disabled for this Spellbook.
-            - Emits the current in-memory cache (which may be empty) to disk.
+            - Emits only when this conjure operation staged new cache.
             - Never propagates cache failures into the conjure path.
 
         Args:
@@ -766,7 +766,7 @@ class SpellbookCreationSystem(Cleanable):
         if not spellbook._system_caching_enabled_in_aether():
             return
         try:
-            spellbook._get_or_create_caching_system().emit()
+            spellbook._emit_cache_file_if_required()
         except Exception as exc:
             if spellbook._logger is not None:
                 spellbook._logger.error(

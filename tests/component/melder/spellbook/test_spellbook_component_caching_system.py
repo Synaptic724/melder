@@ -6,7 +6,9 @@ from types import CodeType
 import pytest
 
 from melder.aether.aether import Aether
-from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.nexus.nexus import Nexus
@@ -37,13 +39,15 @@ def reset_aether_singleton_for_component_spellbook_caching() -> None:
 
 def _package_root() -> Path:
     """
-    Return the installed melder package root used by AetherConfiguration.
+    Return the installed melder package root used by AethericFrameConfiguration.
 
     Returns:
         Path:
             Absolute melder package root.
     """
-    return Path(inspect.getfile(AetherConfiguration)).resolve().parent.parent
+    return Path(
+        inspect.getfile(AethericFrameConfiguration)
+    ).resolve().parent.parent
 
 
 def _prepare_cache_root(path: Path) -> Path:
@@ -83,9 +87,10 @@ def _activate_aether_cache_configuration(
         *,
         cache_root_fragment: Path,
         enabled: bool,
-) -> AetherConfiguration:
+        frame_name: str = "default",
+) -> AethericFrameConfiguration:
     """
-    Activate one root Aether cache configuration for the component tests.
+    Activate one frame-owned cache configuration for the component tests.
 
     Args:
         cache_root_fragment:
@@ -94,18 +99,14 @@ def _activate_aether_cache_configuration(
             Desired cache-enabled state.
 
     Returns:
-        AetherConfiguration:
-            Activated root configuration installed on Aether.
+        AethericFrameConfiguration:
+            Active frame configuration updated for the target frame.
     """
-    aether = Aether()
-    configuration = (
-        aether.create_configuration()
-        .with_defaults()
-        .with_system_caching_enabled(enabled)
-        .with_system_cache_root_path(cache_root_fragment)
-        .activate()
-    )
-    aether.activate(configuration)
+    frame = Aether()._get_existing_frame(frame_name)
+    configuration = frame.frame_configuration
+    assert configuration is not None
+    configuration.with_system_caching_enabled(enabled)
+    configuration.with_system_cache_root_path(cache_root_fragment)
     return configuration
 
 
@@ -495,6 +496,7 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
 
     caching_system = spellbook._get_or_create_caching_system()
     assert caching_system.has_spell_payload(spell_id) is True
+    assert caching_system.bundle_path.exists() is False
     spell_payload = caching_system.get_spell_payload(spell_id)
     assert spell_payload is not None
     assert isinstance(spell_payload, tuple)
@@ -502,6 +504,39 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     assert isinstance(spell_payload[0], CodeType)
     assert isinstance(spell_payload[1], CodeType)
     assert spell.emit_cache() is False
+
+
+def test_component_conduit_meld_emits_cache_file_after_new_context_publish() -> None:
+    """
+    Verify a top-level meld emits the cache file once after staging new cache.
+
+    Returns:
+        None.
+    """
+    cache_root_path = _prepare_cache_root(
+        _package_root() / "tests/component/melder/spellbook/_cache_emit_after_meld"
+    )
+    cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    _activate_aether_cache_configuration(
+        cache_root_fragment=cache_root_fragment,
+        enabled=True,
+        frame_name="ops",
+    )
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence="unique",
+        permissions="create",
+    )
+    _conjure_root(spellbook, name="root")
+
+    caching_system = spellbook._get_or_create_caching_system()
+    assert caching_system.bundle_path.exists() is False
+
+    instance = spellbook._conduit.meld(spell=spell_id)
+
+    assert isinstance(instance, BasicService)
+    assert caching_system.bundle_path.exists() is True
 
 
 def test_component_spell_emit_cache_skips_existing_spell_id_payload() -> None:

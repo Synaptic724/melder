@@ -1,7 +1,9 @@
 import json
 import logging
+import marshal
 from pathlib import Path
 import shutil
+import sys
 from types import MappingProxyType
 
 import pytest
@@ -158,7 +160,7 @@ def test_caching_system_builds_expected_bundle_metadata() -> None:
 
     assert caching_system.conduit_name == "alpha"
     assert caching_system.bundle_path == (
-        cache_root_path / "frame-b" / "alpha" / "bundle.json"
+        cache_root_path / "frame-b" / "alpha.melc"
     )
 
 
@@ -249,12 +251,13 @@ def test_caching_system_emit_writes_expected_file_shape() -> None:
     caching_system.upsert_spell_payload(spell_id, spell_payload)
     caching_system.emit()
 
-    loaded_json = json.loads(caching_system.bundle_path.read_text(encoding="utf-8"))
+    loaded_payload = marshal.loads(caching_system.bundle_path.read_bytes())
 
-    assert loaded_json["version"] == CachingSystem.CURRENT_VERSION
-    assert loaded_json["conduit_name"] == "root"
-    assert loaded_json["spell_payloads"][spell_id] == spell_payload
-    assert isinstance(loaded_json["sha256"], str)
+    assert loaded_payload["version"] == CachingSystem.CURRENT_VERSION
+    assert loaded_payload["conduit_name"] == "root"
+    assert loaded_payload["frame_name"] == "frame-a"
+    assert loaded_payload["spell_payloads"][spell_id] == spell_payload
+    assert loaded_payload["python"] == sys.implementation.cache_tag
 
 
 @pytest.mark.parametrize(

@@ -37,7 +37,6 @@ class GeneralizedCreationContextSetupStep(CodegenCreationFamilyStep):
         route_key = self._resolve_route_key(spell_codegen_model)
 
         state.resolve_route_key = route_key
-        state.fast_transient_no_overrides_enabled = False
 
     @staticmethod
     def _resolve_route_key(

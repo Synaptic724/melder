@@ -121,6 +121,7 @@ and logging.
         "_configuration",
         "_configuration_locked",
         "_conjured",
+        "_cache_emit_required",
         "_caching_enabled",
         "_caching_system",
         "_contracted_spells",
@@ -186,6 +187,7 @@ and logging.
         self._id: str = IDBuilder.create_id()
         self._nexus: Nexus = Nexus()
         self._conjured = False
+        self._cache_emit_required: bool = False
         self._caching_enabled: bool = True
         self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
@@ -377,6 +379,7 @@ and logging.
                     exc_info=True,
                 )
         del self._caching_system
+        del self._cache_emit_required
         del self._caching_enabled
 
         self._aetheric_frame_configuration = None
@@ -802,7 +805,41 @@ and logging.
                 )
             return False
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
+        self._cache_emit_required = True
         return True
+
+    def _emit_cache_file_if_required(self) -> bool:
+        """
+        Internal
+
+        Emit the Spellbook-owned cache file only when this operation staged new
+        cache into the in-memory bundle.
+
+        Purpose:
+            Keep cache persistence on top-level operation boundaries instead of
+            forcing synchronous file writes from the publish hot path.
+
+        Contract:
+            - Returns early when no new cache was staged since the last emit.
+            - Emits at most once per staged operation window.
+            - Restores the emit-required flag when file emission fails so a
+              later caller can retry.
+
+        Returns:
+            bool:
+                True when a cache file emit occurred, otherwise False.
+        """
+        with self._lock:
+            if not self._cache_emit_required:
+                return False
+            self._cache_emit_required = False
+        try:
+            self._get_or_create_caching_system().emit()
+            return True
+        except Exception:
+            with self._lock:
+                self._cache_emit_required = True
+            raise
 
     def _emit_cache_file(self, spell: Spell) -> bool:
         """
@@ -833,9 +870,7 @@ and logging.
             raise RuntimeError(
                 "Spell cache-file emission requires the spell to belong to this Spellbook."
             )
-        caching_system = self._get_or_create_caching_system()
-        caching_system.emit()
-        return True
+        return self._emit_cache_file_if_required()
 
     def _register_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
         """

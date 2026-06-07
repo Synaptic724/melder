@@ -105,21 +105,10 @@ def build_creation_context_cache_asset(
         source_name,
         "exec",
     )
-    creation_metadata = spell_codegen_creation.metadata
-    resolve_route_key = creation_metadata.get("resolve_route_key")
-    if not isinstance(resolve_route_key, str):
-        raise RuntimeError(
-            "CreationContext cache export requires resolve_route_key."
-        )
-
     return {
         "cache_kind": _CACHE_KIND,
         "cache_version": _CACHE_VERSION,
         "spell_id": spell.spell_id,
-        "resolve_route_key": resolve_route_key,
-        "fast_transient_no_overrides_enabled": bool(
-            creation_metadata.get("fast_transient_no_overrides_enabled")
-        ),
         "no_overrides": {
             "root_spell_id": no_overrides_plan.root_spell_id,
             "step_spell_ids": step_spell_ids,
@@ -309,10 +298,6 @@ def load_creation_context_from_cache_asset(
         dynamic_environment=spell._dynamic_environment,
         creation_gate=creation_gate,
         creation_gate_index_id=creation_gate_index_id,
-        resolve_route_key=cache_asset["resolve_route_key"],
-        fast_transient_no_overrides_enabled=bool(
-            cache_asset["fast_transient_no_overrides_enabled"]
-        ),
         no_overrides_executor=no_overrides_executor,
         overrides_executor=overrides_executor,
         publish=publish,
@@ -419,8 +404,6 @@ def _validate_cache_asset(cache_asset: Dict[str, Any]) -> None:
         raise RuntimeError("Unsupported creation-context cache asset kind.")
     if cache_asset.get("cache_version") != _CACHE_VERSION:
         raise RuntimeError("Unsupported creation-context cache asset version.")
-    if not isinstance(cache_asset.get("resolve_route_key"), str):
-        raise RuntimeError("Creation-context cache asset is missing resolve_route_key.")
 
 
 def _build_spell_lookup_from_steps(

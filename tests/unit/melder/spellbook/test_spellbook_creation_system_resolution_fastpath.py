@@ -1628,7 +1628,7 @@ def test_build_conjure_cache_state_reports_full_hit_path(
     spellbook = types.SimpleNamespace(
         _spell_id_pool={"spell-a": object(), "spell-b": object()},
         _system_caching_enabled_in_aether=lambda: True,
-        _get_or_create_caching_system=lambda: caching_system,
+        _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
@@ -1671,7 +1671,7 @@ def test_build_conjure_cache_state_reports_mixed_path(
     spellbook = types.SimpleNamespace(
         _spell_id_pool={"spell-a": object(), "spell-b": object()},
         _system_caching_enabled_in_aether=lambda: True,
-        _get_or_create_caching_system=lambda: caching_system,
+        _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )
     monkeypatch.setattr(
         SpellbookCreationSystem,
