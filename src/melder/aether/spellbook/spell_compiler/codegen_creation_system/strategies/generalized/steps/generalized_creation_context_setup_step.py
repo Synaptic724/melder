@@ -32,21 +32,12 @@ class GeneralizedCreationContextSetupStep(CodegenCreationFamilyStep):
         Populate generalized route/setup facts on family-local state.
         """
         spell_codegen_model = state.spell_codegen_model
-        spell_codegen_plan = state.spell_codegen_plan
+        _ = state.spell_codegen_plan
 
         route_key = self._resolve_route_key(spell_codegen_model)
-        no_overrides_plan = spell_codegen_plan.no_overrides_plan
-        fast_transient_no_overrides_enabled = False
-        if no_overrides_plan is not None:
-            fast_transient_no_overrides_enabled = (
-                route_key == "many"
-                and no_overrides_plan.fast_transient_plan is not None
-            )
 
         state.resolve_route_key = route_key
-        state.fast_transient_no_overrides_enabled = (
-            fast_transient_no_overrides_enabled
-        )
+        state.fast_transient_no_overrides_enabled = False
 
     @staticmethod
     def _resolve_route_key(

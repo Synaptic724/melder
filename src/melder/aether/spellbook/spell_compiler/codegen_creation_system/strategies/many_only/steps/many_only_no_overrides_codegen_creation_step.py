@@ -1,24 +1,25 @@
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers as SharedCompilerExecutions,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
-    GeneralizedCodegenCreationState,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
+    ManyOnlyCodegenCreationState,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
     CodegenCreationFamilyStep,
 )
 
 
-class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
+class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
     """
-    Generalized family no-overrides executor build step.
+    Many-only family no-overrides executor build step.
 
     Purpose:
-        Compile the spell-static no-overrides executor from the generalized lane
-        plan and store it on both the family state and the final output object.
+        Compile the spell-static no-overrides executor from the many-only lane
+        plan and store the many-only transient specialization on both the family
+        state and the final output object.
     """
 
     __slots__ = ()
@@ -28,14 +29,14 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         """
         Return the stable no-overrides step id.
         """
-        return "generalized_no_overrides_codegen_creation"
+        return "many_only_no_overrides_codegen_creation"
 
     def apply(
             self,
-            state: GeneralizedCodegenCreationState,
+            state: ManyOnlyCodegenCreationState,
     ) -> None:
         """
-        Populate no-overrides executor output from generalized lane truth.
+        Populate no-overrides executor output from many-only lane truth.
         """
         spell_codegen_plan = state.spell_codegen_plan
         spell_codegen_creation = state.spell_codegen_creation
@@ -43,16 +44,19 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         no_overrides_plan = spell_codegen_plan.no_overrides_plan
         if no_overrides_plan is None:
             raise RuntimeError(
-                "Generalized no-overrides codegen creation requires a no_overrides_plan."
+                "Many-only no-overrides codegen creation requires a no_overrides_plan."
             )
 
+        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
+            no_overrides_plan.fast_transient_plan,
+        )
         compiled_executor = compile_no_overrides_codegen_creation_executor_from_plan(
             plan=no_overrides_plan,
-            transient_schema=None,
+            transient_schema=transient_schema,
         )
         executor_signature = self._build_executor_signature(
             no_overrides_plan=no_overrides_plan,
-            transient_schema=None,
+            transient_schema=transient_schema,
         )
 
         state.base_no_overrides_executor = compiled_executor
@@ -67,7 +71,7 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
             len(no_overrides_plan.steps)
         )
         spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
-            False
+            no_overrides_plan.fast_transient_plan is not None
         )
         spell_codegen_creation.metadata["no_overrides_executor_signature"] = (
             executor_signature
@@ -91,14 +95,11 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
             )
             for step in no_overrides_plan.steps
         )
-        if transient_schema is None:
-            transient_signature = None
-        else:
-            transient_signature = (
-                SharedCompilerExecutions.build_fast_transient_signature(
-                    transient_schema
-                )
+        transient_signature = (
+            SharedCompilerExecutions.build_fast_transient_signature(
+                transient_schema
             )
+        )
         root_instance_key = SharedCompilerExecutions.normalize_instance_key(
             no_overrides_plan.root_instance_key
         )

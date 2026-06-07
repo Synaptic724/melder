@@ -1,9 +1,9 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler import (
     _compile_overrides_codegen_creation_executor_from_code_object_with_prefilter_cache,
     build_overrides_codegen_creation_step_target_counts_from_rows,
     compile_overrides_codegen_creation_executor,
@@ -13,8 +13,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers as SharedCompilerExecutions,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
-    GeneralizedCodegenCreationState,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
+    ManyOnlyCodegenCreationState,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
     CodegenCreationFamilyStep,
@@ -22,13 +22,13 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
-class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
+class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
     """
-    Generalized family final output step.
+    Many-only family final output step.
 
     Purpose:
         Build the final override runtime callable and finish the narrow
-        `SpellCodegenCreation` output from family-local scratch state.
+        `SpellCodegenCreation` output from many-only family-local scratch state.
     """
 
     __slots__ = ()
@@ -38,14 +38,14 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         """
         Return the stable finalization step id.
         """
-        return "generalized_finalize_creation_context"
+        return "many_only_finalize_creation_context"
 
     def apply(
             self,
-            state: GeneralizedCodegenCreationState,
+            state: ManyOnlyCodegenCreationState,
     ) -> None:
         """
-        Build the final runtime doors from generalized family scratch state.
+        Build the final runtime doors from many-only family scratch state.
         """
         spell_codegen_model = state.spell_codegen_model
         spell_codegen_plan = state.spell_codegen_plan
@@ -55,11 +55,11 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         overrides_plan = spell_codegen_plan.overrides_plan
         if no_overrides_plan is None:
             raise RuntimeError(
-                "Generalized finalize creation-context step requires a no_overrides_plan."
+                "Many-only finalize creation-context step requires a no_overrides_plan."
             )
         if overrides_plan is None:
             raise RuntimeError(
-                "Generalized finalize creation-context step requires an overrides_plan."
+                "Many-only finalize creation-context step requires an overrides_plan."
             )
 
         route_key = state.resolve_route_key
@@ -110,7 +110,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         )
         spell_codegen_creation.metadata["override_lane_id"] = overrides_plan.lane_id
         spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
-            False
+            no_overrides_plan.fast_transient_plan is not None
         )
         spell_codegen_creation.metadata["override_step_count"] = (
             len(overrides_plan.steps)
@@ -135,7 +135,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         ):
             return route_family
         raise RuntimeError(
-            "SpellCodegenModel route_family is not ready for generalized creation-context "
+            "SpellCodegenModel route_family is not ready for many-only creation-context "
             f"build: {route_family!r}."
         )
 
@@ -160,7 +160,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 if step.spell.spell_index.current == root_spell_id:
                     return step.spell
         raise RuntimeError(
-            "generalized creation-context finalize step could not resolve the root spell object."
+            "many-only creation-context finalize step could not resolve the root spell object."
         )
 
     @staticmethod
@@ -170,13 +170,16 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         """
         Build the underlying no-overrides route executor from the lane plan.
         """
+        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
+            no_overrides_plan.fast_transient_plan,
+        )
         executor = compile_no_overrides_codegen_creation_executor_from_plan(
             plan=no_overrides_plan,
-            transient_schema=None,
+            transient_schema=transient_schema,
         )
         if executor is None:
             raise RuntimeError(
-                "generalized creation-context finalize step could not build a no-overrides executor."
+                "many-only creation-context finalize step could not build a no-overrides executor."
             )
         return executor
 
@@ -439,7 +442,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
             for step in overrides_plan.steps
         )
         return (
-            "generalized_overrides_lane_plan",
+            "many_only_overrides_lane_plan",
             SharedCompilerExecutions.hash_codegen_signature(
                 overrides_plan.lane_id,
                 overrides_plan.root_spell_id,
@@ -519,7 +522,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                     socket_ref.node_id,
                     socket_ref.param_path_id,
                     socket_ref.param_name,
-                    GeneralizedFinalizeCreationContextStep._socket_kind_value(
+                    ManyOnlyFinalizeCreationContextStep._socket_kind_value(
                         socket_ref
                     ),
                 )

@@ -12,20 +12,20 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
     SpellCodegenStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_creation_context_setup_step import (
-    GeneralizedCreationContextSetupStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
-    GeneralizedFinalizeCreationContextStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step import (
-    GeneralizedNoOverridesCodegenCreationStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step import (
-    GeneralizedOverridesCodegenCreationStep,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_creation_context_setup_step import (
+    ManyOnlyCreationContextSetupStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step import (
+    ManyOnlyFinalizeCreationContextStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
+    ManyOnlyNoOverridesCodegenCreationStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_overrides_codegen_creation_step import (
+    ManyOnlyOverridesCodegenCreationStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
@@ -52,10 +52,10 @@ class ManyOnlyCodegenCreationStrategy(SpellCodegenStrategy):
         """
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
-            GeneralizedCreationContextSetupStep(),
-            GeneralizedNoOverridesCodegenCreationStep(),
-            GeneralizedOverridesCodegenCreationStep(),
-            GeneralizedFinalizeCreationContextStep(),
+            ManyOnlyCreationContextSetupStep(),
+            ManyOnlyNoOverridesCodegenCreationStep(),
+            ManyOnlyOverridesCodegenCreationStep(),
+            ManyOnlyFinalizeCreationContextStep(),
         )
 
     @property
