@@ -6,8 +6,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.m
     compile_overrides_codegen_creation_executor_from_source,
     emit_overrides_codegen_creation_executor_shape_source,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
-    CodegenCreationSchemaHelpers as SharedCompilerExecutions,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers import (
+    ManyOnlyCodegenCreationHelpers,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
@@ -99,7 +99,7 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         Build the spell-static override runtime scratch inputs.
         """
         steps_rows = self._build_steps_rows(overrides_plan.steps)
-        steps_rows_signature = SharedCompilerExecutions.hash_codegen_signature(
+        steps_rows_signature = ManyOnlyCodegenCreationHelpers.hash_signature(
             steps_rows
         )
         step_spell_ids = tuple(
@@ -108,7 +108,7 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         )
         plan_signature = (
             "many_only_overrides_lane_plan",
-            SharedCompilerExecutions.hash_codegen_signature(
+            ManyOnlyCodegenCreationHelpers.hash_signature(
                 overrides_plan.lane_id,
                 overrides_plan.root_spell_id,
                 step_spell_ids,
@@ -185,9 +185,6 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         Build override-compatible schema rows from generalized lane steps.
         """
         return tuple(
-            SharedCompilerExecutions.build_phase11_step_ir_row(
-                step,
-                include_override_metadata=True,
-            )
+            ManyOnlyCodegenCreationHelpers.build_override_step_row(step)
             for step in steps
         )

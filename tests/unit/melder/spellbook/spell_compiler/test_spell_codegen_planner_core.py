@@ -17,10 +17,10 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder import (
     SpellCodegenPlanStrategyBuilder,
 )
-from melder.aether.spellbook.spell_compiler.codegen_planner.strategies import spell_generalized_many_only_codegen_plan_strategy as many_only_strategy_module
+from melder.aether.spellbook.spell_compiler.codegen_planner.strategies import spell_many_only_codegen_plan_strategy as many_only_strategy_module
 from melder.aether.spellbook.spell_compiler.codegen_planner.strategies import spell_generalized_solo_codegen_plan_strategy as solo_strategy_module
-from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy import (
-    SpellGeneralizedManyOnlyCodegenPlanStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy import (
+    SpellManyOnlyCodegenPlanStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_solo_codegen_plan_strategy import (
     SpellGeneralizedSoloCodegenPlanStrategy,
@@ -152,7 +152,7 @@ def test_spell_codegen_plan_strategy_builder_registers_generalized_default() -> 
 
     assert builder.registered_strategy_names() == (
         "generalized_solo_codegen_plan",
-        "generalized_many_only_codegen_plan",
+        "many_only_codegen_plan",
         "generalized_codegen_plan",
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_plan'"):
@@ -296,7 +296,7 @@ def test_spell_generalized_solo_codegen_plan_strategy_uses_dedicated_solo_builde
     assert plan.metadata["selected_strategy_id"] == strategy.strategy_id
 
 
-def test_spell_generalized_many_only_codegen_plan_strategy_uses_dedicated_many_only_builder(
+def test_spell_many_only_codegen_plan_strategy_uses_dedicated_many_only_builder(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The many-only plan strategy should use the dedicated many-only builder surface."""
@@ -320,10 +320,10 @@ def test_spell_generalized_many_only_codegen_plan_strategy_uses_dedicated_many_o
 
     monkeypatch.setattr(
         many_only_strategy_module,
-        "SpellManyOnlyCodegenPlanBuilder",
+        "ManyOnlyCodegenPlanBuilder",
         _ManyOnlyLaneBuilderProbe,
     )
-    strategy = SpellGeneralizedManyOnlyCodegenPlanStrategy()
+    strategy = SpellManyOnlyCodegenPlanStrategy()
     state = _ProcessorStateProbe(("processor_only",))
     plan = SpellCodegenPlan(processor_strategy_ids=(), plan_strategy_ids=())
 

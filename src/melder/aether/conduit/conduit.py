@@ -309,17 +309,9 @@ class Conduit(Cleanable):
             self._root_conduit_id: str = root_conduit_id
         else:
             self._root_conduit_id = self._id
-        self._transaction_identity: DevopsIdentity = DevopsIdentity(
-            owner_kind="conduit",
-            owner_id=self._id,
-            aetheric_frame_name=self._aetheric_frame_name,
-            metadata={},
-            available_transactions=tuple(),
-        )
-        self._transaction_identity.attach_registry(
-            self._aetheric_frame.devops_information_registry,
-            object_ref=self,
-        )
+        self._transaction_identity: Optional[DevopsIdentity] = None
+        if conduit_state is ConduitState.normal:
+            self._ensure_transaction_identity_registered()
         self._spellspace_stack: SpellSpaceThreadState = SpellSpaceThreadState()
         self._spellspace_registry: set[SpellSpace] = set()
         self._creations: ConduitCreations = ConduitCreations(
@@ -389,6 +381,34 @@ class Conduit(Cleanable):
             aetheric_frame=self._aetheric_frame,
         )
         self._refresh_devops_identity_state()
+
+    def _ensure_transaction_identity_registered(self) -> None:
+        """
+        Internal
+
+        Ensure this conduit owns one attached transaction identity when normal.
+
+        Contract:
+            - No-op for lesser conduits.
+            - Creates the conduit identity lazily on first normal-only need.
+            - Attaches that identity to the frame dev-ops registry when not
+              already attached.
+        """
+        if self._conduit_state is not ConduitState.normal:
+            return
+        if self._transaction_identity is None:
+            self._transaction_identity = DevopsIdentity(
+                owner_kind="conduit",
+                owner_id=self._id,
+                aetheric_frame_name=self._aetheric_frame_name,
+                metadata={},
+                available_transactions=tuple(),
+            )
+        if self._transaction_identity._registry is None:
+            self._transaction_identity.attach_registry(
+                self._aetheric_frame.devops_information_registry,
+                object_ref=self,
+            )
 
 
 
@@ -595,7 +615,8 @@ class Conduit(Cleanable):
         del self._creation_gate_controller
         del self._creations
         del self._aetheric_frame
-        self._transaction_identity.cleanup()
+        if self._transaction_identity is not None:
+            self._transaction_identity.cleanup()
         del self._transaction_identity
         del self._spellspace_stack
         del self._spellspace_registry
@@ -684,7 +705,8 @@ class Conduit(Cleanable):
         del self._creations
         del self._spellbook
         del self._configuration
-        self._transaction_identity.cleanup()
+        if self._transaction_identity is not None:
+            self._transaction_identity.cleanup()
         del self._transaction_identity
         del self._spellspace_stack
         del self._spellspace_registry
@@ -947,9 +969,11 @@ class Conduit(Cleanable):
             with the conduit role and dynamic posture, including lesser ->
             normal upgrade.
         """
-        available_transactions: Tuple[str, ...] = tuple()
-        if self._conduit_state is ConduitState.normal:
-            available_transactions = (
+        if self._conduit_state is not ConduitState.normal:
+            return
+        self._ensure_transaction_identity_registered()
+        self._transaction_identity.set_available_transactions(
+            (
                 "bind",
                 "scan",
                 "link",
@@ -957,8 +981,6 @@ class Conduit(Cleanable):
                 "mutation",
                 "transfer_ownership",
             )
-        self._transaction_identity.set_available_transactions(
-            available_transactions
         )
         self._transaction_identity.update_metadata(
             conduit_id=self._id,
@@ -1589,11 +1611,7 @@ class Conduit(Cleanable):
                 self._conduit_state = ConduitState.normal
                 self._root_conduit_id = self._id
                 self._name = name
-                if self._transaction_identity._registry is None:
-                    self._transaction_identity.attach_registry(
-                        self._aetheric_frame.devops_information_registry,
-                        object_ref=self,
-                    )
+                self._ensure_transaction_identity_registered()
                 self._refresh_devops_identity_state()
                 self._conduit_pool = ConduitPool(
                     root_conduit=self,
@@ -1613,8 +1631,6 @@ class Conduit(Cleanable):
 
                 # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()
-                self._transaction_identity.update_metadata(parent_conduit_id=None)
-
                 # Step 3.5: Rebind gates for this lineage to the injected
                 # frame-owned DevOps controller.
                 self._set_creation_gate_controller_for_lineage()

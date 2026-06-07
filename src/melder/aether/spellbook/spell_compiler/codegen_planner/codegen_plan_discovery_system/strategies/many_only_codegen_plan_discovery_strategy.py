@@ -54,8 +54,8 @@ class ManyOnlyCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
             return None
 
         return CodegenPlanDiscovery(
-            selected_strategy_id="generalized_many_only_codegen_plan",
+            selected_strategy_id="many_only_codegen_plan",
             discovery_reason="many_only_visible_spell_set",
             plan_family_id="many_only",
-            candidate_codegen_style_ids=("generalized_many_only",),
+            candidate_codegen_style_ids=("many_only",),
         )

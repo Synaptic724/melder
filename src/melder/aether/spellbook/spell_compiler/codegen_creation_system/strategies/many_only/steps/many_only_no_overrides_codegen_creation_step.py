@@ -1,8 +1,8 @@
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
-    CodegenCreationSchemaHelpers as SharedCompilerExecutions,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers import (
+    ManyOnlyCodegenCreationHelpers,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
@@ -47,16 +47,11 @@ class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
                 "Many-only no-overrides codegen creation requires a no_overrides_plan."
             )
 
-        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
-            no_overrides_plan.fast_transient_plan,
-        )
         compiled_executor = compile_no_overrides_codegen_creation_executor_from_plan(
             plan=no_overrides_plan,
-            transient_schema=transient_schema,
         )
         executor_signature = self._build_executor_signature(
             no_overrides_plan=no_overrides_plan,
-            transient_schema=transient_schema,
         )
 
         state.base_no_overrides_executor = compiled_executor
@@ -70,8 +65,8 @@ class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         spell_codegen_creation.metadata["no_overrides_step_count"] = (
             len(no_overrides_plan.steps)
         )
-        spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
-            no_overrides_plan.fast_transient_plan is not None
+        spell_codegen_creation.metadata["no_overrides_plan_kind"] = (
+            "many_only_no_overrides"
         )
         spell_codegen_creation.metadata["no_overrides_executor_signature"] = (
             executor_signature
@@ -84,28 +79,24 @@ class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
     def _build_executor_signature(
             *,
             no_overrides_plan: object,
-            transient_schema: object,
     ) -> str:
         """
         Build the deterministic no-overrides executor signature.
         """
         step_signature_rows = tuple(
-            SharedCompilerExecutions.build_no_overrides_codegen_creation_step_signature_row(
+            ManyOnlyCodegenCreationHelpers.build_no_overrides_step_signature_row(
                 step
             )
             for step in no_overrides_plan.steps
         )
-        transient_signature = (
-            SharedCompilerExecutions.build_fast_transient_signature(
-                transient_schema
-            )
-        )
-        root_instance_key = SharedCompilerExecutions.normalize_instance_key(
+        root_instance_key = ManyOnlyCodegenCreationHelpers.normalize_instance_key(
             no_overrides_plan.root_instance_key
         )
-        return SharedCompilerExecutions.hash_codegen_signature(
+        return ManyOnlyCodegenCreationHelpers.hash_signature(
             no_overrides_plan.root_spell_id,
             root_instance_key,
             step_signature_rows,
-            transient_signature,
+            no_overrides_plan.step_call_modes,
+            no_overrides_plan.root_step_index,
+            no_overrides_plan.step_has_disposal_methods,
         )

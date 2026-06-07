@@ -408,9 +408,7 @@ def test_link_lesser_conduit(ward):
     assert "child-1" in ward._lesser_conduits
     assert child._conduit_ward._parent_conduit == ward._conduit
     assert child._conduit_ward.root_conduit == ward._conduit
-    child._transaction_identity.update_metadata.assert_called_once_with(
-        parent_conduit_id="conduit-1"
-    )
+    child._transaction_identity.update_metadata.assert_not_called()
 
 
 def test_detach_for_pool_unregisters_lesser_parent_relation(ward) -> None:
@@ -443,9 +441,7 @@ def test_detach_for_pool_unregisters_lesser_parent_relation(ward) -> None:
 
     assert "child-2" not in ward._lesser_conduits
     assert child._conduit_ward._parent_conduit is None
-    child._transaction_identity.update_metadata.assert_any_call(
-        parent_conduit_id=None
-    )
+    child._transaction_identity.update_metadata.assert_not_called()
 
 
 def test_link_lesser_conduit_requires_root_conduit() -> None:

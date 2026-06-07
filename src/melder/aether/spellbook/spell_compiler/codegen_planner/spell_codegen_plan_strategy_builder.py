@@ -5,8 +5,8 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
     SpellCodegenPlanStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy import (
-    SpellGeneralizedManyOnlyCodegenPlanStrategy,
+from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy import (
+    SpellManyOnlyCodegenPlanStrategy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_codegen_plan_strategy import (
     SpellGeneralizedCodegenPlanStrategy,
@@ -81,12 +81,12 @@ class SpellCodegenPlanStrategyBuilder(Cleanable):
         self._strategies_by_name[
             generalized_solo_codegen_plan_strategy.strategy_id
         ] = generalized_solo_codegen_plan_strategy
-        generalized_many_only_codegen_plan_strategy = (
-            SpellGeneralizedManyOnlyCodegenPlanStrategy()
+        many_only_codegen_plan_strategy = (
+            SpellManyOnlyCodegenPlanStrategy()
         )
         self._strategies_by_name[
-            generalized_many_only_codegen_plan_strategy.strategy_id
-        ] = generalized_many_only_codegen_plan_strategy
+            many_only_codegen_plan_strategy.strategy_id
+        ] = many_only_codegen_plan_strategy
         generalized_codegen_plan_strategy = SpellGeneralizedCodegenPlanStrategy()
         self._strategies_by_name[
             generalized_codegen_plan_strategy.strategy_id

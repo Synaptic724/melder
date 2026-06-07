@@ -32,16 +32,5 @@ class ManyOnlyCreationContextSetupStep(CodegenCreationFamilyStep):
         Populate many-only route/setup facts on family-local state.
         """
         spell_codegen_model = state.spell_codegen_model
-        spell_codegen_plan = state.spell_codegen_plan
-
         _ = spell_codegen_model
-        no_overrides_plan = spell_codegen_plan.no_overrides_plan
-        fast_transient_no_overrides_enabled = (
-            no_overrides_plan is not None
-            and no_overrides_plan.fast_transient_plan is not None
-        )
-
         state.resolve_route_key = "many"
-        state.fast_transient_no_overrides_enabled = (
-            fast_transient_no_overrides_enabled
-        )

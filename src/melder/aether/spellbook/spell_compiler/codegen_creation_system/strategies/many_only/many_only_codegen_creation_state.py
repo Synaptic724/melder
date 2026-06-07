@@ -28,7 +28,6 @@ class ManyOnlyCodegenCreationState:
         "spell_codegen_creation",
         "root_spell",
         "resolve_route_key",
-        "fast_transient_no_overrides_enabled",
         "base_no_overrides_executor",
         "override_targeting",
         "override_plan_signature",
@@ -56,7 +55,6 @@ class ManyOnlyCodegenCreationState:
         self.spell_codegen_creation = spell_codegen_creation
         self.root_spell: Optional[Any] = None
         self.resolve_route_key: Optional[str] = None
-        self.fast_transient_no_overrides_enabled: bool = False
         self.base_no_overrides_executor: Optional[Callable[..., Any]] = None
         self.override_targeting: Optional[Any] = None
         self.override_plan_signature: Optional[Tuple[Any, ...]] = None

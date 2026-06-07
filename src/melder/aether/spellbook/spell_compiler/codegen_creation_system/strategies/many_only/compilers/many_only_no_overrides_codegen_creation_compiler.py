@@ -184,6 +184,9 @@ def compile_no_overrides_codegen_creation_executor_from_plan(
     steps = plan.steps
     if not steps:
         return None
+    many_only_unrolled_schema = _build_many_only_unrolled_schema_from_plan(plan)
+    if many_only_unrolled_schema is not None:
+        transient_schema = many_only_unrolled_schema
     return _compile_no_overrides_executor_from_entry_inputs(
         steps=steps,
         root_instance_key=plan.root_instance_key,
@@ -327,6 +330,68 @@ def _compile_no_overrides_executor_from_steps(
             "No-overrides codegen executor generation failed."
         ),
     )
+
+
+def _build_many_only_unrolled_schema_from_plan(
+        plan: Any,
+) -> Optional[Dict[str, Any]]:
+    """
+    Build a many-only-local unrolled schema from the standalone no-overrides plan.
+
+    Contract:
+        - Returns None when the plan does not expose the many-only unrolled arrays.
+        - Returns None when any step has disposal methods because disposal-aware
+          many registration must stay on the step-plan emitter.
+        - Returns None when any call mode is CALLN.
+    """
+    if not hasattr(plan, "step_call_modes"):
+        return None
+    if any(plan.step_has_disposal_methods):
+        return None
+    call_modes = tuple(plan.step_call_modes)
+    if ManyOnlyCodegenPlanCallMode.CALLN in call_modes:
+        return None
+    return {
+        "step_count": len(plan.steps),
+        "root_step_index": plan.root_step_index,
+        "call_modes": call_modes,
+        "dep1": tuple(plan.step_dep1),
+        "dep2a": tuple(plan.step_dep2a),
+        "dep2b": tuple(plan.step_dep2b),
+        "dep3a": tuple(plan.step_dep3a),
+        "dep3b": tuple(plan.step_dep3b),
+        "dep3c": tuple(plan.step_dep3c),
+        "dep4a": tuple(plan.step_dep4a),
+        "dep4b": tuple(plan.step_dep4b),
+        "dep4c": tuple(plan.step_dep4c),
+        "dep4d": tuple(plan.step_dep4d),
+        "dep5a": tuple(plan.step_dep5a),
+        "dep5b": tuple(plan.step_dep5b),
+        "dep5c": tuple(plan.step_dep5c),
+        "dep5d": tuple(plan.step_dep5d),
+        "dep5e": tuple(plan.step_dep5e),
+        "dep6a": tuple(plan.step_dep6a),
+        "dep6b": tuple(plan.step_dep6b),
+        "dep6c": tuple(plan.step_dep6c),
+        "dep6d": tuple(plan.step_dep6d),
+        "dep6e": tuple(plan.step_dep6e),
+        "dep6f": tuple(plan.step_dep6f),
+        "dep7a": tuple(plan.step_dep7a),
+        "dep7b": tuple(plan.step_dep7b),
+        "dep7c": tuple(plan.step_dep7c),
+        "dep7d": tuple(plan.step_dep7d),
+        "dep7e": tuple(plan.step_dep7e),
+        "dep7f": tuple(plan.step_dep7f),
+        "dep7g": tuple(plan.step_dep7g),
+        "dep8a": tuple(plan.step_dep8a),
+        "dep8b": tuple(plan.step_dep8b),
+        "dep8c": tuple(plan.step_dep8c),
+        "dep8d": tuple(plan.step_dep8d),
+        "dep8e": tuple(plan.step_dep8e),
+        "dep8f": tuple(plan.step_dep8f),
+        "dep8g": tuple(plan.step_dep8g),
+        "dep8h": tuple(plan.step_dep8h),
+    }
 
 
 def _hydrate_steps_from_rows(

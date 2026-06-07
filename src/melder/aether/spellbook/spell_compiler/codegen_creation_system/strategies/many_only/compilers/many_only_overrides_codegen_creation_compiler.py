@@ -631,7 +631,6 @@ def _build_shape_source_step_metadata(
 
     Contract:
         - Validates required row fields needed by shape-specialized emission.
-        - Resolves row existence names to Existence enum values.
         - Marks root-step membership using `root_spell_id`.
     """
     if plan_rows is None:
@@ -651,15 +650,11 @@ def _build_shape_source_step_metadata(
     step_metadata = []
     required_fields = (
         "spell_id",
-        "existence",
-        "creations_target_kind",
         "uses_positional_override",
         "dependency_resolution_order",
         "contract_positional_override",
         "has_contract_payload",
         "contract_payload_items",
-        "use_spell_lock_hint",
-        "must_register",
     )
     for row_index, row in enumerate(plan_rows):
         for field_name in required_fields:
@@ -669,14 +664,6 @@ def _build_shape_source_step_metadata(
                     f"'{field_name}' at index {row_index}."
                 )
         spell_id = row["spell_id"]
-        existence_name = row["existence"]
-        try:
-            existence = Existence[existence_name]
-        except KeyError as exc:
-            raise RuntimeError(
-                "Overrides codegen creation step schema contains unknown existence "
-                f"'{existence_name}' at index {row_index}."
-            ) from exc
         dependency_resolution_order = tuple(
             (
                 param_name,
@@ -746,10 +733,10 @@ def _build_shape_source_step_metadata(
         step_metadata.append(
             (
                 spell_id,
-                row["creations_target_kind"],
-                existence,
-                bool(row["use_spell_lock_hint"]),
-                bool(row["must_register"]),
+                ManyOnlyCodegenPlanTargetKind.CALLER,
+                Existence.many,
+                False,
+                static_has_disposal_methods is True,
                 spell_id == root_spell_id,
                 spell_id in targeted_spell_ids,
                 static_override_target_count,
@@ -2180,8 +2167,6 @@ def _hydrate_steps_from_rows(
         required_fields = (
             "instance_key",
             "spell_id",
-            "existence",
-            "creations_target_kind",
             "shared_instance",
             "dependency_resolution_order",
             "override_match_prefix",
@@ -2190,8 +2175,6 @@ def _hydrate_steps_from_rows(
             "contract_positional_override",
             "has_contract_payload",
             "contract_payload_items",
-            "use_spell_lock_hint",
-            "must_register",
         )
         for field_name in required_fields:
             if field_name not in row:
@@ -2206,15 +2189,6 @@ def _hydrate_steps_from_rows(
             raise RuntimeError(
                 f"Overrides codegen creation step schema references unknown spell_id '{spell_id}'."
             )
-
-        existence_name = row["existence"]
-        try:
-            existence = Existence[existence_name]
-        except KeyError as exc:
-            raise RuntimeError(
-                "Overrides codegen creation step schema contains unknown existence "
-                f"'{existence_name}' at index {row_index}."
-            ) from exc
 
         dependency_resolution_order = tuple(
             (
@@ -2235,8 +2209,8 @@ def _hydrate_steps_from_rows(
             SimpleNamespace(
                 instance_key=tuple(row["instance_key"]),
                 spell=spell,
-                existence=existence,
-                creations_target_kind=row["creations_target_kind"],
+                existence=Existence.many,
+                creations_target_kind=ManyOnlyCodegenPlanTargetKind.CALLER,
                 shared_instance=row["shared_instance"],
                 dependency_resolution_order=dependency_resolution_order,
                 override_match_prefix=row["override_match_prefix"],
@@ -2245,8 +2219,8 @@ def _hydrate_steps_from_rows(
                 contract_positional_override=row["contract_positional_override"],
                 has_contract_payload=has_contract_payload,
                 contract_payload=contract_payload,
-                use_spell_lock_hint=row["use_spell_lock_hint"],
-                must_register=row["must_register"],
+                use_spell_lock_hint=False,
+                must_register=bool(spell.has_disposal_methods),
             )
         )
     return tuple(steps)

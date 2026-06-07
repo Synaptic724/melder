@@ -148,7 +148,7 @@ def test_many_only_codegen_creation_discovery_strategy_claims_many_only_plan() -
     """The many-only phase-11 strategy should claim many-only planner output only."""
     discovery = ManyOnlyCodegenCreationDiscoveryStrategy().discover(
         _ModelProbe("model"),
-        _make_plan("generalized_many_only_codegen_plan"),
+        _make_plan("many_only_codegen_plan"),
     )
 
     assert discovery is not None
@@ -156,7 +156,7 @@ def test_many_only_codegen_creation_discovery_strategy_claims_many_only_plan() -
         "many_only_codegen_creation",
     )
     assert discovery.discovery_reason == "many_only_plan_codegen_creation_family"
-    assert discovery.selected_codegen_style_id == "generalized_many_only"
+    assert discovery.selected_codegen_style_id == "many_only"
 
 
 def test_fallback_no_overrides_codegen_creation_discovery_strategy_returns_fallback_result() -> None:

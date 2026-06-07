@@ -366,15 +366,15 @@ def test_upgrade_to_normal_refreshes_transaction_identity_without_changing_owner
     conduit_dynamic_lesser._nexus_publish_enabled = False
 
     original_id = conduit_dynamic_lesser._id
-    identity = conduit_dynamic_lesser._transaction_identity
-
-    assert identity.owner_id == original_id
-    assert identity.available_transactions == tuple()
+    assert conduit_dynamic_lesser._transaction_identity is None
 
     conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
 
+    identity = conduit_dynamic_lesser._transaction_identity
+
     assert conduit_dynamic_lesser._id == original_id
     assert conduit_dynamic_lesser._root_conduit_id == original_id
+    assert identity is not None
     assert identity.owner_id == original_id
     assert identity.supports_transaction("bind") is True
     assert identity.supports_transaction("scan") is True
@@ -493,15 +493,9 @@ def test_create_lesser_conduit_inherits_root_conduit_pool(
     lesser = conduit_dynamic_normal.create_lesser_conduit()
     try:
         assert lesser._conduit_pool is conduit_dynamic_normal._conduit_pool
-        assert (
-            lesser._transaction_identity.metadata["parent_conduit_id"]
-            == conduit_dynamic_normal._id
-        )
+        assert lesser._transaction_identity is None
         lesser.cleanup()
-        assert (
-            lesser._transaction_identity.metadata["parent_conduit_id"]
-            is None
-        )
+        assert lesser._transaction_identity is None
     finally:
         lesser.permanent_cleanup()
 

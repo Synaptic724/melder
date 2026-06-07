@@ -158,9 +158,9 @@ def test_many_only_codegen_plan_discovery_strategy_claims_multi_many_graph() -> 
     discovery = ManyOnlyCodegenPlanDiscoveryStrategy().discover(model)
 
     assert discovery is not None
-    assert discovery.selected_strategy_id == "generalized_many_only_codegen_plan"
+    assert discovery.selected_strategy_id == "many_only_codegen_plan"
     assert discovery.plan_family_id == "many_only"
-    assert discovery.candidate_codegen_style_ids == ("generalized_many_only",)
+    assert discovery.candidate_codegen_style_ids == ("many_only",)
 
 
 def test_codegen_plan_discovery_strategy_builder_registers_generalized_default() -> None:

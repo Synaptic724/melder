@@ -10,9 +10,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.m
     compile_overrides_codegen_creation_executor_code_object,
     emit_overrides_codegen_creation_executor_shape_source,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
-    CodegenCreationSchemaHelpers as SharedCompilerExecutions,
-)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers import ManyOnlyCodegenCreationHelpers
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
 )
@@ -102,15 +100,15 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
         spell_codegen_creation.no_overrides_executor = base_no_overrides_executor
         spell_codegen_creation.overrides_executor = overrides_runtime
         spell_codegen_creation.metadata["resolve_route_key"] = route_key
-        spell_codegen_creation.metadata["fast_transient_no_overrides_enabled"] = (
-            state.fast_transient_no_overrides_enabled
-        )
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
             no_overrides_plan.lane_id
         )
         spell_codegen_creation.metadata["override_lane_id"] = overrides_plan.lane_id
-        spell_codegen_creation.metadata["no_overrides_fast_transient_available"] = (
-            no_overrides_plan.fast_transient_plan is not None
+        spell_codegen_creation.metadata["no_overrides_plan_kind"] = (
+            "many_only_no_overrides"
+        )
+        spell_codegen_creation.metadata["override_plan_kind"] = (
+            "many_only_overrides"
         )
         spell_codegen_creation.metadata["override_step_count"] = (
             len(overrides_plan.steps)
@@ -170,12 +168,8 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
         """
         Build the underlying no-overrides route executor from the lane plan.
         """
-        transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
-            no_overrides_plan.fast_transient_plan,
-        )
         executor = compile_no_overrides_codegen_creation_executor_from_plan(
             plan=no_overrides_plan,
-            transient_schema=transient_schema,
         )
         if executor is None:
             raise RuntimeError(
@@ -418,10 +412,7 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
         Build deterministic schema rows from generalized override lane steps.
         """
         return tuple(
-            SharedCompilerExecutions.build_phase11_step_ir_row(
-                step,
-                include_override_metadata=True,
-            )
+            ManyOnlyCodegenCreationHelpers.build_override_step_row(step)
             for step in steps
         )
 
@@ -434,7 +425,7 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
         """
         Build the stable override plan signature used by specialization caching.
         """
-        steps_rows_signature = SharedCompilerExecutions.hash_codegen_signature(
+        steps_rows_signature = ManyOnlyCodegenCreationHelpers.hash_signature(
             tuple(plan_rows)
         )
         step_spell_ids = tuple(
@@ -443,7 +434,7 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
         )
         return (
             "many_only_overrides_lane_plan",
-            SharedCompilerExecutions.hash_codegen_signature(
+            ManyOnlyCodegenCreationHelpers.hash_signature(
                 overrides_plan.lane_id,
                 overrides_plan.root_spell_id,
                 step_spell_ids,

@@ -603,10 +603,7 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     conduit_lesser.cleanup()
     assert conduit_lesser.cleaned is False
     assert conduit_lesser._conduit_state is ConduitState.pooled_lesser
-    assert (
-        conduit_lesser._transaction_identity.metadata["conduit_state"]
-        == ConduitState.lesser.value
-    )
+    assert conduit_lesser._transaction_identity is None
     conduit_lesser._nexus._publish_conduit_record.assert_not_called()
     assert hasattr(conduit_lesser, "_nexus")
 
@@ -660,19 +657,13 @@ def test_create_lesser_conduit_from_pool_skips_nexus_publish_and_identity_refres
     pooled._nexus_publish_enabled = True
     pooled._conduit_state = ConduitState.pooled_lesser
     pooled._conduit_ward._conduit_type = ConduitState.pooled_lesser
-    pooled._transaction_identity.update_metadata(
-        conduit_state=ConduitState.pooled_lesser.value
-    )
     conduit_normal._conduit_pool.return_lesser_conduit(pooled)
 
     reused = conduit_normal.create_lesser_conduit()
 
     assert reused is pooled
     assert reused._conduit_state is ConduitState.lesser
-    assert (
-        reused._transaction_identity.metadata["conduit_state"]
-        == ConduitState.pooled_lesser.value
-    )
+    assert reused._transaction_identity is None
     reused._nexus._publish_conduit_record.assert_not_called()
 
 

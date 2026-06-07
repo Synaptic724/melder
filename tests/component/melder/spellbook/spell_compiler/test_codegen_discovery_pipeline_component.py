@@ -126,7 +126,7 @@ def test_component_codegen_plan_discovery_system_prefers_solo_and_many_only_befo
         ),
     )
     many_discovery = CodegenPlanDiscoverySystem().discover(many_state)
-    assert many_discovery.selected_strategy_id == "generalized_many_only_codegen_plan"
+    assert many_discovery.selected_strategy_id == "many_only_codegen_plan"
 
 
 def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_generalized_plan() -> None:
