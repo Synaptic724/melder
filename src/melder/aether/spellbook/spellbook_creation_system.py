@@ -177,9 +177,21 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
         )
+        # Classify cache posture before plan phases so a full hit can skip the
+        # phase-8-to-11 compile and load the runtime lanes from cache instead.
+        resolved_conduit_name = (
+            self._name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
+        )
+        cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+            spellbook=spellbook,
+            dynamic=self._dynamic,
+            conduit_name=resolved_conduit_name,
+        )
+        cache_full_hit = cache_state["cache_path"] == "full_hit"
         conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
+            force_skip_plan_phases=True if cache_full_hit else None,
         )
         policy_enum = SpellbookCreationSystem._resolve_conjure_policy(
             spellbook=spellbook,
@@ -215,6 +227,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             conduit=conduit,
             hook_map=hook_map,
+            cache_state=cache_state,
         )
         return conduit
 
@@ -253,6 +266,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             phase_scheduler_cls: Type[PhaseScheduler],
+            force_skip_plan_phases: Optional[bool] = None,
     ) -> str:
         """
         Purpose:
@@ -273,6 +287,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             conduit_id=conduit_id,
             phase_scheduler_cls=phase_scheduler_cls,
+            force_skip_plan_phases=force_skip_plan_phases,
         )
         return conduit_id
 
@@ -281,6 +296,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             dynamic: bool,
+            conduit_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Build the cache-state summary used by conjure cache orchestration.
@@ -322,7 +338,9 @@ class SpellbookCreationSystem(Cleanable):
         caching_system: Optional[CachingSystem] = None
         cached_spell_ids: Set[str] = set()
         if caching_enabled:
-            caching_system = spellbook._get_or_create_caching_system()
+            caching_system = spellbook._get_or_create_caching_system(
+                conduit_name=conduit_name,
+            )
             cached_spell_ids = set(caching_system.cached_spell_ids)
         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
         missing_spell_ids = live_spell_ids.difference(cached_spell_ids)
@@ -621,6 +639,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Spellbook,
             conduit: Conduit,
             hook_map: Optional[Mapping[str, List[Callable]]],
+            cache_state: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Purpose:
@@ -654,6 +673,11 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             conduit=conduit,
         )
+        if cache_state is not None and cache_state.get("cache_path") == "full_hit":
+            SpellbookCreationSystem._load_cached_creation_contexts_for_conjure(
+                spellbook=spellbook,
+                cache_state=cache_state,
+            )
         SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
             spellbook=spellbook,
         )
@@ -666,6 +690,54 @@ class SpellbookCreationSystem(Cleanable):
                 "on_conduit_post_created",
                 conduit,
             )
+
+    @staticmethod
+    def _load_cached_creation_contexts_for_conjure(
+            *,
+            spellbook: Spellbook,
+            cache_state: Dict[str, Any],
+    ) -> None:
+        """
+        Load both-lane CreationContexts from cache for a full-hit conjure.
+
+        Purpose:
+            On a full cache hit, rebuild and publish each spell's runtime
+            CreationContext from its cached package instead of compiling phases
+            8-11. Must run after ownership wiring (so `spell._owner_creations`
+            is set) and after phases 1-7 (so the phase-5 path registry is live).
+
+        Contract:
+            - Best-effort per spell. A reload failure degrades that spell to the
+              JIT path (`resolution_required=True`) so meld re-runs phases 8-11
+              for it rather than breaking.
+        """
+        caching_system = cache_state.get("caching_system")
+        if caching_system is None:
+            return
+        from melder.aether.conduit.meld.creation_context.creation_context_cache_codec import (
+            load_creation_context,
+        )
+        for spell_id in tuple(cache_state.get("live_spell_ids", ())):
+            spell = spellbook._spell_id_pool.get(spell_id)
+            if spell is None:
+                continue
+            package = caching_system.get_spell_payload(spell_id)
+            if package is None:
+                spell.resolution_required = True
+                continue
+            try:
+                load_creation_context(spell, package, publish=True)
+                spell.resolution_complete = True
+                spell.resolution_required = False
+            except Exception as exc:
+                if spellbook._logger is not None:
+                    spellbook._logger.error(
+                        f"Cache reload failed for spell_id={spell_id}; "
+                        f"falling back to JIT resolution: {exc}",
+                        "_load_cached_creation_contexts_for_conjure",
+                        exc_info=True,
+                    )
+                spell.resolution_required = True
 
     @staticmethod
     def _emit_conduit_cache_file_at_conjure_end(
@@ -823,12 +895,7 @@ class SpellbookCreationSystem(Cleanable):
                 context_name="_define_conduit_into_spells",
             )
         )
-        root_configuration = spellbook._aether.configuration
-        caching_enabled = (
-            root_configuration is not None
-            and root_configuration.activated
-            and root_configuration.system_caching_enabled
-        )
+        caching_enabled = spellbook._resolve_system_caching_enabled()
         resolution_required: bool = not full_ahead_of_time_compilation
         with spellbook._lock:
             for spell in spellbook._spells.values():
@@ -1145,6 +1212,8 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Spellbook,
             conduit_id: str,
             phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
+            *,
+            force_skip_plan_phases: Optional[bool] = None,
     ) -> Dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
@@ -1168,12 +1237,16 @@ class SpellbookCreationSystem(Cleanable):
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
 
-        full_ahead_of_time_compilation = (
-            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-                spellbook=spellbook,
-                context_name="_run_resolution_phases_for_conduit",
+        if force_skip_plan_phases is None:
+            full_ahead_of_time_compilation = (
+                SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+                    spellbook=spellbook,
+                    context_name="_run_resolution_phases_for_conduit",
+                )
             )
-        )
+            resolved_skip_plan_phases = not full_ahead_of_time_compilation
+        else:
+            resolved_skip_plan_phases = bool(force_skip_plan_phases)
         plan_skip_state: List[Optional[bool]] = [None]
         compiler_system = SpellCompilerSystem()
         try:
@@ -1187,7 +1260,7 @@ class SpellbookCreationSystem(Cleanable):
                     compiler_system=compiler_system,
                     conduit_id=conduit_id,
                     plan_skip_state=plan_skip_state,
-                    force_skip_plan_phases=not full_ahead_of_time_compilation,
+                    force_skip_plan_phases=resolved_skip_plan_phases,
                 ),
             )
         finally:

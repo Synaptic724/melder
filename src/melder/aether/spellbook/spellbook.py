@@ -225,9 +225,7 @@ and logging.
         self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()
         self._initialize_configuration()
-        root_configuration = Spellbook._aether.configuration
-        if root_configuration is not None:
-            self._caching_enabled = root_configuration.system_caching_enabled
+        self._caching_enabled = self._resolve_system_caching_enabled()
 
         # Logger setup
         self._initialize_logging(logger)
@@ -674,23 +672,44 @@ and logging.
             raise RuntimeError("Spellbook configuration is unavailable.")
         return configuration
 
+    def _resolve_system_caching_enabled(self) -> bool:
+        """
+        Internal
+
+        Return the authoritative caching posture for this Spellbook's frame.
+
+        Contract:
+            - Caching is owned entirely by the frame: both the toggle
+              (`system_caching_enabled`) and the cache root path live on the
+              `AethericFrameConfiguration`.
+
+        Returns:
+            bool: True when caching is enabled for this Spellbook's frame.
+        """
+        frame_configuration = self._aetheric_frame_configuration
+        return (
+            frame_configuration is not None
+            and frame_configuration.system_caching_enabled
+        )
+
     def _system_caching_enabled_in_aether(self) -> bool:
         """
         Internal
 
-        Return whether this Spellbook currently treats system caching as enabled.
+        Return whether this Spellbook currently treats system caching as enabled
+        and mirror that onto the spell-level cache posture flag.
 
         Returns:
             bool:
-                True when this Spellbook currently mirrors an enabled root cache
-                posture.
+                True when caching is enabled for this Spellbook's frame.
         """
-        root_configuration = Spellbook._aether.configuration
-        if root_configuration is not None:
-            self._caching_enabled = root_configuration.system_caching_enabled
+        self._caching_enabled = self._resolve_system_caching_enabled()
         return self._caching_enabled
 
-    def _get_or_create_caching_system(self) -> CachingSystem:
+    def _get_or_create_caching_system(
+            self,
+            conduit_name: Optional[str] = None,
+    ) -> CachingSystem:
         """
         Internal
 
@@ -717,11 +736,12 @@ and logging.
             caching_system = self._caching_system
             if caching_system is not None:
                 return caching_system
-            conduit_name = self._conduit._name
+            if conduit_name is None:
+                conduit_name = self._conduit._name
             caching_system = CachingSystem(
                 frame_name=self._aetheric_frame,
                 conduit_name=conduit_name,
-                cache_root_path=Spellbook._aether.configuration.resolve_system_cache_root_path(),
+                cache_root_path=self._aetheric_frame_configuration.resolve_system_cache_root_path(),
                 logger=self._logger,
             )
             self._caching_system = caching_system
@@ -769,10 +789,10 @@ and logging.
         # Local import avoids a module-load cycle between Spellbook and the
         # compiler-facing codec.
         from melder.aether.conduit.meld.creation_context.creation_context_cache_codec import (
-            build_no_overrides_package,
+            build_package,
         )
         try:
-            spell_payload = build_no_overrides_package(spell)
+            spell_payload = build_package(spell)
         except Exception as exc:
             if self._logger is not None:
                 self._logger.error(
@@ -2970,12 +2990,7 @@ and logging.
                 )
 
                 conduit = self._get_required_conduit_surface()
-                root_configuration = Spellbook._aether.configuration
-                caching_enabled = (
-                    root_configuration is not None
-                    and root_configuration.activated
-                    and root_configuration.system_caching_enabled
-                )
+                caching_enabled = self._resolve_system_caching_enabled()
                 new_spell._add_owned_conduit(
                     conduit._id,
                     conduit._name,
@@ -3769,6 +3784,7 @@ and logging.
             system_state: Optional[str],
             disposal: Optional[bool],
             disposal_method_names: Optional[List[str]],
+            system_caching_enabled: Optional[bool] = None,
     ) -> None:
         """
         Public API
@@ -3798,6 +3814,8 @@ and logging.
             raise RuntimeError("AethericFrameConfiguration is unavailable.")
         if system_state is not None:
             frame_configuration.with_system_state(system_state)
+        if system_caching_enabled is not None:
+            frame_configuration.with_system_caching_enabled(system_caching_enabled)
 
         configuration = self._configuration
         if configuration is None:

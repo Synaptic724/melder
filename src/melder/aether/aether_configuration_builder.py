@@ -71,36 +71,6 @@ class AetherConfigurationBuilder(Cleanable):
         self._configuration.with_defaults()
         return self
 
-    def with_system_caching_enabled(
-            self,
-            enabled: bool,
-    ) -> "AetherConfigurationBuilder":
-        """
-        Set the root-level system-caching policy flag.
-
-        Returns:
-            AetherConfigurationBuilder:
-                This builder.
-        """
-        self.check_cleaned()
-        self._configuration.with_system_caching_enabled(enabled)
-        return self
-
-    def with_system_cache_root_path(
-            self,
-            root_path: Union[str, Path],
-    ) -> "AetherConfigurationBuilder":
-        """
-        Set the root directory used for all Melder cache data.
-
-        Returns:
-            AetherConfigurationBuilder:
-                This builder.
-        """
-        self.check_cleaned()
-        self._configuration.with_system_cache_root_path(root_path)
-        return self
-
     def with_channel_logger_activation_enabled(
             self,
             enabled: bool,

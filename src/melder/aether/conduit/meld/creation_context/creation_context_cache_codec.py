@@ -3,35 +3,53 @@ Reloadable codec for CreationContext-facing phase-11 assets.
 
 Purpose:
     Build and reload the durable, conduit-agnostic cache payload for one
-    spell's no-overrides runtime lane. The cached unit is the *inner*
-    codegen-creation executor (its emitted source compiled to a `CodeType`)
-    plus the schema-only rows needed to rebuild its execution namespace from
-    the live Spellbook. The owner-dependent outer route wrapper is rebuilt at
-    load time, so nothing conduit-scoped is ever frozen into the cache.
+    spell's runtime lanes (no_overrides + overrides). The cached unit is
+    schema-only data:
+      - the *inner* no_overrides codegen executor (emitted source compiled to a
+        `CodeType`) plus the rows needed to rebuild its execution namespace, and
+      - the override lane's plan rows + targeting rows + plan signature, which
+        rebuild the shape-dispatching override runtime against a live phase-5
+        `PathRegistry`.
+    The owner-dependent outer route wrappers are rebuilt at load time, so no
+    per-conduit runtime object is ever frozen into the cache.
 
 Contract:
-    - `build_no_overrides_package(spell)` returns a marshal-safe dict
-      (primitives, tuples, dicts, and one `CodeType`) for the no-overrides lane.
-    - `load_no_overrides_executor(spell, package)` rebuilds the inner executor
-      from the package against the live Spellbook, then wraps it with the
-      owner-aware outer template using `spell._owner_creations`.
-    - The payload deliberately excludes any per-conduit runtime object so a
-      cached `CodeType` is reusable across conduits/runs (subject only to the
-      Python-version stamp owned by `CachingSystem`).
+    - `build_package(spell)` returns a marshal-safe dict (primitives, tuples,
+      dicts, and one `CodeType`) covering both lanes.
+    - `load_creation_context(spell, package, publish=...)` rebuilds both inner
+      executors against the live Spellbook + live phase-5 path registry, wraps
+      each with the owner-aware outer template using `spell._owner_creations`,
+      and returns a published-or-detached `CreationContext`.
+    - The payload excludes any per-conduit runtime object, so a cached package
+      is reusable across conduits/runs (subject to the Python-version stamp
+      owned by `CachingSystem`).
 
-Note:
-    The override lane is not cached here yet. A full_hit consumer is expected
-    to rebuild the override lane through the normal phase-11 path until override
-    reload lands.
+Reload invariants:
+    - The override runtime is rebuilt by reusing
+      `GeneralizedFinalizeCreationContextStep._build_overrides_runtime` (the
+      step has empty slots / self-free helpers), fed cached rows and the live
+      phase-5 `PathRegistry` from `artifact._root_blueprint_phase5`.
+    - Per-shape override executors still compile lazily at meld time, exactly
+      as in the non-cached runtime; the cache only skips phases 8-10 analysis.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
+from melder.aether.conduit.meld.creation_context.creation_context import (
+    CreationContext,
+)
 from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
     compile_creation_context_hooks_no_overrides_executor,
+    compile_creation_context_hooks_overrides_only_executor,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
+    SpellOverrideTargetRef,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers as SharedCompilerExecutions,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation import (
+    SpellOverrideTargetingCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     _build_executor_namespace,
@@ -42,6 +60,12 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     _normalize_transient_schema,
     _resolve_root_instance_key,
     _supports_transient_unrolled_plan,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
+    GeneralizedFinalizeCreationContextStep,
+)
+from melder.utilities.custom_exceptions.meld_execution_error import (
+    MeldExecutionError,
 )
 from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
@@ -65,37 +89,54 @@ _SHARED_ROUTE_FAMILIES = (
 )
 
 
-def build_no_overrides_package(spell: Any) -> Dict[str, Any]:
+# ---------------------------------------------------------------------------
+# Build (emit)
+# ---------------------------------------------------------------------------
+
+def build_package(spell: Any) -> Dict[str, Any]:
     """
-    Build the marshal-safe no-overrides cache package for one spell.
+    Build the marshal-safe both-lane cache package for one constructed spell.
 
     Contract:
-        - Requires constructed-spell phase-11 output to already exist.
-        - Returns a dict of primitives/tuples/dicts plus one compiled
-          `CodeType` for the inner no-overrides executor.
+        - Requires constructed-spell phase-11 output (creation + plan + model).
+        - Returns a dict of primitives/tuples/dicts plus the inner no_overrides
+          `CodeType`. The override lane is row-only (no code object).
 
     Raises:
         RuntimeError:
-            When phase-11 creation/plan output is missing.
+            When phase-11 creation/plan/model output is missing.
     """
     artifact = spell._compiler_artifact
     spell_codegen_creation = artifact._spell_codegen_creation
     if spell_codegen_creation is None:
-        raise RuntimeError(
-            "no-overrides cache export requires spell_codegen_creation."
-        )
+        raise RuntimeError("cache export requires spell_codegen_creation.")
     spell_codegen_plan = artifact._spell_codegen_plan
     if spell_codegen_plan is None or spell_codegen_plan.no_overrides_plan is None:
-        raise RuntimeError(
-            "no-overrides cache export requires a no_overrides lane plan."
-        )
+        raise RuntimeError("cache export requires a no_overrides lane plan.")
     spell_codegen_model = artifact._spell_codegen_model
     if spell_codegen_model is None:
-        raise RuntimeError(
-            "no-overrides cache export requires a spell_codegen_model."
-        )
+        raise RuntimeError("cache export requires a spell_codegen_model.")
 
-    no_overrides_plan = spell_codegen_plan.no_overrides_plan
+    package = {
+        "package_version": PACKAGE_VERSION,
+        "spell_id": spell.spell_id,
+        "resolve_route_key": _resolve_route_key(spell_codegen_model),
+        "fast_transient_no_overrides_enabled": bool(
+            spell_codegen_plan.no_overrides_plan.fast_transient_plan is not None
+        ),
+        "no_overrides": _build_no_overrides_subpackage(
+            no_overrides_plan=spell_codegen_plan.no_overrides_plan,
+        ),
+        "overrides": _build_overrides_subpackage(
+            spell_codegen_plan=spell_codegen_plan,
+            spell_codegen_model=spell_codegen_model,
+        ),
+    }
+    return package
+
+
+def _build_no_overrides_subpackage(*, no_overrides_plan: Any) -> Dict[str, Any]:
+    """Build the row-only + inner-code no_overrides subpackage."""
     steps = tuple(no_overrides_plan.steps)
     steps_rows = tuple(
         SharedCompilerExecutions.build_phase11_step_ir_row(
@@ -115,56 +156,143 @@ def build_no_overrides_package(spell: Any) -> Dict[str, Any]:
         steps=steps,
         transient_schema=transient_schema,
     )
-    compiled_code = compile(emitted_source, source_name, "exec")
-
     return {
-        "package_version": PACKAGE_VERSION,
-        "spell_id": spell.spell_id,
-        "resolve_route_key": _resolve_route_key(spell_codegen_model),
-        "fast_transient_no_overrides_enabled": bool(
-            no_overrides_plan.fast_transient_plan is not None
-        ),
-        "no_overrides": {
-            "root_spell_id": no_overrides_plan.root_spell_id,
-            "step_spell_ids": step_spell_ids,
-            "steps_rows": steps_rows,
-            "transient_schema": transient_schema,
-            "source_name": source_name,
-            "code_object": compiled_code,
-        },
+        "root_spell_id": no_overrides_plan.root_spell_id,
+        "step_spell_ids": step_spell_ids,
+        "steps_rows": steps_rows,
+        "transient_schema": transient_schema,
+        "source_name": source_name,
+        "code_object": compile(emitted_source, source_name, "exec"),
     }
 
 
-def load_no_overrides_executor(spell: Any, package: Dict[str, Any]) -> Any:
+def _build_overrides_subpackage(
+        *,
+        spell_codegen_plan: Any,
+        spell_codegen_model: Any,
+) -> Optional[Dict[str, Any]]:
     """
-    Rebuild the owner-aware outer no-overrides executor from a cache package.
+    Build the row-only overrides subpackage, or None when no override lane.
+
+    The override lane is rebuilt at load against the live phase-5 path
+    registry, so no compiled code object is persisted here.
+    """
+    overrides_plan = spell_codegen_plan.overrides_plan
+    override_targeting_shape = spell_codegen_model.override_targeting_shape
+    if overrides_plan is None or override_targeting_shape is None:
+        return None
+
+    plan_rows = tuple(
+        SharedCompilerExecutions.build_phase11_step_ir_row(
+            step,
+            include_override_metadata=True,
+        )
+        for step in overrides_plan.steps
+    )
+    step_spell_ids = tuple(
+        step.spell.spell_index.current
+        for step in overrides_plan.steps
+    )
+    plan_signature = GeneralizedFinalizeCreationContextStep._build_override_plan_signature(
+        overrides_plan=overrides_plan,
+        plan_rows=plan_rows,
+    )
+    empty_shape_key = (plan_signature, (), -1)
+    return {
+        "root_spell_id": overrides_plan.root_spell_id,
+        "step_spell_ids": step_spell_ids,
+        "plan_rows": plan_rows,
+        "plan_signature": plan_signature,
+        "empty_shape_key": empty_shape_key,
+        "targets_by_spec": _serialize_targets_by_spec(
+            override_targeting_shape.targets_by_spec,
+        ),
+        "specificity_by_spec": dict(override_targeting_shape.specificity_by_spec),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Load (reload)
+# ---------------------------------------------------------------------------
+
+def load_creation_context(
+        spell: Any,
+        package: Dict[str, Any],
+        *,
+        publish: bool = True,
+) -> CreationContext:
+    """
+    Rebuild one spell-bound `CreationContext` from a cache package.
 
     Contract:
-        - Rebuilds the inner executor from the package against the live
-          Spellbook spell pool.
-        - Wraps the inner executor with the owner-aware outer template using
-          the spell's currently bound `_owner_creations`.
-
-    Raises:
-        RuntimeError:
-            When the package references an unknown spell id, cannot resolve the
-            root instance key, or does not produce a callable inner executor.
+        - Rebuilds both runtime lanes against the live Spellbook and the live
+          phase-5 path registry, then wraps each with the owner-aware outer
+          template using `spell._owner_creations`.
+        - Requires phases 1-7 to have already run for `spell` (so the phase-5
+          blueprint + path registry are live) and ownership to be wired (so
+          `spell._owner_creations` is set).
     """
+    inner_no_overrides = _build_inner_no_overrides_executor(spell, package)
+    outer_no_overrides = compile_creation_context_hooks_no_overrides_executor(
+        resolve_route_key=package["resolve_route_key"],
+        fast_transient_no_overrides_enabled=bool(
+            package["fast_transient_no_overrides_enabled"]
+        ),
+        spell=spell,
+        spell_id=spell.spell_id,
+        owner_creations=spell._owner_creations,
+        no_overrides_executor=inner_no_overrides,
+        spell_space_scope_error_type=SpellSpaceScopeError,
+    )
+
+    overrides_payload = package.get("overrides")
+    if overrides_payload is None:
+        outer_overrides = _build_missing_overrides_executor(spell)
+    else:
+        inner_overrides = _build_inner_overrides_runtime(
+            spell=spell,
+            overrides_payload=overrides_payload,
+            base_no_overrides_executor=inner_no_overrides,
+        )
+        outer_overrides = compile_creation_context_hooks_overrides_only_executor(
+            resolve_route_key=package["resolve_route_key"],
+            spell=spell,
+            spell_id=spell.spell_id,
+            owner_creations=spell._owner_creations,
+            no_overrides_executor=inner_no_overrides,
+            execute_with_overrides=inner_overrides,
+            meld_execution_error_type=MeldExecutionError,
+            spell_space_scope_error_type=SpellSpaceScopeError,
+        )
+
+    creation_context_factory = spell._creation_context_factory
+    if creation_context_factory is None:
+        raise RuntimeError("Spell has no CreationContextFactory.")
+    creation_gate, creation_gate_index_id = (
+        creation_context_factory._resolve_runtime_gate_for_spell(spell)
+    )
+    return CreationContext.load_cached(
+        spell=spell,
+        dynamic_environment=spell._dynamic_environment,
+        creation_gate=creation_gate,
+        creation_gate_index_id=creation_gate_index_id,
+        no_overrides_executor=outer_no_overrides,
+        overrides_executor=outer_overrides,
+        publish=publish,
+    )
+
+
+def _build_inner_no_overrides_executor(
+        spell: Any,
+        package: Dict[str, Any],
+) -> Any:
+    """Rebuild the inner no_overrides executor from its cached package."""
     no_overrides_payload = package["no_overrides"]
-    spellbook = spell._spellbook
-    if spellbook is None:
-        raise RuntimeError("Spell has no owning Spellbook surface.")
-
-    spell_lookup: Dict[str, Any] = {}
-    for spell_id in no_overrides_payload["step_spell_ids"]:
-        resolved_spell = spellbook._spell_id_pool.get(spell_id)
-        if resolved_spell is None:
-            raise RuntimeError(
-                "Cached no-overrides payload references unknown spell_id "
-                f"'{spell_id}'."
-            )
-        spell_lookup[spell_id] = resolved_spell
-
+    spell_lookup = _resolve_spell_lookup(
+        spell=spell,
+        step_spell_ids=no_overrides_payload["step_spell_ids"],
+        lane="no_overrides",
+    )
     steps = _hydrate_steps_from_rows(
         steps_rows=no_overrides_payload["steps_rows"],
         spell_lookup=spell_lookup,
@@ -184,7 +312,7 @@ def load_no_overrides_executor(spell: Any, package: Dict[str, Any]) -> Any:
         )
         if root_instance_key is None:
             raise RuntimeError(
-                "Cached no-overrides payload could not resolve root_instance_key."
+                "Cached no_overrides payload could not resolve root_instance_key."
             )
         namespace = _build_step_executor_namespace(
             steps=steps,
@@ -196,21 +324,131 @@ def load_no_overrides_executor(spell: Any, package: Dict[str, Any]) -> Any:
     inner_executor = local_namespace.get(_NO_OVERRIDES_EXECUTOR_NAME)
     if not callable(inner_executor):
         raise RuntimeError(
-            "Cached no-overrides payload did not define a callable "
+            "Cached no_overrides payload did not define a callable "
             f"{_NO_OVERRIDES_EXECUTOR_NAME}."
         )
+    return inner_executor
 
-    return compile_creation_context_hooks_no_overrides_executor(
-        resolve_route_key=package["resolve_route_key"],
-        fast_transient_no_overrides_enabled=bool(
-            package["fast_transient_no_overrides_enabled"]
+
+def _build_inner_overrides_runtime(
+        *,
+        spell: Any,
+        overrides_payload: Dict[str, Any],
+        base_no_overrides_executor: Any,
+) -> Any:
+    """
+    Rebuild the inner shape-dispatching override runtime from cached rows.
+
+    Reuses the phase-11 finalize builder fed cached rows plus the live phase-5
+    path registry, so arbitrary override shapes still compile lazily at meld.
+    """
+    spell_lookup = _resolve_spell_lookup(
+        spell=spell,
+        step_spell_ids=overrides_payload["step_spell_ids"],
+        lane="overrides",
+    )
+    override_targeting = SpellOverrideTargetingCodegenCreation.from_analysis(
+        root_spell_id=overrides_payload["root_spell_id"],
+        targets_by_spec=_deserialize_targets_by_spec(
+            overrides_payload["targets_by_spec"],
         ),
+        specificity_by_spec=dict(overrides_payload["specificity_by_spec"]),
+    )
+    path_registry = _resolve_live_path_registry(spell)
+    plan_signature = _as_tuple(overrides_payload["plan_signature"])
+    empty_shape_key = _as_tuple(overrides_payload["empty_shape_key"])
+    plan_rows = list(overrides_payload["plan_rows"])
+
+    finalize_step = GeneralizedFinalizeCreationContextStep()
+    return finalize_step._build_overrides_runtime(
+        spell_codegen_model=None,
+        overrides_plan=None,
+        root_spell=spell,
+        base_no_overrides_executor=base_no_overrides_executor,
+        override_targeting=override_targeting,
+        plan_signature=plan_signature,
+        path_registry=path_registry,
+        plan_rows=plan_rows,
+        override_root_spell_id=overrides_payload["root_spell_id"],
+        spell_lookup=spell_lookup,
+        empty_shape_key=empty_shape_key,
+        baseline_executor=None,
+    )
+
+
+def _build_missing_overrides_executor(spell: Any) -> Any:
+    """
+    Build an outer overrides executor for a spell with no cached override lane.
+
+    Raises on use, mirroring "no override lane" rather than silently degrading.
+    """
+    def execute_with_overrides(
+            caller_creations: Any,
+            overrides: Optional[dict],
+            caller_creations_lock_held: bool,
+    ) -> Any:
+        _ = (caller_creations, overrides, caller_creations_lock_held)
+        raise RuntimeError(
+            "Cached spell has no override lane "
+            f"(spell_id={spell.spell_id})."
+        )
+
+    return compile_creation_context_hooks_overrides_only_executor(
+        resolve_route_key="many",
         spell=spell,
         spell_id=spell.spell_id,
         owner_creations=spell._owner_creations,
-        no_overrides_executor=inner_executor,
+        no_overrides_executor=None,
+        execute_with_overrides=execute_with_overrides,
+        meld_execution_error_type=MeldExecutionError,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _resolve_spell_lookup(
+        *,
+        spell: Any,
+        step_spell_ids: Sequence[str],
+        lane: str,
+) -> Dict[str, Any]:
+    """Resolve a stable spell-id -> Spell map from the live Spellbook pool."""
+    spellbook = spell._spellbook
+    if spellbook is None:
+        raise RuntimeError("Spell has no owning Spellbook surface.")
+    spell_lookup: Dict[str, Any] = {}
+    for spell_id in step_spell_ids:
+        resolved_spell = spellbook._spell_id_pool.get(spell_id)
+        if resolved_spell is None:
+            raise RuntimeError(
+                f"Cached {lane} payload references unknown spell_id "
+                f"'{spell_id}'."
+            )
+        spell_lookup[spell_id] = resolved_spell
+    return spell_lookup
+
+
+def _resolve_live_path_registry(spell: Any) -> Any:
+    """
+    Return the live phase-5 path registry for the spell.
+
+    The override runtime needs this to compile per-shape executors at meld
+    time. Phase 5 (always run on conjure) builds it and `reset_phase_artifacts`
+    preserves it, so it is live after conjure.
+    """
+    artifact = spell._compiler_artifact
+    if artifact is None:
+        raise RuntimeError("Spell has no compiler artifact for override reload.")
+    root_blueprint = artifact._root_blueprint_phase5
+    if root_blueprint is None:
+        raise RuntimeError(
+            "Override reload requires a live phase-5 root blueprint "
+            f"(spell_id={spell.spell_id})."
+        )
+    return root_blueprint.path_registry
 
 
 def _build_no_overrides_source_package(
@@ -218,12 +456,7 @@ def _build_no_overrides_source_package(
         steps: Tuple[Any, ...],
         transient_schema: Optional[Dict[str, Any]],
 ) -> Tuple[str, str]:
-    """
-    Build emitted inner no-overrides source plus its synthetic source name.
-
-    Mirrors the live phase-11 source selection: a transient unrolled body when
-    the plan supports it, otherwise the general step-plan body.
-    """
+    """Build emitted inner no_overrides source plus its synthetic source name."""
     if transient_schema is not None and _supports_transient_unrolled_plan(steps):
         normalized_transient_schema = _normalize_transient_schema(
             transient_schema=transient_schema,
@@ -240,18 +473,60 @@ def _build_no_overrides_source_package(
 
 
 def _resolve_route_key(spell_codegen_model: Any) -> str:
-    """
-    Resolve the runtime route key from the codegen model.
-
-    Mirrors the phase-11 finalize route resolution so the cached package can
-    rebuild the correct outer template at load time.
-    """
+    """Resolve the runtime route key from the codegen model (mirrors finalize)."""
     if spell_codegen_model.build_kind == "existing_creation":
         return "existing_creation"
     route_family = spell_codegen_model.route_family
     if route_family in _SHARED_ROUTE_FAMILIES:
         return route_family
     raise RuntimeError(
-        "SpellCodegenModel route_family is not cacheable for the no-overrides "
-        f"lane: {route_family!r}."
+        f"SpellCodegenModel route_family is not cacheable: {route_family!r}."
     )
+
+
+def _serialize_targets_by_spec(
+        targets_by_spec: Dict[str, Tuple[Any, ...]],
+) -> Dict[str, Tuple[Tuple[Any, ...], ...]]:
+    """Serialize processor override-target rows to marshal-safe tuples."""
+    return {
+        spec_key: tuple(
+            (
+                target_ref.node_id,
+                target_ref.param_path_id,
+                target_ref.param_name,
+                target_ref.socket_kind_value,
+            )
+            for target_ref in target_refs
+        )
+        for spec_key, target_refs in targets_by_spec.items()
+    }
+
+
+def _deserialize_targets_by_spec(
+        serialized_targets_by_spec: Dict[str, Sequence[Sequence[Any]]],
+) -> Dict[str, Tuple[SpellOverrideTargetRef, ...]]:
+    """Rebuild processor override-target rows from serialized tuples."""
+    rebuilt: Dict[str, Tuple[SpellOverrideTargetRef, ...]] = {}
+    for spec_key, target_rows in serialized_targets_by_spec.items():
+        rebuilt[spec_key] = tuple(
+            SpellOverrideTargetRef(
+                node_id=target_row[0],
+                param_path_id=target_row[1],
+                param_name=target_row[2],
+                socket_kind_value=target_row[3],
+            )
+            for target_row in target_rows
+        )
+    return rebuilt
+
+
+def _as_tuple(value: Any) -> Any:
+    """
+    Recursively coerce marshal-decoded sequences back into tuples.
+
+    marshal preserves tuples, but be defensive so shape keys/signatures compare
+    by value regardless of decoded list/tuple shape.
+    """
+    if isinstance(value, (list, tuple)):
+        return tuple(_as_tuple(item) for item in value)
+    return value

@@ -1,5 +1,6 @@
 import threading
-from typing import Any, Dict, Optional, ClassVar
+from pathlib import Path
+from typing import Any, Dict, Optional, ClassVar, Union
 
 
 
@@ -56,6 +57,8 @@ class AethericFrameConfiguration(Cleanable):
         "_ai_native_enabled",
         "_rift_enabled",
         "_shared_framewide_spellbook_configuration",
+        "_system_caching_enabled",
+        "_system_cache_root_path",
         "_disable_all_transactions_after_conjure",
         "_disable_mutations",
         "_disable_linking",
@@ -75,6 +78,8 @@ class AethericFrameConfiguration(Cleanable):
             ai_native_enabled: bool,
             rift_enabled: bool,
             shared_framewide_spellbook_configuration: bool = False,
+            system_caching_enabled: bool = True,
+            system_cache_root_path: Optional[Union[str, Path]] = None,
             disable_all_transactions_after_conjure: bool = False,
             disable_mutations: bool = True,
             disable_linking: bool = False,
@@ -164,6 +169,7 @@ class AethericFrameConfiguration(Cleanable):
                 "queue_competing_root_transactions",
                 queue_competing_root_transactions,
             ),
+            ("system_caching_enabled", system_caching_enabled),
         ):
             if not isinstance(value, bool):
                 raise TypeError(f"{field_name} must be a bool.")
@@ -193,6 +199,10 @@ class AethericFrameConfiguration(Cleanable):
         self._shared_framewide_spellbook_configuration: bool = (
             shared_framewide_spellbook_configuration
         )
+        self._system_caching_enabled: bool = system_caching_enabled
+        self._system_cache_root_path: Path = self._normalize_cache_root_path(
+            system_cache_root_path
+        )
         self._disable_all_transactions_after_conjure: bool = (
             disable_all_transactions_after_conjure
         )
@@ -210,6 +220,43 @@ class AethericFrameConfiguration(Cleanable):
         self._max_transaction_wait_time_in_seconds: float = float(
             max_transaction_wait_time_in_seconds
         )
+
+    @staticmethod
+    def _build_default_system_cache_root_path() -> Path:
+        """
+        Build the default package-relative cache root fragment.
+
+        Returns:
+            Path: Relative `__melder_cache__` fragment resolved later against
+            the installed `melder` package root.
+        """
+        return Path("__melder_cache__")
+
+    @staticmethod
+    def _normalize_cache_root_path(
+            root_path: Optional[Union[str, Path]],
+    ) -> Path:
+        """
+        Normalize and validate a relative cache-root fragment.
+
+        Returns:
+            Path: The default fragment when `root_path` is None, otherwise the
+            validated relative fragment.
+
+        Raises:
+            TypeError: If `root_path` is not str/Path.
+            ValueError: If `root_path` is absolute.
+        """
+        if root_path is None:
+            return AethericFrameConfiguration._build_default_system_cache_root_path()
+        if not isinstance(root_path, (str, Path)):
+            raise TypeError("system_cache_root_path must be a str or Path.")
+        normalized_root_path = Path(root_path)
+        if normalized_root_path.is_absolute():
+            raise ValueError(
+                "system_cache_root_path must remain relative to the melder package root."
+            )
+        return normalized_root_path
 
     def cleanup(self) -> None:
         """
@@ -236,6 +283,8 @@ class AethericFrameConfiguration(Cleanable):
             del self._ai_native_enabled
             del self._rift_enabled
             del self._shared_framewide_spellbook_configuration
+            del self._system_caching_enabled
+            del self._system_cache_root_path
             del self._disable_all_transactions_after_conjure
             del self._disable_mutations
             del self._disable_linking
@@ -349,6 +398,38 @@ class AethericFrameConfiguration(Cleanable):
             if self._frozen:
                 raise RuntimeError("Cannot modify frame configuration after it is frozen.")
             self._shared_framewide_spellbook_configuration = enabled
+        return self
+
+    def with_system_caching_enabled(
+            self,
+            enabled: bool = True,
+    ) -> "AethericFrameConfiguration":
+        """
+        Set whether spell runtime caching is enabled for the frame and return
+        `self`.
+        """
+        self.check_cleaned()
+        if not isinstance(enabled, bool):
+            raise TypeError("system_caching_enabled must be a bool.")
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._system_caching_enabled = enabled
+        return self
+
+    def with_system_cache_root_path(
+            self,
+            root_path: Union[str, Path],
+    ) -> "AethericFrameConfiguration":
+        """
+        Set the relative cache-root fragment for the frame and return `self`.
+        """
+        self.check_cleaned()
+        normalized_root_path = self._normalize_cache_root_path(root_path)
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
+            self._system_cache_root_path = normalized_root_path
         return self
 
     def with_disable_all_transactions_after_conjure(
@@ -513,6 +594,10 @@ class AethericFrameConfiguration(Cleanable):
             self._ai_native_enabled = False
             self._rift_enabled = False
             self._shared_framewide_spellbook_configuration = False
+            self._system_caching_enabled = True
+            self._system_cache_root_path = (
+                self._build_default_system_cache_root_path()
+            )
             self._disable_all_transactions_after_conjure = False
             self._disable_mutations = True
             self._disable_linking = False
@@ -608,6 +693,44 @@ class AethericFrameConfiguration(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._shared_framewide_spellbook_configuration
+
+    @property
+    def system_caching_enabled(self) -> bool:
+        """
+        Return whether spell runtime caching is enabled for the frame.
+
+        Returns:
+            bool: True when frame-level caching is enabled.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._system_caching_enabled
+
+    @property
+    def system_cache_root_path(self) -> Path:
+        """
+        Return the configured relative cache-root fragment for the frame.
+
+        Returns:
+            Path: Package-relative cache root fragment.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._system_cache_root_path
+
+    def resolve_system_cache_root_path(self) -> Path:
+        """
+        Resolve the cache-root fragment against the installed melder package root.
+
+        Returns:
+            Path: Absolute cache root path under the installed `melder` package.
+        """
+        self.check_cleaned()
+        with self._lock:
+            fragment = self._system_cache_root_path
+        return (
+            Path(__file__).resolve().parent.parent.parent / fragment
+        ).resolve()
 
     @property
     def disable_all_transactions_after_conjure(self) -> bool:
@@ -744,6 +867,10 @@ class AethericFrameConfiguration(Cleanable):
                 and self._rift_enabled == other._rift_enabled
                 and self._shared_framewide_spellbook_configuration
                 == other._shared_framewide_spellbook_configuration
+                and self._system_caching_enabled
+                == other._system_caching_enabled
+                and self._system_cache_root_path
+                == other._system_cache_root_path
                 and self._disable_all_transactions_after_conjure
                 == other._disable_all_transactions_after_conjure
                 and self._disable_mutations == other._disable_mutations
@@ -783,6 +910,8 @@ class AethericFrameConfiguration(Cleanable):
                 "shared_framewide_spellbook_configuration": (
                     self._shared_framewide_spellbook_configuration
                 ),
+                "system_caching_enabled": self._system_caching_enabled,
+                "system_cache_root_path": self._system_cache_root_path,
                 "disable_all_transactions_after_conjure": (
                     self._disable_all_transactions_after_conjure
                 ),
