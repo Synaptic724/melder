@@ -1822,9 +1822,11 @@ def _append_overrides_step_shape_source(
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
-        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
     ])
     if static_has_disposal_methods is not False:
+        lines.append(
+            f"    spell_id_{step_index} = step_spell_ids[{step_index}]"
+        )
         lines.append(
             (
                 f"    disposal_methods_{step_index} = "
