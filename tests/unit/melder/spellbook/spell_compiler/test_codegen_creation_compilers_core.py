@@ -7,6 +7,8 @@ import pytest
 
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler as no_overrides_compiler_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler as overrides_compiler_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler as solo_no_overrides_compiler_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler as solo_overrides_compiler_module
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -252,6 +254,116 @@ def _make_spell(spell_id: str) -> SimpleNamespace:
         disposal_method_names=(),
         user_created_object=None,
     )
+
+
+def _make_recording_creations() -> SimpleNamespace:
+    """Build a minimal creations probe that records registration calls."""
+    add_creation_calls = []
+    add_many_calls = []
+
+    def _add_creation(*args, **kwargs):
+        add_creation_calls.append((args, kwargs))
+
+    def _add_many_creations(*args, **kwargs):
+        add_many_calls.append((args, kwargs))
+
+    return SimpleNamespace(
+        add_creation=_add_creation,
+        add_many_creations=_add_many_creations,
+        add_creation_calls=add_creation_calls,
+        add_many_calls=add_many_calls,
+    )
+
+
+def test_solo_no_overrides_compiler_emits_cached_code_and_preserves_registration(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Solo no-overrides should emit source, use the executor cache, and preserve route behavior."""
+    cache_calls = []
+
+    def _compile_with_builtin_cache(*, source: str, source_name: str):
+        cache_calls.append((source, source_name))
+        return compile(source, source_name, "exec")
+
+    monkeypatch.setattr(
+        solo_no_overrides_compiler_module,
+        "get_or_compile_executor_code",
+        _compile_with_builtin_cache,
+    )
+
+    spell = _make_spell("solo-no")
+    caller_creations = _make_recording_creations()
+
+    executor = (
+        solo_no_overrides_compiler_module.compile_solo_no_overrides_codegen_creation_executor(
+            spell=spell,
+            solo_emit_key="unique_per_conduit",
+            fast_transient_no_overrides_enabled=False,
+        )
+    )
+    result = executor(caller_creations)
+
+    assert result == "value:solo-no"
+    assert len(cache_calls) == 1
+    assert cache_calls[0][1].startswith("<solo_no_overrides_codegen_creation:")
+    assert caller_creations.add_creation_calls == [
+        (("solo-no", "value:solo-no"), {})
+    ]
+    assert caller_creations.add_many_calls == []
+
+
+def test_solo_overrides_compiler_emits_cached_code_and_preserves_override_behavior(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Solo overrides should emit source, use the executor cache, and preserve root-only override behavior."""
+    cache_calls = []
+
+    def _compile_with_builtin_cache(*, source: str, source_name: str):
+        cache_calls.append((source, source_name))
+        return compile(source, source_name, "exec")
+
+    monkeypatch.setattr(
+        solo_overrides_compiler_module,
+        "get_or_compile_executor_code",
+        _compile_with_builtin_cache,
+    )
+
+    def _call_target(*args, **kwargs):
+        return {
+            "args": args,
+            "kwargs": kwargs,
+        }
+
+    spell = _make_spell("solo-over")
+    spell.spell = _call_target
+    caller_creations = _make_recording_creations()
+
+    executor = (
+        solo_overrides_compiler_module.compile_solo_overrides_codegen_creation_executor(
+            spell=spell,
+            solo_emit_key="unique_per_conduit",
+        )
+    )
+    result = executor(
+        caller_creations,
+        {
+            "__args__": ("left",),
+            "right": "value",
+        },
+    )
+
+    assert result == {
+        "args": ("left",),
+        "kwargs": {
+            "right": "value",
+        },
+    }
+    assert len(cache_calls) == 1
+    assert cache_calls[0][1].startswith("<solo_overrides_codegen_creation:")
+    assert caller_creations.add_creation_calls == [
+        (("solo-over", result), {})
+    ]
+    assert caller_creations.add_many_calls == []
 
 
 def _make_no_overrides_step_row(spell_id: str) -> dict[str, object]:
