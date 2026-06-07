@@ -304,6 +304,35 @@ def test_reset_for_pool_aliases_clear_all(creations: Creations) -> None:
     assert creations._disposable_creations == {}
 
 
+def test_reset_for_pool_skips_disposal_flow_when_no_disposable_entries(
+        creations: Creations,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify reset_for_pool clears live state directly when no disposal work exists.
+    """
+    obj = Probe()
+    creations.add_creation(
+        "spell-u",
+        obj,
+        has_disposal_methods=False,
+        disposal_methods=None,
+    )
+
+    def boom(self: Creations, registry: dict[str, object]) -> list[Exception]:
+        del self
+        del registry
+        raise AssertionError("reset_for_pool should not enter disposal flow.")
+
+    monkeypatch.setattr(Creations, "_dispose_disposable_registry", boom)
+
+    creations.reset_for_pool()
+
+    assert obj.calls == []
+    assert creations._creations == {}
+    assert creations._disposable_creations == {}
+
+
 def test_cleanup_is_idempotent(creations: Creations) -> None:
     """
     Verify cleanup only disposes tracked entries once.

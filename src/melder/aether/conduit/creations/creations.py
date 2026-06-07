@@ -434,9 +434,18 @@ class Creations(Cleanable):
         Clear all live scoped state without destroying this manager.
 
         Contract:
-            Alias for `clear_all()` so future pooling can reuse the same
-            cleanup surface.
+            - Keeps the same observable result as `clear_all()` for callers.
+            - Uses a fast path when no disposable metadata is present:
+              clear only the live registry under lock and return.
+            - Falls back to the full detachable disposal flow when disposable
+              cleanup work is required.
         """
+        with self._lock:
+            if not self._creations and not self._disposable_creations:
+                return
+            if not self._disposable_creations:
+                self._creations.clear()
+                return
         self.clear_all()
 
     @property

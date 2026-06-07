@@ -762,6 +762,39 @@ and logging.
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
         return True
 
+    def _emit_cache_file(self, spell: Spell) -> bool:
+        """
+        Internal
+
+        Emit the Spellbook-owned cache file for the current in-memory cache state.
+
+        Purpose:
+            Keep cache-file ownership on Spellbook while allowing spell-facing
+            callers to force a file emit through a Spellbook-controlled seam.
+
+        Contract:
+            - Returns early when the spell cache policy bit is disabled.
+            - Requires the spell to belong to this Spellbook.
+            - Emits the current `CachingSystem` in-memory state to disk.
+
+        Args:
+            spell:
+                Spell requesting the Spellbook-owned cache file emit.
+
+        Returns:
+            bool:
+                True when the cache file was emitted, otherwise False.
+        """
+        if not spell._caching_enabled:
+            return False
+        if spell._spellbook is not self:
+            raise RuntimeError(
+                "Spell cache-file emission requires the spell to belong to this Spellbook."
+            )
+        caching_system = self._get_or_create_caching_system()
+        caching_system.emit()
+        return True
+
     def _register_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
         """
         Internal

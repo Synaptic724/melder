@@ -700,6 +700,37 @@ class Spell(Cleanable):
             raise RuntimeError("Spell has no owning Spellbook surface.")
         return spellbook._emit_spell_cache(self)
 
+    def emit_cache_file(self) -> bool:
+        """
+        Public API
+
+        Emit the Spellbook-owned cache file for this spell's current cache state.
+
+        Purpose:
+            Provide one spell-facing entrypoint for forcing the current
+            Spellbook-owned in-memory cache state to disk.
+
+        Contract:
+            - Returns early when spell-level cache policy is disabled.
+            - Delegates the real file emit to the owning Spellbook.
+            - Requires the spell to still have a live owning Spellbook.
+
+        Returns:
+            bool:
+                True when the Spellbook cache file was emitted, otherwise False.
+
+        Raises:
+            RuntimeError:
+                If the spell no longer has an owning Spellbook.
+        """
+        self.check_cleaned()
+        if not self._caching_enabled:
+            return False
+        spellbook = self._spellbook
+        if spellbook is None:
+            raise RuntimeError("Spell has no owning Spellbook surface.")
+        return spellbook._emit_cache_file(self)
+
 
     #region Context Manager
     def __enter__(self) -> "Spell":
