@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
         SpellRuntimeAnalysis,
     )
+    from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis import (
+        SpellExistenceOccurrenceAnalysis,
+    )
     from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
         SpellOccurrenceGraphAnalysis,
     )
@@ -59,6 +62,7 @@ class SpellCodegenModel(Cleanable):
         "injection_shape",
         "override_targeting_shape",
         "spell_runtime_shape",
+        "existence_occurrence_shape",
         "node_count",
         "root_dependency_count",
         "max_depth",
@@ -95,6 +99,7 @@ class SpellCodegenModel(Cleanable):
             injection_shape: Optional[SpellInjectionAnalysis] = None,
             override_targeting_shape: Optional[SpellOverrideTargetingAnalysis] = None,
             spell_runtime_shape: Optional[SpellRuntimeAnalysis] = None,
+            existence_occurrence_shape: Optional["SpellExistenceOccurrenceAnalysis"] = None,
             node_count: int = 0,
             root_dependency_count: int = 0,
             max_depth: int = 0,
@@ -152,6 +157,9 @@ class SpellCodegenModel(Cleanable):
         )
         self.spell_runtime_shape: Optional[SpellRuntimeAnalysis] = (
             spell_runtime_shape
+        )
+        self.existence_occurrence_shape: Optional["SpellExistenceOccurrenceAnalysis"] = (
+            existence_occurrence_shape
         )
         self.node_count: int = node_count
         self.root_dependency_count: int = root_dependency_count
@@ -239,6 +247,7 @@ class SpellCodegenModel(Cleanable):
         del self.injection_shape
         del self.override_targeting_shape
         del self.spell_runtime_shape
+        del self.existence_occurrence_shape
         del self.node_count
         del self.root_dependency_count
         del self.max_depth
@@ -287,5 +296,6 @@ class SpellCodegenModel(Cleanable):
             "injection_shape",
             "override_targeting_shape",
             "spell_runtime_shape",
+            "existence_occurrence_shape",
             "assessment",
         )

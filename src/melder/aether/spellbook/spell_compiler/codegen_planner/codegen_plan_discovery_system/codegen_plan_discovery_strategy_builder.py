@@ -5,6 +5,12 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy import (
     CodegenPlanDiscoveryStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy import (
+    ManyOnlyCodegenPlanDiscoveryStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy import (
+    SoloCodegenPlanDiscoveryStrategy,
+)
 from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy import (
     GeneralizedCodegenPlanDiscoveryStrategy,
 )
@@ -50,7 +56,15 @@ class CodegenPlanDiscoveryStrategyBuilder(Cleanable):
         """
         Populate the default phase-10 discovery strategy registry.
         """
+        solo_strategy = SoloCodegenPlanDiscoveryStrategy()
+        many_only_strategy = ManyOnlyCodegenPlanDiscoveryStrategy()
         generalized_strategy = GeneralizedCodegenPlanDiscoveryStrategy()
+        self._strategies_by_name[
+            solo_strategy.strategy_id
+        ] = solo_strategy
+        self._strategies_by_name[
+            many_only_strategy.strategy_id
+        ] = many_only_strategy
         self._strategies_by_name[
             generalized_strategy.strategy_id
         ] = generalized_strategy

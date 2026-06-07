@@ -1559,6 +1559,61 @@ def test_aether_configuration_builder_hands_off_activated_configuration() -> Non
     assert configuration.activated is True
     assert builder.cleaned is True
 
+
+def test_aether_configuration_defaults_enable_system_caching() -> None:
+    """
+    Verify root Aether configuration defaults system caching on.
+
+    Contract:
+    - Fresh AetherConfiguration instances expose system_caching_enabled=True.
+    - The stored cache-root fragment is package-relative `__melder_cache__`.
+    """
+    from pathlib import Path
+
+    configuration = Aether().create_configuration()
+
+    assert configuration.system_caching_enabled is True
+    assert configuration.system_cache_root_path == Path("__melder_cache__")
+
+
+def test_aether_configuration_builder_can_disable_system_caching() -> None:
+    """
+    Verify the Aether configuration builder can override the cache policy flag.
+
+    Contract:
+    - Builder passthrough updates the root configuration flag before handoff.
+    - The handed-off configuration preserves the selected bool value.
+    """
+    builder = Aether().create_configuration_builder()
+
+    configuration = (
+        builder
+        .with_system_caching_enabled(False)
+        .build()
+    )
+
+    assert configuration.system_caching_enabled is False
+
+
+def test_aether_configuration_resolves_cache_root_under_package_root() -> None:
+    """
+    Verify the cache-root fragment resolves under the installed package root.
+
+    Contract:
+    - The stored config value remains relative.
+    - The resolver materializes the absolute package-local cache path.
+    """
+    import inspect
+    from pathlib import Path
+
+    configuration = Aether().create_configuration()
+    expected_root = (
+        Path(inspect.getfile(AetherConfiguration)).resolve().parent.parent
+        / "__melder_cache__"
+    )
+
+    assert configuration.resolve_system_cache_root_path() == expected_root
+
 def test_cleanup_failure_logging(mock_frame_cls):
     """If a frame fails to clean, error is logged."""
     mock_logger = MagicMock()

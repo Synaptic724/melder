@@ -48,6 +48,7 @@ def _make_spellbook_and_spell() -> tuple[Any, Any]:
         spell_name="spell-1",
         spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
         existence=Existence.unique,
+        has_disposal_methods=False,
         is_existing_creation=False,
         _spellbook=spellbook,
         _spell_system_states=SimpleNamespace(_local_topologies={}),
@@ -112,6 +113,31 @@ def test_occurrence_analyzer_builds_graph_artifact(
     assert artifact._occurrence_analysis_input_signature == "occ-sig"
     assert artifact._occurrence_graph_analysis is not None
     assert artifact._occurrence_graph_analysis.edge_count == 2
+    assert (
+        artifact._occurrence_graph_analysis.existence_occurrence_analysis.root_existence
+        is Existence.unique
+    )
+    assert (
+        artifact._occurrence_graph_analysis.existence_occurrence_analysis.total_spell_count
+        == 1
+    )
+    first_row = (
+        artifact._occurrence_graph_analysis.existence_occurrence_analysis
+        .spell_existence_rows[0]
+    )
+    assert first_row.spell_id == "spell-1"
+    assert first_row.existence is Existence.unique
+    assert first_row.has_disposal_methods is False
+    assert (
+        artifact._occurrence_graph_analysis.existence_occurrence_analysis
+        .disposal_enabled_spell_count
+        == 0
+    )
+    assert (
+        artifact._occurrence_graph_analysis.existence_occurrence_analysis
+        .existence_disposal_counts
+        == (((Existence.unique, False), 1),)
+    )
 
 
 def test_spell_analyzer_strategy_builder_registers_graph_strategy_by_default() -> None:
@@ -137,6 +163,7 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
         spell_name="dep",
         spell_index=_SpellIndexProbe("dep"),
         existence=Existence.unique,
+        has_disposal_methods=False,
         is_existing_creation=False,
     )
     spellbook._spell_id_pool["dep"] = dep_spell
@@ -182,6 +209,10 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
         spell_lookup=spellbook._spell_id_pool,
         spellbook=spellbook,
         spell_system_states=spell_system_states,
+        spell_rows=(
+            ("dep", "dep", Existence.unique.name, False),
+            ("spell-1", "spell-1", Existence.unique.name, False),
+        ),
     )
 
     assert fast_key == (
@@ -208,7 +239,7 @@ def test_occurrence_graph_analyzer_reuses_cached_graph_when_fast_key_and_signatu
     )
     artifact = SpellCompilerArtifact("spell-1")
     cached_graph = object()
-    artifact._root_blueprint_phase5 = object()
+    artifact._root_blueprint_phase5 = SimpleNamespace(root_spell_id="spell-1")
     artifact._occurrence_graph_analysis = cached_graph
     artifact._occurrence_analysis_fast_key = ("fast",)
     artifact._occurrence_analysis_input_signature = "sig"

@@ -1,5 +1,8 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis import (
+    SpellExistenceOccurrenceAnalysis,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 OccurrenceKey = Tuple[str, int]
@@ -29,6 +32,7 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         "topology_dependency_count",
         "dag_fallback_dependency_count",
         "shared_collapse_enabled",
+        "existence_occurrence_analysis",
     ]
 
     def __init__(
@@ -42,6 +46,7 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
             topology_dependency_count: int,
             dag_fallback_dependency_count: int,
             shared_collapse_enabled: bool,
+            existence_occurrence_analysis: Optional[SpellExistenceOccurrenceAnalysis] = None,
     ) -> None:
         """
         Build one occurrence-graph analysis artifact.
@@ -55,6 +60,7 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         self.topology_dependency_count = topology_dependency_count
         self.dag_fallback_dependency_count = dag_fallback_dependency_count
         self.shared_collapse_enabled = shared_collapse_enabled
+        self.existence_occurrence_analysis = existence_occurrence_analysis
 
     def cleanup(self) -> None:
         """
@@ -72,3 +78,4 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         del self.topology_dependency_count
         del self.dag_fallback_dependency_count
         del self.shared_collapse_enabled
+        del self.existence_occurrence_analysis

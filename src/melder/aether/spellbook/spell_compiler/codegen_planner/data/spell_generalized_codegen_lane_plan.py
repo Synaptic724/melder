@@ -1054,6 +1054,20 @@ class SpellGeneralizedCodegenPlanBuilder:
               transient-only packing when eligible.
             - Does not mutate model sections.
         """
+        lane_plan = self._build_lane_plan_from_model()
+        lane_plan.metadata["plan_family"] = "generalized"
+        return lane_plan
+
+    def _build_lane_plan_from_model(self) -> SpellGeneralizedCodegenLanePlan:
+        """
+        Build one lane plan from the currently selected model section set.
+
+        Purpose:
+            Hold the common lane synthesis shared by the generalized, solo, and
+            many-only builder surfaces so category-specific builders can enforce
+            their own preconditions without copying the full generalized step
+            synthesis body.
+        """
         graph_shape = self._state.graph_shape
         order_shape = self._state.order_shape
         instance_shape = self._state.instance_shape
@@ -1312,6 +1326,89 @@ class SpellGeneralizedCodegenPlanBuilder:
             fast_has_existing_creations=fast_has_existing_creations,
             metadata={},
         )
+
+
+class SpellSoloCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
+    """
+    Build solo lane plans from `SpellCodegenModel`.
+
+    Purpose:
+        Give the solo planner strategy a real dedicated builder surface instead
+        of routing directly through the generalized builder class.
+
+    Contract:
+        - Requires the fitted existence-occurrence section.
+        - Requires exactly one visible spell in that section.
+        - Reuses the common lane synthesis after enforcing solo-family
+          preconditions.
+        - Stamps the produced lane metadata with the solo family id.
+    """
+
+    __slots__ = ()
+
+    def build(self) -> SpellGeneralizedCodegenLanePlan:
+        """
+        Build one solo lane plan after enforcing solo-family preconditions.
+        """
+        existence_occurrence_shape = self._state.existence_occurrence_shape
+        if existence_occurrence_shape is None:
+            raise ValueError(
+                "Solo lane build requires existence_occurrence_shape."
+            )
+        if existence_occurrence_shape.total_spell_count != 1:
+            raise ValueError(
+                "Solo lane build requires exactly one visible spell."
+            )
+        lane_plan = self._build_lane_plan_from_model()
+        lane_plan.metadata["plan_family"] = "solo"
+        return lane_plan
+
+
+class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
+    """
+    Build many-only lane plans from `SpellCodegenModel`.
+
+    Purpose:
+        Give the many-only planner strategy a real dedicated builder surface
+        instead of routing directly through the generalized builder class.
+
+    Contract:
+        - Requires the fitted existence-occurrence section.
+        - Requires more than one visible spell.
+        - Requires every visible spell to be `Existence.many`.
+        - Reuses the common lane synthesis after enforcing many-only-family
+          preconditions.
+        - Stamps the produced lane metadata with the many-only family id.
+    """
+
+    __slots__ = ()
+
+    def build(self) -> SpellGeneralizedCodegenLanePlan:
+        """
+        Build one many-only lane plan after enforcing many-only preconditions.
+        """
+        existence_occurrence_shape = self._state.existence_occurrence_shape
+        if existence_occurrence_shape is None:
+            raise ValueError(
+                "Many-only lane build requires existence_occurrence_shape."
+            )
+        total_spell_count = existence_occurrence_shape.total_spell_count
+        if total_spell_count <= 1:
+            raise ValueError(
+                "Many-only lane build requires more than one visible spell."
+            )
+        many_count = 0
+        for existence, count in existence_occurrence_shape.existence_counts:
+            if existence is Existence.many:
+                many_count = count
+                break
+        if many_count != total_spell_count:
+            raise ValueError(
+                "Many-only lane build requires every visible spell to be Existence.many."
+            )
+        lane_plan = self._build_lane_plan_from_model()
+        lane_plan.metadata["plan_family"] = "many_only"
+        return lane_plan
 
     def _build_fast_plan_data(
             self,

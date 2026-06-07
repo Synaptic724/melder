@@ -11,6 +11,9 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy import (
     SpellInjectionProcessorStrategy,
 )
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_existence_occurrence_processor_strategy import (
+    SpellExistenceOccurrenceProcessorStrategy,
+)
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy import (
     SpellOccurrenceInstanceProcessorStrategy,
 )
@@ -90,6 +93,7 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
         instance_strategy = SpellOccurrenceInstanceProcessorStrategy()
         contract_strategy = SpellOccurrenceContractProcessorStrategy()
         runtime_strategy = SpellRuntimeProcessorStrategy()
+        existence_occurrence_strategy = SpellExistenceOccurrenceProcessorStrategy()
         injection_strategy = SpellInjectionProcessorStrategy()
         override_targeting_strategy = SpellOverrideTargetingProcessorStrategy()
 
@@ -97,6 +101,9 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
         self._strategies_by_name[instance_strategy.strategy_id] = instance_strategy
         self._strategies_by_name[contract_strategy.strategy_id] = contract_strategy
         self._strategies_by_name[runtime_strategy.strategy_id] = runtime_strategy
+        self._strategies_by_name[
+            existence_occurrence_strategy.strategy_id
+        ] = existence_occurrence_strategy
         self._strategies_by_name[injection_strategy.strategy_id] = injection_strategy
         self._strategies_by_name[
             override_targeting_strategy.strategy_id

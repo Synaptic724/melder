@@ -1,6 +1,7 @@
 import logging
+from pathlib import Path
 import threading
-from typing import Any, Callable, Dict, Optional, ClassVar
+from typing import Any, Callable, ClassVar, Dict, Optional, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -13,13 +14,17 @@ class AetherConfiguration(Cleanable):
 
     Purpose:
         Hold process-wide Aether policy inputs before the root applies them to
-        hosted subsystems. The first owned policy slice is logger activation
-        control for `AetherUtilitySystem`.
+        hosted subsystems. The current owned policy slices are logger
+        activation control for `AetherUtilitySystem` and the root-level
+        system-caching posture used by later cache-aware runtime layers.
 
     Contract:
         - mutable until frozen
         - activation is explicit and implies successful validation/freeze
         - automatic channel logger activation is disabled by default
+        - system caching is enabled by default
+        - the default cache root is the package-relative `__melder_cache__`
+          directory under the installed `melder` package root
         - explicit logger attachment remains outside this config surface
     """
 
@@ -45,10 +50,24 @@ class AetherConfiguration(Cleanable):
         self._frozen: bool = False
         self._activated: bool = False
         self._properties: Dict[str, object] = {
+            "system_caching_enabled": True,
+            "system_cache_root_path": self._build_default_system_cache_root_path(),
             "channel_logger_activation_enabled": False,
             "channel_logger_resolver": None,
             "default_logger": None,
         }
+
+    @staticmethod
+    def _build_default_system_cache_root_path() -> Path:
+        """
+        Build the default package-relative cache root path.
+
+        Returns:
+            Path:
+                Relative cache-root fragment that later runtime consumers
+                resolve under the installed `melder` package root.
+        """
+        return Path("__melder_cache__")
 
     def cleanup(self) -> None:
         """
@@ -120,6 +139,49 @@ class AetherConfiguration(Cleanable):
         return value
 
     @property
+    def system_caching_enabled(self) -> bool:
+        """
+        Return whether root-level system caching is enabled.
+
+        Returns:
+            bool:
+                True when later runtime layers may treat system caching as
+                globally enabled by policy.
+        """
+        self.check_cleaned()
+        value = self._properties["system_caching_enabled"]
+        if not isinstance(value, bool):
+            raise TypeError("system_caching_enabled must remain a bool.")
+        return value
+
+    @property
+    def system_cache_root_path(self) -> Path:
+        """
+        Return the configured root directory for cache artifacts.
+
+        Returns:
+            Path:
+                Package-relative cache root path for all Melder cache data.
+        """
+        self.check_cleaned()
+        value = self._properties["system_cache_root_path"]
+        if not isinstance(value, Path):
+            raise TypeError("system_cache_root_path must remain a Path.")
+        return value
+
+    def resolve_system_cache_root_path(self) -> Path:
+        """
+        Resolve the configured cache-root fragment against the melder package root.
+
+        Returns:
+            Path:
+                Absolute cache root path under the installed `melder` package
+                directory.
+        """
+        self.check_cleaned()
+        return Path(__file__).resolve().parent.parent / self.system_cache_root_path
+
+    @property
     def channel_logger_resolver(self) -> Optional[Callable[..., Any]]:
         """
         Return the configured channel logger resolver, if any.
@@ -156,9 +218,32 @@ class AetherConfiguration(Cleanable):
         Returns:
             AetherConfiguration: This configuration instance.
         """
+        self.set_system_caching_enabled(True)
+        self.set_system_cache_root_path(
+            self._build_default_system_cache_root_path()
+        )
         self.set_channel_logger_activation_enabled(False)
         self.set_channel_logger_resolver(None)
         self.set_default_logger(None)
+        return self
+
+    def with_system_caching_enabled(
+            self,
+            enabled: bool,
+    ) -> "AetherConfiguration":
+        """
+        Set whether root-level system caching is enabled.
+
+        Args:
+            enabled:
+                True when the runtime should treat system caching as enabled by
+                default.
+
+        Returns:
+            AetherConfiguration:
+                This configuration instance.
+        """
+        self.set_system_caching_enabled(enabled)
         return self
 
     def with_channel_logger_activation_enabled(
@@ -177,6 +262,25 @@ class AetherConfiguration(Cleanable):
             AetherConfiguration: This configuration instance.
         """
         self.set_channel_logger_activation_enabled(enabled)
+        return self
+
+    def with_system_cache_root_path(
+            self,
+            root_path: Union[str, Path],
+    ) -> "AetherConfiguration":
+        """
+        Set the root directory used for all Melder cache data.
+
+        Args:
+            root_path:
+                Relative cache-root override anchored under the installed
+                `melder` package root.
+
+        Returns:
+            AetherConfiguration:
+                This configuration instance.
+        """
+        self.set_system_cache_root_path(root_path)
         return self
 
     def with_channel_logger_resolver(
@@ -239,6 +343,67 @@ class AetherConfiguration(Cleanable):
             if self._frozen:
                 raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
             self._properties["channel_logger_activation_enabled"] = enabled
+
+    def set_system_caching_enabled(self, enabled: bool) -> None:
+        """
+        Set the root-level system-caching policy flag.
+
+        Args:
+            enabled:
+                Desired system-caching state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the configuration is frozen.
+            TypeError:
+                If `enabled` is not a bool.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
+        if not isinstance(enabled, bool):
+            raise TypeError("enabled must be a bool.")
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
+            self._properties["system_caching_enabled"] = enabled
+
+    def set_system_cache_root_path(
+            self,
+            root_path: Union[str, Path],
+    ) -> None:
+        """
+        Set the root directory used for all Melder cache data.
+
+        Args:
+            root_path:
+                Relative cache-root override anchored under the installed
+                `melder` package root.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the configuration is frozen.
+            TypeError:
+                If `root_path` is not path-like or is absolute.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
+        if not isinstance(root_path, (str, Path)):
+            raise TypeError("root_path must be a str or Path.")
+        normalized_root_path = Path(root_path)
+        if normalized_root_path.is_absolute():
+            raise ValueError("root_path must remain relative to the melder package root.")
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
+            self._properties["system_cache_root_path"] = normalized_root_path
 
     def set_channel_logger_resolver(
             self,
@@ -308,6 +473,14 @@ class AetherConfiguration(Cleanable):
             bool: True when the configuration is valid.
         """
         self.check_cleaned()
+        if not isinstance(self._properties["system_caching_enabled"], bool):
+            raise ValueError("system_caching_enabled must be a bool.")
+        if not isinstance(self._properties["system_cache_root_path"], Path):
+            raise ValueError("system_cache_root_path must be a Path.")
+        if self._properties["system_cache_root_path"].is_absolute():
+            raise ValueError(
+                "system_cache_root_path must remain relative to the melder package root."
+            )
         if not isinstance(self._properties["channel_logger_activation_enabled"], bool):
             raise ValueError("channel_logger_activation_enabled must be a bool.")
         if (

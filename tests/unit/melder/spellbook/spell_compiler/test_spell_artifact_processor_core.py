@@ -6,6 +6,10 @@ from typing import Any, Dict, List, Optional, Tuple
 import pytest
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis import (
+    SpellExistenceOccurrenceAnalysis,
+    SpellExistenceOccurrence,
+)
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
     SpellArtifactProcessor,
 )
@@ -14,6 +18,9 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_pr
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_existence_occurrence_processor_strategy import (
+    SpellExistenceOccurrenceProcessorStrategy,
 )
 
 
@@ -51,6 +58,31 @@ class _OccurrenceGraphProbe:
             ("dep-2", 2): {"leaf": [("leaf", 3)]},
             ("leaf", 3): {},
         }
+        self.existence_occurrence_analysis = SpellExistenceOccurrenceAnalysis(
+            root_existence=Existence.unique_per_conduit,
+            total_spell_count=2,
+            spell_existence_rows=(
+                SpellExistenceOccurrence(
+                    spell_id="spell-1",
+                    existence=Existence.unique_per_conduit,
+                    has_disposal_methods=True,
+                ),
+                SpellExistenceOccurrence(
+                    spell_id="dep-1",
+                    existence=Existence.many,
+                    has_disposal_methods=False,
+                ),
+            ),
+            existence_counts=(
+                (Existence.many, 1),
+                (Existence.unique_per_conduit, 1),
+            ),
+            disposal_enabled_spell_count=1,
+            existence_disposal_counts=(
+                ((Existence.many, False), 1),
+                ((Existence.unique_per_conduit, True), 1),
+            ),
+        )
 
 
 class _CleanupTracker:
@@ -128,6 +160,7 @@ def test_spell_artifact_processor_builder_registers_default_order() -> None:
         "spell_occurrence_instance_processor",
         "spell_occurrence_contract_processor",
         "spell_runtime_processor",
+        "spell_existence_occurrence_processor",
         "spell_injection_processor",
         "spell_override_targeting_processor",
     )
@@ -156,6 +189,7 @@ def test_build_model_shell_uses_existing_creation_route_family() -> None:
     assert model.root_dependency_count == 2
     assert model.max_depth == 2
     assert model.max_width == 2
+    assert model.existence_occurrence_shape is None
 
 
 def test_spell_artifact_processor_process_publishes_model_and_cleans_previous() -> None:
@@ -191,6 +225,19 @@ def test_spell_artifact_processor_process_publishes_model_and_cleans_previous() 
     assert previous_model.cleanup_called is True
 
 
+def test_existence_occurrence_processor_strategy_publishes_phase8_existence_section() -> None:
+    """The phase-9 existence processor should expose the analyzer-owned existence section on the model."""
+    strategy = SpellExistenceOccurrenceProcessorStrategy()
+    graph_shape = _OccurrenceGraphProbe()
+    artifact = SimpleNamespace(_occurrence_graph_analysis=graph_shape)
+    model = SpellCodegenModel()
+    spell = SimpleNamespace()
+
+    strategy.process(spell, artifact, model)
+
+    assert model.existence_occurrence_shape is graph_shape.existence_occurrence_analysis
+
+
 def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
     """Model cleanup should clean owned sections but leave borrowed graph truth alone."""
     graph_shape = _CleanupTracker()
@@ -221,6 +268,7 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
         "injection_shape",
         "override_targeting_shape",
         "spell_runtime_shape",
+        "existence_occurrence_shape",
         "assessment",
     )
 

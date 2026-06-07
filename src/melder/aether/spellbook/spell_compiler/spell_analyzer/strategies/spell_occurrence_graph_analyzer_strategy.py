@@ -6,6 +6,10 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis import (
+    SpellExistenceOccurrence,
+    SpellExistenceOccurrenceAnalysis,
+)
 from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis import (
     SpellOccurrenceGraphAnalysis,
 )
@@ -127,18 +131,29 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             raise RuntimeError(
                 "SpellOccurrenceGraphAnalyzerStrategy requires Phase 5 root blueprint truth."
             )
+        spell_rows_and_existence = self._build_spell_rows_and_existence_occurrence_analysis(
+            root_spell_id=root_blueprint.root_spell_id,
+            spell_lookup=spellbook._spell_id_pool,
+        )
+        if spell_rows_and_existence is None:
+            spell_rows = None
+            existence_occurrence_analysis = None
+        else:
+            spell_rows, existence_occurrence_analysis = spell_rows_and_existence
 
         fast_key = self._build_occurrence_graph_fast_key(
             root_blueprint=root_blueprint,
             spell_lookup=spellbook._spell_id_pool,
             spellbook=spellbook,
             spell_system_states=spell._spell_system_states,
+            spell_rows=spell_rows,
         )
         input_signature = self._build_occurrence_graph_input_signature(
             root_blueprint=root_blueprint,
             spell_lookup=spellbook._spell_id_pool,
             spellbook=spellbook,
             spell_system_states=spell._spell_system_states,
+            spell_rows=spell_rows,
         )
         if (
                 fast_key is not None
@@ -186,6 +201,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 occurrence_graph=occurrence_graph,
             ),
             shared_collapse_enabled=collapse_shared_occurrences,
+            existence_occurrence_analysis=existence_occurrence_analysis,
         )
 
         previous_graph = artifact._occurrence_graph_analysis
@@ -214,6 +230,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             spell_lookup: Dict[str, "Spell"],
             spellbook: "Spellbook",
             spell_system_states: Optional["SpellSystemStates"],
+            spell_rows: Optional[Tuple[Any, ...]],
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build a lightweight deterministic key for graph-analysis reuse.
@@ -248,19 +265,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         except Exception:
             return None
 
-        try:
-            spell_rows_list: List[Tuple[Any, ...]] = []
-            for spell_id, candidate_spell in sorted(spell_lookup.items()):
-                spell_rows_list.append(
-                    (
-                        spell_id,
-                        candidate_spell.spell_index.current,
-                        candidate_spell.existence.name,
-                        bool(candidate_spell.is_existing_creation),
-                    )
-                )
-            spell_rows = tuple(spell_rows_list)
-        except Exception:
+        if spell_rows is None:
             return None
 
         topology_rows: Tuple[Any, ...] = ()
@@ -342,6 +347,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             spell_lookup: Dict[str, "Spell"],
             spellbook: "Spellbook",
             spell_system_states: Optional["SpellSystemStates"],
+            spell_rows: Optional[Tuple[Any, ...]],
     ) -> Optional[str]:
         """
         Build a deterministic graph-analysis input signature.
@@ -376,17 +382,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         except Exception:
             return None
 
-        try:
-            spell_rows = tuple(
-                (
-                    spell_id,
-                    candidate_spell.spell_index.current,
-                    candidate_spell.existence.name,
-                    bool(candidate_spell.is_existing_creation),
-                )
-                for spell_id, candidate_spell in sorted(spell_lookup.items())
-            )
-        except Exception:
+        if spell_rows is None:
             return None
 
         topology_rows: Tuple[Any, ...] = ()
@@ -460,6 +456,86 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             system_state,
             contracted_rows,
         )
+
+    def _build_spell_rows_and_existence_occurrence_analysis(
+            self,
+            *,
+            root_spell_id: str,
+            spell_lookup: Dict[str, "Spell"],
+    ) -> Optional[Tuple[Tuple[Any, ...], SpellExistenceOccurrenceAnalysis]]:
+        """
+        Build fast-key/input-signature spell rows plus existence-occurrence data in one walk.
+        """
+        if not root_spell_id or spell_lookup is None:
+            return None
+
+        try:
+            spell_rows_list: List[Tuple[Any, ...]] = []
+            occurrence_rows_list: List[SpellExistenceOccurrence] = []
+            existence_counts_by_name: Dict[Existence, int] = {}
+            existence_disposal_counts_by_name: Dict[Tuple[Existence, bool], int] = {}
+            disposal_enabled_spell_count = 0
+            root_existence: Optional[Existence] = None
+
+            for spell_id, candidate_spell in sorted(spell_lookup.items()):
+                current_spell_id = candidate_spell.spell_index.current
+                existence = candidate_spell.existence
+                has_disposal_methods = bool(candidate_spell.has_disposal_methods)
+                spell_rows_list.append(
+                    (
+                        spell_id,
+                        current_spell_id,
+                        existence.name,
+                        bool(candidate_spell.is_existing_creation),
+                    )
+                )
+                occurrence_rows_list.append(
+                    SpellExistenceOccurrence(
+                        spell_id=spell_id,
+                        existence=existence,
+                        has_disposal_methods=has_disposal_methods,
+                    )
+                )
+                current_count = existence_counts_by_name.get(existence, 0)
+                existence_counts_by_name[existence] = current_count + 1
+                current_pair_count = existence_disposal_counts_by_name.get(
+                    (existence, has_disposal_methods),
+                    0,
+                )
+                existence_disposal_counts_by_name[
+                    (existence, has_disposal_methods)
+                ] = current_pair_count + 1
+                if has_disposal_methods:
+                    disposal_enabled_spell_count += 1
+                if spell_id == root_spell_id:
+                    root_existence = existence
+        except Exception:
+            return None
+
+        existence_counts = tuple(
+            sorted(
+                existence_counts_by_name.items(),
+                key=lambda item: item[0].name,
+            )
+        )
+        existence_disposal_counts = tuple(
+            sorted(
+                existence_disposal_counts_by_name.items(),
+                key=lambda item: (
+                    item[0][0].name,
+                    int(item[0][1]),
+                ),
+            )
+        )
+        analysis = SpellExistenceOccurrenceAnalysis(
+            root_existence=root_existence,
+            total_spell_count=len(occurrence_rows_list),
+            spell_existence_rows=tuple(occurrence_rows_list),
+            existence_counts=existence_counts,
+            disposal_enabled_spell_count=disposal_enabled_spell_count,
+            existence_disposal_counts=existence_disposal_counts,
+        )
+        return tuple(spell_rows_list), analysis
 
     @staticmethod
     def _cleanup_previous(

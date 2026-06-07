@@ -5,8 +5,14 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy import (
     SpellCodegenPlanStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy import (
+    SpellGeneralizedManyOnlyCodegenPlanStrategy,
+)
 from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_codegen_plan_strategy import (
     SpellGeneralizedCodegenPlanStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_solo_codegen_plan_strategy import (
+    SpellGeneralizedSoloCodegenPlanStrategy,
 )
 
 
@@ -66,8 +72,21 @@ class SpellCodegenPlanStrategyBuilder(Cleanable):
         Contract:
             - Clears and rebuilds the registry each time it runs.
             - Keys are the strategies' stable `strategy_id` values.
-            - Current default is the generalized model-native strategy.
+            - Current defaults are the solo, many-only, and generalized
+              model-native strategies.
         """
+        generalized_solo_codegen_plan_strategy = (
+            SpellGeneralizedSoloCodegenPlanStrategy()
+        )
+        self._strategies_by_name[
+            generalized_solo_codegen_plan_strategy.strategy_id
+        ] = generalized_solo_codegen_plan_strategy
+        generalized_many_only_codegen_plan_strategy = (
+            SpellGeneralizedManyOnlyCodegenPlanStrategy()
+        )
+        self._strategies_by_name[
+            generalized_many_only_codegen_plan_strategy.strategy_id
+        ] = generalized_many_only_codegen_plan_strategy
         generalized_codegen_plan_strategy = SpellGeneralizedCodegenPlanStrategy()
         self._strategies_by_name[
             generalized_codegen_plan_strategy.strategy_id

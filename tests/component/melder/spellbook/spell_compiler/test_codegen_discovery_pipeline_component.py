@@ -23,6 +23,11 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner import (
     SpellCodegenPlanner,
 )
+from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis import (
+    SpellExistenceOccurrenceAnalysis,
+    SpellExistenceOccurrence,
+)
+from melder.aether.spellbook.existence.existence import Existence
 
 
 class _ProcessorStateProbe:
@@ -31,6 +36,7 @@ class _ProcessorStateProbe:
     def __init__(self, processor_strategy_ids: Tuple[str, ...]) -> None:
         """Store processor provenance for planner-shell build tests."""
         self._processor_strategy_ids = processor_strategy_ids
+        self.existence_occurrence_shape = None
 
     def snapshot_applied_strategy_ids(self) -> Tuple[str, ...]:
         """Return the stored processor strategy ids."""
@@ -74,6 +80,53 @@ def test_component_codegen_plan_discovery_system_uses_default_generalized_strate
     assert isinstance(discovery, CodegenPlanDiscovery)
     assert discovery.selected_strategy_id == "generalized_codegen_plan"
     assert discovery.discovery_reason == "default_generalized_model_native_strategy"
+
+
+def test_component_codegen_plan_discovery_system_prefers_solo_and_many_only_before_generalized() -> None:
+    """The real phase-10 discovery system should prefer solo first, then many-only, before generalized."""
+    solo_state = _ProcessorStateProbe(("processor_a",))
+    solo_state.existence_occurrence_shape = SpellExistenceOccurrenceAnalysis(
+        root_existence=Existence.unique,
+        total_spell_count=1,
+        spell_existence_rows=(
+            SpellExistenceOccurrence(
+                spell_id="root",
+                existence=Existence.unique,
+                has_disposal_methods=False,
+            ),
+        ),
+        existence_counts=((Existence.unique, 1),),
+        disposal_enabled_spell_count=0,
+        existence_disposal_counts=(((Existence.unique, False), 1),),
+    )
+    solo_discovery = CodegenPlanDiscoverySystem().discover(solo_state)
+    assert solo_discovery.selected_strategy_id == "generalized_solo_codegen_plan"
+
+    many_state = _ProcessorStateProbe(("processor_a",))
+    many_state.existence_occurrence_shape = SpellExistenceOccurrenceAnalysis(
+        root_existence=Existence.many,
+        total_spell_count=2,
+        spell_existence_rows=(
+            SpellExistenceOccurrence(
+                spell_id="dep",
+                existence=Existence.many,
+                has_disposal_methods=False,
+            ),
+            SpellExistenceOccurrence(
+                spell_id="root",
+                existence=Existence.many,
+                has_disposal_methods=True,
+            ),
+        ),
+        existence_counts=((Existence.many, 2),),
+        disposal_enabled_spell_count=1,
+        existence_disposal_counts=(
+            ((Existence.many, False), 1),
+            ((Existence.many, True), 1),
+        ),
+    )
+    many_discovery = CodegenPlanDiscoverySystem().discover(many_state)
+    assert many_discovery.selected_strategy_id == "generalized_many_only_codegen_plan"
 
 
 def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_generalized_plan() -> None:

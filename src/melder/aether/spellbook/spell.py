@@ -74,6 +74,9 @@ class Spell(Cleanable):
       transitions.
     - Becomes unusable after `cleanup()` completes; later live-object methods
       are expected to fail through `check_cleaned()`.
+    - Disposal methods should not be modified after creation as it will create
+      problems with the runtime. The runtime will optimize creation and disposal
+      methods added after the fact are ignored.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -370,7 +373,7 @@ class Spell(Cleanable):
         self.resolution_complete: bool = False
         # Compiler-derived runtime request flag.
         # True means the rooted request graph contains a spellspace-scoped
-        # dependency and the spell therefore requires an active spellspace
+        # dependency, and the spell therefore requires an active spellspace
         # request context at runtime.
         self.requires_spellspace_request: bool = False
 
