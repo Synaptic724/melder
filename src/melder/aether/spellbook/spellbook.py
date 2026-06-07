@@ -14,6 +14,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
 from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.utilities.caching_system.caching_system import CachingSystem
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -120,6 +121,7 @@ and logging.
         "_configuration",
         "_configuration_locked",
         "_conjured",
+        "_caching_system",
         "_contracted_spells",
         "_contracted_spells_by_id",
         "_contracted_versions",
@@ -183,6 +185,7 @@ and logging.
         self._id: str = IDBuilder.create_id()
         self._nexus: Nexus = Nexus()
         self._conjured = False
+        self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
         self._conduit: Optional[Conduit] = None
@@ -361,6 +364,16 @@ and logging.
         except Exception as e:
             self._logger.error(f"Error cleaning configuration: {e}", "_cleanup_components", exc_info=True)
         del self._configuration
+        if self._caching_system is not None:
+            try:
+                self._caching_system.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning caching system: {e}",
+                    "_cleanup_components",
+                    exc_info=True,
+                )
+        del self._caching_system
 
         self._aetheric_frame_configuration = None
 
@@ -609,7 +622,6 @@ and logging.
               ConcurrentSet[str] in `_contracted_versions` containing all
               version IDs (SHA256) for that conduitÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s spells.
         """
-
         with self._lock:
             if self._contracted_spells is None or self._contracted_versions is None:
                 return
@@ -655,6 +667,56 @@ and logging.
         if configuration is None:
             raise RuntimeError("Spellbook configuration is unavailable.")
         return configuration
+
+    def _system_caching_enabled_in_aether(self) -> bool:
+        """
+        Internal
+
+        Return whether the Aether root config currently enables system caching.
+
+        Returns:
+            bool:
+                True when the installed Aether root config enables system
+                caching.
+        """
+        return Spellbook._aether.configuration.system_caching_enabled
+
+    def _get_or_create_caching_system(self) -> CachingSystem:
+        """
+        Internal
+
+        Lazily resolve the Spellbook-owned conduit cache utility.
+
+        Purpose:
+            Build the cache utility only when:
+            - the Aether root config explicitly enables caching, and
+            - this Spellbook already owns a root conduit.
+
+        Contract:
+            - Reuses the same utility instance after first creation.
+            - Uses the Aether root cache path resolver as the authoritative
+              filesystem root.
+            - Assumes the caller already proved:
+              - root caching is enabled, and
+              - the Spellbook owns a root conduit.
+
+        Returns:
+            CachingSystem:
+                The Spellbook-owned cache utility.
+        """
+        with self._lock:
+            caching_system = self._caching_system
+            if caching_system is not None:
+                return caching_system
+            conduit_name = self._conduit._name
+            caching_system = CachingSystem(
+                frame_name=self._aetheric_frame,
+                conduit_name=conduit_name,
+                cache_root_path=Spellbook._aether.configuration.resolve_system_cache_root_path(),
+                logger=self._logger,
+            )
+            self._caching_system = caching_system
+            return caching_system
 
     def _register_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
         """

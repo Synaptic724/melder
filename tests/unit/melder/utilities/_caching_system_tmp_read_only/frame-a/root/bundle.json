@@ -1,0 +1,1 @@
+{"conduit_name":"root","sha256":"e9a1933232b8402858b2f29f01956b41dfa148867ae9a65addb5ff8cd6d440fc","spell_payloads":{"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc":{"no_overrides":{"source":"no-readonly"},"overrides":{"source":"over-readonly"},"resolve_route_key":"readonly"}},"version":1}

@@ -32,6 +32,14 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
     GeneralizedCodegenCreationState,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy import (
+    ManyOnlyCodegenCreationStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy import (
+    SoloCodegenCreationStrategy,
+)
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step as solo_no_overrides_step_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step as solo_overrides_step_module
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_creation_context_setup_step import (
     GeneralizedCreationContextSetupStep,
 )
@@ -140,6 +148,42 @@ def test_codegen_creation_discovery_system_selects_generalized_chain_by_default(
     )
 
 
+def test_codegen_creation_discovery_system_selects_solo_family() -> None:
+    """The discovery system should route solo planner output to the solo creation family."""
+    discovery = CodegenCreationDiscoverySystem().discover(
+        object(),
+        SpellCodegenPlan(
+            processor_strategy_ids=(),
+            plan_strategy_ids=("generalized_solo_codegen_plan",),
+            no_overrides_plan=None,
+            overrides_plan=None,
+            metadata={"selected_strategy_id": "generalized_solo_codegen_plan"},
+        ),
+    )
+
+    assert discovery.selected_strategy_ids == (
+        "solo_codegen_creation",
+    )
+
+
+def test_codegen_creation_discovery_system_selects_many_only_family() -> None:
+    """The discovery system should route many-only planner output to the many-only creation family."""
+    discovery = CodegenCreationDiscoverySystem().discover(
+        object(),
+        SpellCodegenPlan(
+            processor_strategy_ids=(),
+            plan_strategy_ids=("generalized_many_only_codegen_plan",),
+            no_overrides_plan=None,
+            overrides_plan=None,
+            metadata={"selected_strategy_id": "generalized_many_only_codegen_plan"},
+        ),
+    )
+
+    assert discovery.selected_strategy_ids == (
+        "many_only_codegen_creation",
+    )
+
+
 def test_codegen_creation_discovery_system_falls_back_to_no_overrides_chain() -> None:
     """The discovery system should still fall back to the no-overrides strategy for non-generalized plans."""
     discovery = CodegenCreationDiscoverySystem().discover(
@@ -159,12 +203,22 @@ def test_codegen_creation_discovery_system_falls_back_to_no_overrides_chain() ->
 
 
 def test_spell_codegen_strategy_builder_registers_extended_order() -> None:
-    """The real strategy builder should expose the generalized family facade plus fallback no-overrides strategy."""
+    """The real strategy builder should expose solo, many-only, generalized, and fallback creation families."""
     builder = SpellCodegenStrategyBuilder()
 
     assert builder.registered_strategy_names() == (
+        "solo_codegen_creation",
+        "many_only_codegen_creation",
         "generalized_codegen_creation",
         "generalized_no_overrides_codegen_creation",
+    )
+    assert isinstance(
+        builder.get_strategy("solo_codegen_creation"),
+        SoloCodegenCreationStrategy,
+    )
+    assert isinstance(
+        builder.get_strategy("many_only_codegen_creation"),
+        ManyOnlyCodegenCreationStrategy,
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_creation'"):
         builder.get_strategy("missing_creation")
@@ -537,3 +591,70 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
     assert callable(creation.overrides_executor)
     assert creation.metadata["resolve_route_key"] == "many"
     assert creation.metadata["fast_transient_no_overrides_enabled"] is True
+
+
+def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The solo phase-11 family should use solo-owned steps and publish narrow runtime metadata."""
+    sentinel_no_overrides = object()
+    sentinel_overrides = object()
+    monkeypatch.setattr(
+        solo_no_overrides_step_module,
+        "compile_solo_no_overrides_codegen_creation_executor",
+        lambda **kwargs: sentinel_no_overrides,
+    )
+    monkeypatch.setattr(
+        solo_overrides_step_module,
+        "compile_solo_overrides_codegen_creation_executor",
+        lambda **kwargs: sentinel_overrides,
+    )
+
+    root_spell = SimpleNamespace(
+        spell_id="root",
+        spell_name="root",
+        spell_index=SimpleNamespace(current="root"),
+        spell=lambda: "instance",
+        has_disposal_methods=False,
+        disposal_method_names=(),
+        is_existing_creation=False,
+        _owner_creations=object(),
+    )
+    model = SimpleNamespace(
+        build_kind="construct",
+        route_family="many",
+        graph_shape=SimpleNamespace(root_spell_id="root"),
+        spell_runtime_shape=SimpleNamespace(
+            spell_count=1,
+            records_by_spell_id={
+                "root": SimpleNamespace(
+                    spell=root_spell,
+                    has_disposal_methods=False,
+                )
+            },
+        ),
+    )
+    plan = SpellCodegenPlan(
+        processor_strategy_ids=(),
+        plan_strategy_ids=("generalized_solo_codegen_plan",),
+        no_overrides_plan=SimpleNamespace(lane_id="solo_no_overrides"),
+        overrides_plan=SimpleNamespace(lane_id="solo_overrides"),
+        metadata={"selected_strategy_id": "generalized_solo_codegen_plan"},
+    )
+    creation = SpellCodegenCreation(
+        selected_strategy_ids=(),
+        discovery_reason=None,
+        no_overrides_executor=None,
+        overrides_executor=None,
+        metadata={},
+    )
+
+    SoloCodegenCreationStrategy().apply(model, plan, creation)
+
+    assert creation.no_overrides_executor is sentinel_no_overrides
+    assert creation.overrides_executor is sentinel_overrides
+    assert creation.metadata["resolve_route_key"] == "many"
+    assert creation.metadata["fast_transient_no_overrides_enabled"] is True
+    assert creation.metadata["creation_context_strategy"] == "solo_codegen_creation"
+    assert creation.metadata["no_overrides_step_count"] == 1
+    assert creation.metadata["override_step_count"] == 1

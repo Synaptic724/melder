@@ -22,6 +22,12 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_crea
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy import (
     GeneralizedCodegenCreationDiscoveryStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy import (
+    ManyOnlyCodegenCreationDiscoveryStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy import (
+    SoloCodegenCreationDiscoveryStrategy,
+)
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
 )
@@ -123,6 +129,36 @@ def test_generalized_codegen_creation_discovery_strategy_declines_non_generalize
     assert discovery is None
 
 
+def test_solo_codegen_creation_discovery_strategy_claims_solo_plan() -> None:
+    """The solo phase-11 strategy should claim solo planner output only."""
+    discovery = SoloCodegenCreationDiscoveryStrategy().discover(
+        _ModelProbe("model"),
+        _make_plan("generalized_solo_codegen_plan"),
+    )
+
+    assert discovery is not None
+    assert discovery.selected_strategy_ids == (
+        "solo_codegen_creation",
+    )
+    assert discovery.discovery_reason == "solo_plan_codegen_creation_family"
+    assert discovery.selected_codegen_style_id == "generalized_solo"
+
+
+def test_many_only_codegen_creation_discovery_strategy_claims_many_only_plan() -> None:
+    """The many-only phase-11 strategy should claim many-only planner output only."""
+    discovery = ManyOnlyCodegenCreationDiscoveryStrategy().discover(
+        _ModelProbe("model"),
+        _make_plan("generalized_many_only_codegen_plan"),
+    )
+
+    assert discovery is not None
+    assert discovery.selected_strategy_ids == (
+        "many_only_codegen_creation",
+    )
+    assert discovery.discovery_reason == "many_only_plan_codegen_creation_family"
+    assert discovery.selected_codegen_style_id == "generalized_many_only"
+
+
 def test_fallback_no_overrides_codegen_creation_discovery_strategy_returns_fallback_result() -> None:
     """The fallback phase-11 strategy should always return the no-overrides creation chain."""
     discovery = FallbackNoOverridesCodegenCreationDiscoveryStrategy().discover(
@@ -138,12 +174,22 @@ def test_fallback_no_overrides_codegen_creation_discovery_strategy_returns_fallb
 
 
 def test_codegen_creation_discovery_strategy_builder_registers_default_strategies() -> None:
-    """The phase-11 discovery builder should register the generalized and fallback strategies in order."""
+    """The phase-11 discovery builder should register the solo, many-only, generalized, and fallback strategies in order."""
     builder = CodegenCreationDiscoveryStrategyBuilder()
 
     assert builder.registered_strategy_names() == (
+        "solo_codegen_creation_discovery",
+        "many_only_codegen_creation_discovery",
         "generalized_codegen_creation_discovery",
         "fallback_no_overrides_codegen_creation_discovery",
+    )
+    assert isinstance(
+        builder.get_strategy("solo_codegen_creation_discovery"),
+        SoloCodegenCreationDiscoveryStrategy,
+    )
+    assert isinstance(
+        builder.get_strategy("many_only_codegen_creation_discovery"),
+        ManyOnlyCodegenCreationDiscoveryStrategy,
     )
     assert isinstance(
         builder.get_strategy("generalized_codegen_creation_discovery"),

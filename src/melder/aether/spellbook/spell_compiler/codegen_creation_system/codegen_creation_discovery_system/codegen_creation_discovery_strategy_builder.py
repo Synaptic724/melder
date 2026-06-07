@@ -11,6 +11,12 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_crea
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy import (
     GeneralizedCodegenCreationDiscoveryStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy import (
+    ManyOnlyCodegenCreationDiscoveryStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy import (
+    SoloCodegenCreationDiscoveryStrategy,
+)
 
 
 class CodegenCreationDiscoveryStrategyBuilder(Cleanable):
@@ -53,8 +59,16 @@ class CodegenCreationDiscoveryStrategyBuilder(Cleanable):
         """
         Populate the default phase-11 discovery strategy registry.
         """
+        solo_strategy = SoloCodegenCreationDiscoveryStrategy()
+        many_only_strategy = ManyOnlyCodegenCreationDiscoveryStrategy()
         generalized_strategy = GeneralizedCodegenCreationDiscoveryStrategy()
         fallback_strategy = FallbackNoOverridesCodegenCreationDiscoveryStrategy()
+        self._strategies_by_name[
+            solo_strategy.strategy_id
+        ] = solo_strategy
+        self._strategies_by_name[
+            many_only_strategy.strategy_id
+        ] = many_only_strategy
         self._strategies_by_name[
             generalized_strategy.strategy_id
         ] = generalized_strategy

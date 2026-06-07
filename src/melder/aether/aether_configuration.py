@@ -179,7 +179,9 @@ class AetherConfiguration(Cleanable):
                 directory.
         """
         self.check_cleaned()
-        return Path(__file__).resolve().parent.parent / self.system_cache_root_path
+        return (
+            Path(__file__).resolve().parent.parent / self.system_cache_root_path
+        ).resolve()
 
     @property
     def channel_logger_resolver(self) -> Optional[Callable[..., Any]]:

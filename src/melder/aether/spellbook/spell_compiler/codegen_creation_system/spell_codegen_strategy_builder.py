@@ -11,6 +11,12 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy import (
     FallbackNoOverridesCodegenCreationStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy import (
+    ManyOnlyCodegenCreationStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy import (
+    SoloCodegenCreationStrategy,
+)
 
 
 class SpellCodegenStrategyBuilder(Cleanable):
@@ -57,6 +63,14 @@ class SpellCodegenStrategyBuilder(Cleanable):
               strategies here.
             - Registration order is execution order.
         """
+        solo_codegen_creation_strategy = SoloCodegenCreationStrategy()
+        self._strategies_by_name[
+            solo_codegen_creation_strategy.strategy_id
+        ] = solo_codegen_creation_strategy
+        many_only_codegen_creation_strategy = ManyOnlyCodegenCreationStrategy()
+        self._strategies_by_name[
+            many_only_codegen_creation_strategy.strategy_id
+        ] = many_only_codegen_creation_strategy
         generalized_codegen_creation_strategy = (
             GeneralizedCodegenCreationStrategy()
         )
