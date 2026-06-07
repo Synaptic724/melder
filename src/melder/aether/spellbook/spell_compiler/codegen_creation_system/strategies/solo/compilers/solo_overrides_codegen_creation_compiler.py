@@ -36,12 +36,11 @@ def compile_solo_overrides_codegen_creation_executor(
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                add_many_creations = caller_creations.add_many_creations
                 instance = _invoke_with_overrides(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                add_many_creations(
+                caller_creations.add_many_creations(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -70,12 +69,11 @@ def compile_solo_overrides_codegen_creation_executor(
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                add_creation = caller_creations.add_creation
                 instance = _invoke_with_overrides(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                add_creation(
+                caller_creations.add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -90,12 +88,11 @@ def compile_solo_overrides_codegen_creation_executor(
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            add_creation = caller_creations.add_creation
             instance = _invoke_with_overrides(
                 call_target=call_target,
                 overrides=overrides,
             )
-            add_creation(
+            caller_creations.add_creation(
                 spell_id,
                 instance,
             )
@@ -110,12 +107,11 @@ def compile_solo_overrides_codegen_creation_executor(
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                add_creation = caller_creations.add_creation
                 instance = _invoke_with_overrides(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                add_creation(
+                caller_creations.add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -130,12 +126,11 @@ def compile_solo_overrides_codegen_creation_executor(
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            add_creation = caller_creations.add_creation
             instance = _invoke_with_overrides(
                 call_target=call_target,
                 overrides=overrides,
             )
-            add_creation(
+            caller_creations.add_creation(
                 spell_id,
                 instance,
             )
@@ -160,54 +155,29 @@ def compile_solo_overrides_codegen_creation_executor(
         return execute_existing_creation
 
     if solo_emit_key == "unique":
-        return _build_owner_creation_overrides_executor(
-            spell=spell,
-            spell_id=spell_id,
-            call_target=call_target,
-            has_disposal_methods=has_disposal_methods,
-            disposal_methods=disposal_methods,
-        )
+        prebound_owner_creations = spell._owner_creations
+        if prebound_owner_creations is not None:
+            if has_disposal_methods:
+                def execute_unique_prebound_with_disposal(
+                        caller_creations: Any,
+                        overrides: Optional[Dict[str, Any]],
+                        caller_creations_lock_held: bool = False,
+                ) -> Any:
+                    instance = _invoke_with_overrides(
+                        call_target=call_target,
+                        overrides=overrides,
+                    )
+                    prebound_owner_creations.add_creation(
+                        spell_id,
+                        instance,
+                        has_disposal_methods=True,
+                        disposal_methods=disposal_methods,
+                    )
+                    return instance
 
-    if solo_emit_key == "unique_per_conduit_cluster":
-        return _build_owner_creation_overrides_executor(
-            spell=spell,
-            spell_id=spell_id,
-            call_target=call_target,
-            has_disposal_methods=has_disposal_methods,
-            disposal_methods=disposal_methods,
-        )
+                return execute_unique_prebound_with_disposal
 
-    if solo_emit_key == "unique_per_conduit_lineage":
-        return _build_owner_creation_overrides_executor(
-            spell=spell,
-            spell_id=spell_id,
-            call_target=call_target,
-            has_disposal_methods=has_disposal_methods,
-            disposal_methods=disposal_methods,
-        )
-
-    raise RuntimeError(
-        f"Unsupported solo overrides emit key: {solo_emit_key}"
-    )
-
-
-def _build_owner_creation_overrides_executor(
-        *,
-        spell: Any,
-        spell_id: str,
-        call_target: Any,
-        has_disposal_methods: bool,
-        disposal_methods: Optional[Tuple[str, ...]],
-) -> Callable[..., Any]:
-    """
-    Build one exact owner-creations override executor for shared solo lifetimes.
-    """
-    prebound_owner_creations = spell._owner_creations
-    if prebound_owner_creations is not None:
-        if has_disposal_methods:
-            add_creation = prebound_owner_creations.add_creation
-
-            def execute_prebound_owner_with_disposal(
+            def execute_unique_prebound(
                     caller_creations: Any,
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
@@ -216,7 +186,26 @@ def _build_owner_creation_overrides_executor(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                add_creation(
+                prebound_owner_creations.add_creation(
+                    spell_id,
+                    instance,
+                )
+                return instance
+
+            return execute_unique_prebound
+
+        if has_disposal_methods:
+            def execute_unique_dynamic_with_disposal(
+                    caller_creations: Any,
+                    overrides: Optional[Dict[str, Any]],
+                    caller_creations_lock_held: bool = False,
+            ) -> Any:
+                instance = _invoke_with_overrides(
+                    call_target=call_target,
+                    overrides=overrides,
+                )
+                dynamic_owner_creations = spell._owner_creations
+                dynamic_owner_creations.add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -224,29 +213,9 @@ def _build_owner_creation_overrides_executor(
                 )
                 return instance
 
-            return execute_prebound_owner_with_disposal
+            return execute_unique_dynamic_with_disposal
 
-        add_creation = prebound_owner_creations.add_creation
-
-        def execute_prebound_owner(
-                caller_creations: Any,
-                overrides: Optional[Dict[str, Any]],
-                caller_creations_lock_held: bool = False,
-        ) -> Any:
-            instance = _invoke_with_overrides(
-                call_target=call_target,
-                overrides=overrides,
-            )
-            add_creation(
-                spell_id,
-                instance,
-            )
-            return instance
-
-        return execute_prebound_owner
-
-    if has_disposal_methods:
-        def execute_dynamic_owner_with_disposal(
+        def execute_unique_dynamic(
                 caller_creations: Any,
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
@@ -256,35 +225,175 @@ def _build_owner_creation_overrides_executor(
                 overrides=overrides,
             )
             dynamic_owner_creations = spell._owner_creations
-            add_creation = dynamic_owner_creations.add_creation
-            add_creation(
+            dynamic_owner_creations.add_creation(
                 spell_id,
                 instance,
-                has_disposal_methods=True,
-                disposal_methods=disposal_methods,
             )
             return instance
 
-        return execute_dynamic_owner_with_disposal
+        return execute_unique_dynamic
 
-    def execute_dynamic_owner(
-            caller_creations: Any,
-            overrides: Optional[Dict[str, Any]],
-            caller_creations_lock_held: bool = False,
-    ) -> Any:
-        instance = _invoke_with_overrides(
-            call_target=call_target,
-            overrides=overrides,
-        )
-        dynamic_owner_creations = spell._owner_creations
-        add_creation = dynamic_owner_creations.add_creation
-        add_creation(
-            spell_id,
-            instance,
-        )
-        return instance
+    if solo_emit_key == "unique_per_conduit_cluster":
+        prebound_owner_creations = spell._owner_creations
+        if prebound_owner_creations is not None:
+            if has_disposal_methods:
+                def execute_cluster_prebound_with_disposal(
+                        caller_creations: Any,
+                        overrides: Optional[Dict[str, Any]],
+                        caller_creations_lock_held: bool = False,
+                ) -> Any:
+                    instance = _invoke_with_overrides(
+                        call_target=call_target,
+                        overrides=overrides,
+                    )
+                    prebound_owner_creations.add_creation(
+                        spell_id,
+                        instance,
+                        has_disposal_methods=True,
+                        disposal_methods=disposal_methods,
+                    )
+                    return instance
 
-    return execute_dynamic_owner
+                return execute_cluster_prebound_with_disposal
+
+            def execute_cluster_prebound(
+                    caller_creations: Any,
+                    overrides: Optional[Dict[str, Any]],
+                    caller_creations_lock_held: bool = False,
+            ) -> Any:
+                instance = _invoke_with_overrides(
+                    call_target=call_target,
+                    overrides=overrides,
+                )
+                prebound_owner_creations.add_creation(
+                    spell_id,
+                    instance,
+                )
+                return instance
+
+            return execute_cluster_prebound
+
+        if has_disposal_methods:
+            def execute_cluster_dynamic_with_disposal(
+                    caller_creations: Any,
+                    overrides: Optional[Dict[str, Any]],
+                    caller_creations_lock_held: bool = False,
+            ) -> Any:
+                instance = _invoke_with_overrides(
+                    call_target=call_target,
+                    overrides=overrides,
+                )
+                dynamic_owner_creations = spell._owner_creations
+                dynamic_owner_creations.add_creation(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=True,
+                    disposal_methods=disposal_methods,
+                )
+                return instance
+
+            return execute_cluster_dynamic_with_disposal
+
+        def execute_cluster_dynamic(
+                caller_creations: Any,
+                overrides: Optional[Dict[str, Any]],
+                caller_creations_lock_held: bool = False,
+        ) -> Any:
+            instance = _invoke_with_overrides(
+                call_target=call_target,
+                overrides=overrides,
+            )
+            dynamic_owner_creations = spell._owner_creations
+            dynamic_owner_creations.add_creation(
+                spell_id,
+                instance,
+            )
+            return instance
+
+        return execute_cluster_dynamic
+
+    if solo_emit_key == "unique_per_conduit_lineage":
+        prebound_owner_creations = spell._owner_creations
+        if prebound_owner_creations is not None:
+            if has_disposal_methods:
+                def execute_lineage_prebound_with_disposal(
+                        caller_creations: Any,
+                        overrides: Optional[Dict[str, Any]],
+                        caller_creations_lock_held: bool = False,
+                ) -> Any:
+                    instance = _invoke_with_overrides(
+                        call_target=call_target,
+                        overrides=overrides,
+                    )
+                    prebound_owner_creations.add_creation(
+                        spell_id,
+                        instance,
+                        has_disposal_methods=True,
+                        disposal_methods=disposal_methods,
+                    )
+                    return instance
+
+                return execute_lineage_prebound_with_disposal
+
+            def execute_lineage_prebound(
+                    caller_creations: Any,
+                    overrides: Optional[Dict[str, Any]],
+                    caller_creations_lock_held: bool = False,
+            ) -> Any:
+                instance = _invoke_with_overrides(
+                    call_target=call_target,
+                    overrides=overrides,
+                )
+                prebound_owner_creations.add_creation(
+                    spell_id,
+                    instance,
+                )
+                return instance
+
+            return execute_lineage_prebound
+
+        if has_disposal_methods:
+            def execute_lineage_dynamic_with_disposal(
+                    caller_creations: Any,
+                    overrides: Optional[Dict[str, Any]],
+                    caller_creations_lock_held: bool = False,
+            ) -> Any:
+                instance = _invoke_with_overrides(
+                    call_target=call_target,
+                    overrides=overrides,
+                )
+                dynamic_owner_creations = spell._owner_creations
+                dynamic_owner_creations.add_creation(
+                    spell_id,
+                    instance,
+                    has_disposal_methods=True,
+                    disposal_methods=disposal_methods,
+                )
+                return instance
+
+            return execute_lineage_dynamic_with_disposal
+
+        def execute_lineage_dynamic(
+                caller_creations: Any,
+                overrides: Optional[Dict[str, Any]],
+                caller_creations_lock_held: bool = False,
+        ) -> Any:
+            instance = _invoke_with_overrides(
+                call_target=call_target,
+                overrides=overrides,
+            )
+            dynamic_owner_creations = spell._owner_creations
+            dynamic_owner_creations.add_creation(
+                spell_id,
+                instance,
+            )
+            return instance
+
+        return execute_lineage_dynamic
+
+    raise RuntimeError(
+        f"Unsupported solo overrides emit key: {solo_emit_key}"
+    )
 
 
 def _invoke_with_overrides(
