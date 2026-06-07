@@ -1327,6 +1327,187 @@ class SpellGeneralizedCodegenPlanBuilder:
             metadata={},
         )
 
+    def _build_fast_plan_data(
+            self,
+            *,
+            steps: List[SpellGeneralizedCodegenPlanStep],
+            instance_key_to_step_index: Dict[InstanceKey, int],
+            root_instance_key: InstanceKey,
+    ) -> FastPlanData:
+        """
+        Build compact arrays for the no-overrides fast path.
+
+        Contract:
+            The dedicated solo/many-only builder split must not remove the
+            generalized builder helper surface. This wrapper preserves the
+            original method contract while delegating to the existing helper
+            implementation body below.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._build_fast_plan_data(
+            self,
+            steps=steps,
+            instance_key_to_step_index=instance_key_to_step_index,
+            root_instance_key=root_instance_key,
+        )
+
+    def _build_fast_transient_plan(
+            self,
+            *,
+            steps: List[SpellGeneralizedCodegenPlanStep],
+            fast_call_targets: List[Any],
+            fast_existence: List[Existence],
+            fast_must_register: List[bool],
+            fast_is_existing_creation: List[bool],
+            fast_is_callable: List[bool],
+            fast_call_modes: List[int],
+            fast_single_dep_indices: List[int],
+            fast_call2_dep_indices_a: List[int],
+            fast_call2_dep_indices_b: List[int],
+            fast_call3_dep_indices_a: List[int],
+            fast_call3_dep_indices_b: List[int],
+            fast_call3_dep_indices_c: List[int],
+            fast_call4_dep_indices_a: List[int],
+            fast_call4_dep_indices_b: List[int],
+            fast_call4_dep_indices_c: List[int],
+            fast_call4_dep_indices_d: List[int],
+            fast_call5_dep_indices_a: List[int],
+            fast_call5_dep_indices_b: List[int],
+            fast_call5_dep_indices_c: List[int],
+            fast_call5_dep_indices_d: List[int],
+            fast_call5_dep_indices_e: List[int],
+            fast_call6_dep_indices_a: List[int],
+            fast_call6_dep_indices_b: List[int],
+            fast_call6_dep_indices_c: List[int],
+            fast_call6_dep_indices_d: List[int],
+            fast_call6_dep_indices_e: List[int],
+            fast_call6_dep_indices_f: List[int],
+            fast_call7_dep_indices_a: List[int],
+            fast_call7_dep_indices_b: List[int],
+            fast_call7_dep_indices_c: List[int],
+            fast_call7_dep_indices_d: List[int],
+            fast_call7_dep_indices_e: List[int],
+            fast_call7_dep_indices_f: List[int],
+            fast_call7_dep_indices_g: List[int],
+            fast_call8_dep_indices_a: List[int],
+            fast_call8_dep_indices_b: List[int],
+            fast_call8_dep_indices_c: List[int],
+            fast_call8_dep_indices_d: List[int],
+            fast_call8_dep_indices_e: List[int],
+            fast_call8_dep_indices_f: List[int],
+            fast_call8_dep_indices_g: List[int],
+            fast_call8_dep_indices_h: List[int],
+            root_step_index: int,
+    ) -> Optional[FastTransientPlan]:
+        """
+        Build a specialized transient-only plan for the no-overrides lane.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._build_fast_transient_plan(
+            self,
+            steps=steps,
+            fast_call_targets=fast_call_targets,
+            fast_existence=fast_existence,
+            fast_must_register=fast_must_register,
+            fast_is_existing_creation=fast_is_existing_creation,
+            fast_is_callable=fast_is_callable,
+            fast_call_modes=fast_call_modes,
+            fast_single_dep_indices=fast_single_dep_indices,
+            fast_call2_dep_indices_a=fast_call2_dep_indices_a,
+            fast_call2_dep_indices_b=fast_call2_dep_indices_b,
+            fast_call3_dep_indices_a=fast_call3_dep_indices_a,
+            fast_call3_dep_indices_b=fast_call3_dep_indices_b,
+            fast_call3_dep_indices_c=fast_call3_dep_indices_c,
+            fast_call4_dep_indices_a=fast_call4_dep_indices_a,
+            fast_call4_dep_indices_b=fast_call4_dep_indices_b,
+            fast_call4_dep_indices_c=fast_call4_dep_indices_c,
+            fast_call4_dep_indices_d=fast_call4_dep_indices_d,
+            fast_call5_dep_indices_a=fast_call5_dep_indices_a,
+            fast_call5_dep_indices_b=fast_call5_dep_indices_b,
+            fast_call5_dep_indices_c=fast_call5_dep_indices_c,
+            fast_call5_dep_indices_d=fast_call5_dep_indices_d,
+            fast_call5_dep_indices_e=fast_call5_dep_indices_e,
+            fast_call6_dep_indices_a=fast_call6_dep_indices_a,
+            fast_call6_dep_indices_b=fast_call6_dep_indices_b,
+            fast_call6_dep_indices_c=fast_call6_dep_indices_c,
+            fast_call6_dep_indices_d=fast_call6_dep_indices_d,
+            fast_call6_dep_indices_e=fast_call6_dep_indices_e,
+            fast_call6_dep_indices_f=fast_call6_dep_indices_f,
+            fast_call7_dep_indices_a=fast_call7_dep_indices_a,
+            fast_call7_dep_indices_b=fast_call7_dep_indices_b,
+            fast_call7_dep_indices_c=fast_call7_dep_indices_c,
+            fast_call7_dep_indices_d=fast_call7_dep_indices_d,
+            fast_call7_dep_indices_e=fast_call7_dep_indices_e,
+            fast_call7_dep_indices_f=fast_call7_dep_indices_f,
+            fast_call7_dep_indices_g=fast_call7_dep_indices_g,
+            fast_call8_dep_indices_a=fast_call8_dep_indices_a,
+            fast_call8_dep_indices_b=fast_call8_dep_indices_b,
+            fast_call8_dep_indices_c=fast_call8_dep_indices_c,
+            fast_call8_dep_indices_d=fast_call8_dep_indices_d,
+            fast_call8_dep_indices_e=fast_call8_dep_indices_e,
+            fast_call8_dep_indices_f=fast_call8_dep_indices_f,
+            fast_call8_dep_indices_g=fast_call8_dep_indices_g,
+            fast_call8_dep_indices_h=fast_call8_dep_indices_h,
+            root_step_index=root_step_index,
+        )
+
+    @staticmethod
+    def _creation_target_for_existence(existence: Existence) -> int:
+        """
+        Map an existence policy to the runtime creations-target kind.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._creation_target_for_existence(
+            existence
+        )
+
+    @staticmethod
+    def _lock_hint_for_existence(existence: Existence) -> str:
+        """
+        Return the preferred runtime lock family for an existence policy.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._lock_hint_for_existence(
+            existence
+        )
+
+    @staticmethod
+    def _should_register(runtime_record: "SpellRuntimeRecord") -> bool:
+        """
+        Decide whether a spell result must be registered.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._should_register(runtime_record)
+
+    def _occurrence_for_instance_key(self, instance_key: InstanceKey) -> OccurrenceKey:
+        """
+        Resolve the occurrence key backing one instance key.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._occurrence_for_instance_key(
+            self,
+            instance_key,
+        )
+
+    @staticmethod
+    def _extract_param_keys(
+            inject_spec: Optional["SpellInjectionInstanceSpec"],
+    ) -> Tuple[
+        List[InstanceKey],
+        Dict[str, List[InstanceKey]],
+        List[str],
+        List[str],
+    ]:
+        """
+        Flatten dependency, override, and contract keys from one injection spec.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._extract_param_keys(inject_spec)
+
+    @staticmethod
+    def _extract_param_keys_no_overrides(
+            inject_spec: Optional["SpellInjectionInstanceSpec"],
+    ) -> Tuple[List[InstanceKey], Dict[str, List[InstanceKey]]]:
+        """
+        Flatten only dependency keys for the no-overrides branch.
+        """
+        return SpellManyOnlyCodegenPlanBuilder._extract_param_keys_no_overrides(
+            inject_spec
+        )
+
 
 class SpellSoloCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
     """

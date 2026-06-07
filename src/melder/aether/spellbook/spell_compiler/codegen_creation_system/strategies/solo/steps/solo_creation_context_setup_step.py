@@ -34,21 +34,8 @@ class SoloCreationContextSetupStep(CodegenCreationFamilyStep):
         """
         spell_codegen_model = state.spell_codegen_model
         spell_runtime_shape = spell_codegen_model.spell_runtime_shape
-        if spell_runtime_shape is None:
-            raise RuntimeError(
-                "Solo creation setup requires spell_runtime_shape."
-            )
-        if spell_runtime_shape.spell_count != 1:
-            raise RuntimeError(
-                "Solo creation setup requires exactly one visible spell."
-            )
-
         root_spell_id = self._resolve_root_spell_id(spell_codegen_model)
-        runtime_record = spell_runtime_shape.records_by_spell_id.get(root_spell_id)
-        if runtime_record is None:
-            raise RuntimeError(
-                f"Solo creation setup could not resolve root spell '{root_spell_id}'."
-            )
+        runtime_record = spell_runtime_shape.records_by_spell_id[root_spell_id]
 
         route_key = self._resolve_route_key(spell_codegen_model)
         fast_transient_no_overrides_enabled = (
@@ -73,19 +60,9 @@ class SoloCreationContextSetupStep(CodegenCreationFamilyStep):
         graph_shape = spell_codegen_model.graph_shape
         if graph_shape is not None:
             return graph_shape.root_spell_id
-
-        spell_runtime_shape = spell_codegen_model.spell_runtime_shape
-        if spell_runtime_shape is None:
-            raise RuntimeError(
-                "Solo creation setup requires graph or runtime truth."
-            )
-        if len(spell_runtime_shape.records_by_spell_id) != 1:
-            raise RuntimeError(
-                "Solo creation setup requires exactly one visible runtime spell."
-            )
-        for spell_id in spell_runtime_shape.records_by_spell_id.keys():
-            return spell_id
-        raise RuntimeError("Solo creation setup could not resolve a root spell id.")
+        return next(
+            iter(spell_codegen_model.spell_runtime_shape.records_by_spell_id.keys())
+        )
 
     @staticmethod
     def _resolve_route_key(
@@ -94,19 +71,6 @@ class SoloCreationContextSetupStep(CodegenCreationFamilyStep):
         """
         Resolve the current creation-context route key from model truth.
         """
-        build_kind = spell_codegen_model.build_kind
-        if build_kind == "existing_creation":
+        if spell_codegen_model.build_kind == "existing_creation":
             return "existing_creation"
-
-        route_family = spell_codegen_model.route_family
-        if route_family in (
-                "spellspace",
-                "unique_per_conduit",
-                "many",
-                "shared",
-        ):
-            return route_family
-        raise RuntimeError(
-            "SpellCodegenModel route_family is not ready for solo creation-context "
-            f"setup: {route_family!r}."
-        )
+        return spell_codegen_model.route_family

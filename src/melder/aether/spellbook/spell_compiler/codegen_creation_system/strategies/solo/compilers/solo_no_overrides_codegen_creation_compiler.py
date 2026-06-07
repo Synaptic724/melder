@@ -88,18 +88,7 @@ def _resolve_creations_for_route(
             "spellspace",
     ):
         return caller_creations
-    if resolve_route_key == "shared":
-        spell_owner_creations = spell._owner_creations
-        if spell_owner_creations is not None:
-            return spell_owner_creations
-        if owner_creations is None:
-            raise RuntimeError(
-                "Solo shared no-overrides execution requires owner_creations."
-            )
-        return owner_creations
-    raise RuntimeError(
-        f"Unsupported solo no-overrides route '{resolve_route_key}'."
-    )
+    return spell._owner_creations or owner_creations
 
 
 def _register_solo_instance(
@@ -141,12 +130,6 @@ def _register_solo_instance(
             ),
         )
         return
-
-    raise RuntimeError(
-        f"[MELD] Unsupported Existence '{existence}' for solo registration "
-        f"(spell_id={spell.spell_id})."
-    )
-
 
 def _normalize_disposal_methods(
         disposal_method_names: Sequence[str],

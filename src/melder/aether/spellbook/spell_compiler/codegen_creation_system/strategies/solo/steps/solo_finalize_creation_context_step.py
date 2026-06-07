@@ -32,10 +32,6 @@ class SoloFinalizeCreationContextStep(CodegenCreationFamilyStep):
         Publish the solo route metadata onto the final output artifact.
         """
         resolve_route_key = state.resolve_route_key
-        if resolve_route_key is None:
-            raise RuntimeError(
-                "Solo finalize creation-context step requires resolve_route_key."
-            )
         spell_codegen_creation = state.spell_codegen_creation
         spell_codegen_creation.metadata["resolve_route_key"] = resolve_route_key
         spell_codegen_creation.metadata["fast_transient_no_overrides_enabled"] = (

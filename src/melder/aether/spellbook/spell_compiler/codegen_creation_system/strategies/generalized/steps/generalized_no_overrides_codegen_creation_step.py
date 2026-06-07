@@ -75,6 +75,9 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         spell_codegen_creation.metadata["no_overrides_executor_signature"] = (
             executor_signature
         )
+        spell_codegen_creation.metadata["_no_overrides_executor_signature"] = (
+            executor_signature
+        )
 
     @staticmethod
     def _build_executor_signature(

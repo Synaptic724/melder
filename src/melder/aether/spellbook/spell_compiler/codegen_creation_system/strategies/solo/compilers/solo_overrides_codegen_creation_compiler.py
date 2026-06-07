@@ -77,16 +77,7 @@ def _resolve_creations_for_route(
             "spellspace",
     ):
         return caller_creations
-    if resolve_route_key == "shared":
-        spell_owner_creations = spell._owner_creations
-        if spell_owner_creations is None:
-            raise RuntimeError(
-                "Solo shared overrides execution requires spell._owner_creations."
-            )
-        return spell_owner_creations
-    raise RuntimeError(
-        f"Unsupported solo overrides route '{resolve_route_key}'."
-    )
+    return spell._owner_creations
 
 
 def _split_override_payload(
@@ -174,12 +165,6 @@ def _register_solo_instance(
             ),
         )
         return
-
-    raise RuntimeError(
-        f"[MELD] Unsupported Existence '{existence}' for solo overrides registration "
-        f"(spell_id={spell.spell_id})."
-    )
-
 
 def _normalize_disposal_methods(
         disposal_method_names: Sequence[str],

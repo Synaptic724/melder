@@ -35,15 +35,7 @@ class SoloNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         Populate the solo no-overrides executor.
         """
         root_spell = state.root_spell
-        if root_spell is None:
-            raise RuntimeError(
-                "Solo no-overrides codegen creation requires root_spell."
-            )
         resolve_route_key = state.resolve_route_key
-        if resolve_route_key is None:
-            raise RuntimeError(
-                "Solo no-overrides codegen creation requires resolve_route_key."
-            )
         spell_codegen_creation = state.spell_codegen_creation
         spell_codegen_plan = state.spell_codegen_plan
 
@@ -54,9 +46,7 @@ class SoloNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
                 state.fast_transient_no_overrides_enabled
             ),
         )
-        lane_id = "solo_no_overrides"
-        if spell_codegen_plan.no_overrides_plan is not None:
-            lane_id = spell_codegen_plan.no_overrides_plan.lane_id
+        lane_id = spell_codegen_plan.no_overrides_plan.lane_id
         signature = (
             "solo",
             resolve_route_key,
