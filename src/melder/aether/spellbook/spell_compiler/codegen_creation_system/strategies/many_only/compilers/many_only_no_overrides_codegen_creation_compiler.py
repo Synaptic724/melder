@@ -280,7 +280,12 @@ def _compile_no_overrides_executor_from_steps(
         Callable[..., Any]:
             Compiled no-overrides executor for the provided plan shape.
     """
-    if transient_schema is not None:
+    has_any_disposal_methods = any(
+        plan_step.spell.has_disposal_methods
+        for plan_step in steps
+    )
+
+    if transient_schema is not None and not has_any_disposal_methods:
         normalized_transient_schema = _normalize_transient_schema(
             transient_schema=transient_schema,
         )
@@ -303,15 +308,21 @@ def _compile_no_overrides_executor_from_steps(
 
     step_source = _build_step_plan_executor_source(
         steps=steps,
+        has_any_disposal_methods=has_any_disposal_methods,
     )
     step_namespace = _build_step_executor_namespace(
         steps=steps,
         root_instance_key=root_instance_key,
+        has_any_disposal_methods=has_any_disposal_methods,
     )
     return _compile_emitted_no_overrides_executor(
         source=step_source,
         namespace=step_namespace,
-        source_name="<melder_no_overrides_codegen_creation_step_executor>",
+        source_name=(
+            "<melder_no_overrides_codegen_creation_step_executor_disposal_aware>"
+            if has_any_disposal_methods
+            else "<melder_no_overrides_codegen_creation_step_executor_disposal_free>"
+        ),
         compile_failure_message=(
             "No-overrides codegen executor generation failed."
         ),
@@ -342,7 +353,6 @@ def _hydrate_steps_from_rows(
         required_fields = (
             "instance_key",
             "spell_id",
-            "existence",
             "creations_target_kind",
             "dependency_resolution_order",
             "uses_positional_override",
@@ -350,7 +360,6 @@ def _hydrate_steps_from_rows(
             "has_contract_payload",
             "contract_payload_items",
             "use_spell_lock_hint",
-            "must_register",
         )
         for field_name in required_fields:
             if field_name not in row:
@@ -365,15 +374,6 @@ def _hydrate_steps_from_rows(
             raise RuntimeError(
                 f"No-overrides codegen step schema references unknown spell_id '{spell_id}'."
             )
-
-        existence_name = row["existence"]
-        try:
-            existence = Existence[existence_name]
-        except KeyError as exc:
-            raise RuntimeError(
-                "No-overrides codegen step schema contains unknown existence "
-                f"'{existence_name}' at index {row_index}."
-            ) from exc
 
         dependency_resolution_order = tuple(
             (
@@ -393,7 +393,6 @@ def _hydrate_steps_from_rows(
             SimpleNamespace(
                 instance_key=tuple(row["instance_key"]),
                 spell=spell,
-                existence=existence,
                 creations_target_kind=row["creations_target_kind"],
                 dependency_resolution_order=dependency_resolution_order,
                 uses_positional_override=row["uses_positional_override"],
@@ -401,7 +400,6 @@ def _hydrate_steps_from_rows(
                 has_contract_payload=row["has_contract_payload"],
                 contract_payload=contract_payload,
                 use_spell_lock_hint=row["use_spell_lock_hint"],
-                must_register=row["must_register"],
             )
         )
     return tuple(hydrated_steps)
@@ -648,6 +646,7 @@ def _emit_construct_instance(
 def _build_step_plan_executor_source(
         *,
         steps: Tuple[Any, ...],
+        has_any_disposal_methods: bool,
 ) -> str:
     """
     Build emitted source for general no-overrides step-plan execution.
@@ -667,9 +666,6 @@ def _build_step_plan_executor_source(
         "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
-        "        step_spell_ids=step_spell_ids,",
-        "        step_has_disposal_methods=step_has_disposal_methods,",
-        "        step_disposal_methods=step_disposal_methods,",
         "        step_instance_keys=step_instance_keys,",
         "        step_dep_keys=step_dep_keys,",
         "        root_instance_key=root_instance_key,",
@@ -681,6 +677,11 @@ def _build_step_plan_executor_source(
         "    ):",
         "    instance_results = {}",
     ]
+    if has_any_disposal_methods:
+        lines.insert(
+            8,
+            "        step_disposal_methods=step_disposal_methods,",
+        )
     for index, plan_step in enumerate(steps):
         _append_step_resolution_source(
             lines=lines,
@@ -766,16 +767,15 @@ def _append_step_resolution_source(
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
-        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
-        (
-            f"    has_disposal_methods_{step_index} = "
-            f"step_has_disposal_methods[{step_index}]"
-        ),
-        (
-            f"    disposal_methods_{step_index} = "
-            f"step_disposal_methods[{step_index}]"
-        ),
     ])
+    if plan_step.spell.has_disposal_methods:
+        lines.extend([
+            f"    spell_id_{step_index} = spell_{step_index}.spell_id",
+            (
+                f"    disposal_methods_{step_index} = "
+                f"step_disposal_methods[{step_index}]"
+            ),
+        ])
     if inlinable_params:
         lines.append(
             f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
@@ -791,18 +791,13 @@ def _append_step_resolution_source(
         inlinable_params=inlinable_params,
         indent="    ",
     )
-    lines.append(f"    with creations_{step_index}._lock:")
-    _emit_construct_instance(
-        lines=lines,
-        step_index=step_index,
-        inlinable_params=inlinable_params,
-        indent="        ",
-    )
-    _append_step_register_source(
-        lines=lines,
-        step_index=step_index,
-        indent="        ",
-    )
+    if plan_step.spell.has_disposal_methods:
+        lines.append(f"    with creations_{step_index}._lock:")
+        _append_step_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="        ",
+        )
     lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
 
 
@@ -817,23 +812,16 @@ def _append_step_register_source(
 
     Contract:
         - Emits the direct many-only registration semantics only.
-        - Registers only when disposal methods exist for the step spell.
+        - Emits only the disposal-aware many registration path.
         - Assumes caller has already emitted the required creations lock.
     """
     lines.extend([
-        f"{indent}if has_disposal_methods_{step_index}:",
-        f"{indent}    creations_{step_index}.add_many_creations(",
-        f"{indent}        spell_id_{step_index},",
-        f"{indent}        instance_{step_index},",
-        (
-            f"{indent}        has_disposal_methods="
-            f"has_disposal_methods_{step_index},"
-        ),
-        (
-            f"{indent}        disposal_methods="
-            f"disposal_methods_{step_index},"
-        ),
-        f"{indent}    )",
+        f"{indent}creations_{step_index}.add_many_creations(",
+        f"{indent}    spell_id_{step_index},",
+        f"{indent}    instance_{step_index},",
+        f"{indent}    has_disposal_methods=True,",
+        f"{indent}    disposal_methods=disposal_methods_{step_index},",
+        f"{indent})",
     ])
 
 
@@ -841,6 +829,7 @@ def _build_step_executor_namespace(
         *,
         steps: Tuple[Any, ...],
         root_instance_key: Tuple[str, Optional[int]],
+        has_any_disposal_methods: bool,
 ) -> Dict[str, Any]:
     """
     Build namespace values for emitted no-overrides step executor source.
@@ -859,18 +848,6 @@ def _build_step_executor_namespace(
             plan_step.spell
             for plan_step in steps
         ),
-        "step_spell_ids": tuple(
-            plan_step.spell.spell_id
-            for plan_step in steps
-        ),
-        "step_has_disposal_methods": tuple(
-            plan_step.spell.has_disposal_methods
-            for plan_step in steps
-        ),
-        "step_disposal_methods": tuple(
-            plan_step.spell.disposal_method_names
-            for plan_step in steps
-        ),
         "step_instance_keys": tuple(
             plan_step.instance_key
             for plan_step in steps
@@ -886,6 +863,14 @@ def _build_step_executor_namespace(
         ),
         "steps": steps,
         "root_instance_key": root_instance_key,
+        "step_disposal_methods": (
+            tuple(
+                plan_step.spell.disposal_method_names
+                for plan_step in steps
+            )
+            if has_any_disposal_methods
+            else ()
+        ),
     }
 
 def _construct_spell_instance(
@@ -901,6 +886,7 @@ def _construct_spell_instance(
         - Applies plan-time contract payload fields.
         - Supports __args__ positional payloads when present.
         - Preserves tuple positional payloads without rebuilding list objects.
+        - Returns raw non-callable spell payloads directly.
         - Raises MeldExecutionError when dependency results are missing or call
           target invocation fails.
     """
@@ -909,15 +895,6 @@ def _construct_spell_instance(
         plan_step=plan_step,
         instance_results=instance_results,
     )
-
-    if spell.existence is Existence.unique and spell.is_existing_creation:
-        instance = spell.user_created_object
-        if instance is None:
-            raise RuntimeError(
-                "[MELD] EXISTING_CREATION spell has no `user_created_object` "
-                f"(spell_id={spell.spell_id})."
-            )
-        return instance
 
     if not (spell.is_class_spell or spell.is_method_spell or spell.is_lambda_spell):
         return spell.spell

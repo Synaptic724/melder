@@ -2,7 +2,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.m
     SpellOverrideTargetingCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler import (
-    compile_overrides_codegen_creation_executor,
+    build_overrides_codegen_creation_step_target_counts_from_rows,
+    compile_overrides_codegen_creation_executor_from_source,
+    emit_overrides_codegen_creation_executor_shape_source,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers as SharedCompilerExecutions,
@@ -120,7 +122,24 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         if graph_shape is not None:
             path_registry = graph_shape.path_registry
 
-        baseline_executor = compile_overrides_codegen_creation_executor(
+        baseline_step_target_counts = (
+            build_overrides_codegen_creation_step_target_counts_from_rows(
+                plan_rows=steps_rows,
+                override_targets_by_spell_id={},
+                path_registry=path_registry,
+            )
+        )
+        baseline_source = emit_overrides_codegen_creation_executor_shape_source(
+            plan_rows=steps_rows,
+            root_spell_id=overrides_plan.root_spell_id,
+            spell_lookup=spell_lookup,
+            override_targeted_spell_ids=(),
+            override_target_counts_by_spell_id=(),
+            override_target_counts_by_step=baseline_step_target_counts,
+            has_root_positional_override=False,
+        )
+        baseline_executor = compile_overrides_codegen_creation_executor_from_source(
+            source=baseline_source,
             execution_plan=None,
             override_targets_by_spell_id={},
             any_overrides_present=False,
