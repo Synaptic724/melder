@@ -1614,7 +1614,7 @@ def test_build_conjure_cache_state_reports_full_hit_path(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify exact spell-id coverage is classified as a full cache hit.
+    Verify live spell-id subset coverage is classified as a full cache hit.
 
     Returns:
         None.
@@ -1692,6 +1692,47 @@ def test_build_conjure_cache_state_reports_mixed_path(
     assert cache_state["is_full_miss"] is False
     assert cache_state["matched_spell_ids"] == {"spell-a"}
     assert cache_state["missing_spell_ids"] == {"spell-b"}
+    assert cache_state["stale_cached_spell_ids"] == {"stale-spell"}
+
+
+def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify stale extra cached spell ids do not force recompilation.
+
+    Returns:
+        None.
+    """
+    caching_system = _StubCachingSystem(
+        {
+            "spell-a": {"spell_id": "spell-a"},
+            "spell-b": {"spell_id": "spell-b"},
+            "stale-spell": {"spell_id": "stale-spell"},
+        }
+    )
+    spellbook = types.SimpleNamespace(
+        _spell_id_pool={"spell-a": object(), "spell-b": object()},
+        _system_caching_enabled_in_aether=lambda: True,
+        _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_read_full_ahead_of_time_compilation",
+        staticmethod(lambda **kwargs: True),
+    )
+
+    cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+        spellbook=spellbook,
+        dynamic=False,
+    )
+
+    assert cache_state["cache_path"] == "full_hit"
+    assert cache_state["is_full_hit"] is True
+    assert cache_state["is_mixed"] is False
+    assert cache_state["is_full_miss"] is False
+    assert cache_state["matched_spell_ids"] == {"spell-a", "spell-b"}
+    assert cache_state["missing_spell_ids"] == set()
     assert cache_state["stale_cached_spell_ids"] == {"stale-spell"}
 
 

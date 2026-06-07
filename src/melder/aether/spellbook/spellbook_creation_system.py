@@ -345,7 +345,7 @@ class SpellbookCreationSystem(Cleanable):
         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
         missing_spell_ids = live_spell_ids.difference(cached_spell_ids)
         stale_cached_spell_ids = cached_spell_ids.difference(live_spell_ids)
-        is_full_hit = bool(live_spell_ids) and live_spell_ids == cached_spell_ids
+        is_full_hit = bool(live_spell_ids) and not missing_spell_ids
         is_mixed = bool(matched_spell_ids) and bool(missing_spell_ids)
         is_full_miss = not is_full_hit and not is_mixed
         return {

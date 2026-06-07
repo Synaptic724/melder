@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
-from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_hooks_overrides_only_executor,
 )

@@ -499,10 +499,10 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     assert caching_system.bundle_path.exists() is False
     spell_payload = caching_system.get_spell_payload(spell_id)
     assert spell_payload is not None
-    assert isinstance(spell_payload, tuple)
-    assert len(spell_payload) == 2
-    assert isinstance(spell_payload[0], CodeType)
-    assert isinstance(spell_payload[1], CodeType)
+    assert "resolve_route_key" not in spell_payload
+    assert "no_overrides" in spell_payload
+    assert "overrides" in spell_payload
+    assert isinstance(spell_payload["no_overrides"]["code_object"], CodeType)
     assert spell.emit_cache() is False
 
 
