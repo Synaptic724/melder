@@ -115,6 +115,29 @@ def test_spellspace_pool_prepare_object_readds_spellspace_to_registry() -> None:
     assert space in registry
 
 
+def test_spellspace_pool_acquire_untracked_skips_registry_reactivation() -> None:
+    """acquire_untracked should reuse a spellspace without re-adding it to the registry."""
+    owner_conduit_id = "conduit-test"
+    creations = _ConduitCreationsStub(owner_conduit_id=owner_conduit_id)
+    conduit_meld = _ConduitMeldStub()
+    registry: set[SpellSpace] = set()
+    pool = SpellSpacePool(
+        owner_conduit_id=owner_conduit_id,
+        conduit_meld=conduit_meld,
+        owner_conduit_creations=creations,
+        spellspace_registry=registry,
+        baseline_idle=1,
+        max_idle=1,
+    )
+    first = pool.acquire()
+    first.cleanup()
+
+    acquired = pool.acquire_untracked()
+
+    assert acquired is first
+    assert acquired not in registry
+
+
 def test_spellspace_pool_destroy_object_uses_permanent_cleanup() -> None:
     """destroy_object should permanently clean a spellspace."""
     owner_conduit_id = "conduit-test"

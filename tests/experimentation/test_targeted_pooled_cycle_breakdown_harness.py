@@ -36,7 +36,6 @@ from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.aether.conduit.spell_space.spell_space_thread_state import (
     SpellSpaceThreadState,
 )
-from melder.utilities.general_base.abstract_elastic_pool import AbstractElasticPool
 from tests.experimentation.test_targeted_lesser_spellspace_meld_cycle_harness import (
     _build_runtime,
     _cleanup_runtime,
@@ -419,7 +418,7 @@ def _measure_pooled_spellspace_breakdown(
         )
 
     def make_pool_acquire_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
-        def wrapped(self: AbstractElasticPool[Any], *args: Any, **kwargs: Any) -> Any:
+        def wrapped(self: SpellSpacePool, *args: Any, **kwargs: Any) -> Any:
             if self is target_pool:
                 return _timed_call(
                     totals,
@@ -553,7 +552,7 @@ def _measure_pooled_spellspace_breakdown(
 
     with ExitStack() as stack:
         stack.enter_context(
-            _patch_method(AbstractElasticPool, "acquire", make_pool_acquire_wrapper)
+            _patch_method(SpellSpacePool, "acquire_untracked", make_pool_acquire_wrapper)
         )
         stack.enter_context(
             _patch_method(_SpellSpaceContextManager, "__enter__", make_context_enter_wrapper)

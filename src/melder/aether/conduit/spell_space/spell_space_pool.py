@@ -83,13 +83,78 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             self,
             obj: SpellSpace,
             *args: Any,
+            track_registry: bool = True,
             **kwargs: Any,
     ) -> SpellSpace:
         """
         Reactivate one spellspace before use.
         """
-        obj._spellspace_registry.add(obj)
+        if track_registry:
+            obj._registry_tracked = True
+            obj._spellspace_registry.add(obj)
         return obj
+
+    def acquire_untracked(self, *args: Any, **kwargs: Any) -> SpellSpace:
+        """
+        Acquire one managed spellspace without registry bookkeeping.
+
+        Purpose:
+            The managed `enter_spellspace()` path already tracks active
+            spellspaces on the conduit-local stack, so it does not need the
+            manual-path registry reactivation performed by `prepare_object()`.
+
+        Contract:
+            - Reuses one idle spellspace when available.
+            - Creates one new spellspace when the idle pool is empty.
+            - Increments the in-use count exactly once per acquire.
+            - Returns the spellspace with `_registry_tracked == False`.
+            - Performs no registry add and no `prepare_object(...)` call.
+        """
+        with self._lock:
+            pooled_space: SpellSpace | None = None
+            if self._enabled and self._idle:
+                pooled_space = self._idle.pop()
+            if pooled_space is None:
+                pooled_space = self.create_object(*args, **kwargs)
+            self._in_use_count += 1
+        return pooled_space
+
+    def acquire(
+            self,
+            *args: Any,
+            track_registry: bool = True,
+            **kwargs: Any,
+    ) -> SpellSpace:
+        """
+        Acquire one spellspace with conduit-local fixed-capacity fast-path rules.
+
+        Purpose:
+            SpellSpace pools are created with fixed `baseline_idle == max_idle`,
+            so the generic elastic-pool stretch/decay bookkeeping does not add
+            value on the hot path. This override keeps the same external acquire
+            contract while skipping the generic time-based policy work.
+
+        Contract:
+            - Reuses one idle spellspace when available.
+            - Creates one new spellspace when the idle pool is empty.
+            - Increments the in-use count exactly once per acquire.
+            - Preserves manual-path registry tracking when `track_registry=True`.
+            - Leaves managed-path spellspaces untracked in the registry when
+              `track_registry=False`.
+        """
+        with self._lock:
+            pooled_space: SpellSpace | None = None
+            if self._enabled and self._idle:
+                pooled_space = self._idle.pop()
+            if pooled_space is None:
+                pooled_space = self.create_object(*args, **kwargs)
+            self._in_use_count += 1
+        return self.prepare_object(
+            pooled_space,
+            *args,
+            track_registry=track_registry,
+            **kwargs,
+        )
 
     def destroy_object(self, obj: SpellSpace) -> None:
         """
@@ -102,12 +167,13 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Return one spellspace to idle storage or destroy it.
 
         Contract:
-            - Uses the same simplified private-pool release policy as
-              `ConduitPool`.
+            - Uses a conduit-local fixed-capacity fast path.
             - Assumes trusted private callers do not double-return the same
               spellspace shell.
-            - Applies at most one decay step only when the idle list is already
-              at the current retained limit.
+            - Retains returned spellspaces while idle capacity remains below the
+              current target.
+            - Destroys excess spellspaces immediately instead of paying generic
+              elastic-pool time/decay bookkeeping that this pool does not need.
         """
         with self._lock:
             if self._in_use_count > 0:
@@ -115,10 +181,4 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             if self._enabled and len(self._idle) < self._target_idle:
                 self._idle.append(obj)
                 return
-            if self._enabled:
-                now = self._time_func()
-                self._apply_decay_once_locked(now)
-                if len(self._idle) < self._target_idle:
-                    self._idle.append(obj)
-                    return
             self.destroy_object(obj)

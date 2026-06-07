@@ -84,10 +84,10 @@ class _SpellSpaceContextManager:
         Acquire and activate one spellspace for this conduit.
 
         Contract:
-            - Creates one spellspace through the owning conduit.
+            - Acquires one managed spellspace through the owning conduit pool.
             - Pushes that spellspace onto the current-thread stack.
         """
-        self._space = self._conduit.create_spellspace()
+        self._space = self._conduit._spellspace_pool.acquire_untracked()
         self._conduit._spellspace_stack.push(self._space)
         return self._space
 
@@ -856,7 +856,7 @@ class Conduit(Cleanable):
             SpellSpace: A new SpellSpace owned by this Conduit.
         """
         self.check_cleaned()
-        return self._spellspace_pool.acquire()
+        return self._spellspace_pool.acquire(track_registry=True)
 
     def _register_spellspace(self, space: SpellSpace) -> None:
         """

@@ -51,6 +51,7 @@ class SpellSpace(Cleanable):
         "_meld",
         "_creations",
         "_owner_conduit_creations",
+        "_registry_tracked",
         "_spellspace_registry",
         "_spellspace_pool",
         "_permanent_cleanup_requested",
@@ -106,6 +107,7 @@ class SpellSpace(Cleanable):
             dynamic_environment=conduit_meld._dynamic_environment,
             meld_hooks=conduit_meld._meld_hooks,
         )
+        self._registry_tracked: bool = False
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
         self._spellspace_pool: SpellSpacePool = spellspace_pool
         self._permanent_cleanup_requested: bool = False
@@ -149,11 +151,16 @@ class SpellSpace(Cleanable):
 
         Contract:
             - Clears spellspace-scoped creations for this spellspace id.
-            - Removes this spellspace from the active registry.
+            - Removes this spellspace from the active registry only when the
+              current lifecycle path registered it there.
+            - Still tolerates direct/manual registry insertion paths by
+              discarding the spellspace when it is currently present.
             - Keeps collaborator references intact for later reuse.
         """
         self._creations.reset_for_pool()
-        self._spellspace_registry.discard(self)
+        if self._registry_tracked or self in self._spellspace_registry:
+            self._spellspace_registry.discard(self)
+            self._registry_tracked = False
         self._permanent_cleanup_requested = False
 
     def _cleanup_for_destroy(self) -> None:
@@ -162,12 +169,16 @@ class SpellSpace(Cleanable):
 
         Contract:
             - Clears spellspace-scoped creations before dropping references.
-            - Removes this spellspace from the current registry.
+            - Removes this spellspace from the current registry when tracked.
+            - Still tolerates direct/manual registry insertion paths by
+              discarding the spellspace when it is currently present.
             - Deletes the pool reference as part of final teardown.
         """
         self._creations.cleanup()
-        self._spellspace_registry.discard(self)
+        if self._registry_tracked or self in self._spellspace_registry:
+            self._spellspace_registry.discard(self)
         self._cleaned = True
+        del self._registry_tracked
         del self._spellspace_registry
         del self._owner_conduit_id
         del self._meld

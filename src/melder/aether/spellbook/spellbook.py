@@ -12,9 +12,6 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
 from melder.aether.spellbook.bind.scan import Scan
-from melder.aether.spellbook.spell_cache_payload_builder import (
-    build_spell_cache_payload,
-)
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.caching_system.caching_system import CachingSystem

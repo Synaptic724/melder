@@ -4,9 +4,6 @@ from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, Lis
 
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.spellbook.spell_cache_payload_builder import (
-    load_spell_cache_payload,
-)
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
