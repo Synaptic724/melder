@@ -415,6 +415,8 @@ class Creations(Cleanable):
               completes.
         """
         with self._lock:
+            if not self._creations and not self._disposable_creations:
+                return
             live_creations = self._creations
             disposable_creations = self._disposable_creations
             self._creations = {}
