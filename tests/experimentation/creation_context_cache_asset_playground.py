@@ -41,9 +41,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers as SharedCompilerExecutions,
 )
-from melder.aether.spellbook.spell_compiler.executor_code_cache import (
-    get_or_compile_executor_code,
-)
 
 
 _CACHE_KIND = "creation_context_cache_asset_playground"
@@ -103,9 +100,10 @@ def build_creation_context_cache_asset(
         root_instance_key=no_overrides_plan.root_instance_key,
         transient_schema=transient_schema,
     )
-    compiled_code = get_or_compile_executor_code(
-        source=emitted_source,
-        source_name=source_name,
+    compiled_code = compile(
+        emitted_source,
+        source_name,
+        "exec",
     )
     creation_metadata = spell_codegen_creation.metadata
     resolve_route_key = creation_metadata.get("resolve_route_key")

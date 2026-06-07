@@ -10,9 +10,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     _get_existing_creation,
     _register_spell_instance_prebound,
 )
-from melder.aether.spellbook.spell_compiler.executor_code_cache import (
-    get_or_compile_executor_code,
-)
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 _MISSING = object()
@@ -130,16 +127,15 @@ def compile_overrides_codegen_creation_executor_code_object(
         - Source must be a non-empty string.
         - Returned code object is safe to execute against different namespaces.
         - Uses the same synthetic filename as direct override compilation.
-        - Resolves the code object through the process-wide executor code
-          cache, so identity-free override source compiled before (this
-          conjure/meld, an earlier one, or another Spellbook) is reused.
+        - Uses direct `compile(...)` and returns the resulting `CodeType`.
     """
     if not isinstance(source, str) or not source:
         raise ValueError("source must be a non-empty string.")
     try:
-        return get_or_compile_executor_code(
-            source=source,
-            source_name="<melder_overrides_codegen_creation_executor>",
+        return compile(
+            source,
+            "<melder_overrides_codegen_creation_executor>",
+            "exec",
         )
     except Exception as exc:
         raise RuntimeError(

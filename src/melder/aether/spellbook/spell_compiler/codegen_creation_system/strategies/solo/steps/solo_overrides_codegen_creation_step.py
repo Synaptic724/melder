@@ -39,14 +39,16 @@ class SoloOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         spell_codegen_creation = state.spell_codegen_creation
         spell_codegen_plan = state.spell_codegen_plan
 
-        executor = compile_solo_overrides_codegen_creation_executor(
+        executor, code_object = compile_solo_overrides_codegen_creation_executor(
             spell=root_spell,
             solo_emit_key=solo_emit_key,
+            return_compiled_code_object=True,
         )
         lane_id = spell_codegen_plan.overrides_plan.lane_id
 
         state.overrides_executor = executor
         spell_codegen_creation.overrides_executor = executor
+        spell_codegen_creation.overrides_code_object = code_object
         spell_codegen_creation.metadata["override_lane_id"] = lane_id
         spell_codegen_creation.metadata["override_root_spell_id"] = (
             state.root_spell_id

@@ -88,15 +88,9 @@ class _CreationGateControllerStub:
 def _make_codegen_creation() -> object:
     """Build the minimal codegen-creation payload consumed by CreationContextBuilder."""
     return SimpleNamespace(
-        no_overrides_executor=(
-            lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "value"
-        ),
-        overrides_executor=(
-            lambda caller_creations, overrides, caller_creations_lock_held=False: "value"
-        ),
-        metadata={
-            "resolve_route_key": "many",
-        },
+        no_overrides_executor=(lambda caller_creations: ("value", True)),
+        overrides_executor=(lambda caller_creations, overrides: ("value", True)),
+        metadata={},
     )
 
 
@@ -128,6 +122,7 @@ def _make_spell(
         _creation_context_factory=None,
         _creation_context_switch=_CounterSwitchStub(),
         _lock=threading.RLock(),
+        _caching_enabled=False,
     )
     return spell
 

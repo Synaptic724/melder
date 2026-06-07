@@ -17,6 +17,9 @@ class SpellCodegenCreation(Cleanable):
           produced this artifact.
         - Runtime-facing output is intentionally narrow:
           `no_overrides_executor` and `overrides_executor`.
+        - The artifact also retains the compiled code objects that produced
+          those executors so cache/export lanes can persist the real compiled
+          outputs without reconstructing them from live callables later.
         - The concrete codegen style chosen by phase 11 is provenance only and
           belongs in metadata, not in the top-level runtime contract.
         - These are the spell-static executor inputs consumed by
@@ -28,7 +31,9 @@ class SpellCodegenCreation(Cleanable):
         "selected_strategy_ids",
         "discovery_reason",
         "no_overrides_executor",
+        "no_overrides_code_object",
         "overrides_executor",
+        "overrides_code_object",
         "metadata",
     ]
 
@@ -40,6 +45,8 @@ class SpellCodegenCreation(Cleanable):
             no_overrides_executor: Optional[Callable[..., Any]],
             overrides_executor: Optional[Callable[..., Any]],
             metadata: Dict[str, Any],
+            no_overrides_code_object: Optional[Any] = None,
+            overrides_code_object: Optional[Any] = None,
     ) -> None:
         """
         Build one codegen creation container.
@@ -54,7 +61,9 @@ class SpellCodegenCreation(Cleanable):
         self.selected_strategy_ids = selected_strategy_ids
         self.discovery_reason = discovery_reason
         self.no_overrides_executor = no_overrides_executor
+        self.no_overrides_code_object = no_overrides_code_object
         self.overrides_executor = overrides_executor
+        self.overrides_code_object = overrides_code_object
         self.metadata = metadata
 
     def cleanup(self) -> None:
@@ -70,5 +79,7 @@ class SpellCodegenCreation(Cleanable):
         del self.selected_strategy_ids
         del self.discovery_reason
         del self.no_overrides_executor
+        del self.no_overrides_code_object
         del self.overrides_executor
+        del self.overrides_code_object
         del self.metadata

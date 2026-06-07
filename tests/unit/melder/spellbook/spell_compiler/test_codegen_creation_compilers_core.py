@@ -194,8 +194,9 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
 
     monkeypatch.setattr(
         overrides_compiler_module,
-        "get_or_compile_executor_code",
-        lambda source, source_name: ("compiled", source, source_name),
+        "compile",
+        lambda source, source_name, mode: ("compiled", source, source_name, mode),
+        raising=False,
     )
     code_object = overrides_compiler_module.compile_overrides_codegen_creation_executor_code_object(
         source="print('x')",
@@ -204,6 +205,7 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
         "compiled",
         "print('x')",
         "<melder_overrides_codegen_creation_executor>",
+        "exec",
     )
 
     calls = []
@@ -275,20 +277,21 @@ def _make_recording_creations() -> SimpleNamespace:
     )
 
 
-def test_solo_no_overrides_compiler_emits_cached_code_and_preserves_registration(
+def test_solo_no_overrides_compiler_emits_compiled_code_and_preserves_registration(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Solo no-overrides should emit source, use the executor cache, and preserve route behavior."""
-    cache_calls = []
+    """Solo no-overrides should emit source, compile directly, and preserve route behavior."""
+    compile_calls = []
 
-    def _compile_with_builtin_cache(*, source: str, source_name: str):
-        cache_calls.append((source, source_name))
+    def _compile_direct(source: str, source_name: str, mode: str):
+        compile_calls.append((source, source_name, mode))
         return compile(source, source_name, "exec")
 
     monkeypatch.setattr(
         solo_no_overrides_compiler_module,
-        "get_or_compile_executor_code",
-        _compile_with_builtin_cache,
+        "compile",
+        _compile_direct,
+        raising=False,
     )
 
     spell = _make_spell("solo-no")
@@ -304,28 +307,30 @@ def test_solo_no_overrides_compiler_emits_cached_code_and_preserves_registration
     result = executor(caller_creations)
 
     assert result == "value:solo-no"
-    assert len(cache_calls) == 1
-    assert cache_calls[0][1].startswith("<solo_no_overrides_codegen_creation:")
+    assert len(compile_calls) == 1
+    assert compile_calls[0][1].startswith("<solo_no_overrides_codegen_creation:")
+    assert compile_calls[0][2] == "exec"
     assert caller_creations.add_creation_calls == [
         (("solo-no", "value:solo-no"), {})
     ]
     assert caller_creations.add_many_calls == []
 
 
-def test_solo_overrides_compiler_emits_cached_code_and_preserves_override_behavior(
+def test_solo_overrides_compiler_emits_compiled_code_and_preserves_override_behavior(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Solo overrides should emit source, use the executor cache, and preserve root-only override behavior."""
-    cache_calls = []
+    """Solo overrides should emit source, compile directly, and preserve root-only override behavior."""
+    compile_calls = []
 
-    def _compile_with_builtin_cache(*, source: str, source_name: str):
-        cache_calls.append((source, source_name))
+    def _compile_direct(source: str, source_name: str, mode: str):
+        compile_calls.append((source, source_name, mode))
         return compile(source, source_name, "exec")
 
     monkeypatch.setattr(
         solo_overrides_compiler_module,
-        "get_or_compile_executor_code",
-        _compile_with_builtin_cache,
+        "compile",
+        _compile_direct,
+        raising=False,
     )
 
     def _call_target(*args, **kwargs):
@@ -358,8 +363,9 @@ def test_solo_overrides_compiler_emits_cached_code_and_preserves_override_behavi
             "right": "value",
         },
     }
-    assert len(cache_calls) == 1
-    assert cache_calls[0][1].startswith("<solo_overrides_codegen_creation:")
+    assert len(compile_calls) == 1
+    assert compile_calls[0][1].startswith("<solo_overrides_codegen_creation:")
+    assert compile_calls[0][2] == "exec"
     assert caller_creations.add_creation_calls == [
         (("solo-over", result), {})
     ]

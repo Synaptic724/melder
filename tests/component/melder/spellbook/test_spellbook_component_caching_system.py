@@ -1,6 +1,7 @@
 import inspect
 from pathlib import Path
 import shutil
+from types import CodeType
 
 import pytest
 
@@ -496,11 +497,10 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     assert caching_system.has_spell_payload(spell_id) is True
     spell_payload = caching_system.get_spell_payload(spell_id)
     assert spell_payload is not None
-    assert spell_payload["resolve_route_key"] == "shared"
-    assert "no_overrides_executor" in spell_payload
-    assert "overrides_executor" in spell_payload
-    assert callable(spell_payload["no_overrides_executor"])
-    assert callable(spell_payload["overrides_executor"])
+    assert isinstance(spell_payload, tuple)
+    assert len(spell_payload) == 2
+    assert isinstance(spell_payload[0], CodeType)
+    assert isinstance(spell_payload[1], CodeType)
     assert spell.emit_cache() is False
 
 

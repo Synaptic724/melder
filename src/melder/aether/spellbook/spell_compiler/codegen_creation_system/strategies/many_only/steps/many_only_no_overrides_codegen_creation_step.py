@@ -47,8 +47,11 @@ class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
                 "Many-only no-overrides codegen creation requires a no_overrides_plan."
             )
 
-        compiled_executor = compile_no_overrides_codegen_creation_executor_from_plan(
-            plan=no_overrides_plan,
+        compiled_executor, compiled_code_object = (
+            compile_no_overrides_codegen_creation_executor_from_plan(
+                plan=no_overrides_plan,
+                return_compiled_code_object=True,
+            )
         )
         executor_signature = self._build_executor_signature(
             no_overrides_plan=no_overrides_plan,
@@ -56,6 +59,7 @@ class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
 
         state.base_no_overrides_executor = compiled_executor
         spell_codegen_creation.no_overrides_executor = compiled_executor
+        spell_codegen_creation.no_overrides_code_object = compiled_code_object
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
             no_overrides_plan.lane_id
         )

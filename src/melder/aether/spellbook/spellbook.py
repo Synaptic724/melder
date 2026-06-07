@@ -763,10 +763,15 @@ and logging.
         caching_system = self._get_or_create_caching_system()
         if caching_system.has_spell_payload(spell.spell_id):
             return False
-        creation_context = spell._creation_context
-        if creation_context is None:
+        spell_codegen_creation = spell._compiler_artifact._spell_codegen_creation
+        if spell_codegen_creation is None:
             return False
-        spell_payload = creation_context.output_cache()
+        spell_payload = (
+            spell_codegen_creation.no_overrides_code_object,
+            spell_codegen_creation.overrides_code_object,
+        )
+        if spell_payload == (None, None):
+            return False
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
         return True
 

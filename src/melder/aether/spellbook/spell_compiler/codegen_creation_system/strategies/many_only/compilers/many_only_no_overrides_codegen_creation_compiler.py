@@ -1,8 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
-from melder.aether.spellbook.spell_compiler.executor_code_cache import (
-    get_or_compile_executor_code,
-)
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
@@ -143,7 +140,8 @@ def compile_no_overrides_codegen_creation_executor_from_plan(
         *,
         plan: Any,
         transient_schema: Optional[Dict[str, Any]] = None,
-) -> Optional[Callable[..., Any]]:
+        return_compiled_code_object: bool = False,
+) -> Optional[Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]]:
     """
     Compile a spell-scoped no-overrides codegen executor from a generalized lane plan.
 
@@ -195,6 +193,7 @@ def compile_no_overrides_codegen_creation_executor_from_plan(
         missing_root_instance_key_message=(
             "No-overrides codegen plan is missing a resolvable root instance key."
         ),
+        return_compiled_code_object=return_compiled_code_object,
     )
 
 
@@ -205,7 +204,8 @@ def _compile_no_overrides_executor_from_entry_inputs(
         root_spell_id: Optional[str],
         transient_schema: Optional[Dict[str, Any]],
         missing_root_instance_key_message: str,
-) -> Callable[..., Any]:
+        return_compiled_code_object: bool = False,
+) -> Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]:
     """
     Resolve shared entrypoint inputs, then compile no-overrides executor source.
 
@@ -250,6 +250,7 @@ def _compile_no_overrides_executor_from_entry_inputs(
         steps=steps,
         root_instance_key=resolved_root_instance_key,
         transient_schema=transient_schema,
+        return_compiled_code_object=return_compiled_code_object,
     )
 
 
@@ -258,7 +259,8 @@ def _compile_no_overrides_executor_from_steps(
         steps: Tuple[Any, ...],
         root_instance_key: Tuple[str, Optional[int]],
         transient_schema: Optional[Dict[str, Any]],
-) -> Callable[..., Any]:
+        return_compiled_code_object: bool = False,
+) -> Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]:
     """
     Compile a no-overrides executor from hydrated steps plus optional transient schema.
 
@@ -307,6 +309,7 @@ def _compile_no_overrides_executor_from_steps(
                 compile_failure_message=(
                     "No-overrides codegen transient executor generation failed."
                 ),
+                return_compiled_code_object=return_compiled_code_object,
             )
 
     step_source = _build_step_plan_executor_source(
@@ -329,6 +332,7 @@ def _compile_no_overrides_executor_from_steps(
         compile_failure_message=(
             "No-overrides codegen executor generation failed."
         ),
+        return_compiled_code_object=return_compiled_code_object,
     )
 
 
@@ -568,25 +572,21 @@ def _compile_emitted_no_overrides_executor(
         namespace: Dict[str, Any],
         source_name: str,
         compile_failure_message: str,
-) -> Callable[..., Any]:
+        return_compiled_code_object: bool = False,
+) -> Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]:
     """
     Compile generated no-overrides source and return the emitted executor.
 
     Contract:
         - Raises RuntimeError when source compilation/execution fails.
         - Raises RuntimeError when the emitted executor symbol is not callable.
-        - Resolves the code object through the process-wide executor code
-          cache: identity-free source that has been compiled before (this
-          conjure, an earlier conjure, or another Spellbook) reuses the cached
-          code object instead of recompiling. `exec` still runs per call
-          against the supplied per-spell `namespace`.
+        - Uses direct `compile(...)` for emitted source.
+        - When `return_compiled_code_object` is true, also returns the
+          compiled `CodeType`.
     """
     local_namespace: Dict[str, Any] = {}
     try:
-        code_object = get_or_compile_executor_code(
-            source=source,
-            source_name=source_name,
-        )
+        code_object = compile(source, source_name, "exec")
         exec(
             code_object,
             namespace,
@@ -597,6 +597,8 @@ def _compile_emitted_no_overrides_executor(
     executor = local_namespace.get("_no_overrides_codegen_creation_executor")
     if callable(executor):
         compiled_executor: Callable[..., Any] = executor
+        if return_compiled_code_object:
+            return compiled_executor, code_object
         return compiled_executor
     raise RuntimeError(
         "No-overrides codegen executor source did not define a callable _no_overrides_codegen_creation_executor."

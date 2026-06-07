@@ -1,8 +1,4 @@
-from typing import Any, Callable, Optional, Sequence, Tuple
-
-from melder.aether.spellbook.spell_compiler.executor_code_cache import (
-    get_or_compile_executor_code,
-)
+from typing import Any, Callable, Optional, Sequence, Tuple, Union
 
 
 def compile_solo_no_overrides_codegen_creation_executor(
@@ -10,19 +6,22 @@ def compile_solo_no_overrides_codegen_creation_executor(
         spell: Any,
         solo_emit_key: str,
         fast_transient_no_overrides_enabled: bool,
-) -> Callable[..., Any]:
+        return_compiled_code_object: bool = False,
+) -> Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]:
     """
     Compile the solo no-overrides executor for one root spell.
 
     Purpose:
         Emit deterministic per-lane source for the solo family so the code
-        object can be cached instead of returning handwritten Python closures.
+        object can be retained instead of returning handwritten Python closures.
 
     Contract:
         - Preserves the current callable contract exactly.
         - Emits the same route/existence logic that previously lived in the
           handwritten closure branches in this file.
-        - Reuses the process-wide executor cache keyed by emitted source.
+        - Uses direct `compile(...)` for emitted source.
+        - When `return_compiled_code_object` is true, also returns the
+          compiled `CodeType`.
     """
     has_disposal_methods = spell.has_disposal_methods
     has_prebound_owner_creations = spell._owner_creations is not None
@@ -50,10 +49,7 @@ def compile_solo_no_overrides_codegen_creation_executor(
         ),
     }
     try:
-        code_object = get_or_compile_executor_code(
-            source=source,
-            source_name=source_name,
-        )
+        code_object = compile(source, source_name, "exec")
         exec(code_object, namespace, local_namespace)
     except Exception as exc:
         raise RuntimeError(
@@ -62,6 +58,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
     executor = local_namespace.get("_solo_no_overrides_codegen_creation_executor")
     if callable(executor):
         compiled_executor: Callable[..., Any] = executor
+        if return_compiled_code_object:
+            return compiled_executor, code_object
         return compiled_executor
     raise RuntimeError(
         "Solo no-overrides codegen source did not define callable "

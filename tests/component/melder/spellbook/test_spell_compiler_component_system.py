@@ -698,7 +698,7 @@ def test_component_spell_compiler_system_phase11_builds_execution_plans() -> Non
         artifact = consumer_spell._compiler_artifact
         creation = artifact._spell_codegen_creation
         assert creation is not None
-        assert creation.metadata["resolve_route_key"] is not None
+        assert "resolve_route_key" not in creation.metadata
         assert creation.no_overrides_executor is not None
         assert creation.metadata["_no_overrides_executor_signature"] is not None
     finally:

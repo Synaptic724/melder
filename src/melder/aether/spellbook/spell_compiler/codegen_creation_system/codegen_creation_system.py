@@ -87,7 +87,9 @@ class CodegenCreationSystem(Cleanable):
             selected_strategy_ids=(),
             discovery_reason=None,
             no_overrides_executor=None,
+            no_overrides_code_object=None,
             overrides_executor=None,
+            overrides_code_object=None,
             metadata={},
         )
         discovery = self._discovery_system.discover(

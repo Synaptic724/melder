@@ -242,6 +242,8 @@ def test_spell_codegen_creation_cleanup_cleans_metadata() -> None:
         no_overrides_executor=lambda caller_creations: ("plain", True),
         overrides_executor=lambda caller_creations, overrides: ("override", False),
         metadata={"hello": "world"},
+        no_overrides_code_object=object(),
+        overrides_code_object=object(),
     )
 
     creation.cleanup()
@@ -448,7 +450,10 @@ def test_no_overrides_step_records_base_executor_and_signature(
     monkeypatch.setattr(
         no_overrides_step_module,
         "compile_no_overrides_codegen_creation_executor_from_plan",
-        lambda *, plan, transient_schema: ("executor", plan.lane_id, transient_schema),
+        lambda *, plan, transient_schema, return_compiled_code_object=False: (
+            ("executor", plan.lane_id, transient_schema),
+            "code-object",
+        ) if return_compiled_code_object else ("executor", plan.lane_id, transient_schema),
     )
 
     state = _make_generalized_state(
@@ -468,6 +473,7 @@ def test_no_overrides_step_records_base_executor_and_signature(
         "no_overrides",
         {"schema": ("transient",)},
     )
+    assert creation.no_overrides_code_object == "code-object"
     assert creation.metadata["no_overrides_executor_signature"] == "sig:4"
     assert creation.metadata["no_overrides_fast_transient_available"] is True
 
@@ -521,7 +527,10 @@ def test_many_only_no_overrides_step_records_many_executor_and_signature(
     monkeypatch.setattr(
         many_only_no_overrides_step_module,
         "compile_no_overrides_codegen_creation_executor_from_plan",
-        lambda *, plan: ("executor", plan.lane_id),
+        lambda *, plan, return_compiled_code_object=False: (
+            ("executor", plan.lane_id),
+            "code-object",
+        ) if return_compiled_code_object else ("executor", plan.lane_id),
     )
 
     state = ManyOnlyCodegenCreationState(
@@ -533,6 +542,7 @@ def test_many_only_no_overrides_step_records_many_executor_and_signature(
 
     assert creation.no_overrides_executor == ("executor", "many_only_no_overrides")
     assert state.base_no_overrides_executor == ("executor", "many_only_no_overrides")
+    assert creation.no_overrides_code_object == "code-object"
     assert creation.metadata["no_overrides_plan_kind"] == "many_only_no_overrides"
 
 
@@ -659,7 +669,9 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
         ),
         metadata={},
     )
-    base_no_overrides_executor = lambda caller_creations, owner_creations=None, caller_creations_lock_held=False: "base-no-overrides"
+    base_no_overrides_executor = (
+        lambda caller_creations=None, owner_creations=None, caller_creations_lock_held=False: "base-no-overrides"
+    )
     creation = SpellCodegenCreation(
         selected_strategy_ids=(),
         discovery_reason=None,
@@ -698,27 +710,29 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
 
     strategy.apply(family_state)
 
-    assert creation.no_overrides_executor is base_no_overrides_executor
+    assert callable(creation.no_overrides_executor)
     assert callable(creation.overrides_executor)
-    assert creation.metadata["resolve_route_key"] == "many"
-    assert creation.metadata["fast_transient_no_overrides_enabled"] is True
+    assert creation.no_overrides_code_object is creation.no_overrides_executor.__code__
+    assert creation.overrides_code_object is creation.overrides_executor.__code__
+    assert "resolve_route_key" not in creation.metadata
+    assert "fast_transient_no_overrides_enabled" not in creation.metadata
 
 
 def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The solo phase-11 family should use solo-owned steps and publish narrow runtime metadata."""
-    sentinel_no_overrides = object()
-    sentinel_overrides = object()
+    sentinel_no_overrides = lambda caller_creations=None, owner_creations=None, caller_creations_lock_held=False: "plain"
+    sentinel_overrides = lambda caller_creations, overrides, caller_creations_lock_held=False: "override"
     monkeypatch.setattr(
         solo_no_overrides_step_module,
         "compile_solo_no_overrides_codegen_creation_executor",
-        lambda **kwargs: sentinel_no_overrides,
+        lambda **kwargs: (sentinel_no_overrides, "code-object"),
     )
     monkeypatch.setattr(
         solo_overrides_step_module,
         "compile_solo_overrides_codegen_creation_executor",
-        lambda **kwargs: sentinel_overrides,
+        lambda **kwargs: (sentinel_overrides, "code-object"),
     )
 
     root_spell = SimpleNamespace(
@@ -762,10 +776,12 @@ def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(
 
     SoloCodegenCreationStrategy().apply(model, plan, creation)
 
-    assert creation.no_overrides_executor is sentinel_no_overrides
-    assert creation.overrides_executor is sentinel_overrides
-    assert creation.metadata["resolve_route_key"] == "many"
-    assert creation.metadata["fast_transient_no_overrides_enabled"] is True
+    assert callable(creation.no_overrides_executor)
+    assert callable(creation.overrides_executor)
+    assert creation.no_overrides_code_object is not None
+    assert creation.overrides_code_object is not None
+    assert "resolve_route_key" not in creation.metadata
+    assert "fast_transient_no_overrides_enabled" not in creation.metadata
     assert creation.metadata["creation_context_strategy"] == "solo_codegen_creation"
     assert creation.metadata["no_overrides_step_count"] == 1
     assert creation.metadata["override_step_count"] == 1

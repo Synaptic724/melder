@@ -28,7 +28,10 @@ class _ContextStub:
         self.cleanup_calls += 1
 
     def output_cache(self) -> dict[str, object]:
-        return {"resolve_route_key": "many"}
+        return {
+            "no_overrides_executor": "no-overrides",
+            "overrides_executor": "overrides",
+        }
 
 
 class _BuilderStub:

@@ -1371,7 +1371,6 @@ class SharedCompilerExecutions:
             None if no_overrides_plan is None else len(no_overrides_plan.steps),
             None if overrides_plan is None else overrides_plan.root_spell_id,
             None if overrides_plan is None else len(overrides_plan.steps),
-            creation_metadata.get("resolve_route_key"),
             creation_metadata.get("_no_overrides_executor_signature"),
         )
 
@@ -1404,10 +1403,6 @@ class SharedCompilerExecutions:
             },
             "creation": None if spell_codegen_creation is None else {
                 "selected_strategy_ids": spell_codegen_creation.selected_strategy_ids,
-                "resolve_route_key": creation_metadata.get("resolve_route_key"),
-                "fast_transient_no_overrides_enabled": (
-                    creation_metadata.get("fast_transient_no_overrides_enabled")
-                ),
                 "no_overrides_executor_signature": (
                     creation_metadata.get("_no_overrides_executor_signature")
                 ),

@@ -1,5 +1,9 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
+from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
+    compile_creation_context_hooks_no_overrides_executor,
+    compile_creation_context_hooks_overrides_only_executor,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
 )
@@ -18,6 +22,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     CodegenCreationFamilyStep,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.spell_space_scope_error import (
+    SpellSpaceScopeError,
+)
 
 
 class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
@@ -95,11 +102,35 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
             empty_shape_key=state.override_empty_shape_key,
             baseline_executor=state.override_baseline_executor,
         )
+        no_overrides_runtime = (
+            compile_creation_context_hooks_no_overrides_executor(
+                resolve_route_key=route_key,
+                fast_transient_no_overrides_enabled=False,
+                spell=root_spell,
+                spell_id=root_spell.spell_id,
+                owner_creations=root_spell._owner_creations,
+                no_overrides_executor=base_no_overrides_executor,
+                spell_space_scope_error_type=SpellSpaceScopeError,
+            )
+        )
+        overrides_creation_runtime = (
+            compile_creation_context_hooks_overrides_only_executor(
+                resolve_route_key=route_key,
+                spell=root_spell,
+                spell_id=root_spell.spell_id,
+                owner_creations=root_spell._owner_creations,
+                no_overrides_executor=base_no_overrides_executor,
+                execute_with_overrides=overrides_runtime,
+                meld_execution_error_type=MeldExecutionError,
+                spell_space_scope_error_type=SpellSpaceScopeError,
+            )
+        )
 
         state.overrides_executor = overrides_runtime
-        spell_codegen_creation.no_overrides_executor = base_no_overrides_executor
-        spell_codegen_creation.overrides_executor = overrides_runtime
-        spell_codegen_creation.metadata["resolve_route_key"] = route_key
+        spell_codegen_creation.no_overrides_executor = no_overrides_runtime
+        spell_codegen_creation.overrides_executor = overrides_creation_runtime
+        spell_codegen_creation.no_overrides_code_object = no_overrides_runtime.__code__
+        spell_codegen_creation.overrides_code_object = overrides_creation_runtime.__code__
         spell_codegen_creation.metadata["no_overrides_lane_id"] = (
             no_overrides_plan.lane_id
         )
