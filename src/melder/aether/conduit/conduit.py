@@ -84,10 +84,16 @@ class _SpellSpaceContextManager:
         Acquire and activate one spellspace for this conduit.
 
         Contract:
-            - Acquires one managed spellspace through the owning conduit pool.
+            - Borrows one managed spellspace shell through the owning
+              conduit-local holder pool when available.
+            - Creates one new spellspace shell outside the holder path on a
+              miss.
             - Pushes that spellspace onto the current-thread stack.
         """
-        self._space = self._conduit._spellspace_pool.acquire_untracked()
+        space = self._conduit._spellspace_pool.acquire_untracked()
+        if space is None:
+            space = self._conduit._spellspace_pool.create_object()
+        self._space = space
         self._conduit._spellspace_stack.push(self._space)
         return self._space
 
@@ -366,14 +372,14 @@ class Conduit(Cleanable):
             conduit_meld=self._meld,
             owner_conduit_creations=self._creations,
             spellspace_registry=self._spellspace_registry,
-            baseline_idle=10,
-            max_idle=10,
+            baseline_idle=20,
+            max_idle=20,
         )
         if conduit_state is ConduitState.normal:
             self._conduit_pool: ConduitPool = ConduitPool(
                 root_conduit=self,
-                baseline_idle=10,
-                max_idle=10,
+                baseline_idle=40,
+                max_idle=40,
             )
         else:
             root_conduits = self._aetheric_frame._conduits
@@ -856,7 +862,13 @@ class Conduit(Cleanable):
             SpellSpace: A new SpellSpace owned by this Conduit.
         """
         self.check_cleaned()
-        return self._spellspace_pool.acquire(track_registry=True)
+        spellspace = self._spellspace_pool.acquire(track_registry=True)
+        if spellspace is None:
+            spellspace = self._spellspace_pool.prepare_object(
+                self._spellspace_pool.create_object(),
+                track_registry=True,
+            )
+        return spellspace
 
     def _register_spellspace(self, space: SpellSpace) -> None:
         """
@@ -1600,8 +1612,8 @@ class Conduit(Cleanable):
                 self._refresh_devops_identity_state()
                 self._conduit_pool = ConduitPool(
                     root_conduit=self,
-                    baseline_idle=10,
-                    max_idle=10,
+                    baseline_idle=40,
+                    max_idle=40,
                 )
 
                 # Step 2: Keep the current creations object.

@@ -130,12 +130,34 @@ def test_spellspace_pool_acquire_untracked_skips_registry_reactivation() -> None
         max_idle=1,
     )
     first = pool.acquire()
+    assert first is None
+    first = pool.prepare_object(pool.create_object())
     first.cleanup()
 
     acquired = pool.acquire_untracked()
 
     assert acquired is first
     assert acquired not in registry
+
+
+def test_spellspace_pool_acquire_returns_none_on_miss() -> None:
+    """acquire should return None when no idle spellspace shell is available."""
+    owner_conduit_id = "conduit-test"
+    creations = _ConduitCreationsStub(owner_conduit_id=owner_conduit_id)
+    conduit_meld = _ConduitMeldStub()
+    registry: set[SpellSpace] = set()
+    pool = SpellSpacePool(
+        owner_conduit_id=owner_conduit_id,
+        conduit_meld=conduit_meld,
+        owner_conduit_creations=creations,
+        spellspace_registry=registry,
+        baseline_idle=1,
+        max_idle=1,
+    )
+
+    acquired = pool.acquire()
+
+    assert acquired is None
 
 
 def test_spellspace_pool_destroy_object_uses_permanent_cleanup() -> None:
@@ -152,7 +174,7 @@ def test_spellspace_pool_destroy_object_uses_permanent_cleanup() -> None:
         baseline_idle=1,
         max_idle=1,
     )
-    space = pool.acquire()
+    space = pool.create_object()
 
     pool.destroy_object(space)
 
@@ -177,6 +199,8 @@ def test_spellspace_pool_cleanup_destroys_idle_spellspaces() -> None:
         max_idle=1,
     )
     space = pool.acquire()
+    assert space is None
+    space = pool.prepare_object(pool.create_object())
     space_id = space.id
     space.cleanup()
 

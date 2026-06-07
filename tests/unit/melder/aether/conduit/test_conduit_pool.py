@@ -11,70 +11,65 @@ class _RootConduitStub:
 
 def test_conduit_pool_exposes_root_conduit_and_id() -> None:
     """
-    Verify the pool stores and exposes its owning root conduit surface.
+    The pool should expose the owning root conduit and its stable id.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
         root_conduit=root,
-        baseline_idle=0,
-        max_idle=1,
+        baseline_idle=40,
+        max_idle=40,
     )
 
     assert pool.root_conduit is root
     assert pool.root_conduit_id == "root-1"
 
 
-def test_conduit_pool_inherits_base_policy_surface() -> None:
+def test_conduit_pool_describe_reports_burst_holder_state() -> None:
     """
-    Verify the scaffold still exposes the inherited elastic pool policy state.
+    The lesser pool should report the coarse burst-holder state.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
         root_conduit=root,
-        baseline_idle=2,
-        max_idle=4,
-        stretch_percent=50,
-        settle_time_seconds=10.0,
-        decay_percent_per_interval=25,
-        decay_interval_seconds=5.0,
+        baseline_idle=40,
+        max_idle=40,
     )
 
     snapshot = pool.describe()
 
-    assert snapshot["baseline_idle"] == 2
-    assert snapshot["max_idle"] == 4
-    assert snapshot["stretch_percent"] == 50
-    assert snapshot["settle_time_seconds"] == 10.0
-    assert snapshot["decay_percent_per_interval"] == 25
-    assert snapshot["decay_interval_seconds"] == 5.0
+    assert snapshot["baseline_idle"] == 40
+    assert snapshot["target_idle"] == 40
+    assert snapshot["max_idle"] == 40
+    assert snapshot["burst_factor"] == 4
 
 
-def test_conduit_pool_create_object_returns_none_when_empty() -> None:
+def test_conduit_pool_create_object_returns_none_on_miss() -> None:
     """
-    Verify the pool hands back nothing when no retained lesser is idle.
+    Holder-only lesser acquire should return None on a miss.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
         root_conduit=root,
-        baseline_idle=0,
-        max_idle=1,
+        baseline_idle=40,
+        max_idle=40,
     )
 
     acquired = pool.create_object()
 
     assert acquired is None
-    assert pool.in_use_count == 0
+    assert pool.in_use_count == 1
+    assert pool.idle_count == 0
 
 
-def test_conduit_pool_create_object_returns_retained_lesser() -> None:
+def test_conduit_pool_create_object_reuses_retained_lesser() -> None:
     """
-    Verify the pool reuses one retained lesser conduit shell.
+    Holder-only lesser acquire should reuse one retained shell when available.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
         root_conduit=root,
-        baseline_idle=1,
-        max_idle=1,
+        baseline_idle=40,
+        max_idle=40,
     )
     pooled = type(
         "_PooledConduitStub",
@@ -92,13 +87,13 @@ def test_conduit_pool_create_object_returns_retained_lesser() -> None:
 
 def test_conduit_pool_destroy_object_calls_permanent_cleanup() -> None:
     """
-    Verify destroy_object uses the conduit hard-destroy lane.
+    destroy_object should route through the conduit hard-destroy lane.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
         root_conduit=root,
-        baseline_idle=0,
-        max_idle=1,
+        baseline_idle=40,
+        max_idle=40,
     )
     pooled = type(
         "_PooledConduitStub",

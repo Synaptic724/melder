@@ -290,8 +290,7 @@ def _measure_lesser_cycle_components(
         _prime_lesser_pool(root_conduit)
         pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
+        pool._idle.clear()
         pool._enabled = False
 
     def acquire_only() -> Conduit:
@@ -345,8 +344,7 @@ def _measure_spellspace_cycle_components(
         _prime_spellspace_pool(lesser)
         pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
+        pool._idle.clear()
         pool._enabled = False
 
     try:
@@ -398,8 +396,7 @@ def _measure_recursive_spellspace_cycle_components(
         _prime_spellspace_pool_depth(lesser, depth)
         pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
+        pool._idle.clear()
         pool._enabled = False
 
     def enter_nested() -> list[Any]:
@@ -473,8 +470,7 @@ def _measure_spellspace_cycle_with_use_components(
         _prime_spellspace_pool(lesser)
         pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
+        pool._idle.clear()
         pool._enabled = False
 
     def reset_external_state() -> None:

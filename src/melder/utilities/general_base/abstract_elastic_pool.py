@@ -1,7 +1,6 @@
-import threading
-import time
+from collections import deque
 from abc import ABC, abstractmethod
-from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Callable, ClassVar, Deque, Dict, Generic, List, Optional, TypeVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -11,37 +10,45 @@ _T = TypeVar("_T")
 
 class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     """
-    Reusable bounded elastic object-pool base.
+    Reusable burst-oriented idle-shell pool base.
 
     Purpose:
-        Provide one shared pooling policy surface for expensive reusable runtime
-        objects such as lesser conduits and spellspaces without binding the base
-        class to one specific object type.
+        Provide one shared coarse burst-pool surface for reusable runtime
+        shells such as lesser conduits and spellspaces without binding the base
+        class to one concrete object type.
 
     High-level model:
-        - The pool tracks a mutable `target_idle` count.
-        - New demand stretches `target_idle` upward by percentage.
-        - Quiet periods decay `target_idle` back toward `baseline_idle`.
-        - Released objects are retained only while idle count remains below both
-          `target_idle` and `max_idle`.
-        - Excess returned objects are destroyed immediately instead of retained.
+        - The pool holds only idle reusable shells in `_idle`.
+        - Borrowed pressure is tracked through `_borrowed_tickets`.
+        - A miss at the current ceiling expands the retained ceiling by one
+          coarse burst factor.
+        - Returned objects are retained while idle count remains below the
+          current ceiling.
+        - Once borrowed pressure falls back under the active shrink mark, the
+          ceiling is stepped down by one floor increment.
+        - Already-idle shells are not retroactively evicted when the ceiling
+          drops; only future returns above the current ceiling are cleaned up.
+        - No time-based decay runs on the hot path.
 
     Contract:
-        - `acquire(...)` either reuses an idle object or creates a new one.
-        - `release(obj)` decrements in-use count and either retains or destroys
-          it based on the current elastic target.
+        - `acquire(...)` either reuses an idle object or records a miss and
+          creates a new one.
+        - `release(obj)` pops one borrow ticket when available and either
+          retains or destroys the returned shell based on the current coarse
+          ceiling.
         - `cleanup()` destroys all retained idle objects and permanently retires
           the pool.
         - Subclasses define object creation and destruction behavior.
 
     Threading:
-        - Internal policy state is protected by an `RLock`.
-        - The abstract lifecycle hooks execute while the lock is held so the
-          pool state and the object state transition stay synchronized.
+        - This pool intentionally does not serialize hot-path mutations with a
+          pool-local lock.
+        - Performance is prioritized over strict pool-internal race handling.
     """
 
     _DEFAULT_ENABLED: ClassVar[bool] = True
     _DEFAULT_BASELINE_IDLE: ClassVar[int] = 0
+    _DEFAULT_BURST_FACTOR: ClassVar[int] = 4
     _DEFAULT_STRETCH_PERCENT: ClassVar[int] = 50
     _DEFAULT_SETTLE_TIME_SECONDS: ClassVar[float] = 300.0
     _DEFAULT_DECAY_PERCENT_PER_INTERVAL: ClassVar[int] = 10
@@ -49,20 +56,15 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
 
     __slots__ = Cleanable.__slots__ + [
         "_baseline_idle",
-        "_decay_interval_seconds",
-        "_decay_percent_per_interval",
-        "_decay_step",
+        "_burst_factor",
         "_enabled",
+        "_borrowed_tickets",
         "_idle",
-        "_in_use_count",
-        "_last_decay_at",
-        "_last_expand_at",
-        "_lock",
         "_max_idle",
-        "_settle_time_seconds",
-        "_stretch_percent",
+        "_post_breach_cap",
+        "_return_checkpoint",
+        "_returned_tickets",
         "_target_idle",
-        "_time_func",
     ]
 
     def __init__(
@@ -78,29 +80,32 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             time_func: Optional[Callable[[], float]] = None,
     ) -> None:
         """
-        Initialize the elastic pool policy state.
+        Initialize one coarse burst-pool policy state.
 
         Args:
             enabled:
                 Whether the pool retains released objects or always destroys
                 them.
             baseline_idle:
-                Idle target the pool decays back down to.
+                Floor retained capacity for idle reusable shells.
             stretch_percent:
-                Percent used to expand `target_idle` when demand exceeds the
-                current prepared capacity.
+                Retained only for constructor compatibility with older callers.
+                The current coarse burst model ignores this value.
             settle_time_seconds:
-                Cooldown after the last stretch before decay begins.
+                Retained only for constructor compatibility with older callers.
+                The current coarse burst model ignores this value.
             decay_percent_per_interval:
-                Percent used to decay `target_idle` toward baseline on each
-                decay interval.
+                Retained only for constructor compatibility with older callers.
+                The current coarse burst model ignores this value.
             decay_interval_seconds:
-                Interval between decay steps once cooldown has elapsed.
+                Retained only for constructor compatibility with older callers.
+                The current coarse burst model ignores this value.
             max_idle:
-                Hard ceiling on retained idle objects. Defaults to
-                `baseline_idle` when omitted.
+                Initial retained ceiling. Defaults to `baseline_idle` when
+                omitted.
             time_func:
-                Optional monotonic clock supplier for deterministic tests.
+                Retained only for constructor compatibility with older callers.
+                The current coarse burst model ignores this value.
 
         Raises:
             ValueError:
@@ -122,28 +127,17 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         if resolved_max_idle < baseline_idle:
             raise ValueError("max_idle must be >= baseline_idle.")
 
-        now = (time.monotonic if time_func is None else time_func)()
         self._enabled: bool = bool(enabled)
         self._baseline_idle: int = baseline_idle
-        self._stretch_percent: int = stretch_percent
-        self._settle_time_seconds: float = settle_time_seconds
-        self._decay_percent_per_interval: int = decay_percent_per_interval
-        self._decay_interval_seconds: float = decay_interval_seconds
-        self._max_idle: int = resolved_max_idle
-        self._target_idle: int = baseline_idle
-        self._decay_step: int = max(
-            1,
-            int(
-                float(max(baseline_idle, 1))
-                * (float(self._decay_percent_per_interval) / 100.0)
-            ),
-        )
-        self._idle: List[_T] = []
-        self._in_use_count: int = 0
-        self._lock: threading.RLock = threading.RLock()
-        self._time_func: Callable[[], float] = time.monotonic if time_func is None else time_func
-        self._last_expand_at: float = now
-        self._last_decay_at: float = now
+        initial_cap = max(1, resolved_max_idle)
+        self._burst_factor: int = self._DEFAULT_BURST_FACTOR
+        self._max_idle: int = initial_cap
+        self._target_idle: int = initial_cap
+        self._post_breach_cap: int = initial_cap
+        self._return_checkpoint: int = 0
+        self._borrowed_tickets: Deque[None] = deque()
+        self._returned_tickets: Deque[None] = deque()
+        self._idle: Deque[_T] = deque()
 
     def cleanup(self) -> None:
         """
@@ -156,15 +150,15 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         if self._cleaned:
             return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            for obj in self._idle:
-                self.destroy_object(obj)
-            self._idle.clear()
-            del self._idle
-        del self._lock
+        self._cleaned = True
+        for obj in self._idle:
+            self.destroy_object(obj)
+        self._idle.clear()
+        self._borrowed_tickets.clear()
+        self._returned_tickets.clear()
+        del self._idle
+        del self._borrowed_tickets
+        del self._returned_tickets
 
 
     @property
@@ -186,15 +180,14 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     @property
     def in_use_count(self) -> int:
         """
-        Return the number of objects currently checked out of the pool.
+        Return the current borrowed-shell count.
         """
-        
-        return self._in_use_count
+        return len(self._borrowed_tickets)
 
     @property
     def target_idle(self) -> int:
         """
-        Return the current elastic idle-retention target.
+        Return the current retained ceiling for idle shells.
         """
         
         return self._target_idle
@@ -210,7 +203,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     @property
     def max_idle(self) -> int:
         """
-        Return the hard idle-retention ceiling.
+        Return the current retained ceiling alias.
         """
         
         return self._max_idle
@@ -221,58 +214,56 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
 
         Contract:
             - Reuses an idle object when available.
-            - Creates a new object when no idle object is available.
-            - Expands `target_idle` when current demand exceeds prepared
-              capacity.
+            - Records borrow pressure on misses before creation.
+            - Expands the retained ceiling coarsely only when a miss occurs at
+              the current ceiling.
             - Invokes `prepare_object(...)` on the object before returning it.
 
         Returns:
             _T: Prepared pooled object.
         """
-        
-        with self._lock:
-            now = self._time_func()
-            self._apply_decay_locked(now)
-            pooled_object: Optional[_T] = None
-            created_new = False
-            if self._enabled and self._idle:
-                pooled_object = self._idle.pop()
-            if pooled_object is None:
-                created_new = True
-                pooled_object = self.create_object(*args, **kwargs)
-            self._in_use_count += 1
-            if created_new:
-                self._maybe_stretch_locked(now)
+        pooled_object = self._try_acquire_idle()
+        if pooled_object is not None:
             return self.prepare_object(pooled_object, *args, **kwargs)
+        self._record_borrow_miss()
+        pooled_object = self.create_object(*args, **kwargs)
+        return self.prepare_object(pooled_object, *args, **kwargs)
 
     def release(self, obj: _T) -> None:
         """
         Release one object back to the pool or destroy it.
 
         Contract:
-            - Decrements in-use count exactly once.
-            - Applies decay before deciding whether to retain or destroy.
-            - Destroys returned objects when pooling is disabled or idle
-              retention is already full.
+            - Removes one borrow ticket when available.
+            - Appends ordinary returned shells without cap checks until the
+              coarse return threshold is reached.
+            - Only when the threshold window is hit does the pool:
+              - apply one shrink-step check,
+              - decide whether the current returned shell still fits under the
+                current ceiling.
+            - Already-idle shells are never retroactively evicted when the
+              ceiling drops.
 
         Args:
             obj: Object being returned.
-
-        Raises:
-            RuntimeError:
-                If release is called with no matching checked-out object count.
         """
-        
-        with self._lock:
-            if self._in_use_count <= 0:
-                raise RuntimeError("release() called with no in-use objects.")
-            self._in_use_count -= 1
-            now = self._time_func()
-            self._apply_decay_locked(now)
-            if self._enabled and len(self._idle) < self._target_idle:
-                self._idle.append(obj)
-                return
+        if self._borrowed_tickets:
+            self._borrowed_tickets.pop()
+        if not self._enabled:
             self.destroy_object(obj)
+            return
+
+        self._returned_tickets.append(None)
+        if len(self._returned_tickets) < self._return_check_stride:
+            self._idle.append(obj)
+            return
+
+        self._returned_tickets.clear()
+        self._maybe_shrink()
+        if len(self._idle) < self._target_idle:
+            self._idle.append(obj)
+            return
+        self.destroy_object(obj)
 
     def describe(self) -> Dict[str, Any]:
         """
@@ -281,20 +272,18 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Returns:
             Dict[str, Any]: Current pool policy and live-count snapshot.
         """
-        
-        with self._lock:
-            return {
-                "enabled": self._enabled,
-                "baseline_idle": self._baseline_idle,
-                "target_idle": self._target_idle,
-                "max_idle": self._max_idle,
-                "idle_count": len(self._idle),
-                "in_use_count": self._in_use_count,
-                "stretch_percent": self._stretch_percent,
-                "settle_time_seconds": self._settle_time_seconds,
-                "decay_percent_per_interval": self._decay_percent_per_interval,
-                "decay_interval_seconds": self._decay_interval_seconds,
-            }
+        return {
+            "enabled": self._enabled,
+            "baseline_idle": self._baseline_idle,
+            "target_idle": self._target_idle,
+            "max_idle": self._max_idle,
+            "idle_count": len(self._idle),
+            "in_use_count": self.in_use_count,
+            "burst_factor": self._burst_factor,
+            "post_breach_cap": self._post_breach_cap,
+            "return_checkpoint": self._return_checkpoint,
+            "returned_tickets": len(self._returned_tickets),
+        }
 
     def prepare_object(self, obj: _T, *args: Any, **kwargs: Any) -> _T:
         """
@@ -323,89 +312,73 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         raise NotImplementedError
 
-    def _maybe_stretch_locked(self, now: float) -> None:
+    def _try_acquire_idle(self) -> Optional[_T]:
         """
-        Increase target idle only after real capacity breach.
+        Reuse one idle shell when available.
 
         Contract:
-            - Called only after a new object had to be created.
-            - Uses the updated checked-out object count to decide whether
-              demand breached the retained target.
-            - Expands by percentage and caps at `max_idle`.
-            - Recomputes the cached decay step once on stretch.
-            - Resets the decay timers on stretch.
+            - Pops one idle shell from the right side of the deque.
+            - Appends one borrow ticket when a shell is reused.
+            - Returns `None` when no idle shell is currently retained.
+        """
+        if not self._enabled or not self._idle:
+            return None
+        self._borrowed_tickets.append(None)
+        return self._idle.pop()
+
+    def _record_borrow_miss(self) -> None:
+        """
+        Record one pool miss and expand the retained ceiling on breach.
+
+        Contract:
+            - Borrow pressure is tracked through `_borrowed_tickets`.
+            - A breach occurs only when the miss arrives at or above the
+              current retained ceiling.
+            - Breach expansion is coarse and multiplicative (`x4` by default).
+            - Shrink marks are recalculated from the new ceiling and floor.
+        """
+        if len(self._borrowed_tickets) >= self._target_idle:
+            self._target_idle *= self._burst_factor
+            self._max_idle = self._target_idle
+            if self._baseline_idle > 0:
+                self._shrink_mark = max(
+                    0,
+                    self._target_idle - (2 * self._baseline_idle),
+                )
+            else:
+                self._shrink_mark = 0
+            self._returned_tickets.clear()
+        self._borrowed_tickets.append(None)
+
+    def _maybe_shrink(self) -> None:
+        """
+        Step the retained ceiling down one floor increment when burst pressure
+        has fallen through the active shrink mark.
+
+        Contract:
+            - Does nothing when the pool is disabled.
+            - Does nothing while the current ceiling is already at the floor.
+            - Shrinks only after borrowed pressure falls at or below the active
+              shrink mark.
+            - Shrinks one floor increment at a time.
         """
         if not self._enabled:
             return
-        if self._in_use_count <= self._target_idle:
-            return
-        if self._target_idle >= self._max_idle:
-            return
-        current_target = max(self._target_idle, self._baseline_idle)
-        stretch_amount = max(
-            1,
-            int(float(current_target) * (float(self._stretch_percent) / 100.0)),
-        )
-        self._target_idle = min(self._max_idle, current_target + stretch_amount)
-        self._decay_step = max(
-            1,
-            int(
-                float(self._target_idle)
-                * (float(self._decay_percent_per_interval) / 100.0)
-            ),
-        )
-        self._last_expand_at = now
-        self._last_decay_at = now
-
-    def _apply_decay_once_locked(self, now: float) -> None:
-        """
-        Apply at most one decay step when the cooldown and interval allow it.
-
-        Contract:
-            - No decay while cooldown is active after the last stretch.
-            - No decay when the target is already at baseline.
-            - Applies one percentage-based decay step and updates the decay
-              timestamp to `now`.
-        """
-        if not self._enabled:
+        if self._baseline_idle <= 0:
             return
         if self._target_idle <= self._baseline_idle:
             return
-        if now - self._last_expand_at < self._settle_time_seconds:
-            return
-        if now - self._last_decay_at < self._decay_interval_seconds:
+        if len(self._borrowed_tickets) > self._shrink_mark:
             return
         self._target_idle = max(
             self._baseline_idle,
-            self._target_idle - self._decay_step,
+            self._target_idle - self._baseline_idle,
         )
-        self._last_decay_at = now
-
-    def _apply_decay_locked(self, now: float) -> None:
-        """
-        Decay target idle back toward baseline after quiet periods.
-
-        Contract:
-            - No decay while cooldown is still active after the last stretch.
-            - Decays in percentage steps at fixed intervals.
-            - Never decays below `baseline_idle`.
-        """
-        if not self._enabled:
-            return
+        self._max_idle = self._target_idle
         if self._target_idle <= self._baseline_idle:
-            return
-        if now - self._last_expand_at < self._settle_time_seconds:
-            return
-        elapsed_since_decay = now - self._last_decay_at
-        if elapsed_since_decay < self._decay_interval_seconds:
-            return
-
-        steps = int(elapsed_since_decay // self._decay_interval_seconds)
-        for _ in range(steps):
-            if self._target_idle <= self._baseline_idle:
-                break
-            self._target_idle = max(
-                self._baseline_idle,
-                self._target_idle - self._decay_step,
+            self._shrink_mark = 0
+        else:
+            self._shrink_mark = max(
+                0,
+                self._target_idle - (2 * self._baseline_idle),
             )
-        self._last_decay_at += float(steps) * self._decay_interval_seconds
