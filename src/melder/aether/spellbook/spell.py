@@ -698,6 +698,8 @@ class Spell(Cleanable):
         spellbook = self._spellbook
         if spellbook is None:
             raise RuntimeError("Spell has no owning Spellbook surface.")
+        if self._creation_context is None:
+            return False
         return spellbook._emit_spell_cache(self)
 
     def emit_cache_file(self) -> bool:

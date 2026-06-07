@@ -802,6 +802,7 @@ def test_emit_cache_delegates_to_spellbook_when_enabled():
         spellbook=spellbook,
     )
     spell._caching_enabled = True
+    spell._creation_context = object()
 
     assert spell.emit_cache() is True
     assert spellbook.calls == [spell]
@@ -810,6 +811,14 @@ def test_emit_cache_delegates_to_spellbook_when_enabled():
 def test_emit_cache_returns_false_when_disabled():
     spell = _make_spell()
     spell._caching_enabled = False
+
+    assert spell.emit_cache() is False
+
+
+def test_emit_cache_returns_false_without_creation_context():
+    spell = _make_spell()
+    spell._caching_enabled = True
+    spell._creation_context = None
 
     assert spell.emit_cache() is False
 

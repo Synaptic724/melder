@@ -27,6 +27,9 @@ class _ContextStub:
     def cleanup(self) -> None:
         self.cleanup_calls += 1
 
+    def output_cache(self) -> dict[str, object]:
+        return {"resolve_route_key": "many"}
+
 
 class _BuilderStub:
     """Minimal builder stub for factory tests."""
@@ -102,11 +105,20 @@ class _SpellStub:
         self.user_created_object = None
         self.execution_plan_dispatch_route = None
         self._owner_creations = SimpleNamespace(_creations={}, _lock=RLock())
-        self._spellbook = SimpleNamespace(_spell_id_pool={})
+        self._spellbook = SimpleNamespace(
+            _spell_id_pool={},
+            _emit_spell_cache=lambda spell, cached_codegen=None: True,
+        )
         self._crafter = object()
         self._creation_context = creation_context
         self._creation_context_switch = CounterSwitch(state=switch_state)
         self._lock = RLock()
+        self._caching_enabled = True
+
+    def emit_cache(self) -> bool:
+        if not self._caching_enabled:
+            return False
+        return self._spellbook._emit_spell_cache(self)
 
 
 class _SwitchStub:
@@ -257,6 +269,57 @@ def test_get_or_build_for_spell_builds_and_advances_switch_for_leader_path(
     assert builder.build_calls[0]["creation_gate_index_id"] == spell.spell_index.id
 
 
+def test_build_and_bind_for_spell_stages_cache_after_publish(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify build-and-bind stages the published cache bundle into Spellbook."""
+    built_context = _ContextStub()
+    spell = _SpellStub(creation_context=None)
+    calls: list[tuple[Any, Any]] = []
+    spell._spellbook = SimpleNamespace(
+        _spell_id_pool={},
+        _emit_spell_cache=lambda owner_spell, cached_codegen=None: calls.append(
+            (owner_spell, cached_codegen)
+        ) or True,
+    )
+    builder = _BuilderStub(build_result=built_context)
+    _patch_creation_context_builder(monkeypatch, builder)
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
+
+    result = factory.build_and_bind_for_spell(spell)
+
+    assert result is built_context
+    assert calls == [(spell, None)]
+
+
+def test_get_or_build_for_spell_leader_path_stages_cache_after_publish(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify leader-path get-or-build stages cache after publishing the context."""
+    built_context = _ContextStub()
+    spell = _SpellStub(creation_context=None)
+    spell._creation_context_switch = _SwitchStub(state=0, selector_return=1)
+    calls: list[tuple[Any, Any]] = []
+    spell._spellbook = SimpleNamespace(
+        _spell_id_pool={},
+        _emit_spell_cache=lambda owner_spell, cached_codegen=None: calls.append(
+            (owner_spell, cached_codegen)
+        ) or True,
+    )
+    builder = _BuilderStub(build_result=built_context)
+    _patch_creation_context_builder(monkeypatch, builder)
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
+
+    result = factory.get_or_build_for_spell(spell)
+
+    assert result is built_context
+    assert calls == [(spell, None)]
+
+
 def test_get_or_build_for_spell_returns_cached_context_for_non_leader_non_open_state(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -292,7 +355,8 @@ def test_rebuild_for_spell_delegates_to_build_and_bind(
 ) -> None:
     """Verify rebuild simply delegates to build-and-bind for the target spell."""
     spell = _SpellStub()
-    builder = _BuilderStub(build_result="rebuilt")
+    built_context = _ContextStub()
+    builder = _BuilderStub(build_result=built_context)
     _patch_creation_context_builder(monkeypatch, builder)
     factory = CreationContextFactory(
         creation_gate_controller=CreationGateController(),
@@ -300,7 +364,7 @@ def test_rebuild_for_spell_delegates_to_build_and_bind(
 
     result = factory.rebuild_for_spell(spell)
 
-    assert result == "rebuilt"
+    assert result is built_context
     assert builder.build_calls[0]["spell"] is spell
 
 

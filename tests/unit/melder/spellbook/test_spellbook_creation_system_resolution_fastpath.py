@@ -3,6 +3,9 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
 import pytest
 
+from melder.aether.conduit.meld.creation_context.creation_context import (
+    CreationContext,
+)
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
@@ -1703,27 +1706,41 @@ def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flag
     """
     loaded_calls: List[tuple[str, Dict[str, Any], bool]] = []
 
-    def _fake_load_spell_cache_payload(
+    def _fake_load_cached_bundle(
             *,
             spell: Any,
-            spell_payload: Dict[str, Any],
+            cached_codegen: Dict[str, Any],
+            dynamic_environment: bool = False,
+            creation_gate: Any = None,
+            creation_gate_index_id: Optional[str] = None,
             publish: bool = True,
     ) -> object:
-        loaded_calls.append((spell.spell_id, spell_payload, publish))
+        _ = dynamic_environment
+        _ = creation_gate
+        _ = creation_gate_index_id
+        loaded_calls.append((spell.spell_id, cached_codegen, publish))
         return object()
     monkeypatch.setattr(
-        "melder.aether.spellbook.spellbook_creation_system.load_spell_cache_payload",
-        _fake_load_spell_cache_payload,
+        CreationContext,
+        "load_cached_bundle",
+        staticmethod(_fake_load_cached_bundle),
+    )
+    creation_context_factory = types.SimpleNamespace(
+        _resolve_runtime_gate_for_spell=lambda spell: (None, None),
     )
     spell_a = types.SimpleNamespace(
         spell_id="spell-a",
         resolution_complete=False,
         resolution_required=True,
+        _creation_context_factory=creation_context_factory,
+        _dynamic_environment=False,
     )
     spell_b = types.SimpleNamespace(
         spell_id="spell-b",
         resolution_complete=False,
         resolution_required=True,
+        _creation_context_factory=creation_context_factory,
+        _dynamic_environment=False,
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={

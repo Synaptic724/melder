@@ -346,7 +346,23 @@ class ConduitWard(Cleanable):
             - Keeps the root conduit reference intact for later reuse.
         """
         children: list[Conduit] = []
+        parent_conduit: Optional[Conduit] = None
         with self._lock:
+            if not self._lesser_conduits:
+                parent_conduit = self._parent_conduit
+                if (
+                        parent_conduit is not None
+                        and parent_conduit._conduit_ward is not None
+                ):
+                    parent_conduit._conduit_ward._lesser_conduits.pop(
+                        self._id,
+                        None,
+                    )
+                self._parent_conduit = None
+                self._conduit._transaction_identity.update_metadata(
+                    parent_conduit_id=None
+                )
+                return
             children = list(self._lesser_conduits.values())
 
         for lesser_conduit in children:

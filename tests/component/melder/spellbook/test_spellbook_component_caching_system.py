@@ -490,13 +490,15 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     spell = _get_spell_by_version_id(spellbook, spell_id)
 
     assert spell is not None
+    spell._get_or_build_creation_context()
     assert spell.emit_cache() is True
 
     caching_system = spellbook._get_or_create_caching_system()
     assert caching_system.has_spell_payload(spell_id) is True
     spell_payload = caching_system.get_spell_payload(spell_id)
     assert spell_payload is not None
-    assert spell_payload["spell_id"] == spell_id
-    assert spell_payload["spell_name"] == spell.spell_name
-    assert "no_overrides" in spell_payload
-    assert "overrides" in spell_payload
+    assert spell_payload["resolve_route_key"] == "shared"
+    assert "no_overrides_executor" in spell_payload
+    assert "overrides_executor" in spell_payload
+    assert callable(spell_payload["no_overrides_executor"])
+    assert callable(spell_payload["overrides_executor"])

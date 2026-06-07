@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, Lis
 
 
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.creation_context.creation_context import (
+    CreationContext,
+)
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
@@ -423,9 +426,18 @@ class SpellbookCreationSystem(Cleanable):
             spell_payload = caching_system.get_spell_payload(spell_id)
             if spell_payload is None:
                 continue
-            load_spell_cache_payload(
+            creation_context_factory = spell._creation_context_factory
+            if creation_context_factory is None:
+                raise RuntimeError("Spell has no CreationContextFactory.")
+            creation_gate, creation_gate_index_id = (
+                creation_context_factory._resolve_runtime_gate_for_spell(spell)
+            )
+            CreationContext.load_cached_bundle(
                 spell=spell,
-                spell_payload=spell_payload,
+                cached_codegen=spell_payload,
+                dynamic_environment=spell._dynamic_environment,
+                creation_gate=creation_gate,
+                creation_gate_index_id=creation_gate_index_id,
                 publish=True,
             )
             spell.resolution_complete = True

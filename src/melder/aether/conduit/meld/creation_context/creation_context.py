@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Mapping, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.creation_context.creation_context_codegen import (
@@ -60,6 +61,7 @@ class CreationContext(Cleanable):
         "_execute_no_hooks_no_overrides_compiled",
         "_no_overrides_executor",
         "_execute_with_overrides",
+        "_cached_codegen",
     ]
 
     def __init__(
@@ -73,6 +75,7 @@ class CreationContext(Cleanable):
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
             overrides_executor: Optional[Callable[..., Any]] = None,
+            cached_codegen: Optional[Mapping[str, Any]] = None,
     ) -> None:
         """
         Build one spell-bound runtime context.
@@ -94,6 +97,10 @@ class CreationContext(Cleanable):
                 Phase-11-provided base no-overrides executor.
             overrides_executor:
                 Phase-11-provided override execution callable.
+            cached_codegen:
+                Exact cache bundle for these phase-11 outputs when already
+                available. When omitted, the context captures the constructor
+                inputs as its cache bundle directly.
 
         Raises:
             ValueError:
@@ -113,6 +120,17 @@ class CreationContext(Cleanable):
         self._owner_creations = spell._owner_creations
         self._no_overrides_executor = no_overrides_executor
         self._execute_with_overrides = overrides_executor
+        if cached_codegen is None:
+            self._cached_codegen = {
+                "resolve_route_key": resolve_route_key,
+                "fast_transient_no_overrides_enabled": (
+                    fast_transient_no_overrides_enabled
+                ),
+                "no_overrides_executor": no_overrides_executor,
+                "overrides_executor": overrides_executor,
+            }
+        else:
+            self._cached_codegen = dict(cached_codegen)
 
         self._execute_hooks_overrides_compiled = (
             compile_creation_context_hooks_overrides_only_executor(
@@ -187,6 +205,7 @@ class CreationContext(Cleanable):
         del self._execute_no_hooks_no_overrides_compiled
         del self._no_overrides_executor
         del self._execute_with_overrides
+        del self._cached_codegen
 
     @classmethod
     def load_cached(
@@ -200,6 +219,7 @@ class CreationContext(Cleanable):
             fast_transient_no_overrides_enabled: bool = False,
             no_overrides_executor: Optional[Callable[..., Any]],
             overrides_executor: Optional[Callable[..., Any]],
+            cached_codegen: Optional[Mapping[str, Any]] = None,
             publish: bool = False,
     ) -> "CreationContext":
         """
@@ -219,6 +239,7 @@ class CreationContext(Cleanable):
             fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
             no_overrides_executor=no_overrides_executor,
             overrides_executor=overrides_executor,
+            cached_codegen=cached_codegen,
         )
         if publish:
             previous_creation_context = spell._creation_context
@@ -237,6 +258,55 @@ class CreationContext(Cleanable):
                 except Exception:
                     pass
         return loaded_creation_context
+
+    @classmethod
+    def load_cached_bundle(
+            cls,
+            *,
+            spell: "Spell",
+            cached_codegen: Mapping[str, Any],
+            dynamic_environment: bool = False,
+            creation_gate: Optional["CreationGate"] = None,
+            creation_gate_index_id: Optional[str] = None,
+            publish: bool = False,
+    ) -> "CreationContext":
+        """
+        Build one generic CreationContext from a cache bundle.
+
+        Purpose:
+            Provide the cache-bundle load seam directly on `CreationContext` so
+            cache hydration does not need a separate builder layer.
+        """
+        resolve_route_key = cached_codegen["resolve_route_key"]
+        fast_transient_no_overrides_enabled = bool(
+            cached_codegen.get("fast_transient_no_overrides_enabled")
+        )
+        no_overrides_executor = cached_codegen["no_overrides_executor"]
+        overrides_executor = cached_codegen["overrides_executor"]
+        return cls.load_cached(
+            spell=spell,
+            dynamic_environment=dynamic_environment,
+            creation_gate=creation_gate,
+            creation_gate_index_id=creation_gate_index_id,
+            resolve_route_key=resolve_route_key,
+            fast_transient_no_overrides_enabled=(
+                fast_transient_no_overrides_enabled
+            ),
+            no_overrides_executor=no_overrides_executor,
+            overrides_executor=overrides_executor,
+            cached_codegen=cached_codegen,
+            publish=publish,
+        )
+
+    def output_cache(self) -> Mapping[str, Any]:
+        """
+        Return the exact cached codegen bundle held by this CreationContext.
+
+        Returns:
+            Mapping[str, Any]:
+                Read-only cache bundle for the current phase-11 outputs.
+        """
+        return MappingProxyType(self._cached_codegen)
 
     def execute(
             self,

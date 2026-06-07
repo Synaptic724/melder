@@ -107,6 +107,24 @@ class CreationContextFactory(Cleanable):
         except Exception:
             pass
 
+    @staticmethod
+    def _stage_cache_after_publish(
+            spell: Spell,
+            creation_context: CreationContext,
+    ) -> None:
+        """
+        Stage the published CreationContext cache bundle into Spellbook memory.
+
+        Contract:
+            - No-op when spell-level caching is disabled.
+            - Uses the just-published CreationContext bundle directly.
+            - Keeps file emission outside this seam.
+        """
+        if not spell._caching_enabled:
+            return
+        _ = creation_context
+        spell.emit_cache()
+
 
     def _index_id_for_spell(self, spell: Spell) -> str:
         """
@@ -215,6 +233,7 @@ class CreationContextFactory(Cleanable):
         previous_creation_context = spell._creation_context
         spell._creation_context = built_creation_context
         self._set_creation_context_switch_open(spell)
+        self._stage_cache_after_publish(spell, built_creation_context)
         self._cleanup_creation_context(previous_creation_context)
         return built_creation_context
 
@@ -256,6 +275,7 @@ class CreationContextFactory(Cleanable):
             )
             spell._creation_context = built_creation_context
             creation_context_switch.advance(1)
+            self._stage_cache_after_publish(spell, built_creation_context)
             return built_creation_context
         creation_context = spell._creation_context
         if creation_context is None:

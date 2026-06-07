@@ -727,7 +727,10 @@ and logging.
             self._caching_system = caching_system
             return caching_system
 
-    def _emit_spell_cache(self, spell: Spell) -> bool:
+    def _emit_spell_cache(
+            self,
+            spell: Spell,
+    ) -> bool:
         """
         Internal
 
@@ -758,7 +761,10 @@ and logging.
                 "Spell cache emission requires the spell to belong to this Spellbook."
             )
         caching_system = self._get_or_create_caching_system()
-        spell_payload = build_spell_cache_payload(spell=spell)
+        creation_context = spell._creation_context
+        if creation_context is None:
+            return False
+        spell_payload = creation_context.output_cache()
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
         return True
 
