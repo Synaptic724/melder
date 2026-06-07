@@ -669,6 +669,37 @@ class Spell(Cleanable):
             raise RuntimeError("Spell has no configured CreationContextFactory.")
         return creation_context_factory.get_or_build_for_spell(self)
 
+    def emit_cache(self) -> bool:
+        """
+        Public API
+
+        Emit this spell's current cache payload through its owning Spellbook.
+
+        Purpose:
+            Provide one spell-facing cache export entrypoint without moving
+            cache ownership or file mutation into `CreationContext`.
+
+        Contract:
+            - Returns early when spell-level cache policy is disabled.
+            - Delegates the real cache update to the owning Spellbook.
+            - Requires the spell to still have a live owning Spellbook.
+
+        Returns:
+            bool:
+                True when the spell emitted a cache payload, otherwise False.
+
+        Raises:
+            RuntimeError:
+                If the spell no longer has an owning Spellbook.
+        """
+        self.check_cleaned()
+        if not self._caching_enabled:
+            return False
+        spellbook = self._spellbook
+        if spellbook is None:
+            raise RuntimeError("Spell has no owning Spellbook surface.")
+        return spellbook._emit_spell_cache(self)
+
 
     #region Context Manager
     def __enter__(self) -> "Spell":

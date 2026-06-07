@@ -777,6 +777,43 @@ def test_owner_conduit_info_before_and_after_assignment():
     assert spell._owner_creations == "creations"
 
 
+def test_emit_cache_delegates_to_spellbook_when_enabled():
+    class _CachingSpellbookStub(_SpellbookStub):
+        def __init__(self, states):
+            super().__init__(states)
+            self.calls = []
+
+        def _emit_spell_cache(self, spell):
+            self.calls.append(spell)
+            return True
+
+    spellbook = _CachingSpellbookStub(_RecordingStates())
+    spell = Spell(
+        spell=lambda: None,
+        spell_index=SpellIndex("cache-id"),
+        spellframe=None,
+        binding_name=None,
+        spell_name="CacheSpell",
+        existence=Existence.unique,
+        spell_type=SpellType.SPELL,
+        spell_id="cache-fingerprint",
+        permissions=Permissions.create,
+        aetheric_frame="default",
+        spellbook=spellbook,
+    )
+    spell._caching_enabled = True
+
+    assert spell.emit_cache() is True
+    assert spellbook.calls == [spell]
+
+
+def test_emit_cache_returns_false_when_disabled():
+    spell = _make_spell()
+    spell._caching_enabled = False
+
+    assert spell.emit_cache() is False
+
+
 def test_add_build_details_sets_dependencies_and_graph():
     spell = _make_spell()
     deps = ["a", "b", "c"]

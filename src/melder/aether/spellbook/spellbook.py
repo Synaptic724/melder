@@ -15,6 +15,9 @@ from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.caching_system.caching_system import CachingSystem
+from melder.utilities.caching_system.spell_cache_payload_builder import (
+    build_spell_cache_payload,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -717,6 +720,41 @@ and logging.
             )
             self._caching_system = caching_system
             return caching_system
+
+    def _emit_spell_cache(self, spell: Spell) -> bool:
+        """
+        Internal
+
+        Emit one spell's current cache payload into the Spellbook-owned cache.
+
+        Purpose:
+            Keep cache-file ownership on Spellbook while allowing public
+            spell-facing callers to delegate the actual write here.
+
+        Contract:
+            - Returns early when the spell cache policy bit is disabled.
+            - Requires the spell to belong to this Spellbook.
+            - Builds the spell payload from current spell/compiler state.
+            - Hands the payload to the Spellbook-owned `CachingSystem`.
+
+        Args:
+            spell:
+                Spell whose current runtime payload should be emitted.
+
+        Returns:
+            bool:
+                True when a payload was emitted, otherwise False.
+        """
+        if not spell._caching_enabled:
+            return False
+        if spell._spellbook is not self:
+            raise RuntimeError(
+                "Spell cache emission requires the spell to belong to this Spellbook."
+            )
+        caching_system = self._get_or_create_caching_system()
+        spell_payload = build_spell_cache_payload(spell=spell)
+        caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
+        return True
 
     def _register_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
         """
