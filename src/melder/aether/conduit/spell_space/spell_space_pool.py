@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -15,18 +15,16 @@ if TYPE_CHECKING:
 
 class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     """
-    Burst-oriented holder pool for reusable `SpellSpace` shells.
+    Elastic pool for reusable `SpellSpace` objects.
 
     Purpose:
-        Retain idle spellspace shells for fast reuse while keeping shell
-        creation outside the hot borrow path on pool misses.
+        Keep spellspace instances alive across repeated use so normal cleanup
+        can recycle them instead of permanently destroying them each time.
 
     Contract:
         - Pool ownership is conduit-local in this slice.
         - Reused spellspaces stay attached to the configured conduit runtime.
         - Destruction uses the spellspace permanent cleanup lane.
-        - Borrow misses return `None` so the caller can create outside the
-          holder path.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -96,59 +94,67 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             obj._spellspace_registry.add(obj)
         return obj
 
-    def acquire_untracked(
-            self,
-            *args: Any,
-            **kwargs: Any,
-    ) -> Optional[SpellSpace]:
+    def acquire_untracked(self, *args: Any, **kwargs: Any) -> SpellSpace:
         """
         Acquire one managed spellspace without registry bookkeeping.
 
         Purpose:
             The managed `enter_spellspace()` path already tracks active
-            spellspaces on the conduit-local stack, so it only needs an idle
-            shell when one is available.
+            spellspaces on the conduit-local stack, so it does not need the
+            manual-path registry reactivation performed by `prepare_object()`.
 
         Contract:
             - Reuses one idle spellspace when available.
-            - Returns `None` on a pool miss after recording borrow pressure.
+            - Creates one new spellspace when the idle pool is empty.
+            - Increments the in-use count exactly once per acquire.
+            - Returns the spellspace with `_registry_tracked == False`.
             - Performs no registry add and no `prepare_object(...)` call.
         """
-        pooled_space = self._try_acquire_idle()
-        if pooled_space is not None:
-            return pooled_space
-        self._record_borrow_miss()
-        return None
+        with self._lock:
+            pooled_space: SpellSpace | None = None
+            if self._enabled and self._idle:
+                pooled_space = self._idle.pop()
+            if pooled_space is None:
+                pooled_space = self.create_object(*args, **kwargs)
+            self._in_use_count += 1
+        return pooled_space
 
     def acquire(
             self,
             *args: Any,
             track_registry: bool = True,
             **kwargs: Any,
-    ) -> Optional[SpellSpace]:
+    ) -> SpellSpace:
         """
-        Acquire one manual spellspace shell with optional registry tracking.
+        Acquire one spellspace with conduit-local fixed-capacity fast-path rules.
 
         Purpose:
-            Manual `create_spellspace()` needs registry tracking when an idle
-            spellspace shell is reused, but on a miss the caller still owns the
-            new-object construction step.
+            SpellSpace pools are created with fixed `baseline_idle == max_idle`,
+            so the generic elastic-pool stretch/decay bookkeeping does not add
+            value on the hot path. This override keeps the same external acquire
+            contract while skipping the generic time-based policy work.
 
         Contract:
             - Reuses one idle spellspace when available.
-            - Returns `None` on a pool miss after recording borrow pressure.
+            - Creates one new spellspace when the idle pool is empty.
+            - Increments the in-use count exactly once per acquire.
             - Preserves manual-path registry tracking when `track_registry=True`.
+            - Leaves managed-path spellspaces untracked in the registry when
+              `track_registry=False`.
         """
-        pooled_space = self._try_acquire_idle()
-        if pooled_space is not None:
-            return self.prepare_object(
-                pooled_space,
-                *args,
-                track_registry=track_registry,
-                **kwargs,
-            )
-        self._record_borrow_miss()
-        return None
+        with self._lock:
+            pooled_space: SpellSpace | None = None
+            if self._enabled and self._idle:
+                pooled_space = self._idle.pop()
+            if pooled_space is None:
+                pooled_space = self.create_object(*args, **kwargs)
+            self._in_use_count += 1
+        return self.prepare_object(
+            pooled_space,
+            *args,
+            track_registry=track_registry,
+            **kwargs,
+        )
 
     def destroy_object(self, obj: SpellSpace) -> None:
         """
@@ -161,8 +167,18 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Return one spellspace to idle storage or destroy it.
 
         Contract:
-            - Delegates to the shared coarse burst-holder logic.
+            - Uses a conduit-local fixed-capacity fast path.
             - Assumes trusted private callers do not double-return the same
               spellspace shell.
+            - Retains returned spellspaces while idle capacity remains below the
+              current target.
+            - Destroys excess spellspaces immediately instead of paying generic
+              elastic-pool time/decay bookkeeping that this pool does not need.
         """
-        super().release(obj)
+        with self._lock:
+            if self._in_use_count > 0:
+                self._in_use_count -= 1
+            if self._enabled and len(self._idle) < self._target_idle:
+                self._idle.append(obj)
+                return
+            self.destroy_object(obj)

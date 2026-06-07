@@ -11,11 +11,11 @@ if TYPE_CHECKING:
 
 class ConduitPool(AbstractElasticPool[Any]):
     """
-    Root-conduit-owned burst holder for reusable lesser conduits.
+    Root-conduit-owned elastic pool scaffold for reusable lesser conduits.
 
     Purpose:
-        Hold idle lesser conduit shells for fast reuse while leaving miss-path
-        lesser creation to the caller.
+        Provide a concrete home for lesser-conduit pooling state before real
+        lesser-conduit acquire/release wiring is implemented.
 
     Contract:
         - Owned by one root conduit.
@@ -85,15 +85,17 @@ class ConduitPool(AbstractElasticPool[Any]):
 
         Contract:
             - Reuses an idle lesser when available.
-            - Returns `None` on a miss after recording borrow pressure.
+            - Returns `None` when the pool is empty.
+            - Increments in-use count exactly once only when a shell is reused.
             - Returns the lesser unattached so the caller still owns new-lesser
               creation, hook order, and lineage-link timing.
         """
-        pooled_object = self._try_acquire_idle()
-        if pooled_object is not None:
+        with self._lock:
+            if not self._enabled or not self._idle:
+                return None
+            pooled_object = self._idle.pop()
+            self._in_use_count += 1
             return pooled_object
-        self._record_borrow_miss()
-        return None
 
     def destroy_object(self, obj: Conduit) -> None:
         """
@@ -110,11 +112,26 @@ class ConduitPool(AbstractElasticPool[Any]):
         Return one lesser conduit shell to the idle pool or destroy it.
 
         Purpose:
-            Return soft-cleaned lesser shells through the coarse burst-holder
-            release path.
+            Support soft lesser cleanup before full pool-acquire wiring exists.
 
         Contract:
-            - Delegates to the shared coarse burst-holder logic.
+            - Retains the conduit when idle capacity allows.
+            - Destroys the conduit through the hard lane when the pool is
+              disabled or already full.
             - Assumes trusted private callers return each conduit at most once.
+            - Applies at most one decay step only when the idle list is already
+              at the current retained limit.
         """
-        super().release(conduit)
+        with self._lock:
+            if self._in_use_count > 0:
+                self._in_use_count -= 1
+            if self._enabled and len(self._idle) < self._target_idle:
+                self._idle.append(conduit)
+                return
+            if self._enabled:
+                now = self._time_func()
+                self._apply_decay_once_locked(now)
+                if len(self._idle) < self._target_idle:
+                    self._idle.append(conduit)
+                    return
+            self.destroy_object(conduit)

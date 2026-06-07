@@ -355,8 +355,8 @@ def test_setup_step_records_route_and_transient_state() -> None:
     assert state.fast_transient_no_overrides_enabled is False
 
 
-def test_many_only_setup_step_records_many_route() -> None:
-    """The many-only setup step should now only resolve the many route."""
+def test_many_only_setup_step_records_many_route_and_transient_state() -> None:
+    """The many-only setup step should own the fast-transient bit."""
     step = ManyOnlyCreationContextSetupStep()
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
@@ -364,7 +364,7 @@ def test_many_only_setup_step_records_many_route() -> None:
         no_overrides_plan=type(
             "LanePlanProbe",
             (),
-            {},
+            {"fast_transient_plan": object()},
         )(),
         overrides_plan=None,
         metadata={},
@@ -389,6 +389,7 @@ def test_many_only_setup_step_records_many_route() -> None:
     step.apply(state)
 
     assert state.resolve_route_key == "many"
+    assert state.fast_transient_no_overrides_enabled is True
 
 
 def test_no_overrides_step_records_base_executor_and_signature(
@@ -475,7 +476,7 @@ def test_no_overrides_step_records_base_executor_and_signature(
 def test_many_only_no_overrides_step_records_transient_executor_and_signature(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The many-only no-overrides step should now own disposal-mode selection."""
+    """The many-only no-overrides step should now own the transient schema path."""
     plan = SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=(),
@@ -486,10 +487,8 @@ def test_many_only_no_overrides_step_records_transient_executor_and_signature(
                 "lane_id": "many_only_no_overrides",
                 "root_spell_id": "root",
                 "root_instance_key": ("root", None),
-                "steps": (
-                    SimpleNamespace(spell=SimpleNamespace(has_disposal_methods=False)),
-                    SimpleNamespace(spell=SimpleNamespace(has_disposal_methods=False)),
-                ),
+                "steps": (object(), object()),
+                "fast_transient_plan": ("transient",),
             },
         )(),
         overrides_plan=None,
@@ -505,8 +504,18 @@ def test_many_only_no_overrides_step_records_transient_executor_and_signature(
 
     monkeypatch.setattr(
         many_only_no_overrides_step_module.SharedCompilerExecutions,
+        "build_fast_transient_schema",
+        lambda fast_transient_plan: {"schema": fast_transient_plan},
+    )
+    monkeypatch.setattr(
+        many_only_no_overrides_step_module.SharedCompilerExecutions,
         "build_no_overrides_codegen_creation_step_signature_row",
         lambda step: ("step", id(step)),
+    )
+    monkeypatch.setattr(
+        many_only_no_overrides_step_module.SharedCompilerExecutions,
+        "build_fast_transient_signature",
+        lambda transient_schema: ("transient", transient_schema["schema"]),
     )
     monkeypatch.setattr(
         many_only_no_overrides_step_module.SharedCompilerExecutions,
@@ -521,7 +530,7 @@ def test_many_only_no_overrides_step_records_transient_executor_and_signature(
     monkeypatch.setattr(
         many_only_no_overrides_step_module,
         "compile_no_overrides_codegen_creation_executor_from_plan",
-        lambda *, plan, transient_schema=None: (
+        lambda *, plan, transient_schema: (
             "executor",
             plan.lane_id,
             transient_schema,
@@ -538,14 +547,14 @@ def test_many_only_no_overrides_step_records_transient_executor_and_signature(
     assert creation.no_overrides_executor == (
         "executor",
         "many_only_no_overrides",
-        None,
+        {"schema": ("transient",)},
     )
     assert state.base_no_overrides_executor == (
         "executor",
         "many_only_no_overrides",
-        None,
+        {"schema": ("transient",)},
     )
-    assert creation.metadata["no_overrides_disposal_mode"] == "disposal_free"
+    assert creation.metadata["no_overrides_fast_transient_available"] is True
 
 
 def test_overrides_step_records_override_runtime_state(
