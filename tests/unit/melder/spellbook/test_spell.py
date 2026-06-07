@@ -18,6 +18,15 @@ class _SpellbookStub:
     def __init__(self, states):
         self._spell_system_states = states
 
+    def cleanup_and_remove_spell(self, spell):
+        spell_index = spell.spell_index
+        spell._spellbook_cleanup = True
+        spell.cleanup()
+        try:
+            spell_index.cleanup()
+        except Exception:
+            pass
+
 
 class _RecordingStates:
     """
@@ -252,6 +261,15 @@ from melder.utilities.general_base.cleanable import Cleanable
 class _SpellbookStub:
     def __init__(self, states):
         self._spell_system_states = states
+
+    def cleanup_and_remove_spell(self, spell):
+        spell_index = spell.spell_index
+        spell._spellbook_cleanup = True
+        spell.cleanup()
+        try:
+            spell_index.cleanup()
+        except Exception:
+            pass
 
 
 class _RecordingStates:
@@ -753,6 +771,7 @@ def test_owner_conduit_info_before_and_after_assignment():
         creations="creations",
         dynamic_environment=False,
         creation_gate_controller=CreationGateController(),
+        caching_enabled=False,
     )
     assert spell.owner_conduit_info == ("conduit-1", "c1")
     assert spell._owner_creations == "creations"
@@ -1214,6 +1233,7 @@ def test_owned_conduit_stamps_runtime_ownership_state():
         creations="creations",
         dynamic_environment=False,
         creation_gate_controller=CreationGateController(),
+        caching_enabled=False,
     )
     assert spell.owner_conduit_info == ("cid", "cname")
     assert spell._owner_creations == "creations"

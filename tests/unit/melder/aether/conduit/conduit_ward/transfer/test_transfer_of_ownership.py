@@ -515,6 +515,7 @@ class FakeAether:
         self._aetheric_frames = {frame_name: frame}
         self._change_control_manager = change_control_manager
         self._incident_manager = incident_manager
+        self.configuration = None
         self.add_calls: List[Dict[str, Any]] = []
         self.remove_calls: List[Dict[str, Any]] = []
 
@@ -1096,6 +1097,7 @@ def build_spell(
         *,
         dynamic_environment: bool = False,
         creation_gate_controller: Optional[CreationGateController] = None,
+        caching_enabled: bool = False,
     ) -> None:
         """
         Record conduit ownership for the test spell.

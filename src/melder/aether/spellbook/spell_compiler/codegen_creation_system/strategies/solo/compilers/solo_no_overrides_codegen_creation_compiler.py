@@ -41,9 +41,9 @@ def compile_solo_no_overrides_codegen_creation_executor(
                     owner_creations: Any = None,
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                _ = owner_creations
+                add_many_creations = caller_creations.add_many_creations
                 instance = call_target()
-                caller_creations.add_many_creations(
+                add_many_creations(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -58,9 +58,6 @@ def compile_solo_no_overrides_codegen_creation_executor(
                 owner_creations: Any = None,
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = owner_creations
-            _ = caller_creations_lock_held
             return call_target()
 
         return execute_many_no_disposal
@@ -75,9 +72,9 @@ def compile_solo_no_overrides_codegen_creation_executor(
                     owner_creations: Any = None,
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                _ = owner_creations
+                add_creation = caller_creations.add_creation
                 instance = call_target()
-                caller_creations.add_creation(
+                add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -92,10 +89,9 @@ def compile_solo_no_overrides_codegen_creation_executor(
                 owner_creations: Any = None,
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = owner_creations
-            _ = caller_creations_lock_held
+            add_creation = caller_creations.add_creation
             instance = call_target()
-            caller_creations.add_creation(
+            add_creation(
                 spell_id,
                 instance,
             )
@@ -109,9 +105,6 @@ def compile_solo_no_overrides_codegen_creation_executor(
                 owner_creations: Any = None,
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = owner_creations
-            _ = caller_creations_lock_held
             instance = spell.user_created_object
             if instance is None:
                 raise RuntimeError(
@@ -125,16 +118,15 @@ def compile_solo_no_overrides_codegen_creation_executor(
     prebound_owner_creations = spell._owner_creations
     if prebound_owner_creations is not None:
         if has_disposal_methods:
+            add_creation = prebound_owner_creations.add_creation
+
             def execute_shared_with_disposal(
                     caller_creations: Any,
                     owner_creations: Any = None,
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                _ = caller_creations
-                _ = owner_creations
-                _ = caller_creations_lock_held
                 instance = call_target()
-                prebound_owner_creations.add_creation(
+                add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -144,16 +136,15 @@ def compile_solo_no_overrides_codegen_creation_executor(
 
             return execute_shared_with_disposal
 
+        add_creation = prebound_owner_creations.add_creation
+
         def execute_shared(
                 caller_creations: Any,
                 owner_creations: Any = None,
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = owner_creations
-            _ = caller_creations_lock_held
             instance = call_target()
-            prebound_owner_creations.add_creation(
+            add_creation(
                 spell_id,
                 instance,
             )
@@ -167,10 +158,9 @@ def compile_solo_no_overrides_codegen_creation_executor(
                 owner_creations: Any = None,
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = caller_creations_lock_held
+            add_creation = owner_creations.add_creation
             instance = call_target()
-            owner_creations.add_creation(
+            add_creation(
                 spell_id,
                 instance,
                 has_disposal_methods=True,
@@ -185,10 +175,9 @@ def compile_solo_no_overrides_codegen_creation_executor(
             owner_creations: Any = None,
             caller_creations_lock_held: bool = False,
     ) -> Any:
-        _ = caller_creations
-        _ = caller_creations_lock_held
+        add_creation = owner_creations.add_creation
         instance = call_target()
-        owner_creations.add_creation(
+        add_creation(
             spell_id,
             instance,
         )

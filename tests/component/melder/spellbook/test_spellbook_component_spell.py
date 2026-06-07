@@ -272,6 +272,7 @@ def test_component_spell_mutation_override_updates_real_system_state() -> None:
             "component-conduit",
             dynamic_environment=True,
             creation_gate_controller=CreationGateController(),
+            caching_enabled=False,
         )
         states = spellbook._spell_system_states
         states.consume_dirty_indexes()

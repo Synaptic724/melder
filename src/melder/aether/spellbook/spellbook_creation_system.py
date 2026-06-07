@@ -574,6 +574,12 @@ class SpellbookCreationSystem(Cleanable):
                 context_name="_define_conduit_into_spells",
             )
         )
+        root_configuration = spellbook._aether.configuration
+        caching_enabled = (
+            root_configuration is not None
+            and root_configuration.activated
+            and root_configuration.system_caching_enabled
+        )
         resolution_required: bool = not full_ahead_of_time_compilation
         with spellbook._lock:
             for spell in spellbook._spells.values():
@@ -584,6 +590,7 @@ class SpellbookCreationSystem(Cleanable):
                         conduit._creations,
                         dynamic_environment=conduit.__dynamic_environment__,
                         creation_gate_controller=conduit._creation_gate_controller,
+                        caching_enabled=caching_enabled,
                     )
                     spell.spell_index._set_owner_conduit_id(conduit._id)
                     spell.resolution_required = resolution_required

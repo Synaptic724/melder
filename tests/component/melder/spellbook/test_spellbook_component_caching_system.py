@@ -10,6 +10,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
+from tests.mocks.spellbook.core_classes import BasicService
 
 
 @pytest.fixture(autouse=True)
@@ -140,6 +141,26 @@ def _conjure_root(spellbook: Spellbook, *, name: str = "root") -> None:
     spellbook.conjure(name=name)
 
 
+def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+    """
+    Resolve a local Spell instance by its versioned spell id.
+
+    Args:
+        spellbook:
+            Spellbook holding locally bound spells.
+        spell_id:
+            Versioned spell id to locate.
+
+    Returns:
+        object | None:
+            Resolved spell instance when found, otherwise None.
+    """
+    for spell_index, spell in spellbook.spells.items():
+        if spell_index.current == spell_id:
+            return spell
+    return None
+
+
 def test_component_spellbook_cache_gate_returns_true_when_enabled() -> None:
     """
     Verify the Spellbook cache gate reflects the enabled root config.
@@ -160,6 +181,25 @@ def test_component_spellbook_cache_gate_returns_true_when_enabled() -> None:
     assert spellbook._system_caching_enabled_in_aether() is True
 
 
+def test_component_spell_defaults_caching_disabled_before_conjure() -> None:
+    """
+    Verify newly bound spells start with caching disabled before ownership stamp.
+
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence="unique",
+        permissions="create",
+    )
+    spell = _get_spell_by_version_id(spellbook, spell_id)
+
+    assert spell is not None
+    assert spell._caching_enabled is False
+
+
 def test_component_spellbook_cache_gate_returns_false_when_disabled() -> None:
     """
     Verify the Spellbook cache gate reflects the disabled root config.
@@ -178,6 +218,64 @@ def test_component_spellbook_cache_gate_returns_false_when_disabled() -> None:
     spellbook = _make_spellbook()
 
     assert spellbook._system_caching_enabled_in_aether() is False
+
+
+def test_component_spell_stamps_caching_enabled_from_root_posture() -> None:
+    """
+    Verify ownership stamping copies the enabled cache posture onto spells.
+
+    Returns:
+        None.
+    """
+    cache_root_path = _prepare_cache_root(
+        _package_root() / "tests/component/melder/spellbook/_cache_spell_enabled"
+    )
+    cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    _activate_aether_cache_configuration(
+        cache_root_fragment=cache_root_fragment,
+        enabled=True,
+    )
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence="unique",
+        permissions="create",
+    )
+
+    _conjure_root(spellbook, name="root")
+    spell = _get_spell_by_version_id(spellbook, spell_id)
+
+    assert spell is not None
+    assert spell._caching_enabled is True
+
+
+def test_component_spell_stamps_caching_disabled_from_root_posture() -> None:
+    """
+    Verify ownership stamping copies the disabled cache posture onto spells.
+
+    Returns:
+        None.
+    """
+    cache_root_path = _prepare_cache_root(
+        _package_root() / "tests/component/melder/spellbook/_cache_spell_disabled"
+    )
+    cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    _activate_aether_cache_configuration(
+        cache_root_fragment=cache_root_fragment,
+        enabled=False,
+    )
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence="unique",
+        permissions="create",
+    )
+
+    _conjure_root(spellbook, name="root")
+    spell = _get_spell_by_version_id(spellbook, spell_id)
+
+    assert spell is not None
+    assert spell._caching_enabled is False
 
 
 def test_component_spellbook_does_not_build_caching_system_until_first_request() -> None:

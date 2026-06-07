@@ -268,6 +268,7 @@ class DummySpell:
             *,
             dynamic_environment=False,
             creation_gate_controller=None,
+            caching_enabled=False,
     ):
         """
         Purpose:
@@ -289,6 +290,7 @@ class DummySpell:
             creations,
             dynamic_environment,
             creation_gate_controller,
+            caching_enabled,
         )
 
     @property

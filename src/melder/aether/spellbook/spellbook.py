@@ -2871,12 +2871,19 @@ and logging.
                 )
 
                 conduit = self._get_required_conduit_surface()
+                root_configuration = Spellbook._aether.configuration
+                caching_enabled = (
+                    root_configuration is not None
+                    and root_configuration.activated
+                    and root_configuration.system_caching_enabled
+                )
                 new_spell._add_owned_conduit(
                     conduit._id,
                     conduit._name,
                     conduit._creations,
                     dynamic_environment=conduit.__dynamic_environment__,
                     creation_gate_controller=conduit._creation_gate_controller,
+                    caching_enabled=caching_enabled,
                 )
                 spell_index._set_owner_conduit_id(conduit._id)
                 new_spell.resolution_required = not full_ahead_of_time_compilation

@@ -1405,12 +1405,19 @@ class TransferOfOwnership(Cleanable):
                     spell_obj.spell_index._owner_conduit_id = self.target_conduit._id
             except Exception as e:
                 raise RuntimeError(f"Failed to update SpellIndex owner: {e}")
+            root_configuration = tgt_book._aether.configuration
+            caching_enabled = (
+                root_configuration is not None
+                and root_configuration.activated
+                and root_configuration.system_caching_enabled
+            )
             spell_obj._add_owned_conduit(
                 self.target_conduit._id,
                 self.target_conduit._name,
                 self.target_conduit._creations,
                 dynamic_environment=self.target_conduit.__dynamic_environment__,
                 creation_gate_controller=self.target_conduit._creation_gate_controller,
+                caching_enabled=caching_enabled,
             )
             target_resolution_required = self._get_resolution_required_for_spellbook(
                 tgt_book

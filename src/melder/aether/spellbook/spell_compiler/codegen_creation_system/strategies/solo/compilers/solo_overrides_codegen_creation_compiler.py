@@ -36,12 +36,12 @@ def compile_solo_overrides_codegen_creation_executor(
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                _ = caller_creations_lock_held
+                add_many_creations = caller_creations.add_many_creations
                 instance = _invoke_with_overrides(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                caller_creations.add_many_creations(
+                add_many_creations(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -56,8 +56,6 @@ def compile_solo_overrides_codegen_creation_executor(
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = caller_creations_lock_held
             return _invoke_with_overrides(
                 call_target=call_target,
                 overrides=overrides,
@@ -75,12 +73,12 @@ def compile_solo_overrides_codegen_creation_executor(
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                _ = caller_creations_lock_held
+                add_creation = caller_creations.add_creation
                 instance = _invoke_with_overrides(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                caller_creations.add_creation(
+                add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -95,12 +93,12 @@ def compile_solo_overrides_codegen_creation_executor(
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations_lock_held
+            add_creation = caller_creations.add_creation
             instance = _invoke_with_overrides(
                 call_target=call_target,
                 overrides=overrides,
             )
-            caller_creations.add_creation(
+            add_creation(
                 spell_id,
                 instance,
             )
@@ -114,9 +112,6 @@ def compile_solo_overrides_codegen_creation_executor(
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = overrides
-            _ = caller_creations_lock_held
             instance = spell.user_created_object
             if instance is None:
                 raise RuntimeError(
@@ -130,18 +125,18 @@ def compile_solo_overrides_codegen_creation_executor(
     prebound_owner_creations = spell._owner_creations
     if prebound_owner_creations is not None:
         if has_disposal_methods:
+            add_creation = prebound_owner_creations.add_creation
+
             def execute_shared_with_disposal(
                     caller_creations: Any,
                     overrides: Optional[Dict[str, Any]],
                     caller_creations_lock_held: bool = False,
             ) -> Any:
-                _ = caller_creations
-                _ = caller_creations_lock_held
                 instance = _invoke_with_overrides(
                     call_target=call_target,
                     overrides=overrides,
                 )
-                prebound_owner_creations.add_creation(
+                add_creation(
                     spell_id,
                     instance,
                     has_disposal_methods=True,
@@ -151,18 +146,18 @@ def compile_solo_overrides_codegen_creation_executor(
 
             return execute_shared_with_disposal
 
+        add_creation = prebound_owner_creations.add_creation
+
         def execute_shared(
                 caller_creations: Any,
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = caller_creations_lock_held
             instance = _invoke_with_overrides(
                 call_target=call_target,
                 overrides=overrides,
             )
-            prebound_owner_creations.add_creation(
+            add_creation(
                 spell_id,
                 instance,
             )
@@ -176,14 +171,13 @@ def compile_solo_overrides_codegen_creation_executor(
                 overrides: Optional[Dict[str, Any]],
                 caller_creations_lock_held: bool = False,
         ) -> Any:
-            _ = caller_creations
-            _ = caller_creations_lock_held
             instance = _invoke_with_overrides(
                 call_target=call_target,
                 overrides=overrides,
             )
             dynamic_owner_creations = spell._owner_creations
-            dynamic_owner_creations.add_creation(
+            add_creation = dynamic_owner_creations.add_creation
+            add_creation(
                 spell_id,
                 instance,
                 has_disposal_methods=True,
@@ -198,14 +192,13 @@ def compile_solo_overrides_codegen_creation_executor(
             overrides: Optional[Dict[str, Any]],
             caller_creations_lock_held: bool = False,
     ) -> Any:
-        _ = caller_creations
-        _ = caller_creations_lock_held
         instance = _invoke_with_overrides(
             call_target=call_target,
             overrides=overrides,
         )
         dynamic_owner_creations = spell._owner_creations
-        dynamic_owner_creations.add_creation(
+        add_creation = dynamic_owner_creations.add_creation
+        add_creation(
             spell_id,
             instance,
         )

@@ -197,6 +197,7 @@ class Spell(Cleanable):
         "_creation_context",
         "_creation_context_factory",
         "_creation_context_switch",
+        "_caching_enabled",
         "_compiler_artifact",
         "_dynamic_environment",
         "_hooks_enabled",
@@ -364,6 +365,8 @@ class Spell(Cleanable):
         self._creation_context_factory: Optional[CreationContextFactory] = None
         # Spell-owned selector latch for one-leader CreationContext publication.
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
+        # Runtime cache gate stamped from the owning Spellbook/Aether posture.
+        self._caching_enabled: bool = False
         # Runtime mode carried from owning conduit for context factory wiring.
         self._dynamic_environment: bool = False
         # Runtime resolution gate flag (False for full AOT by default).
@@ -495,6 +498,7 @@ class Spell(Cleanable):
             del self._creation_context
             del self._creation_context_factory
             del self._creation_context_switch
+            del self._caching_enabled
             del self._compiler_artifact
             del self.spell_index
 
@@ -979,6 +983,7 @@ class Spell(Cleanable):
             *,
             dynamic_environment: bool,
             creation_gate_controller: CreationGateController,
+            caching_enabled: bool,
     ) -> None:
         """
         Internal
@@ -1002,6 +1007,9 @@ class Spell(Cleanable):
                 True when the owning conduit runs in dynamic mode.
             creation_gate_controller (CreationGateController):
                 Frame-owned CreationGateController used by CreationContextFactory.
+            caching_enabled (bool):
+                True when the owning Spellbook/Aether posture wants this spell
+                to emit runtime payloads into the cache.
 
         Returns:
             None.
@@ -1016,6 +1024,7 @@ class Spell(Cleanable):
             self._owner_conduit_id = conduit_id
             self._owner_conduit_name = conduit_name
             self._owner_creations = creations
+            self._caching_enabled = caching_enabled
 
     def _add_build_details(
             self,

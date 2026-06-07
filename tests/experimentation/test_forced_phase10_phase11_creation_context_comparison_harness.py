@@ -41,6 +41,8 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
 )
+from melder.aether.spellbook import spellbook as spellbook_module
+from melder.aether.spellbook import spellbook_creation_system as spellbook_creation_system_module
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder import (
     SpellCodegenStrategyBuilder,
 )
@@ -54,6 +56,9 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_s
     SpellCodegenPlanStrategyBuilder,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+
+if not hasattr(spellbook_creation_system_module, "Spellbook"):
+    spellbook_creation_system_module.Spellbook = spellbook_module.Spellbook
 
 
 class _SoloConfigurableRoot:
