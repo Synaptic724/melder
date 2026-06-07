@@ -491,7 +491,6 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
 
     assert spell is not None
     spell._get_or_build_creation_context()
-    assert spell.emit_cache() is True
 
     caching_system = spellbook._get_or_create_caching_system()
     assert caching_system.has_spell_payload(spell_id) is True
@@ -502,3 +501,27 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     assert "overrides_executor" in spell_payload
     assert callable(spell_payload["no_overrides_executor"])
     assert callable(spell_payload["overrides_executor"])
+    assert spell.emit_cache() is False
+
+
+def test_component_spell_emit_cache_skips_existing_spell_id_payload() -> None:
+    cache_root_path = _prepare_cache_root(
+        _package_root() / "tests/component/melder/spellbook/_cache_emit_spell_skip_existing"
+    )
+    cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    _activate_aether_cache_configuration(
+        cache_root_fragment=cache_root_fragment,
+        enabled=True,
+    )
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence="unique",
+        permissions="create",
+    )
+    _conjure_root(spellbook, name="root")
+    spell = _get_spell_by_version_id(spellbook, spell_id)
+
+    assert spell is not None
+    spell._get_or_build_creation_context()
+    assert spell.emit_cache() is False

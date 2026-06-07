@@ -86,12 +86,16 @@ class ConduitPool(AbstractElasticPool[Any]):
         Contract:
             - Reuses an idle lesser when available.
             - Returns `None` when the pool is empty.
-            - Increments in-use count exactly once only when a shell is reused.
             - Returns the lesser unattached so the caller still owns new-lesser
               creation, hook order, and lineage-link timing.
+            - Skips generic diagnostic in-use bookkeeping because this trusted
+              private fixed-capacity hot path does not use the generic elastic
+              accounting contract.
         """
         with self._lock:
-            return self._acquire_idle_object_locked()
+            if not self._enabled or not self._idle:
+                return None
+            return self._idle.pop()
 
     def destroy_object(self, obj: Conduit) -> None:
         """
@@ -117,13 +121,18 @@ class ConduitPool(AbstractElasticPool[Any]):
             - Assumes trusted private callers return each conduit at most once.
             - Applies at most one decay step only when the idle list is already
               at the current retained limit.
+            - Skips generic diagnostic in-use bookkeeping because this trusted
+              private fixed-capacity hot path does not use the generic elastic
+              accounting contract.
         """
         with self._lock:
-            if self._retain_released_object_locked(conduit, strict=False):
+            if self._enabled and len(self._idle) < self._target_idle:
+                self._idle.append(conduit)
                 return
             if self._enabled and not self._is_fixed_capacity_target_locked():
                 now = self._time_func()
                 self._apply_decay_once_locked(now)
-                if self._retain_released_object_locked(conduit, strict=False):
+                if self._enabled and len(self._idle) < self._target_idle:
+                    self._idle.append(conduit)
                     return
             self.destroy_object(conduit)

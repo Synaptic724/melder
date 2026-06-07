@@ -106,16 +106,16 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Contract:
             - Reuses one idle spellspace when available.
             - Creates one new spellspace when the idle pool is empty.
-            - Increments the in-use count exactly once per acquire.
             - Returns the spellspace with `_registry_tracked == False`.
             - Performs no registry add and no `prepare_object(...)` call.
+            - Skips generic diagnostic in-use bookkeeping because this trusted
+              private fixed-capacity hot path does not use the generic elastic
+              accounting contract.
         """
         with self._lock:
-            pooled_space: Optional[SpellSpace] = self._acquire_idle_object_locked()
-            if pooled_space is None:
-                pooled_space = self.create_object(*args, **kwargs)
-                self._in_use_count += 1
-        return pooled_space
+            if self._enabled and self._idle:
+                return self._idle.pop()
+            return self.create_object(*args, **kwargs)
 
     def acquire(
             self,
@@ -135,16 +135,18 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Contract:
             - Reuses one idle spellspace when available.
             - Creates one new spellspace when the idle pool is empty.
-            - Increments the in-use count exactly once per acquire.
             - Preserves manual-path registry tracking when `track_registry=True`.
             - Leaves managed-path spellspaces untracked in the registry when
               `track_registry=False`.
+            - Skips generic diagnostic in-use bookkeeping because this trusted
+              private fixed-capacity hot path does not use the generic elastic
+              accounting contract.
         """
         with self._lock:
-            pooled_space: Optional[SpellSpace] = self._acquire_idle_object_locked()
-            if pooled_space is None:
+            if self._enabled and self._idle:
+                pooled_space = self._idle.pop()
+            else:
                 pooled_space = self.create_object(*args, **kwargs)
-                self._in_use_count += 1
         return self.prepare_object(
             pooled_space,
             *args,
@@ -170,8 +172,12 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               current target.
             - Destroys excess spellspaces immediately instead of paying generic
               elastic-pool time/decay bookkeeping that this pool does not need.
+            - Skips generic diagnostic in-use bookkeeping because this trusted
+              private fixed-capacity hot path does not use the generic elastic
+              accounting contract.
         """
         with self._lock:
-            if self._retain_released_object_locked(obj, strict=False):
+            if self._enabled and len(self._idle) < self._target_idle:
+                self._idle.append(obj)
                 return
             self.destroy_object(obj)

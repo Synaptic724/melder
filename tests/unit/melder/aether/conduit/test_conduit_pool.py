@@ -86,7 +86,7 @@ def test_conduit_pool_create_object_returns_retained_lesser() -> None:
     acquired = pool.create_object()
 
     assert acquired is pooled
-    assert pool.in_use_count == 1
+    assert pool.in_use_count == 0
     assert pool.idle_count == 0
 
 

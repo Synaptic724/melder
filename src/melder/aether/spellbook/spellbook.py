@@ -761,6 +761,8 @@ and logging.
                 "Spell cache emission requires the spell to belong to this Spellbook."
             )
         caching_system = self._get_or_create_caching_system()
+        if caching_system.has_spell_payload(spell.spell_id):
+            return False
         creation_context = spell._creation_context
         if creation_context is None:
             return False
